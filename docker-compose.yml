@@ -7,19 +7,19 @@ services:
         ODOO_RELEASE: ${ODOO_RELEASE}
     container_name: ${PROJECT_NAME}    
     depends_on:
-      - db-odoo
+      - db
     ports:
       - "${PORT_SERVICE_HOST_ODOO}:${PORT_SERVICE_CONTAINER_ODOO}"
     volumes:
       - odoo-web:/var/lib/odoo
-      - ./odoo.conf:/etc/odoo
+      - ./config:/etc/odoo
       - ./enterprise:/mnt/extra-addons
       - ./integra:/mnt/integra-addons
-      #- ./custom:/mnt/custom-addons
+      - ./custom:/mnt/custom-addons
     environment:
       - PYTHONUNBUFFERED=0    
     restart: always
-  db-odoo:
+  db:
     image: postgres:${POSTGRES_IMG_VERSION}
     environment:
       - POSTGRES_DB=postgres

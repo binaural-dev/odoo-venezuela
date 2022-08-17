@@ -48,6 +48,5 @@ setup/win32/static/postgresql*.exe
 
 # Odoo dev
 /enterprise
-/config
-# docker-compose.yml
-# .env
+docker-compose.yml
+.env

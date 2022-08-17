@@ -63,13 +63,21 @@ RUN curl -o odoo.deb -sSL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/od
 
 # Copy entrypoint script and Odoo configuration file
 COPY ./entrypoint.sh /
-COPY ./odoo.conf /etc/odoo/
+COPY ./config/odoo.conf /etc/odoo/
 
 # Set permissions and Mount /var/lib/odoo to allow restoring filestore and /mnt/extra-addons for users addons
 RUN chown odoo /etc/odoo/odoo.conf \
     && mkdir -p /mnt/extra-addons \
     && chown -R odoo /mnt/extra-addons
-VOLUME ["/var/lib/odoo", "/mnt/extra-addons"]
+
+# Directories integra and custom for project
+RUN mkdir -p /mnt/integra-addons \
+    && chown -R odoo /mnt/integra-addons
+
+RUN mkdir -p /mnt/custom-addons \
+    && chown -R odoo /mnt/custom-addons
+
+VOLUME ["/var/lib/odoo", "/mnt/extra-addons", "/mnt/integra-addons", "/mnt/custom-addons"]
 
 # Expose Odoo services
 EXPOSE 8069 8071 8072
