@@ -3,25 +3,24 @@ services:
   odoo:    
     build:
       context: .
-      #dockerfile: Dockerfile.example
-    container_name: ${PROJECT_NAME}
+      args:
+        ODOO_RELEASE: ${ODOO_RELEASE}
+    container_name: ${PROJECT_NAME}    
     depends_on:
       - db-odoo
     ports:
       - "${PORT_SERVICE_HOST_ODOO}:${PORT_SERVICE_CONTAINER_ODOO}"
     volumes:
       - odoo-web:/var/lib/odoo
-      - ./config:/etc/odoo
+      - ./odoo.conf:/etc/odoo
       - ./enterprise:/mnt/extra-addons
       - ./integra:/mnt/integra-addons
       #- ./custom:/mnt/custom-addons
     environment:
-      - PYTHONUNBUFFERED=0
-    #devices:
-    #  - "/dev/ttyACM0:/dev/ttyACM0"
+      - PYTHONUNBUFFERED=0    
     restart: always
   db-odoo:
-    image: postgres:13
+    image: postgres:${POSTGRES_IMG_VERSION}
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=odoo
