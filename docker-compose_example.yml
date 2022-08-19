@@ -5,9 +5,9 @@ services:
       context: .
       args:
         ODOO_RELEASE: ${ODOO_RELEASE}
-    container_name: ${PROJECT_NAME}    
-    depends_on:
-      - db
+    container_name: ${PROJECT_NAME}   
+    networks:
+      - network_odoo      
     ports:
       - "${PORT_SERVICE_HOST_ODOO}:${PORT_SERVICE_CONTAINER_ODOO}"
     volumes:
@@ -28,6 +28,11 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - odoo-db:/var/lib/postgresql/data/pgdata
+    networks:
+      - network_odoo
 volumes:
   odoo-web:
   odoo-db:
+
+networks:
+  network_odoo:
