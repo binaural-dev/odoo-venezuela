@@ -21,6 +21,7 @@ services:
     restart: always
   db:
     image: postgres:${POSTGRES_IMG_VERSION}
+    container_name: ${PROJECT_NAME}_db
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=odoo

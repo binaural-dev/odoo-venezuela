@@ -1,0 +1,50 @@
+name: CI build
+
+on:
+  workflow_call:
+    secrets:
+      ACCESS_TOKEN:
+        required: true
+      USER:
+        required: true
+      ENTERPRISE_BRANCH:
+        required: true
+      PROJECT_NAME:
+        required: true
+      PORT_SERVICE_HOST_ODOO:
+        required: true
+      PORT_SERVICE_CONTAINER_ODOO:
+        required: true
+      ODOO_RELEASE:
+        required: true
+      POSTGRES_IMG_VERSION:
+        required: true
+      POSTGRES_DB:
+        required: true
+      POSTGRESS_PASSWORD:
+        required: true
+      POSTGRES_USER:
+        required: true
+
+jobs:
+  build:
+    runs-on: binaural16
+    steps:
+    - uses: actions/checkout@v3
+    - name: Clonando odoo enterprise 
+      env:
+        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        USER: ${{ secrets.USER }}
+        ENTERPRISE_BRANCH: ${{ secrets.ENTERPRISE_BRANCH }}
+      run: git clone https://${USER}:${ACCESS_TOKEN}@github.com/odoo/enterprise.git --branch ${ENTERPRISE_BRANCH}
+    - name: Corriendo docker-compose
+      env:
+        PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+        PORT_SERVICE_HOST_ODOO: ${{ secrets.PORT_SERVICE_HOST_ODOO }}
+        PORT_SERVICE_CONTAINER_ODOO: ${{ secrets.PORT_SERVICE_CONTAINER_ODOO }}
+        ODOO_RELEASE: ${{ secrets.ODOO_RELEASE }}
+        POSTGRES_IMG_VERSION: ${{ secrets.POSTGRES_IMG_VERSION }}
+        POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      run: docker-compose -f docker-compose_example.yml up -d
