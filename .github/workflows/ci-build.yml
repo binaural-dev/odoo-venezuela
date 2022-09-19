@@ -28,7 +28,7 @@ on:
 
 jobs:
   build:
-    runs-on: binaural16
+    runs-on: binaural
     steps:
     - uses: actions/checkout@v3
     - name: Clonando odoo enterprise 
