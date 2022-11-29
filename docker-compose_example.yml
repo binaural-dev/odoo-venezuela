@@ -31,9 +31,23 @@ services:
       - odoo-db:/var/lib/postgresql/data/pgdata
     networks:
       - network_odoo
+  pgadmin:
+    container_name: ${PROJECT_NAME}_pgadmin_container
+    image: dpage/pgadmin4
+    ports:
+      - "${PG_ADMIN_HOST_PORT}:${PG_ADMIN_SERVICE_CONTAINER_PORT}"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: binaural.ca@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: odoo
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - odoo-pgadmin:/root/.pgadmin
+    networks:
+      - network_odoo
 volumes:
   odoo-web:
   odoo-db:
+  odoo-pgadmin:
 
 networks:
   network_odoo:
