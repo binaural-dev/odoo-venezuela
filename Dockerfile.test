@@ -4,8 +4,6 @@ FROM ubuntu:$codename
 ENV LANG C.UTF-8
 USER root
 
-RUN echo 'RUNNING TEST DOCKERFILE...'
-
 # Basic dependencies
 RUN apt-get update -qq \
     && DEBIAN_FRONTEND=noninteractive apt-get install -qq --no-install-recommends \
