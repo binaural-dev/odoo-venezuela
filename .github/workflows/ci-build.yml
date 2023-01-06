@@ -81,56 +81,67 @@ jobs:
       - name: run test odoo
         run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons 
           --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest odoo --test-enable --stop-after-init --log-level=test -d odoo -i estate 
-      
-      
-  
-# name: CI build
-
-# on:
-#   workflow_call:
-#     secrets:
-#       ACCESS_TOKEN:
-#         required: true
-#       USER:
-#         required: true
-#       ENTERPRISE_BRANCH:
-#         required: true
-#       PROJECT_NAME:
-#         required: true
-#       PORT_SERVICE_HOST_ODOO:
-#         required: true
-#       PORT_SERVICE_CONTAINER_ODOO:
-#         required: true
-#       ODOO_RELEASE:
-#         required: true
-#       POSTGRES_IMG_VERSION:
-#         required: true
-#       POSTGRES_DB:
-#         required: true
-#       POSTGRESS_PASSWORD:
-#         required: true
-#       POSTGRES_USER:
-#         required: true
-
-# jobs:
-#   build:
-#     runs-on: binaural
-#     steps:
-#     - uses: actions/checkout@v3
-#     - name: Clonando odoo enterprise 
-#       env:
-#         ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-#         USER: ${{ secrets.USER }}
-#         ENTERPRISE_BRANCH: ${{ secrets.ENTERPRISE_BRANCH }}
-#       run: git clone https://${USER}:${ACCESS_TOKEN}@github.com/odoo/enterprise.git --branch ${ENTERPRISE_BRANCH}
-#     - name: Corriendo docker-compose
-#       env:
-#         PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
-#         PORT_SERVICE_HOST_ODOO: ${{ secrets.PORT_SERVICE_HOST_ODOO }}
-#         PORT_SERVICE_CONTAINER_ODOO: ${{ secrets.PORT_SERVICE_CONTAINER_ODOO }}
-#         ODOO_RELEASE: ${{ secrets.ODOO_RELEASE }}
-#         POSTGRES_IMG_VERSION: ${{ secrets.POSTGRES_IMG_VERSION }}
-#         POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-#         POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-#         POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-#       run: docker-compose -f docker-compose_example.yml up -d
+  odoo-pytest:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python_version: "3.10"
+            odoo_version: "16.0"
+            odoo_org_repo: "odoo/odoo"
+            image_name: odoo-test
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: odoo
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Login to ghcr.io
+        uses: docker/login-action@v2.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: run odoo-pytest
+        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons
+          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest pytest --odoo-database=odoo --color=yes /mnt/integra-addons/estate
+  odoo-coverage:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python_version: "3.10"
+            odoo_version: "16.0"
+            odoo_org_repo: "odoo/odoo"
+            image_name: odoo-test
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: odoo
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Login to ghcr.io
+        uses: docker/login-action@v2.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: run code coverage
+        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons
+          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /bin/bash -c/bin/bash -c "coverage3 run --source=/mnt/integra-addons --omit=*/__manifest__.py,*/__init__.py /opt/odoo/odoo-bin --test-enable --log-level=test --stop-after-init -d odoo -i estate && coverage report -m"
