@@ -5,19 +5,22 @@ on:
     types: [opened, reopened]
     branches:
       - 'master'
-      - 'stagign*'
+      - 'staging*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
         include:
           - python_version: "3.10"
             odoo_version: "16.0"
-            # odoo_org_repo: "oca/ocb"
-            image_name: py3.10-bin    
+            odoo_org_repo: "odoo/odoo"
+            image_name: odoo-test
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -32,16 +35,18 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v3
         with:
+          context: .
+          file: Dockerfile.test
           build-args: |
             python_version=${{ matrix.python_version }}
             odoo_version=${{ matrix.odoo_version }}
             odoo_org_repo=${{ matrix.odoo_org_repo }}
             setuptools_constraint=${{ matrix.setuptools_constraint }}
           tags: |
-            ${{ github.repository_owner }}/${{ matrix.image_name }}:latest
+            ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
-          cache-from: type=registry,ref=${{ github.repository_owner }}/${{ matrix.image_name }}:latest
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest
           cache-to: type=local,dest=/tmp/.buildx-cache
           push: true
   odoo-test:
@@ -53,8 +58,8 @@ jobs:
         include:
           - python_version: "3.10"
             odoo_version: "16.0"
-            # odoo_org_repo: "oca/ocb"
-            image_name: py3.10-bin
+            odoo_org_repo: "odoo/odoo"
+            image_name: odoo-test
     services:
       postgres:
         image: postgres:13
@@ -75,7 +80,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: run test odoo
         run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons 
-          --network=host -e PGHOST=localhost ${{ github.repository_owner }}/${{ matrix.image_name }}:latest odoo --test-enable --stop-after-init --log-level=test -d odoo -i estate 
+          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest odoo --test-enable --stop-after-init --log-level=test -d odoo -i estate 
       
       
   
