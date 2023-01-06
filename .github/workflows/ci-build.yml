@@ -74,7 +74,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: run test odoo
-        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons 
+        run: docker run -v $PWD/integra:/mnt/integra-addons -v $PWD/custom:/mnt/custom-addons 
           --network=host -e PGHOST=localhost ${{ github.repository_owner }}/${{ matrix.image_name }}:latest odoo --test-enable --stop-after-init --log-level=test -d odoo -i estate 
       
       
