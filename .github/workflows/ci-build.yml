@@ -111,8 +111,8 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: run odoo-pytest
-        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons
-          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest pytest --odoo-database=odoo --color=yes /mnt/integra-addons/estate
+        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test
+          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /mnt/test/run_pytest.sh -m estate -d odoo
   odoo-coverage:
     runs-on: ubuntu-latest
     needs: build
