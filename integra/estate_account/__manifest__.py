@@ -4,7 +4,7 @@
     "name": "Real Estate Accounting",
     "depends": [
         "estate",
-        "account",
+        #"account",
     ],
     "auto_install": True,
 }
