@@ -80,7 +80,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: run test odoo
         run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons 
-          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest odoo --test-enable --stop-after-init --log-level=test -d odoo -i estate 
+          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest odoo --test-enable --test-tags estate --stop-after-init --log-level=test -d odoo -i estate 
   odoo-pytest:
     runs-on: ubuntu-latest
     needs: build
