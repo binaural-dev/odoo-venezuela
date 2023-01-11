@@ -144,4 +144,4 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: run code coverage
         run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons
-          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /bin/bash -c "coverage3 run --source=/mnt/integra-addons --omit=*/__manifest__.py,*/__init__.py /opt/odoo/odoo-bin --test-enable --log-level=test --stop-after-init -d odoo -i estate && coverage report -m"
+          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /bin/bash -c "coverage3 run --source=/mnt/integra-addons --omit=*/__manifest__.py,*/__init__.py /opt/odoo/odoo-bin --test-enable --test-tags estate --log-level=test --stop-after-init -d odoo -i estate && coverage report -m"
