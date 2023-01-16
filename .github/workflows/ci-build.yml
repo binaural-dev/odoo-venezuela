@@ -51,16 +51,6 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest
           cache-to: type=local,dest=/tmp/.buildx-cache
           push: true
-      - name: Changed Files
-        id: changed-folder
-        uses: tj-actions/changed-files@v35.4.1
-        with:
-          files: integra/**
-          dir_names_max_depth: 2
-      - name: Output changed directories
-        if: steps.changed-folder.outputs.any_changed == 'true'
-        run: |
-          echo "List of any changed files ${{ steps.changed-folder.outputs.all_changed_files }}"
 
   odoo-test:
     runs-on: ubuntu-latest
@@ -123,6 +113,16 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Changed Files
+        id: changed-folder
+        uses: tj-actions/changed-files@v35.4.1
+        with:
+          files: integra/**
+          dir_names_max_depth: 2
+      - name: Output changed directories
+        if: steps.changed-folder.outputs.any_changed == 'true'
+        run: |
+          echo "List of any changed files ${{ steps.changed-folder.outputs.all_changed_files }}"
       - name: run odoo-pytest
         run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test
           --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /mnt/test/run_pytest.sh -m estate -d odoo
