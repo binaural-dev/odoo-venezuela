@@ -110,19 +110,18 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.after }}
-      # - name: Env for Commit Message
-      #   run: |
-      #     MSG=$(git log --format=%B -n 1 ${{ github.event.after }})
-      #     echo "::set-env name=COMMIT_MESSAGE::${MSG}"
-      # - name: Getting Commit Message
-      #   run: echo "Commit SHA: ${{ github.event.after }}, commit message: ${{ env.COMMIT_MESSAGE }} (or ${COMMIT_MESSAGE})"
       - name: Login to ghcr.io
         uses: docker/login-action@v2.1.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        
+      - name: Env for Commit Message
+        run: |
+          MSG=$(git log --format=%B -n 1 ${{ github.event.after }})
+          echo "::set-env name=COMMIT_MESSAGE::${MSG}"
+      - name: Getting Commit Message
+        run: echo "Commit SHA: ${{ github.event.after }}, commit message: ${{ env.COMMIT_MESSAGE }} (or ${COMMIT_MESSAGE})"
       # - name: Changed Files
       #   id: changed-folder
       #   uses: tj-actions/changed-files@v35.4.1
