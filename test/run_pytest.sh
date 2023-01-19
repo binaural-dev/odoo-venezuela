@@ -43,7 +43,7 @@ split_modules() {
 
 usage() {
     echo "USAGE: $0
-    [ -m MODULES (comma separated arg1,arg2, arg3)] [ -d DATABASE_NAME ]"
+    [ -m MODULES (comma separated arg1,arg2,arg3)] [ -d DATABASE_NAME ]"
 }
 
 exit_failure() {
