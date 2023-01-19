@@ -4,7 +4,7 @@ from odoo.exceptions import UserError
 from odoo.tests import tagged
 
 
-@tagged("post_install", "-at_install")
+@tagged("res_partner","post_install", "-at_install")
 class TestResPartner(TransactionCase):
     def setUp(self):
         super(TestResPartner, self).setUp()
@@ -21,8 +21,3 @@ class TestResPartner(TransactionCase):
         self.assertEqual(self.partner.vat, "27436422")
         self.partner.get_default_name_by_vat()
         self.assertEqual(self.partner.name, "BRYAN ALEJANDRO GARCIA ESCALANTE")
-
-    # def test_get_default_name_by_vat_2(self):
-    #     self.AssertionError(self.partner.name, 'BRYAN ALEJANDRO GARCIA')
-    #     self.partner.get_default_name_by_vat()
-    #     self.AssertionError(self.partner.name, 'BRYAN ALEJANDRO GARCIA')
