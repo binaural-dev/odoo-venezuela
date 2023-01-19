@@ -32,21 +32,24 @@ parse_modules() {
 run_odoo_test(){
     tags=$(parse_tags)
     modules=$(parse_modules)
+    database=odoo
 
-    source /mnt/test/run_odoo_tests.sh -t ${tags} -m ${modules} -d odoo1
+    source /mnt/test/run_odoo_tests.sh -t ${tags} -m ${modules} -d ${database}
 }
 
 run_pytest(){
     modules=$(parse_modules)
+    database=odoo
 
-    source mnt/test/run_pytest.sh -m ${modules} -d odoo2
+    source /mnt/test/run_pytest.sh -m ${modules} -d ${database}
 }
 
 run_coverage(){
     tags=$(parse_tags)
     modules=$(parse_modules)
+    database=odoo
 
-    source /mn/test/run_coverage.sh -t ${tags} -m ${modules} -d odoo3
+    source /mnt/test/run_coverage.sh -t ${tags} -m ${modules} -d ${database}
 }
 
 usage() {
