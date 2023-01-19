@@ -5,15 +5,11 @@
        Modulo para información de contacto """,
 
     'license': 'LGPL-3',
-
-    'description': """
-        - Modelo de tipo de persona
-    """,
     
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
     'category': 'Contacts/Contacts',
-    'version': '1.0',
+    'version': '16.0',
 
     # any module necessary for this one to work correctly
     'depends': ['base','contacts'],
