@@ -62,7 +62,7 @@ exit_failure() {
 }
 
 main() { 
-    case "${script_to_run}" in
+    case "$script_to_run" in
         odoo)
             run_odoo_test
         ;;
