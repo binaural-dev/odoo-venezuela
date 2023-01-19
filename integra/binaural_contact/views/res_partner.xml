@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_partner_binaural_form_contacts" model="ir.ui.view">
+        <field name="name">res_partner_binaural_form_contacts</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vat']" position="before">
+                <field name="prefix_vat"/>
+            </xpath>
+            <xpath expr="//field[@name='vat']" position="after">                
+                <button name="get_default_name_by_vat"
+                        type="object"
+                        icon = "fa-search"
+                >
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
