@@ -3,10 +3,7 @@
     "version": "1.0.0",
     "category": "Accounting/Localizations/Account Charts",
     "license": "LGPL-3",
-    "depends": [
-        "account",
-        # "l10n_multilang",
-    ],
+    "depends": ["account"],
     "data": [
         # # Chart of Accounts
         # "data/account_chart_template_data.xml",
