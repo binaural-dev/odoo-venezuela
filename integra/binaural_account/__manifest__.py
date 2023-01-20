@@ -1,22 +1,21 @@
 {
-    'name': "Binaural contactos",
+    'name': "Contabilidad - Venezolana",
 
     'summary': """
-       Modulo para información de contacto """,
+       Modulo para contabilidad Venezolana """,
 
     'license': 'LGPL-3',
     
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
-    'category': 'Contacts/Contacts',
-    'version': '16.0',
+    'category': 'Accounting/Localizations/Account Chart',
 
     # any module necessary for this one to work correctly
-    'depends': ['base','contacts'],
+    'depends': ['base','account'],
 
     # always loaded
     'data': [
-        'views/res_partner.xml',
+        'views/res_config_settings.xml',
     ],
 
     'images': ['static/description/icon.png'],
