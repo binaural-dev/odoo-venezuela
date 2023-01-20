@@ -1,0 +1,7 @@
+<odoo>
+  <data>
+	    <menuitem name="Cities" id="menu_res_city" parent="contacts.menu_localisation" action="action_res_country_city" sequence="1" />
+      <menuitem name="Municipalities" id="menu_res_municipality" parent="contacts.menu_localisation" action="action_res_country_municipality" sequence="2" />
+      <menuitem name="Parish" id="menu_res_country_parish" parent="contacts.menu_localisation" action="action_res_country_parish" sequence="3"/>
+  </data>
+</odoo>
