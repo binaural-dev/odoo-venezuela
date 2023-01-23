@@ -15,6 +15,7 @@
 
     # always loaded
     'data': [
+        'data/account_data.xml',
         'views/res_config_settings.xml',
     ],
 
