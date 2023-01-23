@@ -14,7 +14,7 @@
 
     <record id="binaural_account_journal_delivery_notes" model="account.journal">
         <field name="name">Delivery Notes</field>
-        <field name="invoice_reference_type"></field>
+        <field name="invoice_reference_type">invoice</field>
         <field name="type">sale</field>
         <field name="invoice_reference_model">odoo</field>
         <field name="code">NE</field>
@@ -35,64 +35,67 @@
     <record id="binaural_account_journal_supplier_receipts" model="account.journal">
         <field name="name">Supplier Receipts</field>
         <field name="invoice_reference_type">invoice</field>
-        <field name="type">sale</field>
+        <field name="type">purchase</field>
         <field name="invoice_reference_model">odoo</field>
-        <field name="code">11111</field>
+        <field name="code">RP</field>
         <field name="company_id">1</field>
         <field name="default_account_id" ref="account_activa_account_60101001" />
     </record>
 
-    <record id="account_journal_sellers_payment" model="account.journal">
-        <field name="name">sales invoices</field>
+    <record id="binaural_account_journal_bank" model="account.journal">
+        <field name="name">Bank</field>
         <field name="invoice_reference_type">invoice</field>
-        <field name="type">sale</field>
+        <field name="type">bank</field>
         <field name="invoice_reference_model">odoo</field>
-        <field name="code">11111</field>
+        <field name="code">Bank</field>
+        <field name="company_id">1</field>
+        <field name="default_account_id" ref="account_activa_account_10102001" />
+    </record>
+
+    <record id="binaural_account_journal_bank" model="account.journal">
+        <field name="name">Cash Bs</field>
+        <field name="invoice_reference_type">invoice</field>
+        <field name="type">cash</field>
+        <field name="invoice_reference_model">odoo</field>
+        <field name="code">EBs</field>
+        <field name="company_id">1</field>
+        <field name="default_account_id" ref="account_activa_account_10101001" />
+    </record>
+
+    <record id="binaural_account_journal_bank" model="account.journal">
+        <field name="name">Cash $</field>
+        <field name="invoice_reference_type">invoice</field>
+        <field name="type">cash</field>
+        <field name="invoice_reference_model">odoo</field>
+        <field name="code">EDiv</field>
+        <field name="company_id">1</field>
+        <field name="default_account_id" ref="account_activa_account_10101003" />
+    </record>
+
+    <record id="binaural_account_journal_inventory_valuation" model="account.journal">
+        <field name="name">Inventory Valuation</field>
+        <field name="invoice_reference_type">invoice</field>
+        <field name="type">general</field>
+        <field name="invoice_reference_model">odoo</field>
+        <field name="code">VI</field>
         <field name="company_id">1</field>
     </record>
 
-    <record id="account_journal_sellers_payment" model="account.journal">
-        <field name="name">sales invoices</field>
+    <record id="binaural_account_journal_various_operations" model="account.journal">
+        <field name="name">Various Operations</field>
         <field name="invoice_reference_type">invoice</field>
-        <field name="type">sale</field>
+        <field name="type">general</field>
         <field name="invoice_reference_model">odoo</field>
-        <field name="code">11111</field>
+        <field name="code">OP</field>
         <field name="company_id">1</field>
     </record>
 
-    <record id="account_journal_sellers_payment" model="account.journal">
-        <field name="name">sales invoices</field>
+    <record id="binaural_account_journal_opening_balances" model="account.journal">
+        <field name="name">Opening Balances</field>
         <field name="invoice_reference_type">invoice</field>
-        <field name="type">sale</field>
+        <field name="type">general</field>
         <field name="invoice_reference_model">odoo</field>
-        <field name="code">11111</field>
-        <field name="company_id">1</field>
-    </record>
-
-    <record id="account_journal_sellers_payment" model="account.journal">
-        <field name="name">sales invoices</field>
-        <field name="invoice_reference_type">invoice</field>
-        <field name="type">sale</field>
-        <field name="invoice_reference_model">odoo</field>
-        <field name="code">11111</field>
-        <field name="company_id">1</field>
-    </record>
-
-    <record id="account_journal_sellers_payment" model="account.journal">
-        <field name="name">sales invoices</field>
-        <field name="invoice_reference_type">invoice</field>
-        <field name="type">sale</field>
-        <field name="invoice_reference_model">odoo</field>
-        <field name="code">11111</field>
-        <field name="company_id">1</field>
-    </record>
-
-    <record id="account_journal_sellers_payment" model="account.journal">
-        <field name="name">sales invoices</field>
-        <field name="invoice_reference_type">invoice</field>
-        <field name="type">sale</field>
-        <field name="invoice_reference_model">odoo</field>
-        <field name="code">11111</field>
+        <field name="code">SI</field>
         <field name="company_id">1</field>
     </record>
   </data>
