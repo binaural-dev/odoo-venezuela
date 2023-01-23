@@ -4,6 +4,7 @@
         Maestros de ciudades, municipios
 parroquias. 
     """,
+    "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
