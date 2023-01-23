@@ -5,11 +5,10 @@
     "license": "LGPL-3",
     "depends": ["account"],
     "data": [
-        # # Chart of Accounts
-        # "data/account_chart_template_data.xml",
-        # "data/account_account_tag_data.xml",
-        # "data/account.account.template.csv",
-        # "data/account.group.template.csv",
+        "data/res_currency_data.xml",
+        "data/account_chart_template_data.xml",
+        "data/account.account.template.csv",
+        "data/account_tax_template_data.xml",
         # # Taxes
         # "data/account_tax_group_data.xml",
         # "data/account_tax_report_data.xml",
