@@ -20,6 +20,7 @@ msgstr ""
 msgid "Active"
 msgstr "Activo"
 
+
 #. module: binaural_localizacion
 #: model:ir.ui.menu,name:binaural_localizacion.menu_res_city
 msgid "Cities"
