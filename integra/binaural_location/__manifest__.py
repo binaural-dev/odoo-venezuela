@@ -22,6 +22,7 @@ parroquias. 
         "views/res_country_parish_views.xml",
         "views/res_country_municipality_views.xml",
         "views/res_country_city_views.xml",
+        "views/res_partner_views.xml",
         "views/menus.xml",
     ],
     "application": True,
