@@ -4,6 +4,10 @@
         Maestros de ciudades, municipios
 parroquias. 
     """,
+    "summary": """
+        Maestros de ciudades, municipios
+parroquias. 
+    """,
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
@@ -18,6 +22,7 @@ parroquias. 
         "views/res_country_parish_views.xml",
         "views/res_country_municipality_views.xml",
         "views/res_country_city_views.xml",
+        "views/res_partner_views.xml",
         "views/menus.xml",
     ],
     "application": True,
