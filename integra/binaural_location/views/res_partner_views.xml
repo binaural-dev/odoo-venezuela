@@ -1,0 +1,16 @@
+<odoo>
+	<data>
+		<record id="view_form_res_partner_inherited" model="ir.ui.view">
+			<field name="name">Extension de cliente</field>
+			<field name="model">res.partner</field>
+			<field name="inherit_id" ref="base.view_partner_form" />
+			<field name="arch" type="xml">
+				<field name="city" position="replace">
+					<field name="city_id" placeholder="Ciudad" />
+					<field name="city" invisible="1" />
+				</field>
+			</field>
+			
+		</record>
+	</data>
+</odoo>
