@@ -7,7 +7,7 @@
         <field name="sequence">1</field>
         <field name="amount">16.00</field>
         <field name="amount_type">percent</field>
-        <field name="chart_template_id" ref="l10n_binaural.l10nsp_chart_template_binaural"/>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
         <field name="tax_group_id" ref="l10n_binaural.IVA_SALE_GROUP"/>
     </record>
 
@@ -17,7 +17,7 @@
         <field name="sequence">1</field>
         <field name="amount">8.00</field>
         <field name="amount_type">percent</field>
-        <field name="chart_template_id" ref="l10n_binaural.l10nsp_chart_template_binaural"/>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
         <field name="tax_group_id" ref="l10n_binaural.IVA_SALE_GROUP"/>
     </record>
 
@@ -27,7 +27,7 @@
         <field name="sequence">1</field>
         <field name="amount">31.00</field>
         <field name="amount_type">percent</field>
-        <field name="chart_template_id" ref="l10n_binaural.l10nsp_chart_template_binaural"/>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
         <field name="tax_group_id" ref="l10n_binaural.IVA_SALE_GROUP"/>
     </record>
 
@@ -37,7 +37,7 @@
         <field name="sequence">1</field>
         <field name="amount">16.00</field>
         <field name="amount_type">percent</field>
-        <field name="chart_template_id" ref="l10n_binaural.l10nsp_chart_template_binaural"/>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
         <field name="tax_group_id" ref="l10n_binaural.EXEMPT_SALE_GROUP"/>
     </record>
 
@@ -47,7 +47,7 @@
         <field name="sequence">1</field>
         <field name="amount">16.00</field>
         <field name="amount_type">percent</field>
-        <field name="chart_template_id" ref="l10n_binaural.l10nsp_chart_template_binaural"/>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
         <field name="tax_group_id" ref="l10n_binaural.IVA_PURCHASE_GROUP"/>
     </record>
 
@@ -57,7 +57,7 @@
         <field name="sequence">1</field>
         <field name="amount">8.00</field>
         <field name="amount_type">percent</field>
-        <field name="chart_template_id" ref="l10n_binaural.l10nsp_chart_template_binaural"/>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
         <field name="tax_group_id" ref="l10n_binaural.IVA_PURCHASE_GROUP"/>
     </record>
 
@@ -67,7 +67,7 @@
         <field name="sequence">1</field>
         <field name="amount">31.00</field>
         <field name="amount_type">percent</field>
-        <field name="chart_template_id" ref="l10n_binaural.l10nsp_chart_template_binaural"/>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
         <field name="tax_group_id" ref="l10n_binaural.IVA_PURCHASE_GROUP"/>
     </record>
 
@@ -77,7 +77,7 @@
         <field name="sequence">1</field>
         <field name="amount">16.00</field>
         <field name="amount_type">percent</field>
-        <field name="chart_template_id" ref="l10n_binaural.l10nsp_chart_template_binaural"/>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
         <field name="tax_group_id" ref="l10n_binaural.EXEMPT_PURCHASE_GROUP"/>
     </record>
   </data>
