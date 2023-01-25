@@ -6,6 +6,5 @@ class ResCompany(models.Model):
     currency_foreign_id = fields.Many2one(
         "res.currency",
         string="Currency Foreign",
-        help="Currency Foreign for the company",
-        company_dependent=True,
+        help="Currency Foreign for the company"
     )
