@@ -16,10 +16,9 @@ parroquias. 
     "depends": ["base", "contacts"],
     "data": [
         "security/ir.model.access.csv",
-        "data/res_country_state_data.xml",
-        "data/res_country_city_data.xml",
-        "data/res_country_municipality_data.xml",
-        "data/res_country_parish_data.xml",
+        "data/res_country_state.xml",
+        "data/res_country_municipality.xml",
+        "data/res_country_parish.xml",
         "views/res_country_parish_views.xml",
         "views/res_country_municipality_views.xml",
         "views/res_country_city_views.xml",
