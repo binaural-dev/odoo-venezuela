@@ -35,12 +35,11 @@ class AccountMove(models.Model):
         readonly=False,
     )
 
-    tax = fields.Float(help="Tax of the line", compute="_compute_tax", digits="Tasa")
+    tax = fields.Float(help="Tax of the line", compute="_compute_tax", digits="Tasa", default=0.0)
 
     foreign_taxable_income = fields.Monetary(
         help="Foreign Taxable Income of the invoice",
         compute="_compute_foreign_taxable_income",
-        digits="Tasa",
         currency_field="foreign_currency_id",
     )
     total_taxed = fields.Many2one(
@@ -49,29 +48,26 @@ class AccountMove(models.Model):
     )
 
     foreign_tax = fields.Float(
-        help="Foreign Tax of the line", 
+        help="Foreign Tax of the line",
         # compute="_compute_foreign_tax",
-        digits="Tasa"
+        digits="Tasa",
     )
 
     foreign_discount = fields.Monetary(
         help="Foreign Discount of the line",
         # compute="_compute_foreign_discount",
-        digits="Tasa",
         currency_field="foreign_currency_id",
     )
 
     foreign_total_billed = fields.Monetary(
         help="Foreign Total Billed of the invoice",
         compute="_compute_foreign_total_billed",
-        digits="Tasa",
         currency_field="foreign_currency_id",
     )
 
     foreign_total_due = fields.Monetary(
         help="Foreign Total Due of the invoice",
         compute="_compute_foreign_total_due",
-        digits="Tasa",
         currency_field="foreign_currency_id",
     )
 
@@ -108,7 +104,9 @@ class AccountMove(models.Model):
             )
             foreign_currency_symbol = foreign_currency_record.symbol
             if view_type == "form":
-                view_id = self.env.ref("binaural_invoice.view_account_move_form_binaural_invoice").id
+                view_id = self.env.ref(
+                    "binaural_invoice.view_account_move_form_binaural_invoice"
+                ).id
                 doc = etree.XML(res["arch"])
                 page = doc.xpath("//page[@name='foreign_currency']")
                 if page:
@@ -130,21 +128,32 @@ class AccountMove(models.Model):
                 vat = str(rec.partner_id.vat)
             rec.vat = vat.upper()
 
-    # @api.depends("foreign_currency_id")
+    @api.depends("invoice_date")
     def _compute_tax(self):
         """
-        Compute the tax of the line
+        Compute the tax of the line.
+
+        if current_currency is equal to 2 "USD" compute the company rate
+
+        else thats compute the inverse rate
 
         """
         current_currency = self.env.company.currency_id.id
-        foreign_currency = self.env['res.currency'].search([('active', '=', True)])
+        foreign_currency = self.env["res.currency"].search([("active", "=", True)])
         for currency in foreign_currency:
             if currency.id != current_currency:
                 for tax in currency.rate_ids:
-                    self.tax = tax[-1].company_rate
-            else:
-                self.tax = 0.0
-    
+                    if current_currency == 2:
+                        if tax.name == self.invoice_date:
+                            self.tax = tax.company_rate
+                            break
+                        self.tax = tax[-1].company_rate
+                    else:
+                        if tax.name == self.invoice_date:
+
+                            self.tax = tax.inverse_company_rate
+                            break
+                        self.tax = tax[-1].inverse_company_rate
 
     @api.depends("foreign_currency_id", "amount_total", "tax")
     def _compute_foreign_taxable_income(self):
@@ -163,7 +172,7 @@ class AccountMove(models.Model):
         """
         for rec in self:
             rec.foreign_total_billed = rec.amount_total * rec.tax
-        
+
     @api.depends("foreign_currency_id", "amount_residual", "tax")
     def _compute_foreign_total_due(self):
         """
@@ -172,4 +181,19 @@ class AccountMove(models.Model):
         """
         for rec in self:
             rec.foreign_total_due = rec.amount_residual * rec.tax
-        
+
+    @api.depends(
+        "invoice_line_ids.currency_rate",
+        "invoice_line_ids.tax_base_amount",
+        "invoice_line_ids.tax_line_id",
+        "invoice_line_ids.price_total",
+        "invoice_line_ids.price_subtotal",
+        "invoice_payment_term_id",
+        "partner_id",
+        "currency_id",
+    )
+    def _compute_tax_totals(self):
+        res = super()._compute_tax_totals()
+        for rec in self:
+            _logger.warning("Se ejecutó el método _compute_tax_totals %s" % rec.tax_totals)
+        return res

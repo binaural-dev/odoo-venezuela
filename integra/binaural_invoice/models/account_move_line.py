@@ -44,4 +44,4 @@ class AccountMoveLine(models.Model):
     @api.depends("foreign_price", "quantity")
     def _compute_foreign_subtotal(self):
         for rec in self:
-            rec.foreign_subtotal = rec.price_subtotal * rec.move_id.tax
+            rec.foreign_subtotal = rec.foreign_price * rec.quantity 

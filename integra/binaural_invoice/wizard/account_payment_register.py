@@ -1,5 +1,10 @@
 from odoo import api, fields, models, _
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
 class AccountPaymentRegister(models.TransientModel):
     _inherit = "account.payment.register"
 
@@ -27,13 +32,19 @@ class AccountPaymentRegister(models.TransientModel):
         help="Foreign Currency Rate",
         compute="_compute_foreign_currency_rate",
         digits="Tasa",
+        tracking=True,
+        readonly=False
     )
 
-    @api.depends("journal_id")
+    @api.depends("payment_date")
     def _compute_foreign_currency_rate(self):
         for rec in self:
             if rec.line_ids.move_id.tax:
                 rec.foreign_currency_rate = rec.line_ids.move_id.tax
-            elif not rec.line_ids.move_id.tax:
-                rec.foreign_currency_rate = 1
+            
+
+
+
+
+            
             
