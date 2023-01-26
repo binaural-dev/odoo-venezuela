@@ -17,7 +17,7 @@ parroquias. 
     "data": [
         "security/ir.model.access.csv",
         "data/res_country_state_data.xml",
-        "data/res_country_city_data.xml",
+        # "data/res_country_city_data.xml",
         "data/res_country_municipality_data.xml",
         "data/res_country_parish_data.xml",
         "views/res_country_parish_views.xml",
