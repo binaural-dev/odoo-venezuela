@@ -1,5 +1,5 @@
 {
-    'name': "Contabilidad - Venezolana",
+    'name': "Binaural - Contabilidad Venezolana",
 
     'summary': """
        Modulo para contabilidad Venezolana """,
@@ -18,7 +18,8 @@
         'data/account_data.xml',
         'views/res_config_settings.xml',
         'views/account_move.xml',
-        # 'views/account_move_line.xml',
+        'views/account_journal.xml',
+        'wizard/account_payment_register.xml',
     ],
 
     'images': ['static/description/icon.png'],

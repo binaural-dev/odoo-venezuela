@@ -3,8 +3,8 @@
 
     <data>
 
-    <record id="view_account_move_form_binaural" model="ir.ui.view">
-        <field name="name">view.account.move.form.binaural</field>
+    <record id="view_account_move_form_binaural_invoice" model="ir.ui.view">
+        <field name="name">view.account.move.form.binaural.invoice</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
@@ -22,13 +22,15 @@
                         <field name="foreign_taxable_income" />
                         <field name="total_taxed" />
                         <field name="foreign_tax" />
-                        <field name="foreign_discount" />
+                        <field name="foreign_total_billed" />
                         <field name="foreign_total_due" />
                     </group>
                 </page>
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_unit']" position="after">
                 <field name="foreign_price" />
+            </xpath>
+            <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_subtotal']" position="after">
                 <field name="foreign_subtotal" />
             </xpath>
         </field>

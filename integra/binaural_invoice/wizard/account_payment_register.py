@@ -1,8 +1,7 @@
 from odoo import api, fields, models, _
 
-
-class AccountMoveLine(models.Model):
-    _inherit = "account.move.line"
+class AccountPaymentRegister(models.TransientModel):
+    _inherit = "account.payment.register"
 
     def default_alternate_currency(self):
         """
@@ -18,26 +17,23 @@ class AccountMoveLine(models.Model):
         if alternate_currency:
             return alternate_currency
         return False
-
+    
     foreign_currency_id = fields.Many2one(
         "res.currency",
         default=default_alternate_currency,
     )
 
-    foreign_price = fields.Float(
-        help="Foreign Price of the line",
-        compute="_compute_foreign_price",
+    foreign_currency_rate = fields.Float(
+        help="Foreign Currency Rate",
+        compute="_compute_foreign_currency_rate",
         digits="Tasa",
-    )
-    foreign_subtotal = fields.Monetary(
-        help="Foreign Subtotal of the line",
-        # compute="_compute_foreign_subtotal",
-        digits="Tasa",
-        currency_field="foreign_currency_id",
     )
 
-    
-    @api.depends("price_unit", "quantity")
-    def _compute_foreign_price(self):
+    @api.depends("journal_id")
+    def _compute_foreign_currency_rate(self):
         for rec in self:
-            rec.foreign_price = rec.price_unit * rec.move_id.tax
+            if rec.line_ids.move_id.tax:
+                rec.foreign_currency_rate = rec.line_ids.move_id.tax
+            elif not rec.line_ids.move_id.tax:
+                rec.foreign_currency_rate = 1
+            

@@ -38,14 +38,14 @@ class AccountMove(models.Model):
     tax = fields.Float(help="Tax of the line", compute="_compute_tax", digits="Tasa")
 
     foreign_taxable_income = fields.Monetary(
-        help="Foreign Taxable Income of the line",
-        # compute="_compute_foreign_taxable_income",
+        help="Foreign Taxable Income of the invoice",
+        compute="_compute_foreign_taxable_income",
         digits="Tasa",
         currency_field="foreign_currency_id",
     )
     total_taxed = fields.Many2one(
         "account.tax",
-        help="Total Taxed of the line",
+        help="Total Taxed of the invoice",
     )
 
     foreign_tax = fields.Float(
@@ -61,9 +61,16 @@ class AccountMove(models.Model):
         currency_field="foreign_currency_id",
     )
 
+    foreign_total_billed = fields.Monetary(
+        help="Foreign Total Billed of the invoice",
+        compute="_compute_foreign_total_billed",
+        digits="Tasa",
+        currency_field="foreign_currency_id",
+    )
+
     foreign_total_due = fields.Monetary(
-        help="Foreign Total Due of the line",
-        # compute="_compute_foreign_total_due",
+        help="Foreign Total Due of the invoice",
+        compute="_compute_foreign_total_due",
         digits="Tasa",
         currency_field="foreign_currency_id",
     )
@@ -101,7 +108,7 @@ class AccountMove(models.Model):
             )
             foreign_currency_symbol = foreign_currency_record.symbol
             if view_type == "form":
-                view_id = self.env.ref("binaural_account.view_account_move_form_binaural").id
+                view_id = self.env.ref("binaural_invoice.view_account_move_form_binaural_invoice").id
                 doc = etree.XML(res["arch"])
                 page = doc.xpath("//page[@name='foreign_currency']")
                 if page:
@@ -134,6 +141,35 @@ class AccountMove(models.Model):
         for currency in foreign_currency:
             if currency.id != current_currency:
                 for tax in currency.rate_ids:
-                    self.tax = tax[1].company_rate
+                    self.tax = tax[-1].company_rate
+            else:
+                self.tax = 0.0
+    
+
+    @api.depends("foreign_currency_id", "amount_total", "tax")
+    def _compute_foreign_taxable_income(self):
+        """
+        Compute the foreign taxable income of the invoice
+
+        """
+        for rec in self:
+            rec.foreign_taxable_income = rec.amount_untaxed * rec.tax
+
+    @api.depends("foreign_currency_id", "amount_total", "tax")
+    def _compute_foreign_total_billed(self):
+        """
+        Compute the foreign total billed of the invoice
+
+        """
+        for rec in self:
+            rec.foreign_total_billed = rec.amount_total * rec.tax
         
+    @api.depends("foreign_currency_id", "amount_residual", "tax")
+    def _compute_foreign_total_due(self):
+        """
+        Compute the foreign total due of the invoice
+
+        """
+        for rec in self:
+            rec.foreign_total_due = rec.amount_residual * rec.tax
         
