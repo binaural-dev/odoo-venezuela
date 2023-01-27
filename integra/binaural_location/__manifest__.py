@@ -1,9 +1,5 @@
 {
     "name": "Binaural Localización",
-    "description": """
-        Maestros de ciudades, municipios
-parroquias. 
-    """,
     "summary": """
         Maestros de ciudades, municipios
 parroquias. 
