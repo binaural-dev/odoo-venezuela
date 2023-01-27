@@ -22,7 +22,7 @@ class AccountPaymentRegister(models.TransientModel):
         if alternate_currency:
             return alternate_currency
         return False
-    
+
     foreign_currency_id = fields.Many2one(
         "res.currency",
         default=default_alternate_currency,
@@ -33,9 +33,8 @@ class AccountPaymentRegister(models.TransientModel):
         compute="_compute_foreign_currency_rate",
         digits="Tasa",
         tracking=True,
-        readonly=False
+        readonly=False,
     )
-
 
     def _get_rate_from_invoice(self):
         """
@@ -78,11 +77,3 @@ class AccountPaymentRegister(models.TransientModel):
                             self.foreign_currency_rate = tax.inverse_company_rate
                             break
                         self._get_rate_from_invoice()
-        
-            
-
-
-
-
-            
-            

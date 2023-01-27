@@ -25,4 +25,9 @@
     'images': ['static/description/icon.png'],
 
     'application':True,
+    'assets': {
+        'web.assets_backend': [
+            'binaural_invoice/static/src/components/**/*'
+        ],
+    },
 }
