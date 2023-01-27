@@ -5,3 +5,5 @@ class ResCountryParishBinauralLocalizacion(models.Model):
     _inherit = "res.partner"
 
     city_id = fields.Many2one("res.country.city", string="City")
+
+    city = fields.Char(string="City", related="city_id.name", store=True)

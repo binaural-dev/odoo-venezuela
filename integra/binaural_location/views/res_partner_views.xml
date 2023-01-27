@@ -9,6 +9,11 @@
 					<field name="city_id" placeholder="Ciudad" />
 					<field name="city" invisible="1" />
 				</field>
+
+				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='city']" position="replace">
+					<field name="city_id" placeholder="Ciudad" />
+					<field name="city" invisible="1" />
+				</xpath>
 			</field>
 			
 		</record>
