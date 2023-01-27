@@ -9,8 +9,11 @@
             <field name="inherit_id" ref="account.view_account_payment_register_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//group[@name='group2']" position="inside">
-                        <!-- <field name="foreign_currency_id" /> -->
-                    <field name="foreign_currency_rate" />
+                    <label for="foreign_currency_rate" />
+                    <div name="foreign_currency_div" class="o_row">
+                        <field name="foreign_currency_rate" />
+                        <field name="foreign_currency_id" options="{'no_create': True, 'no_open': True}" required="1" />
+                    </div>
                 </xpath>
             </field>
         </record>

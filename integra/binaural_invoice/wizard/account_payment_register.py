@@ -36,11 +36,49 @@ class AccountPaymentRegister(models.TransientModel):
         readonly=False
     )
 
+
+    def _get_rate_from_invoice(self):
+        """
+        This method is used to get the foreign currency rate from the invoice
+
+        Returns
+        -------
+        type = float
+            The foreign currency rate of the invoice
+
+        """
+        for rec in self:
+            rec.foreign_currency_rate = rec.line_ids.move_id.tax
+
     @api.depends("payment_date")
     def _compute_foreign_currency_rate(self):
-        for rec in self:
-            if rec.line_ids.move_id.tax:
-                rec.foreign_currency_rate = rec.line_ids.move_id.tax
+        """
+        This method is used to get the foreign currency rate from the currency rate table if changed the payment date
+
+        Returns
+        -------
+        type = float
+            The foreign currency rate of the currency rate table or the invoice
+
+
+        """
+        current_currency = self.env.company.currency_id.id
+        foreign_currency = self.env["res.currency"].search([("active", "=", True)])
+        for currency in foreign_currency:
+            if currency.id != current_currency:
+                for tax in currency.rate_ids:
+                    if current_currency == 2:
+                        if tax.name == self.payment_date:
+                            self.foreign_currency_rate = tax.company_rate
+                            break
+                        self._get_rate_from_invoice()
+                    else:
+                        if tax.name == self.payment_date:
+
+                            self.foreign_currency_rate = tax.inverse_company_rate
+                            break
+                        self._get_rate_from_invoice()
+        
             
 
 

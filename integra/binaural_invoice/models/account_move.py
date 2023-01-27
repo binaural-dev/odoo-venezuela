@@ -71,6 +71,12 @@ class AccountMove(models.Model):
         currency_field="foreign_currency_id",
     )
 
+    foreign_tax_totals = fields.Binary(
+        help="Foreign Tax Totals of the invoice",
+        compute="_compute_foreign_tax_totals",
+    )
+
+
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
         """
@@ -135,7 +141,7 @@ class AccountMove(models.Model):
 
         if current_currency is equal to 2 "USD" compute the company rate
 
-        else thats compute the inverse rate
+        else thats compute the inverse rate of the company wich is 3 "VEF"
 
         """
         current_currency = self.env.company.currency_id.id
@@ -182,6 +188,12 @@ class AccountMove(models.Model):
         for rec in self:
             rec.foreign_total_due = rec.amount_residual * rec.tax
 
+    def action_register_payment(self):
+        
+        res = super().action_register_payment()
+        res["context"]["default_foreign_currency_rate"] = self.tax
+        return res
+
     @api.depends(
         "invoice_line_ids.currency_rate",
         "invoice_line_ids.tax_base_amount",
@@ -197,3 +209,85 @@ class AccountMove(models.Model):
         for rec in self:
             _logger.warning("Se ejecutó el método _compute_tax_totals %s" % rec.tax_totals)
         return res
+
+    @api.depends(
+        "invoice_line_ids.currency_rate",
+        "invoice_line_ids.tax_base_amount",
+        "invoice_line_ids.tax_line_id",
+        "invoice_line_ids.price_total",
+        "invoice_line_ids.price_subtotal",
+        "invoice_payment_term_id",
+        "partner_id",
+        "currency_id",
+    )
+    def _compute_foreign_tax_totals(self):
+        """ Computed field used for custom widget's rendering.
+            Only set on invoices.
+        """
+        for move in self:
+            if move.is_invoice(include_receipts=True):
+                base_lines = move.invoice_line_ids.filtered(lambda line: line.display_type == 'product')
+                base_line_values_list = [line._convert_to_tax_base_line_dict() for line in base_lines]
+
+                if move.id:
+                    # The invoice is stored so we can add the early payment discount lines directly to reduce the
+                    # tax amount without touching the untaxed amount.
+                    sign = -1 if move.is_inbound(include_receipts=True) else 1
+                    base_line_values_list += [
+                        {
+                            **line._convert_to_tax_base_line_dict(),
+                            'handle_price_include': False,
+                            'quantity': 1.0,
+                            'price_unit': sign * line.amount_currency,
+                        }
+                        for line in move.line_ids.filtered(lambda line: line.display_type == 'epd')
+                    ]
+
+                kwargs = {
+                    'base_lines': base_line_values_list,
+                    'currency': self.env.company.currency_foreign_id,
+                }
+
+                if move.id:
+                    kwargs['tax_lines'] = [
+                        line._convert_to_tax_line_dict()
+                        for line in move.line_ids.filtered(lambda line: line.display_type == 'tax')
+                    ]
+                else:
+                    # In case the invoice isn't yet stored, the early payment discount lines are not there. Then,
+                    # we need to simulate them.
+                    epd_aggregated_values = {}
+                    for base_line in base_lines:
+                        if not base_line.epd_needed:
+                            continue
+                        for grouping_dict, values in base_line.epd_needed.items():
+                            epd_values = epd_aggregated_values.setdefault(grouping_dict, {'price_subtotal': 0.0})
+                            epd_values['price_subtotal'] += values['price_subtotal']
+
+                    for grouping_dict, values in epd_aggregated_values.items():
+                        taxes = None
+                        if grouping_dict.get('tax_ids'):
+                            taxes = self.env['account.tax'].browse(grouping_dict['tax_ids'][0][2])
+
+                        kwargs['base_lines'].append(self.env['account.tax']._convert_to_tax_base_line_dict(
+                            None,
+                            partner=move.partner_id,
+                            currency=move.currency_id,
+                            taxes=taxes,
+                            price_unit=values['price_subtotal'],
+                            quantity=1.0,
+                            account=self.env['account.account'].browse(grouping_dict['account_id']),
+                            analytic_distribution=values.get('analytic_distribution'),
+                            price_subtotal=values['price_subtotal'],
+                            is_refund=move.move_type in ('out_refund', 'in_refund'),
+                            handle_price_include=False,
+                        ))
+                move.foreign_tax_totals = self.env['account.tax']._prepare_tax_totals(**kwargs)
+                rounding_line = move.line_ids.filtered(lambda l: l.display_type == 'rounding')
+                if rounding_line:
+                    amount_total_rounded = move.foreign_tax_totals['amount_total'] - rounding_line.balance
+                    move.foreign_tax_totals['formatted_amount_total_rounded'] = formatLang(self.env, amount_total_rounded, currency_obj=move.currency_id) or ''
+            else:
+                # Non-invoice moves don't support that field (because of multicurrency: all lines of the invoice share the same currency)
+                move.foreign_tax_totals = None
+

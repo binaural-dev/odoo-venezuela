@@ -45,3 +45,4 @@ class AccountMoveLine(models.Model):
     def _compute_foreign_subtotal(self):
         for rec in self:
             rec.foreign_subtotal = rec.foreign_price * rec.quantity 
+
