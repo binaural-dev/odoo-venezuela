@@ -197,6 +197,7 @@ class AccountMove(models.Model):
         res["context"]["default_foreign_currency_rate"] = self.tax
         return res
 
+    
     @api.depends(
         "invoice_line_ids.currency_rate",
         "invoice_line_ids.tax_base_amount",
@@ -207,8 +208,70 @@ class AccountMove(models.Model):
         "partner_id",
         "currency_id",
     )
-    def _compute_tax_totals(self):
-        res = super()._compute_tax_totals()
-        # for rec in self:
-            # _logger.warning("Se ejecutó el método _compute_tax_totals %s" % rec.tax_totals)
-        return res
+    def _compute_foreign_tax_totals(self):
+        """ Computed field used for custom widget's rendering.
+            Only set on invoices.
+        """
+        for move in self:
+            if move.is_invoice(include_receipts=True):
+                base_lines = move.invoice_line_ids.filtered(lambda line: line.display_type == 'product')
+                base_line_values_list = [line._convert_to_tax_base_line_dict() for line in base_lines]
+
+                if move.id:
+                    # The invoice is stored so we can add the early payment discount lines directly to reduce the
+                    # tax amount without touching the untaxed amount.
+                    sign = -1 if move.is_inbound(include_receipts=True) else 1
+                    base_line_values_list += [
+                        {
+                            **line._convert_to_tax_base_line_dict(),
+                            'handle_price_include': False,
+                            'quantity': 1.0,
+                            'price_unit': sign * line.amount_currency,
+                        }
+                        for line in move.line_ids.filtered(lambda line: line.display_type == 'epd')
+                    ]
+
+                kwargs = {
+                    'base_lines': base_line_values_list,
+                    'currency': move.currency_id,
+                }
+
+                if move.id:
+                    kwargs['tax_lines'] = [
+                        line._convert_to_tax_line_dict()
+                        for line in move.line_ids.filtered(lambda line: line.display_type == 'tax')
+                    ]
+                else:
+                    # In case the invoice isn't yet stored, the early payment discount lines are not there. Then,
+                    # we need to simulate them.
+                    epd_aggregated_values = {}
+                    for base_line in base_lines:
+                        if not base_line.epd_needed:
+                            continue
+                        for grouping_dict, values in base_line.epd_needed.items():
+                            epd_values = epd_aggregated_values.setdefault(grouping_dict, {'price_subtotal': 0.0})
+                            epd_values['price_subtotal'] += values['price_subtotal']
+
+                    for grouping_dict, values in epd_aggregated_values.items():
+                        taxes = None
+                        if grouping_dict.get('tax_ids'):
+                            taxes = self.env['account.tax'].browse(grouping_dict['tax_ids'][0][2])
+
+                        kwargs['base_lines'].append(self.env['account.tax']._convert_to_tax_base_line_dict(
+                            None,
+                            partner=move.partner_id,
+                            currency=move.currency_id,
+                            taxes=taxes,
+                            price_unit=values['price_subtotal'],
+                            quantity=1.0,
+                            account=self.env['account.account'].browse(grouping_dict['account_id']),
+                            analytic_distribution=values.get('analytic_distribution'),
+                            price_subtotal=values['price_subtotal'],
+                            is_refund=move.move_type in ('out_refund', 'in_refund'),
+                            handle_price_include=False,
+                        ))
+                move.tax_totals = self.env['account.tax']._prepare_foreign_tax_totals(**kwargs)
+                _logger.warning('CONCHALE %s', move.tax_totals)
+            else:
+                # Non-invoice moves don't support that field (because of multicurrency: all lines of the invoice share the same currency)
+                move.tax_totals = None

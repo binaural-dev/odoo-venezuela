@@ -64,7 +64,7 @@ class TaxGroupComponent extends Component {
      */
     _onChangeTaxValue() {
         this.setState("disable"); // Disable the input
-        const oldValue = this.props.taxGroup.tax_group_amount;
+        const oldValue = this.props.taxGrototalsup.tax_group_amount;
         let newValue;
         try {
             newValue = parseFloat(this.inputTax.el.value); // Get the new value
@@ -138,9 +138,9 @@ export class ForeignTaxTotalsComponent extends Component {
      * It is responsible for calculating taxes based on tax groups and triggering
      * an event to notify the ORM of a change.
      */
-       _onChangeTaxValueByTaxGroup({ oldValue, newValue, taxGroupId }) {
+    _onChangeTaxValueByTaxGroup({ oldValue, newValue, taxGroupId }) {
         if (oldValue === newValue) return;
-        this.totals.amount_total = this.totals.amount_untaxed + newValue;
+        this.totals.foreign_amount_total = this.totals.foreign_amount_untaxed + newValue;
         this.props.update(this.totals);
     }
 
@@ -152,28 +152,29 @@ export class ForeignTaxTotalsComponent extends Component {
         if (!this.totals) {
             return;
         }
+        let foreign_amount_total = this.totals.foreign_amount_total;
         let amount_untaxed = this.totals.foreign_amount_untaxed;
         let amount_tax = 0;
         let subtotals = [];
         for (let subtotal_title of this.totals.subtotals_order) {
-            let amount_total = amount_untaxed + amount_tax;
+            let foreign_amount_total = amount_untaxed + amount_tax;
             subtotals.push({
                 'name': subtotal_title,
-                'amount': amount_total,
-                'formatted_amount': this._format(amount_total),
+                'amount': foreign_amount_total,
+                'formatted_amount': this._format(foreign_amount_total),
             });
-            let group = this.totals.groups_by_subtotal[subtotal_title];
+            let group = this.totals.foreign_groups_by_subtotal[subtotal_title];
             for (let i in group) {
                 amount_tax = amount_tax + group[i].tax_group_amount;
-                console.log(amount_tax);
             }
         }
         this.totals.subtotals = subtotals;
         let amount_total = amount_untaxed + amount_tax;
-        this.totals.amount_total = amount_total;
-        this.totals.formatted_amount_total = this._format(amount_total);
-        for (let group_name of Object.keys(this.totals.groups_by_subtotal)) {
-            let group = this.totals.groups_by_subtotal[group_name];
+        // this.totals.foreign_amount_total = amount_total;
+        this.totals.foreign_amount_total = amount_total;
+        this.totals.formatted_foreign_amount_total = this._format(foreign_amount_total);
+        for (let group_name of Object.keys(this.totals.foreign_groups_by_subtotal)) {
+            let group = this.totals.foreign_groups_by_subtotal[group_name];
             for (let i in group) {
                 group[i].formatted_tax_group_amount = this._format(group[i].tax_group_amount);
                 group[i].formatted_tax_group_base_amount = this._format(group[i].tax_group_base_amount);

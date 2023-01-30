@@ -49,11 +49,11 @@
                         </td>
 
                         <td>
-                            <span t-att-name="subtotal['name']" style="white-space: nowrap; font-weight: bold;" t-out="subtotal['formatted_amount']"/>
+                            <span t-att-name="subtotal['name']" style="white-space: nowrap; font-weight: bold;" t-out="subtotal['formatted_foreign_amount']"/>
                         </td>
                     </tr>
 
-                    <t t-foreach="totals.groups_by_subtotal[subtotal['name']]" t-as="taxGroup" t-key="taxGroup.group_key">
+                    <t t-foreach="totals.foreign_groups_by_subtotal[subtotal['name']]" t-as="taxGroup" t-key="taxGroup.group_key">
                         <TaxGroupComponent
                             currency="currency"
                             taxGroup="taxGroup"
@@ -72,21 +72,21 @@
 
                     <td>
                         <span
-                            name="amount_total"
-                            t-att-class="Object.keys(totals.groups_by_subtotal).length > 0 ? 'oe_subtotal_footer_separator' : ''"
-                            t-out="totals.formatted_amount_total"
-                            t-attf-style="{{ !totals.formatted_amount_total_rounded ? 'font-size: 1.3em; font-weight: bold; white-space: nowrap;' : 'font-size: 1em;' }}"
+                            name="foreign_amount_total"
+                            t-att-class="Object.keys(totals.foreign_groups_by_subtotal).length > 0 ? 'oe_subtotal_footer_separator' : ''"
+                            t-out="totals.formatted_foreign_amount_total"
+                            t-attf-style="{{ !totals.formatted_foreign_amount_total_rounded ? 'font-size: 1.3em; font-weight: bold; white-space: nowrap;' : 'font-size: 1em;' }}"
                         />
                     </td>
                 </tr>
-                <tr t-if="totals.formatted_amount_total_rounded">
+                <tr t-if="totals.formatted_formatted_foreign_amount_total_rounded">
                     <td class="o_td_label">
                         <label class="o_form_label o_tax_total_label">Total Rounded</label>
                     </td>
 
                     <td>
                         <span
-                            t-out="totals.formatted_amount_total_rounded"
+                            t-out="totals.formatted_formatted_foreign_amount_total_rounded"
                             style="white-space: nowrap; font-weight: bold; font-size: 1.3em;"
                         />
                     </td>
