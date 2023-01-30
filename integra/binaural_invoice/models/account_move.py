@@ -209,7 +209,6 @@ class AccountMove(models.Model):
     )
     def _compute_tax_totals(self):
         res = super()._compute_tax_totals()
-        for rec in self:
-            rec.tax_totals.update({"foreign_currency_rate": rec.tax})
-            _logger.warning("Se ejecutó el método _compute_tax_totals %s" % rec.tax_totals)
+        # for rec in self:
+            # _logger.warning("Se ejecutó el método _compute_tax_totals %s" % rec.tax_totals)
         return res
