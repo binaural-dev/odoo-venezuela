@@ -140,7 +140,7 @@ export class ForeignTaxTotalsComponent extends Component {
      */
     _onChangeTaxValueByTaxGroup({ oldValue, newValue, taxGroupId }) {
         if (oldValue === newValue) return;
-        this.totals.foreign_amount_total = this.totals.foreign_amount_untaxed + newValue;
+        this.totals.amount_total = this.totals.amount_untaxed + newValue;
         this.props.update(this.totals);
     }
 
@@ -152,16 +152,15 @@ export class ForeignTaxTotalsComponent extends Component {
         if (!this.totals) {
             return;
         }
-        let foreign_amount_total = this.totals.foreign_amount_total;
-        let amount_untaxed = this.totals.foreign_amount_untaxed;
+        let amount_untaxed = this.totals.amount_untaxed;
         let amount_tax = 0;
         let subtotals = [];
         for (let subtotal_title of this.totals.subtotals_order) {
-            let foreign_amount_total = amount_untaxed + amount_tax;
+            let amount_total = amount_untaxed + amount_tax;
             subtotals.push({
                 'name': subtotal_title,
-                'amount': foreign_amount_total,
-                'formatted_amount': this._format(foreign_amount_total),
+                'amount': amount_total,
+                'formatted_amount': this._format(amount_total),
             });
             let group = this.totals.foreign_groups_by_subtotal[subtotal_title];
             for (let i in group) {
@@ -170,9 +169,8 @@ export class ForeignTaxTotalsComponent extends Component {
         }
         this.totals.subtotals = subtotals;
         let amount_total = amount_untaxed + amount_tax;
-        // this.totals.foreign_amount_total = amount_total;
-        this.totals.foreign_amount_total = amount_total;
-        this.totals.formatted_foreign_amount_total = this._format(foreign_amount_total);
+        this.totals.amount_total = amount_total;
+        this.totals.formatted_amount_total = this._format(amount_total);
         for (let group_name of Object.keys(this.totals.foreign_groups_by_subtotal)) {
             let group = this.totals.foreign_groups_by_subtotal[group_name];
             for (let i in group) {
