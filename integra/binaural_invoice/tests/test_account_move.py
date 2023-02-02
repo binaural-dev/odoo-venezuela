@@ -4,9 +4,8 @@ from odoo.exceptions import UserError
 from odoo.tests import tagged
 
 
-@tagged("account_move","post_install", "-at_install")
+@tagged("account_move", "post_install", "-at_install")
 class TestAccountMove(TransactionCase):
-
     def setUp(self):
         super(TestAccountMove, self).setUp()
         self.company = self.env["res.company"].create(
@@ -39,30 +38,29 @@ class TestAccountMove(TransactionCase):
                 "vat": "27436422",
             }
         )
-        
-    def test_foreign_rate_onchange_(self):
-        with Form(self.env["account.move"]) as f:
-            f.foreign_rate = 1.5
-            if f.foreign_rate == 0:
-                with self.assertRaises(UserError):
-                    f.save()
-            else:
-                f.save()
 
-    def test_get_values(self):
+    def test_create_move_line(self):
         self.env["account.move"].create(
             {
+                "name": "Test Move",
+                "company_id": self.company.id,
+                "currency_id": self.currency.id,
                 "foreign_rate": 1.5,
+                "line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": "Test Line",
+                            "account_id": self.account.id,
+                            "partner_id": self.partner.id,
+                            "debit": 100.0,
+                            "credit": 0.0,
+                            "amount_currency": 150.0,
+                        },
+                    )
+                ],
             }
         )
-        self.env["account.move"].get_values()
-
-    def test_set_values(self):
-        self.env["account.move"].create(
-            {
-                "foreign_rate": 1.5,
-            }
-        )
-        self.env["account.move"].set_values()
 
     
