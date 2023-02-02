@@ -2,7 +2,7 @@
 <odoo>
   <data noupdate="1">
     <record id="binaural_account_journal_sales_invoices" model="account.journal">
-        <field name="name">Sales Invoices</field>
+        <field name="name">Facturas de ventas</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">sale</field>
         <field name="invoice_reference_model">odoo</field>
@@ -12,7 +12,7 @@
     </record>
 
     <record id="binaural_account_journal_delivery_notes" model="account.journal">
-        <field name="name">Delivery Notes</field>
+        <field name="name">Notas de entrega</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">sale</field>
         <field name="invoice_reference_model">odoo</field>
@@ -22,7 +22,7 @@
     </record>
 
     <record id="binaural_account_journal_supplier_invoices" model="account.journal">
-        <field name="name">Supplier Invoices</field>
+        <field name="name">Facturas de proveedores</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">purchase</field>
         <field name="invoice_reference_model">odoo</field>
@@ -32,7 +32,7 @@
     </record>
 
     <record id="binaural_account_journal_supplier_receipts" model="account.journal">
-        <field name="name">Supplier Receipts</field>
+        <field name="name">Recibos de proveedores</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">purchase</field>
         <field name="invoice_reference_model">odoo</field>
@@ -42,7 +42,7 @@
     </record>
 
     <record id="binaural_account_journal_bank" model="account.journal">
-        <field name="name">Bank</field>
+        <field name="name">Banco</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">bank</field>
         <field name="invoice_reference_model">odoo</field>
@@ -54,7 +54,7 @@
     </record>
 
     <record id="binaural_account_journal_cash_bs" model="account.journal">
-        <field name="name">Cash Bs</field>
+        <field name="name">Efectivo Bs</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">cash</field>
         <field name="invoice_reference_model">odoo</field>
@@ -66,7 +66,7 @@
     </record>
 
     <record id="binaural_account_journal_cash_usd" model="account.journal">
-        <field name="name">Cash $</field>
+        <field name="name">Efectivo $</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">cash</field>
         <field name="invoice_reference_model">odoo</field>
@@ -78,7 +78,7 @@
     </record> 
 
     <record id="binaural_account_journal_inventory_valuation" model="account.journal">
-        <field name="name">Inventory Valuation</field>
+        <field name="name">Valorización de inventario</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">general</field>
         <field name="invoice_reference_model">odoo</field>
@@ -87,7 +87,7 @@
     </record>
 
     <record id="binaural_account_journal_various_operations" model="account.journal">
-        <field name="name">Various Operations</field>
+        <field name="name">Operaciones varias</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">general</field>
         <field name="invoice_reference_model">odoo</field>
@@ -96,7 +96,7 @@
     </record>
 
     <record id="binaural_account_journal_opening_balances" model="account.journal">
-        <field name="name">Opening Balances</field>
+        <field name="name">Saldos Iniciales</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">general</field>
         <field name="invoice_reference_model">odoo</field>

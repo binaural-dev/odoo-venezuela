@@ -17,7 +17,7 @@
         <field name="categ_id">1</field>
     </record>
 
-    <record id="binaural_service_product_a" model="product.template">
+    <record id="binaural_consumable_product" model="product.template">
         <field name="name">Consumable Product</field>
         <field name="detailed_type">consu</field>
         <field name="tracking">none</field>

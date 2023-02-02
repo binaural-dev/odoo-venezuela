@@ -2,7 +2,7 @@
 <odoo>
   <data noupdate="1">
     <record id="IVA_16_SALE" model="account.tax.template">
-        <field name="name">IVA 16% Sales</field>
+        <field name="name">IVA 16% Ventas</field>
         <field name="type_tax_use">sale</field>
         <field name="sequence">1</field>
         <field name="amount">16.00</field>
@@ -12,7 +12,7 @@
     </record>
 
     <record id="IVA_8_SALE" model="account.tax.template">
-        <field name="name">IVA 8% Sales</field>
+        <field name="name">IVA 8% Ventas</field>
         <field name="type_tax_use">sale</field>
         <field name="sequence">1</field>
         <field name="amount">8.00</field>
@@ -22,7 +22,7 @@
     </record>
 
     <record id="IVA_31_SALE" model="account.tax.template">
-        <field name="name">IVA 31% Sales</field>
+        <field name="name">IVA 31% Ventas</field>
         <field name="type_tax_use">sale</field>
         <field name="sequence">1</field>
         <field name="amount">31.00</field>
@@ -32,7 +32,7 @@
     </record>
 
     <record id="EXEMPT_SALE" model="account.tax.template">
-        <field name="name">Exempt Sales</field>
+        <field name="name">Exento Ventas</field>
         <field name="type_tax_use">sale</field>
         <field name="sequence">1</field>
         <field name="amount">16.00</field>
@@ -42,7 +42,7 @@
     </record>
 
     <record id="IVA_16_PURCHASE" model="account.tax.template">
-        <field name="name">IVA 16% Purchases</field>
+        <field name="name">IVA 16% Compras</field>
         <field name="type_tax_use">purchase</field>
         <field name="sequence">1</field>
         <field name="amount">16.00</field>
@@ -52,7 +52,7 @@
     </record>
 
     <record id="IVA_8_PURCHASE" model="account.tax.template">
-        <field name="name">IVA 8% Purchases</field>
+        <field name="name">IVA 8% Compras</field>
         <field name="type_tax_use">purchase</field>
         <field name="sequence">1</field>
         <field name="amount">8.00</field>
@@ -62,7 +62,7 @@
     </record>
 
     <record id="IVA_31_PURCHASE" model="account.tax.template">
-        <field name="name">IVA 31% Purchases</field>
+        <field name="name">IVA 31% Compras</field>
         <field name="type_tax_use">purchase</field>
         <field name="sequence">1</field>
         <field name="amount">31.00</field>
@@ -72,7 +72,7 @@
     </record>
 
     <record id="EXEMPT_PURCHASE" model="account.tax.template">
-        <field name="name">Exempt Purchases</field>
+        <field name="name">Exento Compras</field>
         <field name="type_tax_use">purchase</field>
         <field name="sequence">1</field>
         <field name="amount">16.00</field>
