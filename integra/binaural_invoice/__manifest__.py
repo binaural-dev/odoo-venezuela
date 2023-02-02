@@ -1,5 +1,5 @@
 {
-    'name': "Binaural - Contabilidad Venezolana",
+    'name': "Binaural Contabilidad",
 
     'summary': """
        Modulo para contabilidad Venezolana """,
