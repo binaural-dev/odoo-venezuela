@@ -1,39 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <data noupdate="1">
-    <record id="binaural_incoming_payments_line_bank" model="account.payment.method.line">
-        <field name="name">Incoming Payment - Bank</field>
-        <field name="payment_method_id" ref="l10n_binaural.binaural_incoming_payments_bank" />
-        <field name="payment_account_id" ref="account_account_10102001" />
-    </record>
-
+  <data>
     <record id="binaural_outgoing_payments_line_bank" model="account.payment.method.line">
         <field name="name">Outgoing Payment - Bank</field>
-        <field name="payment_method_id" ref="l10n_binaural.binaural_outgoing_payments_bank" />
+        <field name="payment_method_id" ref="account.account_payment_method_manual_out" />
         <field name="payment_account_id" ref="account_account_10102001" />
     </record>
 
-    <record id="binaural_incoming_payments_line_cash_bs" model="account.payment.method.line">
-        <field name="name">Incoming Payment - Cash Bs</field>
-        <field name="payment_method_id" ref="l10n_binaural.binaural_incoming_payments_cash_bs" />
-        <field name="payment_account_id" ref="account_account_10101001" />
-    </record>
-
-    <record id="binaural_outgoing_payments_cash_bs" model="account.payment.method.line">
+    <record id="binaural_outgoing_payments_line_cash_bs" model="account.payment.method.line">
         <field name="name">Outgoing Payment - Cash Bs</field>
-        <field name="payment_method_id" ref="l10n_binaural.binaural_outgoing_payments_cash_bs" />
+        <field name="payment_method_id" ref="account.account_payment_method_manual_out" />
         <field name="payment_account_id" ref="account_account_10101001" />
     </record>
 
-    <record id="binaural_incoming_payments_cash_usd" model="account.payment.method.line">
-        <field name="name">Incoming Payment - Cash $</field>
-        <field name="payment_method_id" ref="l10n_binaural.binaural_incoming_payments_cash_usd" />
-        <field name="payment_account_id" ref="account_account_10101003" />
-    </record>
-
-    <record id="binaural_outgoing_payments_cash_usd" model="account.payment.method.line">
+    <record id="binaural_outgoing_payments_line_cash_usd" model="account.payment.method.line">
         <field name="name">Outgoing Payment - Cash $</field>
-        <field name="payment_method_id" ref="l10n_binaural.binaural_outgoing_payments_cash_usd" />
+        <field name="payment_method_id" ref="account.account_payment_method_manual_out" />
         <field name="payment_account_id" ref="account_account_10101003" />
     </record>
   </data>

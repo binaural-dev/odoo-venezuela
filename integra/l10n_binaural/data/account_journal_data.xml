@@ -48,20 +48,20 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">Bank</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="available_payment_method_ids" ref="l10n_binaural.binaural_incoming_payments_bank"/> 
-        <field name="outbound_payment_method_line_ids" ref="l10n_binaural.binaural_outgoing_payments_bank"/> 
+        <field name="available_payment_method_ids" ref="account.account_payment_method_manual_out"/> 
+        <field name="outbound_payment_method_line_ids" eval="[(6,0, [ref('l10n_binaural.binaural_outgoing_payments_line_bank')])]"/>
         <field name="default_account_id" ref="account_account_10102001" />
     </record>
 
-    <!-- <record id="binaural_account_journal_cash_bs" model="account.journal">
+    <record id="binaural_account_journal_cash_bs" model="account.journal">
         <field name="name">Cash Bs</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">cash</field>
         <field name="invoice_reference_model">odoo</field>
         <field name="code">EBs</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="available_payment_method_ids" ref="l10n_binaural.binaural_incoming_payments_cash_bs"/> 
-        <field name="outbound_payment_method_line_ids" ref="l10n_binaural.binaural_outgoing_payments_cash_bs"/> 
+        <field name="available_payment_method_ids" ref="account.account_payment_method_manual_out"/> 
+        <field name="outbound_payment_method_line_ids" eval="[(6,0, [ref('l10n_binaural.binaural_outgoing_payments_line_cash_bs')])]"/> 
         <field name="default_account_id" ref="account_account_10101001" />
     </record>
 
@@ -72,10 +72,10 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">EDiv</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="available_payment_method_ids" ref="l10n_binaural.binaural_incoming_payments_cash_usd"/> 
-        <field name="outbound_payment_method_line_ids" ref="l10n_binaural.binaural_outgoing_payments_cash_usd"/> 
+        <field name="available_payment_method_ids" ref="account.account_payment_method_manual_out"/> 
+        <field name="outbound_payment_method_line_ids" eval="[(6,0, [ref('l10n_binaural.binaural_outgoing_payments_line_cash_usd')])]"/> 
         <field name="default_account_id" ref="account_account_10101003" /> 
-    </record> -->
+    </record> 
 
     <record id="binaural_account_journal_inventory_valuation" model="account.journal">
         <field name="name">Inventory Valuation</field>
