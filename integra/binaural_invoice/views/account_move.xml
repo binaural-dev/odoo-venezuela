@@ -23,7 +23,7 @@
                         <field name="foreign_taxable_income" />
                         <field name="foreign_total_billed" />
                         <field name="foreign_total_due" />
-                        <field name="tax_totals" widget="account-foreign-tax-totals-field" nolabel="1" colspan="2"/>
+                        <field name="tax_totals" nolabel="1" colspan="2"/>
                     </group>
                 </page>
             </xpath>

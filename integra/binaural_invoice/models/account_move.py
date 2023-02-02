@@ -124,14 +124,11 @@ class AccountMove(models.Model):
 
     @api.depends(
         "invoice_date",
-        "invoice_line_ids.currency_rate",
-        "invoice_line_ids.tax_base_amount",
-        "invoice_line_ids.tax_line_id",
-        "invoice_line_ids.price_total",
+        "invoice_line_ids",
     )
     def _compute_rate(self):
         """
-        Compute the tax of the line.
+        Compute the rate of the invoice.
 
         if current_currency is equal to 2 "USD" compute the company rate
 
