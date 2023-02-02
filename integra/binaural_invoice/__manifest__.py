@@ -19,6 +19,7 @@
         'views/res_config_settings.xml',
         'views/account_move.xml',
         'views/account_journal.xml',
+        'views/account_invoice_report.xml',
         'wizard/account_payment_register.xml',
     ],
 

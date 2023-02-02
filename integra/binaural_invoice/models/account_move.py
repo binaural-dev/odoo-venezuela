@@ -49,12 +49,6 @@ class AccountMove(models.Model):
         help="Total Taxed of the invoice",
     )
 
-    foreign_discount = fields.Monetary(
-        help="Foreign Discount of the line",
-        # compute="_compute_foreign_discount",
-        currency_field="foreign_currency_id",
-    )
-
     foreign_total_billed = fields.Monetary(
         help="Foreign Total Billed of the invoice",
         compute="_compute_foreign_total_billed",
@@ -67,10 +61,8 @@ class AccountMove(models.Model):
         compute="_compute_foreign_total_due",
         currency_field="foreign_currency_id",
     )
-
-    foreign_tax_totals = fields.Binary(
-        help="Foreign Tax Totals of the invoice",
-        compute="_compute_foreign_tax_totals",
+    show_rate = fields.Float(
+        help="Show Rate of the invoice", digits="Tasa", default=0.0, store=True
     )
 
     @api.model
@@ -112,7 +104,7 @@ class AccountMove(models.Model):
                 doc = etree.XML(res["arch"])
                 page = doc.xpath("//page[@name='foreign_currency']")
                 if page:
-                    page[0].set("string", _("Foreign Currency (%s)") % foreign_currency_symbol)
+                    page[0].set("string", _("Foreign Currency ") + " " + foreign_currency_symbol)
                     res["arch"] = etree.tostring(doc, encoding="unicode")
 
         return res
@@ -158,10 +150,11 @@ class AccountMove(models.Model):
                         self.foreign_rate = tax[-1].company_rate
                     else:
                         if tax.name == self.invoice_date:
-
                             self.foreign_rate = tax.inverse_company_rate
+                            self.show_rate = tax.company_rate
                             break
                         self.foreign_rate = tax[-1].inverse_company_rate
+                        self.show_rate = tax[-1].company_rate
 
     @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
     def _compute_foreign_taxable_income(self):

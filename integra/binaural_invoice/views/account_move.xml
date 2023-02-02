@@ -18,6 +18,7 @@
                 <page string="Foreign currency" name="foreign_currency">
                     <group>
                         <field name="foreign_currency_id" invisible='1' />
+                        <field name="show_rate" string="Foreign rate" />
                         <field name="foreign_rate" />
                         <field name="foreign_taxable_income" />
                         <field name="foreign_total_billed" />
@@ -31,17 +32,6 @@
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_subtotal']" position="after">
                 <field name="foreign_subtotal" />
-            </xpath>
-        </field>
-    </record>
-
-    <record id="view_account_move_search_binaural_invoice" model="ir.ui.view">
-        <field name="name">view.account.move.search.binaural.invoice</field>
-        <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
-        <field name="arch" type="xml">
-            <xpath expr="//filter[@name='posted']" position="after">
-                <filter string="Foreign currency" name="foreign_rate" domain="[('foreign_currency_id', '!=', False)]"/>
             </xpath>
         </field>
     </record>

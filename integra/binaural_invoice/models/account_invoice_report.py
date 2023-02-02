@@ -1,10 +1,13 @@
 from odoo import api, fields, models, _
+from lxml import etree
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountInvoiceReport(models.Model):
     _inherit = "account.invoice.report"
     _auto = False
-
 
     def default_alternate_currency(self):
         """
@@ -40,7 +43,49 @@ class AccountInvoiceReport(models.Model):
         "account.move": ["foreign_rate", "foreign_total_billed"],
     }
 
+    @api.model
     def _select(self):
-        return super()._select() + ", move.foreign_rate as foreign_rate, move.foreign_total_billed as foreign_total_billed"
+        """
+        This method is used to add the foreign_rate and foreign_total_billed fields to the query
 
-    
+        Returns
+        -------
+
+        type = str
+            The query with the foreign_rate and foreign_total_billed fields
+
+        """
+        return super()._select() + ", move.foreign_rate,  move.foreign_total_billed"
+
+    @api.model
+    def get_view(self, view_id=None, view_type=None, **options):
+        """
+        This method is used to add the symbol of the foreign currency to the foreign_rate and foreign_total_billed fields in the view
+
+        Returns
+        -------
+        type = dict
+            The view with the symbol of the foreign currency
+
+        """
+        res = super().get_view(view_id=view_id, view_type=view_type, **options)
+        foreign_currency_id = self.env.company.currency_foreign_id.id
+        _logger.warning("foreign_currency_id: %s", foreign_currency_id)
+        if foreign_currency_id:
+            foreign_currency_record = self.env["res.currency"].search(
+                [("id", "=", int(foreign_currency_id))]
+            )
+            foreign_currency_symbol = foreign_currency_record.symbol
+            doc = etree.XML(res["arch"])
+            foreign_total_billed = doc.xpath("//field[@name='foreign_total_billed']")
+            foreign_rate = doc.xpath("//field[@name='foreign_rate']")
+            if foreign_total_billed:
+                foreign_total_billed[0].set(
+                    "string", "Total Billed (" + foreign_currency_symbol + ")"
+                )
+                res["arch"] = etree.tostring(doc, encoding="unicode")
+            if foreign_rate:
+                foreign_rate[0].set("string", "Foreign Rate (" + foreign_currency_symbol + ")")
+                res["arch"] = etree.tostring(doc, encoding="unicode")
+
+        return res
