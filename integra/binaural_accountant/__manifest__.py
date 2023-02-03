@@ -1,5 +1,5 @@
 {
-    'name': "Contabilidad - Venezolana",
+    'name': "Binaural Contabilidad",
 
     'summary': """
        Modulo para contabilidad Venezolana """,
@@ -11,15 +11,24 @@
     'category': 'Accounting/Localizations/Account Chart',
 
     # any module necessary for this one to work correctly
-    'depends': ['base','account'],
+    'depends': ['base','account_accountant','binaural_contact'],
 
     # always loaded
     'data': [
         'data/account_data.xml',
         'views/res_config_settings.xml',
+        'views/account_move.xml',
+        'views/account_journal.xml',
+        'views/account_invoice_report.xml',
+        'wizard/account_payment_register.xml',
     ],
 
     'images': ['static/description/icon.png'],
 
     'application':True,
+    'assets': {
+        'web.assets_backend': [
+            'binaural_invoice/static/src/components/**/*'
+        ],
+    },
 }

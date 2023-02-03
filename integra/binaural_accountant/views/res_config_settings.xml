@@ -3,8 +3,8 @@
 
     <data>
 
-        <record id="res_config_settings_binaural_account" model="ir.ui.view">
-            <field name="name">res.config.settings.binaural.account</field>
+        <record id="res_config_settings_binaural_invoice" model="ir.ui.view">
+            <field name="name">res.config.settings.binaural.invoice</field>
             <field name="model">res.config.settings</field>
             <field name="priority" eval="100"/>
             <field name="inherit_id" ref="base.res_config_settings_view_form"/>
