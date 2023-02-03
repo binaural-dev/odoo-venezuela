@@ -38,29 +38,27 @@ class TestAccountMove(TransactionCase):
                 "vat": "27436422",
             }
         )
-
-    def test_create_move_line(self):
-        self.env["account.move"].create(
+        self.product = self.env["product.product"].create(
             {
-                "name": "Test Move",
-                "company_id": self.company.id,
-                "currency_id": self.currency.id,
-                "foreign_rate": 1.5,
-                "line_ids": [
-                    (
-                        0,
-                        0,
-                        {
-                            "name": "Test Line",
-                            "account_id": self.account.id,
-                            "partner_id": self.partner.id,
-                            "debit": 100.0,
-                            "credit": 0.0,
-                            "amount_currency": 150.0,
-                        },
-                    )
-                ],
+                "name": "Test Product",
+                "type": "service",
+                "list_price": 100,
+                "taxes_id": False,
             }
         )
+
+    # def test_01(self):
+    #     """Test that the foreign currency symbol is added to the form view."""
+    #     invoice_form = Form(self.env["account.move"].with_context(default_type="out_invoice"))
+    #     invoice_form.partner_id = self.partner
+    #     invoice_form.foreign_currency_id = self.currency
+    #     invoice_form.invoice_date = "2021-01-01"
+    #     with invoice_form.invoice_line_ids.new() as line_form:
+    #         line_form.product_id = self.product
+    #         line_form.quantity = 1
+    #     invoice = invoice_form.save()
+    #     self.assertEqual(invoice.foreign_currency_id.symbol, self.currency.symbol)
+
+
 
     

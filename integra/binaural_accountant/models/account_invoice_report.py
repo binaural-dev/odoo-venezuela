@@ -70,7 +70,6 @@ class AccountInvoiceReport(models.Model):
         """
         res = super().get_view(view_id=view_id, view_type=view_type, **options)
         foreign_currency_id = self.env.company.currency_foreign_id.id
-        _logger.warning("foreign_currency_id: %s", foreign_currency_id)
         if foreign_currency_id:
             foreign_currency_record = self.env["res.currency"].search(
                 [("id", "=", int(foreign_currency_id))]

@@ -99,7 +99,7 @@ class AccountMove(models.Model):
             foreign_currency_symbol = foreign_currency_record.symbol
             if view_type == "form":
                 view_id = self.env.ref(
-                    "binaural_invoice.view_account_move_form_binaural_invoice"
+                    "binaural_accountant.view_account_move_form_binaural_invoice"
                 ).id
                 doc = etree.XML(res["arch"])
                 page = doc.xpath("//page[@name='foreign_currency']")
