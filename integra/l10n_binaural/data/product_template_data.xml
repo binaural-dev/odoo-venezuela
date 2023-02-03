@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+    <record id="binaural_service_product_a" model="product.template">
+        <field name="name">Service A</field>
+        <field name="list_price">10</field>
+        <field name="detailed_type">service</field>
+        <field name="tracking">none</field>
+        <field name="categ_id">1</field>
+    </record>
+
+    <record id="binaural_service_product_b" model="product.template">
+        <field name="name">Service B</field>
+        <field name="list_price">10</field>
+        <field name="detailed_type">service</field>
+        <field name="tracking">none</field>
+        <field name="categ_id">1</field>
+    </record>
+
+    <record id="binaural_consumable_product" model="product.template">
+        <field name="name">Consumable Product</field>
+        <field name="detailed_type">consu</field>
+        <field name="tracking">none</field>
+        <field name="categ_id">1</field>
+    </record>
+
+  </data>
+</odoo>
