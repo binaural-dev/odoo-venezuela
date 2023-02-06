@@ -9,7 +9,7 @@ class ResConfigSettings(models.TransientModel):
         "res.currency",
         string="Currency Foreign",
         help="Currency Foreign for the company",
-        related='company_id.currency_foreign_id',
+        related="company_id.currency_foreign_id",
         readonly=False,
     )
 
@@ -38,4 +38,3 @@ class ResConfigSettings(models.TransientModel):
     def set_values(self):
         res = super(ResConfigSettings, self).set_values()
         return res
-
