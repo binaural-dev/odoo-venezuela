@@ -1,5 +1,4 @@
 from odoo import api, fields, models, _
-import logging
 from lxml import etree
 
 
