@@ -32,7 +32,6 @@ class AccountPaymentRegister(models.TransientModel):
         help="Foreign Currency Rate",
         compute="_compute_foreign_currency_rate",
         digits="Tasa",
-        tracking=True,
         readonly=False,
     )
 
