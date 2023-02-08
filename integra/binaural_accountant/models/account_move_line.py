@@ -24,7 +24,6 @@ class AccountMoveLine(models.Model):
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
         for line in self:
-            _logger.warning("price_unit: %s" % line.price_unit)
             line.foreign_price = line.price_unit * line.foreign_inverse_rate
 
     @api.depends("foreign_price", "quantity")
