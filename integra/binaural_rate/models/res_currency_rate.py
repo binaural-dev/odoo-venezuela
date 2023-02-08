@@ -1,5 +1,6 @@
 from odoo import models, fields, api
 import logging
+_logger = logging.getLogger(__name__)
 
 
 class ResCurrencyRate(models.Model):
@@ -35,11 +36,12 @@ class ResCurrencyRate(models.Model):
         dict
             A dictionary with the rate and inverse rate for the given currency and date.
         """
-        rate = self.env["res.currency.rate"].search(
-            [("name", "=", rate_date), ("currency_id", "=", foreign_currency_id)], limit=1
-        )
-        if not any(rate):
+        rates = self.env["res.currency.rate"].search([("currency_id", "=", foreign_currency_id)])
+        if not rates:
             return {}
+
+        rate = rates.filtered(lambda r: r.name == rate_date) or rates[0]
+        _logger.warning("rate: %s", rate)
         base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
             "base.USD", raise_if_not_found=False
         )

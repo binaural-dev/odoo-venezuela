@@ -103,7 +103,7 @@ class TestResCurrencyRate(TransactionCase):
 
     def test_compute_rate_with_a_date_without_rate(self):
         """
-        Test that the compute_rate method returns a void dictionary when the given date does not
+        Test that the compute_rate method returns the last rate when the given date does not
         have a rate.
         """
         base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
@@ -115,12 +115,21 @@ class TestResCurrencyRate(TransactionCase):
 
         # Test with USD as foreign currency
         compute_rate_usd_result = self.env["res.currency.rate"].compute_rate(
-            base_usd_id, fields.Date.today() - timedelta(days=2)
+            base_usd_id, fields.Date.today() + timedelta(days=2)
         )
-        self.assertEqual(compute_rate_usd_result, {})
+        self.assertEqual(float_compare(compute_rate_usd_result["foreign_rate"], 22, 2), 0)
+        self.assertEqual(
+            float_compare(
+                compute_rate_usd_result["foreign_inverse_rate"], 0.045454545454545456, 18
+            ),
+            0,
+        )
 
         # Test with VEF as foreign currency
         compute_rate_vef_result = self.env["res.currency.rate"].compute_rate(
-            base_vef_id, fields.Date.today() - timedelta(days=2)
+            base_vef_id, fields.Date.today() + timedelta(days=2)
         )
-        self.assertEqual(compute_rate_vef_result, {})
+        self.assertEqual(float_compare(compute_rate_vef_result["foreign_rate"], 22, 2), 0)
+        self.assertEqual(
+            float_compare(compute_rate_vef_result["foreign_inverse_rate"], 22, 2), 0
+        )
