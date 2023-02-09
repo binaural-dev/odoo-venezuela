@@ -6,6 +6,7 @@ _build/
 # dotfiles
 .*
 !.gitlab
+!.github/
 !.releaserc.yml
 !.gitignore
 !.gitlab-ci.yml
