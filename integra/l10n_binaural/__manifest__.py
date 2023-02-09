@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "category": "Accounting/Localizations/Account Charts",
     "license": "LGPL-3",
-    "depends": ["account_accountant", "stock", "sale", "account"],
+    "depends": ["account_accountant", "stock", "sale", "account","contacts"],
     "summary": """
         Plantilla de plan de cuentas de servicio donde se agregan las
         cuentas contables y diarios para tipo de empresa servicio
