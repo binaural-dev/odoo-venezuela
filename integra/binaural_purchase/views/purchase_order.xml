@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data>
+
+        <record id="view_purchase_order_form_binaural_purchase" model="ir.ui.view">
+            <field name="name">view.purchase.order.form.binaural.purchase</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="vat"/>
+                </xpath>
+                <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_unit']" position="after">
+                    <field name="foreign_price"/>
+                </xpath>
+                <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']" position="after">
+                    <field name="foreign_subtotal"/>
+                    <field name="foreign_rate" optional="hide"/>
+                    <field name="foreign_rate" optional="hide"/>
+                    <field
+                    name="foreign_inverse_rate"
+                    groups="base.group_no_one"
+                    string="Foreign inverse rate"
+                    optional="hide"
+                    readonly="1"
+                    />
+                </xpath>
+                <xpath expr="//notebook" position="inside">
+                    <page string="Foreign currency" name="foreign_currency">
+                        <group>
+                            <field name="foreign_currency_id" invisible='1'/>
+                            <field
+                            name="foreign_inverse_rate"
+                            groups="base.group_no_one"
+                            string="Foreign inverse rate"
+                            />
+                            <field name="foreign_rate"/>
+                            <field name="foreign_taxable_income"/>
+                            <field name="foreign_total_billed"/>
+                            <field name="tax_totals" nolabel="1" colspan="2"/>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    
+    </data>
+    
+
+</odoo>
