@@ -1,5 +1,5 @@
 {
-    "name": "Tasa de Cambio (Binaural)",
+    "name": "Binaural Tasa de Cambio",
     "summary": """
         Módulo para obtener la tasa de cambio de la moneda base a la moneda extranjera
     """,

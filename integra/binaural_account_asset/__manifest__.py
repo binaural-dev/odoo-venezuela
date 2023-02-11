@@ -1,5 +1,5 @@
 {
-    "name": "Gestión de activos fijos (Binaural)",
+    "name": "Binaural Gestión de activos fijos",
     "summary": """
         Módulo con modificaciones para la gestión de activos fijos en Venezuela.
     """,
