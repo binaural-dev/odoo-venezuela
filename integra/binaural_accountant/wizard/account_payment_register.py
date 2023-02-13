@@ -32,7 +32,7 @@ class AccountPaymentRegister(models.TransientModel):
     )
     foreign_inverse_rate = fields.Float(
         help=(
-            "Rate that will be used as factor to multiply of the foreign currency for the payment"
+            "Rate that will be used as factor to multiply of the foreign currency for the payment "
             "and the moves created by the wizard."
         ),
         compute="_compute_rate",
