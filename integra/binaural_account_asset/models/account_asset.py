@@ -22,14 +22,18 @@ class AccountAsset(models.Model):
         default=default_alternate_currency,
     )
     foreign_rate = fields.Float(
-        help="The rate that is gonna be always shown to the user.",
+        help="The rate of the asset.",
         digits="Tasa",
         compute="_compute_rate",
         store=True,
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
-        digits=(12, 6), compute="_compute_rate", store=True, readonly=False
+        help="The inverse rate of the asset.",
+        digits=(12, 6),
+        compute="_compute_rate",
+        store=True,
+        readonly=False,
     )
 
     @api.model_create_multi
@@ -49,7 +53,9 @@ class AccountAsset(models.Model):
         """
         for asset in self.filtered("original_move_line_ids"):
             asset.foreign_rate = asset.original_move_line_ids[0].move_id.foreign_rate
-            asset.foreign_inverse_rate = asset.original_move_line_ids[0].move_id.foreign_inverse_rate
+            asset.foreign_inverse_rate = asset.original_move_line_ids[
+                0
+            ].move_id.foreign_inverse_rate
 
     def compute_depreciation_board(self):
         """
