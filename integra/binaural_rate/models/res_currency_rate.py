@@ -1,5 +1,6 @@
 from odoo import models, fields, api
 import logging
+
 _logger = logging.getLogger(__name__)
 
 
@@ -52,3 +53,27 @@ class ResCurrencyRate(models.Model):
             }
         else:
             return {"foreign_rate": rate.company_rate, "foreign_inverse_rate": rate.company_rate}
+
+    @api.model
+    def compute_inverse_rate(self, rate):
+        """
+        Compute the inverse rate for the given rate.
+        The inverse rate will be the inverse of the given rate if the foreign currency is USD, else
+        the inverse rate will be the same as the given rate.
+
+        Parameters
+        ----------
+        rate : float
+            The rate that is gonna be used to compute the inverse rate.
+
+        Returns
+        -------
+        float
+            The inverse rate for the given rate.
+        """
+        base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
+            "base.USD", raise_if_not_found=False
+        )
+        foreign_currency_id = self.env.company.currency_foreign_id.id or False
+        inverse_rate = 1 / rate if foreign_currency_id == base_usd_id else rate
+        return inverse_rate
