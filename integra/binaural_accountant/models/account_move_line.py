@@ -21,6 +21,13 @@ class AccountMoveLine(models.Model):
         store=True,
     )
 
+    # Report fields
+    foreign_debit = fields.Monetary(currency_field="foreign_currency_id")
+    foreign_credit = fields.Monetary(currency_field="foreign_currency_id")
+    foreign_balance = fields.Monetary(
+        currency_field="foreign_currency_id", compute="_compute_foreign_balance", store=True
+    )
+
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
         for line in self:
@@ -30,3 +37,12 @@ class AccountMoveLine(models.Model):
     def _compute_foreign_subtotal(self):
         for line in self:
             line.foreign_subtotal = line.foreign_price * line.quantity
+
+    @api.depends("foreign_credit", "foreign_debit")
+    def _compute_foreign_balance(self):
+        for line in self:
+            if line.move_id.is_invoice(include_receipts=True):
+                # This may be needed to be changed in the future, when taking into account
+                # moves that are not invoices.
+                line.foreign_balance = 0.0
+            line.foreign_balance = line.foreign_debit - line.foreign_credit

@@ -58,7 +58,3 @@ class TestAccountMove(TransactionCase):
     #         line_form.quantity = 1
     #     invoice = invoice_form.save()
     #     self.assertEqual(invoice.foreign_currency_id.symbol, self.currency.symbol)
-
-
-
-    

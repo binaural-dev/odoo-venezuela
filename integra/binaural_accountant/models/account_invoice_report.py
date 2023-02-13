@@ -1,8 +1,5 @@
 from odoo import api, fields, models, _
 from lxml import etree
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class AccountInvoiceReport(models.Model):

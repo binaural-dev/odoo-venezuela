@@ -32,12 +32,27 @@
                 <field name="foreign_price"/>
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_subtotal']" position="after">
+		<field name="foreign_currency_id" invisible='1'/>
                 <field name="foreign_subtotal"/>
                 <field name="foreign_rate" optional="hide"/>
 		<field
 		    name="foreign_inverse_rate"
 		    groups="base.group_no_one"
 		    string="Foreign inverse rate"
+		    optional="hide"
+		    readonly="1"
+		/>
+            </xpath>
+            <xpath expr="//page/field[@name='line_ids']/tree/field[@name='balance']" position="after">
+		<field name="foreign_currency_id" invisible='1'/>
+                <field name="foreign_debit" optional="hide" groups="base.group_no_one"/>
+                <field name="foreign_credit" optional="hide" groups="base.group_no_one"/>
+                <field name="foreign_balance" optional="hide" groups="base.group_no_one"/>
+
+                <field name="foreign_rate" optional="hide" groups="base.group_no_one"/>
+		<field
+		    name="foreign_inverse_rate"
+		    groups="base.group_no_one"
 		    optional="hide"
 		    readonly="1"
 		/>

@@ -25,7 +25,6 @@ class AccountMove(models.Model):
     invoice_date = fields.Date(default=fields.Date.today)
 
     foreign_rate = fields.Float(
-        help="The rate that is gonna be always shown to the user.",
         compute="_compute_rate",
         digits="Tasa",
         default=0.0,
@@ -89,7 +88,8 @@ class AccountMove(models.Model):
         Returns
         -------
         type = dict
-            The view of the account move form with the foreign currency symbol added to the page title
+            The view of the account move form with the foreign currency symbol added to the page
+            title.
         """
         foreign_currency_symbol = ""
         foreign_currency_id = self.env.company.currency_foreign_id.id
@@ -112,26 +112,94 @@ class AccountMove(models.Model):
                     res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """
+        Ensure that the foreign_rate and foreign_inverse_rate are computed and computes the foreign
+        debit and foreign credit of the line_ids fields (journal entries) when the move is created.
+        """
+        moves = super().create(vals_list)
+        moves._compute_rate()
+
+        for move in moves:
+            move.compute_line_ids_foreign_debit_and_credit()
+        return moves
+
+    def write(self, vals):
+        """
+        computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
+        the move is edited.
+        """
+        res = super().write(vals)
+        for move in self:
+            move.compute_line_ids_foreign_debit_and_credit()
+        return res
+
+    def compute_line_ids_foreign_debit_and_credit(self):
+        """
+        This method is used to compute the foreign debit and foreign credit of the line_ids field
+        (journal entries) based on certain parameters.
+
+        If the move is an invoice or a receipt, the foreign debit and foreign credit will be
+        the sum of the foreign_subtotal of the invoice lines when the line has the payable or
+        receivable account of the partner and the sume of the price_subtotal of the invoice lines
+        matches with either the debit or the credit of the line.
+
+        Else, if the move is not an invoice or the line does not have the payable or receivable
+        account of the partner, the foreign debit and foreign credit will be the debit and credit
+        of the line multiplied by the inverse rate.
+        """
+        self.ensure_one()
+        subtotals = self.get_invoice_line_ids_subtotals_sum()
+        for line in self.line_ids:
+            line_account_is_not_the_partner_receivable_or_payable = (
+                line.account_id != self.partner_id.property_account_receivable_id
+                and line.account_id != self.partner_id.property_account_payable_id
+            )
+            debit_or_credit_are_distinct_from_price_subtotal = (
+                abs(line.debit) != subtotals[0] and abs(line.credit) != subtotals[0]
+            )
+            if (
+                not self.is_invoice(include_receipts=True) or
+                line_account_is_not_the_partner_receivable_or_payable
+                or debit_or_credit_are_distinct_from_price_subtotal
+            ):
+                line.foreign_debit = line.debit * self.foreign_inverse_rate
+                line.foreign_credit = line.credit * self.foreign_inverse_rate
+                continue
+
+            if abs(line.debit) > 0:
+                line.foreign_debit = subtotals[1]
+            if abs(line.credit) > 0:
+                line.foreign_credit = subtotals[1]
+        return
+
+    def get_invoice_line_ids_subtotals_sum(self):
+        """
+        This method is used to get the subtotal and foreign_subtotal of the invoice lines.
+
+        Returns
+        -------
+        type = tuple(float, float))
+            The subtotal and foreing subtotal of the invoice lines
+        """
+        self.ensure_one()
+        return (
+            sum(line.price_subtotal for line in self.invoice_line_ids),
+            sum(line.foreign_subtotal for line in self.invoice_line_ids),
+        )
+
     @api.depends("partner_id")
     def _compute_vat(self):
         """
         Compute the vat of the partner and add the prefix to it if it exists in the partner record
         """
-        for rec in self:
-            if rec.partner_id.prefix_vat and rec.partner_id.vat:
-                vat = str(rec.partner_id.prefix_vat) + str(rec.partner_id.vat)
+        for move in self:
+            if move.partner_id.prefix_vat and move.partner_id.vat:
+                vat = str(move.partner_id.prefix_vat) + str(move.partner_id.vat)
             else:
-                vat = str(rec.partner_id.vat)
-            rec.vat = vat.upper()
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        """
-        Ensure that the foreign_rate and foreign_inverse_rate are computed when the invoice is created.
-        """
-        moves = super().create(vals_list)
-        moves._compute_rate()
-        return moves
+                vat = str(move.partner_id.vat)
+            move.vat = vat.upper()
 
     @api.depends("invoice_date")
     def _compute_rate(self):
@@ -174,19 +242,14 @@ class AccountMove(models.Model):
         """
         Onchange the foreign rate and compute the foreign inverse rate
         """
+        Rate = self.env["res.currency.rate"]
         for move in self:
-            base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
-                "base.USD", raise_if_not_found=False
-            )
             if not bool(move.foreign_rate):
                 return
-            move.foreign_inverse_rate = (
-                1 / move.foreign_rate
-                if move.foreign_currency_id.id == base_usd_id
-                else move.foreign_rate
-            )
+            move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
 
     def action_register_payment(self):
         res = super().action_register_payment()
-        res["context"]["default_foreign_currency_rate"] = self.foreign_inverse_rate
+        res["context"]["default_foreign_rate"] = self.foreign_rate
+        res["context"]["default_foreign_inverse_rate"] = self.foreign_inverse_rate
         return res
