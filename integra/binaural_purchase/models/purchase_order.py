@@ -1,5 +1,10 @@
 from odoo import models, fields, api, _
 from lxml import etree
+import dateutil.parser
+
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class PurchaseOrder(models.Model):
@@ -21,8 +26,6 @@ class PurchaseOrder(models.Model):
         "res.currency",
         default=default_alternate_currency,
     )
-
-    invoice_date = fields.Date(default=fields.Date.today)
 
     vat = fields.Char(
         string="VAT",
@@ -62,11 +65,6 @@ class PurchaseOrder(models.Model):
         compute="_compute_foreign_total_billed",
         currency_field="foreign_currency_id",
         store=True,
-    )
-    foreign_total_due = fields.Monetary(
-        help="Foreign Total Due of the invoice",
-        compute="_compute_foreign_total_due",
-        currency_field="foreign_currency_id",
     )
 
 
@@ -136,15 +134,16 @@ class PurchaseOrder(models.Model):
         moves._compute_rate()
         return moves
 
-    @api.depends("invoice_date")
+    @api.depends("date_order")
     def _compute_rate(self):
         """
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
         """
         Rate = self.env["res.currency.rate"]
         for move in self:
+            date_order = dateutil.parser.parse(str(move.date_order)).date()
             rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
+                move.foreign_currency_id.id, date_order or fields.Date.today()
             )
             move.update(rate_values)
 
@@ -163,15 +162,6 @@ class PurchaseOrder(models.Model):
         """
         for move in self:
             move.foreign_total_billed = move.amount_total * move.foreign_inverse_rate
-
-    @api.depends("foreign_currency_id", "foreign_rate")
-    def _compute_foreign_total_due(self):
-        """
-        Compute the foreign total due of the invoice
-        """
-        for move in self:
-            move.foreign_total_due = 15
-            # move.foreign_total_due = move.amount_residual * move.foreign_inverse_rate
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):

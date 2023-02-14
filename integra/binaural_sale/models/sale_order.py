@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from lxml import etree
+import dateutil.parser
 
 
 class SaleOrder(models.Model):
@@ -61,11 +62,6 @@ class SaleOrder(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
-    foreign_total_due = fields.Monetary(
-        help="Foreign Total Due of the invoice",
-        compute="_compute_foreign_total_due",
-        currency_field="foreign_currency_id",
-    )
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -121,3 +117,63 @@ class SaleOrder(models.Model):
             else:
                 vat = str(rec.partner_id.vat)
             rec.vat = vat.upper()
+
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """
+        Ensure that the foreign_rate and foreign_inverse_rate are computed when the invoice is created.
+        """
+        moves = super().create(vals_list)
+        moves._compute_rate()
+        return moves
+
+    @api.depends("date_order")
+    def _compute_rate(self):
+        """
+        Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
+        """
+        Rate = self.env["res.currency.rate"]
+        for move in self:
+            date_order = dateutil.parser.parse(str(move.date_order)).date()
+            rate_values = Rate.compute_rate(
+                move.foreign_currency_id.id, date_order or fields.Date.today()
+            )
+            move.update(rate_values)
+
+    @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
+    def _compute_foreign_taxable_income(self):
+        """ 
+        Compute the foreign taxable income of the invoice
+        """
+        for move in self:
+            move.foreign_taxable_income = move.amount_untaxed * move.foreign_inverse_rate
+
+    @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
+    def _compute_foreign_total_billed(self):
+        """
+        Compute the foreign total billed of the invoice
+        """
+        for move in self:
+            move.foreign_total_billed = move.amount_total * move.foreign_inverse_rate
+
+
+    @api.onchange("foreign_rate")
+    def _onchange_foreign_rate(self):
+        """
+        Onchange the foreign rate and compute the foreign inverse rate
+        """
+        for move in self:
+            base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
+                "base.USD", raise_if_not_found=False
+            )
+            if not bool(move.foreign_rate):
+                return
+            move.foreign_inverse_rate = (
+                1 / move.foreign_rate
+                if move.foreign_currency_id.id == base_usd_id
+                else move.foreign_rate
+            )
+
+
+
