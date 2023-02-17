@@ -32,7 +32,7 @@ class AccountTax(models.Model):
         res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
 
         if not foreign_currency:
-            return res
+            foreign_currency = self.env.company.currency_foreign_id or False
 
         for base_line in base_lines:
             rate = base_line["record"].move_id.foreign_inverse_rate
