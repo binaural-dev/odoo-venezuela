@@ -33,10 +33,11 @@ class AccountMoveLine(models.Model):
         for line in self:
             line.foreign_price = line.price_unit * line.foreign_inverse_rate
 
-    @api.depends("foreign_price", "quantity")
+    @api.depends("foreign_price", "quantity", "discount")
     def _compute_foreign_subtotal(self):
         for line in self:
-            line.foreign_subtotal = line.foreign_price * line.quantity
+            line_discount_price_unit = line.foreign_price * (1 - (line.discount / 100.0))
+            line.foreign_subtotal = line_discount_price_unit * line.quantity
 
     @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
