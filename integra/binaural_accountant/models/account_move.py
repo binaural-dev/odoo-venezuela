@@ -263,6 +263,9 @@ class AccountMove(models.Model):
             move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
 
     def action_register_payment(self):
+        """
+        Add the foreign rate and foreign inverse rate to the context of the action_register_payment.
+        """
         res = super().action_register_payment()
         res["context"]["default_foreign_rate"] = self.foreign_rate
         res["context"]["default_foreign_inverse_rate"] = self.foreign_inverse_rate
