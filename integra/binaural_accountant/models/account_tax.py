@@ -1,6 +1,7 @@
 from collections import defaultdict
 from odoo.tools.float_utils import float_round
 from odoo import api, models, _
+from odoo.exceptions import ValidationError
 
 
 class AccountTax(models.Model):
@@ -28,15 +29,11 @@ class AccountTax(models.Model):
             "foreign_formatted_amount_untaxed": str
             "foreign_formatted_amount_total": str
         """
-        foreign_currency = self.env["res.currency"]
-        for base_line in base_lines:
-            if base_line["record"].move_id.foreign_currency_id:
-                foreign_currency = base_line["record"].move_id.foreign_currency_id
-                break
-        res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
-
+        foreign_currency = self.env.company.currency_foreign_id
         if not foreign_currency:
-            foreign_currency = self.env.company.currency_foreign_id or False
+            raise ValidationError(_("No foreign currency configured in the company"))
+
+        res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
 
         taxes = []
 
