@@ -1,6 +1,6 @@
 from odoo.tests import Form
 from odoo.tests.common import TransactionCase
-from odoo.exceptions import UserError
+from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo import Command, fields
 from datetime import timedelta
@@ -13,8 +13,6 @@ class TestAccountMove(TransactionCase):
         self.journal_sale = self.env["account.journal"].search([("type", "=", "sale")])[0]
         tax_group_obj = self.env["account.tax.group"]
         tax_obj = self.env["account.tax"]
-
-        self.env.company.currency_foreign_id = self.env.ref("base.VEF")
 
         self.partner = self.env["res.partner"].create(
             {
@@ -100,10 +98,31 @@ class TestAccountMove(TransactionCase):
             }
         )
 
-    def test_01(self):
+    def test01(self):
         """
-        Test taxes in alteran currency
+        Check if the foreign currency is configurated
         """
+        self.env.company.currency_foreign_id = False
+        with self.assertRaises(ValidationError):
+
+            invoice = self.env["account.move"].create(
+                {
+                    "partner_id": self.partner.id,
+                    "date": fields.Date.today(),
+                    "move_type": "out_invoice",
+                    "state": "draft",
+                    "company_id": self.env.company.id,
+                    "currency_id": self.env.company.currency_id.id,
+                    "journal_id": self.journal_sale.id,
+                }
+            )
+            invoice.tax_totals
+
+    def test_02(self):
+        """
+        Test taxes in foreign currency
+        """
+        self.env.company.currency_foreign_id = self.env.ref("base.VEF")
         invoice = self.env["account.move"].create(
             {
                 "partner_id": self.partner.id,

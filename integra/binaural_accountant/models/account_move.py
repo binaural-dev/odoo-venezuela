@@ -160,8 +160,8 @@ class AccountMove(models.Model):
                 abs(line.debit) != subtotals[0] and abs(line.credit) != subtotals[0]
             )
             if (
-                not self.is_invoice(include_receipts=True) or
-                line_account_is_not_the_partner_receivable_or_payable
+                not self.is_invoice(include_receipts=True)
+                or line_account_is_not_the_partner_receivable_or_payable
                 or debit_or_credit_are_distinct_from_price_subtotal
             ):
                 line.foreign_debit = line.debit * self.foreign_inverse_rate
@@ -236,6 +236,20 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.foreign_total_due = move.amount_residual * move.foreign_inverse_rate
+
+    @api.depends(
+        "invoice_line_ids.currency_rate",
+        "invoice_line_ids.tax_base_amount",
+        "invoice_line_ids.tax_line_id",
+        "invoice_line_ids.price_total",
+        "invoice_line_ids.price_subtotal",
+        "invoice_payment_term_id",
+        "partner_id",
+        "currency_id",
+        "foreign_rate",
+    )
+    def _compute_tax_totals(self):
+        return super()._compute_tax_totals()
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):

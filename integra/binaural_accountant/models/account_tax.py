@@ -29,7 +29,7 @@ class AccountTax(models.Model):
             "foreign_formatted_amount_untaxed": str
             "foreign_formatted_amount_total": str
         """
-        foreign_currency = self.env.company.currency_foreign_id
+        foreign_currency = self.env.company.currency_foreign_id or False
         if not foreign_currency:
             raise ValidationError(_("No foreign currency configured in the company"))
 
