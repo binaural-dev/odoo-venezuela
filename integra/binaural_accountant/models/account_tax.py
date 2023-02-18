@@ -1,4 +1,5 @@
 from collections import defaultdict
+from odoo.tools.float_utils import float_round
 from odoo import api, models, _
 
 
@@ -45,7 +46,13 @@ class AccountTax(models.Model):
             base_line["currency"] = foreign_currency
 
             if base_line["taxes"]:
-                taxes.append({"tax": base_line["taxes"][0], "base": base_line["price_subtotal"]})
+                taxes.append(
+                    {
+                        "tax": base_line["taxes"][0],
+                        "price": base_line["price_unit"],
+                        "base": base_line["price_subtotal"],
+                    }
+                )
 
         if tax_lines:
             for tax_line in tax_lines:
@@ -53,9 +60,15 @@ class AccountTax(models.Model):
                 tax_line["tax_amount"] = 0.0
                 for tax in taxes:
                     if tax_line["tax_repartition_line"].invoice_tax_id.id == tax["tax"].id:
-                        tax_line["tax_amount"] += tax["base"] * (
-                            tax_line["tax_repartition_line"].invoice_tax_id.amount / 100
+                        tax_line["tax_amount"] += tax_line[
+                            "tax_repartition_line"
+                        ].invoice_tax_id._compute_amount(
+                            float_round(tax["base"], precision_rounding=foreign_currency.rounding),
+                            tax["price"],
                         )
+                tax_line["tax_amount"] = float_round(
+                    tax_line["tax_amount"], precision_rounding=foreign_currency.rounding
+                )
 
         foreign_taxes = super()._prepare_tax_totals(base_lines, foreign_currency, tax_lines)
 
