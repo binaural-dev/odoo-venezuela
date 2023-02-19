@@ -21,11 +21,13 @@ done
 
 parse_tags() {
     pattern="{(\w+)([,\w]*)}"
+    echo "el patron es: $pattern"
     echo $(echo $message | grep -oP $pattern | sed 's/^.//;s/.$//')
 }
 
 parse_modules() {
     pattern="\[(\w+)([,\w]*)\]"
+    echo "el modulo es: $pattern"
     echo $(echo $message | grep -oP $pattern | sed 's/^.//;s/.$//')
 }
 
