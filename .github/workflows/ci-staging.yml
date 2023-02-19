@@ -1,0 +1,149 @@
+name: Build and test to staging branches
+
+on:
+  push:
+    types: [created]
+    branches:
+      - 'staging*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python_version: "3.10"
+            odoo_version: "16.0"
+            odoo_org_repo: "odoo/odoo"
+            image_name: odoo-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2.1.0
+        with:
+          version: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile.test
+          build-args: |
+            python_version=${{ matrix.python_version }}
+            odoo_version=${{ matrix.odoo_version }}
+            odoo_org_repo=${{ matrix.odoo_org_repo }}
+            setuptools_constraint=${{ matrix.setuptools_constraint }}
+          tags: |
+            ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.event.repository.html_url }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest
+          cache-to: type=local,dest=/tmp/.buildx-cache
+          push: true
+
+  odoo-test:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python_version: "3.10"
+            odoo_version: "16.0"
+            odoo_org_repo: "odoo/odoo"
+            image_name: odoo-test
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: odoo
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Login to ghcr.io
+        uses: docker/login-action@v2.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: run test odoo
+        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test 
+          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /mnt/test/run.sh -m "${{ github.event.pull_request.title }}" -r odoo
+  odoo-pytest:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python_version: "3.10"
+            odoo_version: "16.0"
+            odoo_org_repo: "odoo/odoo"
+            image_name: odoo-test
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: odoo
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Login to ghcr.io
+        uses: docker/login-action@v2.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: run odoo-pytest
+        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test
+          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /mnt/test/run.sh -m "${{ github.event.pull_request.title }}" -r pytest
+  odoo-coverage:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python_version: "3.10"
+            odoo_version: "16.0"
+            odoo_org_repo: "odoo/odoo"
+            image_name: odoo-test
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: odoo
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Login to ghcr.io
+        uses: docker/login-action@v2.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: run code coverage
+        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test
+          --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /mnt/test/run.sh -m "${{ github.event.pull_request.title }}" -r coverage
