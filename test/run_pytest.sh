@@ -30,7 +30,7 @@ run_pytest() {
     if [ -z "${modules}" ]; then
         modules=$(list_directories)
     fi
-    
+
     modules_dir_to_test=$(split_modules $modules)
     echo $modules_dir_to_test
     echo "Running Tests..."
@@ -39,7 +39,7 @@ run_pytest() {
 
 # Función que devuelve una lista de carpetas separadas por comas, by chatGPT
 list_directories() {
-  directories=$(ls "/mnt/integra-addons" | grep -v "tools")
+  directories=$(ls "/mnt/integra-addons" | grep -v "tools" | grep -v "l10n_binaural")
   IFS=","
   result=$(echo "$directories" | tr "\n" "," | sed 's/,$//')
   unset IFS

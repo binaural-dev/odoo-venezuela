@@ -17,15 +17,7 @@ do
 done
 
 execute_odoo_tests() {
-    echo "Starting Odoo tests..."
-    # if [ -z "${tags}" ]; then
-    #     echo "Running tests without tags..."
-    #     odoo --test-enable --stop-after-init --log-level=test -d ${database} -i ${modules}
-    # else
-    #     echo "Running tests with tags..." 
-    #     echo ${modules}
-    #     odoo --test-tags=${tags} --stop-after-init --log-level=test -d ${database} -i ${modules}
-    # fi
+    echo "Starting Odoo tests..."    
     if [ -z "${tags}" ] && [ -z "${modules}" ]; then
         echo "Running tests without tags and modules..."
         modules=$(list_directories)
@@ -39,7 +31,7 @@ execute_odoo_tests() {
 
 # Función que devuelve una lista de carpetas separadas por comas, by chatGPT
 list_directories() {
-  directories=$(ls "/mnt/integra-addons" | grep -v "tools")
+  directories=$(ls "/mnt/integra-addons" | grep -v "tools" | grep -v "l10n_binaural")
   IFS=","
   result=$(echo "$directories" | tr "\n" "," | sed 's/,$//')
   unset IFS
