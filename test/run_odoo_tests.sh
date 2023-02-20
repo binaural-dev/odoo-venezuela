@@ -28,13 +28,7 @@ execute_odoo_tests() {
     # fi
     if [ -z "${tags}" ] && [ -z "${modules}" ]; then
         echo "Running tests without tags and modules..."
-        odoo --test-enable --stop-after-init --log-level=test -d ${database}
-    elif [ -z "${tags}" ]; then
-        echo "Running tests without tags..."
-        odoo --test-enable --stop-after-init --log-level=test -d ${database} -i ${modules}
-    elif [ -z "${modules}" ]; then
-        echo "Running tests without modules..."
-        odoo --test-tags=${tags} --stop-after-init --log-level=test -d ${database}
+        odoo --test-enable --test-tags=post_install --stop-after-init --log-level=test -d ${database}        
     else
         echo "Running tests with tags and modules..." 
         echo ${modules}
