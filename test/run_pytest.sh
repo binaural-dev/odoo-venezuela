@@ -17,16 +17,33 @@ done
 
 initialize_database() {
     echo "Initializing Odoo database..."
+    if [ -z "${modules}" ]; then
+        modules=$(list_directories)
+    fi   
     odoo --stop-after-init -d ${database} -i ${modules}
 }
 
 run_pytest() {
     containerenv=/opt/odoo-venv
     here=$(dirname $0)
+
+    if [ -z "${modules}" ]; then
+        modules=$(list_directories)
+    fi
+    
     modules_dir_to_test=$(split_modules $modules)
     echo $modules_dir_to_test
     echo "Running Tests..."
     $containerenv/bin/pytest --odoo-database=${database} --color=yes --ignore=$here/data $modules_dir_to_test
+}
+
+# Función que devuelve una lista de carpetas separadas por comas, by chatGPT
+list_directories() {
+  directories=$(ls "/mnt/integra-addons" | grep -v "tools")
+  IFS=","
+  result=$(echo "$directories" | tr "\n" "," | sed 's/,$//')
+  unset IFS
+  echo "$result"
 }
 
 split_modules() {

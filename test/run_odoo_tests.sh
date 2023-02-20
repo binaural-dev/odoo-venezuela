@@ -29,7 +29,7 @@ execute_odoo_tests() {
     if [ -z "${tags}" ] && [ -z "${modules}" ]; then
         echo "Running tests without tags and modules..."
         modules=$(list_directories)
-        odoo --test-enable --test-tags=post_install --stop-after-init --log-level=test -d ${database} -i ${modules}
+        odoo --test-enable --test-tags=post_install --stop-after-init --log-level=test -d ${database} -i ${modules} -x l10n_binaural/data/account.account.template.csv,l10n_binaural/data/account.account.csv
     else
         echo "Running tests with tags and modules..." 
         echo ${modules}
