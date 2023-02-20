@@ -39,7 +39,7 @@ execute_odoo_tests() {
 
 # Función que devuelve una lista de carpetas separadas por comas, by chatGPT
 list_directories() {
-  directories=$(ls "/mnt/integra-addons/*/" | grep -v "tools")
+  directories=$(ls "/mnt/integra-addons" | grep -v "tools")
   IFS=","
   result=$(echo "$directories" | tr "\n" "," | sed 's/,$//')
   unset IFS
