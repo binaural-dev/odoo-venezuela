@@ -4,8 +4,7 @@ on:
   pull_request:
     types: [opened, reopened]
     branches:
-      - 'master'
-      - 'staging*'
+      - 'master'      
 
 jobs:
   build:
