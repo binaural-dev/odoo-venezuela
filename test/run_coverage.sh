@@ -24,7 +24,7 @@ execute_coverage_run() {
     if [ -z "${tags}" ] && [ -z "${modules}" ]; then
         echo "Runing coverage without tags and modules..."
         modules=$(list_directories)
-        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-enable --stop-after-init --log-level=test -d ${database} -i ${modules}
+        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-tags=post_install --stop-after-init --log-level=test -d ${database} -i ${modules}
     elif [ -z "${tags}" ]; then
         echo "Runing coverage without tags..."
         coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-enable --stop-after-init --log-level=test -d ${database} -i ${modules}
