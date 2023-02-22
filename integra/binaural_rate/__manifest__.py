@@ -11,5 +11,7 @@
     # any module necessary for this one to work correctly
     "depends": ["base"],
     # always loaded
-    "data": [],
+    "data": [
+    'views/res_config_settings.xml',
+    ],
 }

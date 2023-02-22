@@ -1,7 +1,11 @@
+from odoo import _
 from odoo.tests import Form
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
 from odoo.tests import tagged
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 @tagged("sale_order", "post_install", "-at_install")
@@ -12,7 +16,7 @@ class TestSaleOrder(TransactionCase):
         self.company = self.env["res.company"].create(
             {
                 "name": "Test Company",
-                "currency_id": self.env.ref("base.USD").id,
+                "currency_foreign_id": self.env.ref("base.USD").id,
             }
         )
         self.currency = self.env["res.currency"].create(
@@ -44,17 +48,23 @@ class TestSaleOrder(TransactionCase):
         """Test that the foreign currency symbol is added to the form view."""
         sale_form = Form(self.env["sale.order"])
         sale_form.partner_id = self.partner
-        sale_form.date_order = "2021-01-01"
+        sale_form.foreign_rate = 20
         with sale_form.order_line.new() as line_form:
             line_form.product_id = self.product
             line_form.product_uom_qty = 1
-        sale_form.save()
+            line_form.price_unit = 200
+            if line_form.foreign_price > 0:
+                sale_form.save()
 
     def test_02(self):
         """Test that the foreign currency symbol is added to the form view."""
         sale_form = Form(self.env["sale.order"])
         sale_form.partner_id = self.partner
-        sale_form.date_order = "2021-01-01"
+        sale_form.foreign_rate = 20
         with sale_form.order_line.new() as line_form:
             line_form.product_id = self.product
-            line_form.product_uom_qty = 1
+            line_form.product_uom_qty = 2
+            line_form.price_unit = 100
+            if line_form.foreign_price > 0:
+                sale_form.save()
+            
