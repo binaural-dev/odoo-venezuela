@@ -1,7 +1,7 @@
 from odoo import api, fields, models, _
 
 class PurchaseOrderLine(models.Model):
-    _inherit = "purchase.order.line"
+    _inherit = "sale.order.line"
 
     foreign_currency_id = fields.Many2one(related="order_id.foreign_currency_id", store=True)
     foreign_rate = fields.Float(related="order_id.foreign_rate", store=True)
@@ -25,7 +25,7 @@ class PurchaseOrderLine(models.Model):
         for line in self:
             line.foreign_price = line.price_unit * line.foreign_inverse_rate
 
-    @api.depends("product_qty", "foreign_price")
+    @api.depends("product_uom_qty", "foreign_price")
     def _compute_foreign_subtotal(self):
         for line in self:
-            line.foreign_subtotal = line.foreign_price * line.product_qty
+            line.foreign_subtotal = line.foreign_price * line.product_uom_qty

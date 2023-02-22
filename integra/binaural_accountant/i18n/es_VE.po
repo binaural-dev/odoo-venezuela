@@ -36,18 +36,6 @@ msgid "Config Settings"
 msgstr "Opciones de configuración"
 
 #. module: binaural_accountant
-#: model:ir.model.fields,field_description:binaural_accountant.field_res_company__currency_foreign_id
-#: model:ir.model.fields,field_description:binaural_accountant.field_res_config_settings__currency_foreign_id
-msgid "Currency Foreign"
-msgstr "Moneda alterna"
-
-#. module: binaural_accountant
-#: model:ir.model.fields,help:binaural_accountant.field_res_company__currency_foreign_id
-#: model:ir.model.fields,help:binaural_accountant.field_res_config_settings__currency_foreign_id
-msgid "Currency Foreign for the company"
-msgstr "Moneda alterna de la compañía"
-
-#. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_journal__fiscal
 msgid "Fiscal"
 msgstr "Fiscal"

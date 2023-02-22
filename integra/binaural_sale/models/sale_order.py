@@ -2,13 +2,9 @@ from odoo import models, fields, api, _
 from lxml import etree
 import dateutil.parser
 
-import logging
 
-_logger = logging.getLogger(__name__)
-
-
-class PurchaseOrder(models.Model):
-    _inherit = 'purchase.order'
+class SaleOrder(models.Model):
+    _inherit = 'sale.order'
 
     def default_alternate_currency(self):
         """
@@ -67,7 +63,6 @@ class PurchaseOrder(models.Model):
         store=True,
     )
 
-
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
         """
@@ -102,7 +97,7 @@ class PurchaseOrder(models.Model):
             foreign_currency_symbol = foreign_currency_record.symbol
             if view_type == "form":
                 view_id = self.env.ref(
-                    "binaural_purchase.view_purchase_order_form_binaural_purchase"
+                    "binaural_sale.view_sale_order_form_binaural_sales"
                 ).id
                 doc = etree.XML(res["arch"])
                 page = doc.xpath("//page[@name='foreign_currency']")
@@ -110,7 +105,6 @@ class PurchaseOrder(models.Model):
                     page[0].set("string", _("Foreign Currency ") + " " + foreign_currency_symbol)
                     res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
-
 
     @api.depends('partner_id')
     def _compute_vat(self):
@@ -149,7 +143,7 @@ class PurchaseOrder(models.Model):
 
     @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
     def _compute_foreign_taxable_income(self):
-        """
+        """ 
         Compute the foreign taxable income of the invoice
         """
         for move in self:
@@ -162,6 +156,7 @@ class PurchaseOrder(models.Model):
         """
         for move in self:
             move.foreign_total_billed = move.amount_total * move.foreign_inverse_rate
+
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -179,3 +174,6 @@ class PurchaseOrder(models.Model):
                 if move.foreign_currency_id.id == base_usd_id
                 else move.foreign_rate
             )
+
+
+

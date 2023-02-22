@@ -1,23 +1,22 @@
 {
-    'name': "Binaural Compras",
+    'name': "Binaural Ventas",
 
     'summary': """
-       Modulo para compras """,
+       Modulo para ventas """,
 
     'license': 'LGPL-3',
     
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
-    'category': 'Purchase/Purchase',
+    'category': 'Sales/Sales',
     'version': '16.0',
 
     # any module necessary for this one to work correctly
-    'depends': ['base', 'purchase', 'binaural_rate'],
+    'depends': ['base', 'sale_management', 'binaural_rate', 'binaural_contact'],
 
     # always loaded
     'data': [
-        'views/purchase_order.xml',
-        
+        'views/sale_order.xml'
     ],
 
     'images': ['static/description/icon.png'],
