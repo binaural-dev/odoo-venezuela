@@ -4,7 +4,7 @@ from odoo.exceptions import UserError
 from odoo.tests import tagged
 
 
-@tagged("res_config_settings","bin", "-at_install")
+@tagged("res_config_settings","bin", "-at_install", "post_install")
 class TestResConfigSettings(TransactionCase):
     def setUp(self):
         super(TestResConfigSettings, self).setUp()

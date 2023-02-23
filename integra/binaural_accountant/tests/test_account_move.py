@@ -4,7 +4,7 @@ from odoo.exceptions import UserError
 from odoo.tests import tagged
 
 
-@tagged("account_move", "bin", "-at_install")
+@tagged("account_move", "bin", "-at_install", "post_install")
 class TestAccountMove(TransactionCase):
     def setUp(self):
         super(TestAccountMove, self).setUp()
