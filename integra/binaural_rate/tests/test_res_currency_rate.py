@@ -5,7 +5,7 @@ from odoo import Command, fields
 from odoo.tools import float_compare
 
 
-@tagged("res_currency_rate", "post_install", "-at_install")
+@tagged("res_currency_rate", "bin", "-at_install")
 class TestResCurrencyRate(TransactionCase):
     @classmethod
     def setUpClass(cls):

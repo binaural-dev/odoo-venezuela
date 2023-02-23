@@ -3,7 +3,7 @@ from odoo.tests import tagged
 from odoo.addons.account_reports.tests.common import TestAccountReportsCommon
 
 
-@tagged("account_asset", "post_install", "-at_install")
+@tagged("account_asset", "bin", "-at_install")
 class TestAccountMove(TestAccountReportsCommon):
     @classmethod
     def setUpClass(cls):
