@@ -3,6 +3,10 @@ from odoo.tools.float_utils import float_round
 from odoo import api, models, _
 from odoo.exceptions import ValidationError
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class AccountTax(models.Model):
     _inherit = "account.tax"
@@ -57,11 +61,14 @@ class AccountTax(models.Model):
                 tax_line["tax_amount"] = 0.0
                 for tax in taxes:
                     if tax_line["tax_repartition_line"].invoice_tax_id.id == tax["tax"].id:
-                        tax_line["tax_amount"] += tax_line[
-                            "tax_repartition_line"
-                        ].invoice_tax_id._compute_amount(
-                            float_round(tax["base"], precision_rounding=foreign_currency.rounding),
-                            tax["price"],
+                        tax_line["tax_amount"] += float_round(
+                            tax_line["tax_repartition_line"].invoice_tax_id._compute_amount(
+                                float_round(
+                                    tax["base"], precision_rounding=foreign_currency.rounding
+                                ),
+                                tax["price"],
+                            ),
+                            precision_rounding=foreign_currency.rounding,
                         )
                 tax_line["tax_amount"] = float_round(
                     tax_line["tax_amount"], precision_rounding=foreign_currency.rounding
