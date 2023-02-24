@@ -3,10 +3,6 @@ from odoo.tools.float_utils import float_round
 from odoo import api, models, _
 from odoo.exceptions import ValidationError
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class AccountTax(models.Model):
     _inherit = "account.tax"
