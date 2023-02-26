@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "category": "Accounting/Localizations/Account Charts",
     "license": "LGPL-3",
-    "depends": ["account_accountant", "stock", "sale", "account","contacts"],
+    "depends": ["account_accountant", "stock", "sale", "contacts"],
     "summary": """
         Plantilla de plan de cuentas de servicio donde se agregan las
         cuentas contables y diarios para tipo de empresa servicio
@@ -12,7 +12,7 @@
         "data/res_currency_data.xml",
         "data/l10n_binaural_chart_data.xml",
         "data/account.account.template.csv",
-        "data/account.account.csv",
+        "data/account_account_data.xml",
         "data/l10n_binaural_chart_post_data.xml",
         "data/account_payment_method_line_data.xml",
         "data/account_journal_data.xml",
