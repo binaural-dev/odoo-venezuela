@@ -18,7 +18,7 @@ class FeesRetentionBinaural(models.Model):
     tax_unit_ids = fields.Many2one(
         "tax.unit", string="Tax Unit", required=True, domain=[("status", "=", True)]
     )
-    accumulated_rate_ids = fields.One2Many(
+    accumulated_rate_ids = fields.One2many(
         comodel_name="accumulated.fees", inverse_name="fees_id", string="Accumulated fees"
     )
 

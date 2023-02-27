@@ -4,10 +4,33 @@
     <data>
 
         <menuitem
-            id="master_configuration"
+            id="retention_configuration"
             name="Retention"
             parent="account.menu_finance_configuration"/>
-    
+
+        <menuitem
+            id="master_configuration"
+            name="Masters"
+            parent="account.menu_finance_configuration"/>
+
+        
+        <menuitem 
+                name="City" 
+                id="menu_master_configuration_city" 
+                parent="master_configuration" 
+                action="binaural_location.action_res_country_city" />
+
+        <menuitem 
+                name="Parish" 
+                id="menu_master_configuration_parish" 
+                parent="master_configuration" 
+                action="binaural_location.action_res_country_parish" />
+
+        <menuitem 
+                name="Municipality" 
+                id="menu_master_configuration_municipality" 
+                parent="master_configuration" 
+                action="binaural_location.action_res_country_municipality" />
         
     
     </data>

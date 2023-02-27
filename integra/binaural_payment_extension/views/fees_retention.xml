@@ -44,8 +44,8 @@
                             <field name="accumulated_rate_ids" attrs="{'invisible': [('accumulated_rate', '=', False)]}">
                                 <tree editable="bottom" string="Accumulated fees">
                                     <field name="name"/>
-                                    <field name="since"/>
-                                    <field name="until" />
+                                    <field name="start"/>
+                                    <field name="stop" />
                                     <field name="percentage" />
                                     <field name="subtract_ut" />
                                 </tree>
@@ -75,6 +75,11 @@
             <field name="view_mode">tree,kanban,form</field>
             <field name="context">{"search_default_status":True}</field>
         </record>
+
+        <menuitem name="Fees" 
+                id="menu_retention_fees_retention" 
+                parent="binaural_payment_extension.retention_configuration" 
+                action="action_fees" />
 
 
 

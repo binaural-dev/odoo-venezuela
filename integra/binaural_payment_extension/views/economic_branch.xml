@@ -51,6 +51,13 @@
             <field name="binding_view_types">form</field>
             <field name="view_mode">tree,form</field>
         </record>
+
+        <menuitem name="Economic branch" 
+        id="menu_economic_branch" 
+        parent="binaural_payment_extension.master_configuration" 
+        action="action_economic_branch" 
+        sequence="3" />
+
     
     
     </data>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data>
+
+
+        <menuitem name="Retenciones IVA" id="menu_retention_iva" sequence="4" parent="account_accountant.menu_accounting"/>
+
+    
+        
+    
+    </data>
+    
+
+</odoo>
