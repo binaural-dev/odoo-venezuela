@@ -45,6 +45,7 @@ class TestAccountTax(TransactionCase):
                 "tax_group_id": self.tax_group.id,
             }
         )
+
         self.tax2 = tax_obj.create(
             {
                 "name": "IVA 8",
@@ -56,30 +57,86 @@ class TestAccountTax(TransactionCase):
             }
         )
 
+        self.tax3 = tax_obj.create(
+            {
+                "name": "IVA 31",
+                "type_tax_use": "sale",
+                "amount_type": "percent",
+                "amount": "31.00",
+                "description": "IVA 31",
+                "tax_group_id": self.tax_group.id,
+            }
+        )
+
         self.product1 = self.env["product.product"].create(
             {
-                "name": "Test Product 16",
+                "name": "P 1",
                 "type": "service",
-                "list_price": 19.49,
+                "list_price": 9.97,
                 "taxes_id": self.tax1,
             }
         )
 
         self.product2 = self.env["product.product"].create(
             {
-                "name": "Test Product 8",
+                "name": "P 2",
                 "type": "service",
-                "list_price": 18.99,
+                "list_price": 123.33,
                 "taxes_id": self.tax2,
             }
         )
 
         self.product3 = self.env["product.product"].create(
             {
-                "name": "Test Product Exento",
+                "name": "P 3",
                 "type": "service",
-                "list_price": 7.23,
+                "list_price": 99.98,
+                "taxes_id": self.tax3,
+            }
+        )
+
+        self.product4 = self.env["product.product"].create(
+            {
+                "name": "P 4",
+                "type": "service",
+                "list_price": 0.45,
                 "taxes_id": self.tax0,
+            }
+        )
+
+        self.product5 = self.env["product.product"].create(
+            {
+                "name": "P 5",
+                "type": "service",
+                "list_price": 1500.00,
+                "taxes_id": self.tax0,
+            }
+        )
+
+        self.product6 = self.env["product.product"].create(
+            {
+                "name": "P 6",
+                "type": "service",
+                "list_price": 45.53,
+                "taxes_id": self.tax1,
+            }
+        )
+
+        self.product7 = self.env["product.product"].create(
+            {
+                "name": "P 7",
+                "type": "service",
+                "list_price": 200.00,
+                "taxes_id": self.tax2,
+            }
+        )
+
+        self.product8 = self.env["product.product"].create(
+            {
+                "name": "P 8",
+                "type": "service",
+                "list_price": 4.78,
+                "taxes_id": self.tax3,
             }
         )
 
@@ -91,7 +148,7 @@ class TestAccountTax(TransactionCase):
                     Command.create(
                         {
                             "name": fields.Date.today() - timedelta(days=1),
-                            "company_rate": 23.46,
+                            "company_rate": 25,
                         }
                     ),
                 ]
@@ -139,51 +196,51 @@ class TestAccountTax(TransactionCase):
             Command.create(
                 {
                     "product_id": self.product1.id,
-                    "quantity": 48,
-                }
-            ),
-            Command.create(
-                {
-                    "product_id": self.product3.id,
-                    "quantity": 5,
+                    "quantity": 1.22,
                 }
             ),
             Command.create(
                 {
                     "product_id": self.product2.id,
-                    "quantity": 4,
-                }
-            ),
-            Command.create(
-                {
-                    "product_id": self.product1.id,
-                    "quantity": 8,
+                    "quantity": 1.33,
                 }
             ),
             Command.create(
                 {
                     "product_id": self.product3.id,
-                    "quantity": 12,
-                }
-            ),
-            Command.create(
-                {
-                    "product_id": self.product2.id,
                     "quantity": 1,
                 }
             ),
             Command.create(
                 {
-                    "product_id": self.product1.id,
-                    "quantity": 34,
+                    "product_id": self.product4.id,
+                    "quantity": 1,
                 }
             ),
             Command.create(
                 {
-                    "product_id": self.product2.id,
-                    "quantity": 23,
+                    "product_id": self.product5.id,
+                    "quantity": 1,
+                }
+            ),
+            Command.create(
+                {
+                    "product_id": self.product6.id,
+                    "quantity": 1,
+                }
+            ),
+            Command.create(
+                {
+                    "product_id": self.product7.id,
+                    "quantity": 1,
+                }
+            ),
+            Command.create(
+                {
+                    "product_id": self.product8.id,
+                    "quantity": 1,
                 }
             ),
         ]
 
-        self.assertEqual(invoice.tax_totals["foreign_amount_total"], 64091.62)
+        self.assertEqual(invoice.tax_totals["foreign_amount_total"], 52444.04)
