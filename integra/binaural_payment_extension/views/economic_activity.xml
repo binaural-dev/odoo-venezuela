@@ -46,12 +46,6 @@
             <field name="view_mode">tree,form</field>
         </record>
 
-        <menuitem name="Economic activity" 
-        id="menu_economic_activity" 
-        parent="binaural_payment_extension.master_configuration" 
-        action="action_economic_activity" 
-        sequence="3" />
-        
     
     </data>
     

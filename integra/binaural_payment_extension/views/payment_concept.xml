@@ -65,11 +65,6 @@
             <field name="context">{"search_default_status":True}</field>
         </record>
 
-        <menuitem name="Payment concept menu" 
-                id="menu_payment_concept" 
-                parent="binaural_payment_extension.retention_configuration" 
-                action="action_payment_concept_binaural_payment_extension" />
-
     
     </data>
     

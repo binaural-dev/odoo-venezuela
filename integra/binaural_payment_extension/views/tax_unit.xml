@@ -55,10 +55,10 @@
             <field name="context">{"search_default_status":True}</field>
         </record>
 
-        <menuitem name="Tax unit" 
+        <!-- <menuitem name="Tax unit" 
                 id="menu_retention_tax_unit" 
                 parent="binaural_payment_extension.retention_configuration" 
-                action="action_tax_unit_binaural_payment_extension" />
+                action="action_tax_unit_binaural_payment_extension" /> -->
         
     
     </data>

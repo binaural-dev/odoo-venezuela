@@ -35,13 +35,6 @@
                 <field name="view_id" ref="view_type_withholding_tree_binaural_payment_extension" />
                 <field name="context">{"search_default_state":True}</field>
         </record>
-
-        <menuitem name="IVA Retention percentage" 
-                id="menu_retention_type_withholdings" 
-                parent="binaural_payment_extension.retention_configuration" 
-                action="action_type_withholding" />
-
-
     
     </data>
     

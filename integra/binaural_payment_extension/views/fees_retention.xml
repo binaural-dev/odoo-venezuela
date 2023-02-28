@@ -76,13 +76,6 @@
             <field name="context">{"search_default_status":True}</field>
         </record>
 
-        <menuitem name="Fees" 
-                id="menu_retention_fees_retention" 
-                parent="binaural_payment_extension.retention_configuration" 
-                action="action_fees" />
-
-
-
     
     </data>
     

@@ -48,15 +48,6 @@
             <field name="view_mode">tree,kanban,form</field>
             <field name="context">{"search_default_active":True}</field>
         </record>
-
-        <menuitem
-            id="menu_retention_signature_config"
-            name="signature"
-            parent="binaural_payment_extension.retention_configuration"
-            action="action_configurate_signature"
-            />
-
-        
     
     </data>
     
