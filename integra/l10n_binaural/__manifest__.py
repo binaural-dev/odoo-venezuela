@@ -11,7 +11,7 @@
     "data": [
         "data/res_currency_data.xml",
         "data/l10n_binaural_chart_data.xml",
-        "data/account.account.template.csv",
+        "data/account_account_template_data.xml",
         "data/account_account_data.xml",
         "data/l10n_binaural_chart_post_data.xml",
         "data/account_payment_method_line_data.xml",
