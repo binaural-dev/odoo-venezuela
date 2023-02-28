@@ -1,4 +1,3 @@
-from collections import defaultdict
 from odoo.tools.float_utils import float_round
 from odoo import api, models, _
 from odoo.exceptions import ValidationError
