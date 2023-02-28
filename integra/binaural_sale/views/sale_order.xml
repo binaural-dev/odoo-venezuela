@@ -41,9 +41,11 @@
                             string="Foreign inverse rate"
                             />
                             <field name="foreign_rate"/>
-                            <field name="foreign_taxable_income"/>
-                            <field name="foreign_total_billed"/>
-                            <field name="tax_totals" nolabel="1" colspan="2"/>
+                            <field name="tax_totals" 
+                                widget="account-tax-foreign-totals-field" 
+                                nolabel="1" 
+                                colspan="2"
+                                attrs="{'readonly': ['|', ('state', '!=', 'draft'), '&amp;', ('move_type', 'not in', ('in_invoice', 'in_refund')), ('quick_edit_mode', '=', False)]}"/>
                         </group>
                     </page>
                 </xpath>
