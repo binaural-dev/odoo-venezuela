@@ -51,22 +51,14 @@ class PurchaseOrder(models.Model):
         readonly=False,
     )
 
-    foreign_taxable_income = fields.Monetary(
-        help="Foreign Taxable Income of the invoice",
-        compute="_compute_foreign_taxable_income",
-        currency_field="foreign_currency_id",
-    )
     total_taxed = fields.Many2one(
         "account.tax",
         help="Total Taxed of the invoice",
     )
-    foreign_total_billed = fields.Monetary(
-        help="Foreign Total Billed of the invoice",
-        compute="_compute_foreign_total_billed",
-        currency_field="foreign_currency_id",
-        store=True,
-    )
 
+    @api.depends('order_line.taxes_id', 'order_line.price_subtotal', 'amount_total', 'amount_untaxed', 'foreign_rate')
+    def  _compute_tax_totals(self):
+        return super()._compute_tax_totals()
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):

@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <data>
-        <record id="view_sale_order_form_binaural_sales" model="ir.ui.view">
+    <data> <record id="view_sale_order_form_binaural_sales" model="ir.ui.view">
             <field name="name">view.sale.order.form</field>
             <field name="model">sale.order</field>
             <field name="inherit_id" ref="sale.view_order_form" />
@@ -45,7 +44,7 @@
                                 widget="account-tax-foreign-totals-field" 
                                 nolabel="1" 
                                 colspan="2"
-                                attrs="{'readonly': ['|', ('state', '!=', 'draft'), '&amp;', ('move_type', 'not in', ('in_invoice', 'in_refund')), ('quick_edit_mode', '=', False)]}"/>
+                                readonly="1"/>
                         </group>
                     </page>
                 </xpath>

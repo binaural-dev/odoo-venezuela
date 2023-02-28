@@ -95,6 +95,10 @@ class SaleOrder(models.Model):
                     res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
 
+    @api.depends('order_line.tax_id', 'order_line.price_unit', 'amount_total', 'amount_untaxed', 'currency_id', 'foreign_rate')
+    def _compute_tax_totals(self):
+        return super()._compute_tax_totals()
+
     @api.depends('partner_id')
     def _compute_vat(self):
         """
