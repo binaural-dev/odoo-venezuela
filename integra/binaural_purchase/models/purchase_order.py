@@ -83,15 +83,12 @@ class PurchaseOrder(models.Model):
             The view of the account move form with the foreign currency symbol added to the page title
         """
         foreign_currency_symbol = ""
-        foreign_currency_id = self.env.company.currency_foreign_id.id
+        foreign_currency_id = self.env.company.currency_foreign_id
 
         res = super().get_view(view_id, view_type, **options)
 
         if foreign_currency_id:
-            foreign_currency_record = self.env["res.currency"].search(
-                [("id", "=", int(foreign_currency_id))]
-            )
-            foreign_currency_symbol = foreign_currency_record.symbol
+            foreign_currency_symbol = foreign_currency_id.symbol
             if view_type == "form":
                 view_id = self.env.ref(
                     "binaural_purchase.view_purchase_order_form_binaural_purchase"

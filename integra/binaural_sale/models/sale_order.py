@@ -1,6 +1,9 @@
 from odoo import models, fields, api, _
 from lxml import etree
 import dateutil.parser
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class SaleOrder(models.Model):
@@ -75,15 +78,11 @@ class SaleOrder(models.Model):
             The view of the account move form with the foreign currency symbol added to the page title
         """
         foreign_currency_symbol = ""
-        foreign_currency_id = self.env.company.currency_foreign_id.id
-
+        foreign_currency_id = self.env.company.currency_foreign_id
         res = super().get_view(view_id, view_type, **options)
 
         if foreign_currency_id:
-            foreign_currency_record = self.env["res.currency"].search(
-                [("id", "=", int(foreign_currency_id))]
-            )
-            foreign_currency_symbol = foreign_currency_record.symbol
+            foreign_currency_symbol = foreign_currency_id.symbol
             if view_type == "form":
                 view_id = self.env.ref(
                     "binaural_sale.view_sale_order_form_binaural_sales"
@@ -91,7 +90,7 @@ class SaleOrder(models.Model):
                 doc = etree.XML(res["arch"])
                 page = doc.xpath("//page[@name='foreign_currency']")
                 if page:
-                    page[0].set("string", _("Foreign Currency ") + " " + foreign_currency_symbol)
+                    page[0].set("string", _("Foreign Currency ") + foreign_currency_symbol)
                     res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
 
