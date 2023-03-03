@@ -90,6 +90,13 @@ class AccountRetention(models.Model):
         states={"draft": [("readonly", False)]},
         help="Date of arrival of the document and date to be used to make the accounting record Keep blank to use current date.",
     )
+    retention_line = fields.One2many(
+        "account.retention.line",
+        "retention_id",
+        "retention line",
+        states={"draft": [("readonly", False)]},
+        help="Retentions",
+    )
     # amount_base_ret = fields.Float(
     #     compute=amount_ret_all,
     #     string="Base Imponible",
@@ -103,6 +110,9 @@ class AccountRetention(models.Model):
     #     string="IVA retenido",
     #     help="Total del impuesto Retenido",
     # )
+
+    # company_currency_id = fields.Many2one('res.currency', related='company_id.currency_id', string="Company Currency")
+
 
     def action_draft(self):
         self.write({'state': 'draft'})

@@ -26,10 +26,10 @@
         'views/payment_concept.xml',
         'views/signature_config.xml',
         'views/type_withholding.xml',
+        'views/account_retention_line.xml',
         'views/account_retention_iva.xml',
         'views/account_retention_islr.xml',
         'views/menu.xml',
-
         ],
 
     'images': ['static/description/icon.png'],

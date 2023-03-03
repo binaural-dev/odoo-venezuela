@@ -24,6 +24,27 @@
                         <field name="correlative" force_save="1" invisible="1" attrs="{'readonly':[('type','=', 'in_invoice')] }"/>
                         <field name="date" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
                     </group>
+                    <notebook>
+                        <page name="Retention line">
+                            <field colspan="4" name="retention_line" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
+                                <tree string="Retention Lines" editable="bottom">
+                                    <field name="name"/>
+                                    <field name="invoice_id" force_save="1" domain="[('state', '=', 'open'), ('partner_id','=', parent.partner_id)]"/>
+                                    <field name="invoice_type" force_save="1" readonly="1"/>
+	                                <field name="tax_line"/>
+                                    <field name="facture_total" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
+                                    <field name="facture_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
+                                    <field name="iva_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
+                                    <field name="retention_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
+
+                                    <!-- <field name="currency_id" invisible="1"/> -->
+                                    <!-- <field name="company_currency_id" invisible="1" /> -->
+                                    <field name="company_id" invisible="1" />
+                                    <field name="is_retention_client" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
                 </form>
             </field>
         </record>
