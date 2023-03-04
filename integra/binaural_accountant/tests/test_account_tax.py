@@ -14,7 +14,12 @@ class TestAccountTax(AccountTestInvoicingCommon):
         l10n_ve is required to run this test
         """
         super().setUpClass(chart_template_ref="l10n_ve.ve_chart_template_amd")
-        cls.env.company.write({"currency_foreign_id": cls.env.ref("base.VEF")})
+        cls.env.company.write(
+            {
+                "currency_id": cls.env.ref("base.USD").id,
+                "currency_foreign_id": cls.env.ref("base.VEF").id,
+            }
+        )
         tax_group_obj = cls.env["account.tax.group"]
         tax_obj = cls.env["account.tax"]
 
@@ -137,7 +142,9 @@ class TestAccountTax(AccountTestInvoicingCommon):
             {
                 "move_type": "out_invoice",
                 "partner_id": self.partner_a.id,
-                "invoice_date": "2019-01-01",
+                "invoice_date": fields.Date.today() - timedelta(days=1),
+                "foreign_currency_id": self.env.ref("base.VEF").id,
+                "foreign_rate": 25.0,
                 "invoice_line_ids": invoice_lines_vals,
             }
         )
@@ -157,5 +164,4 @@ class TestAccountTax(AccountTestInvoicingCommon):
             (4.78, self.tax3),
         ]
         invoice = self._create_document_for_tax_totals_test(lines)
-
-        self.assertEqual(invoice.tax_totals["foreign_amount_total"], 2050.65)
+        self.assertEqual(invoice.tax_totals["foreign_amount_total"], 51266.19)
