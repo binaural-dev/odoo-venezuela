@@ -3,7 +3,7 @@ from odoo import models, fields, api, _
 
 class TypeWithholding(models.Model):
 
-    _name = "type.withholding"
+    _name = "account.withholding.type"
     _description = "Type Withholding"
     _order = "create_date desc"
     _sql_constraints = [

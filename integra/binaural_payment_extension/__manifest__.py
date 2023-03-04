@@ -1,38 +1,33 @@
 {
-    'name': "Binaural Retenciones",
-
-    'summary': """
+    "name": "Binaural Retenciones",
+    "summary": """
        Modulo de extensiones de pago """,
-
-    'license': 'LGPL-3',
-    
-    'author': "Binauraldev",
-    'website': "https://binauraldev.com/",
-    'category': 'Accountant/Accountant',
-    'version': '16.0',
-
+    "license": "LGPL-3",
+    "author": "Binauraldev",
+    "website": "https://binauraldev.com/",
+    "category": "Accountant/Accountant",
+    "version": "16.0",
     # any module necessary for this one to work correctly
-    'depends': ['base', 'binaural_rate', 'account_accountant', 'binaural_location'],
-
+    "depends": ["base", "binaural_rate", "account_accountant", "binaural_location"],
     # always loaded
-    'data': [
-        'security/ir.model.access.csv',
-        'data/sequence_data.xml',
-        'views/ir_sequence.xml',
-        'views/tax_unit.xml',
-        'views/fees_retention.xml',
-        'views/economic_activity.xml',
-        'views/economic_branch.xml',
-        'views/payment_concept.xml',
-        'views/signature_config.xml',
-        'views/type_withholding.xml',
-        'views/account_retention_line.xml',
-        'views/account_retention_iva.xml',
-        'views/account_retention_islr.xml',
-        'views/menu.xml',
-        ],
-
-    'images': ['static/description/icon.png'],
-
-    'application':True,
+    "data": [
+        "security/ir.model.access.csv",
+        "data/sequence_data.xml",
+        "views/ir_sequence.xml",
+        "views/tax_unit.xml",
+        "views/fees_retention.xml",
+        "views/economic_activity.xml",
+        "views/economic_branch.xml",
+        "views/payment_concept.xml",
+        "views/signature_config.xml",
+        "views/type_withholding.xml",
+        "views/account_move.xml",
+        "views/account_retention_line.xml",
+        "views/account_retention_iva.xml",
+        "views/account_retention_islr.xml",
+        "views/res_partner.xml",
+        "views/menu.xml",
+    ],
+    "images": ["static/description/icon.png"],
+    "application": True,
 }
