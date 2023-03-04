@@ -56,6 +56,36 @@ class PurchaseOrder(models.Model):
         help="Total Taxed of the invoice",
     )
 
+    foreign_taxable_income = fields.Monetary(
+        help="Foreign Taxable Income of the invoice",
+        compute="_compute_foreign_taxable_income",
+        currency_field="foreign_currency_id",
+    )
+
+    foreign_total_billed = fields.Monetary(
+        help="Foreign Total Billed of the invoice",
+        compute="_compute_foreign_total_billed",
+        currency_field="foreign_currency_id",
+        store=True,
+    )
+
+    @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
+    def _compute_foreign_taxable_income(self):
+        """
+        Compute the foreign taxable income of the order
+        """
+        for move in self:
+            move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"] 
+
+    @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
+    def _compute_foreign_total_billed(self):
+        """
+        Compute the foreign total billed of the order
+        """
+        for move in self:
+            move.foreign_total_billed = move.tax_totals["foreign_amount_total"] 
+
+
     @api.depends('order_line.taxes_id', 'order_line.price_subtotal', 'amount_total', 'amount_untaxed', 'foreign_rate')
     def  _compute_tax_totals(self):
         return super()._compute_tax_totals()
