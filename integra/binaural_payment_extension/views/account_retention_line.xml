@@ -10,13 +10,14 @@
             <field name="arch" type="xml">
                 <tree string="Retention Lines">
                     <field name="name"/>
-                    <field name="invoice_id"/>
-                    <field name="retetion_rate" />
+                    <!-- <field name="invoice_id"/> -->
+                    <!-- <field name="retetion_rate" /> -->
                     <field name="base_ret" />
-                    <field name="tax_line" />
+                    <!-- <field name="tax_line" /> -->
                     <field name="imp_ret" />
                     <field name="amount_tax_ret" />
                 </tree>
+            </field>
         </record>
 
         <record id="view_account_retention_line_form_binaural_payment_extension" model="ir.ui.view">
@@ -27,11 +28,11 @@
                 <form string="Retention Lines">
                     <group>
                         <field name="name"/>
-                        <field name="invoice_id" domain="[('state', '=', 'open'), ('partner_id','=', parent.partner_id)]"/>
-                        <field name="retention_rate"/>
+                        <!-- <field name="invoice_id" domain="[('state', '=', 'open'), ('partner_id','=', parent.partner_id)]"/> -->
+                        <!-- <field name="retention_rate"/> -->
                         <field name="base_ret"/>
                         <field name="imp_ret"/>
-                        <field name="tax_line"/>
+                        <!-- <field name="tax_line"/> -->
                         <field name="amount_tax_ret"/>
                         <field name="invoice_amount" />
                         <field name="iva_amount" />

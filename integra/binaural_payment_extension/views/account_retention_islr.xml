@@ -18,6 +18,7 @@
                     </header>
                     <group colspan="4" col="4">
                         <field name="type" force_save="1" select="2"/>
+                        <field name="type_retention" force_save="1" select="2" invisible="1"/>
                         <field name="partner_id" on_change="onchange_partner_id(type,partner_id)" select="1"  attrs="{'invisible':[('type','=', False)],'readonly':[('state','in',['emitted','cancel'])]}"/>
                         <field name="date_accounting" select="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
                         <field name="number" force_save="1" attrs="{'readonly':['|',('type','=', 'in_invoice'),('state','in', ['emitted','cancel'])],
@@ -33,13 +34,13 @@
                                 <tree editable="bottom">
                                     <!-- <field name="bs_currency_id" invisible="1"/> -->
                                     <field name="name" readonly="1" optional="show"/>
-                                    <field name="invoice_id" domain="[('apply_retention_islr', '=', False), ('move_type', 'in', ['in_invoice','in_refund']), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"
-                                           force_save="1" attrs="{'readonly':['|',('parent.type_retention', '=', 'iva'),'&amp;', ('parent.type_retention', '=', 'islr'),('parent.type', '=', 'out_invoice')]}"/>
+                                    <!-- <field name="invoice_id" domain="[('apply_retention_islr', '=', False), ('move_type', 'in', ['in_invoice','in_refund']), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"
+                                           force_save="1" attrs="{'readonly':['|',('parent.type_retention', '=', 'iva'),'&amp;', ('parent.type_retention', '=', 'islr'),('parent.type', '=', 'out_invoice')]}"/> -->
                                     <field name="retention_id" invisible="1"/>
-                                    <field name="invoice_type" force_save="1" readonly="1" optional="show"/>
+                                    <field name="invoice_id" force_save="1" readonly="1" optional="show"/>
                                     <field name="payment_concept_id" force_save="1" attrs="{'column_invisible':['|',('parent.type_retention', '=', 'iva'),'&amp;', ('parent.type_retention', '=', 'islr'),('parent.type', '=', 'out_invoice')]}" optional="show"/>
 
-                                    <field name="tax_line" optional="hide"/>
+                                    <!-- <field name="tax_line" optional="hide"/> -->
                                     <!-- <field name="foreign_currency_rate" optional="show"/> -->
 
                                     <!--

@@ -10,9 +10,9 @@ class AccountRetentionLine(models.Model):
     check_company = True
 
     name = fields.Char(string="Description", required=True, default="ISLR Retention")
-    currency_id = fields.Many2one(
-       "res.currency", string="Currency", readonly=True
-    )
+    # currency_id = fields.Many2one(
+    #    "res.currency", string="Currency", readonly=True
+    # )
     company_id = fields.Many2one(
         "res.company", string="Company", required=True, default=lambda self: self.env.company
     )
@@ -20,7 +20,7 @@ class AccountRetentionLine(models.Model):
         "res.currency", string="Company Currency", readonly=True
     )
     retention_id = fields.Many2one(
-        "account.retention", string="Retention", ondelete="cascade", index=True
+        "account.retention", string="Retention", ondelete="cascade"
     )
     invoice_id = fields.Selection(
         selection=[
@@ -33,7 +33,7 @@ class AccountRetentionLine(models.Model):
         ],
         string="Invoice Type",
     )
-    invoice_number = fields.Char(string="Invoice Number", related="invoice_id.name", store=True)
+    # invoice_number = fields.Char(string="Invoice Number", related="invoice_id.name", store=True)
     aliquot = fields.Float(digits=(16, 2))
     amount_tax_ret = fields.Float(string="Retained tax", digits=(16, 2))
     base_ret = fields.Float("Retained base", digits=(16, 2))
@@ -48,6 +48,10 @@ class AccountRetentionLine(models.Model):
     invoice_total = fields.Float(string="Total invoiced", digits=(16, 2))
     iva_amount = fields.Float(string="IVA", digits=(16, 2))
     retention_amount = fields.Float(digits=(16, 2))
+
+    payment_concept_id = fields.Many2one(
+        "payment.concept", "Payment concept", ondelete="cascade", index=True
+    )
 
     # foreign currency
     foreign_invoice_amount = fields.Float(string="Foreign taxable income")

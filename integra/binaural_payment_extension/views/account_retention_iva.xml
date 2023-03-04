@@ -29,11 +29,11 @@
                             <field colspan="4" name="retention_line" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Retention Lines" editable="bottom">
                                     <field name="name"/>
-                                    <field name="invoice_id" force_save="1" domain="[('state', '=', 'open'), ('partner_id','=', parent.partner_id)]"/>
-                                    <field name="invoice_type" force_save="1" readonly="1"/>
-	                                <field name="tax_line"/>
-                                    <field name="facture_total" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
-                                    <field name="facture_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
+                                    <!-- <field name="invoice_id" force_save="1" domain="[('state', '=', 'open'), ('partner_id','=', parent.partner_id)]"/> -->
+                                    <field name="invoice_id" force_save="1" readonly="1"/>
+	                                <!-- <field name="tax_line"/> -->
+                                    <field name="invoice_total" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
+                                    <field name="invoice_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
                                     <field name="iva_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                     <field name="retention_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
 

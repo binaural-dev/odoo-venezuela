@@ -1,5 +1,5 @@
 {
-    'name': "Binaural Extensiones de pago",
+    'name': "Binaural Retenciones",
 
     'summary': """
        Modulo de extensiones de pago """,
