@@ -1,0 +1,19 @@
+{
+    "name": "Binaural Impuesto",
+    "summary": """
+       Modulo para Impuestos Venezolanos""",
+    "license": "LGPL-3",
+    "author": "Binauraldev",
+    "website": "https://binauraldev.com/",
+    "category": "Accounting/Localizations/Account Chart",
+    "version": "16.0.0.0.1",
+    # any module necessary for this one to work correctly
+    "depends": ["base", "account"],
+    # always loaded
+    "data": [],
+    "images": ["static/description/icon.png"],
+    "application": True,
+    "assets": {
+        "web.assets_backend": ["binaural_tax/static/src/components/**/*"],
+    },
+}
