@@ -1,0 +1,23 @@
+from odoo import api, models, fields, _
+from odoo.exceptions import UserError, ValidationError
+
+
+class PaymentConceptBinaural(models.Model):
+    _name = "payment.concept"
+    _description = "Payment Concept"
+
+    name = fields.Char(string="Description", required=True)
+    line_payment_concept_ids = fields.One2many(
+        "payment.concept.line", "payment_concept_id", "Payment Concept Line"
+    )
+    status = fields.Boolean(default=True, string="Active?")
+
+    @api.constrains("line_payment_concept_ids")
+    def _constraint_line_payment_concept_ids(self):
+        for record in self:
+            type_person_ids = []
+            for line in record.line_payment_concept_ids:
+                if line.type_person_ids.id in type_person_ids:
+                    raise UserError(_("The type of person cannot be repeated."))
+                else:
+                    type_person_ids.append(line.type_person_ids.id)
