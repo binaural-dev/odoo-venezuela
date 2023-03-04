@@ -208,21 +208,25 @@ class AccountMove(models.Model):
             )
             move.update(rate_values)
 
-    @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
+    @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
         """
         Compute the foreign taxable income of the invoice
         """
         for move in self:
-            move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"] 
+            move.foreign_taxable_income = False
+            if move.invoice_line_ids:
+                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"] 
 
-    @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
+    @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):
         """
         Compute the foreign total billed of the invoice
         """
         for move in self:
-            move.foreign_total_billed = move.tax_totals["foreign_amount_total"] 
+            move.foreign_total_billed = False
+            if move.invoice_line_ids:
+                move.foreign_total_billed = move.tax_totals["foreign_amount_total"] 
 
     @api.depends(
         "invoice_line_ids.currency_rate",
