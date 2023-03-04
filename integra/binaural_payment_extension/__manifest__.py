@@ -29,6 +29,8 @@
         'views/account_retention_line.xml',
         'views/account_retention_iva.xml',
         'views/account_retention_islr.xml',
+        'views/account_payment.xml',
+        'wizard/account_payment_register.xml',
         'views/menu.xml',
         ],
 

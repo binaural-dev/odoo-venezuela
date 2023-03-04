@@ -10,3 +10,5 @@ from . import economic_branch
 from . import type_withholding
 from . import account_retention_line
 from . import account_retention
+from . import account_move
+from . import account_payment
