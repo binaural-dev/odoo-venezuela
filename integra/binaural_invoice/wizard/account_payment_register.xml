@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data>
+
+        <record id="view_account_payment_register_form_binaural_invoice" model="ir.ui.view">
+            <field name="name">view.account.payment.register.form.binaural.invoice</field>
+            <field name="model">account.payment.register</field>
+            <field name="inherit_id" ref="account.view_account_payment_register_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group[@name='group2']" position="inside">
+                    <label for="foreign_currency_rate" />
+                    <div name="foreign_currency_div" class="o_row">
+                        <field name="foreign_currency_rate" />
+                        <field name="foreign_currency_id" options="{'no_create': True, 'no_open': True}" required="1" />
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+
+</odoo>

@@ -20,11 +20,11 @@ execute_odoo_tests() {
     echo "Starting Odoo tests..."
     if [ -z "${tags}" ]; then
         echo "Running tests without tags..."
-        odoo --test-enable --stop-after-init --log-level=test -d ${database} -i ${modules}
+        odoo --test-enable --stop-after-init --log-level=test -d ${database} -i ${modules} --without-demo=all
     else
         echo "Running tests with tags..." 
         echo ${modules}
-        odoo --test-tags=${tags} --stop-after-init --log-level=test -d ${database} -i ${modules}
+        odoo --test-tags=${tags} --stop-after-init --log-level=test -d ${database} -i ${modules} --without-demo=all
     fi
 }
 

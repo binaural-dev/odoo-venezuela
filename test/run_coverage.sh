@@ -22,10 +22,10 @@ execute_coverage_run() {
     echo "Starting Coverage Run..."
     if [ -z "${tags}" ]; then
         echo "Runing coverage without tags..."
-        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-enable --stop-after-init --log-level=test -d ${database} -i ${modules}
+        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-enable --stop-after-init --log-level=test -d ${database} -i ${modules} --without-demo=all 
     else
         echo "Runing coverage with tags..."
-        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-tags=${tags} --stop-after-init --log-level=test -d ${database} -i ${modules}
+        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-tags=${tags} --stop-after-init --log-level=test -d ${database} -i ${modules} --without-demo=all
     fi
 }
 
