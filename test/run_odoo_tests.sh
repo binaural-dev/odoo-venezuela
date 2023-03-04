@@ -21,10 +21,10 @@ execute_odoo_tests() {
     if [ -z "${tags}" ] && [ -z "${modules}" ]; then
         echo "Running tests without tags and modules..."
         modules=$(list_directories)
-        odoo --test-enable --test-tags=bin --stop-after-init --log-level=test --load-language=es_VE -d ${database} -i ${modules}
+        odoo --test-enable --test-tags=bin --stop-after-init --log-level=test --load-language=es_VE --without-demo=all -d ${database} -i ${modules}
     else
         echo "Running tests with tags and modules..."         
-        odoo --test-tags=${tags} --stop-after-init --log-level=test -d ${database} -i ${modules}
+        odoo --test-tags=${tags} --stop-after-init --log-level=test --load-language=es_VE --without-demo=all -d ${database} -i ${modules}
     fi
 }
 
