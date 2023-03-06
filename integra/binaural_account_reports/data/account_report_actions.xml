@@ -1,0 +1,21 @@
+<odoo>
+    <data>
+	<record id="action_account_report_ar_usd" model="ir.actions.client">
+            <field name="name">Aged Receivable USD</field>
+            <field name="tag">account_report</field>
+	    <field
+		name="context"
+		eval="{'report_id': ref('account_reports.aged_receivable_report'), 'usd_report': True}"
+	    />
+        </record>
+
+        <record id="action_account_report_ap_usd" model="ir.actions.client">
+            <field name="name">Aged Payable USD</field>
+            <field name="tag">account_report</field>
+	    <field
+		name="context"
+		eval="{'report_id': ref('account_reports.aged_payable_report'), 'usd_report': True}"
+	    />
+        </record>
+    </data>
+</odoo>
