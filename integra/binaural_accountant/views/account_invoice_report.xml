@@ -9,8 +9,9 @@
             <field name="inherit_id" ref="account.view_account_invoice_report_pivot"/>
             <field name="arch" type="xml">
 		        <pivot position="inside">
-                    <field name="foreign_total_billed" />
+                    <field name="foreign_subtotal" />
                     <field name="foreign_rate" />
+                    <field name="foreign_price_total" />
                 </pivot>
             </field>
         </record>
@@ -21,8 +22,9 @@
             <field name="inherit_id" ref="account.view_account_invoice_report_graph"/>
             <field name="arch" type="xml">
                 <graph position="inside">
-                    <field name="foreign_total_billed" />
+                    <field name="foreign_subtotal" />
                     <field name="foreign_rate" />
+                    <field name="foreign_price_total" />
                 </graph>
             </field>
         </record>
@@ -33,12 +35,14 @@
             <field name="inherit_id" ref="account.view_account_invoice_report_search"/>
             <field name="arch" type="xml">
                 <search position="inside">
-                    <field name="foreign_total_billed" />
+                    <field name="foreign_subtotal" />
                     <field name="foreign_rate" />
+                    <field name="foreign_price_total" />
                 </search>
                 <group position="inside">
-                    <filter name="foreign_total_billed" string="Foreign Total Billed" domain="[]" context="{'group_by':'foreign_total_billed'}"/>
+                    <filter name="foreign_subtotal" string="Foreign Total Billed" domain="[]" context="{'group_by':'foreign_subtotal'}"/>
                     <filter name="foreign_rate" string="Foreign Rate" domain="[]" context="{'group_by':'foreign_rate'}"/>
+                    <field name="foreign_price_total" string="Foreign price total" />
                 </group>
 
             </field>
