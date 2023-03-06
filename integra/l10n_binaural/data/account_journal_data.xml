@@ -8,8 +8,8 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">FV</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="default_account_id" ref="account_account_40101001" />
-        <field name="template_id" ref="l10n_chart_template_binaural" />
+        <field name="default_account_id" ref="l10n_binaural.account_account_40101001" />
+        <field name="template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
     </record>
 
     <record id="binaural_account_journal_delivery_notes" model="account.journal">
@@ -18,7 +18,6 @@
         <field name="type">sale</field>
         <field name="invoice_reference_model">odoo</field>
         <field name="code">NE</field>
-        <field name="company_id" ref="base.main_company"/>
         <field name="default_account_id" ref="account_account_40101001" />
         <field name="template_id" ref="l10n_chart_template_binaural" />
     </record>
