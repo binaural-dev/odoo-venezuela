@@ -97,6 +97,15 @@ class AccountRetention(models.Model):
         states={"draft": [("readonly", False)]},
         help="Retentions",
     )
+    payment_ids = fields.Many2many(
+        "account.payment",
+        "account_payment_retention_rel",
+        "retention_id",
+        "payment_id",
+        "Payments",
+        help="Payments",
+    )
+    
     # amount_base_ret = fields.Float(
     #     compute=amount_ret_all,
     #     string="Base Imponible",

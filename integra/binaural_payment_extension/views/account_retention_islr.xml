@@ -34,11 +34,12 @@
                                 <tree editable="bottom">
                                     <!-- <field name="bs_currency_id" invisible="1"/> -->
                                     <field name="name" readonly="1" optional="show"/>
+                                    <field name="payment_id" />
                                     <!-- <field name="invoice_id" domain="[('apply_retention_islr', '=', False), ('move_type', 'in', ['in_invoice','in_refund']), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"
                                            force_save="1" attrs="{'readonly':['|',('parent.type_retention', '=', 'iva'),'&amp;', ('parent.type_retention', '=', 'islr'),('parent.type', '=', 'out_invoice')]}"/> -->
-                                    <field name="retention_id" invisible="1"/>
+                                    <!-- <field name="retention_id" invisible="1"/>
                                     <field name="invoice_id" force_save="1" readonly="1" optional="show"/>
-                                    <field name="payment_concept_id" force_save="1" attrs="{'column_invisible':['|',('parent.type_retention', '=', 'iva'),'&amp;', ('parent.type_retention', '=', 'islr'),('parent.type', '=', 'out_invoice')]}" optional="show"/>
+                                    <field name="payment_concept_id" force_save="1" attrs="{'column_invisible':['|',('parent.type_retention', '=', 'iva'),'&amp;', ('parent.type_retention', '=', 'islr'),('parent.type', '=', 'out_invoice')]}" optional="show"/> -->
 
                                     <!-- <field name="tax_line" optional="hide"/> -->
                                     <!-- <field name="foreign_currency_rate" optional="show"/> -->

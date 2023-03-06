@@ -53,6 +53,16 @@ class AccountRetentionLine(models.Model):
         "payment.concept", "Payment concept", ondelete="cascade", index=True
     )
 
+    payment_id = fields.Many2one(
+        "account.payment", "Payment", ondelete="cascade", index=True
+    )
+
+    payment_date = fields.Date()
+
+    payment_journal_id = fields.Many2one(
+        "account.journal", "Payment journal", ondelete="cascade", index=True
+    )
+
     # foreign currency
     foreign_invoice_amount = fields.Float(string="Foreign taxable income")
     foreign_invoice_total = fields.Float(string="Foreign total invoiced")
