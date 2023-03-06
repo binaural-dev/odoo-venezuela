@@ -1,10 +1,11 @@
 name: Build and test to staging branches
 
 on:
+  workflow_dispatch:
   push:
-    types: [created]
     branches:
       - 'staging*'
+      - 'release*'
 
 jobs:
   build:
