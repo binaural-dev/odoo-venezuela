@@ -59,12 +59,6 @@ class AccountMoveLine(models.Model):
                 )
                 line.foreign_subtotal = taxes_res['total_excluded']
                 line.foreign_price_total = taxes_res['total_included']
-                _logger.warning("price_unit: %s", line.price_unit)
-                _logger.warning("price_subtotal: %s", line.price_subtotal)
-                _logger.warning("price_total: %s", line.price_total)
-                _logger.warning("foreign_price: %s", line.foreign_price)
-                _logger.warning("foreign_subtotal: %s", line.foreign_subtotal)
-                _logger.warning("foreign_price_total: %s", line.foreign_price_total)
             else:
                 line.foreign_price_total = line.foreign_subtotal = foreign_subtotal
 
