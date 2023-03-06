@@ -18,15 +18,30 @@ done
 
 execute_coverage_run() {
     analyze_folder="/mnt/integra-addons"
-    omit_files="*/__manifest__.py,*/__init__.py"
+    omit_files="*/__manifest__.py,*/__init__.py,*/tests/*,*/data/*,*/static/*,*/migrations/*"
     echo "Starting Coverage Run..."
-    if [ -z "${tags}" ]; then
+
+    if [ -z "${tags}" ] && [ -z "${modules}" ]; then
+        echo "Runing coverage without tags and modules..."
+        modules=$(list_directories)
+        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-tags=bin --stop-after-init --log-level=test --load-language=es_VE --without-demo=all -d ${database} -i ${modules}
+    elif [ -z "${tags}" ]; then
         echo "Runing coverage without tags..."
-        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-enable --stop-after-init --log-level=test -d ${database} -i ${modules}
+        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-tags=bin --stop-after-init --log-level=test --load-language=es_VE --without-demo=all -d ${database} -i ${modules}
     else
         echo "Runing coverage with tags..."
-        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-tags=${tags} --stop-after-init --log-level=test -d ${database} -i ${modules}
+        coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-tags=${tags} --stop-after-init --log-level=test --load-language=es_VE --without-demo=all -d ${database} -i ${modules}
     fi
+
+}
+
+# Función que devuelve una lista de carpetas separadas por comas, by chatGPT
+list_directories() {
+  directories=$(ls "/mnt/integra-addons" | grep -v "tools" | grep -v "l10n_binaural")
+  IFS=","
+  result=$(echo "$directories" | tr "\n" "," | sed 's/,$//')
+  unset IFS
+  echo "$result"
 }
 
 usage() {

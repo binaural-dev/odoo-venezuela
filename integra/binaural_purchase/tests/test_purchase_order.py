@@ -4,7 +4,7 @@ from odoo.exceptions import UserError
 from odoo.tests import tagged
 
 
-@tagged("purchase_order", "post_install", "-at_install")
+@tagged("purchase_order", "bin", "-at_install","post_install")
 class TestPurchaseOrder(TransactionCase):
 
     def setUp(self):
