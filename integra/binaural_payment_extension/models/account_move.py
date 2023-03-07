@@ -1,8 +1,25 @@
 from odoo import models, fields, api, _
 
-class AccountMoveRetention(models.Model):
 
+class AccountMoveRetention(models.Model):
     _inherit = "account.move"
+
+    apply_islr_retention = fields.Boolean(
+        string="Apply ISLR Retention?",
+        default=False,
+        track_visibility="onchange",
+    )
+
+    islr_voucher_number = fields.Char(
+        string="ISLR Voucher Number",
+        track_visibility="onchange",
+    )
+
+    retention_islr_line_ids = fields.One2many(
+        "account.retention.line",
+        "invoice_id",
+        string="ISLR Retention Lines",
+    )
 
     def action_register_payment(self):
         """
@@ -13,3 +30,5 @@ class AccountMoveRetention(models.Model):
             res["context"]["default_invoice_line_ids"] = self.invoice_line_ids.ids
             res["context"]["default_retention_type"] = self.move_type
         return res
+    
+

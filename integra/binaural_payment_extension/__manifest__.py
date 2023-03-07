@@ -12,7 +12,7 @@
     'version': '16.0',
 
     # any module necessary for this one to work correctly
-    'depends': ['base', 'binaural_rate', 'account_accountant', 'binaural_location', 'binaural_fiscal'],
+    'depends': ['base', 'binaural_rate', 'account_accountant', 'binaural_location', 'binaural_fiscal', 'binaural_contact'],
 
     # always loaded
     'data': [
@@ -35,6 +35,7 @@
         'views/account_retention_iva.xml',
         'views/account_retention_islr.xml',
         'views/account_payment.xml',
+        'views/res_partner.xml',
         'wizard/account_payment_register.xml',
         'views/menu.xml',
         ],
