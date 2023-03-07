@@ -36,9 +36,11 @@
                             string="Foreign inverse rate"
                             />
                             <field name="foreign_rate"/>
-                            <field name="foreign_taxable_income"/>
-                            <field name="foreign_total_billed"/>
-                            <field name="tax_totals" nolabel="1" colspan="2"/>
+                            <field name="tax_totals" 
+                                widget="account-tax-foreign-totals-field" 
+                                nolabel="1" 
+                                colspan="2"
+                                readonly="1"/>
                         </group>
                     </page>
                 </xpath>

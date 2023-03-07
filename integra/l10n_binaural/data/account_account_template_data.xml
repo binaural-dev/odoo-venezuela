@@ -6,8 +6,7 @@
             <field name="code">1</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_101" model="account.account.template">
@@ -15,8 +14,7 @@
             <field name="code">101</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10101" model="account.account.template">
@@ -24,8 +22,7 @@
             <field name="code">10101</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10101001" model="account.account.template">
@@ -33,8 +30,7 @@
             <field name="code">10101001</field>
             <field name="account_type">asset_cash</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10101002" model="account.account.template">
@@ -42,8 +38,7 @@
             <field name="code">10101002</field>
             <field name="account_type">asset_cash</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10101003" model="account.account.template">
@@ -51,8 +46,7 @@
             <field name="code">10101003</field>
             <field name="account_type">asset_cash</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10102" model="account.account.template">
@@ -60,8 +54,7 @@
             <field name="code">10102</field>
             <field name="account_type">asset_cash</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10102001" model="account.account.template">
@@ -69,8 +62,7 @@
             <field name="code">10102001</field>
             <field name="account_type">asset_cash</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10102002" model="account.account.template">
@@ -78,8 +70,7 @@
             <field name="code">10102002</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10102003" model="account.account.template">
@@ -87,8 +78,7 @@
             <field name="code">10102003</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10102004" model="account.account.template">
@@ -96,8 +86,7 @@
             <field name="code">10102004</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10103" model="account.account.template">
@@ -105,8 +94,7 @@
             <field name="code">10103</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10103001" model="account.account.template">
@@ -114,8 +102,7 @@
             <field name="code">10103001</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
         </record>
         
         <record id="account_activa_account_10104" model="account.account.template">
@@ -123,8 +110,8 @@
             <field name="code">10104</field>
             <field name="account_type">asset_receivable</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10104001" model="account.account.template">
@@ -132,8 +119,8 @@
             <field name="code">10104001</field>
             <field name="account_type">asset_receivable</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10104002" model="account.account.template">
@@ -141,8 +128,8 @@
             <field name="code">10104002</field>
             <field name="account_type">asset_receivable</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10104003" model="account.account.template">
@@ -150,8 +137,8 @@
             <field name="code">10104003</field>
             <field name="account_type">asset_receivable</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10105" model="account.account.template">
@@ -159,8 +146,8 @@
             <field name="code">10105</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10105001" model="account.account.template">
@@ -168,8 +155,8 @@
             <field name="code">10105001</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10105002" model="account.account.template">
@@ -177,8 +164,8 @@
             <field name="code">10105002</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10106" model="account.account.template">
@@ -186,8 +173,8 @@
             <field name="code">10106</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10106001" model="account.account.template">
@@ -195,8 +182,8 @@
             <field name="code">10106001</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10106002" model="account.account.template">
@@ -204,8 +191,8 @@
             <field name="code">10106002</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10107" model="account.account.template">
@@ -213,8 +200,8 @@
             <field name="code">10107</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10107001" model="account.account.template">
@@ -222,8 +209,8 @@
             <field name="code">10107001</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10107002" model="account.account.template">
@@ -231,8 +218,8 @@
             <field name="code">10107002</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10107003" model="account.account.template">
@@ -240,8 +227,8 @@
             <field name="code">10107003</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10107004" model="account.account.template">
@@ -249,8 +236,8 @@
             <field name="code">10107004</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10108" model="account.account.template">
@@ -258,8 +245,8 @@
             <field name="code">10108</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10108001" model="account.account.template">
@@ -267,8 +254,8 @@
             <field name="code">10108001</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10108002" model="account.account.template">
@@ -276,8 +263,8 @@
             <field name="code">10108002</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_102" model="account.account.template">
@@ -285,8 +272,8 @@
             <field name="code">102</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10201" model="account.account.template">
@@ -294,8 +281,8 @@
             <field name="code">10201</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10201001" model="account.account.template">
@@ -303,8 +290,8 @@
             <field name="code">10201001</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10201002" model="account.account.template">
@@ -312,8 +299,8 @@
             <field name="code">10201002</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10201003" model="account.account.template">
@@ -321,8 +308,8 @@
             <field name="code">10201003</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10201004" model="account.account.template">
@@ -330,8 +317,8 @@
             <field name="code">10201004</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10201005" model="account.account.template">
@@ -339,8 +326,8 @@
             <field name="code">10201005</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10201006" model="account.account.template">
@@ -348,8 +335,8 @@
             <field name="code">10201006</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10201007" model="account.account.template">
@@ -357,8 +344,8 @@
             <field name="code">10201007</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10201008" model="account.account.template">
@@ -366,8 +353,8 @@
             <field name="code">10201008</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10202" model="account.account.template">
@@ -375,8 +362,8 @@
             <field name="code">10202</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10202001" model="account.account.template">
@@ -384,8 +371,8 @@
             <field name="code">10202001</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10202003" model="account.account.template">
@@ -393,8 +380,8 @@
             <field name="code">10202003</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10202004" model="account.account.template">
@@ -402,8 +389,8 @@
             <field name="code">10202004</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10202005" model="account.account.template">
@@ -411,8 +398,8 @@
             <field name="code">10202005</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10202006" model="account.account.template">
@@ -420,8 +407,8 @@
             <field name="code">10202006</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10202007" model="account.account.template">
@@ -429,8 +416,8 @@
             <field name="code">10202007</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10202008" model="account.account.template">
@@ -438,8 +425,8 @@
             <field name="code">10202008</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10203" model="account.account.template">
@@ -447,8 +434,8 @@
             <field name="code">10203</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10203001" model="account.account.template">
@@ -456,8 +443,8 @@
             <field name="code">10203001</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10204" model="account.account.template">
@@ -465,8 +452,8 @@
             <field name="code">10204</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_10204001" model="account.account.template">
@@ -474,8 +461,8 @@
             <field name="code">10204001</field>
             <field name="account_type">asset_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_2" model="account.account.template">
@@ -483,8 +470,8 @@
             <field name="code">2</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_201" model="account.account.template">
@@ -492,8 +479,8 @@
             <field name="code">201</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20101" model="account.account.template">
@@ -501,8 +488,8 @@
             <field name="code">20101</field>
             <field name="account_type">liability_payable</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20101001" model="account.account.template">
@@ -510,8 +497,8 @@
             <field name="code">20101001</field>
             <field name="account_type">liability_payable</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20101004" model="account.account.template">
@@ -519,8 +506,8 @@
             <field name="code">20101004</field>
             <field name="account_type">liability_payable</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20101005" model="account.account.template">
@@ -528,8 +515,8 @@
             <field name="code">20101005</field>
             <field name="account_type">liability_payable</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20101006" model="account.account.template">
@@ -537,8 +524,8 @@
             <field name="code">20101006</field>
             <field name="account_type">liability_payable</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20102" model="account.account.template">
@@ -546,8 +533,8 @@
             <field name="code">20102</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20102001" model="account.account.template">
@@ -555,8 +542,8 @@
             <field name="code">20102001</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20102002" model="account.account.template">
@@ -564,8 +551,8 @@
             <field name="code">20102002</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20102003" model="account.account.template">
@@ -573,8 +560,8 @@
             <field name="code">20102003</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20103" model="account.account.template">
@@ -582,8 +569,8 @@
             <field name="code">20103</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20103001" model="account.account.template">
@@ -591,8 +578,8 @@
             <field name="code">20103001</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20103002" model="account.account.template">
@@ -600,8 +587,8 @@
             <field name="code">20103002</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20103003" model="account.account.template">
@@ -609,8 +596,8 @@
             <field name="code">20103003</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20104" model="account.account.template">
@@ -618,8 +605,8 @@
             <field name="code">20104</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20104001" model="account.account.template">
@@ -627,8 +614,8 @@
             <field name="code">20104001</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20104002" model="account.account.template">
@@ -636,8 +623,8 @@
             <field name="code">20104002</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20104003" model="account.account.template">
@@ -645,8 +632,8 @@
             <field name="code">20104003</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20104004" model="account.account.template">
@@ -654,8 +641,8 @@
             <field name="code">20104004</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20105" model="account.account.template">
@@ -663,8 +650,8 @@
             <field name="code">20105</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20105001" model="account.account.template">
@@ -672,8 +659,8 @@
             <field name="code">20105001</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20105002" model="account.account.template">
@@ -681,8 +668,8 @@
             <field name="code">20105002</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20105003" model="account.account.template">
@@ -690,8 +677,8 @@
             <field name="code">20105003</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20105004" model="account.account.template">
@@ -699,8 +686,8 @@
             <field name="code">20105004</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20105005" model="account.account.template">
@@ -708,8 +695,8 @@
             <field name="code">20105005</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20105006" model="account.account.template">
@@ -717,8 +704,8 @@
             <field name="code">20105006</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20105007" model="account.account.template">
@@ -726,8 +713,8 @@
             <field name="code">20105007</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20105008" model="account.account.template">
@@ -735,8 +722,8 @@
             <field name="code">20105008</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20105009" model="account.account.template">
@@ -744,8 +731,8 @@
             <field name="code">20105009</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_202" model="account.account.template">
@@ -753,8 +740,8 @@
             <field name="code">202</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20201" model="account.account.template">
@@ -762,8 +749,8 @@
             <field name="code">20201</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20201001" model="account.account.template">
@@ -771,8 +758,8 @@
             <field name="code">20201001</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20202" model="account.account.template">
@@ -780,8 +767,8 @@
             <field name="code">20202</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_20202001" model="account.account.template">
@@ -789,8 +776,8 @@
             <field name="code">20202001</field>
             <field name="account_type">liability_current</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_3" model="account.account.template">
@@ -798,8 +785,8 @@
             <field name="code">3</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_301" model="account.account.template">
@@ -807,8 +794,8 @@
             <field name="code">301</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30101" model="account.account.template">
@@ -816,8 +803,8 @@
             <field name="code">30101</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30101001" model="account.account.template">
@@ -825,8 +812,8 @@
             <field name="code">30101001</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_302" model="account.account.template">
@@ -834,8 +821,8 @@
             <field name="code">302</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30201" model="account.account.template">
@@ -843,8 +830,8 @@
             <field name="code">30201</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30201001" model="account.account.template">
@@ -852,8 +839,8 @@
             <field name="code">30201001</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30201002" model="account.account.template">
@@ -861,8 +848,8 @@
             <field name="code">30201002</field>
             <field name="account_type">equity_unaffected</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30201003" model="account.account.template">
@@ -870,8 +857,8 @@
             <field name="code">30201003</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30201004" model="account.account.template">
@@ -879,8 +866,8 @@
             <field name="code">30201004</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30202" model="account.account.template">
@@ -888,8 +875,8 @@
             <field name="code">30202</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30202001" model="account.account.template">
@@ -897,8 +884,8 @@
             <field name="code">30202001</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30202002" model="account.account.template">
@@ -906,8 +893,8 @@
             <field name="code">30202002</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30202003" model="account.account.template">
@@ -915,8 +902,8 @@
             <field name="code">30202003</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30202004" model="account.account.template">
@@ -924,8 +911,8 @@
             <field name="code">30202004</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_303" model="account.account.template">
@@ -933,8 +920,8 @@
             <field name="code">303</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30301" model="account.account.template">
@@ -942,8 +929,8 @@
             <field name="code">30301</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_30301001" model="account.account.template">
@@ -951,8 +938,8 @@
             <field name="code">30301001</field>
             <field name="account_type">equity</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_4" model="account.account.template">
@@ -960,8 +947,8 @@
             <field name="code">4</field>
             <field name="account_type">income</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_401" model="account.account.template">
@@ -969,8 +956,8 @@
             <field name="code">401</field>
             <field name="account_type">income</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_40101" model="account.account.template">
@@ -978,8 +965,8 @@
             <field name="code">40101</field>
             <field name="account_type">income</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_40101001" model="account.account.template">
@@ -987,8 +974,8 @@
             <field name="code">40101001</field>
             <field name="account_type">income</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_402" model="account.account.template">
@@ -996,8 +983,8 @@
             <field name="code">402</field>
             <field name="account_type">income</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_40201001" model="account.account.template">
@@ -1005,8 +992,8 @@
             <field name="code">40201001</field>
             <field name="account_type">income</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_403" model="account.account.template">
@@ -1014,8 +1001,8 @@
             <field name="code">403</field>
             <field name="account_type">income</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_40301001" model="account.account.template">
@@ -1023,8 +1010,8 @@
             <field name="code">40301001</field>
             <field name="account_type">income</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_5" model="account.account.template">
@@ -1032,8 +1019,8 @@
             <field name="code">5</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_501" model="account.account.template">
@@ -1041,8 +1028,8 @@
             <field name="code">501</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50101" model="account.account.template">
@@ -1050,8 +1037,8 @@
             <field name="code">50101</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50101001" model="account.account.template">
@@ -1059,8 +1046,8 @@
             <field name="code">50101001</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50102" model="account.account.template">
@@ -1068,8 +1055,8 @@
             <field name="code">50102</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50102001" model="account.account.template">
@@ -1077,8 +1064,8 @@
             <field name="code">50102001</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50102002" model="account.account.template">
@@ -1086,8 +1073,8 @@
             <field name="code">50102002</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50102004" model="account.account.template">
@@ -1095,8 +1082,8 @@
             <field name="code">50102004</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50102005" model="account.account.template">
@@ -1104,8 +1091,8 @@
             <field name="code">50102005</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50102006" model="account.account.template">
@@ -1113,8 +1100,8 @@
             <field name="code">50102006</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50102007" model="account.account.template">
@@ -1122,8 +1109,8 @@
             <field name="code">50102007</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50103" model="account.account.template">
@@ -1131,8 +1118,8 @@
             <field name="code">50103</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50103001" model="account.account.template">
@@ -1140,8 +1127,8 @@
             <field name="code">50103001</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50103002" model="account.account.template">
@@ -1149,8 +1136,8 @@
             <field name="code">50103002</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50104" model="account.account.template">
@@ -1158,8 +1145,8 @@
             <field name="code">50104</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50104001" model="account.account.template">
@@ -1167,8 +1154,8 @@
             <field name="code">50104001</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50104001" model="account.account.template">
@@ -1176,8 +1163,8 @@
             <field name="code">50104001</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_502" model="account.account.template">
@@ -1185,8 +1172,8 @@
             <field name="code">502</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50201" model="account.account.template">
@@ -1194,8 +1181,8 @@
             <field name="code">50201</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50201001" model="account.account.template">
@@ -1203,8 +1190,8 @@
             <field name="code">50201001</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50201002" model="account.account.template">
@@ -1212,8 +1199,8 @@
             <field name="code">50201002</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50201003" model="account.account.template">
@@ -1221,8 +1208,8 @@
             <field name="code">50201003</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_503" model="account.account.template">
@@ -1230,8 +1217,8 @@
             <field name="code">503</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301001" model="account.account.template">
@@ -1239,8 +1226,8 @@
             <field name="code">50301001</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301002" model="account.account.template">
@@ -1248,8 +1235,8 @@
             <field name="code">50301002</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301003" model="account.account.template">
@@ -1257,8 +1244,8 @@
             <field name="code">50301003</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301004" model="account.account.template">
@@ -1266,8 +1253,8 @@
             <field name="code">50301004</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301005" model="account.account.template">
@@ -1275,8 +1262,8 @@
             <field name="code">50301005</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301006" model="account.account.template">
@@ -1284,8 +1271,8 @@
             <field name="code">50301006</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301007" model="account.account.template">
@@ -1293,8 +1280,8 @@
             <field name="code">50301007</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301008" model="account.account.template">
@@ -1302,8 +1289,8 @@
             <field name="code">50301008</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301009" model="account.account.template">
@@ -1311,8 +1298,8 @@
             <field name="code">50301009</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301010" model="account.account.template">
@@ -1320,8 +1307,8 @@
             <field name="code">50301010</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301011" model="account.account.template">
@@ -1329,8 +1316,8 @@
             <field name="code">50301011</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301012" model="account.account.template">
@@ -1338,8 +1325,8 @@
             <field name="code">50301012</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301013" model="account.account.template">
@@ -1347,8 +1334,8 @@
             <field name="code">50301013</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301014" model="account.account.template">
@@ -1356,8 +1343,8 @@
             <field name="code">50301014</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301015" model="account.account.template">
@@ -1365,8 +1352,8 @@
             <field name="code">50301015</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301016" model="account.account.template">
@@ -1374,8 +1361,8 @@
             <field name="code">50301016</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301017" model="account.account.template">
@@ -1383,8 +1370,8 @@
             <field name="code">50301017</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301018" model="account.account.template">
@@ -1392,8 +1379,8 @@
             <field name="code">50301018</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301019" model="account.account.template">
@@ -1401,8 +1388,8 @@
             <field name="code">50301019</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301020" model="account.account.template">
@@ -1410,8 +1397,8 @@
             <field name="code">50301020</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301021" model="account.account.template">
@@ -1419,8 +1406,8 @@
             <field name="code">50301021</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301022" model="account.account.template">
@@ -1428,8 +1415,8 @@
             <field name="code">50301022</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301023" model="account.account.template">
@@ -1437,8 +1424,8 @@
             <field name="code">50301023</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301024" model="account.account.template">
@@ -1446,8 +1433,8 @@
             <field name="code">50301024</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301025" model="account.account.template">
@@ -1455,8 +1442,8 @@
             <field name="code">50301025</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301026" model="account.account.template">
@@ -1464,8 +1451,8 @@
             <field name="code">50301026</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301027" model="account.account.template">
@@ -1473,8 +1460,8 @@
             <field name="code">50301027</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301028" model="account.account.template">
@@ -1482,8 +1469,8 @@
             <field name="code">50301028</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_50301029" model="account.account.template">
@@ -1491,8 +1478,8 @@
             <field name="code">50301029</field>
             <field name="account_type">expense_direct_cost</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_6" model="account.account.template">
@@ -1500,8 +1487,8 @@
             <field name="code">6</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_601" model="account.account.template">
@@ -1509,8 +1496,8 @@
             <field name="code">601</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101" model="account.account.template">
@@ -1518,8 +1505,8 @@
             <field name="code">60101</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101001" model="account.account.template">
@@ -1527,8 +1514,8 @@
             <field name="code">60101001</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101002" model="account.account.template">
@@ -1536,8 +1523,8 @@
             <field name="code">60101002</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101003" model="account.account.template">
@@ -1545,8 +1532,8 @@
             <field name="code">60101003</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101004" model="account.account.template">
@@ -1554,8 +1541,8 @@
             <field name="code">60101004</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101005" model="account.account.template">
@@ -1563,8 +1550,8 @@
             <field name="code">60101005</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101006" model="account.account.template">
@@ -1572,8 +1559,8 @@
             <field name="code">60101006</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101007" model="account.account.template">
@@ -1581,8 +1568,8 @@
             <field name="code">60101007</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101008" model="account.account.template">
@@ -1590,8 +1577,8 @@
             <field name="code">60101008</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101009" model="account.account.template">
@@ -1599,8 +1586,8 @@
             <field name="code">60101009</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101010" model="account.account.template">
@@ -1608,8 +1595,8 @@
             <field name="code">60101010</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101011" model="account.account.template">
@@ -1617,8 +1604,8 @@
             <field name="code">60101011</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101012" model="account.account.template">
@@ -1626,8 +1613,8 @@
             <field name="code">60101012</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101013" model="account.account.template">
@@ -1635,8 +1622,8 @@
             <field name="code">60101013</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101014" model="account.account.template">
@@ -1644,8 +1631,8 @@
             <field name="code">60101014</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101015" model="account.account.template">
@@ -1653,8 +1640,8 @@
             <field name="code">60101015</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101016" model="account.account.template">
@@ -1662,8 +1649,8 @@
             <field name="code">60101016</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101017" model="account.account.template">
@@ -1671,8 +1658,8 @@
             <field name="code">60101017</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60101018" model="account.account.template">
@@ -1680,8 +1667,8 @@
             <field name="code">60101018</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_602" model="account.account.template">
@@ -1689,8 +1676,8 @@
             <field name="code">602</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60201" model="account.account.template">
@@ -1698,8 +1685,8 @@
             <field name="code">60201</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60201001" model="account.account.template">
@@ -1707,8 +1694,8 @@
             <field name="code">60201001</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60201003" model="account.account.template">
@@ -1716,8 +1703,8 @@
             <field name="code">60201003</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60201004" model="account.account.template">
@@ -1725,8 +1712,8 @@
             <field name="code">60201004</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_603" model="account.account.template">
@@ -1734,8 +1721,8 @@
             <field name="code">603</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301" model="account.account.template">
@@ -1743,8 +1730,8 @@
             <field name="code">60301</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301001" model="account.account.template">
@@ -1752,8 +1739,8 @@
             <field name="code">60301001</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301002" model="account.account.template">
@@ -1761,8 +1748,8 @@
             <field name="code">60301002</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301003" model="account.account.template">
@@ -1770,8 +1757,8 @@
             <field name="code">60301003</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301004" model="account.account.template">
@@ -1779,8 +1766,8 @@
             <field name="code">60301004</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301005" model="account.account.template">
@@ -1788,8 +1775,8 @@
             <field name="code">60301005</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301006" model="account.account.template">
@@ -1797,8 +1784,8 @@
             <field name="code">60301006</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301007" model="account.account.template">
@@ -1806,8 +1793,8 @@
             <field name="code">60301007</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301008" model="account.account.template">
@@ -1815,8 +1802,8 @@
             <field name="code">60301008</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301009" model="account.account.template">
@@ -1824,8 +1811,8 @@
             <field name="code">60301009</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301010" model="account.account.template">
@@ -1833,8 +1820,8 @@
             <field name="code">60301010</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301011" model="account.account.template">
@@ -1842,8 +1829,8 @@
             <field name="code">60301011</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301012" model="account.account.template">
@@ -1851,8 +1838,8 @@
             <field name="code">60301012</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301013" model="account.account.template">
@@ -1860,8 +1847,8 @@
             <field name="code">60301013</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301014" model="account.account.template">
@@ -1869,8 +1856,8 @@
             <field name="code">60301014</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301015" model="account.account.template">
@@ -1878,8 +1865,8 @@
             <field name="code">60301015</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301016" model="account.account.template">
@@ -1887,8 +1874,8 @@
             <field name="code">60301016</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301017" model="account.account.template">
@@ -1896,8 +1883,8 @@
             <field name="code">60301017</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301018" model="account.account.template">
@@ -1905,8 +1892,8 @@
             <field name="code">60301018</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301019" model="account.account.template">
@@ -1914,8 +1901,8 @@
             <field name="code">60301019</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301020" model="account.account.template">
@@ -1923,8 +1910,8 @@
             <field name="code">60301020</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301021" model="account.account.template">
@@ -1932,8 +1919,8 @@
             <field name="code">60301021</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301022" model="account.account.template">
@@ -1941,8 +1928,8 @@
             <field name="code">60301022</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301023" model="account.account.template">
@@ -1950,8 +1937,8 @@
             <field name="code">60301023</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301024" model="account.account.template">
@@ -1959,8 +1946,8 @@
             <field name="code">60301024</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301025" model="account.account.template">
@@ -1968,8 +1955,8 @@
             <field name="code">60301025</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301026" model="account.account.template">
@@ -1977,8 +1964,8 @@
             <field name="code">60301026</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301027" model="account.account.template">
@@ -1986,8 +1973,8 @@
             <field name="code">60301027</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301028" model="account.account.template">
@@ -1995,8 +1982,8 @@
             <field name="code">60301028</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301029" model="account.account.template">
@@ -2004,8 +1991,8 @@
             <field name="code">60301029</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_60301030" model="account.account.template">
@@ -2013,8 +2000,8 @@
             <field name="code">60301030</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_7" model="account.account.template">
@@ -2022,8 +2009,8 @@
             <field name="code">7</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_701" model="account.account.template">
@@ -2031,8 +2018,8 @@
             <field name="code">701</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70101" model="account.account.template">
@@ -2040,8 +2027,8 @@
             <field name="code">70101</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70101001" model="account.account.template">
@@ -2049,8 +2036,8 @@
             <field name="code">70101001</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70101002" model="account.account.template">
@@ -2058,8 +2045,8 @@
             <field name="code">70101002</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70101003" model="account.account.template">
@@ -2067,8 +2054,8 @@
             <field name="code">70101003</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70101004" model="account.account.template">
@@ -2076,8 +2063,8 @@
             <field name="code">70101004</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_702" model="account.account.template">
@@ -2085,8 +2072,8 @@
             <field name="code">702</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70201" model="account.account.template">
@@ -2094,8 +2081,8 @@
             <field name="code">70201</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70201001" model="account.account.template">
@@ -2103,8 +2090,8 @@
             <field name="code">70201001</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70201002" model="account.account.template">
@@ -2112,8 +2099,8 @@
             <field name="code">70201002</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70201003" model="account.account.template">
@@ -2121,8 +2108,8 @@
             <field name="code">70201003</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70201004" model="account.account.template">
@@ -2130,8 +2117,8 @@
             <field name="code">70201004</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70201005" model="account.account.template">
@@ -2139,8 +2126,8 @@
             <field name="code">70201005</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
         
         <record id="account_activa_account_70201006" model="account.account.template">
@@ -2148,8 +2135,8 @@
             <field name="code">70201006</field>
             <field name="account_type">expense</field>
             <field name="reconcile" eval="True"/> 
-            <field name="chart_template_id" ref="l10n_binaural.10n_chart_template_binaural">
-            <field name="company_id" ref="base.main_company" /> 
+            <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
+
         </record>
     </data>
 </odoo>

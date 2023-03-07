@@ -20,7 +20,7 @@ do
 done
 
 parse_tags() {
-    pattern="{(\w+)([,\w]*)}"
+    pattern="{(\w+)([,\w]*)}"    
     echo $(echo $message | grep -oP $pattern | sed 's/^.//;s/.$//')
 }
 

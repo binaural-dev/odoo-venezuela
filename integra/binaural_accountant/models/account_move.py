@@ -62,11 +62,6 @@ class AccountMove(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
-    foreign_total_due = fields.Monetary(
-        help="Foreign Total Due of the invoice",
-        compute="_compute_foreign_total_due",
-        currency_field="foreign_currency_id",
-    )
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -213,29 +208,25 @@ class AccountMove(models.Model):
             )
             move.update(rate_values)
 
-    @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
+    @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
         """
         Compute the foreign taxable income of the invoice
         """
         for move in self:
-            move.foreign_taxable_income = move.amount_untaxed * move.foreign_inverse_rate
+            move.foreign_taxable_income = False
+            if move.invoice_line_ids:
+                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"] 
 
-    @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
+    @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):
         """
         Compute the foreign total billed of the invoice
         """
         for move in self:
-            move.foreign_total_billed = move.amount_total * move.foreign_inverse_rate
-
-    @api.depends("foreign_currency_id", "amount_residual", "foreign_rate")
-    def _compute_foreign_total_due(self):
-        """
-        Compute the foreign total due of the invoice
-        """
-        for move in self:
-            move.foreign_total_due = move.amount_residual * move.foreign_inverse_rate
+            move.foreign_total_billed = False
+            if move.invoice_line_ids:
+                move.foreign_total_billed = move.tax_totals["foreign_amount_total"] 
 
     @api.depends(
         "invoice_line_ids.currency_rate",

@@ -8,7 +8,7 @@
     "category": "Accounting/Localizations/Account Chart",
     "version": "16.0.0.0.1",
     # any module necessary for this one to work correctly
-    "depends": ["base", "account_accountant", "binaural_contact", "binaural_rate"],
+    "depends": ["base", "account_accountant", "binaural_tax", "binaural_contact", "binaural_rate"],
     # always loaded
     "data": [
         "data/account_data.xml",
@@ -20,7 +20,4 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "assets": {
-        "web.assets_backend": ["binaural_accountant/static/src/components/**/*"],
-    },
 }

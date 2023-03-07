@@ -10,12 +10,13 @@
             <field name="arch" type="xml">
                 <tree string="Retention Lines">
                     <field name="name"/>
+                    <field name="payment_id" />
                     <!-- <field name="invoice_id"/> -->
                     <!-- <field name="retetion_rate" /> -->
-                    <field name="base_ret" />
+                    <!-- <field name="base_ret" /> -->
                     <!-- <field name="tax_line" /> -->
-                    <field name="imp_ret" />
-                    <field name="amount_tax_ret" />
+                    <!-- <field name="imp_ret" /> -->
+                    <!-- <field name="amount_tax_ret" /> -->
                 </tree>
             </field>
         </record>

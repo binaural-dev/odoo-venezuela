@@ -12,3 +12,7 @@ from . import signature_config
 from . import tax_unit
 from . import type_person
 from . import type_withholding
+from . import account_retention_line
+from . import account_retention
+from . import account_move
+from . import account_payment
