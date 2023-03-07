@@ -5,12 +5,11 @@ from odoo.exceptions import UserError, ValidationError
 class PaymentConceptLine(models.Model):
     _name = "payment.concept.line"
     _description = "Payment Concept Line"
-    _rec_name = "code"
 
     _sql_constraints = [("unique_code", "UNIQUE(code)", "The concept code already exists")]
 
     pay_from = fields.Float(string="Payments greater than:")
-    type_person_ids = fields.Many2one(
+    type_person_id = fields.Many2one(
         "type.person", string="Type person", required=True, domain=[("state", "=", True)]
     )
     payment_concept_id = fields.Many2one(
@@ -21,7 +20,7 @@ class PaymentConceptLine(models.Model):
         ondelete="cascade",
     )
     percentage_tax_base = fields.Float(string="Percentage Taxable Base")
-    tariffs_ids = fields.Many2one("fees.retention", string="Tarifa", domain=[("status", "=", True)])
+    tariff_id = fields.Many2one("fees.retention", string="Tarifa", domain=[("status", "=", True)])
     code = fields.Char(string="Concept code", required=True)
 
     @api.onchange("percentage_tax_base")

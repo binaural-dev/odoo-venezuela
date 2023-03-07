@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data>
+
+        <record id="type_withholding_binaural_payment_extension" model="type.withholding">
+            <field name="name">0%</field>
+            <field name="value">0</field>
+            <field name="state">True</field>
+        </record>
+
+        <record id="type_withholding_two_binaural_payment_extension" model="type.withholding">
+            <field name="name">75%</field>
+            <field name="value">75</field>
+            <field name="state">True</field>
+        </record>
+
+        <record id="type_withholding_three_binaural_payment_extension" model="type.withholding">
+            <field name="name">100%</field>
+            <field name="value">100</field>
+            <field name="state">True</field>
+        </record>
+        
+    
+    </data>
+    
+
+</odoo>
