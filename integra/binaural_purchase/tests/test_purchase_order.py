@@ -42,6 +42,7 @@ class TestPurchaseOrder(TransactionCase):
 
     def test_01(self):
         """Test that the foreign currency symbol is added to the form view."""
+        self.env.company.currency_foreign_id = self.env.ref("base.VEF")
         purchase_form = Form(self.env["purchase.order"])
         purchase_form.partner_id = self.partner
         purchase_form.date_order = "2021-01-01"
@@ -52,6 +53,7 @@ class TestPurchaseOrder(TransactionCase):
 
     def test_02(self):
         """Test that the foreign currency symbol is added to the form view."""
+        self.env.company.currency_foreign_id = self.env.ref("base.VEF")
         purchase_form = Form(self.env["purchase.order"])
         purchase_form.partner_id = self.partner
         purchase_form.date_order = "2021-01-01"

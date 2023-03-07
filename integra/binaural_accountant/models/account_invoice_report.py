@@ -30,14 +30,19 @@ class AccountInvoiceReport(models.Model):
         help="Foreign Rate of the invoice",
         readonly=True,
     )
-    foreign_total_billed = fields.Monetary(
+    foreign_subtotal = fields.Monetary(
+        help="Foreign Total of the invoice",
+        readonly=True,
+        currency_field="foreign_currency_id",
+    )
+    foreign_price_total = fields.Monetary(
         help="Foreign Total of the invoice",
         readonly=True,
         currency_field="foreign_currency_id",
     )
 
     _depends = {
-        "account.move": ["foreign_rate", "foreign_total_billed"],
+        "account.move.line": ["foreign_rate", "foreign_subtotal", "foreign_price_total"],
     }
 
     @api.model
@@ -52,7 +57,7 @@ class AccountInvoiceReport(models.Model):
             The query with the foreign_rate and foreign_total_billed fields
 
         """
-        return super()._select() + ", move.foreign_rate,  move.foreign_total_billed"
+        return super()._select() + ", line.foreign_rate,  line.foreign_subtotal, line.foreign_price_total"
 
     @api.model
     def get_view(self, view_id=None, view_type=None, **options):
@@ -73,8 +78,9 @@ class AccountInvoiceReport(models.Model):
             )
             foreign_currency_symbol = foreign_currency_record.symbol
             doc = etree.XML(res["arch"])
-            foreign_total_billed = doc.xpath("//field[@name='foreign_total_billed']")
+            foreign_total_billed = doc.xpath("//field[@name='foreign_subtotal']")
             foreign_rate = doc.xpath("//field[@name='foreign_rate']")
+            foreign_price_total = doc.xpath("//field[@name='foreign_price_total']")
             if foreign_total_billed:
                 foreign_total_billed[0].set(
                     "string", "Total Billed (" + foreign_currency_symbol + ")"
@@ -82,6 +88,12 @@ class AccountInvoiceReport(models.Model):
                 res["arch"] = etree.tostring(doc, encoding="unicode")
             if foreign_rate:
                 foreign_rate[0].set("string", "Foreign Rate (" + foreign_currency_symbol + ")")
+                res["arch"] = etree.tostring(doc, encoding="unicode")
+
+            if foreign_price_total:
+                foreign_price_total[0].set(
+                    "string", "Foreign Total (" + foreign_currency_symbol + ")"
+                )
                 res["arch"] = etree.tostring(doc, encoding="unicode")
 
         return res

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem
+        id="menu_action_account_report_aged_receivable_usd"
+        name="Aged Receivable USD"
+        action="action_account_report_ar_usd"
+	parent="account_reports.account_reports_partners_reports_menu"
+    />
+    <menuitem
+        id="menu_action_account_report_aged_payable_usd"
+        name="Aged Payable USD"
+        action="action_account_report_ap_usd"
+	parent="account_reports.account_reports_partners_reports_menu"
+    />
+</odoo>

@@ -31,6 +31,7 @@ execute_coverage_run() {
     else
         echo "Runing coverage with tags..."
         coverage run --source=${analyze_folder} --omit=${omit_files} /opt/odoo/odoo-bin --test-tags=${tags} --stop-after-init --log-level=test --load-language=es_VE --without-demo=all -d ${database} -i ${modules}
+
     fi
 
 }

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data>
+
+        <menuitem
+            id="retention_configuration"
+            name="Retention"
+            parent="account.menu_finance_configuration"/>
+
+        <menuitem
+            id="master_configuration"
+            name="Masters"
+            parent="account.menu_finance_configuration"/>
+
+        
+        <menuitem 
+            name="City" 
+            id="menu_master_configuration_city" 
+            parent="master_configuration" 
+            action="binaural_location.action_res_country_city" />
+
+        <menuitem 
+            name="Parish" 
+            id="menu_master_configuration_parish" 
+            parent="master_configuration" 
+            action="binaural_location.action_res_country_parish" />
+
+        <menuitem 
+            name="Municipality" 
+            id="menu_master_configuration_municipality" 
+            parent="master_configuration" 
+            action="binaural_location.action_res_country_municipality" />
+
+        <menuitem 
+            name="Economic activity" 
+            id="menu_economic_activity" 
+            parent="binaural_payment_extension.master_configuration" 
+            action="action_economic_activity" 
+            sequence="3" />
+
+        <menuitem 
+            name="Economic branch" 
+            id="menu_economic_branch" 
+            parent="binaural_payment_extension.master_configuration" 
+            action="action_economic_branch" 
+            sequence="3" />
+
+        <menuitem 
+            name="Fees" 
+            id="menu_retention_fees_retention" 
+            parent="binaural_payment_extension.retention_configuration" 
+            action="action_fees" />
+
+        <menuitem 
+            name="Payment concept menu" 
+            id="menu_payment_concept" 
+            parent="binaural_payment_extension.retention_configuration" 
+            action="action_payment_concept_binaural_payment_extension" />
+
+        <menuitem
+            id="menu_retention_signature_config"
+            name="signature"
+            parent="binaural_payment_extension.retention_configuration"
+            action="action_configurate_signature"
+            />
+
+        <menuitem 
+            name="Tax unit" 
+            id="menu_retention_tax_unit" 
+            parent="binaural_payment_extension.retention_configuration" 
+            action="action_tax_unit_binaural_payment_extension" />
+
+        <menuitem 
+            name="IVA Retention percentage" 
+            id="menu_retention_type_withholdings" 
+            parent="binaural_payment_extension.retention_configuration" 
+            action="action_type_withholding" />
+
+        <!-- IVA Retentions -->
+
+        <menuitem 
+            name="IVA Retention" 
+            id="menu_retention_iva_client" 
+            sequence="0" 
+            parent="account.menu_finance_receivables"
+            action="action_retention_iva_client"/>
+
+        <menuitem 
+            name="IVA Retention" 
+            id="menu_retention_iva_supplier" 
+            sequence="1" 
+            parent="account.menu_finance_payables" 
+            action="action_retention_iva_supplier"/>
+
+        <menuitem 
+            name="ISLR Retention" 
+            id="menu_retention_islr_client" 
+            sequence="0" 
+            parent="account.menu_finance_receivables" 
+            action="action_retention_islr_client"/> 
+
+	    <menuitem 
+            name="ISLR Retention" 
+            id="menu_retention_islr_supplier" 
+            sequence="1"
+            parent="account.menu_finance_payables" 
+            action="action_retention_islr_supplier"/>
+
+        <menuitem
+            id="menu_retention_islr_sequence"
+            name="Sequence"
+            groups="base.group_no_one"
+            sequence="2"
+            parent="account.menu_finance_payables"
+            action="ir_sequence_form_islr"/>
+    
+    </data>
+    
+
+</odoo>

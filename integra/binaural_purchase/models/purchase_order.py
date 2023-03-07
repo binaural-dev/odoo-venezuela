@@ -1,5 +1,10 @@
 from odoo import models, fields, api, _
 from lxml import etree
+import dateutil.parser
+
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class PurchaseOrder(models.Model):
@@ -21,8 +26,6 @@ class PurchaseOrder(models.Model):
         "res.currency",
         default=default_alternate_currency,
     )
-
-    invoice_date = fields.Date(default=fields.Date.today)
 
     vat = fields.Char(
         string="VAT",
@@ -48,27 +51,48 @@ class PurchaseOrder(models.Model):
         readonly=False,
     )
 
+    total_taxed = fields.Many2one(
+        "account.tax",
+        help="Total Taxed of the invoice",
+    )
+
     foreign_taxable_income = fields.Monetary(
         help="Foreign Taxable Income of the invoice",
         compute="_compute_foreign_taxable_income",
         currency_field="foreign_currency_id",
     )
-    total_taxed = fields.Many2one(
-        "account.tax",
-        help="Total Taxed of the invoice",
-    )
+
     foreign_total_billed = fields.Monetary(
         help="Foreign Total Billed of the invoice",
         compute="_compute_foreign_total_billed",
         currency_field="foreign_currency_id",
         store=True,
     )
-    foreign_total_due = fields.Monetary(
-        help="Foreign Total Due of the invoice",
-        compute="_compute_foreign_total_due",
-        currency_field="foreign_currency_id",
-    )
 
+    @api.depends("tax_totals")
+    def _compute_foreign_taxable_income(self):
+        """
+        Compute the foreign taxable income of the order
+        """
+        for order in self:
+            order.foreign_taxable_income = False
+            if order.order_line:
+                order.foreign_taxable_income = order.tax_totals["foreign_amount_untaxed"] 
+
+    @api.depends("tax_totals")
+    def _compute_foreign_total_billed(self):
+        """
+        Compute the foreign total billed of the order
+        """
+        for order in self:
+            order.foreign_total_billed = False 
+            if order.order_line:
+                order.foreign_total_billed = order.tax_totals["foreign_amount_total"] 
+
+
+    @api.depends('order_line.taxes_id', 'order_line.price_subtotal', 'amount_total', 'amount_untaxed', 'foreign_rate')
+    def  _compute_tax_totals(self):
+        return super()._compute_tax_totals()
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -93,15 +117,12 @@ class PurchaseOrder(models.Model):
             The view of the account move form with the foreign currency symbol added to the page title
         """
         foreign_currency_symbol = ""
-        foreign_currency_id = self.env.company.currency_foreign_id.id
+        foreign_currency_id = self.env.company.currency_foreign_id
 
         res = super().get_view(view_id, view_type, **options)
 
         if foreign_currency_id:
-            foreign_currency_record = self.env["res.currency"].search(
-                [("id", "=", int(foreign_currency_id))]
-            )
-            foreign_currency_symbol = foreign_currency_record.symbol
+            foreign_currency_symbol = foreign_currency_id.symbol
             if view_type == "form":
                 view_id = self.env.ref(
                     "binaural_purchase.view_purchase_order_form_binaural_purchase"
@@ -136,42 +157,18 @@ class PurchaseOrder(models.Model):
         moves._compute_rate()
         return moves
 
-    @api.depends("invoice_date")
+    @api.depends("date_order")
     def _compute_rate(self):
         """
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
         """
         Rate = self.env["res.currency.rate"]
         for move in self:
+            date_order = dateutil.parser.parse(str(move.date_order)).date()
             rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
+                move.foreign_currency_id.id, date_order or fields.Date.today()
             )
             move.update(rate_values)
-
-    @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
-    def _compute_foreign_taxable_income(self):
-        """
-        Compute the foreign taxable income of the invoice
-        """
-        for move in self:
-            move.foreign_taxable_income = move.amount_untaxed * move.foreign_inverse_rate
-
-    @api.depends("foreign_currency_id", "amount_total", "foreign_rate")
-    def _compute_foreign_total_billed(self):
-        """
-        Compute the foreign total billed of the invoice
-        """
-        for move in self:
-            move.foreign_total_billed = move.amount_total * move.foreign_inverse_rate
-
-    @api.depends("foreign_currency_id", "foreign_rate")
-    def _compute_foreign_total_due(self):
-        """
-        Compute the foreign total due of the invoice
-        """
-        for move in self:
-            move.foreign_total_due = 15
-            # move.foreign_total_due = move.amount_residual * move.foreign_inverse_rate
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data> <record id="view_sale_order_form_binaural_sales" model="ir.ui.view">
+            <field name="name">view.sale.order.form</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="replace">
+                    <field name="partner_id" context="{'res_partner_search_mode': 'customer', 'show_address': 1}" options="{&quot;always_reload&quot;: True}"/>
+                </xpath>
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="vat"/>
+                </xpath>
+                
+                <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_unit']" position="after">
+                    <field name="foreign_price"/>
+                </xpath>
+
+                <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']" position="after">
+                    <field name="foreign_subtotal"/>
+                    <field name="foreign_rate" optional="hide"/>
+                    <field name="foreign_rate" optional="hide"/>
+                    <field
+                    name="foreign_inverse_rate"
+                    groups="base.group_no_one"
+                    string="Foreign inverse rate"
+                    optional="hide"
+                    readonly="1"
+                    />
+                </xpath>
+
+                <xpath expr="//notebook" position="inside">
+                    <page string="Foreign currency" name="foreign_currency">
+                        <group>
+                            <field name="foreign_currency_id" invisible='1'/>
+                            <field
+                            name="foreign_inverse_rate"
+                            groups="base.group_no_one"
+                            string="Foreign inverse rate"
+                            />
+                            <field name="foreign_rate"/>
+                            <field name="tax_totals" 
+                                widget="account-tax-foreign-totals-field" 
+                                nolabel="1" 
+                                colspan="2"
+                                readonly="1"/>
+                        </group>
+                    </page>
+                </xpath>
+                
+            </field>
+        </record>
+        
+    </data>
+
+</odoo>

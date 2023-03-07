@@ -26,32 +26,15 @@ class AccountPaymentRegister(models.TransientModel):
 
     foreign_rate = fields.Float(
         help="The rate of the payment",
-        compute="_compute_rate",
         digits="Tasa",
-        readonly=False,
     )
     foreign_inverse_rate = fields.Float(
         help=(
             "Rate that will be used as factor to multiply of the foreign currency for the payment "
             "and the moves created by the wizard."
         ),
-        compute="_compute_rate",
         digits=(16, 15),
-        readonly=False,
     )
-
-    @api.depends("payment_date")
-    def _compute_rate(self):
-        """
-        This method is used to get the foreign currency rate from the currency rate table if the
-        payment date is changed.
-        """
-        Rate = self.env["res.currency.rate"]
-        for payment in self:
-            rate_values = Rate.compute_rate(
-                payment.foreign_currency_id.id, payment.payment_date or fields.Date.today()
-            )
-            payment.update(rate_values)
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -63,6 +46,20 @@ class AccountPaymentRegister(models.TransientModel):
             if not bool(payment.foreign_rate):
                 return
             payment.foreign_inverse_rate = Rate.compute_inverse_rate(payment.foreign_rate)
+
+    @api.onchange("payment_date")
+    def _onchange_invoice_date(self):
+        """
+        Onchange the invoice date and compute the foreign rate
+        """
+        Rate = self.env["res.currency.rate"]
+        for payment in self:
+            if not bool(payment.payment_date):
+                return
+            rate_values = Rate.compute_rate(
+                payment.foreign_currency_id.id, payment.payment_date
+            )
+            payment.update(rate_values)
 
     def _create_payment_vals_from_wizard(self, batch_result):
         """
