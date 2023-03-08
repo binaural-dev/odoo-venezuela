@@ -1,12 +1,41 @@
+
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="view_partner_form" model="ir.ui.view">
-	<field name="name">res.partner.form.binaural.inherit</field>
-	<field name="model">res.partner</field>
-	<field name="inherit_id" ref="base.view_partner_form"/>
-	<field name="arch" type="xml">
-	    <field name="vat" position="after">
-	        <field name="withholding_type_id"/>
-	    </field>
-	</field>
-    </record>
+
+    <data>
+        <record id="res_partner_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">res.partner.binaural.payment.extension</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='category_id']" position="after">
+                    <group name="withholding">
+                        <field name="customer_rank" invisible="1"/>
+                        <field name="supplier_rank" invisible="1"/>
+                        <field name="withholding_type_id" attrs="{'required':[('supplier_rank','&gt;', 0)]}" />
+                        <field name="taxpayer_type" required="1" />
+                        <field name="type_person_id" domain="[('state','=',True)]" attrs="{'required':['|',('supplier_rank','&gt;', 0),('customer_rank','&gt;',0)]}" /> 
+                    </group>
+                </xpath>
+                <xpath expr="//notebook/page[@name='sales_purchases']" position="after">
+                    <page name="retention" string="Retentions">
+                        <group name="iva">
+                            <field name="exempt_iva"/>
+                            <field name="iva_account" attrs="{'invisible': [('exempt_iva', '=', True)],
+	                            'required': [('exempt_iva', '=', False), ('customer_rank', '&lt;=', 0)]}" />
+							<field name="supplier_iva_account" attrs="{'invisible': [('exempt_iva', '=', True)]}" />
+                        </group>
+                        <group name="islr">
+                            <field name="exempt_islr"/>
+                            <field name="islr_account" attrs="{'invisible': [('exempt_islr', '=', True)],
+	                            'required': [('exempt_islr', '=', False), ('customer_rank', '&gt;', 0)]}" />
+							<field name="supplier_islr_account" attrs="{'invisible': [('exempt_islr', '=', True)]}" />
+                        </group>
+                    </page>
+                    
+                </xpath>
+            </field>
+        </record>
+    </data>
+
 </odoo>
