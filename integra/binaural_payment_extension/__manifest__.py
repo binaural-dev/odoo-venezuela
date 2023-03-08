@@ -8,7 +8,7 @@
     "category": "Accountant/Accountant",
     "version": "16.0",
     # any module necessary for this one to work correctly
-    'depends': ['base', 'binaural_rate', 'account_accountant', 'binaural_location', 'binaural_fiscal'],
+    'depends': ['base', 'binaural_rate', 'binaural_accountant', 'binaural_location', 'binaural_fiscal'],
 
     # always loaded
     'data': [
