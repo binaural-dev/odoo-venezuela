@@ -36,6 +36,7 @@
         'views/account_retention_islr.xml',
         'views/account_payment.xml',
         'views/res_partner.xml',
+        'views/account_move.xml',
         'wizard/account_payment_register.xml',
         'views/menu.xml',
         ],

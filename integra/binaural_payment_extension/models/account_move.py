@@ -10,8 +10,19 @@ class AccountMoveRetention(models.Model):
         track_visibility="onchange",
     )
 
+    apply_iva_retention = fields.Boolean(
+        string="Apply IVA Retention?",
+        default=False,
+        track_visibility="onchange",
+    )
+
     islr_voucher_number = fields.Char(
         string="ISLR Voucher Number",
+        track_visibility="onchange",
+    )
+
+    iva_voucher_number = fields.Char(
+        string="IVA Voucher Number",
         track_visibility="onchange",
     )
 
@@ -19,6 +30,18 @@ class AccountMoveRetention(models.Model):
         "account.retention.line",
         "invoice_id",
         string="ISLR Retention Lines",
+    )
+
+    retention_iva_line_ids = fields.One2many(
+        "account.retention.line",
+        "invoice_id",
+        string="IVA Retention Lines",
+    )
+
+    generate_iva_retention = fields.Boolean(
+        string="Generate IVA Retention?",
+        default=False,
+        track_visibility="onchange",
     )
 
     def action_register_payment(self):
