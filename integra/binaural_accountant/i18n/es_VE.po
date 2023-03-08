@@ -16,11 +16,6 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_accountant
-#: model:ir.model.fields,field_description:binaural_accountant.field_account_journal__fiscal
-msgid "Fiscal"
-msgstr ""
-
-#. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_move_line__foreign_balance
 msgid "Foreign Balance"
 msgstr "Saldo alterno"
@@ -157,11 +152,6 @@ msgstr "Tasa alterna inversa"
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.view_account_invoice_report_search_binaural_invoice
 msgid "Foreign price total"
 msgstr "Total alterno"
-
-#. module: binaural_accountant
-#: model:ir.model.fields,help:binaural_accountant.field_account_journal__fiscal
-msgid "If the journal is fiscal"
-msgstr "El diario es fiscal?"
 
 #. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__invoice_date

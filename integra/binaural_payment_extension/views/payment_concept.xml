@@ -32,10 +32,10 @@
                             <page name="line_payment_concept" string="Payment concept line">
                                 <field name="line_payment_concept_ids">
                                     <tree delete="true" editable="op">
-                                        <field name="type_person_ids" />
+                                        <field name="type_person_id" />
                                         <field name="code" />
                                         <field name="percentage_tax_base" />
-                                        <field name="tariffs_ids" />
+                                        <field name="tariff_id" />
                                         <field name="pay_from" />
                                     </tree>
                                 </field>
