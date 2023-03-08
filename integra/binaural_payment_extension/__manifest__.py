@@ -15,7 +15,7 @@
         'security/ir.model.access.csv',
         'data/sequence_data.xml',
         'data/type_person_data.xml',
-        'data/type_withholding_data.xml',
+        'data/account_withholding_type_data.xml',
         'data/tax_unit_data.xml',
         'data/fees_retention_data.xml',
         'data/payment_concept_data.xml',
