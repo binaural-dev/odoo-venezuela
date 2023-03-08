@@ -1,17 +1,14 @@
 {
-    'name': "Binaural Retenciones",
-
-    'summary': """
+    "name": "Binaural Retenciones",
+    "summary": """
        Modulo de extensiones de pago """,
-
-    'license': 'LGPL-3',
-    
-    'author': "Binauraldev",
-    'website': "https://binauraldev.com/",
-    'category': 'Accountant/Accountant',
-    'version': '16.0',
-
+    "license": "LGPL-3",
+    "author": "Binauraldev",
+    "website": "https://binauraldev.com/",
+    "category": "Accountant/Accountant",
+    "version": "16.0",
     # any module necessary for this one to work correctly
+    
     'depends': ['base', 'binaural_rate', 'account_accountant', 'binaural_location', 'binaural_fiscal', 'binaural_contact'],
 
     # always loaded
@@ -19,7 +16,7 @@
         'security/ir.model.access.csv',
         'data/sequence_data.xml',
         'data/type_person_data.xml',
-        'data/type_withholding_data.xml',
+        'data/account_withholding_type_data.xml',
         'data/tax_unit_data.xml',
         'data/fees_retention_data.xml',
         'data/payment_concept_data.xml',

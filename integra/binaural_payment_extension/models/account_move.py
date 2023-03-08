@@ -53,5 +53,4 @@ class AccountMoveRetention(models.Model):
             res["context"]["default_invoice_line_ids"] = self.invoice_line_ids.ids
             res["context"]["default_retention_type"] = self.move_type
         return res
-    
 
