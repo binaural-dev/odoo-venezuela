@@ -112,7 +112,7 @@ class AccountRetention(models.Model):
         "Payments",
         help="Payments",
     )
-    
+
     # amount_base_ret = fields.Float(
     #     compute=amount_ret_all,
     #     string="Base Imponible",
@@ -194,16 +194,19 @@ class AccountRetention(models.Model):
 
         withholding_amount = partner_id.withholding_type_id.value
         lines_data = []
-        subtotals_name = invoice_id.tax_totals["foreign_subtotals"][0]["name"]
+        base_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
+        subtotals = "subtotals" if base_is_vef else "foreign_subtotals"
+        subtotals_name = invoice_id.tax_totals[subtotals][0]["name"]
         for tax_group in invoice_id.tax_totals["groups_by_subtotal"][subtotals_name]:
             taxes = tax_ids.filtered(lambda l: l.tax_group_id.id == tax_group["tax_group_id"])
             if not taxes:
                 continue
             tax = taxes[0]
-            lines_data.append(
-                {
-                    "aliquot": tax.amount,
-                    "retention_amount": tax_group["tax_group_amount"] * (withholding_amount / 100),
-                }
-            )
+            retention_amount = tax_group["tax_group_amount"] * (withholding_amount / 100)
+            line_data = {
+                "aliquot": tax.amount,
+                "retention_amount": retention_amount,
+                "foreign_retention_amount": retention_amount * invoice_id.foreign_inverse_rate,
+            }
+            lines_data.append(line_data)
         return lines_data

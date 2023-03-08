@@ -8,7 +8,7 @@
     "category": "Accountant/Accountant",
     "version": "16.0",
     # any module necessary for this one to work correctly
-    "depends": ["base", "binaural_rate", "account_accountant", "binaural_location"],
+    "depends": ["base", "binaural_rate", "binaural_accountant", "binaural_location"],
     # always loaded
     "data": [
         "security/ir.model.access.csv",
@@ -21,7 +21,6 @@
         "views/payment_concept.xml",
         "views/signature_config.xml",
         "views/type_withholding.xml",
-        "views/account_move.xml",
         "views/account_retention_line.xml",
         "views/account_retention_iva.xml",
         "views/account_retention_islr.xml",
