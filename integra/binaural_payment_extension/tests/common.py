@@ -22,15 +22,11 @@ class AccountRetentionTestCommon(AccountTestInvoicingCommon):
         )
 
         cls.Retention = cls.env["account.retention"]
-        cls.withholding_type_75 = cls.env["account.withholding.type"].create(
-            {
-                "name": "Withholding 75%",
-                "value": 75,
-            }
-        )
         cls.partner_a.write(
             {
-                "withholding_type_id": cls.withholding_type_75.id,
+                "withholding_type_id": cls.env.ref(
+                    "binaural_payment_extension.account_withholding_type_75"
+                ).id,
             }
         )
         cls.product_c = cls.env["product.product"].create(
