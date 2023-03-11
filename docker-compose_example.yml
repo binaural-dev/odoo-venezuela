@@ -5,6 +5,7 @@ services:
       context: .
       args:
         ODOO_RELEASE: ${ODOO_RELEASE}
+        ODOO_VERSION: ${ODOO_VERSION}
     container_name: ${PROJECT_NAME}   
     networks:
       - network_odoo      

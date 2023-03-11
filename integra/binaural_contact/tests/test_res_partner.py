@@ -4,7 +4,7 @@ from odoo.exceptions import UserError
 from odoo.tests import tagged
 
 
-@tagged("res_partner","post_install", "-at_install")
+@tagged("res_partner","bin", "-at_install", "post_install")
 class TestResPartner(TransactionCase):
     def setUp(self):
         super(TestResPartner, self).setUp()

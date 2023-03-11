@@ -78,65 +78,42 @@
             action="action_type_withholding" />
 
         <!-- IVA Retentions -->
-        <menuitem 
-            name="IVA Retentions" 
-            id="menu_retention_iva" 
-            sequence="18" 
-            parent="account_accountant.menu_accounting"/>
 
         <menuitem 
-            name="Client" 
+            name="IVA Retention" 
             id="menu_retention_iva_client" 
-            sequence="0" 
-            parent="menu_retention_iva" 
+            sequence="100" 
+            parent="account.menu_finance_receivables"
             action="action_retention_iva_client"/>
 
         <menuitem 
-            name="Supplier" 
+            name="IVA Retention" 
             id="menu_retention_iva_supplier" 
-            sequence="1" 
-            parent="menu_retention_iva" 
+            sequence="100" 
+            parent="account.menu_finance_payables" 
             action="action_retention_iva_supplier"/>
 
-        <menuitem
-            id="menu_retention_iva_sequence"
-            name="Sequence"
-            groups="base.group_no_one"
-            sequence="2"
-            parent="menu_retention_iva"
-            action="ir_sequence_form_iva"/>
-
-
-        <!-- ISLR Retentions -->
         <menuitem 
-            name="ISLR Retentions" 
-            id="menu_retention_islr" 
-            sequence="19" 
-            parent="account_accountant.menu_accounting"/>
-
-        <menuitem 
-            name="Client" 
+            name="ISLR Retention" 
             id="menu_retention_islr_client" 
-            sequence="0" 
-            parent="menu_retention_islr" 
-            action="action_retention_islr_client"/> -->
+            sequence="100" 
+            parent="account.menu_finance_receivables" 
+            action="action_retention_islr_client"/> 
 
 	    <menuitem 
-            name="Supplier" 
+            name="ISLR Retention" 
             id="menu_retention_islr_supplier" 
-            sequence="1"
-            parent="menu_retention_islr" 
+            sequence="100"
+            parent="account.menu_finance_payables" 
             action="action_retention_islr_supplier"/>
 
         <menuitem
             id="menu_retention_islr_sequence"
             name="Sequence"
             groups="base.group_no_one"
-            sequence="2"
-            parent="menu_retention_islr"
+            sequence="100"
+            parent="account.menu_finance_payables"
             action="ir_sequence_form_islr"/>
-
-
     
     </data>
     
