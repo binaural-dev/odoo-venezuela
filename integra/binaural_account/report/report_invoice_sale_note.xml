@@ -19,58 +19,59 @@
             <t t-call="web.html_container">
                 <xpath expr="//t[@t-call='web.report_layout']" position="replace">
                     <t t-foreach="docs" t-as="invoice">
-                        <div class="article" style="" t-att-data-oe-model="invoice and invoice._name"
-                             t-att-data-oe-id="invoice and invoice.id"
-                             t-att-data-oe-lang="invoice and invoice.env.context.get('lang')">
-                            <link rel="stylesheet" move_type="text/scss" href="/web/static/lib/bootstrap/css/bootstrap.css"/>
+                        <div class="article" style="" t-att-data-oe-model="invoice and invoice._name" t-att-data-oe-id="invoice and invoice.id" t-att-data-oe-lang="invoice and invoice.env.context.get('lang')">
+                            <link rel="stylesheet" type="text/css" href="/web/static/lib/bootstrap/dist/css/bootstrap.css"/>
+
                             <div class="page">
                                 <style>
                                     thead > tr{
                                         margin-bottom: 3px;
                                     }
-
                                     th{
                                         vertical-align: middle;
                                     }
-
                                     th{
-                                        font-size: 12px;
+                                        font-size:12px;
                                     }
-
                                     td{
-                                        font-size: 12px;
+                                        font-size:12px;
                                         width: 25%;
-                                        padding: 0px 5px;
+                                        padding:0px 5px;
                                     }
-
                                     .col-xs-7,
                                     .col-xs-4{
-                                        padding: 0px !important;
+                                        padding:0px !important;
                                     }
 
                                     .col-xs-4 span
                                     ,.col-xs-8 span {
-                                        font-size: 14px;
+                                        font-size:14px;
                                     }
-
                                     .td_right{
-                                        padding: 0px 10px;
+                                        padding:0px 10px;
                                     }
-
                                     .class_number td{
-                                        font-size: 11px;
+                                        font-size:11px;
                                         width: 15%;
-                                        padding: 0px 0px;
+                                        padding:0px 0px;
                                     }
-
                                     .row_1 > tr > td > span{
-                                        font-size: 11px;
+                                        font-size:11px;
                                     }
                                 </style>
+
                                 <section id="segmento_2">
                                     <table name="table_invoice_number" class="class_number">
                                         <!-- membrete -->
-                                        <tr></tr>
+                                        <tr>
+                                            <td colspan="2">
+                                                <span t-field="invoice.company_id.logo"
+                                                      t-options="{'widget': 'image', 'style': 'max-width: 80px'}"
+                                                      role="img"
+                                                      t-att-aria-label="'Logo of %s' % invoice.company_id.name"
+                                                      t-att-title="invoice.company_id.name"/>
+                                            </td>
+                                        </tr>
 
                                         <!--fila 1-->
                                         <tr class="row_1 text-nowrap">
@@ -84,7 +85,7 @@
 
                                             <t t-if="invoice.move_type == 'out_invoice' or invoice.move_type == 'in_invoice' or invoice.move_type == 'out_contingence'  or invoice.move_type == 'in_contingence'">
                                                 <td colspan="3" style="text-align:right;font-weight:bold">
-                                                    <span>Factura Nro:
+                                                    <span>Nota de Venta:
                                                         <span t-field="invoice.name"/>
                                                     </span>
                                                 </td>
@@ -92,7 +93,7 @@
                                             <t t-else="">
                                                 <t t-if="invoice.move_type == 'out_refund' or invoice.move_type == 'in_refund'">
                                                     <td colspan="3" style="text-align:right;font-weight:bold">
-                                                        <span>Nota de crédito</span>
+                                                        <span>Devolución Nª</span>
                                                         <strong>
                                                             <span t-field="invoice.name"/>
                                                         </strong>
@@ -128,41 +129,40 @@
 
                                                 Ciudad:
                                                 <span t-field="invoice.partner_id.city"/>
-
                                             </td>
-                                            <td colspan="3" style="text-align:right">Vencimiento:
+                                              <td colspan="3" style="text-align:right">Vencimiento:
                                                 <span t-field="invoice.invoice_date_due"/>
                                             </td>
-
+                                            
                                         </tr>
-                                        <!--fila n+1-->
                                         <tr>
                                             <td colspan="2">
                                                 Telf:
                                                 <span t-field="invoice.partner_id.phone"/>
                                             </td>
-
                                         </tr>
                                     </table>
                                 </section>
-
+                                <!--<br/>-->
                                 <section id="segmento_3" style="font-size:10px !important;">
                                     <table name="table_product">
                                         <thead>
-                                            <th style="width:140px;text-align:center;border: 1px solid black;">Código
+                                            <th style="width:120px;text-align:center;border: 1px solid black;">Código
                                             </th>
-                                            <th id="descripcion" style="width:420 px;text-align:left;border: 1px solid black;padding-left: 10px;">
+                                            <th style="width:380 px;text-align:left;border: 1px solid black;padding-left: 10px;">
                                                 Descripción
                                             </th>
-                                            
-                                            <th style="width:40px;text-align:center;border: 1px solid black;">Cant
+                                            <th style="width:40;text-align:center;border: 1px solid black;">Unidad
+                                            </th>
+                                            <th style="width:60px;text-align:center;border: 1px solid black;">Cant
                                             </th>
                                             <th style="width:90px;text-align:center;border: 1px solid black;">Precio
 
                                             </th>
-                                            <th style="width:50px;text-align:center;border: 1px solid black;">
-                                                Desc %
+                                            <th style="width:90px;text-align:center;border: 1px solid black;">
+                                                Descuento %
                                             </th>
+
                                             <th style="width:90px;text-align:center;border: 1px solid black;">Total</th>
                                         </thead>
                                         <tbody>
@@ -174,14 +174,14 @@
                                             <t t-foreach="invoice.invoice_line_ids" t-as="line">
                                                 <tr>
                                                     <t t-set="base_sin_descuento"
-                                                       t-value="base_sin_descuento + (line.quantity * line.foreign_price)"/>
+                                                       t-value="base_sin_descuento + (line.quantity * line.price_unit)"/>
                                                     <t t-if="len(line.tax_ids) > 0">
                                                         <t t-if="line.tax_ids[0].amount == 8">
                                                             <t t-set="base_8" t-value="base_8 + (line.price_subtotal)"/>
                                                             <t t-set="iva_8"
                                                                t-value="iva_8 + (line.tax_ids[0].amount/100) * (line.price_subtotal)"/>
                                                         </t>
-                                                        <t t-if="line.tax_ids[0].amount == 16">
+                                                        <t t-if="line.tax_ids[0].amount == 16"> 
                                                             <t t-set="base_16"
                                                                t-value="base_16 + (line.price_subtotal)"/>
                                                             <t t-set="iva_16"
@@ -190,157 +190,142 @@
                                                     </t>
                                                     <t t-if="invoice.move_type in ['out_debit', 'in_debit']">
                                                         <td></td>
-                                                        <td style="width:420px;text-align:left;">
+                                                        <td style="width:390px;text-align:left;">
                                                             <span t-field="line.name"/>
                                                         </td>
                                                     </t>
                                                     <t t-else="">
-                                                        <td style="width:140px;text-align:center;">
+                                                        <td style="width:130px;text-align:center;">
                                                             <span t-field="line.product_id.default_code"/>
                                                         </td>
                                                         <t t-if="line.product_id.name">
-                                                            <t t-set="product_name"
-                                                               t-value="line.product_id.name[0:35]"/>
+                                                            <t t-set="product_name" t-value="line.product_id.name[0:35]"/>
                                                         </t>
                                                         <t t-else="">
                                                             <t t-set="product_name" t-value=""/>
                                                         </t>
-                                                        <td style="width:420px;text-align:left;">
+                                                        <td style="width:350px;text-align:left;">
                                                             <span t-esc="line.name"/>
+
                                                         </td>
                                                     </t>
-                                                    <td style="width:40px;text-align:right;">
-                                                        <span t-esc="int(line.quantity)"/>
+                                                    <td style="width:40px;text-align:center;">
+                                                        <span t-field="line.product_uom_id"/>
+                                                    </td>
+                                                    <td style="width:50px;text-align:right;">
+                                                        <span t-esc="line.quantity" t-options='{"widget": "float", "precision": 2}'/>
                                                     </td>
                                                     <td style="width:80px;text-align:right;">
-                                                        <span class="text-nowrap" t-esc="line.foreign_price"
-                                                              t-options='{"widget": "monetary", "display_currency": invoice.foreign_currency_id}'/>
+                                                        <span t-esc="'{0:,.3f}'.format(float(line.price_unit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
                                                     </td>
-                                                    <td style="width:40px;text-align:right;">
+                                                    <td style="width:50px;text-align:right;">
                                                         <span t-esc="line.discount"/>
                                                     </td>
 
-                                                    <t t-set="price_total" t-value="line.foreign_subtotal"/>
+                                                    <t t-set="price_total" t-value="line.price_subtotal"/>
 
-                                                    <td class="td_right" style="width:90px;text-align:right">
-                                                        <span class="text-nowrap" t-esc="line.foreign_subtotal"
-                                                              t-options='{"widget": "monetary", "display_currency": invoice.foreign_currency_id}'/>
+                                                    <td class="td_right"
+                                                        style="width:90px;text-align:right">
+                                                        <span t-esc="'{0:,.2f}'.format(float(price_total)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
                                                     </td>
                                                 </tr>
                                             </t>
                                         </tbody>
                                     </table>
                                 </section>
-                                <div style="width:100%;margin-top:2px"></div>
-                                <div class="clearfix">
-                                    <t t-set="o" t-value="invoice"/>
-                                    <div id="total" class="row">
-                                        <div t-attf-class="#{'col-6' if report_type != 'html' else 'col-sm-7 col-md-6'} ml-auto">
-                                            <table class="table table-sm" style="page-break-inside: avoid;">
-                                                <tr class="border-black o_subtotal" style="">
-                                                    <td>
-                                                        <strong>Base</strong>
-                                                    </td>
-                                                    <td class="text-right">
-                                                        <!--<span t-esc="o.foreign_amount_untaxed"
-                                                              t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/>-->
-                                                    </td>
-                                                </tr>
-                                                <!-- <t t-foreach="o.foreign_amount_by_group" t-as="amount_by_group"> -->
-                                                    <!-- <tr style=""> -->
-                                                        <!-- <t t-if="len(o.line_ids.filtered(lambda line: line.tax_line_id)) in [0, 1] and o.foreign_amount_untaxed == amount_by_group[2]">
-                                                            <td>
-                                                                <span class="text-nowrap" t-esc="amount_by_group[0]"/>
-                                                                <span class="text-nowrap">
-                                                                   sobre (<t t-esc="amount_by_group[4]"/>)
-                                                                </span>
-                                                            </td>
-                                                            <td class="text-right o_price_total">
-                                                                <span class="text-nowrap" t-esc="amount_by_group[3]"/>
-                                                            </td>
-                                                        </t>
-                                                        <t t-else="">
-                                                            <td>
-                                                                <span t-esc="amount_by_group[0]"/>
-                                                                <span class="text-nowrap">
-                                                                   sobre (<t t-esc="amount_by_group[4]"/>)
-                                                                </span>
-                                                            </td>
-                                                            <td class="text-right o_price_total">
-                                                                <span class="text-nowrap" t-esc="amount_by_group[3]"/>
-                                                            </td>
-                                                        </t> -->
-                                                    <!-- </tr> -->
-                                                <!-- </t> -->
-                                                <tr class="border-black o_total">
-                                                    <td>
-                                                        <strong>Total General</strong>
-                                                    </td>
-                                                    <!-- <td class="text-right">
-                                                        <span class="text-nowrap" t-esc="o.foreign_amount_total"
-                                                              t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/>
-                                                    </td> -->
-                                                </tr>
-                                            </table>
-
-                                        </div>
-                                    </div>
-                                </div>
                                 <div style="width:100%;margin-top:20px"></div>
                                 <section id="segmento_4">
                                     <table name="table_total">
+                                        <tr>
+                                            <td colspan="4">
+                                                <span >Observacion:&amp;nbsp;</span>
+                                                <span t-field="invoice.narration"></span>
+                                            </td>
+
+                                            <td>
+                                                <table>
+                                                    <tr>
+                                                        <td style="text-align: left">
+                                                            <t t-if="invoice.move_type != 'out_invoice' or invoice.move_type != 'in_invoice' or invoice.move_type != 'out_contingence'  or invoice.move_type != 'in_contingence'">
+                                                                <t t-if="invoice.invoice_origin">
+                                                                    <t t-foreach="request.env['account.move'].search([('name','=', invoice.invoice_origin)])"
+                                                                       t-as="inv">
+                                                                        Nro de Factura:
+                                                                        <t t-esc="inv.name"/>
+                                                                        <br/>
+                                                                        <t t-if="inv.move_type != 'out_contingence'  or invoice.move_type != 'in_contingence'">
+                                                                            Nro de control:
+                                                                            <t t-esc="inv.correlative"/>
+                                                                            <br/>
+                                                                        </t>
+                                                                        <t t-else="">
+                                                                            Nro de control:
+                                                                            <t t-esc="inv.correlative_contingence"/>
+                                                                            <br/>
+                                                                        </t>
+                                                                        Fecha de Factura:
+                                                                        <span t-field="inv.invoice_date"
+                                                                              t-field-options="{'format': 'dd/MM/YYYY'}"/>
+                                                                        <br/>
+                                                                        Total Facturado:
+                                                                        <t t-esc="'{0:,.2f}'.format(float(inv.amount_total)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                                        <br/>
+                                                                        Motivo:
+                                                                        <t t-esc="invoice.name"/>
+                                                                        <br/>
+                                                                    </t>
+                                                                </t>
+                                                            </t>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                            <td>
+                                                <table>
+                                                    <t t-set="descuento" t-value="base_sin_descuento - invoice.amount_untaxed"/>
+                                                    <tr>
+                                                        <td style="text-align: right" colspan="3">Total a pagar</td>
+                                                        <td class="td_right" style="text-align: right">
+                                                            <span t-esc="'{0:,.2f}'.format(float(invoice.amount_total)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
                                         <t t-if="invoice.move_type == 'out_refund'">
                                             <tr>
                                                 <td colspan="6">
-                                                    <span>Doc afectado: Nro Factura:
-                                                        <span t-field="invoice.reversed_entry_id.name"/>
-                                                    </span>
+                                                    <span>Doc afectado: Nro Factura: <span t-field="invoice.reversed_entry_id.name"/></span>
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td colspan="6">
-                                                    <span>Nro de control:
-                                                        <span t-field="invoice.reversed_entry_id.correlative"/>
-                                                    </span>
+                                                    <span>Nro de control: <span t-field="invoice.reversed_entry_id.correlative"/></span>
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td colspan="6">
-                                                    <span>Fecha de Factura:
-                                                        <span t-field="invoice.reversed_entry_id.invoice_date"/>
-                                                    </span>
+                                                    <span>Fecha de Factura: <span t-field="invoice.reversed_entry_id.invoice_date"/></span>
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td colspan="7">
-                                                    <span>Total Facturado:
-                                                        <!-- <span t-esc="invoice.reversed_entry_id.foreign_amount_total" t-options='{"widget": "monetary", "display_currency": invoice.foreign_currency_id}'/> -->
-                                                    </span>
+                                                    <span>Total Facturado: <span t-field="invoice.reversed_entry_id.amount_total"/></span>
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td colspan="7">
-                                                    <span>Motivo:
-                                                        <span t-field="invoice.ref"/>
-                                                    </span>
+                                                    <span>Motivo: <span t-field="invoice.ref"/></span>
                                                 </td>
                                             </tr>
                                         </t>
                                     </table>
                                 </section>
                             </div>
+
                         </div>
                     </t>
                 </xpath>
-            </t>
-        </template>
-
-        <template id="account.report_invoice">
-            <t t-call="web.html_container">
-                <t t-foreach="docs" t-as="o">
-                    <t t-set="lang" t-value="o.invoice_user_id.sudo().lang if o.move_type in ('in_invoice', 'in_refund') else o.partner_id.lang"/>
-                    <t t-if="o._get_name_invoice_report() == 'account.report_invoice_document'" t-call="binaural_invoice.template_invoice_free_form_binaural_invoice" t-lang="lang"/>
-                </t>
             </t>
         </template>
     </data>
