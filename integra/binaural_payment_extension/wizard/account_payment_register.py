@@ -29,6 +29,12 @@ class AccountPaymentRegister(models.TransientModel):
         store=True,
     )
 
+    retention_line_ids = fields.Many2many(
+        "account.retention.line",
+        string="Retention Lines",
+        store=True,
+    )
+
     retention_ref = fields.Char(
         string="Retention reference",
         store=True,
@@ -66,6 +72,7 @@ class AccountPaymentRegister(models.TransientModel):
                     "company_id": self.company_id.id,
                     "code": self.retention_ref,
                     "type": self.retention_type,
+                    # "payment_ids": [(6, 0, payment.id)],
                     "retention_line": [
                         (
                             0,
@@ -80,6 +87,31 @@ class AccountPaymentRegister(models.TransientModel):
                     ],
                 }
             )
+        if self.is_retention and self.payment_type_retention == "islr":
+            retention = self.env["account.retention"].create(
+                {
+                    "name": "Retention ISLR",
+                    "type_retention": self.payment_type_retention,
+                    "partner_id": self.partner_id.id,
+                    "company_id": self.company_id.id,
+                    "code": self.retention_ref,
+                    "type": self.retention_type,
+                    # "payment_ids": [(6, 0, payment.id)],
+                    "retention_line": [
+                        (
+                            0,
+                            0,
+                            {
+                                "name": "Retention IVA",
+                                "payment_date": self.payment_date,
+                                "payment_id": payment.id,
+                                "payment_journal_id": self.journal_id.id,
+                            },
+                        )
+                    ],
+                }
+            )
+                            
             return retention
 
     def _create_payments(self):
@@ -88,5 +120,5 @@ class AccountPaymentRegister(models.TransientModel):
         res.write({"is_retention": self.is_retention})
         res.write({"payment_type_retention": self.payment_type_retention})
         res.write({"retention_ref": self.retention_ref})
-        res.write({"invoice_line_ids": self.invoice_line_ids})
+        # res.write({"invoice_line_ids": self.invoice_line_ids})
         return res

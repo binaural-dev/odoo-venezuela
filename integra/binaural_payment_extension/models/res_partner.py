@@ -7,7 +7,7 @@ class ResPartner(models.Model):
     _inherit = "res.partner"
 
     withholding_type_id = fields.Many2one(
-        "type.withholding",
+        "account.withholding.type",
         string="Withholding Type",
         domain=[("state", "=", True)],
         track_visibility="onchange",

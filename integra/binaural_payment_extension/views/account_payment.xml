@@ -13,12 +13,13 @@
                     <field name="payment_type_retention" string="Payment type retention" attrs="{'invisible':[('is_retention', '=', False)]}"/>
                     <field name="retention_ref" string="Retention ref" attrs="{'invisible':[('is_retention', '=', False)]}"/>
                     <notebook attrs="{'invisible':[('is_retention', '=', False)]}">
-                        <page name="invoice_line" string="Invoice lines">
-                            <field name="invoice_line_ids" nolabel="1">
+                        <page name="retention_lines" string="Retention lines">
+                            <field name="retention_line_ids" nolabel="1">
                                 <tree editable="bottom">
                                     <field name="name"/>
-                                    <field name="quantity"/>
-                                    <field name="price_unit"/>
+                                    <field name="move_id"/>
+                                    <field name="payment_concept_id"/>
+                                    <field name="invoice_amount"/>
                                 </tree>
                             </field>
                         </page>

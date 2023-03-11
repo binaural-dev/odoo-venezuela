@@ -82,28 +82,28 @@
         <menuitem 
             name="IVA Retention" 
             id="menu_retention_iva_client" 
-            sequence="0" 
+            sequence="100" 
             parent="account.menu_finance_receivables"
             action="action_retention_iva_client"/>
 
         <menuitem 
             name="IVA Retention" 
             id="menu_retention_iva_supplier" 
-            sequence="1" 
+            sequence="100" 
             parent="account.menu_finance_payables" 
             action="action_retention_iva_supplier"/>
 
         <menuitem 
             name="ISLR Retention" 
             id="menu_retention_islr_client" 
-            sequence="0" 
+            sequence="100" 
             parent="account.menu_finance_receivables" 
             action="action_retention_islr_client"/> 
 
 	    <menuitem 
             name="ISLR Retention" 
             id="menu_retention_islr_supplier" 
-            sequence="1"
+            sequence="100"
             parent="account.menu_finance_payables" 
             action="action_retention_islr_supplier"/>
 
@@ -111,7 +111,7 @@
             id="menu_retention_islr_sequence"
             name="Sequence"
             groups="base.group_no_one"
-            sequence="2"
+            sequence="100"
             parent="account.menu_finance_payables"
             action="ir_sequence_form_islr"/>
     

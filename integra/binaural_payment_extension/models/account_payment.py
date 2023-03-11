@@ -5,6 +5,7 @@ class AccountPayment(models.Model):
 
     is_retention = fields.Boolean(
         string="Is retention",
+        help="Check this box if this payment is a retention",
         default=False,
     )
 
@@ -13,6 +14,12 @@ class AccountPayment(models.Model):
             ("iva", "IVA"),
             ("islr", "ISLR"),
         ],
+    )
+
+    retention_line_ids = fields.Many2many(
+        "account.retention.line",
+        string="Retention Lines",
+        store=True,
     )
 
     invoice_line_ids = fields.Many2many(
