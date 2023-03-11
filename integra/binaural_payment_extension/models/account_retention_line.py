@@ -2,10 +2,8 @@ from odoo import models, fields, api, _
 
 
 class AccountRetentionLine(models.Model):
-
     _name = "account.retention.line"
     _description = "Retention Line"
-    _rec_name = "name"
 
     check_company = True
 
@@ -16,13 +14,9 @@ class AccountRetentionLine(models.Model):
     company_id = fields.Many2one(
         "res.company", string="Company", required=True, default=lambda self: self.env.company
     )
-    company_currency_id = fields.Many2one(
-        "res.currency", string="Company Currency", readonly=True
-    )
-    retention_id = fields.Many2one(
-        "account.retention", string="Retention", ondelete="cascade"
-    )
-    invoice_id = fields.Selection(
+    company_currency_id = fields.Many2one("res.currency", string="Company Currency", readonly=True)
+    retention_id = fields.Many2one("account.retention", string="Retention", ondelete="cascade")
+    invoice_type = fields.Selection(
         selection=[
             ("out_invoice", "Out invoice"),
             ("in_invoice", "In invoice"),
@@ -31,7 +25,6 @@ class AccountRetentionLine(models.Model):
             ("out_debit", "Out debit"),
             ("in_debit", "In debit"),
         ],
-        string="Invoice Type",
     )
     # invoice_number = fields.Char(string="Invoice Number", related="invoice_id.name", store=True)
     aliquot = fields.Float(digits=(16, 2))
@@ -53,9 +46,7 @@ class AccountRetentionLine(models.Model):
         "payment.concept", "Payment concept", ondelete="cascade", index=True
     )
 
-    payment_id = fields.Many2one(
-        "account.payment", "Payment", ondelete="cascade", index=True
-    )
+    payment_id = fields.Many2one("account.payment", "Payment", ondelete="cascade", index=True)
 
     payment_date = fields.Date()
 
