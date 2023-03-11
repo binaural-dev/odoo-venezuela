@@ -210,3 +210,46 @@ class AccountRetention(models.Model):
             }
             lines_data.append(line_data)
         return lines_data
+    
+
+    def create_islr_retention_lines_data(self, invoice_id):
+        """
+        Computes the retention lines data for the given invoice.
+
+        Params
+        ------
+        invoice_id: account.move
+            The invoice for which the retention lines are computed.
+
+        Returns
+        -------
+        list[dict]
+            The retention lines data.
+        """
+        if not invoice_id.partner_id.withholding_type_id:
+            raise UserError(_("The partner %s has no withholding type."), invoice_id.partner_id.name)
+
+        tax_ids = invoice_id.invoice_line_ids.filtered(
+            lambda l: l.tax_ids and l.tax_ids[0].amount > 0
+        ).mapped("tax_ids")
+        if not any(tax_ids):
+            raise UserError(_("The invoice %s has no tax."), invoice_id.number)
+
+        withholding_amount = invoice_id.partner_id.withholding_type_id.value
+        lines_data = []
+        base_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
+        subtotals = "subtotals" if base_is_vef else "foreign_subtotals"
+        subtotals_name = invoice_id.tax_totals[subtotals][0]["name"]
+        for tax_group in invoice_id.tax_totals["groups_by_subtotal"][subtotals_name]:
+            taxes = tax_ids.filtered(lambda l: l.tax_group_id.id == tax_group["tax_group_id"])
+            if not taxes:
+                continue
+            tax = taxes[0]
+            retention_amount = tax_group["tax_group_amount"] * (withholding_amount / 100)
+            line_data = {
+                "aliquot": tax.amount,
+                "retention_amount": retention_amount,
+                "foreign_retention_amount": retention_amount * invoice_id.foreign_inverse_rate,
+            }
+            lines_data.append(line_data)
+        return lines_data    

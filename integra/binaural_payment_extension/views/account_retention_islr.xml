@@ -27,6 +27,17 @@
                         <field name="date" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
                     </group>
                     <notebook colspan="4">
+                    <page name="Payments" string="payments">
+                            <field name="payment_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
+                                <tree string="Payments" editable="bottom">
+                                    <field name="date"/>
+                                    <field name="name"/>
+                                    <!-- <field name="payment_id" force_save="1"/> -->
+                                    <!-- <field name="journal_id" force_save="1"/> -->
+                                    <field name="amount"/>
+                                </tree>
+                            </field>
+                        </page>
                         <page name="retention line" string="Retention line">
                             <!-- <field name="foreign_currency_id" invisible="1"/>
                             <field name="bs_currency_id" invisible="1"/> -->
