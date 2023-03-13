@@ -113,7 +113,7 @@ class AccountRetention(models.Model):
             if vals.get("type_retention") == "iva":
                 sequence_number = self.get_sequence_iva_retention().next_by_id()
             elif vals.get("type_retention") == "islr":
-                sequence_number = self.get_sequence_iva_retention().next_by_id()
+                sequence_number = self.get_sequence_islr_retention().next_by_id()
             vals["name"] = sequence_number
             vals["number"] = sequence_number
         return super().create(vals_list)
@@ -204,6 +204,7 @@ class AccountRetention(models.Model):
         if type_retention == ("islr", "in_invoice"):
             retention = self.create_supplier_islr_retention(invoice_id)
             retention.action_post()
+        
         return retention
 
     @api.model

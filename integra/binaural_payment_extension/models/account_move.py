@@ -32,7 +32,7 @@ class AccountMoveRetention(models.Model):
         "account.retention.line",
         "move_id",
         string="IVA Retention Lines",
-        domain=[("retention_id.type_retention", "=", "iva")]
+        domain=[("retention_id.type_retention", "=", "iva")],
     )
 
     generate_iva_retention = fields.Boolean(
@@ -66,8 +66,9 @@ class AccountMoveRetention(models.Model):
         for move in self:
             if not any(move.invoice_line_ids.mapped("tax_ids").filtered(lambda x: x.amount > 0)):
                 raise UserError(_('The invoice "%s"has no tax.'), move.name)
-            
+
             if move.retention_islr_line_ids:
+                self._validate_amount_islr_retention()
                 retention = Retention.create_retention(move, ("islr", "in_invoice"))
                 line_to_reconcile = retention.payment_ids[0].move_id.line_ids.filtered(
                     lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
@@ -83,3 +84,18 @@ class AccountMoveRetention(models.Model):
                 move.iva_voucher_number = retention.number
                 move.js_assign_outstanding_line(line_to_reconcile.id)
         return res
+
+    def _validate_amount_islr_retention(self):
+        for move in self:
+            if move.retention_islr_line_ids.invoice_total > move.amount_total:
+                raise UserError(
+                    _(
+                        "The amount of the retention is greater than the total amount of the invoice."
+                    )
+                )
+            if move.retention_islr_line_ids.invoice_total <= 0:
+                raise UserError(_("The amount of the retention must be greater than zero."))
+            if not move.journal_id.fiscal:
+                raise UserError(_("The journal must be fiscal"))
+            if not move.partner_id.type_person_id:
+                raise UserError(_("The partner must have a type of person"))
