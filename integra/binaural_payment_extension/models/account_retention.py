@@ -159,7 +159,7 @@ class AccountRetention(models.Model):
             self.payment_ids.action_post()
         elif self.type in ["out_invoice", "out_refund", "out_debit"]:
             if not self.number:
-                raise UserError("Introduce el número de comprobante")
+                raise UserError("Insert a number for the retention")
             self.payment_ids.action_post()
         return self.write({"state": "emitted"})
 
@@ -201,6 +201,9 @@ class AccountRetention(models.Model):
         if type_retention == ("iva", "in_invoice"):
             retention = self.create_supplier_iva_retention(invoice_id)
             retention.action_post()
+        if type_retention == ("islr", "in_invoice"):
+            retention = self.create_supplier_islr_retention(invoice_id)
+            retention.action_post()
         return retention
 
     @api.model
@@ -226,6 +229,8 @@ class AccountRetention(models.Model):
                 "partner_id": invoice_id.partner_id.id,
                 "payment_type_retention": "iva",
                 "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
+                "is_retention": True,
+                "foreign_rate": invoice_id.foreign_rate,
                 "currency_id": self.env.user.company_id.currency_id.id,
             }
         )
@@ -240,7 +245,47 @@ class AccountRetention(models.Model):
             }
         )
         payment.compute_retention_amount_from_retention_lines()
-        return retention    
+        return retention
+        
+    @api.model
+    def create_supplier_islr_retention(self, invoice_id):
+        """
+        Creates the payment, the retention and the retention lines for the supplier islr retention.
+
+        Params
+        ------
+        invoice_id: account.move
+            The invoice to which the retention will be applied.
+
+        Returns
+        -------
+        """
+        Payment = self.env["account.payment"]
+        Retention = self.env["account.retention"]
+        payment = Payment.create(
+            {
+                "payment_type": "outbound",
+                "partner_type": "supplier",
+                "partner_id": invoice_id.partner_id.id,
+                "payment_type_retention": "islr",
+                "retention_line_ids": invoice_id.retention_islr_line_ids,
+                "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
+                "is_retention": True,
+                "foreign_rate": invoice_id.foreign_rate,
+                "currency_id": self.env.user.company_id.currency_id.id,
+            }
+        )
+        retention = Retention.create(
+            {
+                "payment_ids": [Command.link(payment.id)],
+                "type_retention": "islr",
+                "type": "in_invoice",
+                "partner_id": invoice_id.partner_id.id,
+                "retention_line_ids": invoice_id.retention_islr_line_ids,
+            }
+        )
+        payment.compute_retention_amount_from_retention_lines()
+        return retention
 
     @api.model
     def compute_retention_lines_data(self, invoice_id, payment=None):
@@ -289,60 +334,3 @@ class AccountRetention(models.Model):
             }
             lines_data.append(line_data)
         return lines_data
-
-    def create_islr_retention_lines_data(self, invoice_id):
-        """
-        Computes the retention lines data for the given invoice.
-
-        Params
-        ------
-        invoice_id: account.move
-            The invoice for which the retention lines are computed.
-
-        Returns
-        -------
-        list[dict]
-            The retention lines data.
-        """
-        if not invoice_id.partner_id.withholding_type_id:
-            raise UserError(
-                _("The partner %s has no withholding type."), invoice_id.partner_id.name
-            )
-
-        tax_ids = invoice_id.invoice_line_ids.filtered(
-            lambda l: l.tax_ids and l.tax_ids[0].amount > 0
-        ).mapped("tax_ids")
-        if not any(tax_ids):
-            raise UserError(_("The invoice %s has no tax."), invoice_id.number)
-
-        withholding_amount = invoice_id.partner_id.withholding_type_id.value
-        lines_data = []
-        base_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
-        subtotals = "subtotals" if base_is_vef else "foreign_subtotals"
-        subtotals_name = invoice_id.tax_totals[subtotals][0]["name"]
-        for tax_group in invoice_id.tax_totals["groups_by_subtotal"][subtotals_name]:
-            taxes = tax_ids.filtered(lambda l: l.tax_group_id.id == tax_group["tax_group_id"])
-            if not taxes:
-                continue
-            tax = taxes[0]
-            retention_amount = tax_group["tax_group_amount"] * (withholding_amount / 100)
-            line_data = {
-                "aliquot": tax.amount,
-                "retention_amount": retention_amount,
-                "foreign_retention_amount": retention_amount * invoice_id.foreign_inverse_rate,
-            }
-            lines_data.append(line_data)
-        return lines_data
-
-    def action_create_islr_retention(self, partner_id, retention_lines, move_id):
-        """ """
-        self.env["account.retention"].create(
-            {
-                "type_retention": "islr",
-                "type": move_id.move_type,
-                "partner_id": partner_id.id,
-                "retention_line_ids": retention_lines,
-                # "move_id": move_id.id,
-                "date": move_id.date,
-            }
-        )

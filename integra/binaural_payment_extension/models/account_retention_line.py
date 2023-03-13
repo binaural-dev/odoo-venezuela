@@ -97,10 +97,22 @@ class AccountRetentionLine(models.Model):
     @api.onchange("payment_concept_id")
     @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
+        """
+        This compute is used to get the related fields from the payment concept of the partner
+        to generate the ISLR retention line
+
+        """
         for record in self:
+            if not record.move_id.journal_id.fiscal:
+                raise ValidationError(_("The journal must be fiscal"))
+            if not record.move_id.partner_id.type_person_id:
+                raise ValidationError(_("The partner must have a type of person"))
+            # Payment concept of the line
             payment_concept = record.payment_concept_id.line_payment_concept_ids
             for line in payment_concept:
                 if record.move_id.partner_id.type_person_id.id == line.type_person_id.id:
+                    # compare the type_person_id of the partner with the type_person_id of the payment concept
+                    # and set the related fields
                     record.invoice_total = record.move_id.tax_totals["amount_total"]
                     record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
                     record.related_pay_from = line.pay_from
@@ -113,6 +125,7 @@ class AccountRetentionLine(models.Model):
                     ]
                     record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
 
+                    # compute the retention amount
                     record.retention_amount = (
                         (record.invoice_amount * record.related_percentage_tax_base / 100)
                         * record.related_percentage_fees
