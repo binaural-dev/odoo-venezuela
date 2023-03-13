@@ -62,9 +62,7 @@ class TestIvaRetentionBs(AccountRetentionTestCommon):
                 ],
             }
         )
-        retention_lines_data = self.Retention.compute_retention_lines_data(
-            invoice, ("iva", "in_invoice")
-        )
+        retention_lines_data = self.Retention.compute_retention_lines_data(invoice)
 
         self.assertEqual(len(retention_lines_data), 3)
 

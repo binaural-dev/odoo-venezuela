@@ -53,10 +53,14 @@ class AccountRetentionLine(models.Model):
 
     payment_id = fields.Many2one("account.payment", "Payment", ondelete="cascade", index=True)
 
-    payment_date = fields.Date()
+    payment_date = fields.Date(related="payment_id.date", store=True)
 
     payment_journal_id = fields.Many2one(
-        "account.journal", "Payment journal", ondelete="cascade", index=True
+        "account.journal",
+        "Payment journal",
+        ondelete="cascade",
+        index=True,
+        related="payment_id.journal_id",
     )
 
     related_pay_from = fields.Float(

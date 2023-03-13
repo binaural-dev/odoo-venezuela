@@ -12,7 +12,7 @@
                 <form string="Retention">
                     <header>
 	                    <button name="action_draft" type="object" states="cancel" string="Convertir a Borrador" />
-                        <button name="action_emitted" type="object" states="draft" string="Validar" class="oe_highlight"/>
+                        <button name="action_post" type="object" states="draft" string="Validar" class="oe_highlight"/>
                         <button name="action_cancel" type="object" states="emitted" string="Anular" confirm="¿Esta seguro que quiere anular este comprabante? Se revertiran los asientos contables asociados" />
                         <field name="state" widget="statusbar" nolabel="1"/>
                     </header>
@@ -41,14 +41,14 @@
                         <page name="retention line" string="Retention line">
                             <!-- <field name="foreign_currency_id" invisible="1"/>
                             <field name="bs_currency_id" invisible="1"/> -->
-                            <field colspan="4" name="retention_line" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}">
+                            <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}">
                                 <tree editable="bottom">
                                     <!-- <field name="bs_currency_id" invisible="1"/> -->
                                     <field name="name" readonly="1" optional="show"/>
                                     <field name="payment_concept_id"/>
-                                    <field name="invoice_total" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                    <field name="invoice_amount" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                    <field name="iva_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
+                                    <field name="invoice_total" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
+                                    <field name="invoice_amount"  widget="monetary" options="{'currency_field': 'company_currency_id'}" />
+                                    <field name="iva_amount" force_save="1" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                     <field name="related_pay_from" />
                                     <field name="related_percentage_tax_base" />
                                     <field name="related_percentage_fees" />

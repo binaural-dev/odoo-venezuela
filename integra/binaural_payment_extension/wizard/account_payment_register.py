@@ -73,7 +73,7 @@ class AccountPaymentRegister(models.TransientModel):
                     "code": self.retention_ref,
                     "type": self.retention_type,
                     # "payment_ids": [(6, 0, payment.id)],
-                    "retention_line": [
+                    "retention_line_ids": [
                         (
                             0,
                             0,
@@ -97,7 +97,7 @@ class AccountPaymentRegister(models.TransientModel):
                     "code": self.retention_ref,
                     "type": self.retention_type,
                     # "payment_ids": [(6, 0, payment.id)],
-                    "retention_line": [
+                    "retention_line_ids": [
                         (
                             0,
                             0,
