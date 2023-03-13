@@ -280,4 +280,18 @@ class AccountRetention(models.Model):
                 "foreign_retention_amount": retention_amount * invoice_id.foreign_inverse_rate,
             }
             lines_data.append(line_data)
-        return lines_data    
+        return lines_data 
+    
+    def action_create_islr_retention(self, partner_id, retention_lines, move_id):
+        """
+        """
+        self.env["account.retention"].create(
+            {
+                "type_retention": "islr",
+                "type": move_id.move_type,
+                "partner_id": partner_id.id,
+                "retention_line": retention_lines,
+                # "move_id": move_id.id,
+                "date": move_id.date,
+            }
+        )

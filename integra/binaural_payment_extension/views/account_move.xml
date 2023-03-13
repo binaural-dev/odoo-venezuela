@@ -32,13 +32,23 @@
                         </field>     
                     </page>
                     <page name="islr_retention" string="ISLR Retentions">
-                        <field name="retention_islr_line_ids" nolabel="1" readonly="1">
+                        <field name="retention_islr_line_ids" nolabel="1">
                             <tree editable='bottom'>
                                 <field name="is_retention_client" invisible="1" />
                                 <field name="name"/>
+                                <field name="payment_concept_id"/>
                                 <field name="invoice_total" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                 <field name="invoice_amount" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                 <field name="iva_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
+                                <field name="related_pay_from" />
+                                <field name="related_percentage_tax_base" />
+                                <field name="related_percentage_fees" />
+                                <field name="related_amount_subtract_fees" />
+                                <field name="retention_amount" />
+                                <field name="foreign_currency_rate" />
+                                <field name="foreign_invoice_total" />
+                                <field name="foreign_invoice_amount" />
+                                <field name="foreign_retention_amount" />
                             </tree>
                         </field>
                     </page>

@@ -1,5 +1,8 @@
 from odoo import api, fields, models, _
 from lxml import etree
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
@@ -224,9 +227,10 @@ class AccountMove(models.Model):
         Compute the foreign total billed of the invoice
         """
         for move in self:
-            move.foreign_total_billed = False
-            if move.invoice_line_ids:
-                move.foreign_total_billed = move.tax_totals["foreign_amount_total"] 
+            move.foreign_total_billed = 0
+            _logger.warning(move.tax_totals)
+            if move.invoice_line_ids and move.is_invoice(include_receipts=True):
+                move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
 
     @api.depends(
         "invoice_line_ids.currency_rate",

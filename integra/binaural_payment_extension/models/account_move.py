@@ -55,6 +55,16 @@ class AccountMoveRetention(models.Model):
             # res["context"]["default_invoice_line_ids"] = self.invoice_line_ids
             res["context"]["default_retention_type"] = self.move_type
         return res
+    
+    def action_post(self):
+        """
+        Override the action_post method to add the invoice lines to the payment register.
+        """
+        res = super().action_post()
+        retention = self.env["account.retention"].search([])
+        for move in self:
+            retention.action_create_islr_retention(move.partner_id, move.retention_islr_line_ids, move)
+        return res
 
     def action_post(self):
         """
