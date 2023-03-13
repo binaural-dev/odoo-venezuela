@@ -25,7 +25,7 @@ class AccountMoveRetention(models.Model):
         "account.retention.line",
         "move_id",
         string="ISLR Retention Lines",
-        domain=[("retention_id.type_retention", "=", "islr")]
+        # domain=[("retention_id.type_retention", "!=", "iva")]
     )
 
     retention_iva_line_ids = fields.One2many(
@@ -54,21 +54,8 @@ class AccountMoveRetention(models.Model):
                 )
                 else False
             )
-            # res["context"]["default_invoice_line_ids"] = self.invoice_line_ids
             res["context"]["default_retention_type"] = self.move_type
         return res
-
-#     def action_post(self):
-#         """
-#         Override the action_post method to add the invoice lines to the payment register.
-#         """
-#         res = super().action_post()
-#         retention = self.env["account.retention"].search([])
-#         for move in self:
-#             retention.action_create_islr_retention(
-#                 move.partner_id, move.retention_islr_line_ids, move
-#             )
-#         return res
 
     def action_post(self):
         """
@@ -79,6 +66,15 @@ class AccountMoveRetention(models.Model):
         for move in self:
             if not any(move.invoice_line_ids.mapped("tax_ids").filtered(lambda x: x.amount > 0)):
                 raise UserError(_('The invoice "%s"has no tax.'), move.name)
+            
+            if move.retention_islr_line_ids:
+                retention = Retention.create_retention(move, ("islr", "in_invoice"))
+                line_to_reconcile = retention.payment_ids[0].move_id.line_ids.filtered(
+                    lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
+                )[0]
+                move.islr_voucher_number = retention.number
+                move.js_assign_outstanding_line(line_to_reconcile.id)
+
             if move.generate_iva_retention:
                 retention = Retention.create_retention(move, ("iva", "in_invoice"))
                 line_to_reconcile = retention.payment_ids[0].move_id.line_ids.filtered(
