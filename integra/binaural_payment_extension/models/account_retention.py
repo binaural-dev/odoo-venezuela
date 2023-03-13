@@ -1,4 +1,4 @@
-from odoo import api, models, fields, _
+from odoo import api, models, fields, Command, _
 from datetime import datetime
 from odoo.exceptions import UserError
 
@@ -7,30 +7,6 @@ class AccountRetention(models.Model):
     _name = "account.retention"
     _description = "Retention"
     _check_company_auto = True
-
-    def sequence_iva_retention(self):
-        sequence = self.env["ir.sequence"].search([("code", "=", "retention.iva.control.number")])
-        if not sequence:
-            sequence = self.env["ir.sequence"].create(
-                {
-                    "name": "Numero de control retenciones IVA",
-                    "code": "retention.iva.control.number",
-                    "padding": 5,
-                }
-            )
-        return sequence
-
-    def sequence_islr_retention(self):
-        sequence = self.env["ir.sequence"].search([("code", "=", "retention.islr.control.number")])
-        if not sequence:
-            sequence = self.env["ir.sequence"].create(
-                {
-                    "name": "Numero de control retenciones ISLR",
-                    "code": "retention.islr.control.number",
-                    "padding": 5,
-                }
-            )
-        return sequence
 
     company_id = fields.Many2one(
         "res.company",
@@ -60,7 +36,8 @@ class AccountRetention(models.Model):
         [
             ("iva", "IVA"),
             ("islr", "ISLR"),
-        ]
+        ],
+        required=True,
     )
     type = fields.Selection(
         [
@@ -97,7 +74,7 @@ class AccountRetention(models.Model):
         states={"draft": [("readonly", False)]},
         help="Date of arrival of the document and date to be used to make the accounting record Keep blank to use current date.",
     )
-    retention_line = fields.One2many(
+    retention_line_ids = fields.One2many(
         "account.retention.line",
         "retention_id",
         "retention line",
@@ -129,11 +106,49 @@ class AccountRetention(models.Model):
 
     # company_currency_id = fields.Many2one('res.currency', related='company_id.currency_id', string="Company Currency")
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            sequence_number = ""
+            if vals.get("type_retention") == "iva":
+                sequence_number = self.get_sequence_iva_retention().next_by_id()
+            elif vals.get("type_retention") == "islr":
+                sequence_number = self.get_sequence_iva_retention().next_by_id()
+            vals["name"] = sequence_number
+            vals["number"] = sequence_number
+        return super().create(vals_list)
+
+    @api.model
+    def get_sequence_iva_retention(self):
+        sequence = self.env["ir.sequence"].search([("code", "=", "retention.iva.control.number")])
+        if not sequence:
+            sequence = self.env["ir.sequence"].create(
+                {
+                    "name": "Numero de control retenciones IVA",
+                    "code": "retention.iva.control.number",
+                    "padding": 5,
+                }
+            )
+        return sequence
+
+    @api.model
+    def get_sequence_islr_retention(self):
+        sequence = self.env["ir.sequence"].search([("code", "=", "retention.islr.control.number")])
+        if not sequence:
+            sequence = self.env["ir.sequence"].create(
+                {
+                    "name": "Numero de control retenciones ISLR",
+                    "code": "retention.islr.control.number",
+                    "padding": 5,
+                }
+            )
+        return sequence
+
     def action_draft(self):
         self.write({"state": "draft"})
         return True
 
-    def action_emitted(self):
+    def action_post(self):
         today = datetime.now()
         if not self.date_accounting:
             self.date_accounting = str(today)
@@ -141,15 +156,15 @@ class AccountRetention(models.Model):
             self.date = str(today)
         if self.type in ["in_invoice", "in_refund", "in_debit"]:
             # REVISAR CUANDO TOQUE EL FLUJO
-            self.make_accounting_entries(False)
+            self.payment_ids.action_post()
         elif self.type in ["out_invoice", "out_refund", "out_debit"]:
             if not self.number:
                 raise UserError("Introduce el número de comprobante")
-            self.make_accounting_entries(False)
+            self.payment_ids.action_post()
         return self.write({"state": "emitted"})
 
     def action_cancel(self):
-        for line in self.retention_line:
+        for line in self.retention_line_ids:
             if line.move_id and line.move_id.line_ids:
                 line.move_id.line_ids.remove_move_reconcile()
             if line.move_id and line.move_id.state != "draft":
@@ -163,20 +178,46 @@ class AccountRetention(models.Model):
         return True
 
     @api.model
-    def create_retention_payment(self, invoice_id, type_retention: tuple[str, str]):
-        """"""
+    def create_retention(self, invoice_id, type_retention: tuple[str, str]):
+        """
+        Calls the method to create the payment for the retention of the type specified in the
+        type_retention parameter.
+
+        Params
+        ------
+        invoice_id: account.move
+            The invoice to which the retention will be applied.
+        type_retention: tuple[str, str]
+            The type of retention and the type of invoice.
+
+        Returns
+        -------
+        account.retention
+            The retention created.
+        """
         if not invoice_id.partner_id.withholding_type_id:
             raise UserError(_("The partner has no withholding type."))
-        payment = None
+        retention = None
         if type_retention == ("iva", "in_invoice"):
-            payment = self.create_supplier_iva_retention_payment(invoice_id)
-        if not payment:
-            return
-        return payment
+            retention = self.create_supplier_iva_retention(invoice_id)
+            retention.action_post()
+        return retention
 
     @api.model
-    def create_supplier_iva_retention_payment(self, invoice_id):
+    def create_supplier_iva_retention(self, invoice_id):
+        """
+        Creates the payment, the retention and the retention lines for the supplier iva retention.
+
+        Params
+        ------
+        invoice_id: account.move
+            The invoice to which the retention will be applied.
+
+        Returns
+        -------
+        """
         Payment = self.env["account.payment"]
+        Retention = self.env["account.retention"]
         RetentionLine = self.env["account.retention.line"]
         payment = Payment.create(
             {
@@ -189,10 +230,17 @@ class AccountRetention(models.Model):
             }
         )
         retention_lines_data = self.compute_retention_lines_data(invoice_id, payment)
-        RetentionLine.create(retention_lines_data)
+        retention = Retention.create(
+            {
+                "payment_ids": [Command.link(payment.id)],
+                "type_retention": "iva",
+                "type": "in_invoice",
+                "partner_id": invoice_id.partner_id.id,
+                "retention_line_ids": [Command.create(line) for line in retention_lines_data],
+            }
+        )
         payment.compute_retention_amount_from_retention_lines()
-        payment.action_post()
-        return payment
+        return retention    
 
     @api.model
     def compute_retention_lines_data(self, invoice_id, payment=None):
@@ -205,6 +253,8 @@ class AccountRetention(models.Model):
             The invoice for which the retention lines are computed.
         type_retention: tuple[str,str]
             The type of retention and the type of invoice.
+        payment: account.payment
+            The payment for which the retention lines are computed.
 
         Returns
         -------
@@ -232,14 +282,14 @@ class AccountRetention(models.Model):
                 "name": _("Iva Retention"),
                 "invoice_type": invoice_id.move_type,
                 "move_id": invoice_id.id,
-                "payment_id": payment.id if payment else False,
+                "payment_id": payment.id if payment else None,
                 "aliquot": tax.amount,
                 "retention_amount": retention_amount,
                 "foreign_retention_amount": retention_amount * invoice_id.foreign_inverse_rate,
             }
             lines_data.append(line_data)
         return lines_data
-    
+
     def create_islr_retention_lines_data(self, invoice_id):
         """
         Computes the retention lines data for the given invoice.
@@ -255,7 +305,9 @@ class AccountRetention(models.Model):
             The retention lines data.
         """
         if not invoice_id.partner_id.withholding_type_id:
-            raise UserError(_("The partner %s has no withholding type."), invoice_id.partner_id.name)
+            raise UserError(
+                _("The partner %s has no withholding type."), invoice_id.partner_id.name
+            )
 
         tax_ids = invoice_id.invoice_line_ids.filtered(
             lambda l: l.tax_ids and l.tax_ids[0].amount > 0
@@ -280,17 +332,16 @@ class AccountRetention(models.Model):
                 "foreign_retention_amount": retention_amount * invoice_id.foreign_inverse_rate,
             }
             lines_data.append(line_data)
-        return lines_data 
-    
+        return lines_data
+
     def action_create_islr_retention(self, partner_id, retention_lines, move_id):
-        """
-        """
+        """ """
         self.env["account.retention"].create(
             {
                 "type_retention": "islr",
                 "type": move_id.move_type,
                 "partner_id": partner_id.id,
-                "retention_line": retention_lines,
+                "retention_line_ids": retention_lines,
                 # "move_id": move_id.id,
                 "date": move_id.date,
             }
