@@ -28,7 +28,7 @@ class AccountMoveRetention(models.Model):
         "account.retention.line",
         "move_id",
         string="ISLR Retention Lines",
-        # domain=[("retention_id.type_retention", "!=", "iva")]
+        domain=["|", ("retention_id", "=", False), ("retention_id.type_retention", "=", "islr")],
     )
 
     retention_iva_line_ids = fields.One2many(

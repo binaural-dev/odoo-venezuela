@@ -34,7 +34,7 @@ class AccountRetentionLine(models.Model):
     amount_tax_ret = fields.Float(string="Retained tax", digits=(16, 2))
     base_ret = fields.Float("Retained base", digits=(16, 2))
     imp_ret = fields.Float(string="tax incurred", digits=(16, 2))
-    retention_rate = fields.Float(store=True, digits=(16, 2))
+    retention_rate = fields.Float(store=True, digits="Tasa")
     move_id = fields.Many2one("account.move", "move", ondelete="cascade")
     # retention_move_id = fields.One2many("account.move", "retention_move_id", string="Retention move")
     is_retention_client = fields.Boolean(default=True)
@@ -101,9 +101,8 @@ class AccountRetentionLine(models.Model):
         """
         This compute is used to get the related fields from the payment concept of the partner
         to generate the ISLR retention line
-
         """
-        for record in self:
+        for record in self.filtered(lambda l: l.payment_concept_id):
             # Payment concept of the line
             payment_concept = record.payment_concept_id.line_payment_concept_ids
             for line in payment_concept:

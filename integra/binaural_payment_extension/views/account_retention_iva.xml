@@ -10,7 +10,7 @@
             <field name="arch" type="xml">
                 <form string="Retention">
                     <header>
-	                    <button name="action_draft" type="object" states="cancel" string="Convertir a Borrador" />
+	                <button name="action_draft" type="object" states="cancel" string="Convertir a Borrador" />
                         <button name="action_post" type="object" states="draft" string="Validar" class="oe_highlight"/>
                         <button name="action_cancel" type="object" states="emitted" string="Anular" confirm="¿Esta seguro que quiere anular este comprabante? Se revertiran los asientos contables asociados" />
                         <field name="state" widget="statusbar" nolabel="1"/>
@@ -25,7 +25,7 @@
                         <field name="date" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
                     </group>
                     <notebook>
-                         <page name="Retention line">
+                	<page name="Retention line">
                             <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Retention Lines" editable="bottom">
                                     <field name="name"/>
