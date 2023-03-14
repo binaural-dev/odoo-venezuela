@@ -28,13 +28,13 @@ msgstr "% Base Imponible"
 #. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_accumulated_fees
 msgid "Accumulated Fees"
-msgstr ""
+msgstr "Tarifa Acumulada"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention__accumulated_rate_ids
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_fees_retention_form_binaural_payment_extension
 msgid "Accumulated fees"
-msgstr ""
+msgstr "Tarifa Acumulada"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_withholding_type__state
