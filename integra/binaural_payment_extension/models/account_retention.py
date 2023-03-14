@@ -197,23 +197,22 @@ class AccountRetention(models.Model):
         """
         if not invoice_id.partner_id.withholding_type_id:
             raise UserError(_("The partner has no withholding type."))
-        retention = None
-        if type_retention == ("iva", "in_invoice"):
-            retention = self.create_supplier_iva_retention(invoice_id)
-            retention.action_post()
-        if type_retention == ("islr", "in_invoice"):
-            payment_type = "outbound"
-            retention = self.create_supplier_islr_retention(invoice_id, payment_type)
-            retention.action_post()
-        if type_retention == ("islr", "in_refund"):
+
+        retention = self.env["account.retention"]
+        payment_type = "outbound"
+        if type_retention[1] == "in_refund":
             payment_type = "inbound"
+
+        if type_retention[0] == "iva":
+            retention = self.create_supplier_iva_retention(invoice_id, payment_type)
+        if type_retention[0] == "islr":
             retention = self.create_supplier_islr_retention(invoice_id, payment_type)
-            retention.action_post()
-        
+
+        retention.action_post()
         return retention
 
     @api.model
-    def create_supplier_iva_retention(self, invoice_id):
+    def create_supplier_iva_retention(self, invoice_id, payment_type):
         """
         Creates the payment, the retention and the retention lines for the supplier iva retention.
 
@@ -227,10 +226,9 @@ class AccountRetention(models.Model):
         """
         Payment = self.env["account.payment"]
         Retention = self.env["account.retention"]
-        RetentionLine = self.env["account.retention.line"]
         payment = Payment.create(
             {
-                "payment_type": "outbound",
+                "payment_type": payment_type,
                 "partner_type": "supplier",
                 "partner_id": invoice_id.partner_id.id,
                 "payment_type_retention": "iva",
@@ -252,7 +250,7 @@ class AccountRetention(models.Model):
         )
         payment.compute_retention_amount_from_retention_lines()
         return retention
-        
+
     @api.model
     def create_supplier_islr_retention(self, invoice_id, payment_type):
         """
@@ -320,10 +318,12 @@ class AccountRetention(models.Model):
 
         withholding_amount = invoice_id.partner_id.withholding_type_id.value
         lines_data = []
-        base_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
-        subtotals = "subtotals" if base_is_vef else "foreign_subtotals"
-        subtotals_name = invoice_id.tax_totals[subtotals][0]["name"]
-        for tax_group in invoice_id.tax_totals["groups_by_subtotal"][subtotals_name]:
+        subtotals_name = invoice_id.tax_totals["subtotals"][0]["name"]
+        tax_groups = zip(
+            invoice_id.tax_totals["groups_by_subtotal"][subtotals_name],
+            invoice_id.tax_totals["groups_by_foreign_subtotal"][subtotals_name],
+        )
+        for tax_group, foreign_tax_group in tax_groups:
             taxes = tax_ids.filtered(lambda l: l.tax_group_id.id == tax_group["tax_group_id"])
             if not taxes:
                 continue
@@ -335,6 +335,14 @@ class AccountRetention(models.Model):
                 "move_id": invoice_id.id,
                 "payment_id": payment.id if payment else None,
                 "aliquot": tax.amount,
+                "iva_amount": tax_group["tax_group_amount"],
+                "invoice_total": invoice_id.tax_totals["amount_total"],
+                "related_percentage_tax_base": withholding_amount,
+                "invoice_amount": tax_group["tax_group_base_amount"],
+                "foreign_currency_rate": invoice_id.foreign_rate,
+                "foreign_invoice_amount": foreign_tax_group["tax_group_base_amount"],
+                "foreign_iva_amount": foreign_tax_group["tax_group_amount"],
+                "foreign_invoice_total": invoice_id.tax_totals["foreign_amount_total"],
                 "retention_amount": retention_amount,
                 "foreign_retention_amount": retention_amount * invoice_id.foreign_inverse_rate,
             }
