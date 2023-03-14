@@ -6,10 +6,10 @@
             <field name="name">Free Form</field>
             <field name="model">account.move</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">binaural_account.template_invoice_free_form_binaural_invoice</field>
-            <field name="report_file">binaural_account.template_invoice_free_form_binaural_invoice</field>
+            <field name="report_name">binaural_invoice.template_invoice_free_form_binaural_invoice</field>
+            <field name="report_file">binaural_invoice.template_invoice_free_form_binaural_invoice</field>
             <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
-            <field name="paperformat_id" ref="binaural_account.invoice_sale_note_paperformat_binaural_invoice"/>
+            <field name="paperformat_id" ref="binaural_invoice.invoice_sale_note_paperformat_binaural_invoice"/>
             <field name="binding_model_id" ref="account.model_account_move"/>
             <field name="binding_type">report</field>
             <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
@@ -333,7 +333,7 @@
                 <t t-foreach="docs" t-as="o">
                     <t t-set="lang"
                        t-value="o.invoice_user_id.sudo().lang if o.move_type in ('in_invoice', 'in_refund') else o.partner_id.lang"/>
-                    <t t-if="o._get_name_invoice_report() == 'account.report_invoice_document'" t-call="binaural_account.template_invoice_free_form_binaural_invoice" t-lang="lang"/>
+                    <t t-if="o._get_name_invoice_report() == 'account.report_invoice_document'" t-call="binaural_invoice.template_invoice_free_form_binaural_invoice" t-lang="lang"/>
                 </t>
             </t>
         </template>
@@ -344,7 +344,7 @@
                     <t t-set="lang"
                        t-value="o.invoice_user_id.sudo().lang if o.move_type in ('in_invoice', 'in_refund') else o.partner_id.lang"/>
                     <t t-set="print_with_payments" t-value="True"/>
-                    <t t-if="o._get_name_invoice_report() == 'account.report_invoice_document'" t-call="binaural_account.template_invoice_free_form_binaural_invoice" t-lang="lang"/>
+                    <t t-if="o._get_name_invoice_report() == 'account.report_invoice_document'" t-call="binaural_invoice.template_invoice_free_form_binaural_invoice" t-lang="lang"/>
                 </t>
             </t>
         </template>
