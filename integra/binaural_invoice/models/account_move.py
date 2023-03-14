@@ -186,6 +186,9 @@ class AccountMove(models.Model):
         for rec in self:
             rec.foreign_total_billed = rec.amount_total * rec.foreign_rate
 
+    def _post(self, soft=True):
+        res = super()._post(soft)
+
     @api.depends("foreign_currency_id", "amount_residual", "foreign_rate")
     def _compute_foreign_total_due(self):
         """
