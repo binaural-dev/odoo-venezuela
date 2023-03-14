@@ -35,7 +35,8 @@ class AccountRetentionLine(models.Model):
     base_ret = fields.Float("Retained base", digits=(16, 2))
     imp_ret = fields.Float(string="tax incurred", digits=(16, 2))
     retention_rate = fields.Float(store=True, digits=(16, 2))
-    move_id = fields.Many2one("account.move", "move", readonly=True, ondelete="cascade")
+    move_id = fields.Many2one("account.move", "move", ondelete="cascade")
+    # retention_move_id = fields.One2many("account.move", "retention_move_id", string="Retention move")
     is_retention_client = fields.Boolean(default=True)
     display_invoice_number = fields.Char(
         string="Invoice Number", compute="_compute_display_invoice_number", store=True
@@ -103,10 +104,6 @@ class AccountRetentionLine(models.Model):
 
         """
         for record in self:
-            if not record.move_id.journal_id.fiscal:
-                raise ValidationError(_("The journal must be fiscal"))
-            if not record.move_id.partner_id.type_person_id:
-                raise ValidationError(_("The partner must have a type of person"))
             # Payment concept of the line
             payment_concept = record.payment_concept_id.line_payment_concept_ids
             for line in payment_concept:

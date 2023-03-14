@@ -113,7 +113,7 @@ class AccountRetention(models.Model):
             if vals.get("type_retention") == "iva":
                 sequence_number = self.get_sequence_iva_retention().next_by_id()
             elif vals.get("type_retention") == "islr":
-                sequence_number = self.get_sequence_iva_retention().next_by_id()
+                sequence_number = self.get_sequence_islr_retention().next_by_id()
             vals["name"] = sequence_number
             vals["number"] = sequence_number
         return super().create(vals_list)
@@ -159,7 +159,7 @@ class AccountRetention(models.Model):
             self.payment_ids.action_post()
         elif self.type in ["out_invoice", "out_refund", "out_debit"]:
             if not self.number:
-                raise UserError("Insert a number for the retention")
+                raise UserError(_("Insert a number for the retention"))
             self.payment_ids.action_post()
         return self.write({"state": "emitted"})
 
@@ -202,8 +202,14 @@ class AccountRetention(models.Model):
             retention = self.create_supplier_iva_retention(invoice_id)
             retention.action_post()
         if type_retention == ("islr", "in_invoice"):
-            retention = self.create_supplier_islr_retention(invoice_id)
+            payment_type = "outbound"
+            retention = self.create_supplier_islr_retention(invoice_id, payment_type)
             retention.action_post()
+        if type_retention == ("islr", "in_refund"):
+            payment_type = "inbound"
+            retention = self.create_supplier_islr_retention(invoice_id, payment_type)
+            retention.action_post()
+        
         return retention
 
     @api.model
@@ -248,7 +254,7 @@ class AccountRetention(models.Model):
         return retention
         
     @api.model
-    def create_supplier_islr_retention(self, invoice_id):
+    def create_supplier_islr_retention(self, invoice_id, payment_type):
         """
         Creates the payment, the retention and the retention lines for the supplier islr retention.
 
@@ -264,7 +270,7 @@ class AccountRetention(models.Model):
         Retention = self.env["account.retention"]
         payment = Payment.create(
             {
-                "payment_type": "outbound",
+                "payment_type": payment_type,
                 "partner_type": "supplier",
                 "partner_id": invoice_id.partner_id.id,
                 "payment_type_retention": "islr",
