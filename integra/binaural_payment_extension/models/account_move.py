@@ -1,5 +1,8 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountMoveRetention(models.Model):
@@ -67,11 +70,19 @@ class AccountMoveRetention(models.Model):
             if not any(move.invoice_line_ids.mapped("tax_ids").filtered(lambda x: x.amount > 0)):
                 raise UserError(_('The invoice "%s"has no tax.'), move.name)
 
-            if move.retention_islr_line_ids:
+            if move.retention_islr_line_ids and move.move_type == "in_invoice":
                 self._validate_amount_islr_retention()
                 retention = Retention.create_retention(move, ("islr", "in_invoice"))
                 line_to_reconcile = retention.payment_ids[0].move_id.line_ids.filtered(
                     lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
+                )[0]
+                move.islr_voucher_number = retention.number
+                move.js_assign_outstanding_line(line_to_reconcile.id)
+
+            if move.retention_islr_line_ids and move.move_type == "in_refund":
+                retention = Retention.create_retention(move, ("islr", "in_refund"))
+                line_to_reconcile = retention.payment_ids[0].move_id.line_ids.filtered(
+                    lambda l: l.account_id.account_type == "liability_payable" and l.credit > 0
                 )[0]
                 move.islr_voucher_number = retention.number
                 move.js_assign_outstanding_line(line_to_reconcile.id)

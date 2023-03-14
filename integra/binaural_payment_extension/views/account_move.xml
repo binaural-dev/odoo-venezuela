@@ -25,9 +25,9 @@
                                 <field name="invoice_total" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                 <field name="invoice_amount" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                 <field name="iva_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-				<field name="aliquot"/>
-				<field name="retention_amount"/>
-				<field name="foreign_retention_amount"/>
+                                <field name="aliquot"/>
+                                <field name="retention_amount"/>
+                                <field name="foreign_retention_amount"/>
                             </tree>
                         </field>     
                     </page>
