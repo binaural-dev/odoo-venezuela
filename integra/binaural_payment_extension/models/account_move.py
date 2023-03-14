@@ -88,10 +88,15 @@ class AccountMoveRetention(models.Model):
                 move.js_assign_outstanding_line(line_to_reconcile.id)
 
             if move.generate_iva_retention:
-                retention = Retention.create_retention(move, ("iva", "in_invoice"))
-                line_to_reconcile = retention.payment_ids[0].move_id.line_ids.filtered(
-                    lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
-                )[0]
+                retention = Retention.create_retention(move, ("iva", move.move_type))
+                if move.move_type == "in_invoice":
+                    line_to_reconcile = retention.payment_ids[0].move_id.line_ids.filtered(
+                        lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
+                    )[0]
+                else:
+                    line_to_reconcile = retention.payment_ids[0].move_id.line_ids.filtered(
+                        lambda l: l.account_id.account_type == "liability_payable" and l.credit > 0
+                    )[0]
                 move.iva_voucher_number = retention.number
                 move.js_assign_outstanding_line(line_to_reconcile.id)
         return res
