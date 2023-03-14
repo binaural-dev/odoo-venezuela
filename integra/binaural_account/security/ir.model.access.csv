@@ -1,2 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_binaural_invoice_binaural_invoice,binaural_invoice.binaural_invoice,model_binaural_invoice_binaural_invoice,base.group_user,1,1,1,1

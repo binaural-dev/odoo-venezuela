@@ -35,6 +35,11 @@ class AccountMove(models.Model):
         readonly=False,
     )
 
+    correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
+    invoice_reception_date = fields.Date(
+        "Reception Date", help="Indicates when the invoice was received by the client/company"
+    )
+
     foreign_rate = fields.Float(
         help="Tax of the line", compute="_compute_rate", digits="Tasa", default=0.0, store=True
     )
