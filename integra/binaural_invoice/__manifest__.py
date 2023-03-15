@@ -16,16 +16,10 @@
         "report/report_invoice_free_form.xml",
         "report/report_invoice_sale_note.xml",
         "views/account_move.xml",
-        "wizard/account_payment_register.xml",
         "wizard/accounting_reports_views.xml",
     ],
 
     'images': ['static/description/icon.png'],
 
-    'application':True,
-    'assets': {
-        'web.assets_backend': [
-            'binaural_invoice/static/src/components/**/*'
-        ],
-    },
+    'application': True
 }

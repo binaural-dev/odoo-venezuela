@@ -18,12 +18,7 @@
                         </group>
                     </sheet>
                     <footer>
-                        <t t-if="report == 'Sale Book'">
-                            <button name="generate_sales_book" type="object" string="Generar Informe"/>
-                        </t>
-                        <t t-else="">
-                            <button name="generate_report" type="object" string="Generar Informe" />
-                        </t>  
+                        <button name="generate_report" type="object" string="Generar Informe" />
                     </footer> 
                 </form>
             </field>
