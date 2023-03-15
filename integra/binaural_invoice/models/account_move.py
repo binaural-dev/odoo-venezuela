@@ -186,9 +186,6 @@ class AccountMove(models.Model):
         for rec in self:
             rec.foreign_total_billed = rec.amount_total * rec.foreign_rate
 
-    def _post(self, soft=True):
-        res = super()._post(soft)
-
     @api.depends("foreign_currency_id", "amount_residual", "foreign_rate")
     def _compute_foreign_total_due(self):
         """
@@ -198,8 +195,43 @@ class AccountMove(models.Model):
         for rec in self:
             rec.foreign_total_due = rec.amount_residual * rec.foreign_rate
 
+    def _post(self, soft=True):
+        res = super()._post(soft)
+        for move in res:
+            if move.is_valid_to_sequence():
+                move.correlative = move.get_sequence()
+
     def action_register_payment(self):
 
         res = super().action_register_payment()
         res["context"]["default_foreign_currency_rate"] = self.foreign_rate
         return res
+
+    @api.model
+    def is_valid_to_sequence(self) -> bool:
+        """ Check if the invoice satisfy the conditions to 
+        associate a new sequence number.
+
+        Returns
+        -------
+            True or False whether the invoice already has a 
+            sequence number or not.
+        """
+
+        return self.move_type in ["out_invoice", "out_refund"] and not self.correlative
+
+    @api.model
+    def get_sequence(self):
+        """ Allow the invoice to have both a generic sequence
+        number or a specific one given certain conditions.
+
+        Returns
+        -------
+            The next number from the sequence to be assigned.
+        """
+
+        self.ensure_one()
+        sequence = self.env["ir.sequence"].sudo()
+        correlative = sequence.search([("code", "=", "invoice.correlative")])
+
+        return correlative.next_by_id(correlative.id)
