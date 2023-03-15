@@ -67,9 +67,6 @@ class AccountMoveRetention(models.Model):
         res = super().action_post()
         Retention = self.env["account.retention"]
         for move in self:
-            if not any(move.invoice_line_ids.mapped("tax_ids").filtered(lambda x: x.amount > 0)):
-                raise UserError(_('The invoice "%s"has no tax.'), move.name)
-
             if move.retention_islr_line_ids and move.move_type == "in_invoice":
                 self._validate_amount_islr_retention()
                 retention = Retention.create_retention(move, ("islr", "in_invoice"))
@@ -88,7 +85,11 @@ class AccountMoveRetention(models.Model):
                 move.js_assign_outstanding_line(line_to_reconcile.id)
 
             if move.generate_iva_retention:
+                if not any(move.invoice_line_ids.mapped("tax_ids").filtered(lambda x: x.amount > 0)):
+                    raise UserError(_('The invoice "%s"has no tax.'), move.name)
                 retention = Retention.create_retention(move, ("iva", move.move_type))
+                if move.move_type not in ("in_invoice", "in_refund"):
+                    continue
                 if move.move_type == "in_invoice":
                     line_to_reconcile = retention.payment_ids[0].move_id.line_ids.filtered(
                         lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0

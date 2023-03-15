@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
     <data>
-
         <record id="view_retention_iva_form_binaural_payment_extension" model="ir.ui.view">
             <field name="name">Retention IVA client form</field>
             <field name="model">account.retention</field>
@@ -94,30 +92,26 @@
             <field name="name">IVA Retention Clients</field>
             <field name="res_model">account.retention</field>
             <field name="binding_view_types">list</field>
-	        <field name="view_mode">tree,form</field>
+	    <field name="view_mode">tree,form</field>
             <field name="view_ids" 
-                    eval="[(5, 0, 0), 
+                   eval="[(5, 0, 0), 
                         (0, 0, {'view_mode': 'tree', 'view_id': ref('view_retention_iva_tree_binaural_payment_extension')}),
                         (0, 0, {'view_mode': 'form', 'view_id': ref('view_retention_iva_form_binaural_payment_extension')})]"/>
             <field name="context">{"default_type":'out_invoice', "default_type_retention":'iva'}</field>
-	        <field name="domain">[('type_retention', '=', 'iva'), ('type', '=', 'out_invoice')]</field>
+	    <field name="domain">[('type_retention', '=', 'iva'), ('type', '=', 'out_invoice')]</field>
         </record>
 
          <record id="action_retention_iva_supplier"  model="ir.actions.act_window">
             <field name="name">IVA Retention Suppliers</field>
             <field name="res_model">account.retention</field>
             <field name="binding_view_types">list</field>
-	        <field name="view_mode">tree,form</field>
+	    <field name="view_mode">tree,form</field>
             <field name="view_ids" 
-                    eval="[(5, 0, 0), 
+                   eval="[(5, 0, 0), 
                         (0, 0, {'view_mode': 'tree', 'view_id': ref('view_retention_iva_tree_binaural_payment_extension')}),
                         (0, 0, {'view_mode': 'form', 'view_id': ref('view_retention_iva_form_binaural_payment_extension')})]"/>
             <field name="context">{"default_type":'in_invoice', "default_type_retention":'iva'}</field>
-	        <field name="domain">[('type_retention', '=', 'iva'), ('type', '=', 'in_invoice')]</field>
+	    <field name="domain">[('type_retention', '=', 'iva'), ('type', '=', 'in_invoice')]</field>
         </record>
-
-    
     </data>
-    
-
 </odoo>

@@ -1,6 +1,10 @@
 from odoo import api, models, fields, Command, _
+from collections import defaultdict
 from datetime import datetime
 from odoo.exceptions import UserError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountRetention(models.Model):
@@ -87,6 +91,9 @@ class AccountRetention(models.Model):
         "retention_id",
         "payment_id",
         "Payments",
+        compute="_compute_payments",
+        readonly=False,
+        store=True,
         help="Payments",
     )
 
@@ -105,6 +112,78 @@ class AccountRetention(models.Model):
     # )
 
     # company_currency_id = fields.Many2one('res.currency', related='company_id.currency_id', string="Company Currency")
+
+    @api.depends("partner_id")
+    def _compute_payments(self):
+        for retention in self.filtered(
+            lambda r: (r.type_retention, r.state) == ("iva", "draft") and r.partner_id
+        ):
+            invoices = self.env["account.move"].search(
+                [
+                    ("partner_id", "=", retention.partner_id.id),
+                    ("state", "=", "posted"),
+                    ("move_type", "in", ("in_refund", "in_invoice")),
+                    ("retention_iva_line_ids", "=", False),
+                    ("amount_residual", ">", 0),
+                ]
+            )
+            invoices_with_taxes = invoices.filtered(
+                lambda i: any(line.tax_ids[0].amount > 0 for line in i.line_ids)
+            )
+            if not any(invoices_with_taxes):
+                raise UserError(
+                    _("There are no invoices with taxes to be retained for the partner.")
+                )
+            retention.payment_ids.unlink()
+            retention.retention_line_ids.unlink()
+            Payment = self.env["account.payment"]
+            payment_vals = {
+                "partner_type": "supplier",
+                "partner_id": retention.partner_id.id,
+                "payment_type_retention": "iva",
+                "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
+                "is_retention": True,
+                "currency_id": self.env.user.company_id.currency_id.id,
+            }
+
+            in_refunds = invoices.filtered(lambda i: i.move_type == "in_refund")
+            in_invoices = invoices.filtered(lambda i: i.move_type == "in_invoice")
+
+            def account_move_void_recordset():
+                return self.env["account.move"]
+
+            in_refunds_dict = defaultdict(account_move_void_recordset)
+            for refund in in_refunds:
+                in_refunds_dict[refund.foreign_rate] += refund
+            in_invoices_dict = defaultdict(account_move_void_recordset)
+            for invoice in in_invoices:
+                in_invoices_dict[invoice.foreign_rate] += invoice
+
+            retention_lines_data = []
+            payments = Payment
+            for refunds in in_refunds_dict.values():
+                payment_vals["payment_type"] = "inbound"
+                payment = Payment.create(payment_vals)
+                payments += payment
+                for refund in refunds:
+                    retention_lines_data.append(self.compute_retention_lines_data(refund, payment))
+            for invoices in in_invoices_dict.values():
+                payment_vals["payment_type"] = "outbound"
+                payment = Payment.create(payment_vals)
+                payments += payment
+                for invoice in invoices:
+                    retention_lines_data.append(self.compute_retention_lines_data(invoice, payment))
+            _logger.warning("Retention lines data %s", retention_lines_data)
+            retention_lines = self.env["account.retention.line"].create(
+                line for lines in retention_lines_data for line in lines
+            )
+            payments.compute_retention_amount_from_retention_lines()
+            retention.update(
+                {
+                    "retention_line_ids": retention_lines.ids,
+                    "payment_ids": payments.ids,
+                }
+            )
 
     @api.model_create_multi
     def create(self, vals_list):
