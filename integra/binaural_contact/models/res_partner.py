@@ -49,7 +49,7 @@ class ResPartner(models.Model):
                             )
                         )
                     vals["name"] = name
-                return super(ResPartner, self).create(vals_list)
+        return super(ResPartner, self).create(vals_list)
 
     def get_default_name_by_vat(self):
 
