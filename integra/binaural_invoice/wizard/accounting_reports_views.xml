@@ -11,15 +11,19 @@
                             <group>
                                 <field name="report"/>
                                 <field name="company_id"/>
-                                <field name="date_start"/>
-                                <field name="date_end"/>
-                                <field name="type_report"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
                                 <field name="currency_system"/>
                             </group>
                         </group>
                     </sheet>
                     <footer>
-                        <button name="generate_report" type="object" string="Generar Informe"/>
+                        <t t-if="report == 'Sale Book'">
+                            <button name="generate_sales_book" type="object" string="Generar Informe"/>
+                        </t>
+                        <t t-else="">
+                            <button name="generate_report" type="object" string="Generar Informe" />
+                        </t>  
                     </footer> 
                 </form>
             </field>

@@ -11,14 +11,10 @@
     # always loaded
     "data": [
         "security/ir.model.access.csv",
-
-        "data/account_data.xml",
         "data/invoice_free_form_paperformat.xml",
         "data/invoice_sale_note_paperformat.xml",
         "report/report_invoice_free_form.xml",
         "report/report_invoice_sale_note.xml",
-
-        "views/res_config_settings.xml",
         "views/account_move.xml",
         "wizard/account_payment_register.xml",
         "wizard/accounting_reports_views.xml",
