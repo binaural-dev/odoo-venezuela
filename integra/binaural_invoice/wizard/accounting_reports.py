@@ -60,7 +60,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             taxes = self._determinate_amount_taxeds(move)
 
             sale_book_line = {
-                "operation_number": count,
+                "operation_number": count + 1,
                 "document_date": self._format_date(move.date),
                 "vat": move.vat,
                 "partner_name": move.invoice_partner_display_name,
@@ -195,9 +195,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         cell_number = workbook.add_format({"num_format": "#,##0.00"})
         cell_bold_abstract = workbook.add_format({"bold": True})
 
-        worksheet.set_column(1, 29, 10)
-        worksheet.set_column(5, 5, 15)
-
         # header xml
         worksheet.merge_range(
             "D1:F1",
@@ -223,12 +220,25 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             worksheet.write(init_row, col, name, cell_bold)
 
         for count, line in enumerate(sale_book_lines):
-            row = init_row + 1 + count
-            col = init_col + count - 1
+            row = init_row + count + 1 
+            col = init_col + count 
 
-            for _, line in line.items():
-                worksheet.write(row, col, line)
-                col += 1
+            worksheet.write(row, col, line.get("operation_number"))
+            worksheet.write(row, col + 1, line.get("document_date"))
+            worksheet.write(row, col + 2, line.get("partner_name"))
+            worksheet.write(row, col + 3, line.get("type"))
+            worksheet.write(row, col + 4, line.get("vat"))
+            worksheet.write(row, col + 5, line.get("correlative"))
+            worksheet.write(row, col + 6, line.get("document_number"))
+            worksheet.write(row, col + 7, line.get("number_invoice_affected"))
+            worksheet.write(row, col + 8, line.get("total_sales_iva"))
+            worksheet.write(row, col + 9, line.get("total_sales_not_iva"))
+            worksheet.write(row, col + 10, line.get("IVA8%"))
+            worksheet.write(row, col + 11, line.get("IVA16%"))
+            worksheet.write(row, col + 12, line.get("tax_base_8"))
+            worksheet.write(row, col + 13, line.get("tax_base_16"))
+            worksheet.write(row, col + 14, line.get("aliquot_8"))
+            worksheet.write(row, col + 15, line.get("aliquot_16"))
 
         workbook.close()
         return file.getvalue()
