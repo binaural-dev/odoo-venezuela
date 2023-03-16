@@ -158,8 +158,9 @@ class AccountRetention(models.Model):
         if not self.date:
             self.date = str(today)
         if self.type in ["in_invoice", "in_refund", "in_debit"]:
+
             if not self.payment_ids:
-                _logger.warning("ENTRO A INVOICE")
+                
                 payment = self.create_payment_from_retention_form()
                 self.payment_ids = payment
                 self.conciliate_payment_to_move(payment)
@@ -192,14 +193,18 @@ class AccountRetention(models.Model):
             if not retention.retention_line_ids.payment_concept_id:
                 raise UserError(_("Select a payment concept"))
             # if not retention.payment_ids:
-            _logger.warning("ENTRO A CREAR EL PAGO")
+            
+            payment_type = "outbound"
+            if retention.retention_line_ids.move_id.type == "in_refund":
+                payment_type = "inbound"
+
             Payment = self.env["account.payment"]
             payment = Payment.create(
                 {
-                    "state": "draft",
-                    "payment_type": "outbound",
+                    "payment_type": payment_type,
                     "partner_type": "supplier",
                     "partner_id": retention.retention_line_ids.move_id.partner_id.id,
+                    "state": "draft",
                     "payment_type_retention": "islr",
                     "payment_method_id": self.env.ref(
                         "account.account_payment_method_manual_in"
@@ -210,22 +215,22 @@ class AccountRetention(models.Model):
                     "currency_id": self.env.user.company_id.currency_id.id,
                 }
             )
-            _logger.warning("PAGO CREADO %s", payment)
             payment.compute_retention_amount_from_retention_lines()
-            # retention.payment_ids = payment
-            _logger.warning("PAGO %s", payment[0].move_id.line_ids)
-
             return payment
 
     def conciliate_payment_to_move(self, payment):
-        # _logger.warning("ENTRO A RECONCILIARRRRRRRRRRRRRRRRRRRRRRRRR")
-        # _logger.warning("PAGO %s", payment[0].move_id.line_ids)
+        payment.action_post()
         for retention in self:
-
-            line_to_reconcile = payment[0].move_id.line_ids.filtered(
-                lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
-            )[0]
-            retention.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
+            if payment.payment_type == "outbound":
+                line_to_reconcile = payment[0].move_id.line_ids.filtered(
+                    lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
+                )[0]
+                retention.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
+            elif payment.payment_type == "inbound":
+                line_to_reconcile = payment[0].move_id.line_ids.filtered(
+                    lambda l: l.account_id.account_type == "liability_receivable" and l.credit > 0
+                )[0]
+                retention.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
 
     @api.model
     def create_retention(self, invoice_id, type_retention: tuple[str, str]):
@@ -314,8 +319,6 @@ class AccountRetention(models.Model):
         Returns
         -------
         """
-        _logger.warning("TROSTEEEEEEEEEEEEEEEE")
-
         Payment = self.env["account.payment"]
         Retention = self.env["account.retention"]
         payment = Payment.create(
