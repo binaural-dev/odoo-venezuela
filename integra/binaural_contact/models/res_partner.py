@@ -40,14 +40,15 @@ class ResPartner(models.Model):
             if vals.get("vat"):
                 prefix_vat = vals.get("prefix_vat")
                 vat = vals.get("vat")
-                name, flag = binaural_cne_query.get_default_name_by_vat(self, prefix_vat, vat)
-                if not flag:
-                    raise MissingError(
-                        _(
-                            "Error to connect with CNE, please check your internet connection or try again later"
+                if prefix_vat == "V":
+                    name, flag = binaural_cne_query.get_default_name_by_vat(self, prefix_vat, vat)
+                    if not flag:
+                        raise MissingError(
+                            _(
+                                "Error to connect with CNE, please check your internet connection or try again later"
+                            )
                         )
-                    )
-                vals["name"] = name
+                    vals["name"] = name
         return super(ResPartner, self).create(vals_list)
 
     def get_default_name_by_vat(self):
