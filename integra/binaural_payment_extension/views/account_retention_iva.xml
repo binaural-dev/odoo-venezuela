@@ -24,9 +24,10 @@
                     </group>
                     <notebook>
                 	<page name="Retention line">
-                            <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
+                            <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Retention Lines" editable="bottom">
                                     <field name="name"/>
+				    <field name="move_id"/>
                                     <field name="invoice_total" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                     <field name="invoice_amount" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                     <field name="iva_amount" force_save="1" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
@@ -37,11 +38,12 @@
                             </field>
                         </page>
                         <page name="Payments" string="payments">
-                            <field name="payment_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
+                            <field name="payment_ids" nolabel="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Payments" editable="bottom">
                                     <field name="date"/>
                                     <field name="name"/>
                                     <field name="amount"/>
+				    <field name="state"/>
                                 </tree>
                             </field>
                         </page>
