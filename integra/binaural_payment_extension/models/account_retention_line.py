@@ -95,6 +95,11 @@ class AccountRetentionLine(models.Model):
     foreign_retention_amount = fields.Float()
     foreign_currency_rate = fields.Float(string="Rate", tracking=True)
 
+    def unlink(self):
+        for record in self:
+            record.payment_id.unlink()
+        return super().unlink()
+
     @api.onchange("payment_concept_id")
     @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
