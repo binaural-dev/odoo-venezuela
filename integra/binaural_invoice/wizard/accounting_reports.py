@@ -60,17 +60,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             taxes = self._determinate_amount_taxeds(move)
 
             sale_book_line = {
-                "operation_number": count,
+                "operation_number": count + 1,
                 "document_date": self._format_date(move.date),
                 "vat": move.vat,
                 "partner_name": move.invoice_partner_display_name,
                 "document_number": move.name,
                 "move_type": self._determinate_type(move.move_type),
                 "transaction_type": self._determinate_transaction_type(move),
-                "number_invoice_affected": move.reversed_entry_id.name,
-                "correlative": move.correlative,
-                "IVA8%": 0.08,
-                "IVA16%": 0.16,
+                "number_invoice_affected": move.reversed_entry_id.name or "",
+                "correlative": move.correlative or "",
+                "IVA8%": "8",
+                "IVA16%": "16",
                 "total_sales_iva": taxes.get("amount_taxed") or "",
                 "total_sales_not_iva": taxes.get("amount_untaxed") or "",
                 "aliquot_8": taxes.get("aliquot_8") or "",
@@ -85,24 +85,25 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def sale_book_fields(self):
         return [
-            "N° operacion",
-            "Fecha del documento",
-            "Nombre/Razón Social",
-            "tipo",
+            "N° operación",
+            "Fecha del documentó",
             "RIF",
+            "Nombre/Razón Social",
+            "Tipo",
+            "N° de Documento",
             "Nª de Control",
-            "N° de documento",
+            "Tipo de Transacción",
             "N° Factura Afectada",
             "Total ventas con IVA",
             "Total ventas exentas",
-            "IVA 16%",
-            "IVA 8%",
-            "Base imponible (8%)",
             "Base imponible (16%)",
-            "Alicuota (8%)",
+            "IVA 16%",
             "Alicuota (16%)",
-            "Fecha Retencion",
-            "N° Retencion",
+            "Base imponible (8%)",
+            "IVA 8%",
+            "Alicuota (8%)",
+            "Fecha Retención",
+            "N° Retención",
             "IVA retenido"
         ]
 
@@ -179,30 +180,50 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         env = self.env
         move_model = env['account.move']
         domain = self._get_domain()
-        return move_model.search(domain)
+        moves = move_model.search(domain)
+        return moves
+
+    def generate_resume_values(self):
+        resume_values = []
+
+        
+
 
     def generate_sales_book(self):
         sale_book_lines = self.parse_sale_book_data()
         file = BytesIO()
 
-        workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
+        workbook = xlsxwriter.Workbook(file, {
+            "in_memory": True, "nan_inf_to_errors": True
+        })
         worksheet = workbook.add_worksheet()
 
-        # cell formats
-        cell_bold = workbook.add_format(
-            {"bold": True, "center_across": True, "text_wrap": True, "bottom": True}
-        )
-        cell_number = workbook.add_format({"num_format": "#,##0.00"})
-        cell_bold_abstract = workbook.add_format({"bold": True})
+        cell_bold = workbook.add_format({
+            "bold": True,
+            "center_across": True,
+            "text_wrap": True,
+            "bottom": True
+        })
 
-        worksheet.set_column(1, 29, 10)
-        worksheet.set_column(5, 5, 15)
+        merge_format = workbook.add_format({
+            'bold': 1,
+            'border': 1,
+            'align': 'center',
+            'valign': 'vcenter',
+            'fg_color': 'gray'
+        })
 
-        # header xml
+        worksheet.set_column(0, 29, 20)
+        worksheet.set_column(5, 5, 40)
+
         worksheet.merge_range(
             "D1:F1",
             f"{self.company_id.name} - {self.company_id.vat}",
-            workbook.add_format({"bold": True, "center_across": True, "font_size": 18}),
+            workbook.add_format({
+                "bold": True,
+                "center_across": True,
+                "font_size": 18
+            }),
         )
         worksheet.merge_range("D2:F2", "Libro de Ventas", cell_bold)
         worksheet.merge_range(
@@ -217,18 +238,100 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         name_columns = self.sale_book_fields()
         init_col = 0
         init_row = 4
+        history_row = init_row
 
         for count, name in enumerate(name_columns):
             col = init_col + count
-            worksheet.write(init_row, col, name, cell_bold)
+            worksheet.write(init_row, col, name, merge_format)
+
+            is_sale_general = name == "Base imponible (16%)"
+            if is_sale_general:
+                worksheet.merge_range(
+                    'L4:N4',
+                    'Ventas Internas Alicuota General',
+                    merge_format
+                )
+
+            is_sale_reduce = name == "Base imponible (8%)"
+            if is_sale_reduce:
+                worksheet.merge_range(
+                    'O4:Q4',
+                    'Ventas Internas Alicuota Reducida',
+                    merge_format
+                )
 
         for count, line in enumerate(sale_book_lines):
-            row = init_row + 1 + count
-            col = init_col + count - 1
+            row = init_row + count + 1
+            col = init_col + count
 
-            for _, line in line.items():
-                worksheet.write(row, col, line)
-                col += 1
+            if row % 2 == 0:
+                color = "b8cce4"
+            else:
+                color = "dbe5f1"
+
+            dic_format_base = {
+                "fg_color": color,
+                "border": 1
+            }
+
+            dic_format_extend = {
+                "fg_color": color,
+                "border": 1,
+                "num_format": "#,##0.00"
+            }
+
+            format_1 = workbook.add_format(dic_format_base)
+            format_2 = workbook.add_format(dic_format_extend)
+
+            worksheet.write(row, col, line["operation_number"], format_1)
+            worksheet.write(row, col + 1, line["document_date"], format_1)
+            worksheet.write(row, col + 2, line["vat"], format_1)
+            worksheet.write(row, col + 3, line["partner_name"], format_1)
+            worksheet.write(row, col + 4, line["move_type"], format_1)
+            worksheet.write(row, col + 5, line["document_number"], format_1)
+            worksheet.write(row, col + 6, line["correlative"], format_1)
+            worksheet.write(row, col + 7, line["transaction_type"], format_1)
+            worksheet.write(row, col + 8, line["number_invoice_affected"], format_1)
+            worksheet.write(row, col + 9, line["total_sales_iva"], format_2)
+            worksheet.write(row, col + 10, line["total_sales_not_iva"], format_2)
+            worksheet.write(row, col + 11, line.get("tax_base_16"), format_2)
+            worksheet.write(row, col + 12, line.get("IVA16%"), format_1)
+            worksheet.write(row, col + 13, line.get("aliquot_16"), format_2)
+            worksheet.write(row, col + 14, line.get("tax_base_8"), format_2)
+            worksheet.write(row, col + 15, line.get("IVA8%"), format_1)
+            worksheet.write(row, col + 16, line.get("aliquot_16"), format_2)
+
+            history_row = row
+
+        worksheet.write(history_row + 1, 0, "Total")
+
+        resume_row_init = history_row + 5
+
+        worksheet.merge_range(
+            f"A{resume_row_init}:B{resume_row_init}",
+            "Resumen",
+            merge_format
+        )
+
+        worksheet.merge_range(
+            f"C{resume_row_init}:D{resume_row_init}",
+            "Facturas/Notas de Débito",
+            merge_format
+        )
+
+        worksheet.merge_range(
+            f"E{resume_row_init}:F{resume_row_init}",
+            "Notas de Crédito",
+            merge_format
+        )
+
+        worksheet.merge_range(
+            f"G{resume_row_init}:H{resume_row_init}",
+            "Total Neto",
+            merge_format
+        )
+
+        
 
         workbook.close()
         return file.getvalue()
