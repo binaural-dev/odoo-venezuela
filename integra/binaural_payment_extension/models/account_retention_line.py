@@ -45,14 +45,18 @@ class AccountRetentionLine(models.Model):
     invoice_total = fields.Float(string="Total invoiced", digits=(16, 2))
     iva_amount = fields.Float(string="IVA", digits=(16, 2))
 
-    retention_amount = fields.Float(digits=(16, 2))
-    foreign_retention_amount = fields.Float(digits=(16, 2))
+    retention_amount = fields.Float(
+        digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
+    )
+    foreign_retention_amount = fields.Float(
+        digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
+    )
 
     payment_concept_id = fields.Many2one(
         "payment.concept", "Payment concept", ondelete="cascade", index=True
     )
 
-    payment_id = fields.Many2one("account.payment", "Payment", ondelete="cascade", index=True)
+    payment_id = fields.Many2one("account.payment", "Payment", index=True)
 
     payment_date = fields.Date(related="payment_id.date", store=True)
 
@@ -95,6 +99,11 @@ class AccountRetentionLine(models.Model):
     foreign_retention_amount = fields.Float()
     foreign_currency_rate = fields.Float(string="Rate", tracking=True)
 
+    def unlink(self):
+        for record in self:
+            record.payment_id.unlink()
+        return super().unlink()
+
     @api.onchange("payment_concept_id")
     @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
@@ -121,15 +130,22 @@ class AccountRetentionLine(models.Model):
                     ]
                     record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
 
-                    # compute the retention amount
-                    record.retention_amount = (
-                        (record.invoice_amount * record.related_percentage_tax_base / 100)
-                        * record.related_percentage_fees
-                        / 100
-                    )
+    @api.onchange("invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
+    @api.depends("invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
+    def _compute_retention_amount(self):
+        """ """
+        # ("retention_id", "=", False), ("retention_id.type_retention", "=", "islr")
+        for record in self.filtered(
+            lambda l: not l.retention_id or l.retention_id.type_retention == "islr"
+        ):
+            record.retention_amount = (
+                (record.invoice_amount * record.related_percentage_tax_base / 100)
+                * record.related_percentage_fees
+                / 100
+            )
 
-                    record.foreign_retention_amount = (
-                        (record.foreign_invoice_amount * record.related_percentage_tax_base / 100)
-                        * record.related_percentage_fees
-                        / 100
-                    )
+            record.foreign_retention_amount = (
+                (record.foreign_invoice_amount * record.related_percentage_tax_base / 100)
+                * record.related_percentage_fees
+                / 100
+            )

@@ -1,4 +1,4 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, api, Command, _
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"
@@ -15,6 +15,7 @@ class AccountPayment(models.Model):
             ("islr", "ISLR"),
         ],
     )
+    retention_id = fields.Many2one("account.retention", ondelete="cascade")
 
     retention_line_ids = fields.One2many(
         "account.retention.line",
@@ -34,6 +35,14 @@ class AccountPayment(models.Model):
         string="Retention reference",
         store=True,
     )
+
+    def unlink(self):
+        for payment in self:
+            if any(isinstance(id, models.NewId) for id in self.retention_line_ids.ids):
+                payment.retention_line_ids = False
+            else:
+                payment.retention_line_ids = Command.clear()
+        return super().unlink()
 
     def compute_retention_amount_from_retention_lines(self):
         """
