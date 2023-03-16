@@ -67,6 +67,7 @@ class AccountMoveRetention(models.Model):
         res = super().action_post()
         Retention = self.env["account.retention"]
         for move in self:
+        
             if move.retention_islr_line_ids and move.move_type == "in_invoice":
                 self._validate_amount_islr_retention()
                 retention = Retention.create_retention(move, ("islr", "in_invoice"))
@@ -77,6 +78,7 @@ class AccountMoveRetention(models.Model):
                 move.js_assign_outstanding_line(line_to_reconcile.id)
 
             if move.retention_islr_line_ids and move.move_type == "in_refund":
+                self._validate_amount_islr_retention()
                 retention = Retention.create_retention(move, ("islr", "in_refund"))
                 line_to_reconcile = retention.payment_ids[0].move_id.line_ids.filtered(
                     lambda l: l.account_id.account_type == "liability_payable" and l.credit > 0
@@ -104,13 +106,15 @@ class AccountMoveRetention(models.Model):
 
     def _validate_amount_islr_retention(self):
         for move in self:
-            if move.retention_islr_line_ids.invoice_total > move.amount_total:
+            islr_retention = move.retention_islr_line_ids
+            sum_invoice_amount = sum(islr_retention.mapped("invoice_amount"))
+            if sum_invoice_amount > move.tax_totals["amount_untaxed"]:
                 raise UserError(
                     _(
                         "The amount of the retention is greater than the total amount of the invoice."
                     )
                 )
-            if move.retention_islr_line_ids.invoice_total <= 0:
+            if sum_invoice_amount <= 0:
                 raise UserError(_("The amount of the retention must be greater than zero."))
             if not move.journal_id.fiscal:
                 raise UserError(_("The journal must be fiscal"))
