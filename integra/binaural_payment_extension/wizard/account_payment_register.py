@@ -73,7 +73,7 @@ class AccountPaymentRegister(models.TransientModel):
                     "code": self.retention_ref,
                     "type": self.retention_type,
                     # "payment_ids": [(6, 0, payment.id)],
-                    "retention_line": [
+                    "retention_line_ids": [
                         (
                             0,
                             0,
@@ -97,7 +97,7 @@ class AccountPaymentRegister(models.TransientModel):
                     "code": self.retention_ref,
                     "type": self.retention_type,
                     # "payment_ids": [(6, 0, payment.id)],
-                    "retention_line": [
+                    "retention_line_ids": [
                         (
                             0,
                             0,
@@ -115,10 +115,11 @@ class AccountPaymentRegister(models.TransientModel):
             return retention
 
     def _create_payments(self):
+        
         res = super()._create_payments()
         self._create_retention(res)
         res.write({"is_retention": self.is_retention})
         res.write({"payment_type_retention": self.payment_type_retention})
         res.write({"retention_ref": self.retention_ref})
-        # res.write({"invoice_line_ids": self.invoice_line_ids})
+        res.write({"invoice_line_ids": self.invoice_line_ids})
         return res

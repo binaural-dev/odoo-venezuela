@@ -62,9 +62,7 @@ class TestIvaRetentionBs(AccountRetentionTestCommon):
                 ],
             }
         )
-        retention_lines_data = self.Retention.compute_retention_lines_data(
-            self.partner_a, invoice, ("iva", "in_invoice")
-        )
+        retention_lines_data = self.Retention.compute_retention_lines_data(invoice)
 
         self.assertEqual(len(retention_lines_data), 3)
 
@@ -72,10 +70,16 @@ class TestIvaRetentionBs(AccountRetentionTestCommon):
         # if this pattern is repeated, we should create a helper method to compare the whole list
         self.assertEqual(retention_lines_data[0]["aliquot"], 16)
         self.assertEqual(float_compare(retention_lines_data[0]["retention_amount"], 24, 2), 0)
-        self.assertEqual(float_compare(retention_lines_data[0]["foreign_retention_amount"], 1.2, 2), 0)
+        self.assertEqual(
+            float_compare(retention_lines_data[0]["foreign_retention_amount"], 1.2, 2), 0
+        )
         self.assertEqual(retention_lines_data[1]["aliquot"], 8)
         self.assertEqual(float_compare(retention_lines_data[1]["retention_amount"], 6, 2), 0)
-        self.assertEqual(float_compare(retention_lines_data[1]["foreign_retention_amount"], 0.3, 2), 0)
+        self.assertEqual(
+            float_compare(retention_lines_data[1]["foreign_retention_amount"], 0.3, 2), 0
+        )
         self.assertEqual(retention_lines_data[2]["aliquot"], 31)
         self.assertEqual(float_compare(retention_lines_data[2]["retention_amount"], 23.25, 2), 0)
-        self.assertEqual(float_compare(retention_lines_data[2]["foreign_retention_amount"], 1.1625, 4), 0)
+        self.assertEqual(
+            float_compare(retention_lines_data[2]["foreign_retention_amount"], 1.1625, 4), 0
+        )

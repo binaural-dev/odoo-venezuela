@@ -16,8 +16,9 @@ class AccountPayment(models.Model):
         ],
     )
 
-    retention_line_ids = fields.Many2many(
+    retention_line_ids = fields.One2many(
         "account.retention.line",
+        "payment_id",
         string="Retention Lines",
         store=True,
     )
@@ -33,3 +34,10 @@ class AccountPayment(models.Model):
         string="Retention reference",
         store=True,
     )
+
+    def compute_retention_amount_from_retention_lines(self):
+        """
+        Compute the amount from the retention lines.
+        """
+        for payment in self:
+            payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
