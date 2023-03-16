@@ -323,23 +323,22 @@ class AccountRetention(models.Model):
             return payment
     
     def _reconcile_all_payments(self):
-        for retention in self:
-            for payment in retention.payment_ids:
-                payment.action_post()
-                if payment.payment_type == "outbound":
-                    line_to_reconcile = payment.move_id.line_ids.filtered(
-                        lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
-                    )[0]
-                    retention.retention_line_ids.move_id.js_assign_outstanding_line(
-                        line_to_reconcile.id
-                    )
-                elif payment.payment_type == "inbound":
-                    line_to_reconcile = payment.move_id.line_ids.filtered(
-                        lambda l: l.account_id.account_type == "liability_receivable" and l.credit > 0
-                    )[0]
-                    retention.retention_line_ids.move_id.js_assign_outstanding_line(
-                        line_to_reconcile.id
-                    )
+        for payment in self.mapped("payment_ids"):
+            payment.action_post()
+            if payment.payment_type == "outbound":
+                line_to_reconcile = payment.move_id.line_ids.filtered(
+                    lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
+                )[0]
+                payment.retention_line_ids.move_id.js_assign_outstanding_line(
+                    line_to_reconcile.id
+                )
+            elif payment.payment_type == "inbound":
+                line_to_reconcile = payment.move_id.line_ids.filtered(
+                    lambda l: l.account_id.account_type == "liability_payable" and l.credit > 0
+                )[0]
+                payment.retention_line_ids.move_id.js_assign_outstanding_line(
+                    line_to_reconcile.id
+                )
 
     @api.model
     def create_retention(self, invoice_id, type_retention: tuple[str, str]):
