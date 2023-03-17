@@ -1,6 +1,8 @@
 from odoo import api, models, fields, Command, _
 from datetime import datetime
 from odoo.exceptions import UserError
+from .utils_retention import load_retention_lines, search_invoices_with_taxes
+from collections import defaultdict
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -84,12 +86,9 @@ class AccountRetention(models.Model):
         states={"draft": [("readonly", False)]},
         help="Retentions",
     )
-    payment_ids = fields.Many2many(
+    payment_ids = fields.One2many(
         "account.payment",
-        "account_payment_retention_rel",
         "retention_id",
-        "payment_id",
-        "Payments",
         help="Payments",
     )
 
@@ -109,17 +108,110 @@ class AccountRetention(models.Model):
 
     # company_currency_id = fields.Many2one('res.currency', related='company_id.currency_id', string="Company Currency")
 
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        """
+        Load retention lines from invoices with taxes when the partner changes for IVA retentions
+        that are not posted.
+        """
+        for retention in self.filtered(
+            lambda r: (r.type_retention, r.state) == ("iva", "draft") and r.partner_id
+        ):
+            search_domain = [
+                ("partner_id", "=", retention.partner_id.id),
+                ("state", "=", "posted"),
+                ("move_type", "in", ("in_refund", "in_invoice")),
+                ("retention_iva_line_ids", "=", False),
+                ("amount_residual", ">", 0),
+            ]
+            invoices_with_taxes = search_invoices_with_taxes(
+                self.env["account.move"], search_domain
+            )
+            if not any(invoices_with_taxes):
+                raise UserError(
+                    _("There are no invoices with taxes to be retained for the partner.")
+                )
+            retention.clear_retention()
+            lines = load_retention_lines(invoices_with_taxes, self.env["account.retention"])
+            return {"value": {"retention_line_ids": lines}}
+
+    def clear_retention(self):
+        """
+        Clear retention lines and payments.
+        """
+        self.ensure_one()
+        self.update(
+            {
+                "retention_line_ids": (
+                    Command.clear()
+                    if any(isinstance(id, models.NewId) for id in self.retention_line_ids.ids)
+                    else False
+                ),
+            }
+        )
+
     @api.model_create_multi
     def create(self, vals_list):
-        for vals in vals_list:
-            sequence_number = ""
-            if vals.get("type_retention") == "iva":
-                sequence_number = self.get_sequence_iva_retention().next_by_id()
-            elif vals.get("type_retention") == "islr":
-                sequence_number = self.get_sequence_islr_retention().next_by_id()
-            vals["name"] = sequence_number
-            vals["number"] = sequence_number
-        return super().create(vals_list)
+        res = super().create(vals_list)
+        res._create_payments_from_retention_lines()
+        return res
+
+    def write(self, vals):
+        res = super().write(vals)
+        if vals.get("retention_line_ids", False):
+            self._create_payments_from_retention_lines()
+        return res
+
+    def _create_payments_from_retention_lines(self):
+        """
+        Create the payments from the retention lines.
+
+        When there are retention lines without payments, this method will create a payment for each
+        set of retention lines that have the same type of invoice and the same rate.
+        """
+        Payment = self.env["account.payment"]
+        for retention in self:
+            if any(retention.payment_ids):
+                continue
+
+            payment_vals = {
+                "partner_type": "supplier",
+                "retention_id": retention.id,
+                "partner_id": retention.partner_id.id,
+                "payment_type_retention": "iva",
+                "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
+                "is_retention": True,
+                "currency_id": self.env.user.company_id.currency_id.id,
+            }
+
+            in_refunds = retention.retention_line_ids.filtered(
+                lambda l: l.move_id.move_type == "in_refund"
+            )
+            in_invoices = retention.retention_line_ids.filtered(
+                lambda l: l.move_id.move_type == "in_invoice"
+            )
+
+            def account_retention_line_empty_recordset():
+                return self.env["account.retention.line"]
+
+            in_refunds_dict = defaultdict(account_retention_line_empty_recordset)
+            in_invoices_dict = defaultdict(account_retention_line_empty_recordset)
+
+            for refund in in_refunds:
+                in_refunds_dict[refund.foreign_currency_rate] += refund
+            for invoice in in_invoices:
+                in_invoices_dict[invoice.foreign_currency_rate] += invoice
+
+            for lines in in_refunds_dict.values():
+                payment_vals["payment_type"] = "inbound"
+                payment = Payment.create(payment_vals)
+                lines.write({"payment_id": payment.id})
+                payment.compute_retention_amount_from_retention_lines()
+            for lines in in_invoices_dict.values():
+                payment_vals["payment_type"] = "outbound"
+                payment = Payment.create(payment_vals)
+                lines.write({"payment_id": payment.id})
+                payment.compute_retention_amount_from_retention_lines()
 
     @api.model
     def get_sequence_iva_retention(self):
@@ -153,26 +245,38 @@ class AccountRetention(models.Model):
 
     def action_post(self):
         today = datetime.now()
-        if not self.date_accounting:
-            self.date_accounting = str(today)
-        if not self.date:
-            self.date = str(today)
-        if self.type in ["in_invoice", "in_refund", "in_debit"]:
+        for retention in self:
+            if not retention.date_accounting:
+                retention.date_accounting = today
+            if not retention.date:
+                retention.date = today
+            if retention.type in ["in_invoice", "in_refund", "in_debit"]:
+                retention._set_sequence()
+                move_ids = retention.mapped("retention_line_ids.move_id")
+                if retention.type_retention == "iva":
+                    move_ids.write({"iva_voucher_number": retention.number})
+                elif retention.type_retention == "islr":
+                    move_ids.write({"islr_voucher_number": retention.number})
+                if not retention.payment_ids:
+                    payment = retention.create_payment_from_retention_form()
+                    retention.payment_ids = payment
+                # REVISAR CUANDO TOQUE EL FLUJO
+            elif retention.type in ["out_invoice", "out_refund", "out_debit"]:
+                if not retention.number:
+                    raise UserError(_("Insert a number for the retention"))
+        self._reconcile_all_payments()
+        self.write({"state": "emitted"})
 
-            if not self.payment_ids:
-                
-                payment = self.create_payment_from_retention_form()
-                self.payment_ids = payment
-                self.conciliate_payment_to_move(payment)
 
-            # REVISAR CUANDO TOQUE EL FLUJO
-            self.payment_ids.action_post()
-        elif self.type in ["out_invoice", "out_refund", "out_debit"]:
-            _logger.warning("ENTRO A OUT INVOICE")
-            if not self.number:
-                raise UserError(_("Insert a number for the retention"))
-            self.payment_ids.action_post()
-        return self.write({"state": "emitted"})
+    def _set_sequence(self):
+        for retention in self:
+            sequence_number = ""
+            if retention.type_retention == "iva":
+                sequence_number = retention.get_sequence_iva_retention().next_by_id()
+            elif retention.type_retention == "islr":
+                sequence_number = retention.get_sequence_islr_retention().next_by_id()
+            retention.name = sequence_number
+            retention.number = sequence_number
 
     def action_cancel(self):
         for line in self.retention_line_ids:
@@ -193,7 +297,7 @@ class AccountRetention(models.Model):
             if not retention.retention_line_ids.payment_concept_id:
                 raise UserError(_("Select a payment concept"))
             # if not retention.payment_ids:
-            
+
             payment_type = "outbound"
             if retention.retention_line_ids.move_id.type == "in_refund":
                 payment_type = "inbound"
@@ -217,20 +321,24 @@ class AccountRetention(models.Model):
             )
             payment.compute_retention_amount_from_retention_lines()
             return payment
-
-    def conciliate_payment_to_move(self, payment):
-        payment.action_post()
-        for retention in self:
+    
+    def _reconcile_all_payments(self):
+        for payment in self.mapped("payment_ids"):
+            payment.action_post()
             if payment.payment_type == "outbound":
-                line_to_reconcile = payment[0].move_id.line_ids.filtered(
+                line_to_reconcile = payment.move_id.line_ids.filtered(
                     lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
                 )[0]
-                retention.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
+                payment.retention_line_ids.move_id.js_assign_outstanding_line(
+                    line_to_reconcile.id
+                )
             elif payment.payment_type == "inbound":
-                line_to_reconcile = payment[0].move_id.line_ids.filtered(
-                    lambda l: l.account_id.account_type == "liability_receivable" and l.credit > 0
+                line_to_reconcile = payment.move_id.line_ids.filtered(
+                    lambda l: l.account_id.account_type == "liability_payable" and l.credit > 0
                 )[0]
-                retention.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
+                payment.retention_line_ids.move_id.js_assign_outstanding_line(
+                    line_to_reconcile.id
+                )
 
     @api.model
     def create_retention(self, invoice_id, type_retention: tuple[str, str]):
@@ -262,8 +370,6 @@ class AccountRetention(models.Model):
             retention = self.create_supplier_iva_retention(invoice_id, payment_type)
         if type_retention[0] == "islr":
             retention = self.create_supplier_islr_retention(invoice_id, payment_type)
-
-        retention.action_post()
         return retention
 
     @api.model
