@@ -13,6 +13,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     _description = "Wizard para generar reportes de libro de compra y ventas"
     _check_company_auto = True
 
+    def _default_check_currency_system(self):
+        is_system_currency_bs = self.env.company.currency_id.name == "VEF"
+        return is_system_currency_bs
+
     def _default_date_from(self):
         current_day = fields.Date.today()
         return current_day
@@ -49,7 +53,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     currency_system = fields.Boolean(
         string="Report in currency system",
-        default=False
+        default=_default_check_currency_system
     )
 
     def parse_sale_book_data(self):
@@ -71,12 +75,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "correlative": move.correlative or "",
                 "IVA8%": "8",
                 "IVA16%": "16",
-                "total_sales_iva": taxes.get("amount_taxed") or "",
-                "total_sales_not_iva": taxes.get("amount_untaxed") or "",
-                "aliquot_8": taxes.get("aliquot_8") or "",
-                "aliquot_16": taxes.get("aliquot_16") or "",
-                "tax_base_8": taxes.get("tax_base_8") or "",
-                "tax_base_16": taxes.get("tax_base_16") or "",
+                "total_sales_iva": taxes.get("amount_taxed") or 0,
+                "total_sales_not_iva": taxes.get("amount_untaxed") or 0,
+                "aliquot_8": taxes.get("aliquot_8") or 0,
+                "aliquot_16": taxes.get("aliquot_16") or 0,
+                "tax_base_8": taxes.get("tax_base_8") or 0,
+                "tax_base_16": taxes.get("tax_base_16") or 0,
             }
 
             sale_book_lines.append(sale_book_line)
@@ -186,9 +190,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     def generate_resume_values(self):
         resume_values = []
 
-        
-
-
     def generate_sales_book(self):
         sale_book_lines = self.parse_sale_book_data()
         file = BytesIO()
@@ -262,7 +263,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         for count, line in enumerate(sale_book_lines):
             row = init_row + count + 1
-            col = init_col + count
+            col = init_col
 
             if row % 2 == 0:
                 color = "b8cce4"
@@ -300,12 +301,16 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             worksheet.write(row, col + 14, line.get("tax_base_8"), format_2)
             worksheet.write(row, col + 15, line.get("IVA8%"), format_1)
             worksheet.write(row, col + 16, line.get("aliquot_16"), format_2)
+            worksheet.write(row, col + 17, "", format_1)
+            worksheet.write(row, col + 18, "", format_1)
+            worksheet.write(row, col + 19, "", format_1)
 
             history_row = row
 
+        worksheet.set_row(history_row, None, workbook.add_format({"fg_color": "blue"}))
         worksheet.write(history_row + 1, 0, "Total")
 
-        resume_row_init = history_row + 5
+        resume_row_init = history_row + 4
 
         worksheet.merge_range(
             f"A{resume_row_init}:B{resume_row_init}",
@@ -331,8 +336,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             merge_format
         )
 
-        
-
         workbook.close()
         return file.getvalue()
 
@@ -353,17 +356,30 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         tax_result = {}
 
-        amount_untaxed = tax_totals.get("amount_untaxed")
-        amount_taxed = tax_totals.get("amount_total")
+        is_check_currency_system = self.currency_system
+
+        if is_check_currency_system:
+            fields_taxed = (
+                "amount_untaxed",
+                "amount_taxed",
+                "groups_by_subtotal"
+            )
+        else:
+            fields_taxed = (
+                "foreign_amount_untaxed",
+                "foreign_amount_taxed",
+                "groups_by_foreign_subtotal"
+            )
+
+        amount_untaxed = tax_totals.get(fields_taxed[0])
+        amount_taxed = tax_totals.get(fields_taxed[1])
 
         tax_result.update({
             "amount_untaxed": amount_untaxed,
             "amount_taxed": amount_taxed
         })
 
-        is_currency_system = "groups_by_subtotal" if self.currency_system else "groups_by_foreign_subtotal"
-
-        tax_base = tax_totals.get(is_currency_system)
+        tax_base = tax_totals.get(fields_taxed[2])
 
         for base in tax_base.items():
             taxes = base[1]
