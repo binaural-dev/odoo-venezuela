@@ -49,3 +49,26 @@ class AccountReport(models.Model):
             return f"{formatted_amount}%"
 
         return formatted_amount
+
+
+class AccountReportCustomHandler(models.AbstractModel):
+    _inherit = "account.report.custom.handler"
+
+    def _get_is_foreign_currency(self):
+        """
+        Gets if the report is in foreign currency.
+
+        Returns
+        -------
+        bool
+            True if the report is in foreign currency, False otherwise.
+        """
+        foreign_currency_id = self.env.company.currency_foreign_id.id
+        base_vef_id = self.env["ir.model.data"]._xmlid_to_res_id(
+            "base.VEF", raise_if_not_found=False
+        )
+        usd_report = self.env.context.get("usd_report", False)
+
+        return (foreign_currency_id != base_vef_id and usd_report) or (
+            foreign_currency_id == base_vef_id and not usd_report
+        )

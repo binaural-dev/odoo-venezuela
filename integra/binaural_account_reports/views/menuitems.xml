@@ -12,4 +12,10 @@
         action="action_account_report_ap_usd"
 	parent="account_reports.account_reports_partners_reports_menu"
     />
+    <menuitem
+        id="menu_action_account_report_general_ledger_usd"
+        name="General Ledger USD"
+        action="action_account_report_general_ledger_usd"
+	parent="account_reports.account_reports_audit_reports_menu"
+    />
 </odoo>
