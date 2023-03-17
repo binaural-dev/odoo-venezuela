@@ -2,7 +2,7 @@ from odoo import models, api
 
 
 class BinauralPaymentExtensionRetentionIvaVoucher(models.AbstractModel):
-    _name = "retention.iva.voucher"
+    _name = "report.binaural_payment_extension.template_retention_iva_voucher"
 
     @api.model
     def _get_report_values(self, docids, data=None):
