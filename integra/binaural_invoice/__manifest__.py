@@ -11,6 +11,7 @@
     # always loaded
     "data": [
         "security/ir.model.access.csv",
+        "data/account_data.xml",
         "data/invoice_free_form_paperformat.xml",
         "data/invoice_sale_note_paperformat.xml",
         "report/report_invoice_free_form.xml",
