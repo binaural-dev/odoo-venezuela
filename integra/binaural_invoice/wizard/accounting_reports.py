@@ -187,8 +187,92 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         moves = move_model.search(domain)
         return moves
 
-    def generate_resume_values(self):
-        resume_values = []
+    def _resume_book_fields(self, row_total):
+        return [
+            {
+                "name": "Ventas Internas no Grabadas",
+                "fac_calc": f"=K{row_total + 1}",
+                "fac_debit_fiscal": 0.0,
+                "nc_calc": 0.0,
+                "nc_debit_fiscal": 0.0,
+                "tn_calc": 0.0,
+                "tn_debit_fiscal": 0.0
+            },
+            {
+                "name": "Exportaciones Gravadas por Alícuota General",
+                "fac_calc": 0.0,
+                "fac_debit_fiscal": 0.0,
+                "nc_calc": 0.0,
+                "nc_debit_fiscal": 0.0,
+                "tn_calc": 0.0,
+                "tn_debit_fiscal": 0.0
+            },
+            {
+                "name": "Exportaciones Gravadas por Alícuota General más Adicional",
+                "fac_calc": 0.0,
+                "fac_debit_fiscal": 0.0,
+                "nc_calc": 0.0,
+                "nc_debit_fiscal": 0.0,
+                "tn_calc": 0.0,
+                "tn_debit_fiscal": 0.0
+            },
+            {
+                "name": "Ventas Internas Gravadas sólo por Alícuota General",
+                "fac_calc": f"=L{row_total + 1}",
+                "fac_debit_fiscal": f"=N{row_total + 1}",
+                "nc_calc": 0.0,
+                "nc_debit_fiscal": 0.0,
+                "tn_calc": 0.0,
+                "tn_debit_fiscal": 0.0
+            },
+            {
+                "name": "Ventas Internas Gravadas por Alícuota General más Adicional",
+                "fac_calc": 0.0,
+                "fac_debit_fiscal": 0.0,
+                "nc_calc": 0.0,
+                "nc_debit_fiscal": 0.0,
+                "tn_calc": 0.0,
+                "tn_debit_fiscal": 0.0
+            },
+            {
+                "name": "Ventas Internas Gravadas por Alícuota Reducida",
+                "fac_calc": f"=K{row_total + 1}",
+                "fac_debit_fiscal": 0.0,
+                "nc_calc": 0.0,
+                "nc_debit_fiscal": 0.0,
+                "tn_calc": 0.0,
+                "tn_debit_fiscal": 0.0
+            },
+            {
+                "name": "Ajustes a los Débitos Fiscales de Periodos Anteriores",
+                "fac_calc": 0.0,
+                "fac_debit_fiscal": 0.0,
+                "nc_calc": 0.0,
+                "nc_debit_fiscal": 0.0,
+                "tn_calc": 0.0,
+                "tn_debit_fiscal": 0.0
+            },
+            {
+
+                "name": "Total Ventas y Débitos Fiscales del Periodo",
+                "fac_calc": f"=K{row_total + 1}",
+                "fac_debit_fiscal": 0.0,
+                "nc_calc": 0.0,
+                "nc_debit_fiscal": 0.0,
+                "tn_calc": 0.0,
+                "tn_debit_fiscal": 0.0
+            },
+            {
+                "name": "Total Retenciones",
+                "fac_calc": 0.0,
+                "fac_debit_fiscal": 0.0,
+                "nc_calc": 0.0,
+                "nc_debit_fiscal": 0.0,
+                "tn_calc": 0.0,
+                "tn_debit_fiscal": 0.0
+            }
+        ]
+
 
     def generate_sales_book(self):
         sale_book_lines = self.parse_sale_book_data()
@@ -197,6 +281,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         workbook = xlsxwriter.Workbook(file, {
             "in_memory": True, "nan_inf_to_errors": True
         })
+
         worksheet = workbook.add_worksheet()
 
         cell_bold = workbook.add_format({
@@ -292,23 +377,80 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             worksheet.write(row, col + 5, line["document_number"], format_1)
             worksheet.write(row, col + 6, line["correlative"], format_1)
             worksheet.write(row, col + 7, line["transaction_type"], format_1)
-            worksheet.write(row, col + 8, line["number_invoice_affected"], format_1)
+            worksheet.write(
+                row,
+                col + 8,
+                line["number_invoice_affected"],
+                format_1
+            )
             worksheet.write(row, col + 9, line["total_sales_iva"], format_2)
-            worksheet.write(row, col + 10, line["total_sales_not_iva"], format_2)
+            worksheet.write(
+                row,
+                col + 10,
+                line["total_sales_not_iva"],
+                format_2
+            )
             worksheet.write(row, col + 11, line.get("tax_base_16"), format_2)
             worksheet.write(row, col + 12, line.get("IVA16%"), format_1)
             worksheet.write(row, col + 13, line.get("aliquot_16"), format_2)
             worksheet.write(row, col + 14, line.get("tax_base_8"), format_2)
             worksheet.write(row, col + 15, line.get("IVA8%"), format_1)
-            worksheet.write(row, col + 16, line.get("aliquot_16"), format_2)
+            worksheet.write(row, col + 16, line.get("aliquot_8"), format_2)
             worksheet.write(row, col + 17, "", format_1)
             worksheet.write(row, col + 18, "", format_1)
             worksheet.write(row, col + 19, "", format_1)
 
             history_row = row
 
-        worksheet.set_row(history_row, None, workbook.add_format({"fg_color": "blue"}))
-        worksheet.write(history_row + 1, 0, "Total")
+        row_total = history_row + 1
+
+        format_col_total = workbook.add_format({
+            "num_format": "#,##0.00",
+            "fg_color": "4f81bd",
+        })
+
+        only_color_format = workbook.add_format({"fg_color": "4f81bd"})
+
+        is_totals_cols = ["J", "K", "L", "N", "O", "Q"]
+        is_full_cols_total = [
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "J",
+            "K",
+            "L",
+            "M",
+            "N",
+            "O",
+            "P",
+            "Q",
+            "R",
+            "S",
+            "T"
+        ]
+
+        for index, column in enumerate(is_full_cols_total):
+            is_first_col = index == 0
+            if is_first_col:
+                worksheet.write(row_total, index, "Total", only_color_format)
+                continue
+
+            is_column_total = column in is_totals_cols
+            if is_column_total:
+                worksheet.write_formula(
+                    f"{column}{row_total + 1}",
+                    f"=SUM({column}{init_row + 2}:{column}{history_row + 1})",
+                    format_col_total
+                )
+                continue
+
+            worksheet.write(row_total, index, "", only_color_format)
 
         resume_row_init = history_row + 4
 
@@ -336,6 +478,88 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             merge_format
         )
 
+        worksheet.write(
+            resume_row_init,
+            0,
+            "",
+            merge_format
+        )
+        worksheet.write(
+            resume_row_init,
+            1,
+            "Débitos Fiscales",
+            merge_format
+        )
+        worksheet.write(
+            resume_row_init,
+            2,
+            "Base Imponible",
+            merge_format
+        )
+        worksheet.write(
+            resume_row_init,
+            3,
+            "Débito Fiscal",
+            merge_format
+        )
+        worksheet.write(
+            resume_row_init,
+            4,
+            "Base Imponible",
+            merge_format
+        )
+        worksheet.write(
+            resume_row_init,
+            5,
+            "Débito Fiscal",
+            merge_format
+        )
+        worksheet.write(
+            resume_row_init,
+            6,
+            "Base Imponible",
+            merge_format
+        )
+        worksheet.write(
+            resume_row_init,
+            7,
+            "Débito Fiscal",
+            merge_format
+        )
+
+        resume_book = self._resume_book_fields(row_total)
+
+        for count, resume_row in enumerate(resume_book):
+            number = count + 1
+            row_resume = resume_row_init + number
+            if number % 2 == 0:
+                color = "b8cce4"
+            else:
+                color = "dbe5f1"
+
+            dic_format_extend = {
+                "fg_color": color,
+                "border": 1,
+                "num_format": "#,##0.00"
+            }
+
+            base_format = {
+                "fg_color": color,
+                "border": 1
+            }
+
+            format = workbook.add_format(dic_format_extend)
+            format_base = workbook.add_format(base_format)
+
+            worksheet.write(row_resume, 0, number, format_base)
+            worksheet.write(row_resume, 1, resume_row["name"], format)
+            worksheet.write(row_resume, 2, resume_row["fac_calc"], format)
+            worksheet.write(row_resume, 3, resume_row["fac_debit_fiscal"], format)
+            worksheet.write(row_resume, 4, resume_row["nc_calc"], format)
+            worksheet.write(row_resume, 5, resume_row["nc_debit_fiscal"], format)
+            worksheet.write(row_resume, 6, resume_row["tn_calc"], format)
+            worksheet.write(row_resume, 7, resume_row["tn_debit_fiscal"], format)
+
         workbook.close()
         return file.getvalue()
 
@@ -352,6 +576,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "aliquot_16": 0.0
             }
 
+        is_credit_note = move.move_type == "out_refund"
+
         tax_totals = move.tax_totals
 
         tax_result = {}
@@ -361,18 +587,27 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if is_check_currency_system:
             fields_taxed = (
                 "amount_untaxed",
-                "amount_taxed",
+                "amount_total",
                 "groups_by_subtotal"
             )
         else:
             fields_taxed = (
                 "foreign_amount_untaxed",
-                "foreign_amount_taxed",
+                "foreign_amount_total",
                 "groups_by_foreign_subtotal"
             )
 
-        amount_untaxed = tax_totals.get(fields_taxed[0])
-        amount_taxed = tax_totals.get(fields_taxed[1])
+        amount_untaxed = (
+            tax_totals.get(fields_taxed[0]) * -1
+            if is_credit_note and tax_totals.get(fields_taxed[0])
+            else tax_totals.get(fields_taxed[0])
+        )
+
+        amount_taxed = (
+            tax_totals.get(fields_taxed[1]) * -1
+            if is_credit_note and tax_totals.get(fields_taxed[1])
+            else tax_totals.get(fields_taxed[1])
+        )
 
         tax_result.update({
             "amount_untaxed": amount_untaxed,
@@ -390,8 +625,16 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 is_8 = tax_name == "IVA 8%"
                 if is_8:
                     tax_result.update({
-                        "tax_base_8": tax.get("tax_group_base_amount"),
-                        "aliquot_8": tax.get("tax_group_amount")
+                        "tax_base_8": (
+                            tax.get("tax_group_base_amount") * -1
+                            if is_credit_note
+                            else tax.get("tax_group_base_amount")
+                        ),
+                        "aliquot_8": (
+                            tax.get("tax_group_amount") * -1
+                            if is_credit_note
+                            else tax.get("tax_group_amount")
+                         )
                     })
 
                     continue
@@ -399,8 +642,16 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 is_16 = tax_name == "IVA 16%"
                 if is_16:
                     tax_result.update({
-                        "tax_base_16": tax.get("tax_group_base_amount"),
-                        "aliquot_16": tax.get("tax_group_amount")
+                        "tax_base_16": (
+                            tax.get("tax_group_base_amount") * -1
+                            if is_credit_note
+                            else tax.get("tax_group_base_amount")
+                        ),
+                        "aliquot_16": (
+                            tax.get("tax_group_amount") * -1
+                            if is_credit_note
+                            else tax.get("tax_group_amount")
+                        )
                     })
 
         return tax_result
