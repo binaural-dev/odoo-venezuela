@@ -218,7 +218,7 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.foreign_taxable_income = False
-            if move.invoice_line_ids:
+            if move.is_invoice() and move.invoice_line_ids:
                 move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"] 
 
     @api.depends("tax_totals")

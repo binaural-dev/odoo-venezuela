@@ -1,52 +1,46 @@
+from datetime import datetime
 from odoo import http
-from odoo.http import request, serialize_exception, content_disposition
-
-import logging
-
-
-_logger = logging.getLogger(__name__)
 
 
 class AccountingReportsController(http.Controller):
-    @http.route("/web/get_excel", type="http", auth="user")
-    def download_document(self, report, wizard, date_start, date_end, current_company_id):
-        current_company = request.env["res.company"].browse(int(current_company_id))
-        wizard_id = int(wizard)
-        wizard = request.env["wizard.accounting.reports"].browse(wizard_id)
-        
-        filecontent = ""
-        table = ""
-        name = "%ss Book" % (report.capitalize())
-        
-        is_purchase = report == "purchase"
+    @http.route("/web/download_sales_book", type="http", auth="user")
+    def download_sales_book(self, **kw):
+        sale_book_model = http.request.env["wizard.accounting.reports"]
+        sale_book = sale_book_model.search([], order="id desc", limit=1)
 
-        if is_purchase:
-            table = wizard._table_purchase_book(wizard_id, current_company)
-            table_resume = wizard._table_resume_shopping_book(wizard_id, current_company)
+        file = sale_book.generate_sales_book()
 
-        else:
-            table = wizard._table_sale_book(wizard_id, current_company)
-            table_resume = wizard._table_resume_sale_book(wizard_id, current_company)
-
-        if not table.empty and name:
-            if is_purchase:
-                filecontent = wizard._excel_file_purchase(
-                    table, name, date_start, date_end, table_resume, current_company
+        return http.request.make_response(
+            file,
+            headers=[
+                (
+                    "Content-Type",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ),
+                (
+                    "Content-Disposition",
+                    "attachment;filename=Libro_de_venta.xlsx"
                 )
+            ]
+        )
 
-            else:
-                filecontent = wizard._excel_file_sale(
-                    table, name, date_start, date_end, table_resume, current_company
+    @http.route("/web/download_purchase_book", type="http", auth="user")
+    def download_purchase_book(self, **kw):
+        purchase_book_model = http.request.env["wizard.accounting.reports"]
+        purchase_book = purchase_book_model.search([], order="id desc", limit=1)
+
+        file = purchase_book.generate_purchases_book()
+
+        return http.request.make_response(
+            file,
+            headers=[
+                (
+                    "Content-Type",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ),
+                (
+                    "Content-Disposition",
+                    "attachment;filename=Libro_de_compra.xlsx"
                 )
-
-        filecontent_length = len(filecontent)
-        file_content_disposition = content_disposition(f"{name}.xlsx")
-
-        return request.make_response(
-            filecontent,
-            [
-                ("Content-Type", "application/.xlsx"),
-                ("Content-Length", filecontent_length),
-                ("Content-Disposition", file_content_disposition),
-            ],
+            ]
         )
