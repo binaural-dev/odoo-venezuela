@@ -39,6 +39,7 @@
 				    <field name="foreign_iva_amount" optional="hide"/>"
 				    <field name="foreign_invoice_total" optional="hide"/>"
                                     <field name="foreign_retention_amount" optional="hide"/>
+				    <field name="invoice_type" optional="hide"/>
                                 </tree>
                             </field>
                         </page>

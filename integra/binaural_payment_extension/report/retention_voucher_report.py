@@ -2,7 +2,7 @@ from odoo import models, api
 
 
 class BinauralPaymentExtensionRetentionIvaVoucher(models.AbstractModel):
-    _name = "report.binaural_payment_extension.retention_voucer_template"
+    _name = "report.binaural_payment_extension.retention_voucher_template"
 
     @api.model
     def _get_report_values(self, docids, data=None):
@@ -10,13 +10,13 @@ class BinauralPaymentExtensionRetentionIvaVoucher(models.AbstractModel):
         return {
             "docids": docids,
             "doc_model": "account.retention",
-            "foreign_currency_is_vef": self.get_foreign_currency_id(),
+            "foreign_currency_is_vef": self.get_foreign_currency_is_vef(),
             "get_digits": self.get_digits(),
             "docs": docs_retentions,
         }
 
     def get_digits(self):
-        decimal_places = self.env.rev("base.VEF").decimal_places
+        decimal_places = self.env.ref("base.VEF").decimal_places
         return decimal_places
 
     def get_foreign_currency_is_vef(self):

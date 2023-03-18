@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
     <data>
-
         <record id="view_purchase_order_form_binaural_purchase" model="ir.ui.view">
             <field name="name">view.purchase.order.form.binaural.purchase</field>
             <field name="model">purchase.order</field>
@@ -19,11 +17,11 @@
                     <field name="foreign_rate" optional="hide"/>
                     <field name="foreign_rate" optional="hide"/>
                     <field
-                    name="foreign_inverse_rate"
-                    groups="base.group_no_one"
-                    string="Foreign inverse rate"
-                    optional="hide"
-                    readonly="1"
+                    	name="foreign_inverse_rate"
+                    	groups="base.group_no_one"
+                    	string="Foreign inverse rate"
+                    	optional="hide"
+                    	readonly="1"
                     />
                 </xpath>
                 <xpath expr="//notebook" position="inside">
@@ -31,23 +29,26 @@
                         <group>
                             <field name="foreign_currency_id" invisible='1'/>
                             <field
-                            name="foreign_inverse_rate"
-                            groups="base.group_no_one"
-                            string="Foreign inverse rate"
+                            	name="foreign_inverse_rate"
+				invisible="1"
+                            	string="Foreign inverse rate"
                             />
+			    <t groups="base.group_no_one">
+				<field name="foreign_inverse_rate"/>
+			    </t>
+
                             <field name="foreign_rate"/>
-                            <field name="tax_totals" 
+			    <field 
+				name="tax_totals" 
                                 widget="account-tax-foreign-totals-field" 
                                 nolabel="1" 
                                 colspan="2"
-                                readonly="1"/>
+				readonly="1"
+			    />
                         </group>
                     </page>
                 </xpath>
             </field>
         </record>
-    
     </data>
-    
-
 </odoo>
