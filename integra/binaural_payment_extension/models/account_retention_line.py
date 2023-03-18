@@ -78,6 +78,7 @@ class AccountRetentionLine(models.Model):
         string="% tax base",
         compute="_compute_related_fields",
         store=True,
+        readonly=False,
     )
 
     related_percentage_fees = fields.Float(
@@ -111,7 +112,12 @@ class AccountRetentionLine(models.Model):
         This compute is used to get the related fields from the payment concept of the partner
         to generate the ISLR retention line
         """
-        for record in self.filtered(lambda l: l.payment_concept_id):
+        lines_from_islr_retention = self.filtered(
+            lambda l: l.payment_concept_id
+            and (not l.retention_id or l.retention_id.retention_type == "islr")
+        )
+        for record in lines_from_islr_retention:
+            _logger.warning("LOL")
             # Payment concept of the line
             payment_concept = record.payment_concept_id.line_payment_concept_ids
             for line in payment_concept:
@@ -134,10 +140,10 @@ class AccountRetentionLine(models.Model):
     @api.depends("invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
     def _compute_retention_amount(self):
         """ """
-        # ("retention_id", "=", False), ("retention_id.type_retention", "=", "islr")
-        for record in self.filtered(
+        lines_from_islr_retention = self.filtered(
             lambda l: not l.retention_id or l.retention_id.type_retention == "islr"
-        ):
+        )
+        for record in lines_from_islr_retention:
             record.retention_amount = (
                 (record.invoice_amount * record.related_percentage_tax_base / 100)
                 * record.related_percentage_fees
