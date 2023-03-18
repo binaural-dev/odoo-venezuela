@@ -3,9 +3,6 @@ from datetime import datetime
 from odoo.exceptions import UserError
 from .utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class AccountRetention(models.Model):
@@ -267,7 +264,6 @@ class AccountRetention(models.Model):
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
 
-
     def _set_sequence(self):
         for retention in self:
             sequence_number = ""
@@ -321,7 +317,7 @@ class AccountRetention(models.Model):
             )
             payment.compute_retention_amount_from_retention_lines()
             return payment
-    
+
     def _reconcile_all_payments(self):
         for payment in self.mapped("payment_ids"):
             payment.action_post()
@@ -329,16 +325,12 @@ class AccountRetention(models.Model):
                 line_to_reconcile = payment.move_id.line_ids.filtered(
                     lambda l: l.account_id.account_type == "liability_payable" and l.debit > 0
                 )[0]
-                payment.retention_line_ids.move_id.js_assign_outstanding_line(
-                    line_to_reconcile.id
-                )
+                payment.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
             elif payment.payment_type == "inbound":
                 line_to_reconcile = payment.move_id.line_ids.filtered(
                     lambda l: l.account_id.account_type == "liability_payable" and l.credit > 0
                 )[0]
-                payment.retention_line_ids.move_id.js_assign_outstanding_line(
-                    line_to_reconcile.id
-                )
+                payment.retention_line_ids.move_id.js_assign_outstanding_line(line_to_reconcile.id)
 
     @api.model
     def create_retention(self, invoice_id, type_retention: tuple[str, str]):
@@ -509,3 +501,13 @@ class AccountRetention(models.Model):
             }
             lines_data.append(line_data)
         return lines_data
+
+    def get_signature(self):
+        config = self.env["signature.config"].search(
+            [("active", "=", True), ("company_id", "=", self.company_id.id)],
+            limit=1,
+        )
+        if config and config.signature:
+            return config.signature
+        else:
+            return False
