@@ -12,6 +12,7 @@
         "base",
         "binaural_rate",
         "binaural_accountant",
+        "binaural_invoice",
         "binaural_location",
         "binaural_fiscal",
         "binaural_contact",
