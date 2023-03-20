@@ -3,7 +3,9 @@ from datetime import datetime
 from odoo.exceptions import UserError
 from .utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class AccountRetention(models.Model):
     _name = "account.retention"
@@ -111,6 +113,7 @@ class AccountRetention(models.Model):
         Load retention lines from invoices with taxes when the partner changes for IVA retentions
         that are not posted.
         """
+        
         for retention in self.filtered(
             lambda r: (r.type_retention, r.state) == ("iva", "draft") and r.partner_id
         ):
@@ -280,6 +283,8 @@ class AccountRetention(models.Model):
 
     def create_payment_from_retention_form(self):
         for retention in self:
+            if not retention.partner_id.type_person_id:
+                raise UserError(_("Select a type person"))
             if not retention.retention_line_ids.payment_concept_id:
                 raise UserError(_("Select a payment concept"))
             # if not retention.payment_ids:
