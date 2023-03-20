@@ -60,4 +60,4 @@ class StockPicking(models.Model):
         if self.sale_id or self.purchase_id:
             return self.sale_id or self.purchase_id
 
-        return self.mapped("move_lines.origin_returned_move_id.picking_id")
+        return self.mapped("move_ids.origin_returned_move_id.picking_id")
