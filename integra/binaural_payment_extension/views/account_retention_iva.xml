@@ -24,24 +24,39 @@
                     </group>
                     <notebook>
                 	<page name="Retention line">
-                            <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
+                            <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Retention Lines" editable="bottom">
                                     <field name="name"/>
+				    <field name="move_id"/>
                                     <field name="invoice_total" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                     <field name="invoice_amount" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                     <field name="iva_amount" force_save="1" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                     <field name="aliquot"/>
                                     <field name="retention_amount"/>
-                                    <field name="foreign_retention_amount"/>
+				    <field name="related_percentage_tax_base" optional="hide"/>
+				    <field name="foreign_currency_rate" optional="hide"/>"
+				    <field name="foreign_invoice_amount" optional="hide"/>"
+				    <field name="foreign_iva_amount" optional="hide"/>"
+				    <field name="foreign_invoice_total" optional="hide"/>"
+                                    <field name="foreign_retention_amount" optional="hide"/>
+				    <field name="invoice_type" optional="hide"/>
                                 </tree>
                             </field>
                         </page>
                         <page name="Payments" string="payments">
-                            <field name="payment_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
+                            <field name="payment_ids" nolabel="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Payments" editable="bottom">
                                     <field name="date"/>
                                     <field name="name"/>
                                     <field name="amount"/>
+				    <field name="state"/>
+				    <field name="foreign_rate" optional="hide"/>
+				    <field name="payment_type" optional="hide"/>
+				    <field name="payment_type_retention" optional="hide"/>
+				    <field name="partner_type" optional="hide"/>
+				    <field name="partner_id" optional="hide"/>
+				    <field name="currency_id" optional="hide"/>
+				    <field name="is_retention" optional="hide"/>
                                 </tree>
                             </field>
                         </page>
