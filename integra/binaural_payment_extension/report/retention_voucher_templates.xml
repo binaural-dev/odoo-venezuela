@@ -166,7 +166,6 @@
                 <t t-set="total_amount_total" t-options='{"widget": "float", "precision": get_digits}'/>
                 <t t-set="total_amount_amount_except" t-options='{"widget": "float", "precision": get_digits}' t-value="0"/>
                 <t t-set="amount_except" t-options='{"widget": "float", "precision": get_digits}'/>
-                <t t-set="total_amount_except" t-options='{"widget": "float", "precision": get_digits}' t-value="0"/>
 
                 <t t-set="invoice_amount" t-options='{"widget": "float", "precision": get_digits}' t-value='0'/>
                 <t t-set="total_amount_tax" t-options='{"widget": "float", "precision": get_digits}' t-value='0'/>
@@ -175,14 +174,6 @@
                 <t t-set="total_amount_to_pay" t-options='{"widget": "float", "precision": get_digits}' t-value='0'/>
 
                 <t t-set="excent" t-options='{"widget": "float", "precision": get_digits}' t-value='0'></t>
-
-
-                <!-- Compras sin derecho a credito IVA -->  
-                 <t t-foreach="set(retention.retention_line_ids.move_id.mapped('id'))" t-as="move_id">
-                     <t t-foreach="[move.tax_totals['amount_untaxed'] for move in retention.retention_line_ids.move_id if move.id == move_id and move.tax_totals != '']" t-as="v">
-                         <t t-set="total_amount_except" t-value="total_amount_except + v"/>     
-                     </t>        
-                 </t>   
 
                 <t t-foreach="retention.retention_line_ids" t-as="line">
                     <div class="row">
@@ -198,45 +189,39 @@
 
                         <!--Número de Factura -->
                         <div class="" style="width:7%;">
-                            <t t-if="line.invoice_type in ['in_invoice']">
+                            <t t-if="line.move_id.move_type in ['out_invoice','out_contingence', 'in_invoice']">
                                 <span t-esc="line.move_id.name"/>
                             </t>
-                            <t t-if="line.invoice_type in ['out_invoice','out_contingence']">
-                                <span t-esc="line.move_id.name"/>
-                            </t>
-                            <t t-if="line.invoice_type not in ['out_invoice','out_contingence','in_invoice']">
+                            <t t-else="">
                                 <span>--</span>
                             </t>
                         </div>
 
                         <!--Nro de Control Factura -->
                         <div class="" style="width:7%;">
-                            <!-- <span t-esc="line.move_id.correlative"/> -->
+                            <span t-esc="line.move_id.correlative"/>
                         </div>
                         <!--Nota de Débito -->
                         <div class="" style="width:7%">
-                            <t t-if="line.invoice_type in ['out_debit']">
+                            <t t-if="line.move_id.move_type == 'out_debit'">
                                 <span t-esc="line.move_id.name"/>
                             </t>
-                            <t t-if="line.invoice_type not in ['out_debit']">
+                            <t t-else="">
                                 <span>--</span>
                             </t>
                         </div>
                         <!--Nota de Crédito -->
                         <div class="" style="width:7%;">
-                            <t t-if="line.invoice_type in ['out_refund']">
+                            <t t-if="line.move_id.move_type in ('out_refund', 'in_refund')">
                                 <span t-esc="line.move_id.name"/>
                             </t>
-                            <t t-if="line.invoice_type in ['in_refund']">
-                                <span t-esc="line.move_id.name"/>
-                            </t>
-                            <t t-if="line.invoice_type not in ['out_refund','in_refund']">
+                            <t t-else="">
                                 <span>--</span>
                             </t>
                         </div>
                         <!-- Factura afectada -->
                         <div class="" style="width:7%;">
-                            <t t-if="line.invoice_type in ['out_refund']">
+                            <t t-if="line.move_id.move_type == 'out_refund'">
                                 <t t-if="line.move_id.origin">
                                     <span t-esc="line.move_id.invoice_origin"/>
                                 </t>
@@ -244,7 +229,7 @@
                                     <span>--</span>
                                 </t>
                             </t>
-                            <t t-if="line.invoice_type in ['in_refund']">
+                            <t t-if="line.move_id.move_type == 'in_refund'">
                                 <t t-if="line.move_id.invoice_origin">
 
                                     <t t-set="afectada"
@@ -473,6 +458,7 @@
         </div>
     </template>
 
+
     <template id="report_islr_customer">
         <!--Header-->
         <div class="container" style="font-size:12px !important;">
@@ -524,7 +510,6 @@
                     <div class="col-12" style="text-transform:uppercase">
                         <span t-esc="res_company.street"/>
                     </div>
-                    <!--<div style="width:100%"><span>Teléfono: </span><span t-esc="res_company.phone" /></div>-->
                 </div>
                 <div class="col-4">
                     <div class="col-12" >
@@ -612,11 +597,11 @@
                     <div class="row text-center">
                         <!-- TD -->
                         <div style="width:5%">
-                            <t t-if="line.invoice_type in ['out_invoice','in_invoice']">
+                            <t t-if="line.move_id.move_type in ('out_invoice','in_invoice')">
                                 <span>FA</span>
                             </t>
                             <t t-else="">
-                                <t t-if="line.invoice_type == 'in_refund'">
+                                <t t-if="line.move_id.move_type == 'in_refund'">
                                     <span>NC</span>
                                 </t>
                                 <t t-else="">
@@ -626,25 +611,19 @@
                         </div>
                         <!-- Fact Nro -->
                         <div style="width:5%">
-                            <t t-if="line.invoice_type in ['in_invoice','in_refund']">
+                            <t t-if="line.move_id.move_type in ('in_invoice','in_refund','out_invoice','out_contingence','out_debit')">
                                 <span t-esc="line.move_id.name"/>
                             </t>
-                            <t t-if="line.invoice_type in ['out_invoice','out_contingence','out_debit']">
-                                <span t-esc="line.move_id.name"/>
-                            </t>
-                            <t t-if="line.invoice_type not in ['out_invoice','out_contingence','in_invoice','in_refund']">
+                            <t t-else="">
                                 <span>--</span>
                             </t>
                         </div>
                         <!-- Nro de Control -->
                         <div style="width:7%">
-                            <t t-if="line.invoice_type in ['in_invoice']">
+                            <t t-if="line.move_id.move_type in ('out_invoice','out_contingence','out_debit', 'in_invoice')">
                                 <span t-esc="line.move_id.correlative"/>
                             </t>
-                            <t t-if="line.invoice_type in ['out_invoice','out_contingence','out_debit']">
-                                <span t-esc="line.move_id.correlative"/>
-                            </t>
-                            <t t-if="line.invoice_type not in ['out_invoice','out_contingence','in_invoice','out_debit']">
+                            <t t-else="">
                                 <span>--</span>
                             </t>
                         </div>
@@ -762,25 +741,9 @@
                     <div class="" style="width:12%">
 			<span t-esc="imp" t-options='{"widget": "float", "precision": get_digits}' />
                     </div>
-
-
                 </div>
             </div>
         </div>
-
-
-        <!--<div style="margin-top:20px;font-size:12px !important;" class="container">
-             <div style="width:40%; float:right">
-                 <div style="width:100%; font:14px bold">
-                     <div style="width:40%; float:left">
-                         TOTAL RETENIDO
-                     </div>
-                     <div style="width:60%; float:right"  class="text-right">
-                         <span t-field="retention.total_tax_ret" t-options='{"widget": "monetary", "display_currency": res_company.currency_id}'/>
-                     </div>
-                 </div>
-             </div>
-        </div>-->
 
         <!--Firmas-->
         <div class="container" style="font-size:12px !important;">
@@ -804,11 +767,12 @@
                     <!--Firma digital fin-->
                     <h6 style="text-align: center; margin: 30px 0;border-top: 1px solid #000;width:80%; padding-top:10px;">
                         Firma del Agente de Retención
-                    </h6><!--<span t-esc="res_company.name"/>-->
+                    </h6>
                 </div>
             </div>
         </div>
     </template>
+
 
     <template id="retention_voucher_template">
         <t t-call="web.html_container">

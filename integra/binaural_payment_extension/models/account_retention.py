@@ -241,7 +241,6 @@ class AccountRetention(models.Model):
 
     def action_draft(self):
         self.write({"state": "draft"})
-        return True
 
     def action_post(self):
         today = datetime.now()
@@ -278,18 +277,9 @@ class AccountRetention(models.Model):
             retention.number = sequence_number
 
     def action_cancel(self):
-        for line in self.retention_line_ids:
-            if line.move_id and line.move_id.line_ids:
-                line.move_id.line_ids.remove_move_reconcile()
-            if line.move_id and line.move_id.state != "draft":
-                line.move_id.button_cancel()
-            if line.retention_id.type_retention in ["iva"]:
-                line.move_id.write({"apply_retention_iva": False, "iva_voucher_number": None})
-            if line.retention_id.type_retention in ["islr"]:
-                line.move_id.write({"apply_retention_islr": False, "islr_voucher_number": None})
-            # line.move_id.unlink()
+        self.payment_ids.mapped("move_id.line_ids").remove_move_reconcile()
+        self.payment_ids.action_cancel()
         self.write({"state": "cancel"})
-        return True
 
     def create_payment_from_retention_form(self):
         for retention in self:
