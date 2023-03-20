@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data>
+
+        <record id="wizard_retention_islr_view" model="ir.ui.view">
+            <field name="name">wizard.retention.islr.view</field>
+            <field name="model">wizard.retention.islr</field>
+        </record>
+    
+        
+    
+    </data>
+    
+
+</odoo>
