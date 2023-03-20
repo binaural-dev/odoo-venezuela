@@ -50,7 +50,7 @@ class AccountPaymentRegister(models.TransientModel):
             ("out_contingence", "Out contingence"),
             ("in_contingence", "In contingence"),
         ],
-        "Tipo de retención",
+        "Type retention",
         help="Tipo del Comprobante",
         required=True,
         readonly=True,
