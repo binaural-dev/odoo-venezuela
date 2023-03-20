@@ -6,12 +6,12 @@ class AccountRetentionTestCommon(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(
         cls,
-        # chart_template_ref="l10n_ve.ve_chart_template_amd",
+        chart_template_ref="l10n_ve.ve_chart_template_amd",
         base_currency_ref="base.VEF",
         foreign_currency_ref="base.USD",
     ):
-        # super().setUpClass(chart_template_ref=chart_template_ref)
-        super().setUpClass()
+        super().setUpClass(chart_template_ref=chart_template_ref)
+        # super().setUpClass()
 
 
         base_currency = cls.env.ref(base_currency_ref)
