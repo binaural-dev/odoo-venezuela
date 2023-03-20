@@ -16,7 +16,10 @@ class AccountRetentionLine(models.Model):
     #    "res.currency", string="Currency", readonly=True
     # )
     company_id = fields.Many2one(
-        "res.company", string="Company", required=True, default=lambda self: self.env.company
+        "res.company",
+        string="Company",
+        required=True,
+        default=lambda self: self.env.company,
     )
     company_currency_id = fields.Many2one("res.currency", string="Company Currency", readonly=True)
     retention_id = fields.Many2one("account.retention", string="Retention", ondelete="cascade")
@@ -114,13 +117,15 @@ class AccountRetentionLine(models.Model):
         """
         lines_from_islr_retention = self.filtered(
             lambda l: l.payment_concept_id
-            and (not l.retention_id or l.retention_id.retention_type == "islr")
+            and (not l.retention_id or l.retention_id.type_retention == "islr")
         )
         for record in lines_from_islr_retention:
-            _logger.warning("LOL")
             # Payment concept of the line
             payment_concept = record.payment_concept_id.line_payment_concept_ids
             for line in payment_concept:
+                if not record.move_id.partner_id.type_person_id:
+                    raise UserError(_("The partner does not have a type of person"))
+
                 if record.move_id.partner_id.type_person_id.id == line.type_person_id.id:
                     # compare the type_person_id of the partner with the type_person_id of the payment concept
                     # and set the related fields
