@@ -2,9 +2,6 @@ from odoo import models, fields, api, _
 from ...tools import binaural_cne_query
 from odoo.exceptions import MissingError
 
-import logging
-_logger = logging.getLogger(__name__)
-
 
 class ResPartner(models.Model):
     _inherit = "res.partner"
@@ -17,7 +14,5 @@ class ResPartner(models.Model):
                     "Error to connect with CNE, please check your internet connection or try again later"
                 )
             )
-
-        _logger.info(name)
 
         return name

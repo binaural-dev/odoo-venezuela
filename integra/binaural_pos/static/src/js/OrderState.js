@@ -13,6 +13,11 @@ odoo.define("binaural_pos.OrderState", function(require) {
         super(...arguments);
         this.to_invoice = true;
       }
+      export_as_JSON() {
+        let json = super.export_as_JSON();
+        json["foreign_amount_total"] = this.get_foreign_total_with_tax()
+        return json;
+      }
       get_foreign_total_tax() {
         if (this.pos.company.tax_calculation_rounding_method === "round_globally") {
           // As always, we need:

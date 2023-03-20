@@ -10,6 +10,17 @@ odoo.define("binaural_pos.OrderlineState", function(require) {
 
   const BinauralOrderline = (Orderline) =>
     class BinauralOrderline extends Orderline {
+      isExempt() {
+        const product_tax = this.get_product().taxes_id;
+        if (product_tax.length < 1) {
+          return true
+        }
+        const tax = this.pos.taxes_by_id[product_tax[0]];
+        if (tax.amount === 0) {
+          return true
+        }
+        return false
+      }
       get_foreign_unit_price() {
         var digits = this.pos.dp['Product Price'];
         // round and truncate to mimic _symbol_set behavior
@@ -45,7 +56,7 @@ odoo.define("binaural_pos.OrderlineState", function(require) {
         };
       }
 
-      get_foreign_tax_details(){
+      get_foreign_tax_details() {
         return this.get_all_foreign_prices().taxDetails;
       }
 

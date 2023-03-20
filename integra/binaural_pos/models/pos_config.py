@@ -1,8 +1,8 @@
-from odoo import models, fields, _
+from odoo import models, fields, _, api
 
 
 class PosConfig(models.Model):
-    _inherit = 'pos.config'
+    _inherit = "pos.config"
 
     foreign_currency_id = fields.Many2one("res.currency", related="company_id.currency_foreign_id")
 
@@ -11,7 +11,6 @@ class PosConfig(models.Model):
         compute="_compute_rate",
         digits=(16, 15),
         default=0.0,
-        store=True,
         readonly=False,
     )
 
@@ -19,17 +18,15 @@ class PosConfig(models.Model):
         compute="_compute_rate",
         digits="Tasa",
         default=0.0,
-        store=True,
         readonly=False,
     )
 
+    @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")
     def _compute_rate(self):
         """
         Compute the rate of the pos using the compute_rate method of the res.currency.rate model.
         """
         rate = self.env["res.currency.rate"]
         for config in self:
-            rate_values = rate.compute_rate(
-                config.foreign_currency_id.id, fields.Date.today()
-            )
+            rate_values = rate.compute_rate(config.foreign_currency_id.id, fields.Date.today())
             config.update(rate_values)
