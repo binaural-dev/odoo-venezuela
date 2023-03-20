@@ -9,6 +9,7 @@ odoo.define("binaural_pos.PosState", function(require) {
       constructor(obj) {
         super(obj);
         this.foreign_currency = null;
+        this.prefix_vats = []
       }
 
       // @override
@@ -16,6 +17,7 @@ odoo.define("binaural_pos.PosState", function(require) {
         await super._processData(...arguments);
         this.currency = loadedData["res.currency"][0];
         this.foreign_currency = loadedData["res.currency"][1];
+        this.prefix_vats = loadedData["prefix_vats"]; 
       }
 
 

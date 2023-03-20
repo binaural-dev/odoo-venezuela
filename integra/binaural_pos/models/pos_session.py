@@ -7,6 +7,17 @@ _logger = logging.getLogger(__name__)
 class PosSession(models.Model):
     _inherit = "pos.session"
 
+    def load_pos_data(self):
+        res = super().load_pos_data()
+        res["prefix_vats"] = self.env["res.partner"]._fields['prefix_vat'].selection 
+        return res 
+
+
+    def _loader_params_res_partner(self):
+        res = super()._loader_params_res_partner()
+        res["search_params"]["fields"].append("prefix_vat")
+        return res
+
     def _loader_params_res_currency(self):
         """
         This method is used to get the params for the search_read of res.currency
