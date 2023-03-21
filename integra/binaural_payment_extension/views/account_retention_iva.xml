@@ -15,6 +15,9 @@
                     </header>
                     <group colspan="4" col="4">
 			<field name="base_currency_is_vef" invisible="1"/>
+			<field name="company_currency_id" invisible="1"/>
+			<field name="foreign_currency_id" invisible="1"/>
+
                         <field name="type" force_save="1" select="2"/>
                         <field name="partner_id" on_change="onchange_partner_id(type,partner_id)" select="1"  attrs="{'invisible':[('type','=', False)],'readonly':[('state','in',['emitted','cancel'])]}"/>
                         <field name="date_accounting" select="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
@@ -61,12 +64,6 @@
 				    />
 				    <!-- Foreign Amounts -->
 				    <field
-					name="foreign_currency_rate"
-					widget="monetary"
-					options="{'currency_field': 'foreign_currency_id'}"
-					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
-				    />
-				    <field
 					name="foreign_invoice_amount"
 					widget="monetary"
 					options="{'currency_field': 'foreign_currency_id'}"
@@ -90,14 +87,46 @@
 					options="{'currency_field': 'foreign_currency_id'}"
 					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
 				    />
+
+				    <field name="foreign_currency_rate" optional="hide"/>
                                 </tree>
                             </field>
 
-			    <group col="2" colspan="2">
-				<field name="total_invoice_amount"/>
-			    	<field name="total_iva_amount"/>
-			    	<field name="total_retention_amount"/>
+			    <group col="2" colspan="2" attrs="{'invisible': [('base_currency_is_vef', '=', False)]}">
+				<field
+				    name="total_invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
+				<field
+				    name="total_iva_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
+				<field
+				    name="total_retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
 		    	    </group>
+
+			    <group col="2" colspan="2" attrs="{'invisible': [('base_currency_is_vef', '=', True)]}">
+				<field
+				    name="foreign_total_invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+				<field 
+				    name="foreign_total_iva_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+				<field
+				    name="foreign_total_retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+			    </group>
                         </page>
                         <page name="Payments" string="payments">
                             <field name="payment_ids" nolabel="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}" >
