@@ -28,5 +28,6 @@ class TestPosSession(TestPoSCommon):
         cls.product3 = cls.create_product("Product 3", cls.categ_basic, 30.0, 15)
         cls.product4 = cls.create_product("Product_4", cls.categ_basic, 9.96, 4.98)
         cls.product99 = cls.create_product("Product_99", cls.categ_basic, 99, 50)
+        cls.product100 = cls.create_product("Product_100", cls.categ_basic, 100, 50)
         cls.adjust_inventory([cls.product1, cls.product2, cls.product3], [100, 50, 50])
 

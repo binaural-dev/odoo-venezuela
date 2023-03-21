@@ -28,15 +28,17 @@ odoo.define("binaural_pos.PartnerDetailsEdit", function(require) {
       }
 
       async onblur(event) {
-        const data = await this.env.services.rpc({
-          model: 'res.partner',
-          method: 'get_default_name_by_vat_param',
-          args: [[], "V", event.target.value],
-        });
+        if (this.nameField.el.value == "") {
+          const data = await this.env.services.rpc({
+            model: 'res.partner',
+            method: 'get_default_name_by_vat_param',
+            args: [[], "V", event.target.value],
+          });
+          console.log("LLAMDA A CNE")
 
-        this.nameField.el.value = data
+          this.nameField.el.value = data
 
-        this.changes["name"] = data;
+        }
 
       }
       async saveChanges() {
@@ -55,6 +57,7 @@ odoo.define("binaural_pos.PartnerDetailsEdit", function(require) {
             title: _t('A Customer VAT Is Required'),
           });
         }
+        console.log("PROCESSED CHANGES", processedChanges)
 
         super.saveChanges();
 

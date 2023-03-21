@@ -4,15 +4,28 @@ odoo.define("binaural_pos.PartnerListScreen", function(require) {
   const Registries = require("point_of_sale.Registries")
   const { _t } = require('web.core');
 
+  const { onMounted } = owl;
+
   const BinauralPartnerListScreen = (PartnerListScreen) =>
     class BinauralPartnerListScreen extends PartnerListScreen {
+      setup() {
+        super.setup()
+        onMounted(() => {
+          this.searchWordInputRef.el.focus()
+        })
+      }
       async _onPressEnterKey() {
         if (!this.state.query) return;
         const result = await this.searchPartner();
 
-        if (result.length < 1) {
+        if (this.partners.length < 1) {
           this.createPartner()
         }
+      }
+
+      async saveChanges(event) {
+        console.log("SE GUARDO")
+        super.saveChanges(...arguments)
       }
 
       async createPartner() {
