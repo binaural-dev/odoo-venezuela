@@ -41,7 +41,8 @@ class StockPicking(models.Model):
                     str(stock.scheduled_date)
                 ).date() or fields.Date.context_today(self)
                 foreign_vals = rate.compute_rate(stock.foreign_currency_id.id, rate_date)
-                del foreign_vals["foreign_inverse_rate"]
+                if foreign_vals.get("foreign_inverse_rate", False):
+                    del foreign_vals["foreign_inverse_rate"]
 
             stock.update(foreign_vals)
 
