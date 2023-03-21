@@ -12,16 +12,14 @@ class AccountRetentionLine(models.Model):
     check_company = True
 
     name = fields.Char(string="Description", required=True, default="ISLR Retention")
-    # currency_id = fields.Many2one(
-    #    "res.currency", string="Currency", readonly=True
-    # )
     company_id = fields.Many2one(
         "res.company",
         string="Company",
         required=True,
         default=lambda self: self.env.company,
     )
-    company_currency_id = fields.Many2one("res.currency", string="Company Currency", readonly=True)
+    company_currency_id = fields.Many2one(related="retention_id.company_currency_id")
+    foreign_currency_id = fields.Many2one(related="retention_id.foreign_currency_id")
     retention_id = fields.Many2one("account.retention", string="Retention", ondelete="cascade")
     invoice_type = fields.Selection(
         selection=[

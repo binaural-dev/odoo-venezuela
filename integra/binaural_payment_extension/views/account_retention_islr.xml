@@ -11,12 +11,16 @@
             <field name="arch" type="xml">
                 <form string="Retention">
                     <header>
-	                    <button name="action_draft" type="object" states="cancel" string="Convertir a Borrador" />
-                        <button name="action_post" type="object" states="draft" string="Validar" class="oe_highlight"/>
-                        <button name="action_cancel" type="object" states="emitted" string="Anular" confirm="¿Esta seguro que quiere anular este comprabante? Se revertiran los asientos contables asociados" />
+	                <button name="action_draft" type="object" states="cancel" string="Convert to draft"/>
+                        <button name="action_post" type="object" states="draft" string="Approve" class="oe_highlight"/>
+                        <button name="action_cancel" type="object" states="emitted" string="Cancel" confirm="Are you sure you want to cancel this voucher? The associated accounting entries will be reversed"/>
                         <field name="state" widget="statusbar" nolabel="1"/>
                     </header>
                     <group colspan="4" col="4">
+			<field name="base_currency_is_vef" invisible="1"/>
+			<field name="company_currency_id" invisible="1"/>
+			<field name="foreign_currency_id" invisible="1"/>
+
                         <field name="type" force_save="1" select="2"/>
                         <field name="type_retention" force_save="1" select="2" invisible="1"/>
                         <field name="partner_id" on_change="onchange_partner_id(type,partner_id)" select="1"  attrs="{'invisible':[('type','=', False)],'readonly':[('state','in',['emitted','cancel'])]}"/>
@@ -50,6 +54,42 @@
                                     <field name="foreign_retention_amount" optional="hide"/>
                                 </tree>
                             </field>
+
+			    <group col="2" colspan="2" attrs="{'invisible': [('base_currency_is_vef', '=', False)]}">
+				<field
+				    name="total_invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
+				<field
+				    name="total_iva_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
+				<field
+				    name="total_retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
+		    	    </group>
+
+			    <group col="2" colspan="2" attrs="{'invisible': [('base_currency_is_vef', '=', True)]}">
+				<field
+				    name="foreign_total_invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+				<field 
+				    name="foreign_total_iva_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+				<field
+				    name="foreign_total_retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+			    </group>
                         </page>
                         <page name="Payments" string="payments">
                             <field name="payment_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
