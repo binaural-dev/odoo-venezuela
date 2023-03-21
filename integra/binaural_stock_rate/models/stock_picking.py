@@ -18,10 +18,12 @@ class StockPicking(models.Model):
         default=0.0,
         store=True,
         readonly=False,
-        help="The currency rate taken from the sale order.",
+        help="The currency rate taken from the document of origin/system.",
     )
     foreign_currency_id = fields.Many2one(
-        "res.currency", default=_get_default_currency, help="The currency of the sale order."
+        "res.currency",
+        default=_get_default_currency,
+        help="The foreign currency taken from the configuration.",
     )
     analytic_account_id = fields.Many2one("account.analytic.account")
 
@@ -34,7 +36,9 @@ class StockPicking(models.Model):
             foreign_vals = {"foreign_rate": 0.0}
             decimals = stock.foreign_currency_id.decimal_places
 
-            if origin_doc and fields.Float.is_zero(origin_doc.foreign_rate, precision_digits=decimals):
+            if origin_doc and fields.Float.is_zero(
+                origin_doc.foreign_rate, precision_digits=decimals
+            ):
                 foreign_vals.update({"foreign_rate": origin_doc.foreign_rate})
             else:
                 rate_date = parser.parse(
@@ -53,7 +57,7 @@ class StockPicking(models.Model):
 
         Returns
         -------
-        sale.order or purchase.order or stock.picking 
+        sale.order or purchase.order or stock.picking
         or False as the origin document of the stock picking.
         """
 
