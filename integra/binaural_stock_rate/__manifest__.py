@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "Binaural Inventario",
+    "name": "Binaural Tasa Inventario",
     "summary": """
-        Modulo para inventario
+        Modulo para calcular tasa en inventario
     """,
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
