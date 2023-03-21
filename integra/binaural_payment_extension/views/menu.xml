@@ -114,18 +114,6 @@
             sequence="100"
             parent="account.menu_finance_payables"
             action="ir_sequence_form_islr"/>
-
-        <menuitem
-            id="seniat_reports"
-            name="Seniat Reports"
-            parent="account.menu_finance_reports"
-            sequence="6" />
-
-        <menuitem
-            id="xml_retention_islr"
-            name="XML ISLR Retention"
-            parent="seniat_reports"
-            />
     
     </data>
     
