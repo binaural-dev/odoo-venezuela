@@ -44,6 +44,7 @@
         "views/res_partner.xml",
         "views/account_move.xml",
         "wizard/account_payment_register.xml",
+        "wizard/wizard_retention_islr.xml",
         "views/menu.xml",
     ],
     "images": ["static/description/icon.png"],
