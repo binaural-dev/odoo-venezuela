@@ -20,7 +20,7 @@ class PaymentConceptLine(models.Model):
         ondelete="cascade",
     )
     percentage_tax_base = fields.Float(string="Percentage Taxable Base")
-    tariff_id = fields.Many2one("fees.retention", string="Tarifa", domain=[("status", "=", True)])
+    tariff_id = fields.Many2one("fees.retention", string="Tariff", domain=[("status", "=", True)])
     code = fields.Char(string="Concept code", required=True)
 
     @api.onchange("percentage_tax_base")

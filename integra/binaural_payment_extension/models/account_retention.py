@@ -3,12 +3,19 @@ from datetime import datetime
 from odoo.exceptions import UserError
 from .utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountRetention(models.Model):
     _name = "account.retention"
     _description = "Retention"
     _check_company_auto = True
+
+    company_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
+    foreign_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
+    base_currency_is_vef = fields.Boolean(compute="_compute_currency_fields")
 
     company_id = fields.Many2one(
         "res.company",
@@ -21,18 +28,18 @@ class AccountRetention(models.Model):
         "Description",
         size=64,
         states={"draft": [("readonly", False)]},
-        help="Descripción del Comprobante",
+        help="Description of the withholding voucher",
     )
     code = fields.Char(
         size=32,
         states={"draft": [("readonly", False)]},
-        help="Referencia del Comprobante",
+        help="Code of the withholding voucher",
     )
     state = fields.Selection(
         [("draft", "Draft"), ("emitted", "Emitted"), ("cancel", "Cancel")],
         index=True,
         default="draft",
-        help="Estatus del Comprobante",
+        help="Status of the withholding voucher",
     )
     type_retention = fields.Selection(
         [
@@ -52,7 +59,7 @@ class AccountRetention(models.Model):
             ("out_contingence", "Out contingence"),
             ("in_contingence", "In contingence"),
         ],
-        "Tipo de retención",
+        "Type retention",
         help="Tipo del Comprobante",
         required=True,
         readonly=True,
@@ -89,22 +96,80 @@ class AccountRetention(models.Model):
         help="Payments",
     )
 
-    # amount_base_ret = fields.Float(
-    #     compute=amount_ret_all,
-    #     string="Base Imponible",
-    #     help="Total de la base retenida",
-    #     store=True,
-    # )
-    # amount_imp_ret = fields.Float(compute=amount_ret_all, store=True, string="Total IVA")
-    # total_tax_ret = fields.Float(
-    #     compute=amount_ret_all,
-    #     store=True,
-    #     string="IVA retenido",
-    #     help="Total del impuesto Retenido",
-    # )
+    total_invoice_amount = fields.Float(
+        string="Taxable Income",
+        compute="_compute_totals",
+        help="Taxable Income Total",
+        store=True,
+    )
+    total_iva_amount = fields.Float(string="Total IVA", compute="_compute_totals", store=True)
+    total_retention_amount = fields.Float(
+        compute="_compute_totals",
+        store=True,
+        help="Retained Amount Total",
+    )
 
-    # company_currency_id = fields.Many2one('res.currency', related='company_id.currency_id', string="Company Currency")
+    foreign_total_invoice_amount = fields.Float(
+        string="Taxable Income",
+        compute="_compute_totals",
+        help="Taxable Income Total",
+        store=True,
+    )
+    foreign_total_iva_amount = fields.Float(
+        string="Total IVA", compute="_compute_totals", store=True
+    )
+    foreign_total_retention_amount = fields.Float(
+        compute="_compute_totals",
+        store=True,
+        help="Retained Amount Total",
+    )
 
+    def _compute_currency_fields(self):
+        _logger.warning("Compute currency fields")
+        for retention in self:
+            retention.company_currency_id = self.env.company.currency_id.id
+            retention.foreign_currency_id = self.env.company.currency_foreign_id.id
+            retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
+                "base.VEF"
+            )
+            _logger.warning("Company currency: %s", retention.company_currency_id)
+            _logger.warning("Foreign currency: %s", retention.foreign_currency_id)
+            _logger.warning("Base currency is VEF: %s", retention.base_currency_is_vef)
+
+    @api.depends(
+        "retention_line_ids.invoice_amount",
+        "retention_line_ids.iva_amount",
+        "retention_line_ids.retention_amount",
+        "retention_line_ids.foreign_invoice_amount",
+        "retention_line_ids.foreign_iva_amount",
+        "retention_line_ids.foreign_retention_amount",
+    )
+    def _compute_totals(self):
+        for retention in self:
+            retention.total_invoice_amount = 0
+            retention.total_iva_amount = 0
+            retention.total_retention_amount = 0
+            retention.foreign_total_invoice_amount = 0
+            retention.foreign_total_iva_amount = 0
+            retention.foreign_total_retention_amount = 0
+
+            for line in retention.retention_line_ids:
+                if line.move_id.move_type in ("in_refund", "out_refund"):
+                    retention.total_invoice_amount -= line.invoice_amount
+                    retention.total_iva_amount -= line.iva_amount
+                    retention.total_retention_amount -= line.retention_amount
+                    retention.foreign_total_invoice_amount -= line.foreign_invoice_amount
+                    retention.foreign_total_iva_amount -= line.foreign_iva_amount
+                    retention.foreign_total_retention_amount -= line.foreign_retention_amount
+                else:
+                    retention.total_invoice_amount += line.invoice_amount
+                    retention.total_iva_amount += line.iva_amount
+                    retention.total_retention_amount += line.retention_amount
+                    retention.foreign_total_invoice_amount += line.foreign_invoice_amount
+                    retention.foreign_total_iva_amount += line.foreign_iva_amount
+                    retention.foreign_total_retention_amount += line.foreign_retention_amount
+
+    @api.depends("retention_line_ids")
     @api.onchange("partner_id")
     def _onchange_partner_id(self):
         """
@@ -238,7 +303,6 @@ class AccountRetention(models.Model):
 
     def action_draft(self):
         self.write({"state": "draft"})
-        return True
 
     def action_post(self):
         today = datetime.now()
@@ -257,7 +321,6 @@ class AccountRetention(models.Model):
                 if not retention.payment_ids:
                     payment = retention.create_payment_from_retention_form()
                     retention.payment_ids = payment
-                # REVISAR CUANDO TOQUE EL FLUJO
             elif retention.type in ["out_invoice", "out_refund", "out_debit"]:
                 if not retention.number:
                     raise UserError(_("Insert a number for the retention"))
@@ -275,21 +338,14 @@ class AccountRetention(models.Model):
             retention.number = sequence_number
 
     def action_cancel(self):
-        for line in self.retention_line_ids:
-            if line.move_id and line.move_id.line_ids:
-                line.move_id.line_ids.remove_move_reconcile()
-            if line.move_id and line.move_id.state != "draft":
-                line.move_id.button_cancel()
-            if line.retention_id.type_retention in ["iva"]:
-                line.move_id.write({"apply_retention_iva": False, "iva_voucher_number": None})
-            if line.retention_id.type_retention in ["islr"]:
-                line.move_id.write({"apply_retention_islr": False, "islr_voucher_number": None})
-            # line.move_id.unlink()
+        self.payment_ids.mapped("move_id.line_ids").remove_move_reconcile()
+        self.payment_ids.action_cancel()
         self.write({"state": "cancel"})
-        return True
 
     def create_payment_from_retention_form(self):
         for retention in self:
+            if not retention.partner_id.type_person_id:
+                raise UserError(_("Select a type person"))
             if not retention.retention_line_ids.payment_concept_id:
                 raise UserError(_("Select a payment concept"))
             # if not retention.payment_ids:

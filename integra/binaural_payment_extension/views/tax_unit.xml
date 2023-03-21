@@ -41,7 +41,7 @@
             <field name="model">tax.unit</field>
             <field name="arch" type="xml">
                 <search string="Tax unit">
-                    <filter name="state" domain="[('status','=',True)]" string="Activo" />
+                    <filter name="state" domain="[('status','=',True)]" string="Active" />
                 </search>
             </field>
         </record>

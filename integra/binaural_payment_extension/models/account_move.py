@@ -99,9 +99,10 @@ class AccountMoveRetention(models.Model):
                         "The amount of the retention is greater than the total amount of the invoice."
                     )
                 )
+            if not move.partner_id.type_person_id:
+                raise UserError(_("The partner must have a type of person"))
             if sum_invoice_amount <= 0:
                 raise UserError(_("The amount of the retention must be greater than zero."))
             if not move.journal_id.fiscal:
                 raise UserError(_("The journal must be fiscal"))
-            if not move.partner_id.type_person_id:
-                raise UserError(_("The partner must have a type of person"))
+
