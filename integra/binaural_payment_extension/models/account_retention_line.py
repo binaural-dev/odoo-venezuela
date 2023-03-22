@@ -142,19 +142,22 @@ class AccountRetentionLine(models.Model):
     @api.onchange("invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
     @api.depends("invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
     def _compute_retention_amount(self):
-        """ """
+        """ 
+         This compute is used to get the retention amount from the payment concept of the partner
+        to generate the ISLR retention line.
+        """
         lines_from_islr_retention = self.filtered(
             lambda l: not l.retention_id or l.retention_id.type_retention == "islr"
         )
         for record in lines_from_islr_retention:
             record.retention_amount = (
-                (record.invoice_amount * record.related_percentage_tax_base / 100)
-                * record.related_percentage_fees
-                / 100
-            )
+                record.invoice_amount 
+                * (record.related_percentage_tax_base / 100)
+                * (record.related_percentage_fees / 100)
+            ) - record.related_amount_subtract_fees
 
             record.foreign_retention_amount = (
-                (record.foreign_invoice_amount * record.related_percentage_tax_base / 100)
-                * record.related_percentage_fees
-                / 100
-            )
+                record.foreign_invoice_amount 
+                * (record.related_percentage_tax_base / 100)
+                * (record.related_percentage_fees / 100)
+            ) - record.related_amount_subtract_fees
