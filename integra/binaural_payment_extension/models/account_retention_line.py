@@ -94,12 +94,18 @@ class AccountRetentionLine(models.Model):
         store=True,
     )
 
+    check_foreign_currency = fields.Boolean(
+        string="Foreign currency", 
+        compute="_compute_check_foreign_currency",
+    )
+
     # foreign currency
     foreign_invoice_amount = fields.Float(string="Foreign taxable income")
     foreign_invoice_total = fields.Float(string="Foreign total invoiced")
     foreign_iva_amount = fields.Float(string="Foreign IVA")
     foreign_retention_amount = fields.Float()
     foreign_currency_rate = fields.Float(string="Rate", tracking=True)
+        
 
     def unlink(self):
         for record in self:
@@ -130,6 +136,7 @@ class AccountRetentionLine(models.Model):
                     record.invoice_total = record.move_id.tax_totals["amount_total"]
                     record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
                     record.related_pay_from = line.pay_from
+                    # record.foreign_iva_amount = record.move_id.tax_totals["amount_total"] - record.move_id.tax_totals["amount_untaxed"]
                     record.related_percentage_tax_base = line.percentage_tax_base
                     record.related_percentage_fees = line.tariff_id.percentage
                     record.related_amount_subtract_fees = line.tariff_id.amount_subtract
@@ -139,8 +146,8 @@ class AccountRetentionLine(models.Model):
                     ]
                     record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
 
-    @api.onchange("invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
-    @api.depends("invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
+    @api.onchange("invoice_amount", "foreign_invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
+    @api.depends("invoice_amount", "foreign_invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
     def _compute_retention_amount(self):
         """ 
          This compute is used to get the retention amount from the payment concept of the partner

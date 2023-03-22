@@ -44,6 +44,21 @@ class AccountMoveRetention(models.Model):
         track_visibility="onchange",
     )
 
+    check_currency_id = fields.Boolean(
+        compute="_compute_check_currency_id",
+    )
+
+    @api.onchange("partner_id")
+    def _compute_check_currency_id(self):
+        for record in self:
+            _logger.warning("El tipo de moneda es: %s", record.foreign_currency_id.name)
+            if record.foreign_currency_id.name != "USD":
+                _logger.warning("El tipo de moneda no es USD")
+                record.check_currency_id = True
+            else:
+                record.check_currency_id = False
+             
+
     def action_register_payment(self):
         """
         Override the action_register_payment method to add the invoice lines to the payment register.
@@ -90,6 +105,15 @@ class AccountMoveRetention(models.Model):
         return res
 
     def _validate_amount_islr_retention(self):
+        """
+        Validations for the ISLR retention.
+
+        Raises:
+            UserError: The amount of the retention is greater than the total amount of the invoice.
+            UserError: The partner must have a type of person.
+            UserError: The amount of the retention must be greater than zero.
+            UserError: The journal must be fiscal.
+        """
         for move in self:
             islr_retention = move.retention_islr_line_ids
             sum_invoice_amount = sum(islr_retention.mapped("invoice_amount"))
