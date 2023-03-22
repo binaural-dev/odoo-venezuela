@@ -23,11 +23,6 @@ odoo.define("binaural_pos.PartnerListScreen", function(require) {
         }
       }
 
-      async saveChanges(event) {
-        console.log("SE GUARDO")
-        super.saveChanges(...arguments)
-      }
-
       async createPartner() {
 
         const data = await this.env.services.rpc({
