@@ -55,9 +55,9 @@ class AccountTax(models.Model):
                 tax_line["currency"] = foreign_currency
                 tax_line["tax_amount"] = 0.0
                 for tax in taxes:
-                    if tax_line["tax_repartition_line"].invoice_tax_id.id == tax["tax"].id:
+                    if tax_line["tax_repartition_line"].tax_id.id == tax["tax"].id:
                         tax_line["tax_amount"] += float_round(
-                            tax_line["tax_repartition_line"].invoice_tax_id._compute_amount(
+                            tax_line["tax_repartition_line"].tax_id._compute_amount(
                                 float_round(
                                     tax["base"], precision_rounding=foreign_currency.rounding
                                 ),
