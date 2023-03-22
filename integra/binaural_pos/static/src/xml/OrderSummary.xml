@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="OrderSummary" t-inherit="point_of_sale.OrderSummary" t-inherit-mode="extension" owl="1">
+        <div class="summary clearfix">
+            <t t-set="_foreignTotal" t-value="getForeignTotal()" />
+            <t t-set="_foreignTax" t-value="getForeignTax()" />
+            <div class="line">
+                <div class="entry total">
+                    <span class="badge">Foreign total: </span>
+                    <span class="value">
+                        <t t-esc="_foreignTotal" />
+                    </span>
+                    <div t-if="_tax.hasTax" class="subentry">
+                        Taxes:
+                        <span class="value">
+                            <t t-esc="_foreignTax.displayAmount" />
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

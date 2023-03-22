@@ -1,0 +1,26 @@
+.rate_bcv{
+  font-size: 1.5em;
+  margin-left: 0.5em;
+}
+
+.headerPartner{
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  margin-bottom: 1em;
+  gap: 0.5em;
+}
+
+.partner-main{
+  margin: 0 !important;
+}
+
+.partner-vat{
+  max-width: calc(340px - 2em);
+}
+
+.partner-min{
+  max-width: 2em;
+  font-size: 22.5px !important;
+  line-height: 22.5px;
+}
