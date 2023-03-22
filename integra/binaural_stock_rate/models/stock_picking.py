@@ -15,7 +15,6 @@ class StockPicking(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_foreign_rate",
         digits="Tasa",
-        default=0.0,
         store=True,
         readonly=False,
         help="The currency rate taken from the document of origin/system.",
@@ -27,7 +26,7 @@ class StockPicking(models.Model):
     )
     analytic_account_id = fields.Many2one("account.analytic.account")
 
-    @api.depends("sale_id", "purchase_id", "scheduled_date")
+    @api.depends("sale_id", "purchase_id", "")
     def _compute_foreign_rate(self):
         rate = self.env["res.currency.rate"]
 
