@@ -22,7 +22,7 @@ class AccountMove(models.Model):
     partner_id_domain = fields.Char(compute="_compute_partner_id_domain")
     filter_partner = fields.Selection(
         [("customer", "Customer"), ("supplier", "Supplier"), ("contact", "Contact")],
-        help="Filter partner by customer rank",
+        help="Filter partner by both customer or supplier rank (Depending on the invoice type)",
     )
 
     @api.depends("filter_partner")
