@@ -168,7 +168,7 @@ export class TaxTotalsComponent extends Component {
         }
     }
 }
-TaxTotalsComponent.template = "account.TaxForeignTotalsField";
+TaxTotalsComponent.template = "TaxForeignTotalsField";
 TaxTotalsComponent.components = { TaxGroupComponent };
 TaxTotalsComponent.props = {
     ...standardFieldProps,
