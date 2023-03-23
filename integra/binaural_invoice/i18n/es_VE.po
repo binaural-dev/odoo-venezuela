@@ -42,3 +42,32 @@ msgstr "Fecha de Recepción"
 #: model:ir.model.fields,help:binaural_invoice.field_account_payment__correlative
 msgid "Sequence control number"
 msgstr "Secuencia para el número de control"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_bank_statement_line__filter_partner
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_move__filter_partner
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_payment__filter_partner
+msgid "Filter Partner"
+msgstr "Filtro de Contacto"
+
+#. module: binaural_invoice
+#: model:ir.model.fields.selection,name:binaural_invoice.selection__account_move__filter_partner__customer
+msgid "Customer"
+msgstr "Clientes"
+
+#. module: binaural_invoice
+#: model:ir.model.fields.selection,name:binaural_invoice.selection__account_move__filter_partner__supplier
+msgid "Supplier"
+msgstr "Proveedores"
+
+#. module: binaural_invoice
+#: model:ir.model.fields.selection,name:binaural_invoice.selection__account_move__filter_partner__contact
+msgid "Contact"
+msgstr "Contactos"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,help:binaural_invoice.field_account_bank_statement_line__filter_partner
+#: model:ir.model.fields,help:binaural_invoice.field_account_move__filter_partner
+#: model:ir.model.fields,help:binaural_invoice.field_account_payment__filter_partner
+msgid "Filter partner by both customer or supplier rank (Depending on the invoice type)"
+msgstr "Filtro de contacto tanto para clientes como para proveedores (Dependiendo del tipo de factura)"

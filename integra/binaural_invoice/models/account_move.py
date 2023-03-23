@@ -1,8 +1,15 @@
-from odoo import api, fields, models, _
+import json
 import logging
-from lxml import etree
+
+from odoo import api, fields, models, _
+from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
+FILTER_PARTNER = {
+    "customer": [("customer_rank", ">=", 1)],
+    "supplier": [("supplier_rank", ">=", 1)],
+    "contact": [("customer_rank", "=", 0), ("supplier_rank", "=", 0)],
+}
 
 
 class AccountMove(models.Model):
@@ -12,6 +19,23 @@ class AccountMove(models.Model):
     invoice_reception_date = fields.Date(
         "Reception Date", help="Indicates when the invoice was received by the client/company"
     )
+    partner_id_domain = fields.Char(compute="_compute_partner_id_domain")
+    filter_partner = fields.Selection(
+        [("customer", "Customer"), ("supplier", "Supplier"), ("contact", "Contact")],
+        help="Filter partner by both customer or supplier rank (Depending on the invoice type)",
+    )
+
+    @api.depends("filter_partner")
+    def _compute_partner_id_domain(self):
+        for move in self:
+            company_id = move.company_id.id
+            domain = expression.AND(
+                [
+                    FILTER_PARTNER.get(move.filter_partner, []),
+                    [("type", "!=", "private"), ("company_id", "in", (False, company_id))],
+                ]
+            )
+            move.update({"partner_id_domain": json.dumps(domain)})
 
     def _post(self, soft=True):
         res = super()._post(soft)
@@ -21,12 +45,12 @@ class AccountMove(models.Model):
 
     @api.model
     def is_valid_to_sequence(self) -> bool:
-        """ Check if the invoice satisfy the conditions to 
+        """Check if the invoice satisfy the conditions to
         associate a new sequence number.
 
         Returns
         -------
-            True or False whether the invoice already has a 
+            True or False whether the invoice already has a
             sequence number or not.
         """
 
@@ -34,7 +58,7 @@ class AccountMove(models.Model):
 
     @api.model
     def get_sequence(self):
-        """ Allow the invoice to have both a generic sequence
+        """Allow the invoice to have both a generic sequence
         number or a specific one given certain conditions.
 
         Returns

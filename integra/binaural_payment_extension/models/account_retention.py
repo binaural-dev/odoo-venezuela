@@ -169,9 +169,8 @@ class AccountRetention(models.Model):
                     retention.foreign_total_iva_amount += line.foreign_iva_amount
                     retention.foreign_total_retention_amount += line.foreign_retention_amount
 
-    @api.depends("retention_line_ids")
     @api.onchange("partner_id")
-    def _onchange_partner_id(self):
+    def onchange_partner_id(self):
         """
         Load retention lines from invoices with taxes when the partner changes for IVA retentions
         that are not posted.
@@ -334,8 +333,9 @@ class AccountRetention(models.Model):
                 sequence_number = retention.get_sequence_iva_retention().next_by_id()
             elif retention.type_retention == "islr":
                 sequence_number = retention.get_sequence_islr_retention().next_by_id()
-            retention.name = sequence_number
-            retention.number = sequence_number
+            correlative = f"{retention.date_accounting.year}{retention.date_accounting.month:02d}{sequence_number}"
+            retention.name = correlative
+            retention.number = correlative
 
     def action_cancel(self):
         self.payment_ids.mapped("move_id.line_ids").remove_move_reconcile()
