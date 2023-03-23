@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record model="ir.ui.view" id="sale_order_view_multi_product_selection_inherit">
+        <field name="name">sale.order.view.multi.product.selection.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']" position="before">
+                <button name="%(act_open_select_products_view)d" type="action" string="Select Products"
+                    context="{'default_flag_order': 'so'}" attrs="{'invisible': [('state', '!=', 'draft')]}"
+                    class="btn-primary mb-3"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
