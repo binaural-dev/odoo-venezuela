@@ -39,19 +39,90 @@
                                     <!-- <field name="bs_currency_id" invisible="1"/> -->
                                     <field name="name" readonly="1" optional="show"/>
                                     <field name="move_id" domain="[('move_type', 'in', ['in_invoice','in_refund']), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"/>
-                                    <field name="payment_concept_id"/>
-                                    <field name="invoice_total" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
-                                    <field name="invoice_amount"  widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
-                                    <field name="foreign_invoice_amount"/>
-                                    <field name="iva_amount" force_save="1" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
-                                    <field name="related_pay_from"/>
-                                    <field name="related_percentage_tax_base"/>
-                                    <field name="related_percentage_fees" />
-                                    <field name="related_amount_subtract_fees" />
-                                    <field name="retention_amount" />
-                                    <field name="foreign_retention_amount"/>
-                                    <field name="foreign_currency_rate" optional="hide"/>
-                                    <field name="foreign_invoice_total" optional="hide"/>
+                                    <field name="payment_concept_id" force_save="1" />
+                                    <field name="is_retention_client" invisible="1" />
+                                <field name="name"/>
+                                <field name="payment_concept_id"/>
+                                <field 
+                                name="invoice_total"
+                                force_save="1"
+                                string="Invoice Total"
+                                readonly="1"  
+                                widget="monetary"
+					            options="{'currency_field': 'company_currency_id'}" 
+                                attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
+                                />
+                                <field 
+                                name="foreign_invoice_total"
+                                force_save="1"
+                                string="Invoice Total"
+                                readonly="1" 
+                                widget="monetary"
+					            options="{'currency_field': 'foreign_currency_id'}"
+					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+                                />
+                                <field 
+                                name="invoice_amount"
+                                force_save="1"
+                                string="Invoice Amount"
+                                widget="monetary"
+					            options="{'currency_field': 'company_currency_id'}" 
+                                attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
+                                />
+
+                                <field 
+                                name="foreign_invoice_amount"
+                                force_save="1"
+                                string="Invoice Amount"
+                                widget="monetary"
+					            options="{'currency_field': 'foreign_currency_id'}"
+					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}" 
+                                />
+
+                                <field 
+                                name="iva_amount" 
+                                force_save="1" 
+                                widget="monetary"
+					            options="{'currency_field': 'company_currency_id'}"
+					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+                                />
+                                <field 
+                                name="related_pay_from"
+                                force_save="1"
+                                readonly="1" 
+                                />
+                                <field 
+                                name="related_percentage_tax_base" 
+                                force_save="1" 
+                                readonly="1" 
+                                />
+                                <field 
+                                name="related_percentage_fees"
+                                force_save="1"
+                                readonly="1" 
+                                />
+                                <field 
+                                name="related_amount_subtract_fees" 
+                                readonly="1" 
+                                />
+                                <field 
+                                name="foreign_currency_rate" 
+                                readonly="1" 
+                                optional="hide"
+                                />
+                                <field 
+                                name="retention_amount" 
+                                readonly="1"
+                                widget="monetary"
+					            options="{'currency_field': 'company_currency_id'}"
+					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+                                />
+                                <field 
+                                name="foreign_retention_amount" 
+                                widget="monetary"
+					            options="{'currency_field': 'foreign_currency_id'}"
+					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+                                />
                                 </tree>
                             </field>
 

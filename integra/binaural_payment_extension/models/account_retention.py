@@ -373,7 +373,7 @@ class AccountRetention(models.Model):
                 raise UserError(_("Select a payment concept"))
 
             payment_type = "outbound"
-            if retention.retention_line_ids.move_id.type == "in_refund":
+            if retention.retention_line_ids.move_id.move_type == "in_refund":
                 payment_type = "inbound"
 
             Payment = self.env["account.payment"]

@@ -36,7 +36,7 @@ class AccountRetentionLine(models.Model):
     base_ret = fields.Float("Retained base", digits=(16, 2))
     imp_ret = fields.Float(string="tax incurred", digits=(16, 2))
     retention_rate = fields.Float(store=True, digits="Tasa")
-    move_id = fields.Many2one("account.move", "move", ondelete="cascade")
+    move_id = fields.Many2one("account.move", "move", ondelete="cascade", store=True)
     # retention_move_id = fields.One2many("account.move", "retention_move_id", string="Retention move")
     is_retention_client = fields.Boolean(default=True)
     display_invoice_number = fields.Char(
@@ -112,7 +112,6 @@ class AccountRetentionLine(models.Model):
             record.payment_id.unlink()
         return super().unlink()
 
-    @api.onchange("payment_concept_id")
     @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
         """
@@ -146,8 +145,7 @@ class AccountRetentionLine(models.Model):
                     ]
                     record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
 
-    @api.onchange("invoice_amount", "foreign_invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
-    @api.depends("invoice_amount", "foreign_invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
+    @api.depends("invoice_amount", "foreign_invoice_amount")
     def _compute_retention_amount(self):
         """ 
          This compute is used to get the retention amount from the payment concept of the partner
