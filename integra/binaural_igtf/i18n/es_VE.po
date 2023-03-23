@@ -1,0 +1,84 @@
+#. module: binaural_igtf
+#: model:ir.model.fields,field_description:binaural_igtf.field_res_company__account_igtf
+msgid "Account Igtf"
+msgstr "Cuenta de IGTF"
+
+#. module: binaural_igtf
+#. odoo-javascript
+#: code:addons/binaural_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/binaural_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: model:ir.model.fields,field_description:binaural_igtf.field_account_bank_statement_line__bi_igtf
+#: model:ir.model.fields,field_description:binaural_igtf.field_account_move__bi_igtf
+#: model:ir.model.fields,field_description:binaural_igtf.field_account_payment__bi_igtf
+#, python-format
+msgid "BI IGTF"
+msgstr "BI IGTF"
+
+#. module: binaural_igtf
+#: model:ir.model,name:binaural_igtf.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: binaural_igtf
+#: model:ir.model,name:binaural_igtf.model_res_config_settings
+msgid "Config Settings"
+msgstr ""
+
+#. module: binaural_igtf
+#. odoo-javascript
+#: code:addons/binaural_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/binaural_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#, python-format
+msgid "IGTF"
+msgstr ""
+
+#. module: binaural_igtf
+#: model:ir.model.fields,field_description:binaural_igtf.field_res_config_settings__account_igtf
+msgid "IGTF Account"
+msgstr "Cuenta de IGTF"
+
+#. module: binaural_igtf
+#: model_terms:ir.ui.view,arch_db:binaural_igtf.res_config_settings_binaural_rate
+msgid "IGTF Configuration"
+msgstr "Configuración de IGTF"
+
+#. module: binaural_igtf
+#: model:ir.model.fields,field_description:binaural_igtf.field_res_company__igtf_percentage
+#: model:ir.model.fields,field_description:binaural_igtf.field_res_config_settings__igtf_percentage
+msgid "IGTF Percentage"
+msgstr "Porcentaje de IGTF"
+
+#. module: binaural_igtf
+#: model:ir.model.fields,field_description:binaural_igtf.field_account_bank_statement_line__amount_residual_igtf
+#: model:ir.model.fields,field_description:binaural_igtf.field_account_move__amount_residual_igtf
+#: model:ir.model.fields,field_description:binaural_igtf.field_account_payment__amount_residual_igtf
+#: model:ir.model.fields,help:binaural_igtf.field_account_bank_statement_line__amount_residual_igtf
+#: model:ir.model.fields,help:binaural_igtf.field_account_move__amount_residual_igtf
+#: model:ir.model.fields,help:binaural_igtf.field_account_payment__amount_residual_igtf
+msgid "IGTF Residual"
+msgstr "Importe adeudado con IGTF"
+
+#. module: binaural_igtf
+#: model:ir.model,name:binaural_igtf.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: binaural_igtf
+#: model:ir.model,name:binaural_igtf.model_account_tax
+msgid "Tax"
+msgstr "Impuesto"
+
+#. module: binaural_igtf
+#. odoo-javascript
+#: code:addons/binaural_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/binaural_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#, python-format
+msgid "Total with IGTF"
+msgstr "Total con IGTF"
+
+#. module: binaural_igtf
+#: model:ir.model.fields,help:binaural_igtf.field_account_bank_statement_line__bi_igtf
+#: model:ir.model.fields,help:binaural_igtf.field_account_move__bi_igtf
+#: model:ir.model.fields,help:binaural_igtf.field_account_payment__bi_igtf
+msgid "subtotal with igtf"
+msgstr "Subtotal con IGTF"

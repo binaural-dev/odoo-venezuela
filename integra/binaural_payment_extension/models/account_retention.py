@@ -36,7 +36,7 @@ class AccountRetention(models.Model):
         help="Code of the withholding voucher",
     )
     state = fields.Selection(
-        [("draft", "Draft"), ("emitted", "Emitted"), ("cancel", "Cancel")],
+        [("draft", "Draft"), ("emitted", "Emitted"), ("cancel", "Cancelled")],
         index=True,
         default="draft",
         help="Status of the withholding voucher",
@@ -171,9 +171,11 @@ class AccountRetention(models.Model):
         Load retention lines from invoices with taxes when the partner changes for IVA retentions
         that are not posted.
         """
+        self._validate_retention_journals()
         for retention in self.filtered(
             lambda r: (r.type_retention, r.state) == ("iva", "draft") and r.partner_id
         ):
+            retention.date_accounting = fields.Date.today()
             search_domain = [
                 ("partner_id", "=", retention.partner_id.id),
                 ("state", "=", "posted"),
@@ -191,6 +193,26 @@ class AccountRetention(models.Model):
             retention.clear_retention()
             lines = load_retention_lines(invoices_with_taxes, self.env["account.retention"])
             return {"value": {"retention_line_ids": lines}}
+
+    def _validate_retention_journals(self):
+        """
+        Validate that the company has the journals configured for the retention type.
+        """
+        for retention in self:
+            if (
+                retention.type_retention == "iva"
+                and not self.env.company.iva_supplier_retention_journal_id
+            ):
+                raise UserError(
+                    _("The company must have a supplier IVA retention journal configured.")
+                )
+            if (
+                retention.type_retention == "islr"
+                and not self.env.company.islr_supplier_retention_journal_id
+            ):
+                raise UserError(
+                    _("The company must have a supplier ISLR retention journal configured.")
+                )
 
     def clear_retention(self):
         """
@@ -221,22 +243,21 @@ class AccountRetention(models.Model):
 
     def _create_payments_from_retention_lines(self):
         """
-        Create the payments from the retention lines.
+        Create the payments from the retention lines for an IVA retention.
 
         When there are retention lines without payments, this method will create a payment for each
         set of retention lines that have the same type of invoice and the same rate.
         """
         Payment = self.env["account.payment"]
         for retention in self:
-            if any(retention.payment_ids):
+            if any(retention.payment_ids) or retention.type_retention != "iva":
                 continue
-
             payment_vals = {
                 "partner_type": "supplier",
                 "retention_id": retention.id,
                 "partner_id": retention.partner_id.id,
+                "journal_id": self.env.company.iva_supplier_retention_journal_id.id,
                 "payment_type_retention": "iva",
-                "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
                 "is_retention": True,
                 "currency_id": self.env.user.company_id.currency_id.id,
             }
@@ -260,11 +281,17 @@ class AccountRetention(models.Model):
                 in_invoices_dict[invoice.foreign_currency_rate] += invoice
 
             for lines in in_refunds_dict.values():
+                payment_vals["payment_method_id"] = (
+                    self.env.ref("account.account_payment_method_manual_in").id,
+                )
                 payment_vals["payment_type"] = "inbound"
                 payment = Payment.create(payment_vals)
                 lines.write({"payment_id": payment.id})
                 payment.compute_retention_amount_from_retention_lines()
             for lines in in_invoices_dict.values():
+                payment_vals["payment_method_id"] = (
+                    self.env.ref("account.account_payment_method_manual_out").id,
+                )
                 payment_vals["payment_type"] = "outbound"
                 payment = Payment.create(payment_vals)
                 lines.write({"payment_id": payment.id})
@@ -344,7 +371,6 @@ class AccountRetention(models.Model):
                 raise UserError(_("Select a type person"))
             if not retention.retention_line_ids.payment_concept_id:
                 raise UserError(_("Select a payment concept"))
-            # if not retention.payment_ids:
 
             payment_type = "outbound"
             if retention.retention_line_ids.move_id.type == "in_refund":
@@ -357,6 +383,7 @@ class AccountRetention(models.Model):
                     "partner_type": "supplier",
                     "partner_id": retention.retention_line_ids.move_id.partner_id.id,
                     "state": "draft",
+                    "journal_id": self.env.company.islr_supplier_retention_journal_id.id,
                     "payment_type_retention": "islr",
                     "payment_method_id": self.env.ref(
                         "account.account_payment_method_manual_in"
@@ -436,6 +463,7 @@ class AccountRetention(models.Model):
                 "payment_type": payment_type,
                 "partner_type": "supplier",
                 "partner_id": invoice_id.partner_id.id,
+                "journal_id": self.env.company.iva_supplier_retention_journal_id.id,
                 "payment_type_retention": "iva",
                 "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
                 "is_retention": True,
@@ -478,6 +506,7 @@ class AccountRetention(models.Model):
                 "partner_id": invoice_id.partner_id.id,
                 "payment_type_retention": "islr",
                 "retention_line_ids": invoice_id.retention_islr_line_ids,
+                "journal_id": self.env.company.islr_supplier_retention_journal_id.id,
                 "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
                 "is_retention": True,
                 "foreign_rate": invoice_id.foreign_rate,

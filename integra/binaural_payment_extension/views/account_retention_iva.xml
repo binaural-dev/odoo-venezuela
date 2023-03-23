@@ -27,7 +27,7 @@
                         <field name="date" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
                     </group>
                     <notebook>
-                	<page name="Retention line">
+                	<page name="retention_lines" string="Retention Lines">
                             <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Retention Lines" editable="bottom">
 				    <field name="invoice_type" invisible="1"/>
@@ -174,7 +174,7 @@
             <field name="arch" type="xml">
                 <search string="IVA Retention">
                     <field name="number" string="Number" filter_domain="[('number','ilike',self)]"/>
-                    <field name="partner_id" string="Razón Social" filter_domain="[('partner_id','ilike',self)]"/>
+                    <field name="partner_id" string="Business Name" filter_domain="[('partner_id','ilike',self)]"/>
                     <field name="date" string="Vocher date" filter_domain="[('date','ilike',self)]"/>
                     <field name="date_accounting" string="Fecha Contable" filter_domain="[('date_accounting','ilike',self)]"/>
                     <!-- <field name="retention_line" string="Factura" filter_domain="[('retention_line.invoice_id.name','ilike',self)]"/> -->

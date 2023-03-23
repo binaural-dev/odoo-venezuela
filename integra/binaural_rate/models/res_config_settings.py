@@ -4,7 +4,6 @@ from odoo.exceptions import UserError
 
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
-    check_company=True
 
     company_id = fields.Many2one(
         "res.company",
@@ -38,11 +37,3 @@ class ResConfigSettings(models.TransientModel):
                 raise UserError(
                     _("The currency foreign must be different from the currency of the company")
                 )
-
-    def get_values(self):
-        res = super(ResConfigSettings, self).get_values()
-        return res
-
-    def set_values(self):
-        res = super(ResConfigSettings, self).set_values()
-        return res
