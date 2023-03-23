@@ -346,6 +346,7 @@ class AccountRetention(models.Model):
             elif retention.type in ["out_invoice", "out_refund", "out_debit"]:
                 if not retention.number:
                     raise UserError(_("Insert a number for the retention"))
+        _logger.warning("FDP! %s", self.payment_ids)
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
 
@@ -373,7 +374,7 @@ class AccountRetention(models.Model):
                 raise UserError(_("Select a payment concept"))
 
             payment_type = "outbound"
-            if retention.retention_line_ids.move_id.type == "in_refund":
+            if retention.retention_line_ids.move_id.move_type == "in_refund":
                 payment_type = "inbound"
 
             Payment = self.env["account.payment"]

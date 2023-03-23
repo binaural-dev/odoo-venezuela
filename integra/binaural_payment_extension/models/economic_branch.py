@@ -14,10 +14,11 @@ class EconomicBranch(models.Model):
         )
     ]
 
-    name = fields.Char(required=True)
+    name = fields.Char(required=True, store=True)
     status = fields.Selection(
         selection=[("active", "Active"), ("inactive", "Inactive")],
         default="active",
+        store=True
     )
 
     @api.onchange("name")
