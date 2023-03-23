@@ -40,18 +40,18 @@
                                     <field name="name" readonly="1" optional="show"/>
                                     <field name="move_id" domain="[('move_type', 'in', ['in_invoice','in_refund']), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"/>
                                     <field name="payment_concept_id"/>
-                                    <field name="invoice_total" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                    <field name="invoice_amount"  widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                    <field name="iva_amount" force_save="1" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                    <field name="related_pay_from" />
-                                    <field name="related_percentage_tax_base" />
+                                    <field name="invoice_total" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
+                                    <field name="invoice_amount"  widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
+                                    <field name="foreign_invoice_amount"/>
+                                    <field name="iva_amount" force_save="1" widget="monetary" options="{'currency_field': 'company_currency_id'}"/>
+                                    <field name="related_pay_from"/>
+                                    <field name="related_percentage_tax_base"/>
                                     <field name="related_percentage_fees" />
                                     <field name="related_amount_subtract_fees" />
                                     <field name="retention_amount" />
+                                    <field name="foreign_retention_amount"/>
                                     <field name="foreign_currency_rate" optional="hide"/>
                                     <field name="foreign_invoice_total" optional="hide"/>
-                                    <field name="foreign_invoice_amount" optional="hide"/>
-                                    <field name="foreign_retention_amount" optional="hide"/>
                                 </tree>
                             </field>
 

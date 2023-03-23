@@ -44,6 +44,23 @@ class AccountMoveRetention(models.Model):
         track_visibility="onchange",
     )
 
+    company_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
+    foreign_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
+    base_currency_is_vef = fields.Boolean(compute="_compute_currency_fields")
+
+    def _compute_currency_fields(self):
+        _logger.warning("Compute currency fields")
+        for retention in self:
+            retention.company_currency_id = self.env.company.currency_id.id
+            retention.foreign_currency_id = self.env.company.currency_foreign_id.id
+            retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
+                "base.VEF"
+            )
+            _logger.warning("Company currency: %s", retention.company_currency_id)
+            _logger.warning("Foreign currency: %s", retention.foreign_currency_id)
+            _logger.warning("Base currency is VEF: %s", retention.base_currency_is_vef)
+             
+
     def action_register_payment(self):
         """
         Override the action_register_payment method to add the invoice lines to the payment register.
