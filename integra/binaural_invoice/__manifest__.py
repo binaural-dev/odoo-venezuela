@@ -7,7 +7,7 @@
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
     # any module necessary for this one to work correctly
-    "depends": ["binaural_accountant", "binaural_contact", "binaural_fiscal", "web_domain_field"],
+    "depends": ["binaural_accountant", "binaural_contact", "binaural_fiscal", "binaural_filter_partner"],
     # always loaded
     "data": [
         "security/ir.model.access.csv",
