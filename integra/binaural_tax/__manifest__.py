@@ -8,9 +8,9 @@
     "category": "Accounting/Localizations/Account Chart",
     "version": "16.0.0.0.1",
     # any module necessary for this one to work correctly
-    "depends": ["base", "account"],
+    "depends": ["base", "account", "binaural_rate"],
     # always loaded
-    "data": [],
+    "data": ["views/res_config_settings.xml"],
     "images": ["static/description/icon.png"],
     "application": True,
     "assets": {

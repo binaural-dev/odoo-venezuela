@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_config_settings_binaural_pos" model="ir.ui.view">
+            <field name="name">res.config.settings.binaural.rate</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='binaural_rate_settings']" position="after">
+                    <h2>POS Configuration</h2>
+                    <div class="row mt16 o_settings_container" name="binaural_igtf_settings" >
+<!-- attrs="{'invisible': [('igtf','=',False)]}" -->
+                        <div class="col-12 col-lg-6 o_setting_box" id="multiple_prices_setting">
+                            <!-- <field name="module_binaural_igtf" invisible="1"/> -->
+                            <div class="o_setting_left_pane">
+                                <field name="module_binaural_pos_igtf"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <!-- <label for="module_binaural_pos_igtf" string="IGTF"/> -->
+                                <div class="text-muted">
+                                   Calculate IGTF with payment method with USD 
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

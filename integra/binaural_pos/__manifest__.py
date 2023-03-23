@@ -10,7 +10,7 @@
     # any module necessary for this one to work correctly
     "depends": ["base", "point_of_sale", "binaural_rate", "binaural_contact"],
     # always loaded
-    "data": ["views/pos_payment_method.xml", "views/pos_order.xml"],
+    "data": ["views/pos_payment_method.xml", "views/pos_order.xml","views/res_config_settings.xml"],
     "images": ["static/description/icon.png"],
     "application": True,
     "assets": {
