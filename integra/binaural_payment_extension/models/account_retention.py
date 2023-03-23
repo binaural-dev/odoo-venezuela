@@ -346,7 +346,6 @@ class AccountRetention(models.Model):
             elif retention.type in ["out_invoice", "out_refund", "out_debit"]:
                 if not retention.number:
                     raise UserError(_("Insert a number for the retention"))
-        _logger.warning("FDP! %s", self.payment_ids)
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
 
