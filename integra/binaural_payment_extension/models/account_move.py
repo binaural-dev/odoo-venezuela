@@ -44,19 +44,21 @@ class AccountMoveRetention(models.Model):
         track_visibility="onchange",
     )
 
-    check_currency_id = fields.Boolean(
-        compute="_compute_check_currency_id",
-    )
+    company_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
+    foreign_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
+    base_currency_is_vef = fields.Boolean(compute="_compute_currency_fields")
 
-    @api.onchange("partner_id")
-    def _compute_check_currency_id(self):
-        for record in self:
-            _logger.warning("El tipo de moneda es: %s", record.foreign_currency_id.name)
-            if record.foreign_currency_id.name != "USD":
-                _logger.warning("El tipo de moneda no es USD")
-                record.check_currency_id = True
-            else:
-                record.check_currency_id = False
+    def _compute_currency_fields(self):
+        _logger.warning("Compute currency fields")
+        for retention in self:
+            retention.company_currency_id = self.env.company.currency_id.id
+            retention.foreign_currency_id = self.env.company.currency_foreign_id.id
+            retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
+                "base.VEF"
+            )
+            _logger.warning("Company currency: %s", retention.company_currency_id)
+            _logger.warning("Foreign currency: %s", retention.foreign_currency_id)
+            _logger.warning("Base currency is VEF: %s", retention.base_currency_is_vef)
              
 
     def action_register_payment(self):

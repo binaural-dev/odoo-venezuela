@@ -125,16 +125,12 @@ class AccountRetention(models.Model):
     )
 
     def _compute_currency_fields(self):
-        _logger.warning("Compute currency fields")
         for retention in self:
             retention.company_currency_id = self.env.company.currency_id.id
             retention.foreign_currency_id = self.env.company.currency_foreign_id.id
             retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
                 "base.VEF"
             )
-            _logger.warning("Company currency: %s", retention.company_currency_id)
-            _logger.warning("Foreign currency: %s", retention.foreign_currency_id)
-            _logger.warning("Base currency is VEF: %s", retention.base_currency_is_vef)
 
     @api.depends(
         "retention_line_ids.invoice_amount",
