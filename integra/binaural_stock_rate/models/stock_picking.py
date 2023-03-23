@@ -26,7 +26,7 @@ class StockPicking(models.Model):
     )
     analytic_account_id = fields.Many2one("account.analytic.account")
 
-    @api.depends("sale_id", "purchase_id", "")
+    @api.depends("sale_id", "purchase_id", "scheduled_date")
     def _compute_foreign_rate(self):
         rate = self.env["res.currency.rate"]
 
