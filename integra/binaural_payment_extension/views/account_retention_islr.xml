@@ -31,7 +31,7 @@
                         <field name="date" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
                     </group>
                     <notebook colspan="4">
-                        <page name="retention line" string="Retention line">
+                        <page name="retention_lines" string="Retention Lines">
                             <!-- <field name="foreign_currency_id" invisible="1"/>
                             <field name="bs_currency_id" invisible="1"/> -->
                             <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}">
