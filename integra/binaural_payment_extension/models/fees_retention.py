@@ -6,14 +6,14 @@ class FeesRetentionBinaural(models.Model):
     _name = "fees.retention"
     _description = "Fees"
 
-    name = fields.Char(string="Description", required=True)
-    percentage = fields.Float(string="Fees percentage")
-    subtract_money = fields.Float(string="Quantity to subtract to fees")
+    name = fields.Char(string="Description", required=True, store=True)
+    percentage = fields.Float(string="Fees percentage", store=True)
+    subtract_money = fields.Float(string="Quantity to subtract to fees", store=True)
     amount_subtract = fields.Float(
         string="Subtract mount", compute="_compute_amount_subtract", store=True
     )
-    apply_subtracting = fields.Boolean(string="Subtract apply?", default=False)
-    accumulated_rate = fields.Boolean(string="Rate accumulated?", default=False)
+    apply_subtracting = fields.Boolean(string="Subtract apply?", default=False, store=True)
+    accumulated_rate = fields.Boolean(string="Rate accumulated?", default=False, store=True)
     status = fields.Boolean(default=True, string="Is active?")
     tax_unit_ids = fields.Many2one(
         "tax.unit", string="Tax Unit", required=True, domain=[("status", "=", True)]

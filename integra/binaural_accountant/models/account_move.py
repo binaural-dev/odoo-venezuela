@@ -228,7 +228,6 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.foreign_total_billed = 0
-            _logger.warning(move.tax_totals)
             if move.invoice_line_ids and move.is_invoice(include_receipts=True):
                 move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
 

@@ -6,11 +6,12 @@ class PaymentConceptBinaural(models.Model):
     _name = "payment.concept"
     _description = "Payment Concept"
 
-    name = fields.Char(string="Description", required=True)
+    name = fields.Char(string="Description", required=True, store=True)
     line_payment_concept_ids = fields.One2many(
-        "payment.concept.line", "payment_concept_id", "Payment Concept Line"
+        "payment.concept.line", "payment_concept_id", "Payment Concept Line", 
+        store=True
     )
-    status = fields.Boolean(default=True, string="Active?")
+    status = fields.Boolean(default=True, string="Active?", store=True)
 
     @api.constrains("line_payment_concept_ids")
     def _constraint_line_payment_concept_ids(self):

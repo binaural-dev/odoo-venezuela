@@ -10,7 +10,7 @@ class PaymentConceptLine(models.Model):
 
     pay_from = fields.Float(string="Payments greater than:")
     type_person_id = fields.Many2one(
-        "type.person", string="Type person", required=True, domain=[("state", "=", True)]
+        "type.person", string="Type person",store=True, required=True, domain=[("state", "=", True)]
     )
     payment_concept_id = fields.Many2one(
         "payment.concept",

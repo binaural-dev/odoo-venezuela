@@ -28,9 +28,10 @@ class ResPartner(models.Model):
             ("ordinary", "Ordinary"),
         ],
         default="ordinary",
+        store=True
     )
 
-    type_person_id = fields.Many2one("type.person", "Type Person", track_visibility="onchange")
+    type_person_id = fields.Many2one("type.person", "Type Person", track_visibility="onchange", store=True)
 
     supplier_islr_account = fields.Many2one(
         "account.account",
