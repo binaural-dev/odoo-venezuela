@@ -19,7 +19,9 @@ def search_invoices_with_taxes(AccountMove, domain):
         Invoices with taxes different than 0.
     """
     invoices = AccountMove.search(domain)
-    return invoices.filtered(lambda i: any(line.tax_ids[0].amount > 0 for line in i.line_ids))
+    return invoices.filtered(
+        lambda i: any(line.tax_ids[0].amount > 0 for line in i.line_ids if line.tax_ids)
+    )
 
 
 def load_retention_lines(invoices, Retention):

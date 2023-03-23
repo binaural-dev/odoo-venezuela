@@ -30,6 +30,7 @@
         "report/retention_voucher_templates.xml",
         "report/retention_voucher_reports.xml",
         "views/ir_sequence.xml",
+        "views/res_config_settings.xml",
         "views/tax_unit.xml",
         "views/fees_retention.xml",
         "views/economic_activity.xml",
