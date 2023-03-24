@@ -1,5 +1,5 @@
 #. module: binaural_igtf
-#: model:ir.model.fields,field_description:binaural_igtf.field_res_company__account_igtf
+#: model:ir.model.fields,field_description:binaural_igtf.field_res_company__account_igtf_id
 msgid "Account Igtf"
 msgstr "Cuenta de IGTF"
 
@@ -33,7 +33,7 @@ msgid "IGTF"
 msgstr ""
 
 #. module: binaural_igtf
-#: model:ir.model.fields,field_description:binaural_igtf.field_res_config_settings__account_igtf
+#: model:ir.model.fields,field_description:binaural_igtf.field_res_config_settings__account_igtf_id
 msgid "IGTF Account"
 msgstr "Cuenta de IGTF"
 

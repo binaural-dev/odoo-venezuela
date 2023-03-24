@@ -1,5 +1,5 @@
 {
-    "name": "Binaural IGTF",
+    "name": "Binaural Technical IGTF",
     "summary": "Modulo para campos del impuesto IGTF (Impuesto a las grandes transacciones financieras)",
     "license": "AGPL-3",
     "description": "Modulo para campos del impuesto IGTF (Impuesto a las grandes transacciones financieras)",
