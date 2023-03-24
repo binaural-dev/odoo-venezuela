@@ -91,7 +91,7 @@
                                 />
                                 <field 
                                 name="related_percentage_tax_base" 
-                                force_save="1" 
+                                force_save="1"
                                 readonly="1" 
                                 />
                                 <field 
@@ -105,19 +105,22 @@
                                 readonly="1" 
                                 />
                                 <field 
-                                name="foreign_currency_rate" 
+                                name="foreign_currency_rate"
+                                force_save="1"
                                 readonly="1" 
                                 optional="hide"
                                 />
                                 <field 
-                                name="retention_amount" 
+                                name="retention_amount"
+                                force_save="1"
                                 readonly="1"
                                 widget="monetary"
 					            options="{'currency_field': 'company_currency_id'}"
 					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
                                 />
                                 <field 
-                                name="foreign_retention_amount" 
+                                name="foreign_retention_amount"
+                                force_save="1" 
                                 widget="monetary"
 					            options="{'currency_field': 'foreign_currency_id'}"
 					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"

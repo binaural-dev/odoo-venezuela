@@ -341,8 +341,8 @@ class AccountRetention(models.Model):
                 elif retention.type_retention == "islr":
                     move_ids.write({"islr_voucher_number": retention.number})
                 if not retention.payment_ids:
-                    payment = retention.create_payment_from_retention_form()
-                    retention.payment_ids = payment
+                    payments = retention.create_payment_from_retention_form()
+                    retention.payment_ids = payments.ids
             elif retention.type in ["out_invoice", "out_refund", "out_debit"]:
                 if not retention.number:
                     raise UserError(_("Insert a number for the retention"))
@@ -366,22 +366,27 @@ class AccountRetention(models.Model):
         self.write({"state": "cancel"})
 
     def create_payment_from_retention_form(self):
-        for retention in self:
-            if not retention.partner_id.type_person_id:
-                raise UserError(_("Select a type person"))
-            if not retention.retention_line_ids.payment_concept_id:
-                raise UserError(_("Select a payment concept"))
+        self.ensure_one()
+        Payment = self.env["account.payment"]
+        
+        if not self.partner_id.type_person_id:
+            raise UserError(_("Select a type person"))
+        if not self.retention_line_ids.payment_concept_id:
+            raise UserError(_("Select a payment concept"))
 
-            payment_type = "outbound"
-            if retention.retention_line_ids.move_id.move_type == "in_refund":
+        payment_type = "outbound"
+        payment_vals = []
+
+        for line in self.retention_line_ids:
+
+            if line.move_id.move_type == "in_refund":
                 payment_type = "inbound"
 
-            Payment = self.env["account.payment"]
-            payment = Payment.create(
+            payment_vals.append(
                 {
                     "payment_type": payment_type,
                     "partner_type": "supplier",
-                    "partner_id": retention.retention_line_ids.move_id.partner_id.id,
+                    "partner_id": line.move_id.partner_id.id,
                     "state": "draft",
                     "journal_id": self.env.company.islr_supplier_retention_journal_id.id,
                     "payment_type_retention": "islr",
@@ -389,13 +394,16 @@ class AccountRetention(models.Model):
                         "account.account_payment_method_manual_in"
                     ).id,
                     "is_retention": True,
-                    "foreign_rate": retention.retention_line_ids.move_id.foreign_rate,
-                    "retention_line_ids": retention.retention_line_ids,
+                    "foreign_rate": line.move_id.foreign_rate,
+                    "retention_line_ids": line,
                     "currency_id": self.env.user.company_id.currency_id.id,
                 }
             )
-            payment.compute_retention_amount_from_retention_lines()
-            return payment
+
+        payments = Payment.create(payment_vals) 
+        payments.compute_retention_amount_from_retention_lines()
+
+        return payments
 
     def _reconcile_all_payments(self):
         for payment in self.mapped("payment_ids"):
