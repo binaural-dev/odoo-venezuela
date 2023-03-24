@@ -9,16 +9,13 @@
                 <xpath expr="//div[@name='binaural_rate_settings']" position="after">
                     <h2>POS Configuration</h2>
                     <div class="row mt16 o_settings_container" name="binaural_igtf_settings" >
-<!-- attrs="{'invisible': [('igtf','=',False)]}" -->
                         <div class="col-12 col-lg-6 o_setting_box" id="multiple_prices_setting">
-                            <!-- <field name="module_binaural_igtf" invisible="1"/> -->
                             <div class="o_setting_left_pane">
                                 <field name="module_binaural_pos_igtf"/>
                             </div>
                             <div class="o_setting_right_pane">
-                                <!-- <label for="module_binaural_pos_igtf" string="IGTF"/> -->
                                 <div class="text-muted">
-                                   Calculate IGTF with payment method with USD 
+                                    Calculate IGTF with payments made in USD
                                 </div>
                             </div>
                         </div>
