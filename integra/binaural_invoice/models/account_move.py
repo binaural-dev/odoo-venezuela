@@ -5,36 +5,24 @@ from odoo import api, fields, models, _
 from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
-FILTER_PARTNER = {
-    "customer": [("customer_rank", ">=", 1)],
-    "supplier": [("supplier_rank", ">=", 1)],
-    "contact": [("customer_rank", "=", 0), ("supplier_rank", "=", 0)],
-}
 
 
 class AccountMove(models.Model):
-    _inherit = "account.move"
+    _name = "account.move"
+    _inherit = ["account.move", "filter.partner.mixin"]
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     invoice_reception_date = fields.Date(
         "Reception Date", help="Indicates when the invoice was received by the client/company"
-    )
-    partner_id_domain = fields.Char(compute="_compute_partner_id_domain")
-    filter_partner = fields.Selection(
-        [("customer", "Customer"), ("supplier", "Supplier"), ("contact", "Contact")],
-        help="Filter partner by both customer or supplier rank (Depending on the invoice type)",
     )
 
     @api.depends("filter_partner")
     def _compute_partner_id_domain(self):
         for move in self:
             company_id = move.company_id.id
-            domain = expression.AND(
-                [
-                    FILTER_PARTNER.get(move.filter_partner, []),
-                    [("type", "!=", "private"), ("company_id", "in", (False, company_id))],
-                ]
-            )
+            extend_domain = [("type", "!=", "private"), ("company_id", "in", (False, company_id))]
+            domain = move.get_partner_domain(extend=extend_domain)
+
             move.update({"partner_id_domain": json.dumps(domain)})
 
     def _post(self, soft=True):
