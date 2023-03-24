@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 _logger = logging.getLogger(__name__)
 
 
-def get_usd_rate_of_the_day_bcv():
+def get_usd_rate_of_the_day_bcv(self):
     """This function return the rate of the day by the BCV website
 
     Raises:
@@ -21,7 +21,7 @@ def get_usd_rate_of_the_day_bcv():
 
     disable_warnings(InsecureRequestWarning)
     URL = "https://www.bcv.org.ve/"
-    current_date = fields.Date.today()
+    current_date = fields.Date.context_today(self)
 
     try:
         html_content = requests.get(URL, verify=False, timeout=5)
