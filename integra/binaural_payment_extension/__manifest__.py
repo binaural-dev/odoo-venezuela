@@ -46,6 +46,7 @@
         "views/account_move.xml",
         "wizard/account_payment_register.xml",
         "wizard/wizard_retention_islr.xml",
+        "wizard/wizard_retention_iva.xml",
         "views/menu.xml",
     ],
     "images": ["static/description/icon.png"],

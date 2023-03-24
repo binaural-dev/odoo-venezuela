@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230320\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-23 15:46+0000\n"
-"PO-Revision-Date: 2023-03-23 15:46+0000\n"
+"POT-Creation-Date: 2023-03-24 15:30+0000\n"
+"PO-Revision-Date: 2023-03-24 15:30+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -110,6 +110,7 @@ msgid "Business Name"
 msgstr "Razón Social"
 
 #. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.library_rent_wizard_form
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
 msgid "Cancel"
@@ -151,6 +152,7 @@ msgstr "Compañías"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__company_id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_signature_config__company_id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_islr__company_id
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.wizard_retention_islr_view
 msgid "Company"
 msgstr "Compañía"
 
@@ -159,16 +161,6 @@ msgstr "Compañía"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__company_currency_id
 msgid "Company Currency"
 msgstr "Moneda de la Compañía"
-
-#. module: binaural_payment_extension
-#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.wizard_retention_islr_view
-msgid "Company"
-msgstr "Compañía"
-
-#. module: binaural_payment_extension
-#: model:ir.actions.report,name:binaural_payment_extension.retention_voucher_action
-msgid "Retention Voucher"
-msgstr "Comprobante de Retención"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line__code
@@ -210,6 +202,7 @@ msgstr "Correlativo"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_tax_unit__create_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_type_person__create_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_islr__create_uid
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_iva__create_uid
 msgid "Created by"
 msgstr "Creado por"
 
@@ -227,6 +220,7 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_tax_unit__create_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_type_person__create_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_islr__create_date
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_iva__create_date
 msgid "Created on"
 msgstr "Creado en"
 
@@ -234,6 +228,16 @@ msgstr "Creado en"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__payment_date
 msgid "Date"
 msgstr "Fecha"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_iva__date_end
+msgid "Date End"
+msgstr "Fecha de Término"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_iva__date_start
+msgid "Date Start"
+msgstr "Fecha de inicio"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_islr__date_end
@@ -294,6 +298,7 @@ msgstr "Descripción del Comprobante"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_tax_unit__display_name
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_type_person__display_name
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_islr__display_name
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_iva__display_name
 msgid "Display Name"
 msgstr "Nombre"
 
@@ -408,6 +413,11 @@ msgid "File"
 msgstr ""
 
 #. module: binaural_payment_extension
+#: model:ir.model,name:binaural_payment_extension.model_wizard_retention_iva
+msgid "File IVA taxes with the SENIAT"
+msgstr "Declarar IVA ante el SENIAT"
+
+#. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_islr__filename
 msgid "Filename"
 msgstr ""
@@ -466,6 +476,13 @@ msgid "Generate IVA Retention?"
 msgstr "¿Genera retención de IVA?"
 
 #. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:binaural_payment_extension.action_generate_txt
+#: model:ir.ui.menu,name:binaural_payment_extension.txt_report
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.library_rent_wizard_form
+msgid "Generate TXT"
+msgstr "Generar TXT"
+
+#. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_search_binaural_payment_extension
 msgid "Group By"
 msgstr "Agrupar por"
@@ -489,6 +506,7 @@ msgstr "Agrupar por"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_tax_unit__id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_type_person__id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_islr__id
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_iva__id
 msgid "ID"
 msgstr ""
 
@@ -521,7 +539,7 @@ msgstr "Lineas de Retención de ISLR"
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.wizard_retention_islr_view
 msgid "ISLR Retention Wizard"
-msgstr ""
+msgstr "Wizard de Retención de ISLR"
 
 #. module: binaural_payment_extension
 #: model:ir.actions.act_window,name:binaural_payment_extension.action_retention_islr_client
@@ -744,6 +762,7 @@ msgstr "Diario para Retenciones de I.V.A de Proveedores"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_tax_unit____last_update
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_type_person____last_update
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_islr____last_update
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_iva____last_update
 msgid "Last Modified on"
 msgstr "Ultima modificación"
 
@@ -761,6 +780,7 @@ msgstr "Ultima modificación"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_tax_unit__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_type_person__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_islr__write_uid
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_iva__write_uid
 msgid "Last Updated by"
 msgstr "Ultima actualización"
 
@@ -778,6 +798,7 @@ msgstr "Ultima actualización"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_tax_unit__write_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_type_person__write_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_islr__write_date
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_wizard_retention_iva__write_date
 msgid "Last Updated on"
 msgstr "Ultima actualización"
 
@@ -814,6 +835,13 @@ msgstr "Nombre"
 #, python-format
 msgid "No data to export"
 msgstr "No hay datos para exportar"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/wizard_retention_iva.py:0
+#, python-format
+msgid "No retentions found for the selected period"
+msgstr "No se encontraron retenciones para el periodo seleccionado"
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_islr_customer
@@ -1030,7 +1058,6 @@ msgstr "Linea de Retención"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_payment_register__retention_line_ids
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_account_retention_line_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_account_retention_line_tree_binaural_payment_extension
-#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
 msgid "Retention Lines"
@@ -1040,6 +1067,11 @@ msgstr "Lineas de Retención"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__retention_rate
 msgid "Retention Rate"
 msgstr "Tasa"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.report,name:binaural_payment_extension.retention_voucher_action
+msgid "Retention Voucher"
+msgstr "Comprobante de Retención"
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.account_payment_register_form_binaural_payment_extension
@@ -1093,6 +1125,11 @@ msgstr "Reportes del Seniat"
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_islr_sequence
 msgid "Sequence ISLR"
 msgstr "Secuencia de ISLR"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_iva_sequence
+msgid "Sequence IVA"
+msgstr "Secuencia de IVA"
 
 #. module: binaural_payment_extension
 #: model:ir.actions.act_window,name:binaural_payment_extension.ir_sequence_form_islr
@@ -1285,28 +1322,32 @@ msgstr "La base imponible de la retención debe ser mayor que cero"
 #: code:addons/binaural_payment_extension/models/account_move.py:0
 #, python-format
 msgid "The company must have a journal for ISLR supplier retention."
-msgstr "La compañía debe tener un diario para retenciones de ISLR de proveedor."
+msgstr ""
+"La compañía debe tener un diario para retenciones de ISLR de proveedor."
 
 #. module: binaural_payment_extension
 #. odoo-python
 #: code:addons/binaural_payment_extension/models/account_move.py:0
 #, python-format
 msgid "The company must have a journal for IVA supplier retention."
-msgstr "La compañía debe tener un diario para retenciones de IVA de proveedor."
+msgstr ""
+"La compañía debe tener un diario para retenciones de IVA de proveedor."
 
 #. module: binaural_payment_extension
 #. odoo-python
 #: code:addons/binaural_payment_extension/models/account_retention.py:0
 #, python-format
 msgid "The company must have a supplier ISLR retention journal configured."
-msgstr "La compañía debe tener un diario para retenciones de ISLR de proveedor."
+msgstr ""
+"La compañía debe tener un diario para retenciones de ISLR de proveedor."
 
 #. module: binaural_payment_extension
 #. odoo-python
 #: code:addons/binaural_payment_extension/models/account_retention.py:0
 #, python-format
 msgid "The company must have a supplier IVA retention journal configured."
-msgstr "La compañía debe tener un diario para retenciones de IVA de proveedor."
+msgstr ""
+"La compañía debe tener un diario para retenciones de IVA de proveedor."
 
 #. module: binaural_payment_extension
 #: model:ir.model.constraint,message:binaural_payment_extension.constraint_payment_concept_line_unique_code
@@ -1511,6 +1552,13 @@ msgstr "No puedes añadir retenciones con el mismo nombre."
 #: model:ir.model.constraint,message:binaural_payment_extension.constraint_economic_branch_name_uniq
 msgid "You may not register an economic sector with the same name."
 msgstr "No puedes registrar una Rama Económica con el mismo nombre "
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/wizard_retention_iva.py:0
+#, python-format
+msgid "You must enter a start and end date"
+msgstr "Debes ingresar una fecha de inicio y fin"
 
 #. module: binaural_payment_extension
 #. odoo-python
