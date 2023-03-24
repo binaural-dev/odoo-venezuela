@@ -1,7 +1,6 @@
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
-from odoo import fields, _
-from odoo.exceptions import UserError
+from odoo import fields
 import requests
 import logging
 from bs4 import BeautifulSoup
