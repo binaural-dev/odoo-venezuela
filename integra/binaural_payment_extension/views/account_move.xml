@@ -107,7 +107,8 @@
                                 readonly="1" 
                                 />
                                 <field 
-                                name="foreign_currency_rate" 
+                                name="foreign_currency_rate"
+                                force_save="1"
                                 readonly="1" 
                                 optional="hide"
                                 />
