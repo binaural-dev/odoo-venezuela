@@ -1,6 +1,6 @@
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
-from odoo import fields
+from odoo import fields, _
 from odoo.exceptions import UserError
 import requests
 import logging
@@ -34,6 +34,4 @@ def get_usd_rate_of_the_day_bcv(self):
         return (float(usd_value), current_date)
     except Exception as e:
         _logger.error(e)
-        raise UserError(
-            "Error to connect with BCV, please check your internet connection or try again later"
-        )
+        return (1, False)
