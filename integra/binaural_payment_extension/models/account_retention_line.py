@@ -112,6 +112,7 @@ class AccountRetentionLine(models.Model):
             record.payment_id.unlink()
         return super().unlink()
 
+    @api.onchange("payment_concept_id")
     @api.depends("payment_concept_id", "move_id")
     def _compute_related_fields(self):
         """
@@ -145,7 +146,8 @@ class AccountRetentionLine(models.Model):
                     ]
                     record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
 
-    @api.depends("invoice_amount", "foreign_invoice_amount")
+    @api.onchange("invoice_amount", "foreign_invoice_amount", "related_percentage_tax_base", "related_percentage_fees", "related_amount_subtract_fees")
+    @api.depends("invoice_amount", "foreign_invoice_amount", "related_percentage_tax_base", "related_percentage_fees", "related_amount_subtract_fees")
     def _compute_retention_amount(self):
         """ 
          This compute is used to get the retention amount from the payment concept of the partner
