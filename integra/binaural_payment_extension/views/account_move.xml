@@ -47,13 +47,15 @@
                                 <field name="payment_concept_id"/>
                                 <field 
                                 name="invoice_total"
-                                readonly="1"  
+                                readonly="1"
+                                force_save="1"
                                 widget="monetary"
 					            options="{'currency_field': 'company_currency_id'}" 
                                 attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
                                 />
                                 <field 
                                 name="foreign_invoice_total"
+                                force_save="1"
                                 readonly="1" 
                                 widget="monetary"
 					            options="{'currency_field': 'foreign_currency_id'}"
@@ -61,6 +63,7 @@
                                 />
                                 <field 
                                 name="invoice_amount"
+                                force_save="1"
                                 string="Invoice Amount"
                                 widget="monetary"
 					            options="{'currency_field': 'company_currency_id'}" 
@@ -68,7 +71,8 @@
                                 />
 
                                 <field 
-                                name="foreign_invoice_amount" 
+                                name="foreign_invoice_amount"
+                                force_save="1"
                                 string="Invoice Amount"
                                 widget="monetary"
 					            options="{'currency_field': 'foreign_currency_id'}"
@@ -83,29 +87,35 @@
 					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
                                 />
                                 <field 
-                                name="related_pay_from" 
+                                name="related_pay_from"
+                                force_save="1"
                                 readonly="1" 
                                 />
                                 <field 
-                                name="related_percentage_tax_base" 
+                                name="related_percentage_tax_base"
+                                force_save="1" 
                                 readonly="1" 
                                 />
                                 <field 
-                                name="related_percentage_fees" 
+                                name="related_percentage_fees"
+                                force_save="1"
                                 readonly="1" 
                                 />
                                 <field 
-                                name="related_amount_subtract_fees" 
+                                name="related_amount_subtract_fees"
+                                force_save="1" 
                                 readonly="1" 
                                 />
                                 <field 
-                                name="foreign_currency_rate" 
+                                name="foreign_currency_rate"
+                                force_save="1"
                                 readonly="1" 
                                 optional="hide"
                                 />
                                 <field 
                                 name="retention_amount" 
                                 readonly="1"
+                                force_save="1"
                                 widget="monetary"
 					            options="{'currency_field': 'company_currency_id'}"
 					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
@@ -113,6 +123,7 @@
                                 <field 
                                 name="foreign_retention_amount" 
                                 widget="monetary"
+                                force_save="1"
 					            options="{'currency_field': 'foreign_currency_id'}"
 					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
                                 />

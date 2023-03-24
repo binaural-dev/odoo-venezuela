@@ -37,12 +37,10 @@
                             <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}">
                                 <tree editable="bottom">
                                     <!-- <field name="bs_currency_id" invisible="1"/> -->
-                                    <field name="name" readonly="1" optional="show"/>
-                                    <field name="move_id" domain="[('move_type', 'in', ['in_invoice','in_refund']), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"/>
-                                    <field name="payment_concept_id" force_save="1" />
-                                    <field name="is_retention_client" invisible="1" />
-                                <field name="name"/>
-                                <field name="payment_concept_id"/>
+                                <field name="name" readonly="1"/>
+                                <field name="move_id" domain="[('move_type', 'in', ['in_invoice','in_refund']), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"/>
+                                <field name="payment_concept_id" force_save="1" />
+                                <field name="is_retention_client" invisible="1" />
                                 <field 
                                 name="invoice_total"
                                 force_save="1"
@@ -93,7 +91,7 @@
                                 />
                                 <field 
                                 name="related_percentage_tax_base" 
-                                force_save="1" 
+                                force_save="1"
                                 readonly="1" 
                                 />
                                 <field 
@@ -103,22 +101,26 @@
                                 />
                                 <field 
                                 name="related_amount_subtract_fees" 
+                                force_save="1"
                                 readonly="1" 
                                 />
                                 <field 
-                                name="foreign_currency_rate" 
+                                name="foreign_currency_rate"
+                                force_save="1"
                                 readonly="1" 
                                 optional="hide"
                                 />
                                 <field 
-                                name="retention_amount" 
+                                name="retention_amount"
+                                force_save="1"
                                 readonly="1"
                                 widget="monetary"
 					            options="{'currency_field': 'company_currency_id'}"
 					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
                                 />
                                 <field 
-                                name="foreign_retention_amount" 
+                                name="foreign_retention_amount"
+                                force_save="1" 
                                 widget="monetary"
 					            options="{'currency_field': 'foreign_currency_id'}"
 					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"

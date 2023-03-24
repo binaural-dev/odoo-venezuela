@@ -116,13 +116,12 @@
             action="ir_sequence_form_islr"/>
 
         <menuitem
-            id="menu_retention_islr_sequence"
+            id="menu_retention_iva_sequence"
             name="Sequence IVA"
             groups="base.group_no_one"
             sequence="100"
             parent="account.menu_finance_payables"
             action="ir_sequence_form_iva"/>
-    
     
     </data>
     
