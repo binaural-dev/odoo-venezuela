@@ -10,20 +10,22 @@ class AccountPaymentIgtf(models.Model):
     def default_igtf_percentage(self):
         return self.env.company.igtf_percentage or 0.0
 
-    is_igtf = fields.Boolean(string="IGTF", default=default_is_igtf, help="IGTF")
+    is_igtf = fields.Boolean(string="IGTF", default=default_is_igtf, help="IGTF", store=True)
 
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
         default=False,
         help="IGTF on Foreign Exchange?",
         readonly=False,
-        compute="_compute_is_igtf_on_foreign_exchange",
+        compute="_compute_is_igtf",
+        store=True,
     )
 
     igtf_percentage = fields.Float(
         string="IGTF Percentage",
         default=default_igtf_percentage,
         help="IGTF Percentage",
+        store=True,
     )
 
     igtf_amount = fields.Monetary(
