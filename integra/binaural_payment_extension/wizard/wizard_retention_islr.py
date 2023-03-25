@@ -59,10 +59,9 @@ class RetentionIslrReport(models.TransientModel):
         report_obj = request.env["wizard.retention.islr"]
 
         table = report_obj._table_retention_islr(int(self.id))
-        if report == "islr":
-            name = "XML Retencion de ISLR"
-            start = str(self.date_start)
-            end = str(self.date_end)
+        name = "XML Retencion de ISLR"
+        start = str(self.date_start)
+        end = str(self.date_end)
         if not table.empty and name:
             if report == "islr":
                 filecontent = report_obj._excel_file_retention_islr(
@@ -91,15 +90,11 @@ class RetentionIslrReport(models.TransientModel):
             {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray"}
         )
         datos = table
-        # range_start = 'Desde: ' + datetime.strptime(start, '%Y-%m-%d').strftime('%d/%m/%Y')
-        # range_end = 'Hasta: ' + datetime.strptime(end, '%Y-%m-%d').strftime('%d/%m/%Y')
         company_vat = company.vat if company.vat else ""
         range_month = datetime.strptime(start, "%Y-%m-%d").strftime("%Y%m")
 
         worksheet2 = workbook.add_worksheet(name)
         worksheet2.set_column("A:Z", 20)
-        # worksheet2.write('A1', company.name)
-        # worksheet2.write('A1', name)
         worksheet2.merge_range("A1:F1", name, merge_format)
         worksheet2.write("G1", "Rif Agente:")
         worksheet2.write("H1", company_vat)
@@ -107,9 +102,6 @@ class RetentionIslrReport(models.TransientModel):
         worksheet2.write("H2", range_month)
         worksheet2.merge_range("A2:B2", "Ruta de descarga:", merge_format)
         worksheet2.write("C2", "C:/Users/Public")
-        # worksheet2.write('A4', range_start)
-        # worksheet2.write('A5', range_end)
-        # worksheet2.set_row(5, 20, merge_format)
         columnas = list(datos.columns.values)
         columns2 = [{"header": r} for r in columnas]
         data = datos.values.tolist()
@@ -117,11 +109,9 @@ class RetentionIslrReport(models.TransientModel):
         worksheet2.write("I1", len(data))
 
         currency_format = workbook.add_format({"num_format": "#,###0.00"})
-        porcent_format = workbook.add_format({"num_format": '#,###0.00" "%'})
         date_format = workbook.add_format()
         date_format.set_num_format("d-mmm-yy")  # Format string.
         col3 = len(columns2) - 1
-        # col2 = len(data) + 6
         col2 = len(data) + 4
         for record in columns2[6:8]:
             record.update({"format": currency_format})
@@ -172,7 +162,6 @@ class RetentionIslrReport(models.TransientModel):
                 dict.update(dic)
                 dict["ID Sec"] = op
                 dict["RIF Retenido"] = i.partner_id.prefix_vat + i.partner_id.vat
-                nf = ""
                 pi = str(i.date_accounting)
                 fpi = datetime.strptime(pi, "%Y-%m-%d")
 
