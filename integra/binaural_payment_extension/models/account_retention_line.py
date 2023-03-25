@@ -18,6 +18,7 @@ class AccountRetentionLine(models.Model):
         required=True,
         default=lambda self: self.env.company,
     )
+    state = fields.Selection(related="retention_id.state")
     company_currency_id = fields.Many2one(related="retention_id.company_currency_id")
     foreign_currency_id = fields.Many2one(related="retention_id.foreign_currency_id")
     retention_id = fields.Many2one("account.retention", string="Retention", ondelete="cascade")
@@ -36,14 +37,20 @@ class AccountRetentionLine(models.Model):
     base_ret = fields.Float("Retained base", digits=(16, 2))
     imp_ret = fields.Float(string="tax incurred", digits=(16, 2))
     retention_rate = fields.Float(store=True, digits="Tasa")
-    move_id = fields.Many2one("account.move", "move", ondelete="cascade")
+    move_id = fields.Many2one("account.move", "move", ondelete="cascade", store=True)
     # retention_move_id = fields.One2many("account.move", "retention_move_id", string="Retention move")
     is_retention_client = fields.Boolean(default=True)
     display_invoice_number = fields.Char(
         string="Invoice Number", compute="_compute_display_invoice_number", store=True
     )
-    invoice_amount = fields.Float(string="Taxable income", digits=(16, 2))
-    invoice_total = fields.Float(string="Total invoiced", digits=(16, 2))
+    invoice_amount = fields.Float(
+        string="Taxable income",
+        digits="Tasa",
+        compute="_compute_amounts",
+        store=True,
+        readonly=False,
+    )
+    invoice_total = fields.Float(string="Total invoiced", digits="Tasa", store=True)
     iva_amount = fields.Float(string="IVA", digits=(16, 2))
 
     retention_amount = fields.Float(
@@ -94,8 +101,15 @@ class AccountRetentionLine(models.Model):
         store=True,
     )
 
+    check_foreign_currency = fields.Boolean(
+        string="Foreign currency",
+        compute="_compute_check_foreign_currency",
+    )
+
     # foreign currency
-    foreign_invoice_amount = fields.Float(string="Foreign taxable income")
+    foreign_invoice_amount = fields.Float(
+        string="Foreign taxable income", compute="_compute_amounts", store=True, readonly=False
+    )
     foreign_invoice_total = fields.Float(string="Foreign total invoiced")
     foreign_iva_amount = fields.Float(string="Foreign IVA")
     foreign_retention_amount = fields.Float()
@@ -130,6 +144,7 @@ class AccountRetentionLine(models.Model):
                     record.invoice_total = record.move_id.tax_totals["amount_total"]
                     record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
                     record.related_pay_from = line.pay_from
+                    # record.foreign_iva_amount = record.move_id.tax_totals["amount_total"] - record.move_id.tax_totals["amount_untaxed"]
                     record.related_percentage_tax_base = line.percentage_tax_base
                     record.related_percentage_fees = line.tariff_id.percentage
                     record.related_amount_subtract_fees = line.tariff_id.amount_subtract
@@ -139,25 +154,63 @@ class AccountRetentionLine(models.Model):
                     ]
                     record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
 
-    @api.onchange("invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
-    @api.depends("invoice_amount", "related_percentage_tax_base", "related_percentage_fees")
+    @api.depends("invoice_amount", "foreign_invoice_amount")
+    def _compute_amounts(self):
+        base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
+        if not base_currency_is_vef:
+            for line in self:
+                if line.invoice_amount > 0 and line.foreign_invoice_amount > 0:
+                    line.invoice_amount = line.foreign_invoice_amount * (
+                        1 / line.foreign_currency_rate
+                    )
+
+    @api.onchange(
+        "invoice_amount",
+        "foreign_invoice_amount",
+        "related_percentage_tax_base",
+        "related_percentage_fees",
+        "related_amount_subtract_fees",
+        "foreign_currency_rate",
+        # "move_id",
+    )
+    @api.depends(
+        "invoice_amount",
+        "foreign_invoice_amount",
+        "related_percentage_tax_base",
+        "related_percentage_fees",
+        "related_amount_subtract_fees",
+        "foreign_currency_rate",
+        "move_id",
+    )
     def _compute_retention_amount(self):
-        """ 
+        """
          This compute is used to get the retention amount from the payment concept of the partner
         to generate the ISLR retention line.
         """
+        base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
+
         lines_from_islr_retention = self.filtered(
             lambda l: not l.retention_id or l.retention_id.type_retention == "islr"
         )
         for record in lines_from_islr_retention:
-            record.retention_amount = (
-                record.invoice_amount 
-                * (record.related_percentage_tax_base / 100)
-                * (record.related_percentage_fees / 100)
-            ) - record.related_amount_subtract_fees
+            foreign_rate = record.move_id.foreign_rate
+            if not foreign_rate:
+                foreign_rate = 1
+            if not base_currency_is_vef:
+                record.retention_amount = (
+                    record.invoice_amount
+                    * (record.related_percentage_tax_base / 100)
+                    * (record.related_percentage_fees / 100)
+                ) - record.related_amount_subtract_fees / foreign_rate
+            else:
+                record.retention_amount = (
+                    record.invoice_amount
+                    * (record.related_percentage_tax_base / 100)
+                    * (record.related_percentage_fees / 100)
+                ) - record.related_amount_subtract_fees
 
             record.foreign_retention_amount = (
-                record.foreign_invoice_amount 
+                record.foreign_invoice_amount
                 * (record.related_percentage_tax_base / 100)
                 * (record.related_percentage_fees / 100)
             ) - record.related_amount_subtract_fees

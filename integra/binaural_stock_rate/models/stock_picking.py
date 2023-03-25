@@ -15,7 +15,6 @@ class StockPicking(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_foreign_rate",
         digits="Tasa",
-        default=0.0,
         store=True,
         readonly=False,
         help="The currency rate taken from the document of origin/system.",

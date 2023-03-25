@@ -199,7 +199,7 @@
 
                         <!--Nro de Control Factura -->
                         <div class="" style="width:7%;">
-                            <span t-esc="line.move_id.correlative"/>
+                            <span t-esc="line.move_id.correlative or '--'"/>
                         </div>
                         <!--Nota de Débito -->
                         <div class="" style="width:7%">
@@ -600,12 +600,7 @@
                         </div>
                         <!-- Nro de Control -->
                         <div style="width:7%">
-                            <t t-if="line.move_id.move_type in ('out_invoice','out_contingence','out_debit', 'in_invoice')">
-                                <span t-esc="line.move_id.correlative"/>
-                            </t>
-                            <t t-else="">
-                                <span>--</span>
-                            </t>
+                            <span t-esc="line.move_id.correlative or '--'"/>
                         </div>
                         <!-- Fecha -->
                         <div style="width:5%">

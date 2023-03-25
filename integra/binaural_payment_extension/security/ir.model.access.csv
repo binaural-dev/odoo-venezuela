@@ -12,3 +12,4 @@ access_configurate_signature,Configuraciones de firma,model_signature_config,,1,
 access_economic_branch,Maestro de Ramo economico,model_economic_branch,,1,1,1,1
 access_economic_activity,Maestro de Actividad economica,model_economic_activity,,1,1,1,1
 access_wizard_accounting_reports_islr,binaural_wizard_accounting_reports_islr,model_wizard_retention_islr,base.group_user,1,1,1,1
+access_wizard_accounting_reports_iva,binaural_wizard_accounting_reports_iva,model_wizard_retention_iva,base.group_user,1,1,1,1

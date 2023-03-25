@@ -44,6 +44,19 @@ class AccountMoveRetention(models.Model):
         track_visibility="onchange",
     )
 
+    company_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
+    foreign_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
+    base_currency_is_vef = fields.Boolean(compute="_compute_currency_fields")
+
+    def _compute_currency_fields(self):
+        for retention in self:
+            retention.company_currency_id = self.env.company.currency_id.id
+            retention.foreign_currency_id = self.env.company.currency_foreign_id.id
+            retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
+                "base.VEF"
+            )
+            
+
     def action_register_payment(self):
         """
         Override the action_register_payment method to add the invoice lines to the payment register.
@@ -96,8 +109,8 @@ class AccountMoveRetention(models.Model):
         if not self.env.company.islr_supplier_retention_journal_id:
             raise UserError(_("The company must have a journal for ISLR supplier retention."))
         islr_retention = self.retention_islr_line_ids
-        sum_invoice_amount = sum(islr_retention.mapped("invoice_amount"))
-        if sum_invoice_amount > self.tax_totals["amount_untaxed"]:
+        sum_invoice_amount = sum(islr_retention.mapped("foreign_invoice_amount"))
+        if sum_invoice_amount > self.tax_totals["foreign_amount_untaxed"]:
             raise UserError(
                 _("The amount of the retention is greater than the total amount of the invoice.")
             )

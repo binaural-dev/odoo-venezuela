@@ -9,6 +9,7 @@
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="foreign_rate"/>
             </xpath>
+
             <xpath expr="//notebook/page[@name='extra']/group/group/field[@name='move_type']" position="after">
                     <field name="analytic_account_id" force_save="1" groups="analytic.group_analytic_accounting"/>
             </xpath>
