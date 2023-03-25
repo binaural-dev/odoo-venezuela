@@ -325,9 +325,9 @@ class AccountRetention(models.Model):
             in_invoices_dict = defaultdict(account_retention_line_empty_recordset)
 
             for refund in in_refunds:
-                in_refunds_dict[refund.foreign_currency_rate] += refund
+                in_refunds_dict[refund.move_id] += refund
             for invoice in in_invoices:
-                in_invoices_dict[invoice.foreign_currency_rate] += invoice
+                in_invoices_dict[invoice.move_id] += invoice
 
             for lines in in_refunds_dict.values():
                 payment_vals["payment_method_id"] = (
@@ -417,7 +417,7 @@ class AccountRetention(models.Model):
     def create_payment_from_retention_form(self):
         self.ensure_one()
         Payment = self.env["account.payment"]
-        
+
         if not self.partner_id.type_person_id:
             raise UserError(_("Select a type person"))
         if not self.retention_line_ids.payment_concept_id:
@@ -427,7 +427,6 @@ class AccountRetention(models.Model):
         payment_vals = []
 
         for line in self.retention_line_ids:
-
             if line.move_id.move_type == "in_refund":
                 payment_type = "inbound"
 
@@ -449,7 +448,7 @@ class AccountRetention(models.Model):
                 }
             )
 
-        payments = Payment.create(payment_vals) 
+        payments = Payment.create(payment_vals)
         payments.compute_retention_amount_from_retention_lines()
 
         return payments
