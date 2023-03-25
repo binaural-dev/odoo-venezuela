@@ -50,3 +50,17 @@ class AccountPayment(models.Model):
         """
         for payment in self:
             payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
+
+    def compute_retention_amount_from_retention_islr_lines(self):
+        """
+        Compute the amount from the retention lines.
+        """
+        base_currency_is_vef = self.env.company.currency_id == self.env.ref(
+                "base.VEF"
+            )
+        for payment in self:
+            if base_currency_is_vef:
+                payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
+            else:
+                payment.amount = sum(payment.retention_line_ids.mapped("foreign_retention_amount"))
+
