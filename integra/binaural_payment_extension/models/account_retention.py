@@ -3,9 +3,8 @@ from datetime import datetime
 from odoo.exceptions import UserError
 from .utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
+import json
 import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class AccountRetention(models.Model):
@@ -123,6 +122,14 @@ class AccountRetention(models.Model):
         store=True,
         help="Retained Amount Total",
     )
+    original_lines_per_invoice_counter = fields.Char(
+        help=(
+            "Technical field to store the quantity of retention lines per invoice before the user"
+            " changes them. This is used to know if the user has deleted the retention lines when"
+            " the invoice is changed, in order to delete all the other lines of the same invoice"
+            " that the one that just has been deleted."
+        )
+    )
 
     def _compute_currency_fields(self):
         for retention in self:
@@ -192,7 +199,17 @@ class AccountRetention(models.Model):
                 )
             retention.clear_retention()
             lines = load_retention_lines(invoices_with_taxes, self.env["account.retention"])
-            return {"value": {"retention_line_ids": lines}}
+
+            lines_per_invoice_counter = defaultdict(int)
+            for line in lines:
+                lines_per_invoice_counter[str(line[2]["move_id"])] += 1
+
+            return {
+                "value": {
+                    "retention_line_ids": lines,
+                    "original_lines_per_invoice_counter": json.dumps(lines_per_invoice_counter),
+                }
+            }
 
     def _validate_retention_journals(self):
         """
@@ -228,6 +245,35 @@ class AccountRetention(models.Model):
                 ),
             }
         )
+
+    @api.onchange("retention_line_ids")
+    def onchange_retention_line_ids(self):
+        """
+        On the IVA supplier retention when a line is deleted, delete all the others lines that have
+        the same invoice.
+        """
+        for retention in self.filtered(
+            lambda r: (r.type_retention, r.state) == ("iva", "draft") and r.partner_id
+        ):
+            original_lines_per_invoice_counter = json.loads(
+                retention.original_lines_per_invoice_counter
+            )
+            lines_per_invoice_counter = defaultdict(int)
+            for line in retention.retention_line_ids:
+                lines_per_invoice_counter[str(line.move_id.id)] += 1
+
+            for line in retention.retention_line_ids:
+                if (
+                    lines_per_invoice_counter[str(line.move_id.id)]
+                    != original_lines_per_invoice_counter[str(line.move_id.id)]
+                ):
+                    retention.retention_line_ids -= line
+
+            return {
+                "value": {
+                    "original_lines_per_invoice_counter": json.dumps(lines_per_invoice_counter)
+                }
+            }
 
     @api.model_create_multi
     def create(self, vals_list):
