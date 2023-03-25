@@ -34,7 +34,6 @@ odoo.define("binaural_pos.PartnerDetailsEdit", function(require) {
             method: 'get_default_name_by_vat_param',
             args: [[], "V", event.target.value],
           });
-          console.log("LLAMDA A CNE")
 
           this.nameField.el.value = data
 
@@ -57,7 +56,6 @@ odoo.define("binaural_pos.PartnerDetailsEdit", function(require) {
             title: _t('A Customer VAT Is Required'),
           });
         }
-        console.log("PROCESSED CHANGES", processedChanges)
 
         super.saveChanges();
 
