@@ -50,3 +50,5 @@ class AccountPayment(models.Model):
         """
         for payment in self:
             payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
+
+
