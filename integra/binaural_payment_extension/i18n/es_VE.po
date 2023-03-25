@@ -1176,6 +1176,7 @@ msgstr "Inicio"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__state
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__state
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_search_binaural_payment_extension
 msgid "State"
 msgstr "Estado"

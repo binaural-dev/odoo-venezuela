@@ -4,7 +4,6 @@ from odoo.exceptions import UserError
 from .utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
 import json
-import logging
 
 
 class AccountRetention(models.Model):
@@ -184,14 +183,18 @@ class AccountRetention(models.Model):
         ):
             retention.date_accounting = fields.Date.today()
             search_domain = [
+                ("company_id", "=", retention.company_id.id),
                 ("partner_id", "=", retention.partner_id.id),
                 ("state", "=", "posted"),
                 ("move_type", "in", ("in_refund", "in_invoice")),
-                ("retention_iva_line_ids", "=", False),
                 ("amount_residual", ">", 0),
             ]
             invoices_with_taxes = search_invoices_with_taxes(
                 self.env["account.move"], search_domain
+            ).filtered(
+                lambda i: not any(
+                    i.retention_iva_line_ids.filtered(lambda l: l.state in ("draf", "emitted"))
+                )
             )
             if not any(invoices_with_taxes):
                 raise UserError(
