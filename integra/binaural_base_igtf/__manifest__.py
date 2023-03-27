@@ -11,7 +11,7 @@
     "data": ["views/res_config_settings.xml"],
     "images": ["static/description/icon.png"],
     "assets": {
-        "web.assets_backend": ["binaural_igtf/static/src/components/**/*"],
+        "web.assets_backend": ["binaural_base_igtf/static/src/components/**/*"],
     },
     "application": True,
 }
