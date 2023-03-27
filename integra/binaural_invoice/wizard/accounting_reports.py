@@ -111,6 +111,33 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "IVA retenido"
         ]
 
+    def purchase_book_fields(self):
+        return [
+            "N° operación",
+            "Fecha del documentó",
+            "RIF",
+            "Nombre/Razón Social",
+            "Tipo",
+            "N° de Documento",
+            "Nª de Control",
+            "Tipo de Transacción",
+            "N° Factura Afectada",
+            "Total ventas con IVA",
+            "Total ventas exentas",
+            "Base imponible (16%)",
+            "IVA 16%",
+            "Alicuota (16%)",
+            "Base imponible (8%)",
+            "IVA 8%",
+            "Alicuota (8%)",
+            "Base imponible (31%)",
+            "IVA 31%",
+            "Alicuota (31%)",
+            "Fecha Retención",
+            "N° Retención",
+            "IVA retenido"
+        ]
+
     def _get_domain(self, current_company_id=False):
         search_domain = []
         is_purchase = self.report == "purchase"
@@ -161,23 +188,26 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     def _determinate_type(self, move_type):
         types = {
             "out_debit": "ND",
+            "in_debit": "ND",
             "out_invoice": "FAC",
-            "out_refund": "NC"
+            "in_invoice": "FAC",
+            "out_refund": "NC",
+            "in_refund": "NC"
         }
 
         return types[move_type]
 
     def _determinate_transaction_type(self, move):
-        if move.move_type == "out_invoice" and move.state == "posted":
+        if move.move_type in ["out_invoice", "in_invoice"] and move.state == "posted":
             return "01-REG"
 
-        if move.move_type == "out_debit" and move.state == "posted":
+        if move.move_type in ["out_debit", "in_debit"] and move.state == "posted":
             return "02-REG"
 
-        if move.move_type == "out_refund" and move.state == "posted":
+        if move.move_type in ["out_refund", "in_refund"] and move.state == "posted":
             return "03-REG"
 
-        if move.move_type in ["out_refund", "out_debit", "out_invoice"] and move.state in ["cancel"]:
+        if move.move_type in ["out_refund", "out_debit", "out_invoice", "in_refund", "in_debit", "in_invoice"] and move.state in ["cancel"]:
             return "03-ANU"
 
     def search_moves(self):
