@@ -13,3 +13,8 @@ class PosOrder(models.Model):
         res["igtf_amount"] = ui_order["igtf_amount"]
         res["bi_igtf"] = ui_order["bi_igtf"]
         return res
+
+    def _create_invoice(self, move_vals):
+        res = super()._create_invoice(move_vals)
+        res.write({"bi_igtf": self.bi_igtf})
+        return res
