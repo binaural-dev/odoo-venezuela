@@ -44,24 +44,46 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
 
     def _create_payments(self):
-        _logging.warning("CREATE PAYMENTS")
         res = super()._create_payments()
-       
-        res.line_ids.create({
-            'name': 'IGTF',
-            'debit': 0,
-            'credit': 3,
-            'account_id': 4,
-            'move_id': res.id,
-        })
-        for lines in res.line_ids:
-            if lines.debit > 0:
-                lines.debit = lines.debit + 3
-            _logging.warning("PAYMEEENTSSSSSSSSSSSS: %s", lines.account_id.name)
+        # res.action_draft()
+
+        _logging.warning("REES: %s", res)
+
+
+        res.line_ids += self._create_account_move_line_igtf(res)
+        res.line_ids.move_id.button_draft()
+        credit_line = res.line_ids.filtered(lambda line: line.account_id.account_type == 'asset_receivable')
+        _logging.warning("CREDIT LINE: %s", credit_line.account_id.name)
+        credit_line.credit = credit_line.credit - 3.0
+        credit_line.amount_currency = credit_line.amount_currency - 3.0
+
+        for line in res.line_ids:
+            if line.name == "IGTF":
+                line.debit += 3.0
+                line.amount_currency += -3.0
+
+        res.line_ids.move_id.action_post()
+
         return res
     
-    def action_create_payments(self):
-        _logging.warning("ACTION CREATE PAYMENTS")
-        res = super().action_create_payments()
-        _logging.warning("RESSSSSSSSSS: %s", res)
-        return res
+    
+
+    def _create_account_move_line_igtf(self, payments):
+        """Create account move lines for IGTF.
+
+        :return: The account move lines to create.
+        """
+        account = self.env.company.account_igtf_id.id
+
+        return self.env["account.move.line"].create(
+            {
+                "move_id": payments.line_ids.move_id.id,
+                "name": "IGTF",
+                "debit": 0,
+                "credit": 0,
+                "amount_currency": 0,
+                "account_id": account,
+                "partner_id": self.partner_id.id,
+                # 'currency_id': self.currency_id.id
+            }
+        )
