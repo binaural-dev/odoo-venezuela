@@ -70,3 +70,8 @@ msgstr "Tasa monetaria"
 msgid ""
 "The currency foreign must be different from the currency of the company"
 msgstr "La moneda alterna debería ser diferente a la moneda base"
+
+#. module: binaural_rate
+#: model:ir.model.fields.selection,name:binaural_rate.selection__res_company__currency_provider__bcv
+msgid "Venezuelan Central Bank"
+msgstr "Banco Central de Venezuela"
