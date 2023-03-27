@@ -1,7 +1,7 @@
 odoo.define("binaural_pos.OrderState", function(require) {
   "use strict";
 
-  const { Order } = require("point_of_sale.models");
+  const { Order, Payment } = require("point_of_sale.models");
   const Registries = require("point_of_sale.Registries");
   const utils = require("web.utils");
 
@@ -17,6 +17,34 @@ odoo.define("binaural_pos.OrderState", function(require) {
         let json = super.export_as_JSON();
         json["foreign_amount_total"] = this.get_foreign_total_with_tax()
         return json;
+      }
+
+      add_paymentline(payment_method) {
+        this.assert_editable();
+        if (this.electronic_payment_in_progress()) {
+          return false;
+        } else {
+          var newPaymentline = Payment.create({}, { order: this, payment_method: payment_method, pos: this.pos });
+          this.paymentlines.add(newPaymentline);
+          this.select_paymentline(newPaymentline);
+          if (this.pos.config.cash_rounding) {
+            this.selected_paymentline.set_amount(0);
+          }
+
+          if (!newPaymentline.payment_method.is_foreign_currency) {
+            newPaymentline.set_amount(this.get_due());
+          } else {
+            newPaymentline.set_foreign_amount(this.get_foreign_due())
+            newPaymentline.set_amount(
+              this.get_due()
+            );
+          }
+
+          if (payment_method.payment_terminal) {
+            newPaymentline.set_payment_status('pending');
+          }
+          return newPaymentline;
+        }
       }
       get_foreign_total_tax() {
         if (this.pos.company.tax_calculation_rounding_method === "round_globally") {

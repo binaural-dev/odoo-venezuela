@@ -12,6 +12,10 @@ odoo.define("binaural_pos_igtf.PaymentScreenStatus", function(require) {
         const posModel = this.env.pos;
         return posModel.format_currency(this.currentOrder.get_igtf_amount(), 'Product Price')
       }
+      get igtfForeignAmount() {
+        const posModel = this.env.pos;
+        return posModel.format_foreign_currency(this.currentOrder.get_foreign_igtf_amount(), 'Product Price')
+      }
       get isIgtf() {
         let payment_lines = this.currentOrder.get_paymentlines();
         let is_igtf = false;
