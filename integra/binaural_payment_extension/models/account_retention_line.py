@@ -214,3 +214,69 @@ class AccountRetentionLine(models.Model):
                 * (record.related_percentage_tax_base / 100)
                 * (record.related_percentage_fees / 100)
             ) - record.related_amount_subtract_fees
+
+    @api.onchange("retention_amount")
+    def onchange_retention_amount(self):
+        """
+        Making sure that the foreign retention amount is updated when the retention amount is
+        changed on the retention line of the iva customer retentions.
+
+        This is made to be triggered only when the foreign currency is NOT VEF, as this is the only
+        case when the retention amount is shown on the retention line, because the amounts of the
+        retention lines are always shown in VEF.
+        """
+        if self.env.context.get("noonchange", False):
+            return
+        for line in self.filtered(
+            lambda l: (l.retention_id.type_retention, l.retention_id.type) == ("iva", "out_invoice")
+        ):
+            self.env.context = self.with_context(noonchange=True).env.context
+            line.update(
+                {
+                    "foreign_retention_amount": line.retention_amount
+                    * line.move_id.foreign_inverse_rate
+                }
+            )
+
+    @api.onchange("foreign_retention_amount")
+    def onchange_foreign_retention_amount(self):
+        """
+        Making sure that the retention amount is updated when the foreign retention amount is
+        changed on the retention line of the iva customer retentions.
+
+        This is made to be triggered only when the foreign currency is VEF, as this is the only
+        case when the foreign retention amount is shown on the view of the iva customer retention,
+        because the amounts of the retention lines are always shown in VEF.
+        """
+        if self.env.context.get("noonchange", False):
+            return
+        for line in self.filtered(
+            lambda l: (l.retention_id.type_retention, l.retention_id.type) == ("iva", "out_invoice")
+        ):
+            self.env.context = self.with_context(noonchange=True).env.context
+            line.update(
+                {
+                    "retention_amount": line.foreign_retention_amount
+                    * (1 / line.move_id.foreign_rate)
+                }
+            )
+
+    @api.constrains("retention_amount", "invoice_total", "foreign_retention_amount")
+    def _constraint_municipality_tax(self):
+        for record in self:
+            if any(
+                (
+                    record.retention_amount == 0,
+                    record.invoice_total == 0,
+                    record.foreign_retention_amount == 0,
+                )
+            ):
+                raise ValidationError(_("You can not create a retention with 0 amount."))
+
+            if record.retention_amount > record.move_id.amount_residual:
+                raise ValidationError(
+                    _(
+                        "The total amount of the retention is greater than the residual amount of"
+                        " the invoice."
+                    )
+                )

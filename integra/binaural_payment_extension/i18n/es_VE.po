@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230320\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230327\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-25 14:17+0000\n"
-"PO-Revision-Date: 2023-03-25 14:17+0000\n"
+"POT-Creation-Date: 2023-03-27 19:53+0000\n"
+"PO-Revision-Date: 2023-03-27 19:53+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -1115,6 +1115,11 @@ msgid "Ordinary"
 msgstr "Ordinario"
 
 #. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__original_lines_per_invoice_counter
+msgid "Original Lines Per Invoice Counter"
+msgstr ""
+
+#. module: binaural_payment_extension
 #: model:ir.model.fields.selection,name:binaural_payment_extension.selection__account_payment_register__retention_type__out_contingence
 #: model:ir.model.fields.selection,name:binaural_payment_extension.selection__account_retention__type__out_contingence
 msgid "Out contingence"
@@ -1445,6 +1450,7 @@ msgstr "Estado"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,help:binaural_payment_extension.field_account_retention__state
+#: model:ir.model.fields,help:binaural_payment_extension.field_account_retention_line__state
 msgid "Status of the withholding voucher"
 msgstr "Estatus del Comprobante"
 
@@ -1553,6 +1559,15 @@ msgid "Taxpayer Type"
 msgstr "Tipo de contribuyente"
 
 #. module: binaural_payment_extension
+#: model:ir.model.fields,help:binaural_payment_extension.field_account_retention__original_lines_per_invoice_counter
+msgid ""
+"Technical field to store the quantity of retention lines per invoice before "
+"the user changes them. This is used to know if the user has deleted the "
+"retention lines when the invoice is changed, in order to delete all the "
+"other lines of the same invoice that the one that just has been deleted."
+msgstr ""
+
+#. module: binaural_payment_extension
 #: model:ir.model.constraint,message:binaural_payment_extension.constraint_economic_activity_aliquot_mayor_cero
 msgid "The aliquot must be greater than zero"
 msgstr "La alícuota debe ser mayor a cero "
@@ -1573,6 +1588,20 @@ msgstr ""
 #, python-format
 msgid "The amount of the retention must be greater than zero."
 msgstr "La base imponible de la retención debe ser mayor que cero"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "The company must have a customer ISLR retention journal configured."
+msgstr "La compañía debe tener un diario para retenciones de ISLR de cliente."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "The company must have a customer IVA retention journal configured."
+msgstr "La compañía debe tener un diario para retenciones de IVA de cliente."
 
 #. module: binaural_payment_extension
 #. odoo-python
@@ -1677,6 +1706,15 @@ msgstr "El porcentaje de retención no puede ser negativo."
 
 #. module: binaural_payment_extension
 #. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
+#, python-format
+msgid ""
+"The total amount of the retention is greater than the residual amount of the"
+" invoice."
+msgstr "El monto total de la retención es mayor que el monto residual de la factura."
+
+#. module: binaural_payment_extension
+#. odoo-python
 #: code:addons/binaural_payment_extension/models/payment_concept.py:0
 #, python-format
 msgid "The type of person cannot be repeated."
@@ -1686,7 +1724,14 @@ msgstr "El tipo de persona no puede repetirse."
 #. odoo-python
 #: code:addons/binaural_payment_extension/models/account_retention.py:0
 #, python-format
-msgid "There are no invoices with taxes to be retained for the partner."
+msgid "There are no invoices with taxes to be retained for the customer."
+msgstr "No hay facturas con impuestos para ser retenidos para el cliente."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "There are no invoices with taxes to be retained for the supplier."
 msgstr "No hay facturas con impuestos para ser retenidos para el proveedor."
 
 #. module: binaural_payment_extension
@@ -1799,6 +1844,13 @@ msgstr ""
 #: model:ir.model.constraint,message:binaural_payment_extension.constraint_account_withholding_type_unique_value
 msgid "You can not add withholdings with the same Value"
 msgstr "No puedes añadir retenciones con el mismo valor."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
+#, python-format
+msgid "You can not create a retention with 0 amount."
+msgstr "No se puede crear una retención con montos en 0."
 
 #. module: binaural_payment_extension
 #: model:ir.model.constraint,message:binaural_payment_extension.constraint_account_withholding_type_unique_name
