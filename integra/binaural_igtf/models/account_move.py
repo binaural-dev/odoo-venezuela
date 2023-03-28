@@ -11,5 +11,7 @@ class AccountMoveIgtf(models.Model):
     
     default_is_igtf_config = fields.Boolean(default=default_is_igtf)
 
-    def _get_unbalanced_moves(self, container):
-       pass
+    # def _get_unbalanced_moves(self, container):
+    #    pass
+
+   

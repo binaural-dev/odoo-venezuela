@@ -1,4 +1,7 @@
 from odoo import api, models, fields, _
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountPaymentIgtf(models.Model):
@@ -40,11 +43,31 @@ class AccountPaymentIgtf(models.Model):
         for payment in self:
             if payment.journal_id.is_igtf == True and payment.is_igtf:
                 payment.is_igtf_on_foreign_exchange = True
-            
+
     @api.depends("amount", "is_igtf")
     def _compute_igtf_amount(self):
         for payment in self:
             payment.igtf_amount = 0.0
             if payment.is_igtf and payment.journal_id.is_igtf:
                 payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
-           
+
+    
+    def _prepare_move_line_default_vals(self, write_off_line_vals=None):
+        vals = super(AccountPaymentIgtf, self)._prepare_move_line_default_vals(write_off_line_vals)
+
+        credit_line = [line for line in vals]
+
+        credit_line[1]['credit'] = credit_line[1]['credit'] - 3.0
+
+
+        vals[1].update({"amount_currency": -97,
+                        "credit": 91})
+
+        vals.append({"name": "IGTF",
+                "debit": 0,
+                "credit": 3,
+                "amount_currency": -3,
+                "account_id": 8,
+                "partner_id": self.partner_id.id,})
+  
+        return vals

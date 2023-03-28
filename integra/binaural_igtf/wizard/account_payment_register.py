@@ -1,4 +1,9 @@
 from odoo import api, models, fields, _
+from odoo.exceptions import UserError
+from odoo.tools import frozendict
+from collections import defaultdict
+
+
 import logging
 
 _logging = logging.getLogger(__name__)
@@ -39,51 +44,51 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     @api.depends("journal_id", "is_igtf")
     def _compute_is_igtf(self):
         for payment in self:
-            if payment.journal_id.is_igtf == True and payment.is_igtf:
+            if payment.journal_id.is_igtf == True and payment.is_igtf and payment.currency_id.name == "USD":
                 payment.is_igtf_on_foreign_exchange = True
 
+    @api.depends("amount", "is_igtf")
+    def _compute_igtf_amount(self):
+        for payment in self:
+            payment.igtf_amount = 0.0
+            if payment.is_igtf and payment.journal_id.is_igtf and payment.currency_id.name == "USD":
+                payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
 
-    def _create_payments(self):
-        res = super()._create_payments()
-        # res.action_draft()
+   
 
-        _logging.warning("REES: %s", res)
+    # def _create_account_move_line_igtf_credit(self, payments):
+    #     """Create account move lines for IGTF.
 
+    #     :return: The account move lines to create.
+    #     """
+    #     account = self.env.company.account_igtf_id.id
 
-        res.line_ids += self._create_account_move_line_igtf(res)
-        res.line_ids.move_id.button_draft()
-        credit_line = res.line_ids.filtered(lambda line: line.account_id.account_type == 'asset_receivable')
-        _logging.warning("CREDIT LINE: %s", credit_line.account_id.name)
-        credit_line.credit = credit_line.credit - 3.0
-        credit_line.amount_currency = credit_line.amount_currency - 3.0
-
-        for line in res.line_ids:
-            if line.name == "IGTF":
-                line.debit += 3.0
-                line.amount_currency += -3.0
-
-        res.line_ids.move_id.action_post()
-
-        return res
+    #     return self.env["account.move.line"].create(
+    #         {
+    #             "move_id": payments.line_ids.move_id.id,
+    #             "name": "IGTF",
+    #             "debit": 0,
+    #             "credit": 3,
+    #             "amount_currency": -3,
+    #             "account_id": account,
+    #             "partner_id": self.partner_id.id,
+    #             # 'currency_id': self.currency_id.id
+    #         }
+    #     )
     
-    
+    # def _create_account_move_line_igtf_debit(self, payments):
 
-    def _create_account_move_line_igtf(self, payments):
-        """Create account move lines for IGTF.
+    #     account = self.env.company.account_igtf_id.id
 
-        :return: The account move lines to create.
-        """
-        account = self.env.company.account_igtf_id.id
-
-        return self.env["account.move.line"].create(
-            {
-                "move_id": payments.line_ids.move_id.id,
-                "name": "IGTF",
-                "debit": 0,
-                "credit": 0,
-                "amount_currency": 0,
-                "account_id": account,
-                "partner_id": self.partner_id.id,
-                # 'currency_id': self.currency_id.id
-            }
-        )
+    #     return self.env["account.move.line"].create(
+    #         {
+    #             "move_id": payments.line_ids.move_id.id,
+    #             "name": "IGTF",
+    #             "debit": 3,
+    #             "credit": 0,
+    #             "amount_currency": 3,
+    #             "account_id": account,
+    #             "partner_id": self.partner_id.id,
+    #             # 'currency_id': self.currency_id.id
+    #         }
+    #     )
