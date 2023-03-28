@@ -1,6 +1,5 @@
 from odoo import http
 import pandas as pd
-import logging
 
 
 class IslrReportController(http.Controller):

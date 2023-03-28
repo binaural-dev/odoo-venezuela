@@ -1,25 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
     <data>
-
         <record id="account_payment_register_form_binaural_payment_extension" model="ir.ui.view">
             <field name="name">account.payment.register.form</field>
             <field name="model">account.payment.register</field>
             <field name="inherit_id" ref="account.view_account_payment_register_form"/>
             <field name="arch" type="xml">
+		<field name="journal_id" position="replace">
+		    <field name="journal_id" attrs="{'readonly': [('edit_retention_fields', '=', False)]}"/>
+		</field>
+		<field name="foreign_rate" position="replace">
+		    <field name="foreign_rate" attrs="{'readonly': [('edit_retention_fields', '=', False)]}"/>
+		</field>
+		<field name="payment_difference_handling" position="replace">
+		    <field
+			name="payment_difference_handling"
+			widget="radio"
+			nolabel="1"
+			attrs="{'readonly': [('edit_retention_fields', '=', False)]}"
+		    />
+	        </field>
+		<field name="group_payment" position="replace">
+		    <field
+			name="group_payment"
+			attrs="{'invisible': [('can_group_payments', '=', False)], 'readonly': [('edit_retention_fields', '=', False)]}"
+		    />
+		</field>
+
                 <xpath expr="//group[@name='group2']" position="after">
-                    <field name="is_retention" string="Is retention"/>
-                    <field name="payment_type_retention" string="Payment type retention" attrs="{'invisible':[('is_retention', '=', False)]}"/>
-                    <field name="retention_ref" string="Retention ref" attrs="{'invisible':[('is_retention', '=', False)]}"/>
+		    <!-- Invisible fields -->
+		    <field name="edit_retention_fields" invisible="1"/>
+		    <field name="base_currency_is_vef" invisible="1"/>
+		    <field name="is_out_invoice" invisible="1"/>
+
+		    <div attrs="{'invisible': [('is_out_invoice', '=', False)]}">
+		    	<label for="is_retention"/>
+                    	<field name="is_retention"/>
+	    	    </div>
+		    <label for="retention_ref" attrs="{'invisible':[('is_retention', '=', False)]}"/>
+		    <field
+			name="retention_ref"
+			string="Retention ref"
+			attrs="{'invisible':[('is_retention', '=', False)], 'required':[('is_retention', '=', True)]}"
+		    />
+
                     <notebook attrs="{'invisible':[('is_retention', '=', False)]}">
                         <page name="retention_lines" string="Retention lines">
                             <field name="retention_line_ids" nolabel="1">
                                 <tree editable="bottom">
+				    <!-- Invisible fields -->
+                                    <field name="invoice_type" invisible="1"/>
+				    <field name="company_currency_id" invisible="1"/>
+				    <field name="foreign_currency_id" invisible="1"/>
+				    <field name="foreign_currency_rate" invisible="1"/>
+
                                     <field name="name"/>
-                                    <field name="move_id"/>
-                                    <field name="payment_concept_id"/>
-                                    <field name="invoice_amount"/>
+				    <field name="move_id"/>
+                                    <field name="aliquot"/>
+				    <field name="related_percentage_tax_base" optional="hide"/>
+				    <!-- Amounts -->
+				    <field
+					name="invoice_total"
+					widget="monetary"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				    />
+				    <field
+					name="invoice_amount"
+					widget="monetary"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				    />
+				    <field
+					name="iva_amount"
+					widget="monetary"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				    />
+				    <field
+					name="retention_amount"
+					widget="monetary"
+				    />
+				    <!-- Foreign Amounts -->
+				    <field
+					name="foreign_invoice_amount"
+					widget="monetary"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				    />
+				    <field
+					name="foreign_iva_amount"
+					widget="monetary"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				    />
+				    <field
+					name="foreign_invoice_total"
+					widget="monetary"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				    />
+				    <field
+					name="foreign_retention_amount"
+					widget="monetary"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				    />
                                 </tree>
                             </field>
                         </page>
@@ -27,10 +106,5 @@
                 </xpath>
             </field>
         </record>
-    
-        
-    
     </data>
-    
-
 </odoo>
