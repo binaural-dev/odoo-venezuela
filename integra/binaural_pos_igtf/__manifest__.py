@@ -7,8 +7,15 @@
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
     "version": "1.0",
-    "depends": ["base", "binaural_pos", "binaural_igtf"],
+    "depends": ["base", "binaural_pos", "binaural_base_igtf"],
     "data": ["views/pos_payment_method.xml"],
     "images": ["static/description/icon.png"],
+    "assets": {
+        "point_of_sale.assets": [
+            "binaural_pos_igtf/static/src/js/*.js",
+            "binaural_pos_igtf/static/src/xml/*.xml",
+            "binaural_pos_igtf/static/src/css/*.css",
+        ],
+    },
     "application": True,
 }

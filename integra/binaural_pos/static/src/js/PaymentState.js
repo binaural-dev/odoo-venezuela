@@ -20,14 +20,10 @@ odoo.define("binaural_pos.PaymentState", function(require) {
         return res
       }
       get_foreign_amount() {
-        return round_pr(
-          this.amount * this.pos.config.foreign_inverse_rate,
-          this.pos.foreign_currency.rounding
-        );
+        return this.foreign_amount;
       }
       set_foreign_amount(value) {
         this.foreign_amount = value
-        this.amount = round_di(parseFloat(value) || 0, this.pos.foreign_currency.decimal_places);
       }
     }
   Registries.Model.extend(Payment, BinauralPayment);

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('payment-status-total-due')]" position="inside">
+            <t t-if="isIgtf">
+                <span>IGTF:</span>
+                <span t-esc="igtfAmount"/>
+                <br/>
+                <span>Foreign IGTF:</span>
+                <span t-esc="igtfForeignAmount"/>
+            </t>
+        </xpath>
+    </t>
+</templates>
