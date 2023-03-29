@@ -33,6 +33,7 @@ class AccountPayment(models.Model):
 
     retention_ref = fields.Char(
         string="Retention reference",
+        related="retention_id.number",
         store=True,
     )
 
@@ -50,5 +51,3 @@ class AccountPayment(models.Model):
         """
         for payment in self:
             payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
-
-

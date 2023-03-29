@@ -16,7 +16,7 @@
                     <group colspan="4" col="4">
 			<!-- Invisible fields -->
 			<field name="original_lines_per_invoice_counter" invisible="1"/>
-			<field name="base_currency_is_vef" invisible="1"/>
+			<field name="base_currency_is_vef"/>
 			<field name="company_currency_id" invisible="1"/>
 			<field name="foreign_currency_id" invisible="1"/>
 
@@ -33,9 +33,11 @@
                 	<page name="retention_lines" string="Retention Lines">
                             <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Retention Lines" editable="bottom">
-				    <field name="invoice_type" invisible="1"/>
+				    <!-- Invisible fields -->
+                                    <field name="invoice_type" invisible="1"/>
 				    <field name="company_currency_id" invisible="1"/>
 				    <field name="foreign_currency_id" invisible="1"/>
+
                                     <field name="name"/>
 				    <field name="move_id"/>
                                     <field name="aliquot"/>

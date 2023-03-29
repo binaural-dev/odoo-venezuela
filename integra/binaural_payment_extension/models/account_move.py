@@ -1,8 +1,5 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class AccountMoveRetention(models.Model):
@@ -55,23 +52,6 @@ class AccountMoveRetention(models.Model):
             retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
                 "base.VEF"
             )
-            
-
-    def action_register_payment(self):
-        """
-        Override the action_register_payment method to add the invoice lines to the payment register.
-        """
-        res = super().action_register_payment()
-        if self.move_type in ["out_invoice", "out_refund", "in_invoice", "in_refund"]:
-            res["context"]["default_retention_line_ids"] = (
-                self.invoice_line_ids
-                if self.invoice_line_ids.filtered(
-                    lambda x: x.tax_ids.filtered(lambda y: y.tax_group_id.name == "IVA")
-                )
-                else False
-            )
-            res["context"]["default_retention_type"] = self.move_type
-        return res
 
     def action_post(self):
         """
@@ -134,3 +114,17 @@ class AccountMoveRetention(models.Model):
             raise UserError(_('The invoice "%s"has no tax.'), self.name)
         if not self.journal_id.fiscal:
             raise UserError(_("The journal must be fiscal"))
+
+    def action_register_payment(self):
+        """
+        Override the action_register_payment method to send the is_out_invoice context to the
+        payment wizard.
+
+        This is used to know if the invoice is an outgoing invoice, in order to know if the
+        option to create a retention should be displayed in the payment wizard.
+        """
+        res = super().action_register_payment()
+        res["context"]["default_is_out_invoice"] = any(
+            self.filtered(lambda i: i.move_type == "out_invoice")
+        )
+        return res

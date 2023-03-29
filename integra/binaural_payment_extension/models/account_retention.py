@@ -1,11 +1,9 @@
 from odoo import api, models, fields, Command, _
 from datetime import datetime
 from odoo.exceptions import UserError
-from .utils_retention import load_retention_lines, search_invoices_with_taxes
+from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
 import json
-import logging
-_logger = logging.getLogger(__name__)
 
 
 class AccountRetention(models.Model):
@@ -13,9 +11,20 @@ class AccountRetention(models.Model):
     _description = "Retention"
     _check_company_auto = True
 
-    company_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
-    foreign_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
-    base_currency_is_vef = fields.Boolean(compute="_compute_currency_fields")
+    company_currency_id = fields.Many2one(
+        "res.currency",
+        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_id,
+    )
+    foreign_currency_id = fields.Many2one(
+        "res.currency",
+        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_foreign_id,
+    )
+    base_currency_is_vef = fields.Boolean(
+        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
+    )
 
     company_id = fields.Many2one(
         "res.company",
@@ -203,7 +212,7 @@ class AccountRetention(models.Model):
             self.env["account.move"], search_domain
         ).filtered(
             lambda i: not any(
-                i.retention_iva_line_ids.filtered(lambda l: l.state in ("draf", "emitted"))
+                i.retention_iva_line_ids.filtered(lambda l: l.state in ("draft", "emitted"))
             )
         )
         if not any(invoices_with_taxes):
@@ -242,7 +251,6 @@ class AccountRetention(models.Model):
             raise UserError(_("There are no invoices with taxes to be retained for the customer."))
         self.clear_retention()
         lines = load_retention_lines(invoices_with_taxes, self.env["account.retention"])
-        _logger.warning("lines: %s", lines)
 
         lines_per_invoice_counter = defaultdict(int)
         for line in lines:
@@ -383,24 +391,25 @@ class AccountRetention(models.Model):
         Payment = self.env["account.payment"]
         payment_vals["partner_type"] = "supplier"
         payment_vals["journal_id"] = self.env.company.iva_supplier_retention_journal_id.id
-        in_refunds = self.retention_line_ids.filtered(lambda l: l.move_id.move_type == "in_refund")
-        in_invoices = self.retention_line_ids.filtered(
+        in_refund_lines = self.retention_line_ids.filtered(lambda l: l.move_id.move_type == "in_refund")
+        in_invoice_lines = self.retention_line_ids.filtered(
             lambda l: l.move_id.move_type == "in_invoice"
         )
 
         in_refunds_dict = defaultdict(account_retention_line_empty_recordset)
         in_invoices_dict = defaultdict(account_retention_line_empty_recordset)
 
-        for refund in in_refunds:
-            in_refunds_dict[refund.move_id] += refund
-        for invoice in in_invoices:
-            in_invoices_dict[invoice.move_id] += invoice
+        for line in in_refund_lines:
+            in_refunds_dict[line.move_id] += line
+        for line in in_invoice_lines:
+            in_invoices_dict[line.move_id] += line
 
         for lines in in_refunds_dict.values():
             payment_vals["payment_method_id"] = (
                 self.env.ref("account.account_payment_method_manual_in").id,
             )
             payment_vals["payment_type"] = "inbound"
+            payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()
@@ -409,6 +418,7 @@ class AccountRetention(models.Model):
                 self.env.ref("account.account_payment_method_manual_out").id,
             )
             payment_vals["payment_type"] = "outbound"
+            payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()
@@ -419,26 +429,27 @@ class AccountRetention(models.Model):
         Payment = self.env["account.payment"]
         payment_vals["partner_type"] = "customer"
         payment_vals["journal_id"] = self.env.company.iva_customer_retention_journal_id.id
-        out_refunds = self.retention_line_ids.filtered(
+        out_refund_lines = self.retention_line_ids.filtered(
             lambda l: l.move_id.move_type == "out_refund"
         )
-        out_invoices = self.retention_line_ids.filtered(
+        out_invoice_lines = self.retention_line_ids.filtered(
             lambda l: l.move_id.move_type == "out_invoice"
         )
 
         out_refunds_dict = defaultdict(account_retention_line_empty_recordset)
         out_invoices_dict = defaultdict(account_retention_line_empty_recordset)
 
-        for refund in out_refunds:
-            out_refunds_dict[refund.move_id] += refund
-        for invoice in out_invoices:
-            out_invoices_dict[invoice.move_id] += invoice
+        for line in out_refund_lines:
+            out_refunds_dict[line.move_id] += line
+        for line in out_invoice_lines:
+            out_invoices_dict[line.move_id] += line
 
         for lines in out_refunds_dict.values():
             payment_vals["payment_method_id"] = (
                 self.env.ref("account.account_payment_method_manual_out").id,
             )
             payment_vals["payment_type"] = "outbound"
+            payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()
@@ -447,6 +458,7 @@ class AccountRetention(models.Model):
                 self.env.ref("account.account_payment_method_manual_in").id,
             )
             payment_vals["payment_type"] = "inbound"
+            payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()

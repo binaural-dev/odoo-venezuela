@@ -1,8 +1,5 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class AccountRetentionLine(models.Model):
@@ -38,7 +35,6 @@ class AccountRetentionLine(models.Model):
     imp_ret = fields.Float(string="tax incurred", digits=(16, 2))
     retention_rate = fields.Float(store=True, digits="Tasa")
     move_id = fields.Many2one("account.move", "move", ondelete="cascade", store=True)
-    # retention_move_id = fields.One2many("account.move", "retention_move_id", string="Retention move")
     is_retention_client = fields.Boolean(default=True)
     display_invoice_number = fields.Char(
         string="Invoice Number", compute="_compute_display_invoice_number", store=True
@@ -228,7 +224,8 @@ class AccountRetentionLine(models.Model):
         if self.env.context.get("noonchange", False):
             return
         for line in self.filtered(
-            lambda l: (l.retention_id.type_retention, l.retention_id.type) == ("iva", "out_invoice")
+            lambda l: (not l.retention_id and l.invoice_type in ("out_invoice", "out_refund"))
+            or (l.retention_id.type_retention, l.retention_id.type) == ("iva", "out_invoice")
         ):
             self.env.context = self.with_context(noonchange=True).env.context
             line.update(
@@ -251,7 +248,8 @@ class AccountRetentionLine(models.Model):
         if self.env.context.get("noonchange", False):
             return
         for line in self.filtered(
-            lambda l: (l.retention_id.type_retention, l.retention_id.type) == ("iva", "out_invoice")
+            lambda l: (not l.retention_id and l.invoice_type in ("out_invoice", "out_refund"))
+            or (l.retention_id.type_retention, l.retention_id.type) == ("iva", "out_invoice")
         ):
             self.env.context = self.with_context(noonchange=True).env.context
             line.update(
