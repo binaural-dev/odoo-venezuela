@@ -125,6 +125,6 @@ class AccountMoveRetention(models.Model):
         """
         res = super().action_register_payment()
         res["context"]["default_is_out_invoice"] = any(
-            self.filtered(lambda i: i.move_type == "out_invoice")
+            self.filtered(lambda i: i.move_type in ("out_invoice", "out_refund"))
         )
         return res
