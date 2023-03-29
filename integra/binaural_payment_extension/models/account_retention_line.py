@@ -135,20 +135,23 @@ class AccountRetentionLine(models.Model):
                     raise UserError(_("The partner does not have a type of person"))
 
                 if record.move_id.partner_id.type_person_id.id == line.type_person_id.id:
-                    # compare the type_person_id of the partner with the type_person_id of the payment concept
-                    # and set the related fields
+                    # compare the type_person_id of the partner with the type_person_id of the
+                    # payment concept and set the related fields.
                     record.invoice_total = record.move_id.tax_totals["amount_total"]
-                    record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
+                    record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
                     record.related_pay_from = line.pay_from
-                    # record.foreign_iva_amount = record.move_id.tax_totals["amount_total"] - record.move_id.tax_totals["amount_untaxed"]
                     record.related_percentage_tax_base = line.percentage_tax_base
                     record.related_percentage_fees = line.tariff_id.percentage
                     record.related_amount_subtract_fees = line.tariff_id.amount_subtract
                     record.foreign_currency_rate = record.move_id.foreign_rate
-                    record.foreign_invoice_amount = record.move_id.tax_totals[
-                        "foreign_amount_untaxed"
-                    ]
-                    record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
+
+                    if record.retention_id.type == "in_invoice":
+                        # We don't want this fields to be computed when the retention is
+                        # created from a customer invoice since they are filled by the user.
+                        record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
+                        record.foreign_invoice_amount = record.move_id.tax_totals[
+                            "foreign_amount_untaxed"
+                        ]
 
     @api.depends("invoice_amount", "foreign_invoice_amount")
     def _compute_amounts(self):
@@ -167,7 +170,6 @@ class AccountRetentionLine(models.Model):
         "related_percentage_fees",
         "related_amount_subtract_fees",
         "foreign_currency_rate",
-        # "move_id",
     )
     @api.depends(
         "invoice_amount",
@@ -180,15 +182,16 @@ class AccountRetentionLine(models.Model):
     )
     def _compute_retention_amount(self):
         """
-         This compute is used to get the retention amount from the payment concept of the partner
+        This compute is used to get the retention amount from the payment concept of the partner
         to generate the ISLR retention line.
         """
         base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
 
-        lines_from_islr_retention = self.filtered(
-            lambda l: not l.retention_id or l.retention_id.type_retention == "islr"
+        islr_supplier_retention_lines = self.filtered(
+            lambda l: not l.retention_id
+            or (l.retention_id.type_retention == "islr" and l.retention_id.type == "in_invoice")
         )
-        for record in lines_from_islr_retention:
+        for record in islr_supplier_retention_lines:
             foreign_rate = record.move_id.foreign_rate
             if not foreign_rate:
                 foreign_rate = 1
@@ -211,23 +214,31 @@ class AccountRetentionLine(models.Model):
                 * (record.related_percentage_fees / 100)
             ) - record.related_amount_subtract_fees
 
-    @api.onchange("retention_amount")
+    @api.onchange("retention_amount", "invoice_amount")
     def onchange_retention_amount(self):
         """
-        Making sure that the foreign retention amount is updated when the retention amount is
-        changed on the retention line of the iva customer retentions.
+        Making sure that the foreign retention amount and foreign invoice amount are updated when
+        the retention amount or the invoice amount are changed on the retention line of the
+        customer retentions.
 
         This is made to be triggered only when the foreign currency is NOT VEF, as this is the only
-        case when the retention amount is shown on the retention line, because the amounts of the
-        retention lines are always shown in VEF.
+        case when the retention amount and the invoice amount are shown on the retention line,
+        because the amounts of the retention lines are always shown in VEF.
         """
         if self.env.context.get("noonchange", False):
             return
         for line in self.filtered(
             lambda l: (not l.retention_id and l.invoice_type in ("out_invoice", "out_refund"))
-            or (l.retention_id.type_retention, l.retention_id.type) == ("iva", "out_invoice")
+            or l.retention_id.type == "out_invoice"
         ):
             self.env.context = self.with_context(noonchange=True).env.context
+            if line.retention_id.type_retention == "islr":
+                line.update(
+                    {
+                        "foreign_invoice_amount": line.invoice_amount
+                        * line.move_id.foreign_inverse_rate
+                    }
+                )
             line.update(
                 {
                     "foreign_retention_amount": line.retention_amount
@@ -235,22 +246,30 @@ class AccountRetentionLine(models.Model):
                 }
             )
 
-    @api.onchange("foreign_retention_amount")
+    @api.onchange("foreign_retention_amount", "foreign_invoice_amount")
     def onchange_foreign_retention_amount(self):
         """
-        Making sure that the retention amount is updated when the foreign retention amount is
-        changed on the retention line of the iva customer retentions.
+        Making sure that the retention amount and the invoice amount are updated when the foreign
+        retention amount or the foreign invoice amount are changed on the retention line of the
+        customer retentions.
 
         This is made to be triggered only when the foreign currency is VEF, as this is the only
-        case when the foreign retention amount is shown on the view of the iva customer retention,
-        because the amounts of the retention lines are always shown in VEF.
+        case when the foreign retention amount and the foreign iva amount are shown on the views of
+        the customer retentions, because the amounts of the retention lines are always shown in VEF.
         """
         if self.env.context.get("noonchange", False):
             return
         for line in self.filtered(
             lambda l: (not l.retention_id and l.invoice_type in ("out_invoice", "out_refund"))
-            or (l.retention_id.type_retention, l.retention_id.type) == ("iva", "out_invoice")
+            or l.retention_id.type == "out_invoice"
         ):
+            if line.retention_id.type_retention == "islr":
+                line.update(
+                    {
+                        "invoice_amount": line.foreign_invoice_amount
+                        * (1 / line.move_id.foreign_rate)
+                    }
+                )
             self.env.context = self.with_context(noonchange=True).env.context
             line.update(
                 {
@@ -259,14 +278,22 @@ class AccountRetentionLine(models.Model):
                 }
             )
 
-    @api.constrains("retention_amount", "invoice_total", "foreign_retention_amount")
-    def _constraint_municipality_tax(self):
+    @api.constrains(
+        "retention_amount",
+        "invoice_total",
+        "foreign_retention_amount",
+        "invoice_amount",
+        "foreign_invoice_amount",
+    )
+    def _constraint_amounts(self):
         for record in self:
             if any(
                 (
                     record.retention_amount == 0,
                     record.invoice_total == 0,
                     record.foreign_retention_amount == 0,
+                    record.invoice_amount == 0,
+                    record.foreign_invoice_amount == 0,
                 )
             ):
                 raise ValidationError(_("You can not create a retention with 0 amount."))

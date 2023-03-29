@@ -17,9 +17,11 @@
                         <field name="state" widget="statusbar" nolabel="1"/>
                     </header>
                     <group colspan="4" col="4">
+			<!-- Invisible fields -->
 			<field name="base_currency_is_vef" invisible="1"/>
 			<field name="company_currency_id" invisible="1"/>
 			<field name="foreign_currency_id" invisible="1"/>
+			<field name="islr_lines_allowed_move_types" invisible="1"/>
 
                         <field name="type" force_save="1" select="2"/>
                         <field name="type_retention" force_save="1" select="2" invisible="1"/>
@@ -32,98 +34,91 @@
                     </group>
                     <notebook colspan="4">
                         <page name="retention_lines" string="Retention Lines">
-                            <!-- <field name="foreign_currency_id" invisible="1"/>
-                            <field name="bs_currency_id" invisible="1"/> -->
                             <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}">
                                 <tree editable="bottom">
-                                    <!-- <field name="bs_currency_id" invisible="1"/> -->
                                 <field name="name" readonly="1"/>
-                                <field name="move_id" domain="[('move_type', 'in', ['in_invoice','in_refund']), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"/>
-                                <field name="payment_concept_id" force_save="1" />
-                                <field name="is_retention_client" invisible="1" />
+				<field
+				    name="move_id"
+				    domain="[('move_type', 'in', parent.islr_lines_allowed_move_types), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"
+				/>
+                                <field name="payment_concept_id" force_save="1"/>
+                                <field name="is_retention_client" invisible="1"/>
                                 <field 
-                                name="invoice_total"
-                                force_save="1"
-                                string="Invoice Total"
-                                readonly="1"  
-                                widget="monetary"
-					            options="{'currency_field': 'company_currency_id'}" 
-                                attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
+                                    name="invoice_total"
+                                    force_save="1"
+                                    string="Invoice Total"
+                                    readonly="1"  
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}" 
+                                    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
                                 />
                                 <field 
-                                name="foreign_invoice_total"
-                                force_save="1"
-                                string="Invoice Total"
-                                readonly="1" 
-                                widget="monetary"
-					            options="{'currency_field': 'foreign_currency_id'}"
-					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+                                    name="foreign_invoice_total"
+                                    force_save="1"
+                                    string="Invoice Total"
+                                    readonly="1" 
+                                    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
                                 />
                                 <field 
-                                name="invoice_amount"
-                                force_save="1"
-                                string="Invoice Amount"
-                                widget="monetary"
-					            options="{'currency_field': 'company_currency_id'}" 
-                                attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
-                                />
-
-                                <field 
-                                name="foreign_invoice_amount"
-                                force_save="1"
-                                string="Invoice Amount"
-                                widget="monetary"
-					            options="{'currency_field': 'foreign_currency_id'}"
-					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}" 
+                                    name="invoice_amount"
+                                    force_save="1"
+                                    string="Invoice Amount"
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}" 
+                                    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
                                 />
 
                                 <field 
-                                name="iva_amount" 
-                                force_save="1" 
-                                widget="monetary"
-					            options="{'currency_field': 'company_currency_id'}"
-					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+                                    name="foreign_invoice_amount"
+                                    force_save="1"
+                                    string="Invoice Amount"
+                                    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}" 
+                                />
+
+                                <field 
+                                    name="related_pay_from"
+                                    force_save="1"
+                                    readonly="1" 
+				    attrs="{'column_invisible': [('parent.type', '=', 'out_invoice')]}"
                                 />
                                 <field 
-                                name="related_pay_from"
-                                force_save="1"
-                                readonly="1" 
+                                    name="related_percentage_tax_base" 
+                                    force_save="1"
+                                    readonly="1" 
                                 />
                                 <field 
-                                name="related_percentage_tax_base" 
-                                force_save="1"
-                                readonly="1" 
+                                    name="related_percentage_fees"
+                                    force_save="1"
+                                    readonly="1" 
                                 />
                                 <field 
-                                name="related_percentage_fees"
-                                force_save="1"
-                                readonly="1" 
+                                    name="related_amount_subtract_fees" 
+                                    force_save="1"
+                                    readonly="1" 
                                 />
                                 <field 
-                                name="related_amount_subtract_fees" 
-                                force_save="1"
-                                readonly="1" 
+                                    name="foreign_currency_rate"
+                                    force_save="1"
+                                    readonly="1" 
+                                    optional="hide"
                                 />
                                 <field 
-                                name="foreign_currency_rate"
-                                force_save="1"
-                                readonly="1" 
-                                optional="hide"
+                                    name="retention_amount"
+                                    force_save="1"
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)], 'readonly': [('parent.type', '=', 'in_invoice')]}"
                                 />
                                 <field 
-                                name="retention_amount"
-                                force_save="1"
-                                readonly="1"
-                                widget="monetary"
-					            options="{'currency_field': 'company_currency_id'}"
-					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
-                                />
-                                <field 
-                                name="foreign_retention_amount"
-                                force_save="1" 
-                                widget="monetary"
-					            options="{'currency_field': 'foreign_currency_id'}"
-					            attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+                                    name="foreign_retention_amount"
+                                    force_save="1" 
+                                    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)], 'readonly': [('parent.type', '=', 'in_invoice')]}"
                                 />
                                 </tree>
                             </field>
@@ -131,11 +126,6 @@
 			    <group col="2" colspan="2" attrs="{'invisible': [('base_currency_is_vef', '=', False)]}">
 				<field
 				    name="total_invoice_amount"
-				    widget="monetary"
-				    options="{'currency_field': 'company_currency_id'}"
-				/>
-				<field
-				    name="total_iva_amount"
 				    widget="monetary"
 				    options="{'currency_field': 'company_currency_id'}"
 				/>
@@ -152,11 +142,6 @@
 				    widget="monetary"
 				    options="{'currency_field': 'foreign_currency_id'}"
 				/>
-				<field 
-				    name="foreign_total_iva_amount"
-				    widget="monetary"
-				    options="{'currency_field': 'foreign_currency_id'}"
-				/>
 				<field
 				    name="foreign_total_retention_amount"
 				    widget="monetary"
@@ -169,7 +154,6 @@
                                 <tree string="Payments" editable="bottom">
                                     <field name="date"/>
                                     <field name="name"/>
-                                    <!-- <field name="journal_id"/> -->
                                     <field name="amount"/>
                                 </tree>
                             </field>

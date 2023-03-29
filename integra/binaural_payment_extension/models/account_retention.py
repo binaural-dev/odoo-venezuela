@@ -95,6 +95,14 @@ class AccountRetention(models.Model):
             " Keep blank to use current date."
         ),
     )
+    islr_lines_allowed_move_types = fields.Binary(
+        compute="_compute_islr_lines_allowed_move_types",
+        help=(
+            "Technical field to store the allowed move types for the ISLR retention lines. This is"
+            " used to filter the moves that can be selected in the ISLR retention lines."
+        ),
+    )
+
     retention_line_ids = fields.One2many(
         "account.retention.line",
         "retention_id",
@@ -150,6 +158,24 @@ class AccountRetention(models.Model):
             retention.foreign_currency_id = self.env.company.currency_foreign_id.id
             retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
                 "base.VEF"
+            )
+
+    @api.depends("type")
+    def _compute_islr_lines_allowed_move_types(self):
+        """
+        Computes the allowed move types for the moves of the ISLR retention lines.
+
+        If the retention is of type "in_invoice", the allowed move types are "in_invoice" and
+        "in_refund". If the retention is of type "out_invoice", the allowed move types are
+        "out_invoice" and "out_refund".
+
+        This is used to filter the moves that can be selected in the ISLR retention lines.
+        """
+        for retention in self:
+            retention.islr_lines_allowed_move_types = (
+                ("in_invoice", "in_refund")
+                if retention.type == "in_invoice"
+                else ("out_invoice", "out_refund")
             )
 
     @api.depends(
@@ -542,6 +568,17 @@ class AccountRetention(models.Model):
         self.write({"state": "cancel"})
 
     def create_payment_from_retention_form(self):
+        """
+        Create the corresponding payments for the retention based on the fields of the retention.
+
+        This is meant to create the payment for the ISLR retention and it is triggered on the
+        action_post method of the retention if it still doesn't have payments at that point.
+
+        Returns
+        -------
+        account.payment recordset
+            The payments created for the retention.
+        """
         self.ensure_one()
         Payment = self.env["account.payment"]
 
@@ -550,24 +587,34 @@ class AccountRetention(models.Model):
         if not self.retention_line_ids.payment_concept_id:
             raise UserError(_("Select a payment concept"))
 
-        payment_type = "outbound"
+        payment_type = "outbound" if self.type == "in_invoice" else "inbound"
+        partner_type = "supplier" if self.type == "in_invoice" else "customer"
+        journal_id = (
+            self.env.company.islr_supplier_retention_journal_id.id
+            if self.type == "in_invoice"
+            else self.env.company.islr_customer_retention_journal_id.id
+        )
         payment_vals = []
 
         for line in self.retention_line_ids:
             if line.move_id.move_type == "in_refund":
-                payment_type = "inbound"
+                payment_type = "inbound" if self.type == "in_invoice" else "outbound"
+
+            payment_method_ref = (
+                "account.account_payment_method_manual_in"
+                if payment_type == "inbound"
+                else "account.account_payment_method_manual_out"
+            )
 
             payment_vals.append(
                 {
-                    "payment_type": payment_type,
-                    "partner_type": "supplier",
-                    "partner_id": line.move_id.partner_id.id,
                     "state": "draft",
-                    "journal_id": self.env.company.islr_supplier_retention_journal_id.id,
+                    "payment_type": payment_type,
+                    "partner_type": partner_type,
+                    "partner_id": line.move_id.partner_id.id,
+                    "journal_id": journal_id,
                     "payment_type_retention": "islr",
-                    "payment_method_id": self.env.ref(
-                        "account.account_payment_method_manual_in"
-                    ).id,
+                    "payment_method_id": self.env.ref(payment_method_ref).id,
                     "is_retention": True,
                     "foreign_rate": line.move_id.foreign_rate,
                     "retention_line_ids": line,
