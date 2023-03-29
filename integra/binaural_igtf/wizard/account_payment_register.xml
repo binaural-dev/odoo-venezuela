@@ -13,10 +13,8 @@
                             <div attrs="{'invisible' : [('is_igtf_on_foreign_exchange', '=',False)]}">
                                 <span class="oe_title">IGTF(<field name="igtf_percentage" readonly="1"/>)%:</span>
                                 <field name="igtf_amount"/>
-
                             </div>
                     </group>
-                    
                 </xpath>
             </field>
         </record>

@@ -1,6 +1,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
-from contextlib import ExitStack, contextmanager
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class AccountMoveIgtf(models.Model):
@@ -11,7 +12,9 @@ class AccountMoveIgtf(models.Model):
     
     default_is_igtf_config = fields.Boolean(default=default_is_igtf)
 
-    # def _get_unbalanced_moves(self, container):
-    #    pass
 
-   
+    def js_assign_outstanding_line(self, line_id):
+        res = super(AccountMoveIgtf, self).js_assign_outstanding_line(line_id)
+        _logger.warning("js_assign_outstanding_line")
+        _logger.warning(res)
+        return res

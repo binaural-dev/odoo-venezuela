@@ -28,7 +28,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         help="IGTF Percentage",
         store=True,
     )
-    igtf_amount = fields.Monetary(
+    igtf_amount = fields.Float(
         string="IGTF Amount", compute="_compute_igtf_amount", store=True, help="IGTF Amount"
     )
 
@@ -41,7 +41,13 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         store=True,
     )
 
-    @api.depends("journal_id", "is_igtf")
+    @api.depends("amount", "is_igtf", "igtf_amount")
+    def _compute_amount_with_igtf(self):
+        for payment in self:
+            payment.amount_with_igtf = payment.amount + payment.igtf_amount
+            _logging.warning("payment.amount_with_igtf: %s", payment.amount_with_igtf)
+
+    @api.depends("journal_id", "is_igtf", "currency_id")
     def _compute_is_igtf(self):
         for payment in self:
             if payment.journal_id.is_igtf == True and payment.is_igtf and payment.currency_id.name == "USD":
@@ -53,42 +59,35 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             payment.igtf_amount = 0.0
             if payment.is_igtf and payment.journal_id.is_igtf and payment.currency_id.name == "USD":
                 payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
+                _logging.warning("payment.igtf_amount: %s", payment.igtf_amount)
 
-   
+                
 
-    # def _create_account_move_line_igtf_credit(self, payments):
-    #     """Create account move lines for IGTF.
+    def _init_payments(self, to_process, edit_mode=False):
+        """ Create the payments from the wizard's values.
+        IGTF fields are added to the payment values to be created. 
+        
+        :param to_process: A list of dicts containing the values to create the payments.
 
-    #     :return: The account move lines to create.
-    #     """
-    #     account = self.env.company.account_igtf_id.id
-
-    #     return self.env["account.move.line"].create(
-    #         {
-    #             "move_id": payments.line_ids.move_id.id,
-    #             "name": "IGTF",
-    #             "debit": 0,
-    #             "credit": 3,
-    #             "amount_currency": -3,
-    #             "account_id": account,
-    #             "partner_id": self.partner_id.id,
-    #             # 'currency_id': self.currency_id.id
-    #         }
-    #     )
+        :return: A list of ids of the created payments.
+        """
+        to_process[0]['create_vals']['amount'] = to_process[0]['create_vals']['amount'] + self.igtf_amount
+        to_process[0]['create_vals']['igtf_amount'] = self.igtf_amount
+        to_process[0]['create_vals']['igtf_percentage'] = self.igtf_percentage
+        
+        res = super(AccountPaymentRegisterIgtf, self)._init_payments(to_process, edit_mode)
+        return res
     
-    # def _create_account_move_line_igtf_debit(self, payments):
+    def _create_payments(self):
+        """ Create payment and add bi_igtf to the invoice.
+        the bi_igtf is the amount of the payment minus the igtf amount.
+        this field is used to calculate the igtf amount on the invoice on the tax widget.
 
-    #     account = self.env.company.account_igtf_id.id
-
-    #     return self.env["account.move.line"].create(
-    #         {
-    #             "move_id": payments.line_ids.move_id.id,
-    #             "name": "IGTF",
-    #             "debit": 3,
-    #             "credit": 0,
-    #             "amount_currency": 3,
-    #             "account_id": account,
-    #             "partner_id": self.partner_id.id,
-    #             # 'currency_id': self.currency_id.id
-    #         }
-    #     )
+        Returns:
+            Payment: The created payment.
+        """
+        res = super(AccountPaymentRegisterIgtf, self)._create_payments()
+        for payment in res:
+            if payment.journal_id.is_igtf == True and payment.is_igtf and payment.currency_id.name == "USD":
+                payment.reconciled_invoice_ids.write({'bi_igtf': payment.amount - payment.igtf_amount})
+        return res
