@@ -83,14 +83,17 @@ class AccountRetention(models.Model):
     number = fields.Char("Voucher Number")
     correlative = fields.Char(readonly=True)
     date = fields.Date(
-        "Fecha Comprobante",
+        "Voucher Date",
         states={"draft": [("readonly", False)]},
         help="Date of issuance of the withholding voucher by the external party.",
     )
     date_accounting = fields.Date(
-        "Fecha Contable",
+        "Accounting Date",
         states={"draft": [("readonly", False)]},
-        help="Date of arrival of the document and date to be used to make the accounting record Keep blank to use current date.",
+        help=(
+            "Date of arrival of the document and date to be used to make the accounting record."
+            " Keep blank to use current date."
+        ),
     )
     retention_line_ids = fields.One2many(
         "account.retention.line",
@@ -391,7 +394,9 @@ class AccountRetention(models.Model):
         Payment = self.env["account.payment"]
         payment_vals["partner_type"] = "supplier"
         payment_vals["journal_id"] = self.env.company.iva_supplier_retention_journal_id.id
-        in_refund_lines = self.retention_line_ids.filtered(lambda l: l.move_id.move_type == "in_refund")
+        in_refund_lines = self.retention_line_ids.filtered(
+            lambda l: l.move_id.move_type == "in_refund"
+        )
         in_invoice_lines = self.retention_line_ids.filtered(
             lambda l: l.move_id.move_type == "in_invoice"
         )
@@ -495,23 +500,28 @@ class AccountRetention(models.Model):
     def action_post(self):
         today = datetime.now()
         for retention in self:
+            if (
+                retention.type in ["out_invoice", "out_refund", "out_debit"]
+                and not retention.number
+            ):
+                raise UserError(_("Insert a number for the retention"))
             if not retention.date_accounting:
                 retention.date_accounting = today
             if not retention.date:
                 retention.date = today
+
             if retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._set_sequence()
-                move_ids = retention.mapped("retention_line_ids.move_id")
-                if retention.type_retention == "iva":
-                    move_ids.write({"iva_voucher_number": retention.number})
-                elif retention.type_retention == "islr":
-                    move_ids.write({"islr_voucher_number": retention.number})
-                if not retention.payment_ids:
-                    payments = retention.create_payment_from_retention_form()
-                    retention.payment_ids = payments.ids
-            elif retention.type in ["out_invoice", "out_refund", "out_debit"]:
-                if not retention.number:
-                    raise UserError(_("Insert a number for the retention"))
+
+            move_ids = retention.mapped("retention_line_ids.move_id")
+            if retention.type_retention == "iva":
+                move_ids.write({"iva_voucher_number": retention.number})
+            elif retention.type_retention == "islr":
+                move_ids.write({"islr_voucher_number": retention.number})
+            if not retention.payment_ids:
+                payments = retention.create_payment_from_retention_form()
+                retention.payment_ids = payments.ids
+
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
 

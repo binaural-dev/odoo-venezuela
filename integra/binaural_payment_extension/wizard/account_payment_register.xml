@@ -6,28 +6,14 @@
             <field name="model">account.payment.register</field>
             <field name="inherit_id" ref="account.view_account_payment_register_form"/>
             <field name="arch" type="xml">
-		<field name="journal_id" position="replace">
-		    <field name="journal_id" attrs="{'readonly': [('edit_retention_fields', '=', False)]}"/>
+		<field name="journal_id" position="attributes">
+		    <attribute name="attrs">{'readonly': [('edit_retention_fields', '=', False)]}</attribute>
 		</field>
-		<field name="foreign_rate" position="replace">
-		    <field name="foreign_rate" attrs="{'readonly': [('edit_retention_fields', '=', False)]}"/>
-		</field>
-		<field name="payment_difference_handling" position="replace">
-		    <field
-			name="payment_difference_handling"
-			widget="radio"
-			nolabel="1"
-			attrs="{'readonly': [('edit_retention_fields', '=', False)]}"
-		    />
-	        </field>
-		<field name="group_payment" position="replace">
-		    <field
-			name="group_payment"
-			attrs="{'invisible': [('can_group_payments', '=', False)], 'readonly': [('edit_retention_fields', '=', False)]}"
-		    />
+		<field name="foreign_rate" position="attributes">
+		    <attribute name="attrs">{'readonly': [('edit_retention_fields', '=', False)]}</attribute>
 		</field>
 
-                <xpath expr="//group[@name='group2']" position="after">
+                <group name="group2" position="after">
 		    <!-- Invisible fields -->
 		    <field name="edit_retention_fields" invisible="1"/>
 		    <field name="base_currency_is_vef" invisible="1"/>
@@ -37,12 +23,14 @@
 		    	<label for="is_retention"/>
                     	<field name="is_retention"/>
 	    	    </div>
-		    <label for="retention_ref" attrs="{'invisible':[('is_retention', '=', False)]}"/>
-		    <field
-			name="retention_ref"
-			string="Retention ref"
-			attrs="{'invisible':[('is_retention', '=', False)], 'required':[('is_retention', '=', True)]}"
-		    />
+
+		    <div attrs="{'invisible':[('is_retention', '=', False)]}">
+			<label for="voucher_date"/>
+			<field name="voucher_date" attrs="{'required':[('is_retention', '=', True)]}"/>
+
+		    	<label for="retention_ref" />
+		    	<field name="retention_ref" attrs="{'required':[('is_retention', '=', True)]}"/>
+	    	    </div>
 
                     <notebook attrs="{'invisible':[('is_retention', '=', False)]}">
                         <page name="retention_lines" string="Retention lines">
@@ -103,7 +91,21 @@
                             </field>
                         </page>
                     </notebook>
-                </xpath>
+                </group>
+
+		<group name="group3" position="attributes">
+		    <attribute name="attrs">
+			{
+			    'invisible': [
+			    	'|', ('edit_retention_fields', '=', False),
+			    	'|', ('payment_difference', '=', 0.0),
+				'|', ('can_edit_wizard', '=', False),
+			    	'&amp;', ('can_group_payments', '=', True),
+			    	('group_payment', '=', False),
+			    ]
+			}
+		    </attribute>
+		</group>
             </field>
         </record>
     </data>

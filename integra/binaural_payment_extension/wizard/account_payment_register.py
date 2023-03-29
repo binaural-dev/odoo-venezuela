@@ -1,6 +1,8 @@
 from odoo import models, fields, api, Command, _
 from odoo.exceptions import UserError
 from ..utils.utils_retention import load_retention_lines
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class AccountPaymentRegister(models.TransientModel):
@@ -20,9 +22,13 @@ class AccountPaymentRegister(models.TransientModel):
     is_retention = fields.Boolean(string="Retention payment", default=False)
     edit_retention_fields = fields.Boolean(default=True)
 
-    retention_line_ids = fields.Many2many("account.retention.line", string="Retention Lines")
-
+    voucher_date = fields.Date(
+        "Fecha Comprobante",
+        help="Date of issuance of the withholding voucher by the external party.",
+    )
     retention_ref = fields.Char(string="Retention reference")
+
+    retention_line_ids = fields.Many2many("account.retention.line", string="Retention Lines")
 
     @api.onchange("is_retention")
     def _onchange_is_retention(self):
@@ -121,6 +127,7 @@ class AccountPaymentRegister(models.TransientModel):
             payment.journal_id = self.env.company.iva_customer_retention_journal_id.id
             payment.compute_retention_amount_from_retention_lines()
         retention = self._create_retention(payments)
+        _logger.warning("Retention created: %s", retention.read([]))
         retention.action_post()
         return payments
 
@@ -141,17 +148,6 @@ class AccountPaymentRegister(models.TransientModel):
         if self.is_retention:
             return
         return super()._reconcile_payments(to_process, edit_mode)
-
-    @api.constrains("is_retention", "retention_line_ids")
-    def _check_retention_lines(self):
-        """
-        Ensure that the retention lines are set if the payment is a retention.
-        """
-        if not self.is_retention:
-            return
-        if not self.retention_line_ids:
-            self._onchange_is_retention()
-            raise UserError(_("You must have at least one retention line"))
 
     def _create_retention(self, payments):
         """
@@ -174,6 +170,8 @@ class AccountPaymentRegister(models.TransientModel):
             {
                 "name": "Retention IVA",
                 "type_retention": "iva",
+                "date": self.voucher_date,
+                "date_accounting": self.payment_date,
                 "partner_id": self.partner_id.id,
                 "company_id": self.company_id.id,
                 "code": self.retention_ref,

@@ -15,8 +15,8 @@
                         <field name="islr_voucher_number" readonly="1" />     
                     </group>
                     <field name="base_currency_is_vef" invisible="1"/>
-			        <field name="company_currency_id" invisible="1"/>
-			        <field name="foreign_currency_id" invisible="1"/>
+		    <field name="company_currency_id" invisible="1"/>
+		    <field name="foreign_currency_id" invisible="1"/>
 
                 </xpath>
 
@@ -24,19 +24,66 @@
                     <page name="iva_retention" string="IVA Retentions">
                         <field name="retention_iva_line_ids" nolabel="1" readonly="1">
                             <tree editable='bottom'>
-                                <field name="is_retention_client" invisible="1" />
+                                <field name="invoice_type" invisible="1"/>
+				<field name="company_currency_id" invisible="1"/>
+				<field name="foreign_currency_id" invisible="1"/>
+
                                 <field name="name"/>
-                                <field name="invoice_total" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                <field name="invoice_amount" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                <field name="iva_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
+				<field name="move_id"/>
                                 <field name="aliquot"/>
-                                <field name="retention_amount"/>
-				<field name="state"/>
-                                <field name="foreign_currency_rate" optional="hide"/>
-                                <field name="foreign_invoice_amount" optional="hide" />
-                                <field name="foreign_invoice_total" optional="hide" />
-                                <field name="foreign_retention_amount" optional="hide" />
-                                <field name="foreign_iva_amount" optional="hide" />
+				<field name="related_percentage_tax_base" optional="hide"/>
+				<!-- Amounts -->
+				<field
+				    name="invoice_total"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				/>
+				<field
+				    name="invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				/>
+				<field
+				    name="iva_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				/>
+				<field
+				    name="retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				/>
+				<!-- Foreign Amounts -->
+				<field
+				    name="foreign_invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				/>
+				<field
+				    name="foreign_iva_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				/>
+				<field
+				    name="foreign_invoice_total"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				/>
+				<field
+				    name="foreign_retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				/>
+
+				<field name="foreign_currency_rate" optional="hide"/>
                             </tree>
                         </field>
                     </page>

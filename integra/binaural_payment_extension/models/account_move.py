@@ -5,6 +5,21 @@ from odoo.exceptions import UserError
 class AccountMoveRetention(models.Model):
     _inherit = "account.move"
 
+    company_currency_id = fields.Many2one(
+        "res.currency",
+        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_id,
+    )
+    foreign_currency_id = fields.Many2one(
+        "res.currency",
+        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_foreign_id,
+    )
+    base_currency_is_vef = fields.Boolean(
+        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
+    )
+
     apply_islr_retention = fields.Boolean(
         string="Apply ISLR Retention?",
         default=False,
@@ -41,9 +56,6 @@ class AccountMoveRetention(models.Model):
         track_visibility="onchange",
     )
 
-    company_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
-    foreign_currency_id = fields.Many2one("res.currency", compute="_compute_currency_fields")
-    base_currency_is_vef = fields.Boolean(compute="_compute_currency_fields")
 
     def _compute_currency_fields(self):
         for retention in self:
