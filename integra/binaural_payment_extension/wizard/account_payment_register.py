@@ -1,8 +1,6 @@
 from odoo import models, fields, api, Command, _
 from odoo.exceptions import UserError
 from ..utils.utils_retention import load_retention_lines
-import logging
-_logger = logging.getLogger(__name__)
 
 
 class AccountPaymentRegister(models.TransientModel):
@@ -19,7 +17,7 @@ class AccountPaymentRegister(models.TransientModel):
     )
 
     is_out_invoice = fields.Boolean()
-    is_retention = fields.Boolean(string="Retention payment", default=False)
+    is_retention = fields.Boolean(string="IVA Retention payment", default=False)
     edit_retention_fields = fields.Boolean(default=True)
 
     voucher_date = fields.Date(
@@ -28,21 +26,16 @@ class AccountPaymentRegister(models.TransientModel):
     )
     retention_ref = fields.Char(string="Retention reference")
 
-    retention_line_ids = fields.Many2many("account.retention.line", string="Retention Lines")
+    retention_line_ids = fields.Many2many("account.retention.line")
 
     @api.onchange("is_retention")
-    def _onchange_is_retention(self):
+    def _onchange_retention(self):
         """
         Sets the journal for iva customer retentions and loads the retention lines from the
         invoices.
 
         If the payment is not a retention, we clear the retention lines and set the edit_retention
         fields to True, so the user can edit the payment fields.
-
-        If any of the invoices selected has a retention line in a draft or emitted retention, we
-        raise an error.
-
-        If any of the invoices selected doesn't have any tax line, we raise an error.
         """
         if not self.is_retention:
             return {
@@ -55,6 +48,28 @@ class AccountPaymentRegister(models.TransientModel):
         move_ids = self._context.get("active_ids", [])
         invoices = self.env["account.move"].browse(move_ids)
 
+        lines = self._load_iva_retention_lines(invoices)
+        return lines
+
+    def _load_iva_retention_lines(self, invoices):
+        """
+        Loads the retention lines from the invoices when the retention payment to register is of
+        type IVA.
+
+        If any of the invoices selected has a retention line in a draft or emitted retention, we
+        raise an error.
+
+        If any of the invoices selected doesn't have any tax line, we raise an error.
+
+        Parameters
+        ----------
+        invoices : recordset of account.move
+            The invoices to load the retention lines from.
+        Returns
+        -------
+        dict
+            The onchange values containing the lines to be loaded or the errors.
+        """
         invoices_without_taxes = invoices.filtered(
             lambda i: not any(line.tax_ids[0].amount > 0 for line in i.line_ids if line.tax_ids)
         )
@@ -127,7 +142,6 @@ class AccountPaymentRegister(models.TransientModel):
             payment.journal_id = self.env.company.iva_customer_retention_journal_id.id
             payment.compute_retention_amount_from_retention_lines()
         retention = self._create_retention(payments)
-        _logger.warning("Retention created: %s", retention.read([]))
         retention.action_post()
         return payments
 

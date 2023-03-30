@@ -84,6 +84,8 @@
 				/>
 
 				<field name="foreign_currency_rate" optional="hide"/>
+
+				<field name="state"/>
                             </tree>
                         </field>
                     </page>
