@@ -89,5 +89,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         res = super(AccountPaymentRegisterIgtf, self)._create_payments()
         for payment in res:
             if payment.journal_id.is_igtf == True and payment.is_igtf and payment.currency_id.name == "USD":
-                payment.reconciled_invoice_ids.write({'bi_igtf': payment.amount - payment.igtf_amount})
+                if payment.reconciled_invoice_ids:
+                    payment.reconciled_invoice_ids.write({'bi_igtf': payment.amount - payment.igtf_amount})
+                if payment.reconciled_bill_ids:
+                    payment.reconciled_bill_ids.write({'bi_igtf': payment.amount - payment.igtf_amount})
         return res

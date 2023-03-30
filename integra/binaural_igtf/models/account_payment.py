@@ -1,4 +1,5 @@
 from odoo import api, models, fields, _
+from odoo.exceptions import UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ class AccountPaymentIgtf(models.Model):
         compute="_compute_igtf_amount",
         store=True,
         help="IGTF Amount",
-        digits=(16, 1),
+        digits=(16, 2),
     )
 
     amount_with_igtf = fields.Float(
@@ -58,11 +59,12 @@ class AccountPaymentIgtf(models.Model):
 
     @api.depends("amount", "is_igtf")
     def _compute_igtf_amount(self):
-        if not self.igtf_amount:
-            for payment in self:
-                payment.igtf_amount = 0.0
-                if payment.is_igtf and payment.journal_id.is_igtf:
-                    payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
+        # if not self.igtf_amount:
+        for payment in self:
+            payment.igtf_amount = 0.0
+            if payment.is_igtf and payment.journal_id.is_igtf:
+                payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
+
 
     def _prepare_move_line_default_vals(self, write_off_line_vals=None):
         """Prepare values to create a new account.move.line for a payment.
@@ -75,16 +77,25 @@ class AccountPaymentIgtf(models.Model):
             dict: Values to create the account.move.line.
         """
         vals = super(AccountPaymentIgtf, self)._prepare_move_line_default_vals(write_off_line_vals)
+        igtf_account = self.env.company.account_igtf_id.id
         
         if self.is_igtf and self.igtf_amount:
             if self.payment_type == "inbound":
-                self._prepare_inbound_move_line_igtf_vals(vals)
+                vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
+                # debit line in vals
+                vals_debit = [x for x in vals if x['account_id'] != igtf_account and x['debit'] > 0]
+                
+                if not vals_igtf:
+                    self._prepare_inbound_move_line_igtf_vals(vals)    
+                else:
+                    raise UserError(_("IGTF already exists in the move line values"))
+                    # vals_debit[0].update({'debit': vals_debit[0]['debit'] + self.igtf_amount, 'amount_currency': vals_debit[0]['amount_currency'] + self.igtf_amount})
+                    # vals_igtf[0].update({'credit': self.igtf_amount, 'amount_currency': -self.igtf_amount})
 
+                
             if self.payment_type == "outbound":
                 self._prepare_outbound_move_line_igtf_vals(vals)
 
-            
-            # vals[0].update({"amount_currency": 103, "debit": self.igtf_amount})
         return vals
 
     def _create_inbound_move_line_igtf_vals(self, vals):
@@ -99,6 +110,7 @@ class AccountPaymentIgtf(models.Model):
         """
         igtf_account = self.env.company.account_igtf_id.id
         igtf_amount = self.igtf_amount
+
         vals.append(
             {
                 "name": "IGTF",
@@ -109,6 +121,8 @@ class AccountPaymentIgtf(models.Model):
                 "partner_id": self.partner_id.id,
             }
         )
+
+
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
@@ -120,9 +134,11 @@ class AccountPaymentIgtf(models.Model):
 
         Returns:
             list: list of move line values with the igtf move line values
+
         """
         igtf_account = self.env.company.account_igtf_id.id
         igtf_amount = self.igtf_amount
+        
         vals.append(
             {
                 "name": "IGTF",
@@ -133,6 +149,7 @@ class AccountPaymentIgtf(models.Model):
                 "partner_id": self.partner_id.id,
             }
         )
+       
         return vals
 
     def _prepare_inbound_move_line_igtf_vals(self, vals):
@@ -144,11 +161,23 @@ class AccountPaymentIgtf(models.Model):
         Args:
             vals (list): list of move line values
         """
+        igtf_account = self.env.company.account_igtf_id.id
+
+
         lines = [line for line in vals]
         if self.payment_type == "inbound":
             credit_line = lines[1]["credit"] - self.igtf_amount
             vals[1].update({"amount_currency": -credit_line, "credit": credit_line})
+            
+            vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
+            # if not vals_igtf:
             self._create_inbound_move_line_igtf_vals(vals)
+            # else:
+            #     _logger.warning("IGTF already exists")
+                # vals[]
+                # vals_igtf[0].update({"amount_currency": -self.igtf_amount, "credit": self.igtf_amount})
+ 
+
 
     def _prepare_outbound_move_line_igtf_vals(self, vals):
         """
@@ -159,40 +188,16 @@ class AccountPaymentIgtf(models.Model):
         Args:
             vals (list): list of move line values
         """
+        igtf_account = self.env.company.account_igtf_id.id
+
+
         lines = [line for line in vals]
         if self.payment_type == "outbound":
             debit_line = lines[1]["debit"] - self.igtf_amount
             vals[1].update({"amount_currency": debit_line, "debit": debit_line})
+            
+            vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
+            # if not vals_igtf:
             self._create_outbound_move_line_igtf_vals(vals)
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        _logger.warning("VALS LIST: %s", vals_list)
-
-        if vals_list[0]['is_igtf'] == True:
-            vals_list[0]['amount'] = 103
-            # _logger.warning("VALS LIST 11111: %s", vals_list[0]['amount'])
-        vals_list[0]['amount'] = 103
-
-        _logger.warning("VALS LIST 22222: %s", vals_list[0]['amount'])
-        # to_['amount'] = to_process[0]['create_vals']['amount'] + self.igtf_amount
-
-        res = super(AccountPaymentIgtf, self).create(vals_list)
-        igtf_account = self.env.company.account_igtf_id.id
-
-        # for payment in res:
-        #     if payment.is_igtf and payment.journal_id.is_igtf:
-        #         for line in payment.line_ids:
-        #             lines = payment.line_ids.filtered(lambda l: l.account_id.id == igtf_account)
-        #             if lines:
-        #                 if line.debit > 0:
-        #                     line.update({"debit": line.debit + payment.igtf_amount})
-                    
-            #    _logger.warning("IGTF lines: %s", lines)
-        
-        return res
-
-    def _create_paired_internal_transfer_payment(self):
-        res = super(AccountPaymentIgtf, self)._create_paired_internal_transfer_payment()
-        _logger.warning("AAAAAAAREEEEEES: %s", res)
-        return res
+            # else:
+            #     vals_igtf[0].update({"amount_currency": self.igtf_amount, "debit": self.igtf_amount})
