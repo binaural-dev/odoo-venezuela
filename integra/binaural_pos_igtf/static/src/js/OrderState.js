@@ -52,7 +52,6 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
             || repeat_payments.includes(payment.payment_method.id)) {
             return;
           }
-          console.log(payment)
           bi_igtf += round_pr(payment.amount, rounding);
           foreign_bi_igtf += round_pr(payment.foreign_amount, rounding);
           repeat_payments.push(payment.payment_method.id)
