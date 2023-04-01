@@ -1,10 +1,12 @@
 from odoo import fields, models, api, _
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    bi_igtf = fields.Monetary(string="BI IGTF", default=0.00, help="subtotal with igtf")
+    bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", store=True)
     amount_paid = fields.Monetary(string="Paid", default=0.00, help="Paid")
     amount_to_pay_igtf = fields.Monetary(
         string="IGTF Paid", default=0.00, help="IGTF Paid", compute="_compute_amount_to_pay_igtf"
@@ -39,3 +41,4 @@ class AccountMove(models.Model):
     )
     def _compute_tax_totals(self):
         return super()._compute_tax_totals()
+    

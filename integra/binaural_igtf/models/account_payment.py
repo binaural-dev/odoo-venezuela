@@ -9,7 +9,7 @@ class AccountPaymentIgtf(models.Model):
     _inherit = "account.payment"
 
     def default_is_igtf(self):
-        return self.env.company.module_binaural_base_igtf or False
+        return self.env.company.is_igtf or False
 
     def default_igtf_percentage(self):
         return self.env.company.igtf_percentage or 0.0
@@ -54,16 +54,16 @@ class AccountPaymentIgtf(models.Model):
     @api.depends("journal_id", "is_igtf")
     def _compute_is_igtf(self):
         for payment in self:
-            if payment.journal_id.is_igtf == True and payment.is_igtf:
+            if payment.journal_id.is_igtf and payment.journal_id.fiscal and payment.is_igtf:
                 payment.is_igtf_on_foreign_exchange = True
 
     @api.depends("amount", "is_igtf")
     def _compute_igtf_amount(self):
-        # if not self.igtf_amount:
-        for payment in self:
-            payment.igtf_amount = 0.0
-            if payment.is_igtf and payment.journal_id.is_igtf:
-                payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
+        if not self.igtf_amount:
+            for payment in self:
+                payment.igtf_amount = 0.0
+                if payment.is_igtf and payment.journal_id.is_igtf and payment.journal_id.fiscal:
+                    payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
 
 
     def _prepare_move_line_default_vals(self, write_off_line_vals=None):
@@ -78,23 +78,29 @@ class AccountPaymentIgtf(models.Model):
         """
         vals = super(AccountPaymentIgtf, self)._prepare_move_line_default_vals(write_off_line_vals)
         igtf_account = self.env.company.account_igtf_id.id
-        
-        if self.is_igtf and self.igtf_amount:
-            if self.payment_type == "inbound":
-                vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
-                # debit line in vals
-                vals_debit = [x for x in vals if x['account_id'] != igtf_account and x['debit'] > 0]
-                
-                if not vals_igtf:
-                    self._prepare_inbound_move_line_igtf_vals(vals)    
-                else:
-                    raise UserError(_("IGTF already exists in the move line values"))
-                    # vals_debit[0].update({'debit': vals_debit[0]['debit'] + self.igtf_amount, 'amount_currency': vals_debit[0]['amount_currency'] + self.igtf_amount})
-                    # vals_igtf[0].update({'credit': self.igtf_amount, 'amount_currency': -self.igtf_amount})
 
-                
-            if self.payment_type == "outbound":
-                self._prepare_outbound_move_line_igtf_vals(vals)
+        for payment in self:
+        
+            if payment.is_igtf and payment.igtf_amount:
+                if payment.payment_type == "inbound":
+                    vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
+                    # debit line in vals
+                    # vals_debit = [x for x in vals if x['account_id'] != igtf_account and x['debit'] > 0]
+                    
+                    if not vals_igtf:
+                        payment._prepare_inbound_move_line_igtf_vals(vals)    
+                    else:
+                        raise UserError(_("IGTF already exists in the move line values"))
+                        # vals_debit[0].update({'debit': vals_debit[0]['debit'] + self.igtf_amount, 'amount_currency': vals_debit[0]['amount_currency'] + self.igtf_amount})
+                        # vals_igtf[0].update({'credit': self.igtf_amount, 'amount_currency': -self.igtf_amount})
+
+                    
+                if payment.payment_type == "outbound":
+                    vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
+                    if not vals_igtf:
+                        payment._prepare_outbound_move_line_igtf_vals(vals)
+
+                    # payment._prepare_outbound_move_line_igtf_vals(vals)
 
         return vals
 

@@ -13,7 +13,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     _inherit = "account.payment.register"
 
     def default_is_igtf(self):
-        return self.env.company.module_binaural_base_igtf or False
+        return self.env.company.is_igtf or False
 
     def default_igtf_percentage(self):
         return self.env.company.igtf_percentage or 0.0
@@ -41,45 +41,66 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         store=True,
     )
 
+    amount_without_difference = fields.Float(
+        string="Amount without Difference",
+        compute="_compute_amount_without_difference",
+        store=True,
+    )
+
+
+    @api.depends("amount", "payment_difference")
+    def _compute_amount_without_difference(self):
+        for payment in self:
+            payment.amount_without_difference = payment.amount + payment.payment_difference
+
     @api.depends("amount", "is_igtf", "igtf_amount")
     def _compute_amount_with_igtf(self):
         for payment in self:
             payment.amount_with_igtf = payment.amount + payment.igtf_amount
-            _logging.warning("payment.amount_with_igtf: %s", payment.amount_with_igtf)
 
     @api.depends("journal_id", "is_igtf", "currency_id")
     def _compute_is_igtf(self):
         for payment in self:
-            if payment.journal_id.is_igtf == True and payment.is_igtf and payment.currency_id.name == "USD":
+            if (
+                payment.journal_id.is_igtf
+                and payment.journal_id.fiscal
+                and payment.is_igtf
+                and payment.currency_id.name == "USD"
+            ):
                 payment.is_igtf_on_foreign_exchange = True
 
     @api.depends("amount", "is_igtf")
     def _compute_igtf_amount(self):
         for payment in self:
             payment.igtf_amount = 0.0
-            if payment.is_igtf and payment.journal_id.is_igtf and payment.currency_id.name == "USD":
-                payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
-                _logging.warning("payment.igtf_amount: %s", payment.igtf_amount)
-
-                
+            if (
+                payment.is_igtf
+                and payment.journal_id.fiscal
+                and payment.journal_id.is_igtf
+                and payment.currency_id.name == "USD"
+            ):
+                payment_amount = payment.amount + payment.payment_difference
+                payment.igtf_amount = payment_amount * (payment.igtf_percentage / 100)
 
     def _init_payments(self, to_process, edit_mode=False):
-        """ Create the payments from the wizard's values.
-        IGTF fields are added to the payment values to be created. 
-        
+        """Create the payments from the wizard's values.
+        IGTF fields are added to the payment values to be created.
+
         :param to_process: A list of dicts containing the values to create the payments.
 
         :return: A list of ids of the created payments.
         """
-        to_process[0]['create_vals']['amount'] = to_process[0]['create_vals']['amount'] + self.igtf_amount
-        to_process[0]['create_vals']['igtf_amount'] = self.igtf_amount
-        to_process[0]['create_vals']['igtf_percentage'] = self.igtf_percentage
-        
+        to_process[0]["create_vals"]["amount"] = (
+            to_process[0]["create_vals"]["amount"] + self.igtf_amount
+        )
+        to_process[0]["create_vals"]["igtf_amount"] = self.igtf_amount
+        to_process[0]["create_vals"]["igtf_percentage"] = self.igtf_percentage
+
         res = super(AccountPaymentRegisterIgtf, self)._init_payments(to_process, edit_mode)
         return res
-    
+
     def _create_payments(self):
-        """ Create payment and add bi_igtf to the invoice.
+        """Create payment and add bi_igtf to the invoice.
         the bi_igtf is the amount of the payment minus the igtf amount.
         this field is used to calculate the igtf amount on the invoice on the tax widget.
 
@@ -88,9 +109,18 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         """
         res = super(AccountPaymentRegisterIgtf, self)._create_payments()
         for payment in res:
-            if payment.journal_id.is_igtf == True and payment.is_igtf and payment.currency_id.name == "USD":
+            if (
+                payment.journal_id.is_igtf == True
+                and payment.is_igtf
+                and payment.currency_id.name == "USD"
+            ):
+                payment.is_igtf_on_foreign_exchange = True
                 if payment.reconciled_invoice_ids:
-                    payment.reconciled_invoice_ids.write({'bi_igtf': payment.amount - payment.igtf_amount})
+                    payment.reconciled_invoice_ids.write(
+                        {"bi_igtf": self.amount_without_difference}
+                    )
                 if payment.reconciled_bill_ids:
-                    payment.reconciled_bill_ids.write({'bi_igtf': payment.amount - payment.igtf_amount})
+                    payment.reconciled_bill_ids.write(
+                        {"bi_igtf": self.amount_without_difference}
+                    )
         return res
