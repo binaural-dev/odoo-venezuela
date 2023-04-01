@@ -3,6 +3,7 @@ import logging
 
 from odoo import api, fields, models, _
 from odoo.osv import expression
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -15,6 +16,21 @@ class AccountMove(models.Model):
     invoice_reception_date = fields.Date(
         "Reception Date", help="Indicates when the invoice was received by the client/company"
     )
+
+    @api.onchange("invoice_line_ids")
+    def _onchange_invoice_line_ids(self):
+        """
+        Limit the number of products that can be added to the invoice
+        """
+        if self.invoice_line_ids:
+            max_product_invoice = self.company_id.max_product_invoice
+            if len(self.invoice_line_ids) > max_product_invoice:
+                raise ValidationError(
+                    _(
+                        "You can not add more than %s products to the invoice."
+                        % max_product_invoice
+                    )
+                )
 
     @api.depends("filter_partner")
     def _compute_partner_id_domain(self):
