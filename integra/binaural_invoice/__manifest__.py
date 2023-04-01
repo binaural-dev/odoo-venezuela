@@ -17,6 +17,7 @@
         "report/report_invoice_free_form.xml",
         "report/report_invoice_sale_note.xml",
         "views/account_move.xml",
+        "views/res_config_settings.xml",
         "wizard/accounting_reports_views.xml",
     ],
 
