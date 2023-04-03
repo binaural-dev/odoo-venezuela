@@ -1,0 +1,15 @@
+<odoo>
+    <data>
+        <!--heredar formulario de pickigns-->
+        <record id="view_product_brand_tree_inherited_stock_valuation" model="ir.ui.view">
+            <field name="name">product.brand.tree.stock.valuation</field>
+            <field name="model">stock.valuation.layer</field>
+            <field name="inherit_id" ref="stock_account.stock_valuation_layer_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='product_id']" position="after">
+                    <field name="brand_id"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

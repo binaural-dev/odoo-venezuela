@@ -1,0 +1,17 @@
+<odoo>
+    <data>
+        <!--Agregar campos compania en formulario de categoria de producto-->
+        <record id="binaural_marca_product_brand_inh_form" model="ir.ui.view">
+            <field name="name">Binaural_marca_product_brand_form_inh</field>
+            <field name="model">product.product</field>
+            <field name="inherit_id" ref="product.product_normal_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='categ_id']" position="before">
+                    <group>
+                        <field name="brand_id"/>         
+                    </group>
+                </xpath>
+            </field>
+        </record> 
+    </data>
+</odoo>
