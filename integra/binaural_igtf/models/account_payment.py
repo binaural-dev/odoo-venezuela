@@ -84,23 +84,19 @@ class AccountPaymentIgtf(models.Model):
             if payment.is_igtf and payment.igtf_amount:
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
-                    # debit line in vals
-                    # vals_debit = [x for x in vals if x['account_id'] != igtf_account and x['debit'] > 0]
                     
                     if not vals_igtf:
                         payment._prepare_inbound_move_line_igtf_vals(vals)    
                     else:
                         raise UserError(_("IGTF already exists in the move line values"))
-                        # vals_debit[0].update({'debit': vals_debit[0]['debit'] + self.igtf_amount, 'amount_currency': vals_debit[0]['amount_currency'] + self.igtf_amount})
-                        # vals_igtf[0].update({'credit': self.igtf_amount, 'amount_currency': -self.igtf_amount})
-
+                        
                     
                 if payment.payment_type == "outbound":
                     vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
                     if not vals_igtf:
                         payment._prepare_outbound_move_line_igtf_vals(vals)
-
-                    # payment._prepare_outbound_move_line_igtf_vals(vals)
+                    else:
+                        raise UserError(_("IGTF already exists in the move line values"))
 
         return vals
 
@@ -167,23 +163,13 @@ class AccountPaymentIgtf(models.Model):
         Args:
             vals (list): list of move line values
         """
-        igtf_account = self.env.company.account_igtf_id.id
-
 
         lines = [line for line in vals]
         if self.payment_type == "inbound":
             credit_line = lines[1]["credit"] - self.igtf_amount
-            vals[1].update({"amount_currency": -credit_line, "credit": credit_line})
-            
-            vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
-            # if not vals_igtf:
+            vals[1].update({"amount_currency": -credit_line, "credit": credit_line})    
             self._create_inbound_move_line_igtf_vals(vals)
-            # else:
-            #     _logger.warning("IGTF already exists")
-                # vals[]
-                # vals_igtf[0].update({"amount_currency": -self.igtf_amount, "credit": self.igtf_amount})
- 
-
+           
 
     def _prepare_outbound_move_line_igtf_vals(self, vals):
         """
@@ -194,16 +180,9 @@ class AccountPaymentIgtf(models.Model):
         Args:
             vals (list): list of move line values
         """
-        igtf_account = self.env.company.account_igtf_id.id
-
 
         lines = [line for line in vals]
         if self.payment_type == "outbound":
             debit_line = lines[1]["debit"] - self.igtf_amount
             vals[1].update({"amount_currency": debit_line, "debit": debit_line})
-            
-            vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
-            # if not vals_igtf:
             self._create_outbound_move_line_igtf_vals(vals)
-            # else:
-            #     vals_igtf[0].update({"amount_currency": self.igtf_amount, "debit": self.igtf_amount})

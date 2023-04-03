@@ -9,9 +9,15 @@ class AccountMoveIgtf(models.Model):
     _inherit = "account.move"
 
     def default_is_igtf(self):
-        return self.env.company.module_binaural_base_igtf or False
+        return self.env.company.is_igtf or False
 
     default_is_igtf_config = fields.Boolean(default=default_is_igtf)
+
+    def get_fields(self):
+        for move in self:
+           _logger.warning("get_fields")
+           _logger.warning(move.read())
+
 
     def js_assign_outstanding_line(self, line_id):
         res = super(AccountMoveIgtf, self).js_assign_outstanding_line(line_id)
@@ -21,11 +27,10 @@ class AccountMoveIgtf(models.Model):
         return res
 
     def js_remove_outstanding_partial(self, partial_id):
+        self._compute_tax_totals()
+        _logger.warning("Tax totals: %s" % self.tax_totals)
         partial = self.env['account.partial.reconcile'].browse(partial_id)
-        # move = self.env['account.move'].search([('id', '=', self.id)])
-        _logger.warning("MOVEEEE")
-        _logger.warning(self.bi_igtf)
-        # self.bi_igtf = self.bi_igtf - partial.amount
+        self.get_fields()
         res = super().js_remove_outstanding_partial(partial_id)
 
 

@@ -116,11 +116,13 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             ):
                 payment.is_igtf_on_foreign_exchange = True
                 if payment.reconciled_invoice_ids:
-                    payment.reconciled_invoice_ids.write(
-                        {"bi_igtf": self.amount_without_difference}
-                    )
+                    payment.reconciled_invoice_ids.bi_igtf = self.amount_without_difference
+                    # write(
+                    #     {"bi_igtf": self.amount_without_difference}
+                    # )
                 if payment.reconciled_bill_ids:
-                    payment.reconciled_bill_ids.write(
-                        {"bi_igtf": self.amount_without_difference}
-                    )
+                    payment.reconciled_bill_ids.bi_igtf = self.amount_without_difference
+                    # write(
+                    #     {"bi_igtf": self.amount_without_difference}
+                    # )
         return res
