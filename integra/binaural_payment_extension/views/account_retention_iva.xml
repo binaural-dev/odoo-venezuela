@@ -8,12 +8,19 @@
             <field name="arch" type="xml">
                 <form string="Retention">
                     <header>
-	                <button name="action_draft" type="object" states="cancel" string="Convertir a Borrador" />
-                        <button name="action_post" type="object" states="draft" string="Validar" class="oe_highlight"/>
-                        <button name="action_cancel" type="object" states="emitted" string="Anular" confirm="¿Esta seguro que quiere anular este comprabante? Se revertiran los asientos contables asociados" />
+	                <button name="action_draft" type="object" states="cancel" string="Convert to draft"/>
+                        <button name="action_post" type="object" states="draft" string="Approve" class="oe_highlight"/>
+                        <button name="action_cancel" type="object" states="emitted" string="Cancel" confirm="Are you sure you want to cancel this voucher? The associated accounting entries will be reversed"/>
                         <field name="state" widget="statusbar" nolabel="1"/>
                     </header>
                     <group colspan="4" col="4">
+			<!-- Invisible fields -->
+			<field name="original_lines_per_invoice_counter" invisible="1"/>
+			<field name="base_currency_is_vef"/>
+			<field name="company_currency_id" invisible="1"/>
+			<field name="foreign_currency_id" invisible="1"/>
+
+                        <field name="type_retention" invisible="1"/>
                         <field name="type" force_save="1" select="2"/>
                         <field name="partner_id" on_change="onchange_partner_id(type,partner_id)" select="1"  attrs="{'invisible':[('type','=', False)],'readonly':[('state','in',['emitted','cancel'])]}"/>
                         <field name="date_accounting" select="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
@@ -23,24 +30,108 @@
                         <field name="date" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
                     </group>
                     <notebook>
-                	<page name="Retention line">
+                	<page name="retention_lines" string="Retention Lines">
                             <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Retention Lines" editable="bottom">
+				    <!-- Invisible fields -->
+                                    <field name="invoice_type" invisible="1"/>
+				    <field name="company_currency_id" invisible="1"/>
+				    <field name="foreign_currency_id" invisible="1"/>
+
                                     <field name="name"/>
 				    <field name="move_id"/>
-                                    <field name="invoice_total" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                    <field name="invoice_amount" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                    <field name="iva_amount" force_save="1" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
                                     <field name="aliquot"/>
-                                    <field name="retention_amount"/>
 				    <field name="related_percentage_tax_base" optional="hide"/>
-				    <field name="foreign_currency_rate" optional="hide"/>"
-				    <field name="foreign_invoice_amount" optional="hide"/>"
-				    <field name="foreign_iva_amount" optional="hide"/>"
-				    <field name="foreign_invoice_total" optional="hide"/>"
-                                    <field name="foreign_retention_amount" optional="hide"/>
+				    <!-- Amounts -->
+				    <field
+					name="invoice_total"
+					widget="monetary"
+					options="{'currency_field': 'company_currency_id'}"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				    />
+				    <field
+					name="invoice_amount"
+					widget="monetary"
+					options="{'currency_field': 'company_currency_id'}"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				    />
+				    <field
+					name="iva_amount"
+					widget="monetary"
+					options="{'currency_field': 'company_currency_id'}"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				    />
+				    <field
+					name="retention_amount"
+					widget="monetary"
+					options="{'currency_field': 'company_currency_id'}"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				    />
+				    <!-- Foreign Amounts -->
+				    <field
+					name="foreign_invoice_amount"
+					widget="monetary"
+					options="{'currency_field': 'foreign_currency_id'}"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				    />
+				    <field
+					name="foreign_iva_amount"
+					widget="monetary"
+					options="{'currency_field': 'foreign_currency_id'}"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				    />
+				    <field
+					name="foreign_invoice_total"
+					widget="monetary"
+					options="{'currency_field': 'foreign_currency_id'}"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				    />
+				    <field
+					name="foreign_retention_amount"
+					widget="monetary"
+					options="{'currency_field': 'foreign_currency_id'}"
+					attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				    />
+
+				    <field name="foreign_currency_rate" optional="hide"/>
                                 </tree>
                             </field>
+
+			    <group col="2" colspan="2" attrs="{'invisible': [('base_currency_is_vef', '=', False)]}">
+				<field
+				    name="total_invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
+				<field
+				    name="total_iva_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
+				<field
+				    name="total_retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
+		    	    </group>
+
+			    <group col="2" colspan="2" attrs="{'invisible': [('base_currency_is_vef', '=', True)]}">
+				<field
+				    name="foreign_total_invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+				<field 
+				    name="foreign_total_iva_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+				<field
+				    name="foreign_total_retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+			    </group>
                         </page>
                         <page name="Payments" string="payments">
                             <field name="payment_ids" nolabel="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}" >
@@ -87,15 +178,15 @@
             <field name="model">account.retention</field>
             <field name="arch" type="xml">
                 <search string="IVA Retention">
-                    <field name="number" string="Número" filter_domain="[('number','ilike',self)]"/>
-                    <field name="partner_id" string="Razón Social" filter_domain="[('partner_id','ilike',self)]"/>
-                    <field name="date" string="Fecha de Comprobante" filter_domain="[('date','ilike',self)]"/>
+                    <field name="number" string="Number" filter_domain="[('number','ilike',self)]"/>
+                    <field name="partner_id" string="Business Name" filter_domain="[('partner_id','ilike',self)]"/>
+                    <field name="date" string="Vocher date" filter_domain="[('date','ilike',self)]"/>
                     <field name="date_accounting" string="Fecha Contable" filter_domain="[('date_accounting','ilike',self)]"/>
                     <!-- <field name="retention_line" string="Factura" filter_domain="[('retention_line.invoice_id.name','ilike',self)]"/> -->
 
                     <group expand="0" string="Group By">
-                        <filter name="group_state" string="Estatus" domain="[]" context="{'group_by':'state'}"/>
-                        <filter name="group_partner" string="Razón social" domain="[]" context="{'group_by':'partner_id'}"/>
+                        <filter name="group_state" string="State" domain="[]" context="{'group_by':'state'}"/>
+                        <filter name="group_partner" string="Business Name" domain="[]" context="{'group_by':'partner_id'}"/>
                         <filter name="group_date_accounting" string="Fecha Contable" domain="[]" context="{'group_by':'date_accounting'}"/>
                     </group>
                 </search>

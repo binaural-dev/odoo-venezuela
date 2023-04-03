@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 from lxml import etree
 import logging
 
@@ -219,7 +220,7 @@ class AccountMove(models.Model):
         for move in self:
             move.foreign_taxable_income = False
             if move.is_invoice() and move.invoice_line_ids:
-                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"] 
+                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"]
 
     @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):
@@ -228,7 +229,6 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.foreign_total_billed = 0
-            _logger.warning(move.tax_totals)
             if move.invoice_line_ids and move.is_invoice(include_receipts=True):
                 move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
 
@@ -261,7 +261,9 @@ class AccountMove(models.Model):
         """
         Add the foreign rate and foreign inverse rate to the context of the action_register_payment.
         """
+        if len(set(self.mapped("foreign_rate"))) > 1:
+            raise UserError(_("You can only register payments for one foreign rate at a time."))
         res = super().action_register_payment()
-        res["context"]["default_foreign_rate"] = self.foreign_rate
-        res["context"]["default_foreign_inverse_rate"] = self.foreign_inverse_rate
+        res["context"]["default_foreign_rate"] = self[0].foreign_rate
+        res["context"]["default_foreign_inverse_rate"] = self[0].foreign_inverse_rate
         return res

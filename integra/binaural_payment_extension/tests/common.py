@@ -11,6 +11,8 @@ class AccountRetentionTestCommon(AccountTestInvoicingCommon):
         foreign_currency_ref="base.USD",
     ):
         super().setUpClass(chart_template_ref=chart_template_ref)
+        # super().setUpClass()
+
 
         base_currency = cls.env.ref(base_currency_ref)
         foreign_currency = cls.env.ref(foreign_currency_ref)
@@ -18,6 +20,50 @@ class AccountRetentionTestCommon(AccountTestInvoicingCommon):
             {
                 "currency_id": base_currency.id,
                 "currency_foreign_id": foreign_currency.id,
+            }
+        )
+
+        cls.partner_a = cls.env["res.partner"].create(
+            {
+                "name": "partner_a",
+                "prefix_vat": "J",
+                "vat": "123456789",
+                "taxpayer_type": "formal",
+                "type_person_id": cls.env.ref("binaural_payment_extension.type_person_three_binaural_payment_extension").id,
+
+            }
+        )
+
+        cls.partner_b = cls.env["res.partner"].create(
+            {
+                "name": "partner_b",
+                "prefix_vat": "J",
+                "vat": "22233344",
+                "taxpayer_type": "formal",
+                "type_person_id": cls.env.ref("binaural_payment_extension.type_person_three_binaural_payment_extension").id,
+
+            }
+        )
+
+        cls.journal_sale = cls.env["account.journal"].create(
+            {
+                "name": "Journal Sale",
+                "code": "JPUR",
+                "refund_sequence": True,
+                "type": "purchase",
+                "company_id": cls.company_data["company"].id,
+                "fiscal": True,
+            }
+        )
+
+        cls.journal_nofiscal = cls.env["account.journal"].create(
+            {
+                "name": "Journal No Fiscal",
+                "code": "JNOFISCAL",
+                "refund_sequence": True,
+                "type": "purchase",
+                "company_id": cls.company_data["company"].id,
+                "fiscal": False,
             }
         )
 
@@ -86,3 +132,27 @@ class AccountRetentionTestCommon(AccountTestInvoicingCommon):
         cls.tax_purchase_d.write(
             {"amount": 31, "tax_group_id": cls.tax_group_d.id, "name": "IVA 31%"}
         )
+
+
+        cls.account_move = cls.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "journal_id": cls.journal_sale.id,
+                "partner_id": cls.partner_b.id,
+                "foreign_currency_id": cls.company_data["company"].currency_foreign_id.id,
+                "foreign_rate": 20,
+                "foreign_inverse_rate": 0.05,
+                "invoice_line_ids": [
+                     Command.create(
+                        {
+                            "product_id": cls.product_a.id,
+                            "quantity": 1,
+                            "price_unit": 100,
+                            "tax_ids": [Command.link(cls.tax_purchase_a.id)],
+                        }
+                    ),
+                ],
+            }
+        )
+        cls.account_move.action_post()
+                

@@ -1,12 +1,24 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class AccountMoveRetention(models.Model):
     _inherit = "account.move"
+
+    company_currency_id = fields.Many2one(
+        "res.currency",
+        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_id,
+    )
+    foreign_currency_id = fields.Many2one(
+        "res.currency",
+        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_foreign_id,
+    )
+    base_currency_is_vef = fields.Boolean(
+        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
+    )
 
     apply_islr_retention = fields.Boolean(
         string="Apply ISLR Retention?",
@@ -44,21 +56,14 @@ class AccountMoveRetention(models.Model):
         track_visibility="onchange",
     )
 
-    def action_register_payment(self):
-        """
-        Override the action_register_payment method to add the invoice lines to the payment register.
-        """
-        res = super().action_register_payment()
-        if self.move_type in ["out_invoice", "out_refund", "in_invoice", "in_refund"]:
-            res["context"]["default_retention_line_ids"] = (
-                self.invoice_line_ids
-                if self.invoice_line_ids.filtered(
-                    lambda x: x.tax_ids.filtered(lambda y: y.tax_group_id.name == "IVA")
-                )
-                else False
+
+    def _compute_currency_fields(self):
+        for retention in self:
+            retention.company_currency_id = self.env.company.currency_id.id
+            retention.foreign_currency_id = self.env.company.currency_foreign_id.id
+            retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
+                "base.VEF"
             )
-            res["context"]["default_retention_type"] = self.move_type
-        return res
 
     def action_post(self):
         """
@@ -68,20 +73,17 @@ class AccountMoveRetention(models.Model):
         Retention = self.env["account.retention"]
         for move in self:
             if move.retention_islr_line_ids and move.move_type == "in_invoice":
-                self._validate_amount_islr_retention()
+                self._validate_islr_retention()
                 retention = Retention.create_retention(move, ("islr", "in_invoice"))
                 retention.action_post()
 
             if move.retention_islr_line_ids and move.move_type == "in_refund":
-                self._validate_amount_islr_retention()
+                self._validate_islr_retention()
                 retention = Retention.create_retention(move, ("islr", "in_refund"))
                 retention.action_post()
 
             if move.generate_iva_retention:
-                if not any(
-                    move.invoice_line_ids.mapped("tax_ids").filtered(lambda x: x.amount > 0)
-                ):
-                    raise UserError(_('The invoice "%s"has no tax.'), move.name)
+                self._validate_iva_retention()
                 retention = Retention.create_retention(move, ("iva", move.move_type))
                 if move.move_type not in ("in_invoice", "in_refund"):
                     continue
@@ -89,19 +91,52 @@ class AccountMoveRetention(models.Model):
                 move.iva_voucher_number = retention.number
         return res
 
-    def _validate_amount_islr_retention(self):
-        for move in self:
-            islr_retention = move.retention_islr_line_ids
-            sum_invoice_amount = sum(islr_retention.mapped("invoice_amount"))
-            if sum_invoice_amount > move.tax_totals["amount_untaxed"]:
-                raise UserError(
-                    _(
-                        "The amount of the retention is greater than the total amount of the invoice."
-                    )
-                )
-            if sum_invoice_amount <= 0:
-                raise UserError(_("The amount of the retention must be greater than zero."))
-            if not move.journal_id.fiscal:
-                raise UserError(_("The journal must be fiscal"))
-            if not move.partner_id.type_person_id:
-                raise UserError(_("The partner must have a type of person"))
+    def _validate_islr_retention(self):
+        """
+        Validate that the company has a journal for ISLR supplier retention, the partner a type of
+        person, the amount of the retention is greater than zero and that the journal of the
+        invoice is fiscal, in order for the ISLR retention to be created.
+        """
+        self.ensure_one()
+        if not self.env.company.islr_supplier_retention_journal_id:
+            raise UserError(_("The company must have a journal for ISLR supplier retention."))
+        islr_retention = self.retention_islr_line_ids
+        sum_invoice_amount = sum(islr_retention.mapped("foreign_invoice_amount"))
+        if sum_invoice_amount > self.tax_totals["foreign_amount_untaxed"]:
+            raise UserError(
+                _("The amount of the retention is greater than the total amount of the invoice.")
+            )
+        if not self.partner_id.type_person_id:
+            raise UserError(_("The partner must have a type of person"))
+        if sum_invoice_amount <= 0:
+            raise UserError(_("The amount of the retention must be greater than zero."))
+        if not self.journal_id.fiscal:
+            raise UserError(_("The journal must be fiscal"))
+
+    def _validate_iva_retention(self):
+        """
+        Validate that the company has a journal for IVA supplier retention, the invoice has at
+        least one tax and that the journal of the invoice is fiscal, in order for the IVA retention
+        to be created.
+        """
+        self.ensure_one()
+        if not self.env.company.iva_supplier_retention_journal_id:
+            raise UserError(_("The company must have a journal for IVA supplier retention."))
+        if not any(self.invoice_line_ids.mapped("tax_ids").filtered(lambda x: x.amount > 0)):
+            raise UserError(_('The invoice "%s"has no tax.'), self.name)
+        if not self.journal_id.fiscal:
+            raise UserError(_("The journal must be fiscal"))
+
+    def action_register_payment(self):
+        """
+        Override the action_register_payment method to send the is_out_invoice context to the
+        payment wizard.
+
+        This is used to know if the invoice is an outgoing invoice, in order to know if the
+        option to create a retention should be displayed in the payment wizard.
+        """
+        res = super().action_register_payment()
+        res["context"]["default_is_out_invoice"] = any(
+            self.filtered(lambda i: i.move_type in ("out_invoice", "out_refund"))
+        )
+        return res

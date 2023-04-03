@@ -17,9 +17,12 @@
                         <field name="foreign_currency_id" invisible='1'/>
 			<field
 			    name="foreign_inverse_rate"
-			    groups="base.group_no_one"
+			    invisible="1"
 			    string="Foreign inverse rate"
 			/>
+			<t groups="base.group_no_one">
+			    <field name="foreign_inverse_rate"/>
+			</t>
                         <field name="foreign_rate"/>
                         <field name="tax_totals" 
                             widget="account-tax-foreign-totals-field" 

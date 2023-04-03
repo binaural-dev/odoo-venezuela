@@ -440,17 +440,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "bottom": True
         })
 
-        merge_format = workbook.add_format({
-            'bold': 1,
-            'border': 1,
-            'align': 'center',
-            'valign': 'vcenter',
-            'fg_color': 'gray'
-        })
-
-        worksheet.set_column(0, 29, 20)
-        worksheet.set_column(5, 5, 40)
-
+        # header xml
         worksheet.merge_range(
             "D1:F1",
             f"{self.company_id.name} - {self.company_id.vat}",
@@ -496,218 +486,25 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 )
 
         for count, line in enumerate(sale_book_lines):
-            row = init_row + count + 1
-            col = init_col
+            row = init_row + count + 1 
+            col = init_col + count 
 
-            if row % 2 == 0:
-                color = "b8cce4"
-            else:
-                color = "dbe5f1"
-
-            dic_format_base = {
-                "fg_color": color,
-                "border": 1
-            }
-
-            dic_format_extend = {
-                "fg_color": color,
-                "border": 1,
-                "num_format": "#,##0.00"
-            }
-
-            format_1 = workbook.add_format(dic_format_base)
-            format_2 = workbook.add_format(dic_format_extend)
-
-            worksheet.write(row, col, line["operation_number"], format_1)
-            worksheet.write(row, col + 1, line["document_date"], format_1)
-            worksheet.write(row, col + 2, line["vat"], format_1)
-            worksheet.write(row, col + 3, line["partner_name"], format_1)
-            worksheet.write(row, col + 4, line["move_type"], format_1)
-            worksheet.write(row, col + 5, line["document_number"], format_1)
-            worksheet.write(row, col + 6, line["correlative"], format_1)
-            worksheet.write(row, col + 7, line["transaction_type"], format_1)
-            worksheet.write(
-                row,
-                col + 8,
-                line["number_invoice_affected"],
-                format_1
-            )
-            worksheet.write(row, col + 9, line["total_sales_iva"], format_2)
-            worksheet.write(
-                row,
-                col + 10,
-                line["total_sales_not_iva"],
-                format_2
-            )
-            worksheet.write(row, col + 11, line.get("tax_base_16"), format_2)
-            worksheet.write(row, col + 12, line.get("IVA16%"), format_1)
-            worksheet.write(row, col + 13, line.get("aliquot_16"), format_2)
-            worksheet.write(row, col + 14, line.get("tax_base_8"), format_2)
-            worksheet.write(row, col + 15, line.get("IVA8%"), format_1)
-            worksheet.write(row, col + 16, line.get("aliquot_8"), format_2)
-            worksheet.write(row, col + 17, "", format_1)
-            worksheet.write(row, col + 18, "", format_1)
-            worksheet.write(row, col + 19, "", format_1)
-
-            history_row = row
-
-        row_total = history_row + 1
-
-        format_col_total = workbook.add_format({
-            "num_format": "#,##0.00",
-            "fg_color": "4f81bd",
-        })
-
-        only_color_format = workbook.add_format({"fg_color": "4f81bd"})
-
-        is_totals_cols = ["J", "K", "L", "N", "O", "Q"]
-        is_full_cols_total = [
-            "A",
-            "B",
-            "C",
-            "D",
-            "E",
-            "F",
-            "G",
-            "H",
-            "I",
-            "J",
-            "K",
-            "L",
-            "M",
-            "N",
-            "O",
-            "P",
-            "Q",
-            "R",
-            "S",
-            "T"
-        ]
-
-        for index, column in enumerate(is_full_cols_total):
-            is_first_col = index == 0
-            if is_first_col:
-                worksheet.write(row_total, index, "Total", only_color_format)
-                continue
-
-            is_column_total = column in is_totals_cols
-            if is_column_total:
-                worksheet.write_formula(
-                    f"{column}{row_total + 1}",
-                    f"=SUM({column}{init_row + 2}:{column}{history_row + 1})",
-                    format_col_total
-                )
-                continue
-
-            worksheet.write(row_total, index, "", only_color_format)
-
-        resume_row_init = history_row + 4
-
-        worksheet.merge_range(
-            f"A{resume_row_init}:B{resume_row_init}",
-            "Resumen",
-            merge_format
-        )
-
-        worksheet.merge_range(
-            f"C{resume_row_init}:D{resume_row_init}",
-            "Facturas/Notas de Débito",
-            merge_format
-        )
-
-        worksheet.merge_range(
-            f"E{resume_row_init}:F{resume_row_init}",
-            "Notas de Crédito",
-            merge_format
-        )
-
-        worksheet.merge_range(
-            f"G{resume_row_init}:H{resume_row_init}",
-            "Total Neto",
-            merge_format
-        )
-
-        worksheet.write(
-            resume_row_init,
-            0,
-            "",
-            merge_format
-        )
-        worksheet.write(
-            resume_row_init,
-            1,
-            "Débitos Fiscales",
-            merge_format
-        )
-        worksheet.write(
-            resume_row_init,
-            2,
-            "Base Imponible",
-            merge_format
-        )
-        worksheet.write(
-            resume_row_init,
-            3,
-            "Débito Fiscal",
-            merge_format
-        )
-        worksheet.write(
-            resume_row_init,
-            4,
-            "Base Imponible",
-            merge_format
-        )
-        worksheet.write(
-            resume_row_init,
-            5,
-            "Débito Fiscal",
-            merge_format
-        )
-        worksheet.write(
-            resume_row_init,
-            6,
-            "Base Imponible",
-            merge_format
-        )
-        worksheet.write(
-            resume_row_init,
-            7,
-            "Débito Fiscal",
-            merge_format
-        )
-
-        resume_book = self._resume_sale_book_fields(row_total)
-
-        for count, resume_row in enumerate(resume_book):
-            number = count + 1
-            row_resume = resume_row_init + number
-            if number % 2 == 0:
-                color = "b8cce4"
-            else:
-                color = "dbe5f1"
-
-            dic_format_extend = {
-                "fg_color": color,
-                "border": 1,
-                "num_format": "#,##0.00"
-            }
-
-            base_format = {
-                "fg_color": color,
-                "border": 1
-            }
-
-            format = workbook.add_format(dic_format_extend)
-            format_base = workbook.add_format(base_format)
-
-            worksheet.write(row_resume, 0, number, format_base)
-            worksheet.write(row_resume, 1, resume_row["name"], format)
-            worksheet.write(row_resume, 2, resume_row["fac_calc"], format)
-            worksheet.write(row_resume, 3, resume_row["fac_debit_fiscal"], format)
-            worksheet.write(row_resume, 4, resume_row["nc_calc"], format)
-            worksheet.write(row_resume, 5, resume_row["nc_debit_fiscal"], format)
-            worksheet.write(row_resume, 6, resume_row["tn_calc"], format)
-            worksheet.write(row_resume, 7, resume_row["tn_debit_fiscal"], format)
+            worksheet.write(row, col, line.get("operation_number"))
+            worksheet.write(row, col + 1, line.get("document_date"))
+            worksheet.write(row, col + 2, line.get("partner_name"))
+            worksheet.write(row, col + 3, line.get("type"))
+            worksheet.write(row, col + 4, line.get("vat"))
+            worksheet.write(row, col + 5, line.get("correlative"))
+            worksheet.write(row, col + 6, line.get("document_number"))
+            worksheet.write(row, col + 7, line.get("number_invoice_affected"))
+            worksheet.write(row, col + 8, line.get("total_sales_iva"))
+            worksheet.write(row, col + 9, line.get("total_sales_not_iva"))
+            worksheet.write(row, col + 10, line.get("IVA8%"))
+            worksheet.write(row, col + 11, line.get("IVA16%"))
+            worksheet.write(row, col + 12, line.get("tax_base_8"))
+            worksheet.write(row, col + 13, line.get("tax_base_16"))
+            worksheet.write(row, col + 14, line.get("aliquot_8"))
+            worksheet.write(row, col + 15, line.get("aliquot_16"))
 
         workbook.close()
         return file.getvalue()
