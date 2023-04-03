@@ -97,22 +97,24 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "document_number": move.name,
                 "move_type": self._determinate_type(move.move_type),
                 "transaction_type": self._determinate_transaction_type(move),
-                "number_invoice_affected": move.reversed_entry_id.name or "",
-                "correlative": move.correlative or "",
-                "IVA8%": "8",
-                "IVA16%": "16",
-                "IVA31%": "31",
-                "total_purchases_iva": taxes.get("amount_taxed") or 0,
-                "total_purchases_not_iva": taxes.get("amount_untaxed") or 0,
-                "aliquot_8": taxes.get("aliquot_8") or 0,
-                "aliquot_16": taxes.get("aliquot_16") or 0,
-                "aliquot_31": taxes.get("aliquot_31") or 0,
-                "tax_base_8": taxes.get("tax_base_8") or 0,
-                "tax_base_16": taxes.get("tax_base_16") or 0,
-                "tax_base_31": taxes.get("tax_base_31") or 0,
+                "number_invoice_affected": move.reversed_entry_id.name,
+                "correlative": move.correlative,
+                "reduced_aliquot": 0.08,
+                "extend_aliquot": 0.31,
+                "general_aliquot": 0.16,
+                "total_purchases_iva": taxes.get("amount_taxed") or "",
+                "total_purchases_not_iva": taxes.get("amount_exempt_aliquot") or "",
+                "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot") or "",
+                "amount_general_aliquot": taxes.get("amount_general_aliquot") or "",
+                "amount_extend_aliquot": taxes.get("amount_extend_aliquot") or "",
+                "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot") or "",
+                "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot") or "",
+                "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot") or "",
             }
 
             purchase_book_lines.append(purchase_book_line)
+
+        _logger.info(moves)
 
         return purchase_book_lines
 
@@ -233,48 +235,60 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "field": "number_invoice_affected",
             },
             {
-                "name": "Total ventas con IVA",
+                "name": "Total compras con IVA",
                 "field": "total_purchases_iva",
+                "format": "number",
             },
             {
-                "name": "Total ventas exentas",
+                "name": "Total compras exentas",
                 "field": "total_purchases_not_iva",
+                "format": "number",
+            },
+
+            {
+                "name": "Base imponible (16%)",
+                "field": "tax_base_general_aliquot",
+                "format": "number",
             },
             {
-                "name": "IVA 8%",
-                "field": "reduced_aliquot",
+                "name": "Alicuota (16%)",
+                "field": "general_aliquot",
+                "format": "percent",
             },
             {
                 "name": "IVA 16%",
-                "field": "general_aliquot",
-            },
-            {
-                "name": "IVA 31%",
-                "field": "extend_aliquot",
+                "field": "amount_general_aliquot",
+                "format": "number",
             },
             {
                 "name": "Base imponible (8%)",
                 "field": "tax_base_reduced_aliquot",
+                "format": "number",
             },
             {
-                "name": "Base imponible (16%)",
-                "field": "tax_base_general_aliquot",
+                "name": "Alicuota (8%)",
+                "field": "reduced_aliquot",
+                "format": "percent",
+            },
+            {
+                "name": "IVA 8%",
+                "field": "amount_reduced_aliquot",
+                "format": "number",
             },
             {
                 "name": "Base imponible (31%)",
                 "field": "tax_base_extend_aliquot",
-            },
-            {
-                "name": "Alicuota (8%)",
-                "field": "amount_reduced_aliquot",
-            },
-            {
-                "name": "Alicuota (16%)",
-                "field": "amount_general_aliquot",
+                "format": "number",
             },
             {
                 "name": "Alicuota (31%)",
+                "field": "extend_aliquot",
+                "format": "percent",
+            },
+            {
+                "name": "IVA 31%",
                 "field": "amount_extend_aliquot",
+                "format": "number",
             },
             {
                 "name": "Fecha Retencion",
@@ -294,7 +308,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain = []
         is_purchase = self.report == "purchase"
 
-        field_date = "invoice_date" if is_purchase else "date"
+        field_date = "date" if is_purchase else "invoice_date"
 
         if current_company_id:
             search_domain += [("company_id", "=", current_company_id)]
@@ -545,28 +559,21 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         sale_book_lines = self.parse_sale_book_data()
         file = BytesIO()
 
-        workbook = xlsxwriter.Workbook(file, {
-            "in_memory": True, "nan_inf_to_errors": True
-        })
-
+        workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
         worksheet = workbook.add_worksheet()
 
-        cell_bold = workbook.add_format({
-            "bold": True,
-            "center_across": True,
-            "text_wrap": True,
-            "bottom": True
-        })
+        # cell formats
+        cell_bold = workbook.add_format(
+            {"bold": True, "center_across": True, "text_wrap": True, "bottom": True}
+        )
+        cell_number = workbook.add_format({"num_format": "#,##0.00"})
+        cell_bold_abstract = workbook.add_format({"bold": True})
 
         # header xml
         worksheet.merge_range(
             "D1:F1",
             f"{self.company_id.name} - {self.company_id.vat}",
-            workbook.add_format({
-                "bold": True,
-                "center_across": True,
-                "font_size": 18
-            }),
+            workbook.add_format({"bold": True, "center_across": True, "font_size": 18}),
         )
         worksheet.merge_range("D2:F2", "Libro de Ventas", cell_bold)
         worksheet.merge_range(
@@ -654,19 +661,26 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         )
 
         tax_base = tax_totals.get(is_currency_system)
+        _logger.warning("tax_base: %s", tax_base)
 
         for base in tax_base.items():
             taxes = base[1]
 
             for tax in taxes:
                 tax_name = tax.get("tax_group_name")
+                is_exempt = tax_name == "IVA 0%"
+                if is_exempt:
+                    tax_result.update({
+                        "tax_base_exempt_aliquot": tax.get("tax_group_base_amount"),
+                        "amount_exempt_aliquot": tax.get("tax_group_amount"),
+                    })
 
                 is_8 = tax_name == "IVA 8%"
                 if is_8:
                     tax_result.update(
                         {
-                            "tax_base_8": tax.get("tax_group_base_amount"),
-                            "aliquot_8": tax.get("tax_group_amount"),
+                            "tax_base_reduced_aliquot": tax.get("tax_group_base_amount"),
+                            "amount_reduced_aliquot": tax.get("tax_group_amount"),
                         }
                     )
 
@@ -676,39 +690,48 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 if is_16:
                     tax_result.update(
                         {
-                            "tax_base_16": tax.get("tax_group_base_amount"),
-                            "aliquot_16": tax.get("tax_group_amount"),
+                            "tax_base_general_aliquot": tax.get("tax_group_base_amount"),
+                            "amount_general_aliquot": tax.get("tax_group_amount"),
+                        }
+                    )
+
+                    continue
+
+                is_31 = tax_name == "IVA 31%"
+                if is_31:
+                    tax_result.update(
+                        {
+                            "tax_base_extend_aliquot": tax.get("tax_group_base_amount"),
+                            "amount_extend_aliquot": tax.get("tax_group_amount"),
                         }
                     )
 
         return tax_result
 
     def generate_purchases_book(self):
-        sale_book_lines = self.parse_sale_book_data()
+        purchase_book_lines = self.parse_purchase_book_data()
         file = BytesIO()
 
-        workbook = xlsxwriter.Workbook(file, {
-            "in_memory": True, "nan_inf_to_errors": True
-        })
-
+        workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
         worksheet = workbook.add_worksheet()
 
-        cell_bold = workbook.add_format({
-            "bold": True,
-            "center_across": True,
-            "text_wrap": True,
-            "bottom": True
-        })
+        # cell formats
+        cell_bold = workbook.add_format(
+            {"bold": True, "center_across": True, "text_wrap": True, "bottom": True}
+        )
+        # cell_number = workbook.add_format({"num_format": "#,##0.00"})
+        # cell_percent = workbook.add_format({"num_format": "0.00%"})
+        # cell_bold_abstract = workbook.add_format({"bold": True})
+        cell_formats = {
+            "number": workbook.add_format({"num_format": "#,##0.00"}),
+            "percent": workbook.add_format({"num_format": "0.00%"})
+        }
 
         # header xml
         worksheet.merge_range(
             "D1:F1",
             f"{self.company_id.name} - {self.company_id.vat}",
-            workbook.add_format({
-                "bold": True,
-                "center_across": True,
-                "font_size": 18
-            }),
+            workbook.add_format({"bold": True, "center_across": True, "font_size": 18}),
         )
         worksheet.merge_range("D2:F2", "Libro de Compras", cell_bold)
         worksheet.merge_range(
@@ -727,16 +750,13 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 _logger.info(index)
                 worksheet.set_column(index, index, field.get("size"))
             worksheet.merge_range(6, index, 7, index, field.get("name"), cell_bold)
-            for index_line, line in enumerate(sale_book_lines):
+            for index_line, line in enumerate(purchase_book_lines):
+                cell_format = None
                 if field["field"] == "index":
                     worksheet.write(8 + index_line, index, index_line + 1)
                 else:
-                    if field.get("number"):
-                        worksheet.write(
-                            8 + index_line, index, line.get(field["field"]), cell_number
-                        )
-                    else:
-                        worksheet.write(8 + index_line, index,  line.get(field["field"]))
+                    cell_format = cell_formats.get(field.get("format"), workbook.add_format())
+                    worksheet.write(8 + index_line, index, line.get(field["field"]), cell_format)
 
         workbook.close()
         return file.getvalue()
