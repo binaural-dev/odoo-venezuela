@@ -171,6 +171,9 @@ class AccountRetention(models.Model):
         "in_refund". If the retention is of type "out_invoice", the allowed move types are
         "out_invoice" and "out_refund".
 
+        In any case the moves must be posted, must be of the same company as the retention and must
+        have a fiscal journal (this last one if it's not a municipal retention).
+
         This is used to filter the moves that can be selected in the retention lines for each type
         of retention (ISLR and municipal).
         """
@@ -181,14 +184,16 @@ class AccountRetention(models.Model):
                 else ("out_invoice", "out_refund")
             )
 
-            retention.allowed_lines_move_ids = self.env["account.move"].search(
-                [
-                    ("company_id", "=", self.env.company.id),
-                    ("state", "=", "posted"),
-                    ("partner_id", "=", retention.partner_id.id),
-                    ("move_type", "in", allowed_types),
-                ]
-            )
+            domain = [
+                ("company_id", "=", self.env.company.id),
+                ("state", "=", "posted"),
+                ("partner_id", "=", retention.partner_id.id),
+                ("move_type", "in", allowed_types),
+            ]
+            if retention.type_retention != "municipal":
+                domain.append(("fiscal", "=", True))
+
+            retention.allowed_lines_move_ids = self.env["account.move"].search(domain)
 
     @api.depends(
         "retention_line_ids.invoice_amount",
@@ -248,6 +253,7 @@ class AccountRetention(models.Model):
             ("state", "=", "posted"),
             ("move_type", "in", ("in_refund", "in_invoice")),
             ("amount_residual", ">", 0),
+            ("fiscal", "=", True),
         ]
         invoices_with_taxes = search_invoices_with_taxes(
             self.env["account.move"], search_domain

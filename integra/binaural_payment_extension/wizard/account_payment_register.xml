@@ -12,6 +12,9 @@
 		<field name="foreign_rate" position="attributes">
 		    <attribute name="attrs">{'readonly': [('edit_retention_fields', '=', False)]}</attribute>
 		</field>
+		<field name="journal_id" position="before">
+                    <field name="is_retention" attrs="{'invisible': [('is_out_invoice', '=', False)]}"/>
+		</field>
 
                 <group name="group2" position="after">
 		    <!-- Invisible fields -->
@@ -19,10 +22,6 @@
 		    <field name="base_currency_is_vef" invisible="1"/>
 		    <field name="is_out_invoice" invisible="1"/>
 
-		    <div attrs="{'invisible': [('is_out_invoice', '=', False)]}">
-		    	<label for="is_retention"/>
-                    	<field name="is_retention"/>
-	    	    </div>
 
 		    <div attrs="{'invisible':[('is_retention', '=', False)]}">
 			<label for="voucher_date"/>

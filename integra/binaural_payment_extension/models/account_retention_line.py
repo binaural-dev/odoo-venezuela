@@ -1,7 +1,5 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
-import logging
-_logger = logging.getLogger(__name__)
 
 
 class AccountRetentionLine(models.Model):
@@ -235,7 +233,6 @@ class AccountRetentionLine(models.Model):
             or (l.retention_id.type_retention == "islr" and l.retention_id.type == "in_invoice")
         )
         for record in islr_supplier_retention_lines:
-            _logger.warning("ON compute retention")
             foreign_rate = record.move_id.foreign_rate
             if not foreign_rate:
                 foreign_rate = 1
@@ -301,8 +298,6 @@ class AccountRetentionLine(models.Model):
             lambda l: (not l.retention_id and l.economic_activity_id)
             or l.retention_id.type_retention == "municipal"
         ):
-            _logger.warning("ON onchange municipal invoice amount")
-            _logger.warning("economic activity: %s", record.economic_activity_id)
             record.retention_amount = record.invoice_amount * record.aliquot / 100
             record.foreign_retention_amount = record.foreign_invoice_amount * record.aliquot / 100
 

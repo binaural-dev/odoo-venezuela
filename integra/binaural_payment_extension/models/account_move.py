@@ -82,19 +82,18 @@ class AccountMoveRetention(models.Model):
             if move.move_type not in ("in_invoice", "in_refund"):
                 continue
 
-            if move.retention_islr_line_ids:
+            if move.retention_islr_line_ids and move.fiscal:
                 move._validate_islr_retention()
                 retention = move._create_supplier_retention("islr")
                 retention.action_post()
                 move.islr_voucher_number = retention.number
 
             if move.retention_municipal_line_ids:
-                # move._validate_islr_retention()
                 retention = move._create_supplier_retention("municipal")
                 retention.action_post()
                 move.islr_voucher_number = retention.number
 
-            if move.generate_iva_retention:
+            if move.generate_iva_retention and move.fiscal:
                 move._validate_iva_retention()
                 retention = move._create_supplier_retention("iva")
                 retention.action_post()
@@ -104,8 +103,8 @@ class AccountMoveRetention(models.Model):
     def _validate_islr_retention(self):
         """
         Validate that the company has a journal for ISLR supplier retention, the partner a type of
-        person, the amount of the retention is greater than zero and that the journal of the
-        invoice is fiscal, in order for the ISLR retention to be created.
+        person and that the amount of the retention is greater than zero, in order for the ISLR
+        retention to be created.
         """
         self.ensure_one()
         if not self.env.company.islr_supplier_retention_journal_id:
@@ -120,22 +119,26 @@ class AccountMoveRetention(models.Model):
             raise UserError(_("The partner must have a type of person"))
         if sum_invoice_amount <= 0:
             raise UserError(_("The amount of the retention must be greater than zero."))
-        if not self.journal_id.fiscal:
-            raise UserError(_("The journal must be fiscal"))
 
     def _validate_iva_retention(self):
         """
-        Validate that the company has a journal for IVA supplier retention, the invoice has at
-        least one tax and that the journal of the invoice is fiscal, in order for the IVA retention
-        to be created.
+        Validate that the company has a journal for IVA supplier retention and that the invoice has
+        at least one tax, in order for the IVA retention to be created.
         """
         self.ensure_one()
         if not self.env.company.iva_supplier_retention_journal_id:
             raise UserError(_("The company must have a journal for IVA supplier retention."))
         if not any(self.invoice_line_ids.mapped("tax_ids").filtered(lambda x: x.amount > 0)):
             raise UserError(_('The invoice "%s"has no tax.'), self.name)
-        if not self.journal_id.fiscal:
-            raise UserError(_("The journal must be fiscal"))
+
+    def _validate_municipal_retention(self):
+        """
+        Validate that the company has a journal for municipal supplier retention in order for the
+        municipal retention to be created.
+        """
+        self.ensure_one()
+        if not self.env.company.municipal_supplier_retention_journal_id:
+            raise UserError(_("The company must have a journal for municipal supplier retention."))
 
     @api.model
     def _create_supplier_retention(self, type_retention):
