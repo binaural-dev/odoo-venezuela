@@ -7,14 +7,15 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", store=True)
-    amount_paid = fields.Monetary(string="Paid", default=0.00, help="Paid", store=True)
+    bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", store=True, copy=False)
+    amount_paid = fields.Monetary(string="Paid", default=0.00, help="Paid", store=True, copy=False)
     amount_to_pay_igtf = fields.Monetary(
         string="IGTF Paid",
         default=0.00,
         help="IGTF Paid",
         compute="_compute_amount_to_pay_igtf",
         store=True,
+        copy=False,
     )
 
     amount_residual_igtf = fields.Monetary(
@@ -22,6 +23,7 @@ class AccountMove(models.Model):
         default=0.00,
         help="IGTF Residual",
         compute="_compute_amount_residual_igtf",
+        copy=False,
     )
 
     @api.depends("tax_totals")
