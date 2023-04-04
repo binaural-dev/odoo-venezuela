@@ -81,7 +81,7 @@ class AccountPaymentIgtf(models.Model):
 
         for payment in self:
         
-            if payment.is_igtf and payment.igtf_amount:
+            if payment.is_igtf and payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x['account_id'] == igtf_account]
                     

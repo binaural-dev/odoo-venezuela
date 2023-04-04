@@ -13,35 +13,51 @@ class AccountMoveIgtf(models.Model):
 
     default_is_igtf_config = fields.Boolean(default=default_is_igtf)
 
-    def get_fields(self):
-        for move in self:
-           _logger.warning("get_fields")
-           _logger.warning(move.read())
+    def remove_igtf_from_move(self, partial_id):
+        """Remove IGTF from move
 
+        this method is called when a partial reconciliation is removed from the reconciliation widget
+        search for the partial reconciliation and remove the IGTF from the move if it is a payment
+
+        :param partial_id: id of the partial reconciliation to remove
+        :type partial_id: int
+        """
+        partial = self.env["account.partial.reconcile"].browse(partial_id)
+
+        payment_credit = partial.credit_move_id.payment_id
+        payment_debit = partial.debit_move_id.payment_id
+
+        move_credit = partial.credit_move_id.payment_id.reconciled_invoice_ids
+        move_debit = partial.debit_move_id.payment_id.reconciled_invoice_ids
+
+        reverse_move_credit = partial.credit_move_id.payment_id.reconciled_bill_ids
+        reverse_move_debit = partial.debit_move_id.payment_id.reconciled_bill_ids
+
+        if payment_credit.is_igtf and payment_credit.is_igtf_on_foreign_exchange and move_credit:
+            amount = partial.credit_move_id.payment_id.amount
+            move_credit.write({"bi_igtf": move_credit.bi_igtf - amount})
+
+        if payment_debit.is_igtf and payment_debit.is_igtf_on_foreign_exchange and move_debit:
+            amount = partial.debit_move_id.payment_id.amount
+            move_debit.write({"bi_igtf": move_debit.bi_igtf - amount})
+
+        if (
+            payment_credit.is_igtf
+            and payment_credit.is_igtf_on_foreign_exchange
+            and reverse_move_credit
+        ):
+            amount = partial.credit_move_id.payment_id.amount
+            reverse_move_credit.write({"bi_igtf": reverse_move_credit.bi_igtf - amount})
+
+        if (
+            payment_debit.is_igtf
+            and payment_debit.is_igtf_on_foreign_exchange
+            and reverse_move_debit
+        ):
+            amount = partial.debit_move_id.payment_id.amount
+            reverse_move_debit.write({"bi_igtf": reverse_move_debit.bi_igtf - amount})
 
     def js_remove_outstanding_partial(self, partial_id):
-        partial = self.env['account.partial.reconcile'].browse(partial_id)
-        
-        if partial.credit_move_id.payment_id.reconciled_invoice_ids:
-            move = partial.credit_move_id.payment_id.reconciled_invoice_ids
-            amount = partial.credit_move_id.payment_id.amount - partial.credit_move_id.payment_id.igtf_amount
-            move.write({'bi_igtf': move.bi_igtf - amount})
-
-        if partial.debit_move_id.payment_id.reconciled_invoice_ids:
-            move = partial.debit_move_id.payment_id.reconciled_invoice_ids
-            amount = partial.debit_move_id.payment_id.amount - partial.debit_move_id.payment_id.igtf_amount
-            move.write({'bi_igtf': move.bi_igtf - amount})
-
-        if partial.credit_move_id.payment_id.reconciled_bill_ids:
-            move = partial.credit_move_id.payment_id.reconciled_bill_ids
-            amount = partial.credit_move_id.payment_id.amount - partial.credit_move_id.payment_id.igtf_amount
-            move.write({'bi_igtf': move.bi_igtf - amount})
-
-        if partial.debit_move_id.payment_id.reconciled_bill_ids:
-            move = partial.debit_move_id.payment_id.reconciled_bill_ids
-            amount = partial.debit_move_id.payment_id.amount - partial.debit_move_id.payment_id.igtf_amount
-            move.write({'bi_igtf': move.bi_igtf - amount})
+        self.remove_igtf_from_move(partial_id)
         res = super().js_remove_outstanding_partial(partial_id)
-
         return res
-    
