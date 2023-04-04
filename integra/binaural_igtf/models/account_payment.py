@@ -59,11 +59,11 @@ class AccountPaymentIgtf(models.Model):
 
     @api.depends("amount", "is_igtf")
     def _compute_igtf_amount(self):
-        if not self.igtf_amount:
             for payment in self:
-                payment.igtf_amount = 0.0
-                if payment.is_igtf and payment.journal_id.is_igtf and payment.journal_id.fiscal:
-                    payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
+                if not payment.igtf_amount:
+                    payment.igtf_amount = 0.0
+                    if payment.is_igtf and payment.journal_id.is_igtf and payment.journal_id.fiscal:
+                        payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
 
 
     def _prepare_move_line_default_vals(self, write_off_line_vals=None):
@@ -123,8 +123,6 @@ class AccountPaymentIgtf(models.Model):
                 "partner_id": self.partner_id.id,
             }
         )
-
-
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
