@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "16.0",
+    "version": "16.1",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -41,6 +41,7 @@
         "views/account_retention_line.xml",
         "views/account_retention_iva.xml",
         "views/account_retention_islr.xml",
+        "views/account_retention_municipal.xml",
         "views/account_payment.xml",
         "views/res_partner.xml",
         "views/account_move.xml",

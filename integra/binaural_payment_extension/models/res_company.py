@@ -25,3 +25,14 @@ class ResCompany(models.Model):
         string="Journal for Customer I.S.L.R Retentions",
         domanin="[('fiscal', '=', True)]",
     )
+
+    municipal_supplier_retention_journal_id = fields.Many2one(
+        "account.journal",
+        string="Journal for Supplier Municipal Retentions",
+        domanin="[('fiscal', '=', True)]",
+    )
+    municipal_customer_retention_journal_id = fields.Many2one(
+        "account.journal",
+        string="Journal for Customer Municipal Retentions",
+        domanin="[('fiscal', '=', True)]",
+    )

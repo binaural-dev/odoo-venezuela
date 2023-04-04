@@ -17,3 +17,10 @@ class ResConfigSettings(models.TransientModel):
     islr_customer_retention_journal_id = fields.Many2one(
         related="company_id.islr_customer_retention_journal_id", readonly=False
     )
+
+    municipal_supplier_retention_journal_id = fields.Many2one(
+        related="company_id.municipal_supplier_retention_journal_id", readonly=False
+    )
+    municipal_customer_retention_journal_id = fields.Many2one(
+        related="company_id.municipal_customer_retention_journal_id", readonly=False
+    )
