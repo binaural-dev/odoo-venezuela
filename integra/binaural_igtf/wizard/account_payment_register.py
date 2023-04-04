@@ -47,11 +47,12 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         store=True,
     )
 
-
     @api.depends("amount", "payment_difference")
     def _compute_amount_without_difference(self):
         for payment in self:
-            payment.amount_without_difference = payment.amount + payment.payment_difference
+            payment.amount_without_difference = payment.amount
+            if payment.payment_difference < 0:
+                payment.amount_without_difference = payment.amount + payment.payment_difference
 
     @api.depends("amount", "is_igtf", "igtf_amount")
     def _compute_amount_with_igtf(self):
@@ -69,7 +70,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             ):
                 payment.is_igtf_on_foreign_exchange = True
 
-    @api.depends("amount", "is_igtf")
+    @api.onchange("amount")
+    @api.depends("amount", "is_igtf", "amount_without_difference")
     def _compute_igtf_amount(self):
         for payment in self:
             payment.igtf_amount = 0.0
@@ -79,8 +81,13 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 and payment.journal_id.is_igtf
                 and payment.currency_id.name == "USD"
             ):
-                payment_amount = payment.amount + payment.payment_difference
+                payment_amount = payment.amount
+                if payment.payment_difference < 0:
+                    _logging.warning("payment.payment_difference < 0")
+                    payment_amount = payment.amount + payment.payment_difference                    
                 payment.igtf_amount = payment_amount * (payment.igtf_percentage / 100)
+                _logging.warning("payment.igtf_amount")
+                _logging.warning(payment.igtf_amount)
 
     def _init_payments(self, to_process, edit_mode=False):
         """Create the payments from the wizard's values.
@@ -116,13 +123,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             ):
                 payment.is_igtf_on_foreign_exchange = True
                 if payment.reconciled_invoice_ids:
-                    payment.reconciled_invoice_ids.bi_igtf = self.amount_without_difference
-                    # write(
-                    #     {"bi_igtf": self.amount_without_difference}
-                    # )
+                    payment.reconciled_invoice_ids.bi_igtf += self.amount_without_difference
+               
                 if payment.reconciled_bill_ids:
-                    payment.reconciled_bill_ids.bi_igtf = self.amount_without_difference
-                    # write(
-                    #     {"bi_igtf": self.amount_without_difference}
-                    # )
+                    payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference
+                   
         return res

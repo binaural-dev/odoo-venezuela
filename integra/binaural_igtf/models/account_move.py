@@ -19,20 +19,29 @@ class AccountMoveIgtf(models.Model):
            _logger.warning(move.read())
 
 
-    def js_assign_outstanding_line(self, line_id):
-        res = super(AccountMoveIgtf, self).js_assign_outstanding_line(line_id)
-        _logger.warning("js_assign_outstanding_line")
-        _logger.warning(res)
-        _logger.warning(self.bi_igtf)
-        return res
-
     def js_remove_outstanding_partial(self, partial_id):
-        self._compute_tax_totals()
-        _logger.warning("Tax totals: %s" % self.tax_totals)
         partial = self.env['account.partial.reconcile'].browse(partial_id)
-        self.get_fields()
-        res = super().js_remove_outstanding_partial(partial_id)
+        
+        if partial.credit_move_id.payment_id.reconciled_invoice_ids:
+            move = partial.credit_move_id.payment_id.reconciled_invoice_ids
+            amount = partial.credit_move_id.payment_id.amount - partial.credit_move_id.payment_id.igtf_amount
+            move.write({'bi_igtf': move.bi_igtf - amount})
 
+        if partial.debit_move_id.payment_id.reconciled_invoice_ids:
+            move = partial.debit_move_id.payment_id.reconciled_invoice_ids
+            amount = partial.debit_move_id.payment_id.amount - partial.debit_move_id.payment_id.igtf_amount
+            move.write({'bi_igtf': move.bi_igtf - amount})
+
+        if partial.credit_move_id.payment_id.reconciled_bill_ids:
+            move = partial.credit_move_id.payment_id.reconciled_bill_ids
+            amount = partial.credit_move_id.payment_id.amount - partial.credit_move_id.payment_id.igtf_amount
+            move.write({'bi_igtf': move.bi_igtf - amount})
+
+        if partial.debit_move_id.payment_id.reconciled_bill_ids:
+            move = partial.debit_move_id.payment_id.reconciled_bill_ids
+            amount = partial.debit_move_id.payment_id.amount - partial.debit_move_id.payment_id.igtf_amount
+            move.write({'bi_igtf': move.bi_igtf - amount})
+        res = super().js_remove_outstanding_partial(partial_id)
 
         return res
     

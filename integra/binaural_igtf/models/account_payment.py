@@ -123,8 +123,6 @@ class AccountPaymentIgtf(models.Model):
                 "partner_id": self.partner_id.id,
             }
         )
-
-
         return vals
 
     def _create_outbound_move_line_igtf_vals(self, vals):
