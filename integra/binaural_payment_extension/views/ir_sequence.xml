@@ -16,5 +16,13 @@
             <field name="view_mode">form</field>
             <field name="res_id" ref="sequence_islr_retention"/>
         </record>
+
+        <record id="ir_sequence_form_municipal" model="ir.actions.act_window">
+            <field name="name">Sequences_municipal</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">ir.sequence</field>
+            <field name="view_mode">form</field>
+            <field name="res_id" ref="sequence_municipal_retention"/>
+        </record>
     </data>
 </odoo>

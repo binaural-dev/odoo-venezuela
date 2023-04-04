@@ -1,5 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class AccountRetentionLine(models.Model):
@@ -8,7 +10,9 @@ class AccountRetentionLine(models.Model):
 
     check_company = True
 
-    name = fields.Char(string="Description", required=True, default="ISLR Retention")
+    name = fields.Char(
+        string="Description", required=True, compute="_compute_name", store=True, readonly=False
+    )
     company_id = fields.Many2one(
         "res.company",
         string="Company",
@@ -58,6 +62,14 @@ class AccountRetentionLine(models.Model):
 
     payment_concept_id = fields.Many2one(
         "payment.concept", "Payment concept", ondelete="cascade", index=True
+    )
+    economic_activity_id = fields.Many2one(
+        "economic.activity",
+        ondelete="cascade",
+        compute="_compute_economic_activity_id",
+        readonly=False,
+        store=True,
+        index=True,
     )
 
     payment_id = fields.Many2one("account.payment", "Payment", index=True)
@@ -111,6 +123,37 @@ class AccountRetentionLine(models.Model):
     foreign_retention_amount = fields.Float()
     foreign_currency_rate = fields.Float(string="Rate", tracking=True)
 
+    @api.depends("retention_id.type_retention", "move_id")
+    def _compute_name(self):
+        for record in self:
+            if record.name:
+                continue
+            names = {
+                "islr": _("ISLR Retention"),
+                "iva": _("IVA Retention"),
+                "municipal": _("Municipal Retention"),
+            }
+            type_retention = "islr"
+            if record.retention_id.type_retention:
+                type_retention = record.retention_id.type_retention
+            elif record.move_id:
+                if record in record.move_id.retention_iva_line_ids:
+                    type_retention = "iva"
+                elif record in record.move_id.retention_municipal_line_ids:
+                    type_retention = "municipal"
+
+            record.name = names.get(type_retention, _("Retention"))
+
+    @api.depends("retention_id", "move_id")
+    def _compute_economic_activity_id(self):
+        for line in self:
+            if line.economic_activity_id:
+                continue
+            if line.retention_id and line.retention_id.type_retention == "municipal":
+                line.economic_activity_id = line.retention_id.partner_id.economic_activity_id
+            if line.move_id and line.id in line.move_id.retention_municipal_line_ids.ids:
+                line.economic_activity_id = line.move_id.partner_id.economic_activity_id
+
     def unlink(self):
         for record in self:
             record.payment_id.unlink()
@@ -145,7 +188,7 @@ class AccountRetentionLine(models.Model):
                     record.related_amount_subtract_fees = line.tariff_id.amount_subtract
                     record.foreign_currency_rate = record.move_id.foreign_rate
 
-                    if record.retention_id.type == "in_invoice":
+                    if not record.retention_id or record.retention_id.type == "in_invoice":
                         # We don't want this fields to be computed when the retention is
                         # created from a customer invoice since they are filled by the user.
                         record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
@@ -188,10 +231,11 @@ class AccountRetentionLine(models.Model):
         base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
 
         islr_supplier_retention_lines = self.filtered(
-            lambda l: not l.retention_id
+            lambda l: (not l.retention_id and l.payment_concept_id)
             or (l.retention_id.type_retention == "islr" and l.retention_id.type == "in_invoice")
         )
         for record in islr_supplier_retention_lines:
+            _logger.warning("ON compute retention")
             foreign_rate = record.move_id.foreign_rate
             if not foreign_rate:
                 foreign_rate = 1
@@ -214,6 +258,54 @@ class AccountRetentionLine(models.Model):
                 * (record.related_percentage_fees / 100)
             ) - record.related_amount_subtract_fees
 
+    @api.onchange("economic_activity_id", "move_id")
+    def onchange_economic_activity_id(self):
+        """
+        Computes the aliquot of the line when the economic activity is changed for the retentions
+        of municipal type.
+        """
+        municipal_retention_lines_with_economic_activity_and_invoice = self.filtered(
+            lambda l: (
+                not l.retention_id
+                or (
+                    l.retention_id.type_retention == "municipal"
+                    and l.retention_id.type == "in_invoice"
+                )
+            )
+            and l.economic_activity_id
+            and l.move_id
+        )
+
+        for record in municipal_retention_lines_with_economic_activity_and_invoice:
+            if not record.retention_id or record.retention_id.type == "in_invoice":
+                # We don't want this fields to be computed when the retention is
+                # created from a customer invoice since they are filled by the user.
+                record.invoice_amount = record.move_id.tax_totals["amount_untaxed"]
+                record.foreign_invoice_amount = record.move_id.tax_totals["foreign_amount_untaxed"]
+
+            record.invoice_total = record.move_id.tax_totals["amount_total"]
+            record.foreign_invoice_total = record.move_id.tax_totals["foreign_amount_total"]
+            record.foreign_currency_rate = record.move_id.foreign_rate
+
+            record.aliquot = record.economic_activity_id.aliquot
+            record.retention_amount = record.invoice_amount * record.aliquot / 100
+            record.foreign_retention_amount = record.foreign_invoice_amount * record.aliquot / 100
+
+    @api.onchange("invoice_amount", "foreign_invoice_amount", "aliquot")
+    def onchange_municipal_invoice_amount(self):
+        """
+        Computes the retention amount when the invoice amount or the aliquot are changed for the
+        retentions of municipal type.
+        """
+        for record in self.filtered(
+            lambda l: (not l.retention_id and l.economic_activity_id)
+            or l.retention_id.type_retention == "municipal"
+        ):
+            _logger.warning("ON onchange municipal invoice amount")
+            _logger.warning("economic activity: %s", record.economic_activity_id)
+            record.retention_amount = record.invoice_amount * record.aliquot / 100
+            record.foreign_retention_amount = record.foreign_invoice_amount * record.aliquot / 100
+
     @api.onchange("retention_amount", "invoice_amount")
     def onchange_retention_amount(self):
         """
@@ -228,11 +320,10 @@ class AccountRetentionLine(models.Model):
         if self.env.context.get("noonchange", False):
             return
         for line in self.filtered(
-            lambda l: (not l.retention_id and l.invoice_type in ("out_invoice", "out_refund"))
-            or l.retention_id.type == "out_invoice"
+            lambda l: not l.retention_id or l.retention_id.type == "out_invoice"
         ):
             self.env.context = self.with_context(noonchange=True).env.context
-            if line.retention_id.type_retention == "islr":
+            if not line.retention_id or line.retention_id.type_retention in ("islr", "municipal"):
                 line.update(
                     {
                         "foreign_invoice_amount": line.invoice_amount
@@ -260,10 +351,9 @@ class AccountRetentionLine(models.Model):
         if self.env.context.get("noonchange", False):
             return
         for line in self.filtered(
-            lambda l: (not l.retention_id and l.invoice_type in ("out_invoice", "out_refund"))
-            or l.retention_id.type == "out_invoice"
+            lambda l: not l.retention_id or l.retention_id.type == "out_invoice"
         ):
-            if line.retention_id.type_retention == "islr":
+            if not line.retention_id or line.retention_id.type_retention in ("islr", "municipal"):
                 line.update(
                     {
                         "invoice_amount": line.foreign_invoice_amount

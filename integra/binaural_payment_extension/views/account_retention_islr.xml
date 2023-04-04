@@ -21,7 +21,7 @@
 			<field name="base_currency_is_vef" invisible="1"/>
 			<field name="company_currency_id" invisible="1"/>
 			<field name="foreign_currency_id" invisible="1"/>
-			<field name="islr_lines_allowed_move_types" invisible="1"/>
+			<field name="allowed_lines_move_ids" invisible="1"/>
 
                         <field name="type" force_save="1" select="2"/>
                         <field name="type_retention" force_save="1" select="2" invisible="1"/>
@@ -36,10 +36,10 @@
                         <page name="retention_lines" string="Retention Lines">
                             <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}">
                                 <tree editable="bottom">
-                                <field name="name" readonly="1"/>
+                                <field name="name" readonly="1" force_save="1"/>
 				<field
 				    name="move_id"
-				    domain="[('move_type', 'in', parent.islr_lines_allowed_move_types), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"
+				    domain="[('id', 'in', parent.allowed_lines_move_ids)]"
 				/>
                                 <field name="payment_concept_id" force_save="1"/>
                                 <field name="is_retention_client" invisible="1"/>

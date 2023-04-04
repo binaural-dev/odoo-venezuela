@@ -13,6 +13,7 @@ class AccountPayment(models.Model):
         [
             ("iva", "IVA"),
             ("islr", "ISLR"),
+            ("municipal", "Municipal"),
         ],
     )
     retention_id = fields.Many2one("account.retention", ondelete="cascade")

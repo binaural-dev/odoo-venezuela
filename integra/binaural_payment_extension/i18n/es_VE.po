@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230327\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230403\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-30 15:54+0000\n"
-"PO-Revision-Date: 2023-03-30 15:54+0000\n"
+"POT-Creation-Date: 2023-04-03 21:14+0000\n"
+"PO-Revision-Date: 2023-04-03 21:14+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -275,6 +275,11 @@ msgid "Aliquot"
 msgstr "Alícuota"
 
 #. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__allowed_lines_move_ids
+msgid "Allowed Lines Move"
+msgstr "Apuntes permitidas"
+
+#. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__related_amount_subtract_fees
 msgid "Amount subtract tariffs"
 msgstr "Sustraendo"
@@ -294,12 +299,14 @@ msgstr "Aplica retención de Impuesto sobre la renta"
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_form_binaural_payment_extension
 msgid "Approve"
 msgstr "Aprobar"
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_form_binaural_payment_extension
 msgid ""
 "Are you sure you want to cancel this voucher? The associated accounting "
 "entries will be reversed"
@@ -333,6 +340,7 @@ msgstr ""
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_search_binaural_payment_extension
 msgid "Business Name"
 msgstr "Razón Social"
 
@@ -350,6 +358,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.library_rent_wizard_form
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_form_binaural_payment_extension
 msgid "Cancel"
 msgstr "Anular"
 
@@ -426,6 +435,7 @@ msgstr "Contacto"
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_form_binaural_payment_extension
 msgid "Convert to draft"
 msgstr "Convertir a borrador"
 
@@ -515,6 +525,12 @@ msgid "Default Account"
 msgstr "Cuenta predeterminada"
 
 #. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_partner__economic_activity_id
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_users__economic_activity_id
+msgid "Default Economic Activity"
+msgstr "Actividad económica predeterminada"
+
+#. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__name
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__name
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_accumulated_fees__name
@@ -556,6 +572,7 @@ msgstr "Borrador"
 
 #. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_economic_activity
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__economic_activity_id
 msgid "Economic Activity"
 msgstr "Actividad Económica"
 
@@ -616,18 +633,6 @@ msgid "Error in the fees percentage field"
 msgstr "Error en el campo de porcentaje de tarifas"
 
 #. module: binaural_payment_extension
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_partner__exempt_islr
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_users__exempt_islr
-msgid "Exempt ISLR"
-msgstr "Exento de ISLR"
-
-#. module: binaural_payment_extension
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_partner__exempt_iva
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_users__exempt_iva
-msgid "Exempt IVA"
-msgstr "Exento de IVA"
-
-#. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_islr_customer
 msgid "Fact Nro"
 msgstr ""
@@ -644,6 +649,7 @@ msgstr ""
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_search_binaural_payment_extension
 msgid "Fecha Contable"
 msgstr ""
 
@@ -717,7 +723,7 @@ msgstr "Total retención alterno"
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__check_foreign_currency
 msgid "Foreign currency"
-msgstr ""
+msgstr "Moneda alterna"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__foreign_invoice_amount
@@ -750,6 +756,7 @@ msgstr "Generar TXT"
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_search_binaural_payment_extension
 msgid "Group By"
 msgstr "Agrupar por"
 
@@ -789,8 +796,11 @@ msgid "ISLR Account"
 msgstr "Cuenta de Retención de ISLR"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_islr_client
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_islr_supplier
+#, python-format
 msgid "ISLR Retention"
 msgstr "Retención de ISLR"
 
@@ -822,13 +832,6 @@ msgid "ISLR Retentions"
 msgstr "Retenciones de ISLR"
 
 #. module: binaural_payment_extension
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_bank_statement_line__islr_voucher_number
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_move__islr_voucher_number
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_payment__islr_voucher_number
-msgid "ISLR Voucher Number"
-msgstr "Comprobante de Retención de ISLR"
-
-#. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__iva_amount
 #: model:ir.model.fields.selection,name:binaural_payment_extension.selection__account_payment__payment_type_retention__iva
 #: model:ir.model.fields.selection,name:binaural_payment_extension.selection__account_retention__type_retention__iva
@@ -842,10 +845,13 @@ msgid "IVA Account"
 msgstr "Cuenta de Retención IVA"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_iva_client
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_iva_supplier
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_search_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_type_withholding_search_binaural_payment_extension
+#, python-format
 msgid "IVA Retention"
 msgstr "Retención de IVA"
 
@@ -880,13 +886,6 @@ msgstr "Porcentaje de retención de IVA"
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.account_move_form_binaural_payment_extension
 msgid "IVA Retentions"
 msgstr "Retenciones de IVA"
-
-#. module: binaural_payment_extension
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_bank_statement_line__iva_voucher_number
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_move__iva_voucher_number
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_payment__iva_voucher_number
-msgid "IVA Voucher Number"
-msgstr "Comprobante de Retención de IVA"
 
 #. module: binaural_payment_extension
 #: model:ir.actions.act_window,name:binaural_payment_extension.action_type_withholding
@@ -986,11 +985,25 @@ msgid "Islr Retention"
 msgstr "Retención de ISLR"
 
 #. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_bank_statement_line__islr_voucher_number
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_move__islr_voucher_number
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_payment__islr_voucher_number
+msgid "Islr Voucher Number"
+msgstr "Comprobante de Retención de ISLR"
+
+#. module: binaural_payment_extension
 #. odoo-python
 #: code:addons/binaural_payment_extension/models/account_retention.py:0
 #, python-format
 msgid "Iva Retention"
 msgstr "Retención de IVA"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_bank_statement_line__iva_voucher_number
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_move__iva_voucher_number
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_payment__iva_voucher_number
+msgid "Iva Voucher Number"
+msgstr "Comprobante de Retención de IVA"
 
 #. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_account_journal
@@ -1015,6 +1028,12 @@ msgid "Journal for Customer I.V.A Retentions"
 msgstr "Diario para Retenciones de I.V.A de Clientes"
 
 #. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_company__municipal_customer_retention_journal_id
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_config_settings__municipal_customer_retention_journal_id
+msgid "Journal for Customer Municipal Retentions"
+msgstr "Diario para Retenciones Municipales de Clientes"
+
+#. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_res_company__islr_supplier_retention_journal_id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_res_config_settings__islr_supplier_retention_journal_id
 msgid "Journal for Supplier I.S.L.R Retentions"
@@ -1025,6 +1044,12 @@ msgstr "Diario para Retenciones de I.S.L.R de Proveedores"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_res_config_settings__iva_supplier_retention_journal_id
 msgid "Journal for Supplier I.V.A Retentions"
 msgstr "Diario para Retenciones de I.V.A de Proveedores"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_company__municipal_supplier_retention_journal_id
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_config_settings__municipal_supplier_retention_journal_id
+msgid "Journal for Supplier Municipal Retentions"
+msgstr "Diario para Retenciones Municipales de Proveedores"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention____last_update
@@ -1096,10 +1121,55 @@ msgid "Monthly Taxable Minimum"
 msgstr "Mínimo Tributable Mensual"
 
 #. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:binaural_payment_extension.selection__account_payment__payment_type_retention__municipal
+#: model:ir.model.fields.selection,name:binaural_payment_extension.selection__account_retention__type_retention__municipal
+msgid "Municipal"
+msgstr ""
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
+#: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_municipal_client
+#: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_municipal_supplier
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_search_binaural_payment_extension
+#, python-format
+msgid "Municipal Retention"
+msgstr "Retención Municipal"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:binaural_payment_extension.action_retention_municipal_client
+msgid "Municipal Retention Clients"
+msgstr "Retenciones Municipales de Clientes"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_bank_statement_line__retention_municipal_line_ids
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_move__retention_municipal_line_ids
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_payment__retention_municipal_line_ids
+msgid "Municipal Retention Lines"
+msgstr "Líneas de Retención Municipal"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:binaural_payment_extension.action_retention_municipal_supplier
+msgid "Municipal Retention Suppliers"
+msgstr "Retenciones Municipales de Proveedores"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.account_move_form_binaural_payment_extension
+msgid "Municipal Retentions"
+msgstr "Retenciones Municipales"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_bank_statement_line__municipal_voucher_number
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_move__municipal_voucher_number
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_payment__municipal_voucher_number
+msgid "Municipal Voucher Number"
+msgstr "Comprobante de Retención Municipal"
+
+#. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__municipality_id
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_master_configuration_municipality
 msgid "Municipality"
-msgstr "Municipalidad"
+msgstr "Municipio"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_withholding_type__name
@@ -1128,6 +1198,7 @@ msgstr ""
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_search_binaural_payment_extension
 msgid "Number"
 msgstr "Número"
 
@@ -1224,6 +1295,7 @@ msgstr "Tipo de pago de Retención"
 #: model:ir.model.fields,help:binaural_payment_extension.field_account_retention__payment_ids
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_form_binaural_payment_extension
 msgid "Payments"
 msgstr "Pagos"
 
@@ -1306,6 +1378,8 @@ msgid "Retained tax"
 msgstr "Tarifa Retenida"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
 #: model:ir.model,name:binaural_payment_extension.model_account_retention
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_payment__retention_id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__retention_id
@@ -1313,6 +1387,9 @@ msgstr "Tarifa Retenida"
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_tree_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_tree_binaural_payment_extension
+#, python-format
 msgid "Retention"
 msgstr "Retención"
 
@@ -1338,6 +1415,7 @@ msgstr "Linea de Retención"
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_account_retention_line_tree_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_form_binaural_payment_extension
 msgid "Retention Lines"
 msgstr "Lineas de Retención"
 
@@ -1370,7 +1448,6 @@ msgstr "Nro de Comprobante"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,help:binaural_payment_extension.field_account_retention__retention_line_ids
-#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.res_partner_binaural_payment_extension
 msgid "Retentions"
 msgstr "Retenciones"
 
@@ -1404,6 +1481,11 @@ msgid "Sequence IVA"
 msgstr "Secuencia de IVA"
 
 #. module: binaural_payment_extension
+#: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_municipal_sequence
+msgid "Sequence Municipal"
+msgstr "Secuencia de Municipal"
+
+#. module: binaural_payment_extension
 #: model:ir.actions.act_window,name:binaural_payment_extension.ir_sequence_form_islr
 msgid "Sequences_islr"
 msgstr "Secuencia de ISLR"
@@ -1412,6 +1494,11 @@ msgstr "Secuencia de ISLR"
 #: model:ir.actions.act_window,name:binaural_payment_extension.ir_sequence_form_iva
 msgid "Sequences_iva"
 msgstr "Secuencia de IVA"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:binaural_payment_extension.ir_sequence_form_municipal
+msgid "Sequences_municipal"
+msgstr ""
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_signature_config__signature
@@ -1450,6 +1537,7 @@ msgstr "Inicio"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__state
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__state
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_search_binaural_payment_extension
 msgid "State"
 msgstr "Estado"
 
@@ -1484,18 +1572,6 @@ msgstr "Aplica Sustraendo"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention__amount_subtract
 msgid "Subtract mount"
 msgstr "Monto Sustraendo"
-
-#. module: binaural_payment_extension
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_partner__supplier_islr_account
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_users__supplier_islr_account
-msgid "Supplier ISLR Account"
-msgstr "Cuenta de ISLR para Proveedor"
-
-#. module: binaural_payment_extension
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_partner__supplier_iva_account
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_users__supplier_iva_account
-msgid "Supplier IVA Account"
-msgstr "Cuenta de IVA para Proveedor"
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_islr_customer
@@ -1570,7 +1646,7 @@ msgid "Taxpayer Type"
 msgstr "Tipo de contribuyente"
 
 #. module: binaural_payment_extension
-#: model:ir.model.fields,help:binaural_payment_extension.field_account_retention__islr_lines_allowed_move_types
+#: model:ir.model.fields,help:binaural_payment_extension.field_account_retention__allowed_lines_move_ids
 msgid ""
 "Technical field to store the allowed move types for the ISLR retention "
 "lines. This is used to filter the moves that can be selected in the ISLR "
@@ -1589,10 +1665,10 @@ msgid ""
 "other lines of the same invoice that the one that just has been deleted."
 msgstr ""
 "Campo técnico para almacenar la cantidad de líneas de retención por factura "
-"antes de que el usuario las cambie. Esto se utiliza para saber si el usuario "
-"ha eliminado las líneas de retención cuando se cambia la factura, con el "
-"fin de eliminar todas las otras líneas de la misma factura que se "
-"acaba de eliminar."
+"antes de que el usuario las cambie. Esto se utiliza para saber si el usuario"
+" ha eliminado las líneas de retención cuando se cambia la factura, con el "
+"fin de eliminar todas las otras líneas de la misma factura que se acaba de "
+"eliminar."
 
 #. module: binaural_payment_extension
 #: model:ir.model.constraint,message:binaural_payment_extension.constraint_economic_activity_aliquot_mayor_cero
@@ -1607,7 +1683,7 @@ msgid ""
 "The amount of the retention is greater than the total amount of the invoice."
 msgstr ""
 "La base imponible de la retención es mayor que la base imponible de la "
-"factura. "
+"factura."
 
 #. module: binaural_payment_extension
 #. odoo-python
@@ -1629,6 +1705,15 @@ msgstr "La compañía debe tener un diario para retenciones de ISLR de cliente."
 #, python-format
 msgid "The company must have a customer IVA retention journal configured."
 msgstr "La compañía debe tener un diario para retenciones de IVA de cliente."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid ""
+"The company must have a customer municipal retention journal configured."
+msgstr ""
+"La compañía debe tener un diario para retenciones municipales de cliente."
 
 #. module: binaural_payment_extension
 #. odoo-python
@@ -1661,6 +1746,15 @@ msgstr ""
 msgid "The company must have a supplier IVA retention journal configured."
 msgstr ""
 "La compañía debe tener un diario para retenciones de IVA de proveedor."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid ""
+"The company must have a supplier municipal retention journal configured."
+msgstr ""
+"La compañía debe tener un diario para retenciones municipales de proveedor."
 
 #. module: binaural_payment_extension
 #: model:ir.model.constraint,message:binaural_payment_extension.constraint_payment_concept_line_unique_code
@@ -1705,10 +1799,10 @@ msgstr "El contacto no tiene tipo de persona"
 
 #. module: binaural_payment_extension
 #. odoo-python
-#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#: code:addons/binaural_payment_extension/models/account_move.py:0
 #, python-format
 msgid "The partner has no withholding type."
-msgstr "El partner no tiene tipo de retención"
+msgstr "El contacto no tiene tipo de retención"
 
 #. module: binaural_payment_extension
 #. odoo-python
@@ -1767,7 +1861,7 @@ msgstr "No hay facturas con impuestos para ser retenidos para el proveedor."
 msgid ""
 "There cannot be two records with the same code for the selected "
 "municipality."
-msgstr "Municipalidad"
+msgstr "No puede haber dos registros con el mismo código para el municipio."
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,help:binaural_payment_extension.field_account_retention__type
@@ -1830,6 +1924,7 @@ msgstr "Valor"
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_search_binaural_payment_extension
 msgid "Vocher date"
 msgstr "Fecha de Comprobante"
 
@@ -1947,6 +2042,7 @@ msgstr "Nro de Documento"
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_form_binaural_payment_extension
 msgid "payments"
 msgstr "Pagos"
 
