@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230403\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-03 21:14+0000\n"
-"PO-Revision-Date: 2023-04-03 21:14+0000\n"
+"POT-Creation-Date: 2023-04-04 19:12+0000\n"
+"PO-Revision-Date: 2023-04-04 19:12+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -1733,6 +1733,14 @@ msgstr ""
 
 #. module: binaural_payment_extension
 #. odoo-python
+#: code:addons/binaural_payment_extension/models/account_move.py:0
+#, python-format
+msgid "The company must have a journal for municipal supplier retention."
+msgstr ""
+"La compañía debe tener un diario para retenciones municipales de proveedor."
+
+#. module: binaural_payment_extension
+#. odoo-python
 #: code:addons/binaural_payment_extension/models/account_retention.py:0
 #, python-format
 msgid "The company must have a supplier ISLR retention journal configured."
@@ -1781,14 +1789,6 @@ msgstr "La Factura \"%s\"No tiene Impuesto"
 #, python-format
 msgid "The invoice %s has no tax."
 msgstr "La factura %s no tiene impuesto"
-
-#. module: binaural_payment_extension
-#. odoo-python
-#: code:addons/binaural_payment_extension/models/account_move.py:0
-#: code:addons/binaural_payment_extension/models/account_move.py:0
-#, python-format
-msgid "The journal must be fiscal"
-msgstr "El diario contable debe ser fiscal."
 
 #. module: binaural_payment_extension
 #. odoo-python
