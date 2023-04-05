@@ -262,13 +262,7 @@ class AccountRetentionLine(models.Model):
         of municipal type.
         """
         municipal_retention_lines_with_economic_activity_and_invoice = self.filtered(
-            lambda l: (
-                not l.retention_id
-                or (
-                    l.retention_id.type_retention == "municipal"
-                    and l.retention_id.type == "in_invoice"
-                )
-            )
+            lambda l: (not l.retention_id or (l.retention_id.type_retention == "municipal"))
             and l.economic_activity_id
             and l.move_id
         )

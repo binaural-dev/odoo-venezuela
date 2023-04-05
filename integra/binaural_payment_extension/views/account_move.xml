@@ -108,7 +108,11 @@
 			string="ISLR Retentions"
 			attrs="{'invisible': [('fiscal', '=', False)]}"
 		    >
-			<field name="retention_islr_line_ids" nolabel="1">
+			<field
+			    name="retention_islr_line_ids"
+			    nolabel="1"
+			    attrs="{'readonly': [('move_type', 'not in', ('in_invoice', 'in_refund'))]}"
+			>
                             <tree editable='bottom'>
 				<!-- Invisible Fields -->
                                 <field name="invoice_type" invisible="1"/>
@@ -199,7 +203,11 @@
                         </field>
                     </page>
                     <page name="municipal_retention" string="Municipal Retentions">
-			<field name="retention_municipal_line_ids" nolabel="1">
+			<field
+			    name="retention_municipal_line_ids"
+			    nolabel="1"
+			    attrs="{'readonly': [('move_type', 'not in', ('in_invoice', 'in_refund'))]}"
+			>
                             <tree editable='bottom'>
                                 <field name="name" force_save="1" readonly="1"/>
 				<field name="economic_activity_id" force_save="1"/>
