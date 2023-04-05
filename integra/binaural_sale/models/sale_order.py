@@ -186,3 +186,12 @@ class SaleOrder(models.Model):
                 if move.foreign_currency_id.id == base_usd_id
                 else move.foreign_rate
             )
+
+
+    def _create_invoices(self, grouped=False, final=False, date=None):
+        res = super()._create_invoices(grouped, final, date)
+        # Update the foreign rate and foreign inverse rate of the invoice
+        for invoice in res:
+            invoice.foreign_rate = self.foreign_rate
+            invoice.foreign_inverse_rate = self.foreign_inverse_rate
+        return res
