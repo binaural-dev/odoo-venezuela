@@ -499,7 +499,7 @@ msgstr ""
 #: model:ir.actions.act_window,name:binaural_invoice.action_accounting_report_purchase
 #: model:ir.ui.menu,name:binaural_invoice.account_report_purchase_menu
 msgid "Purchase Book"
-msgstr ""
+msgstr "Libro de Compras"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
