@@ -69,21 +69,6 @@ class SaleOrder(models.Model):
         store=True,
     )
 
-    @api.onchange("order_line")
-    def _onchange_order_line(self):
-        """
-        Limit the number of products that can be added to the order
-        """
-        if self.order_line:
-            max_product_invoice = self.company_id.max_product_invoice
-            if len(self.order_line) > max_product_invoice:
-                raise ValidationError(
-                    _(
-                        "You can not add more than %s products to the order."
-                        % max_product_invoice
-                    )
-                )
-
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
         """
@@ -203,11 +188,55 @@ class SaleOrder(models.Model):
                 else move.foreign_rate
             )
 
+    def _get_invoiceable_lines(self, final=False):
+        res = super()._get_invoiceable_lines(final)
+        return res
 
     def _create_invoices(self, grouped=False, final=False, date=None):
+        """
+        This function creates the invoice associated to the order,
+        but with this inheritance it creates multiple invoices if 
+        it exceeds the configuration limit.
+
+        It also sends the custom rate of the order to the invoice
+        """
+        limit = self.company_id.max_product_invoice
+        group = len(self._get_invoiceable_lines(final)) / limit
+        invoices = self.env["account.move"]
+        invoice_vals = self._prepare_invoice()
+
+        if group % 1 != 0:
+            group = int(group) + 1
+
+        if group == 1:
+            return super()._create_invoices(grouped, final, date)
+
         res = super()._create_invoices(grouped, final, date)
+
+        invoices |= res
+        _move_lines = self.env["account.move.line"]
+
+        for i in range(group - len(res)):
+            _move_lines = res.invoice_line_ids[limit : limit + limit]
+            move = (
+                self.env["account.move"]
+                .sudo()
+                .with_context(default_move_type="out_invoice")
+                .create(invoice_vals)
+            )
+
+            for line in _move_lines:
+                line.sudo().write({"move_id": move.id})
+
+            move.message_post_with_view(
+                "mail.message_origin_link",
+                values={"self": move, "origin": move.line_ids.sale_line_ids.order_id},
+                subtype_id=self.env["ir.model.data"]._xmlid_to_res_id("mail.mt_note"),
+            )
+            invoices |= move
+
         # Update the foreign rate and foreign inverse rate of the invoice
-        for invoice in res:
+        for invoice in invoices:
             invoice.foreign_rate = self.foreign_rate
             invoice.foreign_inverse_rate = self.foreign_inverse_rate
-        return res
+        return invoices
