@@ -33,11 +33,21 @@ class AccountMoveIgtf(models.Model):
         reverse_move_credit = partial.credit_move_id.payment_id.reconciled_bill_ids
         reverse_move_debit = partial.debit_move_id.payment_id.reconciled_bill_ids
 
-        if payment_credit.is_igtf and payment_credit.is_igtf_on_foreign_exchange and move_credit:
+        if (
+            payment_credit.is_igtf
+            and payment_credit.is_igtf_on_foreign_exchange
+            and move_credit
+            and move_credit.bi_igtf > 0
+        ):
             amount = partial.credit_move_id.payment_id.amount
             move_credit.write({"bi_igtf": move_credit.bi_igtf - amount})
 
-        if payment_debit.is_igtf and payment_debit.is_igtf_on_foreign_exchange and move_debit:
+        if (
+            payment_debit.is_igtf
+            and payment_debit.is_igtf_on_foreign_exchange
+            and move_debit
+            and move_debit.bi_igtf > 0
+        ):
             amount = partial.debit_move_id.payment_id.amount
             move_debit.write({"bi_igtf": move_debit.bi_igtf - amount})
 
@@ -45,6 +55,7 @@ class AccountMoveIgtf(models.Model):
             payment_credit.is_igtf
             and payment_credit.is_igtf_on_foreign_exchange
             and reverse_move_credit
+            and reverse_move_credit.bi_igtf > 0
         ):
             amount = partial.credit_move_id.payment_id.amount
             reverse_move_credit.write({"bi_igtf": reverse_move_credit.bi_igtf - amount})
@@ -53,6 +64,7 @@ class AccountMoveIgtf(models.Model):
             payment_debit.is_igtf
             and payment_debit.is_igtf_on_foreign_exchange
             and reverse_move_debit
+            and reverse_move_debit.bi_igtf > 0
         ):
             amount = partial.debit_move_id.payment_id.amount
             reverse_move_debit.write({"bi_igtf": reverse_move_debit.bi_igtf - amount})
