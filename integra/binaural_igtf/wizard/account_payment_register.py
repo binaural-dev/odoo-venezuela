@@ -70,8 +70,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             ):
                 payment.is_igtf_on_foreign_exchange = True
 
-    @api.onchange("amount")
-    @api.depends("amount", "is_igtf", "amount_without_difference")
+    @api.depends("amount", "is_igtf", "is_igtf_on_foreign_exchange")
     def _compute_igtf_amount(self):
         for payment in self:
             payment.igtf_amount = 0.0
@@ -80,14 +79,12 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 and payment.journal_id.fiscal
                 and payment.journal_id.is_igtf
                 and payment.currency_id.name == "USD"
+                and payment.is_igtf_on_foreign_exchange
             ):
                 payment_amount = payment.amount
                 if payment.payment_difference < 0:
-                    _logging.warning("payment.payment_difference < 0")
                     payment_amount = payment.amount + payment.payment_difference                    
                 payment.igtf_amount = payment_amount * (payment.igtf_percentage / 100)
-                _logging.warning("payment.igtf_amount")
-                _logging.warning(payment.igtf_amount)
 
     def _init_payments(self, to_process, edit_mode=False):
         """Create the payments from the wizard's values.
@@ -97,11 +94,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
         :return: A list of ids of the created payments.
         """
-        to_process[0]["create_vals"]["amount"] = (
-            to_process[0]["create_vals"]["amount"] + self.igtf_amount
-        )
         to_process[0]["create_vals"]["igtf_amount"] = self.igtf_amount
         to_process[0]["create_vals"]["igtf_percentage"] = self.igtf_percentage
+        to_process[0]["create_vals"]["is_igtf_on_foreign_exchange"] = self.is_igtf_on_foreign_exchange
 
         res = super(AccountPaymentRegisterIgtf, self)._init_payments(to_process, edit_mode)
         return res
@@ -120,9 +115,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 payment.journal_id.is_igtf == True
                 and payment.is_igtf
                 and payment.currency_id.name == "USD"
+                and payment.is_igtf_on_foreign_exchange
             ):
-                payment.is_igtf_on_foreign_exchange = True
-                if payment.reconciled_invoice_ids:
+                if payment.reconciled_invoice_ids :
                     payment.reconciled_invoice_ids.bi_igtf += self.amount_without_difference
                
                 if payment.reconciled_bill_ids:

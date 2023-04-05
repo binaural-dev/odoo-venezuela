@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 from lxml import etree
 import dateutil.parser
 import logging
@@ -67,6 +68,21 @@ class SaleOrder(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
+
+    @api.onchange("order_line")
+    def _onchange_order_line(self):
+        """
+        Limit the number of products that can be added to the order
+        """
+        if self.order_line:
+            max_product_invoice = self.company_id.max_product_invoice
+            if len(self.order_line) > max_product_invoice:
+                raise ValidationError(
+                    _(
+                        "You can not add more than %s products to the order."
+                        % max_product_invoice
+                    )
+                )
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -186,3 +202,12 @@ class SaleOrder(models.Model):
                 if move.foreign_currency_id.id == base_usd_id
                 else move.foreign_rate
             )
+
+
+    def _create_invoices(self, grouped=False, final=False, date=None):
+        res = super()._create_invoices(grouped, final, date)
+        # Update the foreign rate and foreign inverse rate of the invoice
+        for invoice in res:
+            invoice.foreign_rate = self.foreign_rate
+            invoice.foreign_inverse_rate = self.foreign_inverse_rate
+        return res
