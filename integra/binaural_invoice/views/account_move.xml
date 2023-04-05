@@ -27,7 +27,7 @@
                     }"/>
             </xpath>
 
-            <xpath expr="//field[@name='vat']" position="after">
+            <xpath expr="//label[@for='partner_id'][1]" position="before">
                 <field name="partner_id_domain" invisible="1"/>
                 <field name="filter_partner" attrs="{'invisible': [('move_type', '=', 'entry')]}"/>
             </xpath>
