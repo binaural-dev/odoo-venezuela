@@ -35,7 +35,9 @@ msgstr "Filtro de Contacto"
 msgid ""
 "Filter partner by both customer or supplier rank (Depending on what is "
 "needed)"
-msgstr "Filtra el contacto ya sea por cliente o proveedor (dependiendo del lo que se necesite)"
+msgstr ""
+"Filtro de contacto ya sea por cliente o proveedor (dependiendo de lo que se "
+"necesite)"
 
 #. module: binaural_filter_partner
 #: model:ir.model,name:binaural_filter_partner.model_filter_partner_mixin
