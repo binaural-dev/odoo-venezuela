@@ -19,11 +19,11 @@ class FilterPartnerMixin(models.AbstractModel):
     partner_id_domain = fields.Char(compute="_compute_partner_id_domain")
     filter_partner = fields.Selection(
         [("customer", "Customer"), ("supplier", "Supplier"), ("contact", "Contact")],
-        help="Filter partner by both customer or supplier rank (Depending on the invoice type)",
+        help="Filter partner by both customer or supplier rank (Depending on what is needed)",
     )
 
     @api.depends("filter_partner")
-    def _compute_filter_partner_domain(self):
+    def _compute_partner_id_domain(self):
         for record in self:
             domain = record.get_partner_domain()
             record.update({"partner_id_domain": json.dumps(domain)})

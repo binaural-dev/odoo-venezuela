@@ -8,7 +8,8 @@ _logger = logging.getLogger(__name__)
 
 
 class PurchaseOrder(models.Model):
-    _inherit = 'purchase.order'
+    _name = "purchase.order"
+    _inherit = ['purchase.order', 'filter.partner.mixin']
 
     def default_alternate_currency(self):
         """
