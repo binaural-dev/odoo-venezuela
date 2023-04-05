@@ -476,84 +476,102 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return [
             {
                 "name": "Compras Internas no Grabadas",
-                "fac_calc": f"=K{row_total + 1}",
-                "fac_debit_fiscal": 0.0,
-                "nc_calc": 0.0,
-                "nc_debit_fiscal": 0.0,
-                "tn_calc": 0.0,
-                "tn_debit_fiscal": 0.0,
+                "fields": [
+                    f"=K{row_total + 1}",
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
             },
             {
                 "name": "Exportaciones Gravadas por Alícuota General",
-                "fac_calc": 0.0,
-                "fac_debit_fiscal": 0.0,
-                "nc_calc": 0.0,
-                "nc_debit_fiscal": 0.0,
-                "tn_calc": 0.0,
-                "tn_debit_fiscal": 0.0,
+                "fields": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
             },
             {
                 "name": "Exportaciones Gravadas por Alícuota General más Adicional",
-                "fac_calc": 0.0,
-                "fac_debit_fiscal": 0.0,
-                "nc_calc": 0.0,
-                "nc_debit_fiscal": 0.0,
-                "tn_calc": 0.0,
-                "tn_debit_fiscal": 0.0,
+                "fields": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
             },
             {
                 "name": "Compras Internas Gravadas sólo por Alícuota General",
-                "fac_calc": f"=L{row_total + 1}",
-                "fac_debit_fiscal": f"=N{row_total + 1}",
-                "nc_calc": 0.0,
-                "nc_debit_fiscal": 0.0,
-                "tn_calc": 0.0,
-                "tn_debit_fiscal": 0.0,
+                "fields": [
+                    f"=L{row_total + 1}",
+                    f"=N{row_total + 1}",
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
             },
             {
                 "name": "Compras Internas Gravadas por Alícuota General más Adicional",
-                "fac_calc": 0.0,
-                "fac_debit_fiscal": 0.0,
-                "nc_calc": 0.0,
-                "nc_debit_fiscal": 0.0,
-                "tn_calc": 0.0,
-                "tn_debit_fiscal": 0.0,
+                "fields": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
             },
             {
                 "name": "Compras Internas Gravadas por Alícuota Reducida",
-                "fac_calc": f"=K{row_total + 1}",
-                "fac_debit_fiscal": 0.0,
-                "nc_calc": 0.0,
-                "nc_debit_fiscal": 0.0,
-                "tn_calc": 0.0,
-                "tn_debit_fiscal": 0.0,
+                "fields": [
+                    f"=K{row_total + 1}",
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
             },
             {
                 "name": "Ajustes a los Créditos Fiscales de Periodos Anteriores",
-                "fac_calc": 0.0,
-                "fac_debit_fiscal": 0.0,
-                "nc_calc": 0.0,
-                "nc_debit_fiscal": 0.0,
-                "tn_calc": 0.0,
-                "tn_debit_fiscal": 0.0,
+                "fields": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
             },
             {
                 "name": "Total Ventas y Créditos Fiscales del Periodo",
-                "fac_calc": f"=K{row_total + 1}",
-                "fac_debit_fiscal": 0.0,
-                "nc_calc": 0.0,
-                "nc_debit_fiscal": 0.0,
-                "tn_calc": 0.0,
-                "tn_debit_fiscal": 0.0,
+                "fields": [
+                    f"=K{row_total + 1}",
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
             },
             {
                 "name": "Total Retenciones",
-                "fac_calc": 0.0,
-                "fac_debit_fiscal": 0.0,
-                "nc_calc": 0.0,
-                "nc_debit_fiscal": 0.0,
-                "tn_calc": 0.0,
-                "tn_debit_fiscal": 0.0,
+                "fields": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                ]
             },
         ]
 
@@ -720,9 +738,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         merge_format = workbook.add_format(
             {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray"}
         )
-        # cell_number = workbook.add_format({"num_format": "#,##0.00"})
-        # cell_percent = workbook.add_format({"num_format": "0.00%"})
-        # cell_bold_abstract = workbook.add_format({"bold": True})
         cell_formats = {
             "number": workbook.add_format({"num_format": "#,##0.00"}),
             "percent": workbook.add_format({"num_format": "0.00%"}),
@@ -745,17 +760,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         )
 
         name_columns = self.purchase_book_fields()
-        resume_idx = 0
+        total_idx = 0
 
         for index, field in enumerate(name_columns):
-            total_idx = 0
             if field.get("size"):
                 worksheet.set_column(index, index, field.get("size"))
             worksheet.merge_range(6, index, 7, index, field.get("name"), merge_format)
             for index_line, line in enumerate(purchase_book_lines):
                 total_idx = (8 + index_line) + 1
                 if field["field"] == "index":
-                    _logger.warning("fuaaaaaa")
                     worksheet.write(8 + index_line, index, index_line + 1)
                 else:
                     cell_format = cell_formats.get(field.get("format"), workbook.add_format())
@@ -766,17 +779,23 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 worksheet.write(
                     total_idx, index, f"=SUM({col}9:{col}{total_idx})", cell_formats.get("number")
                 )
-            resume_idx = total_idx + 2
 
+        header_idx = total_idx + 2 
         resume_headers = self.resume_purchase_book_headers()
         for idx, header in enumerate(resume_headers):
-            pidx = (idx + 1 if idx else idx)
-            nidx = pidx + 1
-            _logger.warning("nidx: %s", nidx)
-            _logger.warning("nidx + 1: %s", nidx + 1)
-            worksheet.merge_range(resume_idx, pidx, resume_idx, nidx, header.get("name"), merge_format)
-            worksheet.write(resume_idx + 1, nidx, header.get("headers")[0], merge_format)
-            worksheet.write(resume_idx + 1, nidx + 1, header.get("headers")[1], merge_format)
+            nidx = (idx * 2)
+            worksheet.merge_range(header_idx, nidx, header_idx, nidx + 1, header.get("name"), merge_format)
+            worksheet.write(header_idx + 1, nidx, header.get("headers")[0])
+            worksheet.write(header_idx + 1, nidx + 1, header.get("headers")[1])
+        
+        resume_book = self._resume_purchase_book_fields(total_idx)
+        for idx, resume in enumerate(resume_book):
+            row_resume = (total_idx + 3) + (idx + 1)
+            worksheet.write(row_resume, 0, idx + 1)
+            worksheet.write(row_resume, 1, resume.get("name"))
+
+            for idx_line, line in enumerate(resume.get("fields")):
+                worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
 
         workbook.close()
         return file.getvalue()
