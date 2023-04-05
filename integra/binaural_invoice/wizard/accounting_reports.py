@@ -197,87 +197,107 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return [
             {
                 "name": "N° operacion",
-                "field": "operation_number",
+                "field": "index",
             },
             {
                 "name": "Fecha del documento",
                 "field": "document_date",
+                "size": 15,
             },
             {
                 "name": "Nombre/Razón Social",
                 "field": "partner_name",
+                "size": 25,
             },
             {
                 "name": "Tipo",
                 "field": "move_type",
+                "size": 6,
             },
-            {"name": "RIF", "field": "vat", "size": 15},
+            {
+                "name": "RIF", 
+                "field": "vat", 
+                "size": 15},
             {
                 "name": "Nª de Control",
                 "field": "correlative",
+                "size": 15,
             },
             {
                 "name": "N° de documento",
                 "field": "document_number",
+                "size": 20,
             },
             {
                 "name": "N° Factura Afectada",
                 "field": "number_invoice_affected",
+                "size": 15,
             },
             {
                 "name": "Total compras con IVA",
                 "field": "total_purchases_iva",
                 "format": "number",
+                "size": 15,
             },
             {
                 "name": "Total compras exentas",
                 "field": "total_purchases_not_iva",
                 "format": "number",
+                "size": 15,
             },
             {
                 "name": "Base imponible (16%)",
                 "field": "tax_base_general_aliquot",
                 "format": "number",
+                "size": 15,
             },
             {
                 "name": "Alicuota (16%)",
                 "field": "general_aliquot",
                 "format": "percent",
+                "size": 15,
             },
             {
                 "name": "IVA 16%",
                 "field": "amount_general_aliquot",
                 "format": "number",
+                "size": 15,
             },
             {
                 "name": "Base imponible (8%)",
                 "field": "tax_base_reduced_aliquot",
                 "format": "number",
+                "size": 15,
             },
             {
                 "name": "Alicuota (8%)",
                 "field": "reduced_aliquot",
                 "format": "percent",
+                "size": 15,
             },
             {
                 "name": "IVA 8%",
                 "field": "amount_reduced_aliquot",
                 "format": "number",
+                "size": 15,
             },
             {
                 "name": "Base imponible (31%)",
                 "field": "tax_base_extend_aliquot",
                 "format": "number",
+                "size": 15,
             },
             {
                 "name": "Alicuota (31%)",
                 "field": "extend_aliquot",
                 "format": "percent",
+                "size": 15,
             },
             {
                 "name": "IVA 31%",
                 "field": "amount_extend_aliquot",
                 "format": "number",
+                "size": 15,
             },
         ]
 
@@ -551,7 +571,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 ],
             },
             {
-                "name": "Total Ventas y Créditos Fiscales del Periodo",
+                "name": "Total Compras y Créditos Fiscales del Periodo",
                 "fields": [
                     f"=K{row_total + 1}",
                     0.0,
@@ -561,17 +581,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     0.0,
                 ],
             },
-            {
-                "name": "Total Retenciones",
-                "fields": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
-            },
+            # {
+            #     "name": "Total Retenciones",
+            #     "fields": [
+            #         0.0,
+            #         0.0,
+            #         0.0,
+            #         0.0,
+            #         0.0,
+            #         0.0,
+            #     ],
+            # },
         ]
 
     def generate_sales_book(self):
