@@ -30,8 +30,8 @@
                         <field name="date" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
                     </group>
                     <notebook>
-                	<page name="retention_lines" string="Retention Lines" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
-                            <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'readonly':[('state','in',['emitted','cancel'])]}" >
+                	<page name="retention_lines" string="Retention Lines">
+                            <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Retention Lines" editable="bottom">
 				    <!-- Invisible fields -->
                                     <field name="invoice_type" invisible="1"/>
