@@ -31,7 +31,7 @@ class WizardAccountingReports(models.TransientModel):
 
     def _get_retention_domain(self):
         is_purchase = self.report == "purchase"
-        field_date = "date" if is_purchase else "invoice_date"
+        field_date = "date" if is_purchase else "date_accounting"
         move_type = (
             ["out_invoice", "out_refund"] if not is_purchase else ["in_invoice", "in_refund"]
         )
