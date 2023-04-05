@@ -1,62 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <data> <record id="view_sale_order_form_binaural_sales" model="ir.ui.view">
-            <field name="name">view.sale.order.form</field>
-            <field name="model">sale.order</field>
-            <field name="inherit_id" ref="sale.view_order_form" />
-            <field name="arch" type="xml">
-                <xpath expr="//field[@name='partner_id']" position="replace">
-                    <field name="partner_id" context="{'res_partner_search_mode': 'customer', 'show_address': 1}" options="{&quot;always_reload&quot;: True}"/>
-                </xpath>
-                <xpath expr="//field[@name='partner_id']" position="after">
-                    <field name="vat"/>
-                </xpath>
-                
-                <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_unit']" position="after">
-                    <field name="foreign_price"/>
-                </xpath>
+    <record id="view_sale_order_form_binaural_sales" model="ir.ui.view">
+        <field name="name">view.sale.order.form</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="replace">
+                <field name="partner_id_domain" invisible="1"/>
+                <field name="filter_partner" attrs="{'readonly': [('state', 'in', ['sale', 'done'])]}"/>
+                <field name="partner_id" domain="partner_id_domain" context="{'res_partner_search_mode': 'customer', 'show_address': 1}" options="{&quot;always_reload&quot;: True}"/>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="vat"/>
+            </xpath>
+            
+            <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_unit']" position="after">
+                <field name="foreign_price"/>
+            </xpath>
 
-                <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']" position="after">
-                    <field name="foreign_subtotal"/>
-                    <field name="foreign_rate" optional="hide"/>
-                    <field name="foreign_rate" optional="hide"/>
-                    <field
-        		name="foreign_inverse_rate"
-			groups="base.group_no_one"
-			string="Foreign inverse rate"
-			optional="hide"
-			readonly="1"
-                    />
-                </xpath>
+            <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']" position="after">
+                <field name="foreign_subtotal"/>
+                <field name="foreign_rate" optional="hide"/>
+                <field name="foreign_rate" optional="hide"/>
+                <field
+            name="foreign_inverse_rate"
+        groups="base.group_no_one"
+        string="Foreign inverse rate"
+        optional="hide"
+        readonly="1"
+                />
+            </xpath>
 
-                <xpath expr="//notebook" position="inside">
-                    <page string="Foreign currency" name="foreign_currency">
-                        <group>
-                            <field name="foreign_currency_id" invisible='1'/>
-                            <field
-                            	name="foreign_inverse_rate"
-				invisible="1"
-                            	string="Foreign inverse rate"
-                            />
-			    <t groups="base.group_no_one">
-				<field name="foreign_inverse_rate"/>
-			    </t>
-                            <field name="foreign_rate"/>
-			    <field 
-				name="tax_totals" 
-                                widget="account-tax-foreign-totals-field" 
-                                nolabel="1" 
-                                colspan="2"
-			    	readonly="1"
-			    />
-                        </group>
-                    </page>
-                </xpath>
-                
-            </field>
-        </record>
-        
-    </data>
+            <xpath expr="//notebook" position="inside">
+                <page string="Foreign currency" name="foreign_currency">
+                    <group>
+                        <field name="foreign_currency_id" invisible='1'/>
+                        <field
+                            name="foreign_inverse_rate"
+            invisible="1"
+                            string="Foreign inverse rate"
+                        />
+            <t groups="base.group_no_one">
+            <field name="foreign_inverse_rate"/>
+            </t>
+                        <field name="foreign_rate"/>
+            <field 
+            name="tax_totals" 
+                            widget="account-tax-foreign-totals-field" 
+                            nolabel="1" 
+                            colspan="2"
+                readonly="1"
+            />
+                    </group>
+                </page>
+            </xpath>
+            
+        </field>
+    </record>
+
+    <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">
+        <field name="name">Quotations</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_id" ref="sale.view_quotation_tree_with_onboarding"/>
+        <field name="view_mode">tree,kanban,form,calendar,pivot,graph,activity</field>
+        <field name="search_view_id" ref="sale.sale_order_view_search_inherit_quotation"/>
+        <field name="context">{'search_default_my_quotation': 1, 'default_filter_partner': 'customer'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+            Create a new quotation, the first step of a new sale!
+            </p><p>
+            Once the quotation is confirmed by the customer, it becomes a sales order.<br/> You will be able to create an invoice and collect the payment.
+            </p>
+        </field>
+    </record>
 
 </odoo>
