@@ -18,6 +18,7 @@ class WizardAccountingReports(models.TransientModel):
                 {
                     "name": "Fecha Retención",
                     "field": "date_retention",
+                    "size": 20,
                 },
                 {
                     "name": "N° Retención",
@@ -31,7 +32,7 @@ class WizardAccountingReports(models.TransientModel):
 
     def _get_retention_domain(self):
         is_purchase = self.report == "purchase"
-        field_date = "date" if is_purchase else "invoice_date"
+        field_date = "date" if is_purchase else "date_accounting"
         move_type = (
             ["out_invoice", "out_refund"] if not is_purchase else ["in_invoice", "in_refund"]
         )
@@ -62,12 +63,14 @@ class WizardAccountingReports(models.TransientModel):
             _logger.warning("move date: %s", move_date)
             if (move_date < self.date_from or move_date > self.date_to):
                 move.update({
-                    "total_sales_iva": "",
-                    "total_sales_not_iva": "",
-                    "amount_reduced_aliquot": "",
-                    "amount_general_aliquot": "",
-                    "tax_base_reduced_aliquot": "",
-                    "tax_base_general_aliquot": "",
+                    "total_purchases_iva": 0,
+                    "total_purchases_not_iva": 0,
+                    "amount_reduced_aliquot": 0,
+                    "amount_general_aliquot": 0,
+                    "amount_extend_aliquot": 0,
+                    "tax_base_reduced_aliquot": 0,
+                    "tax_base_general_aliquot": 0,
+                    "tax_base_extend_aliquot": 0,
                 })
             _logger.warning("move date: %s", type(move.get("document_date")))
             retention_data = self.get_retention_iva_values(move.get("_id"))
