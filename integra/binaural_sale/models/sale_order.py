@@ -188,10 +188,6 @@ class SaleOrder(models.Model):
                 else move.foreign_rate
             )
 
-    def _get_invoiceable_lines(self, final=False):
-        res = super()._get_invoiceable_lines(final)
-        return res
-
     def _create_invoices(self, grouped=False, final=False, date=None):
         """
         This function creates the invoice associated to the order,
