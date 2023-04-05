@@ -9,6 +9,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 INIT_LINES = 8
+MOVES = None
 
 
 class WizardAccountingReportsBinauralInvoice(models.TransientModel):
@@ -84,9 +85,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def parse_purchase_book_data(self):
         purchase_book_lines = []
-        moves = self.search_moves()
+        MOVES = self.search_moves()
 
-        for count, move in enumerate(moves):
+        for count, move in enumerate(MOVES):
             taxes = self._determinate_amount_taxeds(move)
             multiplier = -1 if move.move_type == "in_refund" else 1
 
@@ -116,6 +117,13 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             purchase_book_lines.append(purchase_book_line)
 
         return purchase_book_lines
+    
+    def _determinate_resume_purchase(self, moves, tax_type):
+        resume_lines = []
+
+        if tax_type == "general_aliquot":
+            credit_notes = moves.filtered(lambda m: m.move_type == "in_refund")
+            moves -= credit_notes
 
     def sale_book_fields(self):
         return [
@@ -398,6 +406,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "in_invoice",
         ] and move.state in ["cancel"]:
             return "03-ANU"
+        
 
     def search_moves(self):
         env = self.env
@@ -495,91 +504,38 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return [
             {
                 "name": "Compras Internas no Grabadas",
+                "format": "number",
                 "fields": [
-                    f"=K{row_total + 1}",
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+
+                ]
             },
             {
                 "name": "Exportaciones Gravadas por Alícuota General",
-                "fields": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
             },
             {
                 "name": "Exportaciones Gravadas por Alícuota General más Adicional",
-                "fields": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
             },
             {
                 "name": "Compras Internas Gravadas sólo por Alícuota General",
-                "fields": [
-                    f"=L{row_total + 1}",
-                    f"=N{row_total + 1}",
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
             },
             {
                 "name": "Compras Internas Gravadas por Alícuota General más Adicional",
-                "fields": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
             },
             {
                 "name": "Compras Internas Gravadas por Alícuota Reducida",
-                "fields": [
-                    f"=K{row_total + 1}",
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
             },
             {
                 "name": "Ajustes a los Créditos Fiscales de Periodos Anteriores",
-                "fields": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
             },
             {
                 "name": "Total Compras y Créditos Fiscales del Periodo",
-                "fields": [
-                    f"=K{row_total + 1}",
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
             },
             # {
             #     "name": "Total Retenciones",
@@ -827,8 +783,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             worksheet.write(row_resume, 0, idx + 1)
             worksheet.write(row_resume, 1, resume.get("name"))
 
-            for idx_line, line in enumerate(resume.get("fields")):
-                worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
+            # for idx_line, line in enumerate(resume.get("fields")):
+            #     worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
 
         workbook.close()
         return file.getvalue()
