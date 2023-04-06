@@ -87,7 +87,7 @@ class AccountMove(models.Model):
             self.env.cr.execute(
                 """
                 WITH duplicated_sequence AS (
-                    SELECT name, partner_id, state
+                    SELECT name, partner_id, state, journal_id
                       FROM account_move
                      WHERE state = 'posted'
                        AND name != '/'
