@@ -1,8 +1,7 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import UserError
+from odoo.tools import index_exists, drop_index
 from lxml import etree
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
@@ -65,6 +64,77 @@ class AccountMove(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
+
+    _sql_constraints = [
+        (
+            "unique_name",
+            "",
+            "Another entry with the same name already exists.",
+        ),
+        (
+            "unique_name_ve",
+            "",
+            "Another entry with the same name already exists.",
+        ),
+    ]
+
+    def _auto_init(self):
+        res = super()._auto_init()
+        if not index_exists(self.env.cr, "account_move_unique_name_ve"):
+            drop_index(self.env.cr, "account_move_unique_name", self._table)
+            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
+            # we can add the following UNIQUE INDEX
+            self.env.cr.execute(
+                """
+                WITH duplicated_sequence AS (
+                    SELECT name, partner_id, state
+                      FROM account_move
+                     WHERE state = 'posted'
+                       AND name != '/'
+                       AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
+                  GROUP BY partner_id, journal_id, name, state
+                    HAVING COUNT(*) > 1
+                ),
+                to_update AS (
+                    SELECT move.id,
+                           move.name,
+                           move.state,
+                           move.date,
+                           row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
+                      FROM duplicated_sequence
+                      JOIN account_move move ON move.name = duplicated_sequence.name
+                                            AND move.partner_id = duplicated_sequence.partner_id
+                                            AND move.state = duplicated_sequence.state
+                                            AND move.journal_id = duplicated_sequence.journal_id
+                ),
+               new_vals AS (
+                    SELECT id,
+                           name || ' (' || (row_seq-1)::text || ')' AS name
+                      FROM to_update
+                     WHERE row_seq > 1
+                )
+                UPDATE account_move
+                   SET name = new_vals.name
+                  FROM new_vals
+                 WHERE account_move.id = new_vals.id;
+            """
+            )
+
+            self.env.cr.execute(
+                """
+                CREATE UNIQUE INDEX account_move_unique_name
+                    ON account_move(
+                        name, partner_id, company_id, journal_id
+                    )
+                WHERE state = 'posted' AND name != '/';
+                CREATE UNIQUE INDEX account_move_unique_name_ve
+                    ON account_move(
+                        name, partner_id, company_id, journal_id
+                    )
+                WHERE state = 'posted' AND name != '/';
+            """
+            )
+        return res
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -219,7 +289,7 @@ class AccountMove(models.Model):
         for move in self:
             move.foreign_taxable_income = False
             if move.is_invoice() and move.invoice_line_ids:
-                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"] 
+                move.foreign_taxable_income = move.tax_totals["foreign_amount_untaxed"]
 
     @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):
@@ -228,7 +298,6 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.foreign_total_billed = 0
-            _logger.warning(move.tax_totals)
             if move.invoice_line_ids and move.is_invoice(include_receipts=True):
                 move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
 
@@ -261,7 +330,9 @@ class AccountMove(models.Model):
         """
         Add the foreign rate and foreign inverse rate to the context of the action_register_payment.
         """
+        if len(set(self.mapped("foreign_rate"))) > 1:
+            raise UserError(_("You can only register payments for one foreign rate at a time."))
         res = super().action_register_payment()
-        res["context"]["default_foreign_rate"] = self.foreign_rate
-        res["context"]["default_foreign_inverse_rate"] = self.foreign_inverse_rate
+        res["context"]["default_foreign_rate"] = self[0].foreign_rate
+        res["context"]["default_foreign_inverse_rate"] = self[0].foreign_inverse_rate
         return res

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data>
+
+        <record id="wizard_retention_islr_view" model="ir.ui.view">
+            <field name="name">wizard.retention.islr.view</field>
+            <field name="model">wizard.retention.islr</field>
+            <field name="arch" type="xml">
+                <form string="ISLR Retention Wizard">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="report" invisible="1"/>
+                                <field name="company_id" string="Company" invisible="1"/>
+                                <field name="date_start"/>
+                                <field name="date_end"/>
+                            </group> 
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="print_report" string="Print Excel" type="object" class="oe_highlight"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <act_window id="action_retention_islr" name="XML Retenciones de ISLR" res_model="wizard.retention.islr" view_mode="form" target="new" context="{'default_report': 'islr'}"/>
+
+
+        <menuitem
+            id="seniat_reports"
+            name="Seniat Reports"
+            parent="account.menu_finance_reports"
+            sequence="7" />
+
+        <menuitem
+            id="xml_retention_islr"
+            name="XML ISLR Retention"
+            parent="binaural_payment_extension.seniat_reports"
+            action="action_retention_islr"
+            />
+    
+    </data>
+    
+
+</odoo>

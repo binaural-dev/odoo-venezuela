@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <data noupdate="1">
-    <record id="binaural_account_journal_sales_invoices" model="account.journal">
+    <record id="binaural_account_journal_sales_invoices_01" model="account.journal">
         <field name="name">Facturas de ventas</field>
         <field name="invoice_reference_type">invoice</field>
         <field name="type">sale</field>
@@ -9,7 +9,6 @@
         <field name="code">FV</field>
         <field name="company_id" ref="base.main_company"/>
         <field name="default_account_id" ref="l10n_binaural.account_account_40101001" />
-        <field name="template_id" ref="l10n_binaural.l10n_chart_template_binaural" />
     </record>
 
     <record id="binaural_account_journal_delivery_notes" model="account.journal">
@@ -19,7 +18,6 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">NE</field>
         <field name="default_account_id" ref="account_account_40101001" />
-        <field name="template_id" ref="l10n_chart_template_binaural" />
     </record>
 
     <record id="binaural_account_journal_supplier_invoices" model="account.journal">
@@ -30,7 +28,6 @@
         <field name="code">FP</field>
         <field name="company_id" ref="base.main_company"/>
         <field name="default_account_id" ref="account_account_60101001" />
-        <field name="template_id" ref="l10n_chart_template_binaural" />
     </record>
 
     <record id="binaural_account_journal_supplier_receipts" model="account.journal">
@@ -41,7 +38,6 @@
         <field name="code">RP</field>
         <field name="company_id" ref="base.main_company"/>
         <field name="default_account_id" ref="account_account_60101001" />
-        <field name="template_id" ref="l10n_chart_template_binaural" />
     </record>
 
     <record id="binaural_account_journal_bank" model="account.journal">
@@ -51,10 +47,13 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">Bank</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="available_payment_method_ids" ref="account.account_payment_method_manual_out"/> 
-        <field name="outbound_payment_method_line_ids" eval="[(6,0, [ref('binaural_outgoing_payments_line_bank')])]"/>
+        <field name="outbound_payment_method_line_ids" eval="[
+            (0,0, {
+                'name': 'Pago saliente - Banco',
+                'payment_method_id': ref('account.account_payment_method_manual_out'),
+                'payment_account_id': ref('account_account_10102001'),
+            })]"/>
         <field name="default_account_id" ref="account_account_10102001" />
-        <field name="template_id" ref="l10n_chart_template_binaural" />
     </record>
 
     <record id="binaural_account_journal_cash_bs" model="account.journal">
@@ -64,10 +63,13 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">EBs</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="available_payment_method_ids" ref="account.account_payment_method_manual_out"/> 
-        <field name="outbound_payment_method_line_ids" eval="[(6,0, [ref('binaural_outgoing_payments_line_cash_bs')])]"/> 
+        <field name="outbound_payment_method_line_ids" eval="[
+            (0,0, {
+                'name': 'Pago saliente - Efectivo Bs',
+                'payment_method_id': ref('account.account_payment_method_manual_out'),
+                'payment_account_id': ref('account_account_10101001'),
+            })]"/> 
         <field name="default_account_id" ref="account_account_10101001" />
-        <field name="template_id" ref="l10n_chart_template_binaural" />
     </record>
 
     <record id="binaural_account_journal_cash_usd" model="account.journal">
@@ -77,10 +79,13 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">EDiv</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="available_payment_method_ids" ref="account.account_payment_method_manual_out"/> 
-        <field name="outbound_payment_method_line_ids" eval="[(6,0, [ref('binaural_outgoing_payments_line_cash_usd')])]"/> 
+        <field name="outbound_payment_method_line_ids" eval="[
+            (0,0, {
+                'name': 'Pago saliente - Efectivo $',
+                'payment_method_id': ref('account.account_payment_method_manual_out'),
+                'payment_account_id': ref('account_account_10101003'),
+            })]"/> 
         <field name="default_account_id" ref="account_account_10101003" /> 
-        <field name="template_id" ref="l10n_chart_template_binaural" />
     </record> 
 
     <record id="binaural_account_journal_inventory_valuation" model="account.journal">
@@ -90,7 +95,6 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">VI</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="template_id" ref="l10n_chart_template_binaural" />
     </record>
 
     <record id="binaural_account_journal_various_operations" model="account.journal">
@@ -100,7 +104,6 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">OP</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="template_id" ref="l10n_chart_template_binaural" />
     </record>
 
     <record id="binaural_account_journal_opening_balances" model="account.journal">
@@ -110,7 +113,6 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">SI</field>
         <field name="company_id" ref="base.main_company"/>
-        <field name="template_id" ref="l10n_chart_template_binaural" />
     </record>
   </data>
 </odoo>

@@ -1,9 +1,7 @@
-
-from odoo import models, fields, api
+from odoo import models, fields
 
 
 class ResPartner(models.Model):
-
     _inherit = "res.partner"
 
     withholding_type_id = fields.Many2one(
@@ -28,22 +26,13 @@ class ResPartner(models.Model):
             ("ordinary", "Ordinary"),
         ],
         default="ordinary",
+        store=True,
     )
 
-    type_person_id = fields.Many2one("type.person", "Type Person", track_visibility="onchange")
-
-    supplier_islr_account = fields.Many2one(
-        "account.account",
-        string="Supplier ISLR Account",
-        track_visibility="onchange",
+    type_person_id = fields.Many2one(
+        "type.person", "Type Person", track_visibility="onchange", store=True
     )
 
-    supplier_iva_account = fields.Many2one(
-        "account.account",
-        string="Supplier IVA Account",
-        track_visibility="onchange",
+    economic_activity_id = fields.Many2one(
+        "economic.activity", "Default Economic Activity", track_visibility="onchange", store=True
     )
-
-    exempt_iva = fields.Boolean("Exempt IVA", default=True, track_visibility="onchange")
-
-    exempt_islr = fields.Boolean("Exempt ISLR", default=True, track_visibility="onchange")

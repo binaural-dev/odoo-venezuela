@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 from lxml import etree
 import dateutil.parser
 import logging
@@ -7,7 +8,8 @@ _logger = logging.getLogger(__name__)
 
 
 class SaleOrder(models.Model):
-    _inherit = "sale.order"
+    _name = "sale.order"
+    _inherit = ["sale.order", "filter.partner.mixin"]
 
     def default_alternate_currency(self):
         """
@@ -186,3 +188,52 @@ class SaleOrder(models.Model):
                 if move.foreign_currency_id.id == base_usd_id
                 else move.foreign_rate
             )
+
+    def _create_invoices(self, grouped=False, final=False, date=None):
+        """
+        This function creates the invoice associated to the order,
+        but with this inheritance it creates multiple invoices if 
+        it exceeds the configuration limit.
+
+        It also sends the custom rate of the order to the invoice
+        """
+        limit = self.company_id.max_product_invoice
+        group = len(self._get_invoiceable_lines(final)) / limit
+        invoices = self.env["account.move"]
+        invoice_vals = self._prepare_invoice()
+
+        if group % 1 != 0:
+            group = int(group) + 1
+
+        if group == 1:
+            return super()._create_invoices(grouped, final, date)
+
+        res = super()._create_invoices(grouped, final, date)
+
+        invoices |= res
+        _move_lines = self.env["account.move.line"]
+
+        for i in range(group - len(res)):
+            _move_lines = res.invoice_line_ids[limit : limit + limit]
+            move = (
+                self.env["account.move"]
+                .sudo()
+                .with_context(default_move_type="out_invoice")
+                .create(invoice_vals)
+            )
+
+            for line in _move_lines:
+                line.sudo().write({"move_id": move.id})
+
+            move.message_post_with_view(
+                "mail.message_origin_link",
+                values={"self": move, "origin": move.line_ids.sale_line_ids.order_id},
+                subtype_id=self.env["ir.model.data"]._xmlid_to_res_id("mail.mt_note"),
+            )
+            invoices |= move
+
+        # Update the foreign rate and foreign inverse rate of the invoice
+        for invoice in invoices:
+            invoice.foreign_rate = self.foreign_rate
+            invoice.foreign_inverse_rate = self.foreign_inverse_rate
+        return invoices

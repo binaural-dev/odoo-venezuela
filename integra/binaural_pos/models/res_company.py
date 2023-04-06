@@ -1,0 +1,8 @@
+from odoo import fields, models
+
+
+class ResCompany(models.Model):
+    _inherit = "res.company"
+
+    module_binaural_pos_igtf = fields.Boolean("IGTF in POS")
+    module_binaural_base_igtf = fields.Boolean("IGTF")

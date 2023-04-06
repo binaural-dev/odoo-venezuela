@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_form_move_inherited_binaural_marca_form" model="ir.ui.view">
+            <field name="name">Extension de formulario factura: agregar campo marca</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='account_id']" position="after">
+                    <field name="brand_id" optional="hide"></field>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

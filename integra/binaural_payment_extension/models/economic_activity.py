@@ -4,7 +4,6 @@ from odoo import api, models, fields, _
 class EconomicActivity(models.Model):
     _name = "economic.activity"
     _description = "Economic Activity"
-    _rec_name = "name"
     _sql_constraints = [
         (
             "code_uniq",
@@ -14,7 +13,7 @@ class EconomicActivity(models.Model):
         ("aliquot_mayor_cero", "check (aliquot > 0)", "The aliquot must be greater than zero"),
     ]
 
-    name = fields.Char("Código", required=True)
+    name = fields.Char("Code", required=True, store=True)
     municipality_id = fields.Many2one(
         "res.country.municipality", string="Municipality", required=True
     )

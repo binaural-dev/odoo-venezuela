@@ -13,6 +13,7 @@ class AccountPayment(models.Model):
         [
             ("iva", "IVA"),
             ("islr", "ISLR"),
+            ("municipal", "Municipal"),
         ],
     )
     retention_id = fields.Many2one("account.retention", ondelete="cascade")
@@ -33,6 +34,7 @@ class AccountPayment(models.Model):
 
     retention_ref = fields.Char(
         string="Retention reference",
+        related="retention_id.number",
         store=True,
     )
 

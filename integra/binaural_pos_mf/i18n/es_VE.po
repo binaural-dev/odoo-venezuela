@@ -1,0 +1,148 @@
+#. module: binaural_pos_mf
+#: model_terms:ir.ui.view,arch_db:binaural_pos_mf.view_pos_session_form
+msgid "Are you sure you want to generate report Z?"
+msgstr "Estas seguro de generar el reporte Z?"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_account_bank_statement_line__cashbox_id
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_account_move__cashbox_id
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_account_payment__cashbox_id
+#: model_terms:ir.ui.view,arch_db:binaural_pos_mf.account_move_form
+msgid "Cashbox invoiced"
+msgstr "Caja facturada"
+
+#. module: binaural_pos_mf
+#. openerp-web
+#: code:addons/binaural_pos_mf/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
+#, python-format
+msgid "Check if the fiscal printer is connected and try again."
+msgstr "Chequea que la impresora fiscal este conectada e intenta de nuevo."
+
+#. module: binaural_pos_mf
+#. openerp-web
+#: code:addons/binaural_pos_mf/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
+#, python-format
+msgid "Check if the fiscal printer is connected and try again. Please"
+msgstr "Chequea que la impresora fiscal este conectada e intenta de nuevo. Por favor"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__company_id
+msgid "Company"
+msgstr "Compañia"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__date_from
+msgid "Date From"
+msgstr "Fecha Desde"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__date_to
+msgid "Date To"
+msgstr "Fecha Hasta"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_account_move__display_name
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config__display_name
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_order__display_name
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_session__display_name
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__display_name
+msgid "Display Name"
+msgstr "Mostrar nombre"
+
+#. module: binaural_pos_mf
+#: model_terms:ir.ui.view,arch_db:binaural_pos_mf.pos_config_view_form_inherit
+msgid "Fiscal Data Module"
+msgstr "Maquina Fiscal"
+
+#. module: binaural_pos_mf
+#. openerp-web
+#: code:addons/binaural_pos_mf/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
+#: code:addons/binaural_pos_mf/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
+#, python-format
+msgid "Fiscal print is not connected"
+msgstr "Maquina fiscal no conectada"
+
+#. module: binaural_pos_mf
+#: model_terms:ir.ui.view,arch_db:binaural_pos_mf.wizard_sales_book_pos
+msgid "Generar Informe"
+msgstr ""
+
+#. module: binaural_pos_mf
+#: model_terms:ir.ui.view,arch_db:binaural_pos_mf.view_pos_session_form
+msgid "Generate Report Z"
+msgstr "Generar Reporte Z"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config__iface_fiscal_data_module
+msgid "Iface Fiscal Data Module"
+msgstr "Maquina Fiscal"
+
+#. module: binaural_pos_mf
+#: model:ir.model,name:binaural_pos_mf.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_account_move____last_update
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config____last_update
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_order____last_update
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_session____last_update
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book____last_update
+msgid "Last Modified on"
+msgstr "Modificada por última vez"
+
+#. module: binaural_pos_mf
+#. openerp-web
+#: code:addons/binaural_pos_mf/static/src/xml/ChromeWidgets/DebugWidget.xml:0
+#, python-format
+msgid "PRINT INVOICE ORDER ACTUAL"
+msgstr ""
+
+#. module: binaural_pos_mf
+#: model:ir.model,name:binaural_pos_mf.model_pos_config
+msgid "Point of Sale Configuration"
+msgstr "Configuración del TPV"
+
+#. module: binaural_pos_mf
+#: model:ir.model,name:binaural_pos_mf.model_pos_order
+msgid "Point of Sale Orders"
+msgstr "Pedidos del TPV"
+
+#. module: binaural_pos_mf
+#: model:ir.model,name:binaural_pos_mf.model_pos_session
+msgid "Point of Sale Session"
+msgstr "Sesión TPV"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_account_bank_statement_line__sales_book_type
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_account_move__sales_book_type
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_account_payment__sales_book_type
+msgid "Sales Book Type"
+msgstr "Tipo de libro de ventas"
+
+#. module: binaural_pos_mf
+#: model:ir.actions.act_window,name:binaural_pos_mf.action_pos_sales_book
+#: model:ir.ui.menu,name:binaural_pos_mf.account_pos_sales_book
+msgid "Sales book"
+msgstr "Libro de ventas (por rango)"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_session__serial_machine
+msgid "Serial of fiscal machine"
+msgstr "Serial de la maquina fiscal"
+
+#. module: binaural_pos_mf
+#: code:addons/binaural_pos_mf/models/pos_session.py:0
+#, python-format
+msgid "The serial of the fiscal machine has not been registered."
+msgstr "El serial de la maquina fiscal no ha sido registrado."
+
+#. module: binaural_pos_mf
+#: model:ir.model,name:binaural_pos_mf.model_wizard_sales_book
+msgid "Wizard to download xlsx of sakes Book POS"
+msgstr "Wizard para descargar xlsx de libro de ventas POS"

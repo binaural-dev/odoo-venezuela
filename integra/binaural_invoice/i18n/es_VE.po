@@ -1,13 +1,13 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-# 	* binaural_account
+# 	* binaural_invoice
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230116\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230403\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-01-20 19:13+0000\n"
-"PO-Revision-Date: 2023-01-20 19:13+0000\n"
+"POT-Creation-Date: 2023-04-05 14:39+0000\n"
+"PO-Revision-Date: 2023-04-05 14:39+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -15,36 +15,617 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
 
-#. module: binaural_account
-#: model_terms:ir.ui.view,arch_db:binaural_account.res_config_settings_binaural_account
-msgid "<span>Select alternate currency</span>"
-msgstr "Seleccionar moneda alterna"
+#. module: binaural_invoice
+#: model:ir.actions.report,print_report_name:binaural_invoice.action_invoice_free_form_binaural_invoice
+#: model:ir.actions.report,print_report_name:binaural_invoice.action_invoice_sale_note_binaural_invoice
+msgid ""
+"(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + "
+"'.pdf')"
+msgstr ""
 
-#. module: binaural_account
-#: model_terms:ir.ui.view,arch_db:binaural_account.res_config_settings_binaural_account
-msgid "Binaural Venezuelan location"
-msgstr "Localización Venezolana Binaural"
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid ""
+"-\n"
+"\n"
+"                                                Ciudad:"
+msgstr ""
 
-#. module: binaural_account
-#: model:ir.model,name:binaural_account.model_res_config_settings
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid ""
+"-\n"
+"\n"
+"                                                Estado:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid ""
+"<br/>\n"
+"                                                                        Motivo:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid ""
+"<br/>\n"
+"                                                                        Total Facturado:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+msgid ""
+"<span groups=\"account.group_show_line_subtotals_tax_excluded\">Amount</span>\n"
+"                                        <span groups=\"account.group_show_line_subtotals_tax_included\">Total Price</span>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid ""
+"<span groups=\"account.group_show_line_subtotals_tax_excluded\">Amount</span>\n"
+"                                    <span groups=\"account.group_show_line_subtotals_tax_included\">Total Price</span>"
+msgstr ""
+"<span groups=\"account.group_show_line_subtotals_tax_excluded\">Monto</span>\n"
+"                                    <span groups=\"account.group_show_line_subtotals_tax_included\">Total</span>"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<span>Description</span>"
+msgstr "<span>Descripciòn</span>"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "<span>Devolución Nª</span>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<span>Disc.%</span>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+msgid "<span>Nota de crédito</span>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "<span>Observacion:&amp;nbsp;</span>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<span>Quantity</span>"
+msgstr "<span>Cantidad</span>"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<span>Taxes</span>"
+msgstr "<span>IVA</span>"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<span>Unit Price</span>"
+msgstr "<span>Precio U.</span>"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong class=\"mr16\">Subtotal</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid ""
+"<strong class=\"text-center\">Scan me with your banking "
+"app.</strong><br/><br/>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Amount Due</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+msgid "<strong>Base Imponible</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Credit Note Date:</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Customer Code:</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Date:</strong>"
+msgstr "<strong>Fecha:</strong>"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Due Date:</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Incoterm: </strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Invoice Date:</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Receipt Date:</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Reference:</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Shipping Address:</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "<strong>Source:</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+msgid "<strong>Total General</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.document_tax_totals
+msgid "<strong>Total Rounded</strong>"
+msgstr "<strong>Total Redondeado:</strong>"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.document_tax_totals
+msgid "<strong>Total</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.ui.menu,name:binaural_invoice.account_report_menu
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.wizard_binaural_facturacion_reportes_view
+msgid "Accounting Reports"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Amount Due"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields.selection,name:binaural_invoice.selection__wizard_accounting_reports__report__purchase
+msgid "Book Purchase"
+msgstr "Libro de Compras"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Cancelled Invoice"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Cant"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model,name:binaural_invoice.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__company_id
+msgid "Company"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model,name:binaural_invoice.model_res_config_settings
 msgid "Config Settings"
 msgstr "Opciones de configuración"
 
-#. module: binaural_account
-#: model:ir.model.fields,field_description:binaural_account.field_res_config_settings__currency_foreign_id
-msgid "Currency Foreign"
-msgstr "Moneda alterna"
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_bank_statement_line__correlative
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_move__correlative
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_payment__correlative
+msgid "Control Number"
+msgstr "Número de Control"
 
-#. module: binaural_account
-#: model:ir.model.fields,help:binaural_account.field_res_config_settings__currency_foreign_id
-msgid "Currency Foreign for the company"
-msgstr "Moneda alterna de la compañía"
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__create_uid
+msgid "Created by"
+msgstr ""
 
-#. module: binaural_account
-#. odoo-python
-#: code:addons/binaural_account/models/res_config_setings.py:0
-#: code:addons/binaural_account/models/res_config_setings.py:0
-#, python-format
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Credit Note"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Código"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__date_to
+msgid "Date End"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__date_from
+msgid "Date Start"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+msgid "Desc %"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Descripción"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Descuento %"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Discount"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Doc afectado: Nro Factura:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Domicilio Fiscal:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Draft Invoice"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Due Date"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Emisión:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+msgid "Factura Nro:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Fecha de Factura:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_move__filter_partner
+msgid "Filter Partner"
+msgstr "Filtro de Contacto"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,help:binaural_invoice.field_account_move__filter_partner
 msgid ""
-"The currency foreign must be different from the currency of the company"
-msgstr "La moneda alterna debe ser diferente de la moneda base de la compañía"
+"Filter partner by both customer or supplier rank (Depending on the invoice "
+"type)"
+msgstr ""
+"Filtro de contacto tanto para clientes como para proveedores (Dependiendo "
+"del tipo de factura)"
+
+#. module: binaural_invoice
+#: model:ir.actions.report,name:binaural_invoice.action_invoice_free_form_binaural_invoice
+msgid "Free Form"
+msgstr "Forma Libre"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.wizard_binaural_facturacion_reportes_view
+msgid "Generar Informe"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__id
+msgid "ID"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,help:binaural_invoice.field_account_bank_statement_line__invoice_reception_date
+#: model:ir.model.fields,help:binaural_invoice.field_account_move__invoice_reception_date
+#: model:ir.model.fields,help:binaural_invoice.field_account_payment__invoice_reception_date
+msgid "Indicates when the invoice was received by the client/company"
+msgstr "Indica cuando una factura fue recibida por el cliente o la compañía"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Invoice"
+msgstr "Factura"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.res_config_settings_binaural_invoice
+msgid "Invoice Configuration"
+msgstr "Configuración de Facturación"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.view_account_move_form_binaural_invoice
+msgid "JRNL/2016/00001"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model,name:binaural_invoice.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports____last_update
+msgid "Last Modified on"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.res_config_settings_binaural_invoice
+msgid "Limit the number of products on an invoice"
+msgstr "Limitar la cantidad de productos en una factura"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_res_company__max_product_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_res_config_settings__max_product_invoice
+msgid "Max Product Invoice"
+msgstr "Cantidad maxima de Productos en Factura"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Motivo:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Nota de Venta:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Nro de Factura:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Nro de control:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Paid on"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_move__partner_id_domain
+msgid "Partner Id Domain"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Please use the following communication for your payment :"
+msgstr "Por favor use la siguiente comunicación para su pago:"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Precio"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.actions.act_window,name:binaural_invoice.action_accounting_report_purchase
+#: model:ir.ui.menu,name:binaural_invoice.account_report_purchase_menu
+msgid "Purchase Book"
+msgstr "Libro de Compras"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "RIF/Cédula:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Razón social:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_bank_statement_line__invoice_reception_date
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_move__invoice_reception_date
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_payment__invoice_reception_date
+msgid "Reception Date"
+msgstr "Fecha de Recepción"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__report
+msgid "Report"
+msgstr "Reporte"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__currency_system
+msgid "Report in currency system"
+msgstr "Reporte en moneda del sistema"
+
+#. module: binaural_invoice
+#: model:ir.actions.act_window,name:binaural_invoice.action_accounting_report_sale
+#: model:ir.model.fields.selection,name:binaural_invoice.selection__wizard_accounting_reports__report__sale
+#: model:ir.ui.menu,name:binaural_invoice.account_report_sale_menu
+msgid "Sale Book"
+msgstr "Libro de Ventas"
+
+#. module: binaural_invoice
+#: model:ir.actions.report,name:binaural_invoice.action_invoice_sale_note_binaural_invoice
+msgid "Sale Note"
+msgstr "Nota de Venta"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,help:binaural_invoice.field_account_bank_statement_line__correlative
+#: model:ir.model.fields,help:binaural_invoice.field_account_move__correlative
+#: model:ir.model.fields,help:binaural_invoice.field_account_payment__correlative
+msgid "Sequence control number"
+msgstr "Secuencia para el número de control"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Tax ID"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Telf:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.document_tax_totals
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Total"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Total Facturado:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Total a pagar"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Unidad"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
+msgid "Vencimiento:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Vendor Bill"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "Vendor Credit Note"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model,name:binaural_invoice.model_wizard_accounting_reports
+msgid "Wizard para generar reportes de libro de compra y ventas"
+msgstr ""
+
+#. module: binaural_invoice
+#. odoo-python
+#: code:addons/binaural_invoice/models/account_move.py:0
+#, python-format
+msgid "You can not add more than %s products to the invoice."
+msgstr "No puede agregar más de %s productos a la factura."
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.free_form_binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+msgid "if paid before"
+msgstr "si se paga antes"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.tax_groups_totals
+msgid "on"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
+msgid "sobre ("
+msgstr ""
