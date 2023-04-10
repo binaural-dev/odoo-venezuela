@@ -16,6 +16,25 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__filter_partner
+msgid "Filter Partner"
+msgstr "Filtro de Contacto"
+
+#. module: binaural_purchase
+#: model:ir.model.fields,help:binaural_purchase.field_purchase_order__filter_partner
+msgid ""
+"Filter partner by both customer or supplier rank (Depending on what is "
+"needed)"
+msgstr ""
+"Filtro de contacto ya sea por cliente o proveedor (dependiendo de lo que se "
+"necesite)"
+
+#. module: binaural_purchase
+#: model:ir.model.fields.selection,name:binaural_purchase.selection__purchase_order__filter_partner__contact
+msgid "Contact"
+msgstr "Contacto"
+
+#. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__foreign_currency_id
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order_line__foreign_currency_id
 msgid "Foreign Currency"

@@ -16,6 +16,8 @@
 				<field name="iva_customer_retention_journal_id"/>
 				<field name="islr_supplier_retention_journal_id"/>
 				<field name="islr_customer_retention_journal_id"/>
+				<field name="municipal_supplier_retention_journal_id"/>
+				<field name="municipal_customer_retention_journal_id"/>
                             </group>
                 	</div>
 		    </div>

@@ -28,6 +28,23 @@ class AccountPaymentRegister(models.TransientModel):
 
     retention_line_ids = fields.Many2many("account.retention.line")
 
+    @api.depends("payment_type", "company_id", "can_edit_wizard")
+    def _compute_available_journal_ids(self):
+        """
+        Ensure that the supplier retention journals are not selectable for customer payments.
+        """
+        res = super()._compute_available_journal_ids()
+        supplier_retention_journal_ids = (
+            self.env.company.iva_supplier_retention_journal_id.id,
+            self.env.company.islr_supplier_retention_journal_id.id,
+            self.env.company.municipal_supplier_retention_journal_id.id,
+        )
+        for wizard in self:
+            wizard.available_journal_ids = wizard.available_journal_ids.filtered_domain(
+                [("id", "not in", supplier_retention_journal_ids)]
+            )
+        return res
+
     @api.onchange("is_retention")
     def _onchange_retention(self):
         """
