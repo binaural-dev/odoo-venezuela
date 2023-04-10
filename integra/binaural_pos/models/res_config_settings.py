@@ -5,3 +5,4 @@ class ResConfigSettings(models.TransientModel):
 
     module_binaural_pos_igtf = fields.Boolean(related='company_id.module_binaural_pos_igtf', readonly=False)
     module_binaural_base_igtf = fields.Boolean(related='company_id.module_binaural_base_igtf', readonly=False)
+    module_binaural_pos_mf = fields.Boolean(related='company_id.module_binaural_pos_mf', readonly=False)
