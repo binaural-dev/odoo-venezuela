@@ -9,11 +9,17 @@
                 <xpath expr="//div[@name='binaural_rate_settings']" position="after">
                     <h2>Taxes Configuration</h2>
                     <div class="row mt16 o_settings_container" name="binaural_igtf_settings">
-                        <div class="o_setting_right_pane">
-                            <group colspan="2" col="3">
-                                <field name="module_binaural_base_igtf"/>
-                            </group>
-                        </div>    
+                        <div class="col-12 col-lg-6 o_setting_box" id="base_igtf_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="module_binaural_igtf"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="module_binaural_igtf"/>
+                                <div class="text-muted">
+                                    Basic config to calculate IGTF 
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </xpath>
             </field>

@@ -8,7 +8,8 @@ _logger = logging.getLogger(__name__)
 
 
 class PurchaseOrder(models.Model):
-    _inherit = 'purchase.order'
+    _name = "purchase.order"
+    _inherit = ['purchase.order', 'filter.partner.mixin']
 
     def default_alternate_currency(self):
         """
@@ -186,3 +187,13 @@ class PurchaseOrder(models.Model):
                 if move.foreign_currency_id.id == base_usd_id
                 else move.foreign_rate
             )
+
+    def action_create_invoice(self):
+        # Update the foreign rate and foreign inverse rate of the invoice
+        res = super().action_create_invoice()
+        if res.get("res_id"):
+            invoice = self.env["account.move"].browse(res["res_id"])
+            invoice.foreign_rate = self.foreign_rate
+            invoice.foreign_inverse_rate = self.foreign_inverse_rate
+        return res
+

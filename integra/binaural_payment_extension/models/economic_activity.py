@@ -4,7 +4,6 @@ from odoo import api, models, fields, _
 class EconomicActivity(models.Model):
     _name = "economic.activity"
     _description = "Economic Activity"
-    _rec_name = "name"
     _sql_constraints = [
         (
             "code_uniq",

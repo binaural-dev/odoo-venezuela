@@ -12,7 +12,7 @@
     'version': '16.0',
 
     # any module necessary for this one to work correctly
-    'depends': ['base', 'purchase', 'binaural_tax', 'binaural_rate'],
+    'depends': ['base', 'purchase', 'binaural_tax', 'binaural_rate', "binaural_filter_partner"],
 
     # always loaded
     'data': [

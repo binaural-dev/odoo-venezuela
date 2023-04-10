@@ -1,0 +1,106 @@
+import logging
+from datetime import datetime
+import xlsxwriter
+
+from odoo import _, api, models
+from odoo.osv import expression
+
+_logger = logging.getLogger(__name__)
+
+
+class WizardAccountingReports(models.TransientModel):
+    _inherit = "wizard.accounting.reports"
+
+    def purchase_book_fields(self):
+        fields = super().purchase_book_fields()
+        fields.extend(
+            [
+                {
+                    "name": "Fecha Retención",
+                    "field": "date_retention",
+                    "size": 20,
+                },
+                {
+                    "name": "N° Retención",
+                    "field": "number_retention",
+                    "size": 20,
+                },
+                {"name": "IVA retenido", "field": "iva_retained", "format": "number"},
+            ]
+        )
+        return fields
+
+    def _get_retention_domain(self):
+        is_purchase = self.report == "purchase"
+        field_date = "date" if is_purchase else "date_accounting"
+        move_type = (
+            ["out_invoice", "out_refund"] if not is_purchase else ["in_invoice", "in_refund"]
+        )
+
+        domain = [
+            (field_date, ">=", self.date_from),
+            (field_date, "<=", self.date_to),
+            ("type", "in", move_type),
+            ("type_retention", "=", "iva"),
+        ]
+        return domain
+
+    def search_moves(self):
+        retention = self.env["account.retention"]
+        res_moves = super().search_moves()
+
+        domain = self._get_retention_domain()
+        retention_ids = retention.search(domain)
+        moves = retention_ids.mapped("retention_line_ids.move_id")
+        res_moves |= moves
+
+        return res_moves
+
+    def parse_purchase_book_data(self):
+        data = super().parse_purchase_book_data()
+        for move in data:
+            move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
+            _logger.warning("move date: %s", move_date)
+            if (move_date < self.date_from or move_date > self.date_to):
+                move.update({
+                    "total_purchases_iva": 0,
+                    "total_purchases_not_iva": 0,
+                    "amount_reduced_aliquot": 0,
+                    "amount_general_aliquot": 0,
+                    "amount_extend_aliquot": 0,
+                    "tax_base_reduced_aliquot": 0,
+                    "tax_base_general_aliquot": 0,
+                    "tax_base_extend_aliquot": 0,
+                })
+            _logger.warning("move date: %s", type(move.get("document_date")))
+            retention_data = self.get_retention_iva_values(move.get("_id"))
+            move.update(retention_data)
+
+        return data
+
+    def get_retention_iva_values(self, move_id):
+        move = self.env["account.move"].browse(move_id)
+        multiplier = -1 if move.move_type == "in_refund" else 1
+        ret_lines = move.retention_iva_line_ids
+        retention = ret_lines.mapped("retention_id")
+        ret_vals = dict()
+
+        if not ret_lines or (retention.date <= self.date_from or retention.date >= self.date_to):
+            return {
+                "date_retention": "",
+                "number_retention": "",
+                "iva_retained": "",
+            }
+
+        ret_vals["date_retention"] = self._format_date(ret_lines.mapped("retention_id").date)
+        ret_vals["number_retention"] = move.iva_voucher_number
+        ret_vals["iva_retained"] = self._sum_retention_total(ret_lines) * multiplier
+
+        return ret_vals
+
+    def _sum_retention_total(self, lines):
+        is_check_currency_system = self.currency_system
+        if not is_check_currency_system:
+            return sum(lines.mapped("foreign_retention_amount"))
+
+        return sum(lines.mapped("retention_amount"))
