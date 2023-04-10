@@ -4,23 +4,17 @@
         <record id="res_config_settings_binaural_rate" model="ir.ui.view">
             <field name="name">res.config.settings.binaural.rate</field>
             <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
+            <field name="inherit_id" ref="binaural_tax.res_config_settings_binaural_taxes"/>
             <field name="arch" type="xml">
-                <xpath expr="//div[@name='binaural_rate_settings']" position="after">
-                    <h2>IGTF Configuration</h2>
-                    <div class="row mt16 o_settings_container" name="binaural_igtf_settings">
-                        <div class="o_setting_right_pane">
-                            <group colspan="2" col="3">
-                                <field name="account_igtf_id" required="1"/>
-                                <field name="igtf_percentage" />
-                            </group>
-                        </div>    
-                    </div>
+                <xpath expr="//div[@id='base_igtf_setting']/div[2]" position="inside">
+                    <br/>
+                    <field name="module_binaural_igtf" invisible="1"/>
+                    <group colspan="2" col="1" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                        <field name="account_igtf_id" required="1"/>
+                        <field name="igtf_percentage" />
+                    </group>
                 </xpath>
             </field>
         </record>
-    
     </data>
-    
-
 </odoo>

@@ -24,7 +24,7 @@ class FeesRetentionBinaural(models.Model):
 
     @api.constrains("accumulated_rate_ids", "percentage")
     def _check_data_accumulated(self):
-        if self.accumulated_rate and len(self.accumulated_rate_ids) is 0:
+        if self.accumulated_rate and not len(self.accumulated_rate_ids):
             raise ValidationError(_("You must enter the accumulated fees.\n"))
         if self.percentage < 0:
             raise ValidationError(_("The rate percentage cannot be negative.\n"))
