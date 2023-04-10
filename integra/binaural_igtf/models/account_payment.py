@@ -184,3 +184,15 @@ class AccountPaymentIgtf(models.Model):
             debit_line = lines[1]["debit"] - self.igtf_amount
             vals[1].update({"amount_currency": debit_line, "debit": debit_line})
             self._create_outbound_move_line_igtf_vals(vals)
+
+
+    def action_draft(self):
+        # if payment have reconciled_invoice_ids or reconciled_bill_ids and is_igtf is True clear bi_igtf of the reconciled invoices
+        for payment in self:
+            if payment.reconciled_invoice_ids or payment.reconciled_bill_ids and payment.is_igtf:
+                for invoice in payment.reconciled_invoice_ids:
+                    invoice.bi_igtf = invoice.bi_igtf - payment.amount
+                for bill in payment.reconciled_bill_ids:
+                    bill.bi_igtf = bill.bi_igtf - payment.amount
+
+        return super(AccountPaymentIgtf, self).action_draft()

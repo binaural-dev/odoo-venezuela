@@ -8,7 +8,15 @@
     "category": "Accounting/Localizations/Account Chart",
     "version": "16.0.0.0.1",
     # any module necessary for this one to work correctly
-    "depends": ["base", "account_accountant", "binaural_tax", "binaural_contact", "binaural_rate", "binaural_fiscal"],
+    "depends": [
+        "base",
+        "account_accountant",
+        "account_sequence",
+        "binaural_tax",
+        "binaural_contact",
+        "binaural_rate",
+        "binaural_fiscal",
+    ],
     # always loaded
     "data": [
         "data/account_data.xml",
