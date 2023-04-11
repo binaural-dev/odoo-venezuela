@@ -11,6 +11,29 @@ _logger = logging.getLogger(__name__)
 class WizardAccountingReports(models.TransientModel):
     _inherit = "wizard.accounting.reports"
 
+    def _determinate_resume_retention_books(self, moves):
+        retention_resume_lines = []
+        retention_moves = moves.filtered(lambda m: bool(m.retention_iva_line_ids.ids))
+        credit_notes = retention_moves.filtered(lambda m: m.move_type in ["out_refund", "in_refund"])
+        retention_moves -= credit_notes
+
+        retention_resume_lines.append(0.0)
+        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids) for move in retention_moves]))
+        retention_resume_lines.append(0.0)
+        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids) * -1 for move in credit_notes]))
+
+        return retention_resume_lines
+
+    def _resume_purchase_book_fields(self, moves):
+        res_book = super()._resume_purchase_book_fields(moves)
+        res_book.extend([{
+            "name": "Total Retenciones",
+            "format": "number",
+            "values": self._determinate_resume_retention_books(moves)
+        }])
+        _logger.warning("res book: %s", res_book)
+        return res_book
+
     def purchase_book_fields(self):
         fields = super().purchase_book_fields()
         fields.extend(
@@ -60,7 +83,6 @@ class WizardAccountingReports(models.TransientModel):
         data = super().parse_purchase_book_data()
         for move in data:
             move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
-            _logger.warning("move date: %s", move_date)
             if (move_date < self.date_from or move_date > self.date_to):
                 move.update({
                     "total_purchases_iva": 0,
@@ -85,7 +107,7 @@ class WizardAccountingReports(models.TransientModel):
         retention = ret_lines.mapped("retention_id")
         ret_vals = dict()
 
-        if not ret_lines or (retention.date <= self.date_from or retention.date >= self.date_to):
+        if not ret_lines or (retention.date < self.date_from or retention.date > self.date_to):
             return {
                 "date_retention": "",
                 "number_retention": "",
