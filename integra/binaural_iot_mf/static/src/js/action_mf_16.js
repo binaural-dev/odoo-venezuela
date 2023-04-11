@@ -37,6 +37,7 @@ export class IoTFiscalMachineComponent extends Widget {
       "generate_report_x": _t("Generate Report X"),
       "get_serial_machine": _t("Get Serial Machine"),
       "status_error": _t("Get Status / Error"),
+      "programacion": _t("Programming"),
       "status_1": _t("Get Status 1"),
       "reprint_document": _t("Reprint Document"),
     }
@@ -61,7 +62,11 @@ export class IoTFiscalMachineComponent extends Widget {
     console.log("CLOWN, please set a function name")
   }
   print_out_invoice() {
-    console.log("print_out_invoice")
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
   }
   get_serial_machine() {
     if (!this.device) {
@@ -88,7 +93,86 @@ export class IoTFiscalMachineComponent extends Widget {
       .then(data => {
         onIoTActionResult(data, this.env)
       })
-      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail("10.18.1.47"));
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+  }
+
+  async generate_report_z() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    const request = await this.env.services.rpc("web/dataset/call_kw/account.move/check_report_z", {
+      model: 'account.move',
+      method: 'check_report_z',
+      args: [[], this.device.serial_machine],
+      kwargs: {},
+    })
+
+    if (!request) {
+      this.env.services.notification.add(_t("Not are invoices to Report Z"), {
+        title: _t("Verify invoices with Serial Machine"),
+        type: "danger",
+      });
+      return
+    }
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+      this.env.services.rpc("web/dataset/call_kw/iot.device/set_serial_machine", {
+        model: 'account.move',
+        method: 'report_z',
+        args: [[], this.device.serial_machine, value],
+        kwargs: {},
+      })
+    });
+    this.iotDevice.action({
+      action: "report_z",
+      data: { "me": "you" },
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+  }
+
+  async generate_report_x() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    this.iotDevice.addListener(() => {
+      this.iotDevice.removeListener();
+    });
+    this.iotDevice.action({
+      action: "report_x",
+      data: { "me": "you" },
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+  }
+
+  async programacion() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    this.iotDevice.addListener(() => {
+      this.iotDevice.removeListener();
+    });
+    this.iotDevice.action({
+      action: "programacion",
+      data: { "me": "you" },
+    })
+      .then(data => {
+        console.log(data)
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
   }
 }
 

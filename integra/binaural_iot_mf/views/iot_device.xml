@@ -7,13 +7,10 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="before">
                 <header>
-                    <widget name="iot-mf-button" action="get_serial_machine"/>
-                    <!-- <widget name="get_fiscal_serial"/> -->
-                    <!-- <widget name="generate_report_z"/> -->
-                    <!-- <widget name="generate_report_x"/> -->
-                    <!-- <widget name="programacion"/> -->
-                    <!-- <widget name="statusMachine"/> -->
-                    <!-- <widget name="status1"/> -->
+                    <widget name="iot-mf-button" action="get_serial_machine" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget name="iot-mf-button" action="generate_report_z"  attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget name="iot-mf-button" action="generate_report_x" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget name="iot-mf-button" action="programacion" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
                 </header>
             </xpath>
 
