@@ -1,4 +1,4 @@
-from odoo import api, fields, models, _
+from odoo import api, fields, models, Command, _ 
 from odoo.tools import float_is_zero, float_compare
 import json
 
@@ -199,6 +199,40 @@ class AccountMove(models.Model):
                 min_amount = -payment_line_advance[0].amount_residual
             else:
                 min_amount = self.amount_residual
+            if payment.currency_id and payment.currency_id == self.currency_id:
+                amount_to_show = abs(min_amount)
+                self.currency_id.round(amount_to_show)
+            else:
+                currency = payment.company_id.currency_id
+                amount_to_show = currency._convert(
+                    abs(min_amount),
+                    self.currency_id,
+                    self.company_id,
+                    payment.date or fields.Date.today(),
+                )
+            if self.move_type in ["out_invoice", "in_refund"]:
+                line_vals = Command.create(
+                    {
+                        'name': 'CUENTA POR COBRAR CLIENTE',
+                        'account_id': account,  # cuenta de la factura, CXC
+                        'partner_id': self.partner_id.id,
+                        'credit': amount_to_show,
+                        'debit': 0.0,
+                        'foreign_currency_rate': payment.foreign_currency_rate,
+                        'payment_id_advance': payment.id,
+                        'reconciled': False,
+                    }), Command.create(
+                    {
+                        # "name": payment.name,
+                        # "debit": 0.0,
+                        # "credit": amount_to_show,
+                        # "account_id": self.account_id.id,
+                        # "partner_id": self.partner_id.id,
+                        # "currency_id": self.currency_id.id,
+                        # "amount_currency": -min_amount,
+                        # "payment_id_advance": payment.id,
+                        # "payment_id": self.id,
+                    })
 
 
     def js_remove_outstanding_partial(self, partial_id):
