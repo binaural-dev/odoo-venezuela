@@ -31,7 +31,6 @@ class WizardAccountingReports(models.TransientModel):
             "format": "number",
             "values": self._determinate_resume_retention_books(moves)
         }])
-        _logger.warning("res book: %s", res_book)
         return res_book
 
     def purchase_book_fields(self):
@@ -94,7 +93,6 @@ class WizardAccountingReports(models.TransientModel):
                     "tax_base_general_aliquot": 0,
                     "tax_base_extend_aliquot": 0,
                 })
-            _logger.warning("move date: %s", type(move.get("document_date")))
             retention_data = self.get_retention_iva_values(move.get("_id"))
             move.update(retention_data)
 

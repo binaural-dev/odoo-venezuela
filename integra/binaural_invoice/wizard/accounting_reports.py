@@ -687,7 +687,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             else "groups_by_foreign_subtotal"
         )
         tax_base = tax_totals.get(is_currency_system)
-        _logger.warning("taxes: %s", tax_base)
 
         for base in tax_base.items():
             taxes = base[1]
