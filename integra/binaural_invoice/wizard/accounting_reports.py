@@ -52,6 +52,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     currency_system = fields.Boolean(string="Report in currency system", default=False)
 
     def _fields_sale_book_line(self, move, taxes):
+        multiplier = -1 if move.move_type == "out_refund" else 1
         return {
             "document_date": self._format_date(move.invoice_date),
             "vat": move.vat,
@@ -63,19 +64,44 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "correlative": move.correlative,
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
-            "total_sales_iva": taxes.get("amount_taxed") or "",
-            "total_sales_not_iva": taxes.get("amount_untaxed") or "",
-            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot") or "",
-            "amount_general_aliquot": taxes.get("amount_general_aliquot") or "",
-            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot") or "",
-            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot") or "",
+            "total_sales_iva": taxes.get("amount_taxed", 0) * multiplier,
+            "total_sales_not_iva": taxes.get("amount_untaxed", 0) * multiplier,
+            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
+            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
+            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
+            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
+        }
+    
+    def _fields_purchase_book_line(self, move, taxes):
+        multiplier = -1 if move.move_type == "in_refund" else 1
+        return {
+            "_id": move.id,
+            "document_date": self._format_date(move.invoice_date),
+            "vat": move.vat,
+            "partner_name": move.invoice_partner_display_name,
+            "document_number": move.name,
+            "move_type": self._determinate_type(move.move_type),
+            "transaction_type": self._determinate_transaction_type(move),
+            "number_invoice_affected": move.reversed_entry_id.name or "--",
+            "correlative": move.correlative,
+            "reduced_aliquot": 0.08,
+            "extend_aliquot": 0.31,
+            "general_aliquot": 0.16,
+            "total_purchases_iva": taxes.get("amount_taxed", 0),
+            "total_purchases_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
+            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
+            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
+            "amount_extend_aliquot": taxes.get("amount_extend_aliquot", 0) * multiplier,
+            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
+            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
+            "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot", 0) * multiplier,
         }
 
     def parse_sale_book_data(self):
         sale_book_lines = []
         moves = self.search_moves()
 
-        for count, move in enumerate(moves):
+        for move in moves:
             taxes = self._determinate_amount_taxeds(move)
             sale_book_line = self._fields_sale_book_line(move, taxes)
             sale_book_lines.append(sale_book_line)
@@ -85,33 +111,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         purchase_book_lines = []
         moves = self.search_moves()
 
-        for count, move in enumerate(moves):
+        for move in moves:
             taxes = self._determinate_amount_taxeds(move)
-            multiplier = -1 if move.move_type == "in_refund" else 1
-
-            purchase_book_line = {
-                "_id": move.id,
-                "operation_number": count + 1,
-                "document_date": self._format_date(move.invoice_date),
-                "vat": move.vat,
-                "partner_name": move.invoice_partner_display_name,
-                "document_number": move.name,
-                "move_type": self._determinate_type(move.move_type),
-                "transaction_type": self._determinate_transaction_type(move),
-                "number_invoice_affected": move.reversed_entry_id.name or "--",
-                "correlative": move.correlative,
-                "reduced_aliquot": 0.08,
-                "extend_aliquot": 0.31,
-                "general_aliquot": 0.16,
-                "total_purchases_iva": taxes.get("amount_taxed", 0),
-                "total_purchases_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
-                "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
-                "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
-                "amount_extend_aliquot": taxes.get("amount_extend_aliquot", 0) * multiplier,
-                "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
-                "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
-                "tax_base_extend_aliquot": taxes.get("tax_base_extend_aliquot", 0) * multiplier,
-            }
+            purchase_book_line = self._fields_purchase_book_line(move, taxes, )
             purchase_book_lines.append(purchase_book_line)
 
         return purchase_book_lines
@@ -336,7 +338,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             },
         ]
 
-    def resume_purchase_book_headers(self):
+    def resume_book_headers(self):
         HEADERS = ("Base Imponible", "Débito Fiscal")
 
         return [
@@ -439,10 +441,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def search_moves(self):
         env = self.env
-        order_date = "date asc" if self.report == "purchase" else "invoice_date asc"
         move_model = env["account.move"]
         domain = self._get_domain()
-        moves = move_model.search(domain, order=order_date)
+        moves = move_model.search(domain, order="invoice_date asc")
         return moves
 
     def _resume_sale_book_fields(self, row_total):
@@ -574,57 +575,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             },
         ]
 
-    def generate_sales_book(self):
-        sale_book_lines = self.parse_sale_book_data()
-        file = BytesIO()
-
-        workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
-        worksheet = workbook.add_worksheet()
-
-        # cell formats
-        cell_bold = workbook.add_format(
-            {"bold": True, "center_across": True, "text_wrap": True, "bottom": True}
-        )
-        cell_number = workbook.add_format({"num_format": "#,##0.00"})
-        cell_bold_abstract = workbook.add_format({"bold": True})
-
-        # header xml
-
-        worksheet.merge_range(
-            "D1:F1",
-            f"{self.company_id.name} - {self.company_id.vat}",
-            workbook.add_format({"bold": True, "center_across": True, "font_size": 18}),
-        )
-        worksheet.merge_range("D2:F2", "Libro de Ventas", cell_bold)
-        worksheet.merge_range(
-            "D3:F3",
-            (
-                f"Desde {self._format_date(self.date_from)}"
-                f" Hasta {self._format_date(self.date_to)}"
-            ),
-            cell_bold,
-        )
-
-        name_columns = self.sale_book_fields()
-
-        for index, field in enumerate(name_columns):
-            if field.get("size"):
-                worksheet.set_column(index, index, field.get("size"))
-            worksheet.merge_range(6, index, 7, index, field.get("name"), cell_bold)
-            for index_line, line in enumerate(sale_book_lines):
-                if field["field"] == "index":
-                    worksheet.write(INIT_LINES + index_line, index, index_line + 1)
-                else:
-                    if field.get("number"):
-                        worksheet.write(
-                            INIT_LINES + index_line, index, line.get(field["field"]), cell_number
-                        )
-                    else:
-                        worksheet.write(INIT_LINES + index_line, index, line.get(field["field"]))
-
-        workbook.close()
-        return file.getvalue()
-
     def _determinate_amount_taxeds(self, move):
         is_posted = move.state == "posted"
         vef_base = self.company_id.currency_id.id == self.env.ref("base.VEF").id
@@ -735,6 +685,61 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         return tax_result
 
+    def generate_sales_book(self):
+        sale_book_lines = self.parse_sale_book_data()
+        file = BytesIO()
+
+        workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
+        worksheet = workbook.add_worksheet()
+
+        # cell formats
+        cell_bold = workbook.add_format(
+            {"bold": True, "center_across": True, "text_wrap": True, "bottom": True}
+        )
+        cell_number = workbook.add_format({"num_format": "#,##0.00"})
+        cell_bold_abstract = workbook.add_format({"bold": True})
+        cell_formats = {
+            "number": workbook.add_format({"num_format": "#,##0.00"}),
+            "percent": workbook.add_format({"num_format": "0.00%"}),
+        }
+        # header xml
+
+        worksheet.merge_range(
+            "D1:F1",
+            f"{self.company_id.name} - {self.company_id.vat}",
+            workbook.add_format({"bold": True, "center_across": True, "font_size": 18}),
+        )
+        worksheet.merge_range("D2:F2", "Libro de Ventas", cell_bold)
+        worksheet.merge_range(
+            "D3:F3",
+            (
+                f"Desde {self._format_date(self.date_from)}"
+                f" Hasta {self._format_date(self.date_to)}"
+            ),
+            cell_bold,
+        )
+
+        name_columns = self.sale_book_fields()
+        total_idx = 0
+
+        for index, field in enumerate(name_columns):
+            if field.get("size"):
+                worksheet.set_column(index, index, field.get("size"))
+            worksheet.merge_range(6, index, 7, index, field.get("name"), cell_bold)
+            for index_line, line in enumerate(sale_book_lines):
+                if field["field"] == "index":
+                    worksheet.write(INIT_LINES + index_line, index, index_line + 1)
+                else:
+                    if field.get("number"):
+                        worksheet.write(
+                            INIT_LINES + index_line, index, line.get(field["field"]), cell_number
+                        )
+                    else:
+                        worksheet.write(INIT_LINES + index_line, index, line.get(field["field"]))
+
+        workbook.close()
+        return file.getvalue()
+
     def generate_purchases_book(self):
         purchase_book_lines = self.parse_purchase_book_data()
         file = BytesIO()
@@ -780,10 +785,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             for index_line, line in enumerate(purchase_book_lines):
                 total_idx = (8 + index_line) + 1
                 if field["field"] == "index":
-                    worksheet.write(8 + index_line, index, index_line + 1)
+                    worksheet.write(INIT_LINES + index_line, index, index_line + 1)
                 else:
                     cell_format = cell_formats.get(field.get("format"), workbook.add_format())
-                    worksheet.write(8 + index_line, index, line.get(field["field"]), cell_format)
+                    worksheet.write(INIT_LINES + index_line, index, line.get(field["field"]), cell_format)
 
             if field.get("format") == "number":
                 col = utility.xl_col_to_name(index)
@@ -791,8 +796,16 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     total_idx, index, f"=SUM({col}9:{col}{total_idx})", cell_formats.get("number")
                 )
 
-        header_idx = total_idx + 2
+        self.generate_book_resume(worksheet, total_idx, merge_format, cell_formats)
+
+        workbook.close()
+        return file.getvalue()
+
+    def generate_book_resume(self, worksheet, index_to_start, merge_format, cell_formats):
+        is_purchase = self.report == "purchase"
+        header_idx = index_to_start + 2
         resume_headers = self.resume_purchase_book_headers()
+
         for idx, header in enumerate(resume_headers):
             nidx = idx * 2
             worksheet.merge_range(
@@ -801,9 +814,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             worksheet.write(header_idx + 1, nidx, header.get("headers")[0])
             worksheet.write(header_idx + 1, nidx + 1, header.get("headers")[1])
 
-        resume_columns = self._resume_purchase_book_fields(self.search_moves())
+        moves = self.search_moves()
+        resume_columns = self._resume_purchase_book_fields(moves) if is_purchase else self._resume_sale_book_fields(moves)
+
         for idx, resume in enumerate(resume_columns):
-            row_resume = (total_idx + 4) +  idx
+            row_resume = (index_to_start + 4) +  idx
 
             worksheet.write(row_resume, 0, idx + 1)
             worksheet.write(row_resume, 1, resume.get("name"))
@@ -819,6 +834,3 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
             worksheet.write_formula(row_resume, total_line + 1, imposed_formula, cell_formats.get("number")) 
             worksheet.write_formula(row_resume, total_line + 2, debit_formula, cell_formats.get("number")) 
-
-        workbook.close()
-        return file.getvalue()
