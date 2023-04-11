@@ -7,7 +7,6 @@ from xlsxwriter import utility
 import logging
 
 _logger = logging.getLogger(__name__)
-
 INIT_LINES = 8
 
 
@@ -54,7 +53,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def _fields_sale_book_line(self, move, taxes):
         return {
-            "document_date": self._format_date(move.date),
+            "document_date": self._format_date(move.invoice_date),
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
             "document_number": move.name,
@@ -93,13 +92,13 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             purchase_book_line = {
                 "_id": move.id,
                 "operation_number": count + 1,
-                "document_date": self._format_date(move.date),
+                "document_date": self._format_date(move.invoice_date),
                 "vat": move.vat,
                 "partner_name": move.invoice_partner_display_name,
                 "document_number": move.name,
                 "move_type": self._determinate_type(move.move_type),
                 "transaction_type": self._determinate_transaction_type(move),
-                "number_invoice_affected": move.reversed_entry_id.name,
+                "number_invoice_affected": move.reversed_entry_id.name or "--",
                 "correlative": move.correlative,
                 "reduced_aliquot": 0.08,
                 "extend_aliquot": 0.31,
@@ -116,6 +115,42 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             purchase_book_lines.append(purchase_book_line)
 
         return purchase_book_lines
+
+    def _determinate_resume_books(self, moves, tax_type=None):
+        resume_lines = []
+        credit_notes = moves.filtered(lambda m: m.move_type in ["out_refund", "in_refund"])
+        moves -= credit_notes
+
+        if tax_type == "exempt_aliquot":
+            resume_lines.append(sum([self._determinate_amount_taxeds(move)["tax_base_exempt_aliquot"] for move in moves]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(move)["amount_exempt_aliquot"] for move in moves]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(note)["tax_base_exempt_aliquot"] * -1 for note in credit_notes]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(note)["amount_exempt_aliquot"] * -1 for note in credit_notes]))
+
+            return resume_lines
+        if tax_type == "general_aliquot":
+            resume_lines.append(sum([self._determinate_amount_taxeds(move)["tax_base_general_aliquot"] for move in moves]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(move)["amount_general_aliquot"] for move in moves]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(note)["tax_base_general_aliquot"] * -1 for note in credit_notes]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(note)["amount_general_aliquot"] * -1 for note in credit_notes]))
+
+            return resume_lines
+        if tax_type == "reduced_aliquot":
+            resume_lines.append(sum([self._determinate_amount_taxeds(move)["tax_base_reduced_aliquot"] for move in moves]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(move)["amount_reduced_aliquot"] for move in moves]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(note)["tax_base_reduced_aliquot"] * -1 for note in credit_notes]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(note)["amount_reduced_aliquot"] * -1 for note in credit_notes]))
+
+            return resume_lines
+        if tax_type == "extend_aliquot":
+            resume_lines.append(sum([self._determinate_amount_taxeds(move)["tax_base_extend_aliquot"] for move in moves]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(move)["amount_extend_aliquot"] for move in moves]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(note)["tax_base_extend_aliquot"] * -1 for note in credit_notes]))
+            resume_lines.append(sum([self._determinate_amount_taxeds(note)["amount_extend_aliquot"] * -1 for note in credit_notes]))
+
+            return resume_lines
+
+        return [0.0, 0.0, 0.0, 0.0]
 
     def sale_book_fields(self):
         return [
@@ -307,17 +342,19 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return [
             {
                 "name": "Resumen",
+                "field": "resume",
                 "headers": [
                     "",
                     "Débitos Fiscales",
                 ],
             },
-            {"name": "Facturas/Notas de Débito", "headers": HEADERS},
+            {"name": "Facturas/Notas de Débito", "field": "inv_debit_notes", "headers": HEADERS},
             {
                 "name": "Notas de Crédito",
+                "field": "credit_notes",
                 "headers": HEADERS,
             },
-            {"name": "Total Neto", "headers": HEADERS},
+            {"name": "Total Neto", "field": "total", "headers": HEADERS},
         ]
 
     def _get_domain(self, current_company_id=False):
@@ -398,12 +435,14 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "in_invoice",
         ] and move.state in ["cancel"]:
             return "03-ANU"
+        
 
     def search_moves(self):
         env = self.env
+        order_date = "date asc" if self.report == "purchase" else "invoice_date asc"
         move_model = env["account.move"]
         domain = self._get_domain()
-        moves = move_model.search(domain)
+        moves = move_model.search(domain, order=order_date)
         return moves
 
     def _resume_sale_book_fields(self, row_total):
@@ -491,107 +530,48 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             },
         ]
 
-    def _resume_purchase_book_fields(self, row_total):
+    def _resume_purchase_book_fields(self, moves):
         return [
             {
                 "name": "Compras Internas no Grabadas",
-                "fields": [
-                    f"=K{row_total + 1}",
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
+                "values": self._determinate_resume_books(moves, "exempt_aliquot"),
             },
             {
                 "name": "Exportaciones Gravadas por Alícuota General",
-                "fields": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
+                "values": self._determinate_resume_books(moves)
             },
             {
                 "name": "Exportaciones Gravadas por Alícuota General más Adicional",
-                "fields": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
+                "values": self._determinate_resume_books(moves)
             },
             {
                 "name": "Compras Internas Gravadas sólo por Alícuota General",
-                "fields": [
-                    f"=L{row_total + 1}",
-                    f"=N{row_total + 1}",
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
+                "values": self._determinate_resume_books(moves, "general_aliquot"),
             },
             {
                 "name": "Compras Internas Gravadas por Alícuota General más Adicional",
-                "fields": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
+                "values": self._determinate_resume_books(moves, "extend_aliquot"),
             },
             {
                 "name": "Compras Internas Gravadas por Alícuota Reducida",
-                "fields": [
-                    f"=K{row_total + 1}",
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
+                "values": self._determinate_resume_books(moves, "reduced_aliquot"),
             },
             {
                 "name": "Ajustes a los Créditos Fiscales de Periodos Anteriores",
-                "fields": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
+                "values": self._determinate_resume_books(moves)
             },
             {
                 "name": "Total Compras y Créditos Fiscales del Periodo",
-                "fields": [
-                    f"=K{row_total + 1}",
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ],
+                "format": "number",
+                "values": self._determinate_resume_books(moves)
             },
-            # {
-            #     "name": "Total Retenciones",
-            #     "fields": [
-            #         0.0,
-            #         0.0,
-            #         0.0,
-            #         0.0,
-            #         0.0,
-            #         0.0,
-            #     ],
-            # },
         ]
 
     def generate_sales_book(self):
@@ -609,6 +589,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         cell_bold_abstract = workbook.add_format({"bold": True})
 
         # header xml
+
         worksheet.merge_range(
             "D1:F1",
             f"{self.company_id.name} - {self.company_id.vat}",
@@ -705,7 +686,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             if vef_base or self.currency_system
             else "groups_by_foreign_subtotal"
         )
-
         tax_base = tax_totals.get(is_currency_system)
 
         for base in tax_base.items():
@@ -807,7 +787,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
             if field.get("format") == "number":
                 col = utility.xl_col_to_name(index)
-                worksheet.write(
+                worksheet.write_formula(
                     total_idx, index, f"=SUM({col}9:{col}{total_idx})", cell_formats.get("number")
                 )
 
@@ -821,14 +801,24 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             worksheet.write(header_idx + 1, nidx, header.get("headers")[0])
             worksheet.write(header_idx + 1, nidx + 1, header.get("headers")[1])
 
-        resume_book = self._resume_purchase_book_fields(total_idx)
-        for idx, resume in enumerate(resume_book):
-            row_resume = (total_idx + 3) + (idx + 1)
+        resume_columns = self._resume_purchase_book_fields(self.search_moves())
+        for idx, resume in enumerate(resume_columns):
+            row_resume = (total_idx + 4) +  idx
+
             worksheet.write(row_resume, 0, idx + 1)
             worksheet.write(row_resume, 1, resume.get("name"))
 
-            for idx_line, line in enumerate(resume.get("fields")):
+            total_line = 0
+            for idx_line, line in enumerate(resume.get("values")):
+                total_line = idx_line + 2
                 worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
+
+            column_range = f"C{row_resume + 1}:{utility.xl_col_to_name(total_line)}{row_resume + 1}"
+            imposed_formula = f"=SUMPRODUCT(--({column_range}), --(MOD(COLUMN({column_range}), 2)=1))"
+            debit_formula = f"=SUMPRODUCT(--({column_range}), --(MOD(COLUMN({column_range}), 2)=0))"
+
+            worksheet.write_formula(row_resume, total_line + 1, imposed_formula, cell_formats.get("number")) 
+            worksheet.write_formula(row_resume, total_line + 2, debit_formula, cell_formats.get("number")) 
 
         workbook.close()
         return file.getvalue()
