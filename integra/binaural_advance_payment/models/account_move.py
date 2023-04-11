@@ -218,7 +218,7 @@ class AccountMove(models.Model):
                         'partner_id': self.partner_id.id,
                         'credit': amount_to_show,
                         'debit': 0.0,
-                        'foreign_currency_rate': payment.foreign_currency_rate,
+                        # 'foreign_currency_rate': payment.foreign_currency_rate,
                         'payment_id_advance': payment.id,
                         'reconciled': False,
                     }), Command.create(
