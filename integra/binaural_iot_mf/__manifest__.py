@@ -3,8 +3,8 @@
     "version": "1.0",
     "category": "Accounting",
     "summary": "The Factory KHA (SDK) en IoT",
-    "description": """,
     "license": "LGPL-3",
+    "description": """
     Implementacion de SDK de The Factory HKA (VE) a Internet of Things (IoT) y
     compatibilidad con Odoo.
     """,
