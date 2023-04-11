@@ -50,6 +50,15 @@ class AccountReport(models.Model):
 
         return formatted_amount
 
+    def export_file(self, options, file_generator):
+        """
+        Sends the usd_report variable to the request (this way in the controller we can tell if
+        the report we are gonna export is in USD or not).
+        """
+        res = super().export_file(options, file_generator)
+        res["data"]["usd_report"] = self.env.context.get("usd_report", False)
+        return res
+
 
 class AccountReportCustomHandler(models.AbstractModel):
     _inherit = "account.report.custom.handler"
