@@ -1,15 +1,10 @@
 from odoo import models, fields, api, _
 from lxml import etree
-import dateutil.parser
-
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class PurchaseOrder(models.Model):
     _name = "purchase.order"
-    _inherit = ['purchase.order', 'filter.partner.mixin']
+    _inherit = ["purchase.order", "filter.partner.mixin"]
 
     def default_alternate_currency(self):
         """
@@ -44,7 +39,7 @@ class PurchaseOrder(models.Model):
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
-        help="Rate that will be used as factor to multiply of the foreign currency for this move.",
+        help="Rate that will be used as factor to multiply of the foreign currency for this order.",
         compute="_compute_rate",
         digits=(16, 15),
         default=0.0,
@@ -54,17 +49,17 @@ class PurchaseOrder(models.Model):
 
     total_taxed = fields.Many2one(
         "account.tax",
-        help="Total Taxed of the invoice",
+        help="Total Taxed of the order",
     )
 
     foreign_taxable_income = fields.Monetary(
-        help="Foreign Taxable Income of the invoice",
+        help="Foreign Taxable Income of the order",
         compute="_compute_foreign_taxable_income",
         currency_field="foreign_currency_id",
     )
 
     foreign_total_billed = fields.Monetary(
-        help="Foreign Total Billed of the invoice",
+        help="Foreign Total Billed of the order",
         compute="_compute_foreign_total_billed",
         currency_field="foreign_currency_id",
         store=True,
@@ -78,7 +73,7 @@ class PurchaseOrder(models.Model):
         for order in self:
             order.foreign_taxable_income = False
             if order.order_line:
-                order.foreign_taxable_income = order.tax_totals["foreign_amount_untaxed"] 
+                order.foreign_taxable_income = order.tax_totals["foreign_amount_untaxed"]
 
     @api.depends("tax_totals")
     def _compute_foreign_total_billed(self):
@@ -86,19 +81,24 @@ class PurchaseOrder(models.Model):
         Compute the foreign total billed of the order
         """
         for order in self:
-            order.foreign_total_billed = False 
+            order.foreign_total_billed = False
             if order.order_line:
-                order.foreign_total_billed = order.tax_totals["foreign_amount_total"] 
+                order.foreign_total_billed = order.tax_totals["foreign_amount_total"]
 
-
-    @api.depends('order_line.taxes_id', 'order_line.price_subtotal', 'amount_total', 'amount_untaxed', 'foreign_rate')
-    def  _compute_tax_totals(self):
+    @api.depends(
+        "order_line.taxes_id",
+        "order_line.price_subtotal",
+        "amount_total",
+        "amount_untaxed",
+        "foreign_rate",
+    )
+    def _compute_tax_totals(self):
         return super()._compute_tax_totals()
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
         """
-        This method is used to get the view of the account move form and add the foreign currency
+        This method is used to get the view of the purchase order form and add the foreign currency
         symbol to the page title.
 
         Parameters
@@ -115,7 +115,8 @@ class PurchaseOrder(models.Model):
         Returns
         -------
         type = dict
-            The view of the account move form with the foreign currency symbol added to the page title
+            The view of the purchase order form with the foreign currency symbol added to the page
+            title
         """
         foreign_currency_symbol = ""
         foreign_currency_id = self.env.company.currency_foreign_id
@@ -135,8 +136,7 @@ class PurchaseOrder(models.Model):
                     res["arch"] = etree.tostring(doc, encoding="unicode")
         return res
 
-
-    @api.depends('partner_id')
+    @api.depends("partner_id")
     def _compute_vat(self):
         """
         Compute the vat of the partner and add the prefix to it if it exists in the partner record
@@ -148,52 +148,69 @@ class PurchaseOrder(models.Model):
                 vat = str(rec.partner_id.vat)
             rec.vat = vat.upper()
 
-
     @api.model_create_multi
     def create(self, vals_list):
         """
-        Ensure that the foreign_rate and foreign_inverse_rate are computed when the invoice is created.
+        Ensure that the foreign_rate and foreign_inverse_rate are computed when the purchase order
+        is created.
         """
-        moves = super().create(vals_list)
-        moves._compute_rate()
-        return moves
+        purchase_orders = super().create(vals_list)
+        purchase_orders._compute_rate()
+        return purchase_orders
 
-    @api.depends("date_order")
+    @api.onchange("name")
+    def onchange_order_line(self):
+        """
+        Ensure the foreign_rate and foreign_inverse_rate are computed when the order is still not
+        created.
+        """
+        self._compute_rate()
+
+    @api.depends("date_order", "date_approve")
     def _compute_rate(self):
         """
-        Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
+        Compute the rate of the purchase order using the compute_rate method of the
+        res.currency.rate model.
         """
         Rate = self.env["res.currency.rate"]
-        for move in self:
-            date_order = dateutil.parser.parse(str(move.date_order)).date()
-            rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, date_order or fields.Date.today()
+        for purchase in self:
+            date_order = (
+                purchase.date_approve.date()
+                if purchase.date_approve
+                else purchase.date_order.date()
             )
-            move.update(rate_values)
+            rate_values = Rate.compute_rate(
+                purchase.foreign_currency_id.id, date_order or fields.Date.today()
+            )
+            purchase.update(rate_values)
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
         """
         Onchange the foreign rate and compute the foreign inverse rate
         """
-        for move in self:
+        for purchase in self:
             base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
                 "base.USD", raise_if_not_found=False
             )
-            if not bool(move.foreign_rate):
+            if not bool(purchase.foreign_rate):
                 return
-            move.foreign_inverse_rate = (
-                1 / move.foreign_rate
-                if move.foreign_currency_id.id == base_usd_id
-                else move.foreign_rate
+            purchase.foreign_inverse_rate = (
+                1 / purchase.foreign_rate
+                if purchase.foreign_currency_id.id == base_usd_id
+                else purchase.foreign_rate
             )
 
     def action_create_invoice(self):
         # Update the foreign rate and foreign inverse rate of the invoice
         res = super().action_create_invoice()
-        if res.get("res_id"):
-            invoice = self.env["account.move"].browse(res["res_id"])
-            invoice.foreign_rate = self.foreign_rate
-            invoice.foreign_inverse_rate = self.foreign_inverse_rate
+        if not self.env.company.use_invoice_rate_from_purchase_order:
+            return res
+        for order in self:
+            order.invoice_ids.write(
+                {
+                    "foreign_rate": self.foreign_rate,
+                    "foreign_inverse_rate": self.foreign_inverse_rate,
+                }
+            )
         return res
-
