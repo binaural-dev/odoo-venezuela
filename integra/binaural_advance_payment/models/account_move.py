@@ -194,6 +194,11 @@ class AccountMove(models.Model):
         
         if payment.is_advance:
             payment_line_advance = payment.line_ids.filtered(lambda line: line.account_id == payment.destination_account_id)
+            min_amount = 0
+            if -payment_line_advance[0].amount_residual < self.amount_residual:
+                min_amount = -payment_line_advance[0].amount_residual
+            else:
+                min_amount = self.amount_residual
 
 
     def js_remove_outstanding_partial(self, partial_id):

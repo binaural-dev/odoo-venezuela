@@ -8,6 +8,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='is_internal_transfer']" position="after">
                 <field name="is_advance_payment" string="Is advance payment"/>
+                <field name="destination_account_id" />
             </xpath>
         </field>
     </record>

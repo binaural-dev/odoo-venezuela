@@ -18,8 +18,8 @@ class AccountPayment(models.Model):
     def _compute_destination_account_id(self):
         for rec in self:
             if rec.is_advance_payment:
-                customer_account = self.env.company.advance_customer_account_id
-                supplier_account = self.env.company.advance_supplier_account_id
+                customer_account = self.env.company.advance_customer_account_id.id
+                supplier_account = self.env.company.advance_supplier_account_id.id
                 if not customer_account or not supplier_account:
                     raise UserError(
                         _(
@@ -30,5 +30,6 @@ class AccountPayment(models.Model):
                     rec.destination_account_id = customer_account
                 elif rec.partner_type == "supplier":
                     rec.destination_account_id = supplier_account
-            return super(AccountPayment, rec)._compute_destination_account_id()
+            else:
+                return super(AccountPayment, rec)._compute_destination_account_id()
         
