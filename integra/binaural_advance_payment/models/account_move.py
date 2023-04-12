@@ -16,7 +16,6 @@ class AccountMove(models.Model):
     )
 
     def _compute_payments_widget_to_reconcile_info2(self):
-        _logger.warning("Computing PAYMENT WIDGET AAAAAAAAAAA")
         for move in self:
             move.invoice_outstanding_credits_debits_widget2 = False
             move.invoice_has_outstanding = False
@@ -32,11 +31,7 @@ class AccountMove(models.Model):
             )
             domain = []
             if move.move_type in ("out_invoice", "in_refund"):
-                _logger.warning("IFFF")
-                # advance_account = self.env['account.payment.config.advance'].search(
-                #     [('active', '=', True), ('advance_type', '=', 'customer')], limit=1)
                 advance_account = self.env.company.advance_customer_account_id
-                _logger.warning("Advance Account: %s", advance_account)
                 if advance_account:
                     domain = [
                         ("account_id", "=", advance_account.id),
@@ -49,9 +44,7 @@ class AccountMove(models.Model):
                         # ("credit", ">", 0),
                         # ("debit", "=", 0),
                     ]
-                    _logger.warning("Domain: %s", domain)
             else:
-                _logger.warning("ELSEEE")
                 advance_account = self.env.company.advance_supplier_account_id
                 if advance_account:
                     domain = [
@@ -66,22 +59,15 @@ class AccountMove(models.Model):
                         # ("debit", ">", 0),
                     ]
             payments_widget_vals = {"outstanding": True, "content": [], "move_id": move.id}
-            _logger.warning("DomaiIIIIIINn: %s", domain)
 
             if move.is_inbound():
-                _logger.warning("AAAAAAA")
                 domain.append(("balance", "<", 0.0))
                 payments_widget_vals["title"] = _("Outstanding credits")
             else:
-                _logger.warning("BBBBB")
                 domain.append(("balance", ">", 0.0))
                 payments_widget_vals["title"] = _("Outstanding debits")
 
-            advance_lines = self.env["account.move.line"].search(domain)
-            _logger.warning("Advance Linessssssss: %s", advance_lines)
-
             for line in self.env["account.move.line"].search(domain):
-                _logger.warning("Line: %s", line)
                 if line.currency_id == move.currency_id:
                     # Same foreign currency.
                     amount = abs(line.amount_residual_currency)
@@ -109,17 +95,8 @@ class AccountMove(models.Model):
                         "payment_date": fields.Date.to_string(line.date),
                     }
                 )
-                _logger.warning("Payments Widget22222: %s", payments_widget_vals)
 
             if not payments_widget_vals["content"]:
-                payments_widget_vals["content"].append(
-                    {"journal_name": _("No outstanding credits or debits"),
-                     "amount": 10.0,
-                     "currency": move.currency_id.symbol,}
-                )
-                _logger.warning("OOOOO")
-                move.invoice_outstanding_credits_debits_widget2 = payments_widget_vals
-                move.invoice_has_outstanding = True
                 continue
 
             move.invoice_outstanding_credits_debits_widget2 = payments_widget_vals
@@ -247,7 +224,7 @@ class AccountMove(models.Model):
                         "payment_id_advance": payment.id,
                         "reconciled": False,
                     }
-                )], [Command.create(
+                ), Command.create(
                     {
                         "name": "ANTICIPO/CLIENTE",
                         "account_id": payment.destination_account_id.id,  # cuenta de la factura, CXC
@@ -271,7 +248,7 @@ class AccountMove(models.Model):
                         "payment_id_advance": payment.id,
                         "reconciled": False,
                     }
-                )], [Command.create(
+                ), Command.create(
                     {
                         "name": "ANTICIPO/PROVEEDOR",
                         "account_id": payment.destination_account_id.id,  # cuenta de la factura, CXC
@@ -295,18 +272,21 @@ class AccountMove(models.Model):
             )
             move.action_post()
             account_move_line = False
-            _logger.warning("plsssssssss")
             for line in move.line_ids:
-                if line.account_id == payment.destination_account_id:
+                if line.name in ('ANTICIPO/CLIENTE', 'ANTICIPO/PROVEEDOR'):
                     account_move_line = line.id
-                    _logger.warning("account_move_line: %s", account_move_line)
             lines2 = self.env["account.move.line"].browse(account_move_line)
-            _logger.warning("lines22222222: %s", lines2)
-            lines2 += self.line_ids.filtered(
-                lambda line: line.account_id == lines2[0].account_id and not line.reconciled
-            )
-            _logger.warning("lines33333: %s", lines2)
-            return lines2.reconcile()
+            lines += lines2
+            lines.reconcile()
+
+            cta_fv = False
+
+            for cf in move.line_ids:
+                    if cf.name in ('CUENTA POR COBRAR CLIENTE', 'CUENTA POR PAGAR PROVEEDOR'):
+                        cta_fv = cf.id
+            lines3 = self.env['account.move.line'].browse(cta_fv)
+            lines3 += self.line_ids.filtered(lambda line: line.account_id == lines3[0].account_id and not line.reconciled)
+            return lines3.reconcile()
 
     def js_remove_outstanding_partial(self, partial_id):
         """Called by the 'payment' widget to remove a reconciled entry to the present invoice.
@@ -329,11 +309,11 @@ class AccountMove(models.Model):
         move_line_partial = self.env["account.move.line"].browse(
             partial_advance_payment.credit_move_id.id
         )
-        if move_line_partial.payment_id_advance and move_line_partial.payment_id_advance.is_advance:
+        if move_line_partial.payment_id_advance and move_line_partial.payment_id_advance.is_advance_payment:
             move_line_partial.move_id.cancel_move()
 
         move_line_partial = self.env["account.move.line"].browse(
             partial_advance_payment.debit_move_id.id
         )
-        if move_line_partial.payment_id_advance and move_line_partial.payment_id_advance.is_advance:
+        if move_line_partial.payment_id_advance and move_line_partial.payment_id_advance.is_advance_payment:
             move_line_partial.move_id.cancel_move()
