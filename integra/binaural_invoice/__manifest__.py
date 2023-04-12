@@ -11,6 +11,7 @@
     "depends": ["binaural_accountant", "binaural_contact", "binaural_fiscal", "binaural_filter_partner"],
     # always loaded
     "data": [
+        "security/binaural_invoice_groups.xml",
         "security/ir.model.access.csv",
         "data/account_data.xml",
         "data/invoice_free_form_paperformat.xml",
