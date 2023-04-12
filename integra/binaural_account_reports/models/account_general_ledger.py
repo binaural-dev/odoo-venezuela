@@ -15,7 +15,7 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
         # As the currency table is the same whatever the comparisons, create it only once.
         ct_query = self.env["res.currency"]._get_query_currency_table(options)
 
-        report_in_foreign_currency = self._get_is_foreign_currency()
+        amounts_query = self._get_sums_amount_rows_query()
 
         # ============================================
         # 1) Get sums for all accounts.
@@ -51,20 +51,7 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
                     MAX(account_move_line.date)                             AS max_date,
                     %s                                                      AS column_group_key,
                     COALESCE(SUM(account_move_line.amount_currency), 0.0)   AS amount_currency,
-                    (
-                        CASE WHEN {report_in_foreign_currency}
-                        THEN (
-                            SUM(ROUND(account_move_line.foreign_debit, currency_table.precision))   AS debit,
-                            SUM(ROUND(account_move_line.foreign_credit, currency_table.precision))  AS credit,
-                            SUM(ROUND(account_move_line.foreign_balance, currency_table.precision)) AS balance
-                        )
-                        ELSE(
-                            SUM(ROUND(account_move_line.debit * currency_table.rate, currency_table.precision))   AS debit,
-                            SUM(ROUND(account_move_line.credit * currency_table.rate, currency_table.precision))  AS credit,
-                            SUM(ROUND(account_move_line.balance * currency_table.rate, currency_table.precision)) AS balance
-                        )
-                        END
-                    )
+                    {amounts_query}
                 FROM {tables}
                 LEFT JOIN {ct_query} ON currency_table.company_id = account_move_line.company_id
                 WHERE {where_clause}
@@ -98,20 +85,7 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
                         NULL                                                    AS max_date,
                         %s                                                      AS column_group_key,
                         COALESCE(SUM(account_move_line.amount_currency), 0.0)   AS amount_currency,
-                        (
-                            CASE WHEN {report_in_foreign_currency}
-                            THEN (
-                                SUM(ROUND(account_move_line.foreign_debit, currency_table.precision))   AS debit,
-                                SUM(ROUND(account_move_line.foreign_credit, currency_table.precision))  AS credit,
-                                SUM(ROUND(account_move_line.foreign_balance, currency_table.precision)) AS balance
-                            )
-                            ELSE(
-                                SUM(ROUND(account_move_line.debit * currency_table.rate, currency_table.precision))   AS debit,
-                                SUM(ROUND(account_move_line.credit * currency_table.rate, currency_table.precision))  AS credit,
-                                SUM(ROUND(account_move_line.balance * currency_table.rate, currency_table.precision)) AS balance
-                            )
-                            END
-                        )
+                        {amounts_query}
                     FROM {tables}
                     LEFT JOIN {ct_query} ON currency_table.company_id = account_move_line.company_id
                     WHERE {where_clause}
@@ -141,7 +115,8 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
             else "account.name"
         )
 
-        report_in_foreign_currency = self._get_is_foreign_currency()
+        amounts_query = self._get_amount_rows_query()
+
         for column_group_key, group_options in report._split_options_per_column_group(
             options
         ).items():
@@ -164,18 +139,7 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
                     account_move_line.partner_id,
                     account_move_line.currency_id,
                     account_move_line.amount_currency,
-                    CASE WHEN {report_in_foreign_currency}
-                    THEN (
-                        ROUND(account_move_line.foreign_debit, currency_table.precision)   AS debit,
-                        ROUND(account_move_line.foreign_credit, currency_table.precision)  AS credit,
-                        ROUND(account_move_line.foreign_balance, currency_table.precision) AS balance,
-                    )
-                    ELSE(
-                        ROUND(account_move_line.debit * currency_table.rate, currency_table.precision)   AS debit,
-                        ROUND(account_move_line.credit * currency_table.rate, currency_table.precision)  AS credit,
-                        ROUND(account_move_line.balance * currency_table.rate, currency_table.precision) AS balance,
-                    )
-                    END
+                    {amounts_query},
                     move.name                               AS move_name,
                     company.currency_id                     AS company_currency_id,
                     partner.name                            AS partner_name,
@@ -197,7 +161,6 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
                 WHERE {where_clause}
                 ORDER BY account_move_line.date, account_move_line.id)
             """
-
             queries.append(query)
             all_params.append(column_group_key)
             all_params += where_params
@@ -212,3 +175,56 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
             all_params.append(limit)
 
         return (full_query, all_params)
+
+    def _get_initial_balance_values(self, report, account_ids, options):
+        """
+        Get sums for the initial balance.
+        """
+        queries = []
+        params = []
+
+        amounts_query = self._get_sums_amount_rows_query()
+        for column_group_key, options_group in report._split_options_per_column_group(
+            options
+        ).items():
+            new_options = self._get_options_initial_balance(options_group)
+            ct_query = self.env["res.currency"]._get_query_currency_table(new_options)
+            tables, where_clause, where_params = report._query_get(
+                new_options,
+                "normal",
+                domain=[
+                    ("account_id", "in", account_ids),
+                    ("account_id.include_initial_balance", "=", True),
+                ],
+            )
+            params.append(column_group_key)
+            params += where_params
+            queries.append(
+                f"""
+                SELECT
+                    account_move_line.account_id                                                          AS groupby,
+                    'initial_balance'                                                                     AS key,
+                    NULL                                                                                  AS max_date,
+                    %s                                                                                    AS column_group_key,
+                    COALESCE(SUM(account_move_line.amount_currency), 0.0)                                 AS amount_currency,
+                    {amounts_query}
+                FROM {tables}
+                LEFT JOIN {ct_query} ON currency_table.company_id = account_move_line.company_id
+                WHERE {where_clause}
+                GROUP BY account_move_line.account_id
+            """
+            )
+
+        self._cr.execute(" UNION ALL ".join(queries), params)
+
+        init_balance_by_col_group = {
+            account_id: {column_group_key: {} for column_group_key in options["column_groups"]}
+            for account_id in account_ids
+        }
+        for result in self._cr.dictfetchall():
+            init_balance_by_col_group[result["groupby"]][result["column_group_key"]] = result
+
+        accounts = self.env["account.account"].browse(account_ids)
+        return {
+            account.id: (account, init_balance_by_col_group[account.id]) for account in accounts
+        }
