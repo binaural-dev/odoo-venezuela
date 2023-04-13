@@ -31,5 +31,5 @@ class AccountPayment(models.Model):
                 elif rec.partner_type == "supplier":
                     rec.destination_account_id = supplier_account
             else:
-                return super(AccountPayment, rec)._compute_destination_account_id()
-        
+                super(AccountPayment, rec)._compute_destination_account_id()
+        return
