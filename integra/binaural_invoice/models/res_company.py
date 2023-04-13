@@ -5,4 +5,4 @@ class ResCompany(models.Model):
     _inherit = "res.company"
 
     max_product_invoice = fields.Integer(default=23)
-    series_invoicing = fields.Boolean(implied_group="binaural_invoice.group_sales_invoicing_series")
+    group_sales_invoicing_series = fields.Boolean()
