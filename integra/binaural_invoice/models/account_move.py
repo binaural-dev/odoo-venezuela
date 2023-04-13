@@ -2,7 +2,6 @@ import json
 import logging
 
 from odoo import api, fields, models, _
-from odoo.osv import expression
 from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -71,7 +70,14 @@ class AccountMove(models.Model):
         """
 
         self.ensure_one()
-        sequence = self.env["ir.sequence"].sudo()
-        correlative = sequence.search([("code", "=", "invoice.correlative")])
+        series_invoicing_enabled = self.env["ir.config_parameter"].sudo().get_param("group_sales_invoicing_series")
 
+        sequence = self.env["ir.sequence"].sudo()
+        correlative = None
+
+        if not series_invoicing_enabled:
+            correlative = sequence.search([("code", "=", "invoice.correlative")])
+            return correlative.next_by_id(correlative.id)
+
+        correlative = self.journal_id.series_correlative_sequence_id
         return correlative.next_by_id(correlative.id)
