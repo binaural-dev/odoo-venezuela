@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230403\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230410\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-04 19:12+0000\n"
-"PO-Revision-Date: 2023-04-04 19:12+0000\n"
+"POT-Creation-Date: 2023-04-14 18:50+0000\n"
+"PO-Revision-Date: 2023-04-14 18:50+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -304,6 +304,13 @@ msgid "Approve"
 msgstr "Aprobar"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "April"
+msgstr "Abril"
+
+#. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_iva_form_binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_form_binaural_payment_extension
@@ -318,6 +325,13 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line__payment_concept_id
 msgid "Associated Payment Concept"
 msgstr "Concepto de pago asociado"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "August"
+msgstr "Agosto"
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_iva_customer
@@ -452,6 +466,7 @@ msgstr "Correlativo"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__create_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_branch__create_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention__create_uid
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_municipal_retention_xlsx_report__create_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept__create_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line__create_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_signature_config__create_uid
@@ -470,6 +485,7 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__create_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_branch__create_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention__create_date
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_municipal_retention_xlsx_report__create_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept__create_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line__create_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_signature_config__create_date
@@ -520,6 +536,13 @@ msgid "Date start"
 msgstr "Fecha de inicio"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "December"
+msgstr "Diciembre"
+
+#. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_journal__default_account_id
 msgid "Default Account"
 msgstr "Cuenta predeterminada"
@@ -529,6 +552,11 @@ msgstr "Cuenta predeterminada"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_res_users__economic_activity_id
 msgid "Default Economic Activity"
 msgstr "Actividad económica predeterminada"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.wizard_report_municipality_retentions_report_view
+msgid "Descargar Excel de impuesto fiscal"
+msgstr ""
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__name
@@ -555,6 +583,7 @@ msgstr "Descripción del Comprobante"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__display_name
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_branch__display_name
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention__display_name
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_municipal_retention_xlsx_report__display_name
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept__display_name
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line__display_name
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_signature_config__display_name
@@ -575,6 +604,11 @@ msgstr "Borrador"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__economic_activity_id
 msgid "Economic Activity"
 msgstr "Actividad Económica"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_company__economic_activity_number
+msgid "Economic Activity Number"
+msgstr "Número de Actividad Ecónomica"
 
 #. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_economic_branch
@@ -638,6 +672,13 @@ msgid "Fact Nro"
 msgstr ""
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "February"
+msgstr "Febrero"
+
+#. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_islr_customer
 msgid "Fecha"
 msgstr ""
@@ -654,8 +695,18 @@ msgid "Fecha Contable"
 msgstr ""
 
 #. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_municipal_retention_xlsx_report__date_start
+msgid "Fecha Inicio"
+msgstr ""
+
+#. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_iva_customer
 msgid "Fecha de entrega:"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_municipal_retention_xlsx_report__date_end
+msgid "Fecha fin"
 msgstr ""
 
 #. module: binaural_payment_extension
@@ -773,6 +824,7 @@ msgstr "Agrupar por"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_branch__id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention__id
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_municipal_retention_xlsx_report__id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept__id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line__id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_signature_config__id
@@ -1006,6 +1058,13 @@ msgid "Iva Voucher Number"
 msgstr "Comprobante de Retención de IVA"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "January"
+msgstr "Enero"
+
+#. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_account_journal
 msgid "Journal"
 msgstr "Diario"
@@ -1052,6 +1111,20 @@ msgid "Journal for Supplier Municipal Retentions"
 msgstr "Diario para Retenciones Municipales de Proveedores"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "July"
+msgstr "Julio"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "June"
+msgstr "Junio"
+
+#. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention____last_update
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line____last_update
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_withholding_type____last_update
@@ -1059,6 +1132,7 @@ msgstr "Diario para Retenciones Municipales de Proveedores"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity____last_update
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_branch____last_update
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention____last_update
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_municipal_retention_xlsx_report____last_update
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept____last_update
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line____last_update
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_signature_config____last_update
@@ -1077,6 +1151,7 @@ msgstr "Ultima modificación"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_branch__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention__write_uid
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_municipal_retention_xlsx_report__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_signature_config__write_uid
@@ -1095,6 +1170,7 @@ msgstr "Ultima actualización"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__write_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_branch__write_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention__write_date
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_municipal_retention_xlsx_report__write_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept__write_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line__write_date
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_signature_config__write_date
@@ -1111,9 +1187,23 @@ msgid "Leave blank to compare only with the value \"start\""
 msgstr "Dejar en blanco para comparar solo con el valor \"inicio\""
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "March"
+msgstr "Marzo"
+
+#. module: binaural_payment_extension
 #: model:ir.ui.menu,name:binaural_payment_extension.master_configuration
 msgid "Masters"
 msgstr "Maestros"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "May"
+msgstr "Mayo"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__minimum_monthly
@@ -1149,6 +1239,13 @@ msgid "Municipal Retention Lines"
 msgstr "Líneas de Retención Municipal"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "Municipal Retention Report from {date_from} to {date_to}"
+msgstr "Reporte de retenciones municipales desde {date_from} hasta {date_to}"
+
+#. module: binaural_payment_extension
 #: model:ir.actions.act_window,name:binaural_payment_extension.action_retention_municipal_supplier
 msgid "Municipal Retention Suppliers"
 msgstr "Retenciones Municipales de Proveedores"
@@ -1159,11 +1256,26 @@ msgid "Municipal Retentions"
 msgstr "Retenciones Municipales"
 
 #. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.wizard_report_municipality_retentions_report_view
+msgid "Municipal Retentions Report"
+msgstr "Reporte de Retenciones Municipales"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:binaural_payment_extension.municipal_supplier_retention_report_action
+msgid "Municipal Supplier Retention Report"
+msgstr "Reporte de Retenciones Municipales de Proveedor"
+
+#. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_bank_statement_line__municipal_voucher_number
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_move__municipal_voucher_number
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_payment__municipal_voucher_number
 msgid "Municipal Voucher Number"
 msgstr "Comprobante de Retención Municipal"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:binaural_payment_extension.municipal_supplier_retention_report_menu
+msgid "Municipal supplier retention report"
+msgstr "Reporte de retenciones municipales de proveedor"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__municipality_id
@@ -1192,6 +1304,13 @@ msgid "No retentions found for the selected period"
 msgstr "No se encontraron retenciones para el periodo seleccionado"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "November"
+msgstr "Noviembre"
+
+#. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_islr_customer
 msgid "Nro de Control"
 msgstr ""
@@ -1201,6 +1320,13 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_search_binaural_payment_extension
 msgid "Number"
 msgstr "Número"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "October"
+msgstr "Octubre"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields.selection,name:binaural_payment_extension.selection__res_partner__taxpayer_type__ordinary
@@ -1471,6 +1597,13 @@ msgid "Seniat Reports"
 msgstr "Reportes del Seniat"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "September"
+msgstr "Septiembre"
+
+#. module: binaural_payment_extension
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_islr_sequence
 msgid "Sequence ISLR"
 msgstr "Secuencia de ISLR"
@@ -1597,6 +1730,21 @@ msgstr "Tarifa Acumulada"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line__tariff_id
 msgid "Tariff"
 msgstr "Tarifa"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_company_form
+msgid "Tax Authorities Data"
+msgstr "Datos de Hacienda"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_company__tax_authorities_logo
+msgid "Tax Authorities Logo"
+msgstr "Logo de Hacienda"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_company__tax_authorities_name
+msgid "Tax Authorities Name"
+msgstr "Nombre de Hacienda"
 
 #. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_tax_unit
@@ -1857,11 +2005,27 @@ msgid "There are no invoices with taxes to be retained for the supplier."
 msgstr "No hay facturas con impuestos para ser retenidos para el proveedor."
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/municipal_retention_xlsx_report.py:0
+#, python-format
+msgid "There are no supplier municipal retentions for the given date range."
+msgstr ""
+"No hay retenciones municipales de proveedor para el rango de fecha "
+"seleccionado."
+
+#. module: binaural_payment_extension
 #: model:ir.model.constraint,message:binaural_payment_extension.constraint_economic_activity_code_uniq
 msgid ""
 "There cannot be two records with the same code for the selected "
 "municipality."
 msgstr "No puede haber dos registros con el mismo código para el municipio."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "There is no data to show."
+msgstr "No hay datos que mostrar."
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,help:binaural_payment_extension.field_account_retention__type
@@ -1957,6 +2121,11 @@ msgid "Wizard Retention ISLR Report"
 msgstr "Wizard de reportes de Retención de ISLR"
 
 #. module: binaural_payment_extension
+#: model:ir.model,name:binaural_payment_extension.model_wizard_accounting_reports
+msgid "Wizard para generar reportes de libro de compra y ventas"
+msgstr ""
+
+#. module: binaural_payment_extension
 #: model:ir.ui.menu,name:binaural_payment_extension.xml_retention_islr
 msgid "XML ISLR Retention"
 msgstr "XML de Retención de ISLR"
@@ -2038,6 +2207,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__move_id
 msgid "move"
 msgstr "Nro de Documento"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:binaural_payment_extension.model_municipal_retention_xlsx_report
+msgid "municipal.retention.xlsx.report"
+msgstr ""
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_islr_form_binaural_payment_extension
