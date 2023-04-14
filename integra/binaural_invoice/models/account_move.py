@@ -21,14 +21,11 @@ class AccountMove(models.Model):
         """
         Limit the number of products that can be added to the invoice
         """
-        if self.invoice_line_ids and self.move_type in ["out_invoice","out_refund"]:
+        if self.invoice_line_ids and self.move_type in ["out_invoice", "out_refund"]:
             max_product_invoice = self.company_id.max_product_invoice
             if len(self.invoice_line_ids) > max_product_invoice:
                 raise ValidationError(
-                    _(
-                        "You can not add more than %s products to the invoice."
-                        % max_product_invoice
-                    )
+                    _("You can not add more than %s products to the invoice." % max_product_invoice)
                 )
 
     @api.depends("filter_partner")
@@ -70,13 +67,24 @@ class AccountMove(models.Model):
         """
 
         self.ensure_one()
-        series_invoicing_enabled = self.env["ir.config_parameter"].sudo().get_param("group_sales_invoicing_series")
+        series_invoicing_enabled = (
+            self.env["ir.config_parameter"].sudo().get_param("group_sales_invoicing_series")
+        )
 
         sequence = self.env["ir.sequence"].sudo()
         correlative = None
 
         if not series_invoicing_enabled:
             correlative = sequence.search([("code", "=", "invoice.correlative")])
+
+            if not correlative:
+                correlative = sequence.create(
+                    {
+                        "name": "Número de control",
+                        "code": "invoice.correlative",
+                        "padding": 5,
+                    }
+                )
             return correlative.next_by_id(correlative.id)
 
         correlative = self.journal_id.series_correlative_sequence_id
