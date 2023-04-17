@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_purchase_order_form_inherited_binaural_marcas_form" model="ir.ui.view">
+            <field name="name">Extension de formulario de compra: agregar campo marca</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page/field[@name='order_line']/tree/field[@name='name']" position="after">
+                    <field name="brand_id_purchase" optional="hide"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

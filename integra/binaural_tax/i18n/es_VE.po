@@ -1,0 +1,46 @@
+#. module: binaural_tax
+#: model:ir.model,name:binaural_tax.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: binaural_tax
+#: model:ir.model,name:binaural_tax.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
+
+#. module: binaural_tax
+#: model:ir.model.fields,field_description:binaural_tax.field_res_company__module_binaural_igtf
+#: model:ir.model.fields,field_description:binaural_tax.field_res_config_settings__module_binaural_igtf
+msgid "IGTF"
+msgstr ""
+
+#. module: binaural_tax
+#. odoo-python
+#: code:addons/binaural_tax/models/account_tax.py:0
+#, python-format
+msgid "No foreign currency configured in the company"
+msgstr "La moneda alterna no esta configurada para esta compañia"
+
+#. module: binaural_tax
+#: model:ir.model,name:binaural_tax.model_account_tax
+msgid "Tax"
+msgstr "Impuesto"
+
+#. module: binaural_tax
+#: model_terms:ir.ui.view,arch_db:binaural_tax.res_config_settings_binaural_taxes
+msgid "Taxes Configuration"
+msgstr "Configuración de impuestos"
+
+#. module: binaural_tax
+#. odoo-javascript
+#: code:addons/binaural_tax/static/src/components/tax_totals/tax_totals.xml:0
+#, python-format
+msgid "Total"
+msgstr "Total"
+
+#. module: binaural_tax
+#. odoo-javascript
+#: code:addons/binaural_tax/static/src/components/tax_totals/tax_totals.xml:0
+#, python-format
+msgid "Total Rounded"
+msgstr "Total Redondeado"
