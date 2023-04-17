@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "16.3",
+    "version": "16.4",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -16,6 +16,7 @@
         "binaural_location",
         "binaural_fiscal",
         "binaural_contact",
+        "binaural_tax_payer",
     ],
     # always loaded
     "data": [
@@ -36,6 +37,7 @@
         "views/economic_activity.xml",
         "views/economic_branch.xml",
         "views/payment_concept.xml",
+        "views/res_company.xml",
         "views/signature_config.xml",
         "views/type_withholding.xml",
         "views/account_retention_line.xml",
@@ -48,6 +50,7 @@
         "wizard/account_payment_register.xml",
         "wizard/wizard_retention_islr.xml",
         "wizard/wizard_retention_iva.xml",
+        "wizard/municipal_retention_xlsx_report.xml",
         "views/menu.xml",
     ],
     "images": ["static/description/icon.png"],

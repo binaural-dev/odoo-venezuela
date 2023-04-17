@@ -1,11 +1,8 @@
-import logging
 from datetime import datetime
 import xlsxwriter
 
 from odoo import _, api, models
 from odoo.osv import expression
-
-_logger = logging.getLogger(__name__)
 
 
 class WizardAccountingReports(models.TransientModel):
@@ -112,7 +109,7 @@ class WizardAccountingReports(models.TransientModel):
         data = super().parse_purchase_book_data()
         for move in data:
             move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
-            if (move_date < self.date_from or move_date > self.date_to):
+            if self._check_future_retention_dates(move_date):
                 move.update({
                     "total_purchases_iva": 0,
                     "total_purchases_not_iva": 0,
@@ -130,7 +127,7 @@ class WizardAccountingReports(models.TransientModel):
         data = super().parse_purchase_book_data()
         for move in data:
             move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
-            if (move_date < self.date_from or move_date > self.date_to):
+            if self._check_future_retention_dates(move_date):
                 move.update({
                     "total_purchases_iva": 0,
                     "total_purchases_not_iva": 0,
@@ -153,7 +150,7 @@ class WizardAccountingReports(models.TransientModel):
         retention = ret_lines.mapped("retention_id")
         ret_vals = dict()
 
-        if not ret_lines or (retention.date < self.date_from or retention.date > self.date_to):
+        if not ret_lines or self._check_future_retention_dates(retention.date):
             return {
                 "date_retention": "",
                 "number_retention": "",
@@ -168,7 +165,14 @@ class WizardAccountingReports(models.TransientModel):
 
     def _sum_retention_total(self, lines):
         is_check_currency_system = self.currency_system
+        retention = lines.mapped("retention_id")
+
+        if self._check_future_retention_dates(retention.date):
+            return 0.0
         if not is_check_currency_system:
             return sum(lines.mapped("foreign_retention_amount"))
 
         return sum(lines.mapped("retention_amount"))
+
+    def _check_future_retention_dates(self, cmp_date):
+        return cmp_date < self.date_from or cmp_date > self.date_to

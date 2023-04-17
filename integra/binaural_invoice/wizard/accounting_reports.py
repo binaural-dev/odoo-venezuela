@@ -35,7 +35,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     report = fields.Selection(
         [("purchase", "Book Purchase"), ("sale", "Sale Book")],
-        string="Report",
         required=True,
     )
 
