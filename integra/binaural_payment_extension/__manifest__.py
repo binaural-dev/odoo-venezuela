@@ -16,6 +16,7 @@
         "binaural_location",
         "binaural_fiscal",
         "binaural_contact",
+        "binaural_tax_payer",
     ],
     # always loaded
     "data": [
