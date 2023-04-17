@@ -45,7 +45,7 @@
         </xpath>
     </t>
 
-    <t t-name="account.TaxForeignTotalsField" owl="1">
+    <t t-name="TaxForeignTotalsField" owl="1">
         <table t-if="totals" class="oe_right">
             <tbody>
                 <t t-foreach="totals.foreign_subtotals" t-as="subtotal" t-key="subtotal['name']">
@@ -60,7 +60,6 @@
                     </tr>
 
                     <t t-foreach="totals.groups_by_foreign_subtotal[subtotal['name']]" t-as="taxGroup" t-key="taxGroup.group_key">
-                        <t t-log="taxGroup"/>
                         <TaxGroupComponent
                             currency="currency"
                             taxGroup="taxGroup"

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="iot_device_view_form" model="ir.ui.view">
+        <field name="name">iot.device.view.form</field>
+        <field name="model">iot.device</field>
+        <field name="inherit_id" ref="iot.iot_device_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="before">
+                <header>
+                    <widget name="iot-mf-button" action="get_serial_machine" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget name="iot-mf-button" action="generate_report_z"  attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget name="iot-mf-button" action="generate_report_x" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget name="iot-mf-button" action="programacion" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                </header>
+            </xpath>
+
+            <xpath expr="//field[@name='identifier']" position="after">
+                <field 
+                    name="serial_machine"
+                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                <field 
+                    name="flag_21"
+                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

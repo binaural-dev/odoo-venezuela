@@ -1,4 +1,5 @@
 from . import accumulated_fees
+from . import account_journal
 from . import account_move
 from . import account_payment
 from . import account_retention
@@ -9,6 +10,8 @@ from . import economic_activity
 from . import fees_retention
 from . import payment_concept
 from . import payment_concept_line
+from . import res_company
+from . import res_config_settings
 from . import res_partner
 from . import signature_config
 from . import tax_unit

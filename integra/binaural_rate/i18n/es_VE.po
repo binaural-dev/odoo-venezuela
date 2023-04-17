@@ -22,8 +22,13 @@ msgstr "Seleccionar moneda alterna"
 
 #. module: binaural_rate
 #: model_terms:ir.ui.view,arch_db:binaural_rate.res_config_settings_binaural_rate
-msgid "Binaural Configuration"
-msgstr "Binaural Configuración"
+msgid "Binaural"
+msgstr "Binaural"
+
+#. module: binaural_rate
+#: model_terms:ir.ui.view,arch_db:binaural_rate.res_config_settings_binaural_rate
+msgid "Rates Configuration"
+msgstr "Configuración de tasas"
 
 #. module: binaural_rate
 #: model:ir.model,name:binaural_rate.model_res_company
@@ -65,3 +70,8 @@ msgstr "Tasa monetaria"
 msgid ""
 "The currency foreign must be different from the currency of the company"
 msgstr "La moneda alterna debería ser diferente a la moneda base"
+
+#. module: binaural_rate
+#: model:ir.model.fields.selection,name:binaural_rate.selection__res_company__currency_provider__bcv
+msgid "Venezuelan Central Bank"
+msgstr "Banco Central de Venezuela"

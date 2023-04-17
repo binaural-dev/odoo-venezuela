@@ -47,7 +47,6 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">Bank</field>
         <field name="company_id" ref="base.main_company"/>
-        <!-- <field name="available_payment_method_ids" eval="[(6,0 [ref('account.account_payment_method_manual_out')])]"/>  -->
         <field name="outbound_payment_method_line_ids" eval="[
             (0,0, {
                 'name': 'Pago saliente - Banco',
@@ -64,7 +63,6 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">EBs</field>
         <field name="company_id" ref="base.main_company"/>
-        <!-- <field name="available_payment_method_ids" ref="account.account_payment_method_manual_out"/>  -->
         <field name="outbound_payment_method_line_ids" eval="[
             (0,0, {
                 'name': 'Pago saliente - Efectivo Bs',
@@ -81,7 +79,6 @@
         <field name="invoice_reference_model">odoo</field>
         <field name="code">EDiv</field>
         <field name="company_id" ref="base.main_company"/>
-        <!-- <field name="available_payment_method_ids" ref="account.account_payment_method_manual_out"/>  -->
         <field name="outbound_payment_method_line_ids" eval="[
             (0,0, {
                 'name': 'Pago saliente - Efectivo $',

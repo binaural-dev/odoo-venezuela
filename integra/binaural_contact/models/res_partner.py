@@ -37,10 +37,11 @@ class ResPartner(models.Model):
 
         """
         for vals in vals_list:
-            if vals.get("vat"):
+            if vals.get("vat") and not vals.get("name", False):
                 prefix_vat = vals.get("prefix_vat")
+                name = vals.get("name")
                 vat = vals.get("vat")
-                if prefix_vat == "V":
+                if prefix_vat == "V" and not name:
                     name, flag = binaural_cne_query.get_default_name_by_vat(self, prefix_vat, vat)
                     if not flag:
                         raise MissingError(
@@ -52,7 +53,6 @@ class ResPartner(models.Model):
         return super(ResPartner, self).create(vals_list)
 
     def get_default_name_by_vat(self):
-
         """This function assign the name of the person by the vat number and the prefix of the vat number
         calling the function get_default_name_by_vat from binaural_cne_query
 
