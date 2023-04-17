@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "1.0",
+    "version": "1.1",
     "depends": ["base","binaural_rate", "binaural_tax","binaural_invoice"],
     "data": ["views/res_config_settings.xml","report/invoice_free_form.xml"],
     "images": ["static/description/icon.png"],
