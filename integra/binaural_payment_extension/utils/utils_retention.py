@@ -42,3 +42,31 @@ def load_retention_lines(invoices, Retention):
     """
     retention_lines_data = [Retention.compute_retention_lines_data(i) for i in invoices]
     return [Command.create(line) for lines in retention_lines_data for line in lines]
+
+def get_current_date_format(date):
+    """
+    Computes a date format consisting of the name of the month plus the year.
+
+    Returns
+    -------
+    string
+        The month and the year on the desired format.
+    """
+    months = (
+        _("January"),
+        _("February"),
+        _("March"),
+        _("April"),
+        _("May"),
+        _("June"),
+        _("July"),
+        _("August"),
+        _("September"),
+        _("October"),
+        _("November"),
+        _("December"),
+    )
+    month = months[date.month - 1]
+    year = date.year
+    message = "{} {}".format(month, year)
+    return message
