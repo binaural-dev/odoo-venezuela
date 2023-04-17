@@ -1,7 +1,5 @@
 from dateutil.relativedelta import relativedelta
 from itertools import chain
-import logging
-_logger = logging.getLogger(__name__)
 
 from odoo import fields, models
 
@@ -12,7 +10,6 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
     def _aged_partner_report_custom_engine_common(
         self, options, internal_type, current_groupby, next_groupby, offset=0, limit=None
     ):
-        _logger.warning("Report options: %s", options)
         report = self.env["account.report"].browse(options["report_id"])
         report._check_groupby_fields(
             (next_groupby.split(",") if next_groupby else [])
@@ -207,29 +204,14 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
 
             HAVING
                 (
-                    CASE WHEN {report_in_foreign_currency}
-                    THEN 
-                        (
-                            SUM(ROUND(account_move_line.foreign_debit, currency_table.precision))
-                            - COALESCE(SUM(ROUND(part_debit.amount * part_debit.foreign_inverse_rate, currency_table.precision)), 0)
-                        ) != 0
-                        OR
-                        (
-                            SUM(ROUND(account_move_line.foreign_credit, currency_table.precision))
-                            - COALESCE(SUM(ROUND(part_credit.amount * part_credit.foreign_inverse_rate, currency_table.precision)), 0)
-                        ) != 0
-                    ELSE
-                        (
-                            SUM(ROUND(account_move_line.debit * currency_table.rate, currency_table.precision))
-                            - COALESCE(SUM(ROUND(part_debit.amount * currency_table.rate, currency_table.precision)), 0)
-                        ) != 0
-                        OR
-                        (
-                            SUM(ROUND(account_move_line.credit * currency_table.rate, currency_table.precision))
-                            - COALESCE(SUM(ROUND(part_credit.amount * currency_table.rate, currency_table.precision)), 0)
-                        ) != 0
-                    END
-                    )
+                    SUM(ROUND(account_move_line.debit * currency_table.rate, currency_table.precision))
+                    - COALESCE(SUM(ROUND(part_debit.amount * currency_table.rate, currency_table.precision)), 0)
+                ) != 0
+                OR
+                (
+                    SUM(ROUND(account_move_line.credit * currency_table.rate, currency_table.precision))
+                    - COALESCE(SUM(ROUND(part_credit.amount * currency_table.rate, currency_table.precision)), 0)
+                ) != 0
             {tail_query}
         """
 

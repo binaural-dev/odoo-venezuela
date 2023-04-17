@@ -18,9 +18,6 @@
         "data/account_tax_template_data.xml",
         "data/product_template_data.xml",
         "data/res_partner_data.xml",
-        "data/account_journal_data.xml",
-        "data/account_payment_method_line_data.xml",
-
-
+        "data/account_journal_data.xml"
     ],
 }

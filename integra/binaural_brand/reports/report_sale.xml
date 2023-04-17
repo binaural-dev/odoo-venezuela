@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+        <template id="report_saleorder" inherit_id="sale.report_saleorder_document">
+                <xpath expr="//th[@name='th_description']" position="after">
+                        <th name="th_marca" class="text-right">Marca</th>
+                </xpath>
+                <xpath expr="//td[@name='td_name']" position="after">
+                        <td name="td_marca"><span t-field="line.brand_id_sale"/></td>
+                </xpath>
+        </template> 
+</odoo>

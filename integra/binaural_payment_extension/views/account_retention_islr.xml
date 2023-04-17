@@ -11,12 +11,18 @@
             <field name="arch" type="xml">
                 <form string="Retention">
                     <header>
-	                    <button name="action_draft" type="object" states="cancel" string="Convertir a Borrador" />
-                        <button name="action_post" type="object" states="draft" string="Validar" class="oe_highlight"/>
-                        <button name="action_cancel" type="object" states="emitted" string="Anular" confirm="¿Esta seguro que quiere anular este comprabante? Se revertiran los asientos contables asociados" />
+	                <button name="action_draft" type="object" states="cancel" string="Convert to draft"/>
+                        <button name="action_post" type="object" states="draft" string="Approve" class="oe_highlight"/>
+                        <button name="action_cancel" type="object" states="emitted" string="Cancel" confirm="Are you sure you want to cancel this voucher? The associated accounting entries will be reversed"/>
                         <field name="state" widget="statusbar" nolabel="1"/>
                     </header>
                     <group colspan="4" col="4">
+			<!-- Invisible fields -->
+			<field name="base_currency_is_vef" invisible="1"/>
+			<field name="company_currency_id" invisible="1"/>
+			<field name="foreign_currency_id" invisible="1"/>
+			<field name="allowed_lines_move_ids" invisible="1"/>
+
                         <field name="type" force_save="1" select="2"/>
                         <field name="type_retention" force_save="1" select="2" invisible="1"/>
                         <field name="partner_id" on_change="onchange_partner_id(type,partner_id)" select="1"  attrs="{'invisible':[('type','=', False)],'readonly':[('state','in',['emitted','cancel'])]}"/>
@@ -27,36 +33,127 @@
                         <field name="date" attrs="{'readonly':[('state','in',['emitted','cancel'])]}"/>
                     </group>
                     <notebook colspan="4">
-                        <page name="retention line" string="Retention line">
-                            <!-- <field name="foreign_currency_id" invisible="1"/>
-                            <field name="bs_currency_id" invisible="1"/> -->
+                        <page name="retention_lines" string="Retention Lines">
                             <field colspan="4" name="retention_line_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}">
                                 <tree editable="bottom">
-                                    <!-- <field name="bs_currency_id" invisible="1"/> -->
-                                    <field name="name" readonly="1" optional="show"/>
-                                    <field name="move_id" domain="[('move_type', 'in', ['in_invoice','in_refund']), ('state', 'in', ['posted']),('partner_id', '=', parent.partner_id)]"/>
-                                    <field name="payment_concept_id"/>
-                                    <field name="invoice_total" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                    <field name="invoice_amount"  widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                    <field name="iva_amount" force_save="1" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                    <field name="related_pay_from" />
-                                    <field name="related_percentage_tax_base" />
-                                    <field name="related_percentage_fees" />
-                                    <field name="related_amount_subtract_fees" />
-                                    <field name="retention_amount" />
-                                    <field name="foreign_currency_rate" optional="hide"/>
-                                    <field name="foreign_invoice_total" optional="hide"/>
-                                    <field name="foreign_invoice_amount" optional="hide"/>
-                                    <field name="foreign_retention_amount" optional="hide"/>
+                                <field name="name" readonly="1" force_save="1"/>
+				<field
+				    name="move_id"
+				    domain="[('id', 'in', parent.allowed_lines_move_ids)]"
+				/>
+                                <field name="payment_concept_id" force_save="1"/>
+                                <field name="is_retention_client" invisible="1"/>
+                                <field 
+                                    name="invoice_total"
+                                    force_save="1"
+                                    string="Invoice Total"
+                                    readonly="1"  
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}" 
+                                    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
+                                />
+                                <field 
+                                    name="foreign_invoice_total"
+                                    force_save="1"
+                                    string="Invoice Total"
+                                    readonly="1" 
+                                    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+                                />
+                                <field 
+                                    name="invoice_amount"
+                                    force_save="1"
+                                    string="Invoice Amount"
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}" 
+                                    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
+                                />
+
+                                <field 
+                                    name="foreign_invoice_amount"
+                                    force_save="1"
+                                    string="Invoice Amount"
+                                    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}" 
+                                />
+
+                                <field 
+                                    name="related_pay_from"
+                                    force_save="1"
+                                    readonly="1" 
+				    attrs="{'column_invisible': [('parent.type', '=', 'out_invoice')]}"
+                                />
+                                <field 
+                                    name="related_percentage_tax_base" 
+                                    force_save="1"
+                                    readonly="1" 
+                                />
+                                <field 
+                                    name="related_percentage_fees"
+                                    force_save="1"
+                                    readonly="1" 
+                                />
+                                <field 
+                                    name="related_amount_subtract_fees" 
+                                    force_save="1"
+                                    readonly="1" 
+                                />
+                                <field 
+                                    name="foreign_currency_rate"
+                                    force_save="1"
+                                    readonly="1" 
+                                    optional="hide"
+                                />
+                                <field 
+                                    name="retention_amount"
+                                    force_save="1"
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)], 'readonly': [('parent.type', '=', 'in_invoice')]}"
+                                />
+                                <field 
+                                    name="foreign_retention_amount"
+                                    force_save="1" 
+                                    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)], 'readonly': [('parent.type', '=', 'in_invoice')]}"
+                                />
                                 </tree>
                             </field>
+
+			    <group col="2" colspan="2" attrs="{'invisible': [('base_currency_is_vef', '=', False)]}">
+				<field
+				    name="total_invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
+				<field
+				    name="total_retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				/>
+		    	    </group>
+
+			    <group col="2" colspan="2" attrs="{'invisible': [('base_currency_is_vef', '=', True)]}">
+				<field
+				    name="foreign_total_invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+				<field
+				    name="foreign_total_retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				/>
+			    </group>
                         </page>
                         <page name="Payments" string="payments">
                             <field name="payment_ids" nolabel="1" attrs="{'invisible':[('partner_id','=',False)],'readonly':[('state','in',['emitted','cancel'])]}" >
                                 <tree string="Payments" editable="bottom">
                                     <field name="date"/>
                                     <field name="name"/>
-                                    <!-- <field name="journal_id"/> -->
                                     <field name="amount"/>
                                 </tree>
                             </field>

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
     <data>
-
         <menuitem
             id="retention_configuration"
             name="Retention"
@@ -30,7 +28,8 @@
             name="Municipality" 
             id="menu_master_configuration_municipality" 
             parent="master_configuration" 
-            action="binaural_location.action_res_country_municipality" />
+	    action="binaural_location.action_res_country_municipality"
+	/>
 
         <menuitem 
             name="Economic activity" 
@@ -77,7 +76,7 @@
             parent="binaural_payment_extension.retention_configuration" 
             action="action_type_withholding" />
 
-        <!-- IVA Retentions -->
+        <!-- Retentions -->
 
         <menuitem 
             name="IVA Retention" 
@@ -93,6 +92,7 @@
             parent="account.menu_finance_payables" 
             action="action_retention_iva_supplier"/>
 
+
         <menuitem 
             name="ISLR Retention" 
             id="menu_retention_islr_client" 
@@ -100,12 +100,26 @@
             parent="account.menu_finance_receivables" 
             action="action_retention_islr_client"/> 
 
-	    <menuitem 
+	<menuitem 
             name="ISLR Retention" 
             id="menu_retention_islr_supplier" 
             sequence="100"
             parent="account.menu_finance_payables" 
             action="action_retention_islr_supplier"/>
+
+        <menuitem 
+            name="Municipal Retention" 
+            id="menu_retention_municipal_client" 
+            sequence="100" 
+            parent="account.menu_finance_receivables" 
+            action="action_retention_municipal_client"/> 
+
+	<menuitem 
+            name="Municipal Retention" 
+            id="menu_retention_municipal_supplier" 
+            sequence="100"
+            parent="account.menu_finance_payables" 
+            action="action_retention_municipal_supplier"/>
 
         <menuitem
             id="menu_retention_islr_sequence"
@@ -114,8 +128,21 @@
             sequence="100"
             parent="account.menu_finance_payables"
             action="ir_sequence_form_islr"/>
-    
-    </data>
-    
 
+        <menuitem
+            id="menu_retention_iva_sequence"
+            name="Sequence IVA"
+            groups="base.group_no_one"
+            sequence="100"
+            parent="account.menu_finance_payables"
+            action="ir_sequence_form_iva"/>
+
+        <menuitem
+            id="menu_retention_municipal_sequence"
+            name="Sequence Municipal"
+            groups="base.group_no_one"
+            sequence="100"
+            parent="account.menu_finance_payables"
+            action="ir_sequence_form_municipal"/>
+    </data>
 </odoo>

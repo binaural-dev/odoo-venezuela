@@ -9,53 +9,268 @@
             <field name="inherit_id" ref="account.view_move_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='vat']" position="after">
-                    <group name="islr_group">
-                        <field name="generate_iva_retention" />
+                    <group name="retention_group">
+			<field
+			    name="generate_iva_retention"
+			    attrs="{'invisible':['|', ('move_type','not in',('in_invoice', 'in_receipt', 'in_refund')), ('fiscal', '=', False)]}"
+			/>
                         <field name="iva_voucher_number" readonly="1" />
-                        <field name="islr_voucher_number" readonly="1" />         
+                        <field name="islr_voucher_number" readonly="1" />     
+                        <field name="municipal_voucher_number" readonly="1" />
                     </group>
+                    <field name="base_currency_is_vef" invisible="1"/>
+		    <field name="company_currency_id" invisible="1"/>
+		    <field name="foreign_currency_id" invisible="1"/>
+
                 </xpath>
 
                 <xpath expr="//notebook" position="inside">
-                    <page name="iva_retention" string="IVA Retentions">
-                        <field name="retention_iva_line_ids" nolabel="1" readonly="1">
+		    <page 
+			name="iva_retention"
+			string="IVA Retentions"
+			attrs="{'invisible': [('fiscal', '=', False)]}"
+		    >
+			<field
+			    name="retention_iva_line_ids"
+			    nolabel="1"
+			    readonly="1"
+			    attrs="{'invisible': [('fiscal', '=', False)]}"
+		    	>
                             <tree editable='bottom'>
-                                <field name="is_retention_client" invisible="1" />
+				<!-- Invisible Fields -->
+                                <field name="invoice_type" invisible="1"/>
+				<field name="company_currency_id" invisible="1"/>
+				<field name="foreign_currency_id" invisible="1"/>
+
                                 <field name="name"/>
-                                <field name="invoice_total" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                <field name="invoice_amount" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                <field name="iva_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
+				<field name="move_id"/>
                                 <field name="aliquot"/>
-                                <field name="retention_amount"/>
-                                <field name="foreign_currency_rate" optional="hide"/>
-                                <field name="foreign_invoice_amount" optional="hide" />
-                                <field name="foreign_invoice_total" optional="hide" />
-                                <field name="foreign_retention_amount" optional="hide" />
-                                <field name="foreign_iva_amount" optional="hide" />
-                            </tree>
-                        </field>     
-                    </page>
-                    <page name="islr_retention" string="ISLR Retentions">
-                        <field name="retention_islr_line_ids" nolabel="1">
-                            <tree editable='bottom'>
-                                <field name="is_retention_client" invisible="1" />
-                                <field name="name"/>
-                                <field name="payment_concept_id"/>
-                                <field name="invoice_total" readonly="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                <field name="invoice_amount" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                <field name="iva_amount" force_save="1" attrs="{'invisible':[('is_retention_client','=', False)]}" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
-                                <field name="related_pay_from" readonly="1" />
-                                <field name="related_percentage_tax_base" readonly="1" />
-                                <field name="related_percentage_fees" readonly="1" />
-                                <field name="related_amount_subtract_fees" readonly="1" />
-                                <field name="retention_amount" readonly="1" />
-                                <field name="foreign_currency_rate" readonly="1" optional="hide"/>
-                                <field name="foreign_invoice_total" readonly="1" optional="hide" />
-                                <field name="foreign_invoice_amount" readonly="1" optional="hide" />
-                                <field name="foreign_retention_amount" readonly="1" optional="hide" />
+				<field name="related_percentage_tax_base" optional="hide"/>
+				<!-- Amounts -->
+				<field
+				    name="invoice_total"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				/>
+				<field
+				    name="invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				/>
+				<field
+				    name="iva_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				/>
+				<field
+				    name="retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+				/>
+				<!-- Foreign Amounts -->
+				<field
+				    name="foreign_invoice_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				/>
+				<field
+				    name="foreign_iva_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				/>
+				<field
+				    name="foreign_invoice_total"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				/>
+				<field
+				    name="foreign_retention_amount"
+				    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+				/>
+
+				<field name="foreign_currency_rate" optional="hide"/>
+
+				<field name="state"/>
                             </tree>
                         </field>
                     </page>
+		    <page
+			name="islr_retention"
+			string="ISLR Retentions"
+			attrs="{'invisible': [('fiscal', '=', False)]}"
+		    >
+			<field
+			    name="retention_islr_line_ids"
+			    nolabel="1"
+			    attrs="{'readonly': [('move_type', 'not in', ('in_invoice', 'in_refund'))]}"
+			>
+                            <tree editable='bottom'>
+				<!-- Invisible Fields -->
+                                <field name="invoice_type" invisible="1"/>
+				<field name="company_currency_id" invisible="1"/>
+				<field name="foreign_currency_id" invisible="1"/>
+
+                                <field name="name"/>
+                                <field name="payment_concept_id"/>
+                                <field 
+                                    name="invoice_total"
+                                    readonly="1"
+                                    force_save="1"
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}" 
+                                    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
+                                />
+                                <field 
+                                    name="foreign_invoice_total"
+                                    force_save="1"
+                                    readonly="1" 
+                                    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+                                />
+                                <field 
+                                    name="invoice_amount"
+                                    force_save="1"
+                                    string="Invoice Amount"
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}" 
+                                    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
+                                />
+
+                                <field 
+                                    name="foreign_invoice_amount"
+                                    force_save="1"
+                                    string="Invoice Amount"
+                                    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}" 
+                                />
+
+                                <field 
+                                    name="related_pay_from"
+                                    force_save="1"
+                                    readonly="1" 
+                                />
+                                <field 
+                                    name="related_percentage_tax_base"
+                                    force_save="1" 
+                                    readonly="1" 
+                                />
+                                <field 
+                                    name="related_percentage_fees"
+                                    force_save="1"
+                                    readonly="1" 
+                                />
+                                <field 
+                                    name="related_amount_subtract_fees"
+                                    force_save="1" 
+                                    readonly="1" 
+                                />
+                              
+                                <field 
+                                    name="foreign_currency_rate"
+                                    force_save="1"
+                                    readonly="1" 
+                                    optional="hide"
+                                />
+                                <field 
+                                    name="retention_amount" 
+                                    readonly="1"
+                                    force_save="1"
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+                                />
+                                <field 
+                                    name="foreign_retention_amount" 
+                                    widget="monetary"
+                                    force_save="1"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+                                />
+
+				<field name="state"/>
+                            </tree>
+                        </field>
+                    </page>
+                    <page name="municipal_retention" string="Municipal Retentions">
+			<field
+			    name="retention_municipal_line_ids"
+			    nolabel="1"
+			    attrs="{'readonly': [('move_type', 'not in', ('in_invoice', 'in_refund'))]}"
+			>
+                            <tree editable='bottom'>
+                                <field name="name" force_save="1" readonly="1"/>
+				<field name="economic_activity_id" force_save="1"/>
+				<field name="aliquot" readonly="1" force_save="1"/>
+                                <field 
+                                    name="invoice_amount"
+                                    force_save="1"
+                                    string="Invoice Amount"
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}" 
+                                    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
+                                />
+                                <field 
+                                    name="invoice_total"
+                                    readonly="1"
+                                    force_save="1"
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}" 
+                                    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" 
+                                />
+                                <field 
+                                    name="retention_amount" 
+                                    readonly="1"
+                                    force_save="1"
+                                    widget="monetary"
+				    options="{'currency_field': 'company_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}"
+                                />
+                                <field 
+                                    name="foreign_invoice_amount"
+                                    force_save="1"
+                                    string="Invoice Amount"
+                                    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}" 
+                                />
+                                <field 
+                                    name="foreign_invoice_total"
+                                    force_save="1"
+                                    readonly="1" 
+                                    widget="monetary"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+                                />
+                                <field 
+                                    name="foreign_retention_amount" 
+                                    widget="monetary"
+                                    force_save="1"
+				    options="{'currency_field': 'foreign_currency_id'}"
+				    attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}"
+                                />
+                                <field 
+                                    name="foreign_currency_rate"
+                                    force_save="1"
+                                    readonly="1" 
+                                    optional="hide"
+                                />
+				
+				<field name="state" force_save="1"/>
+                            </tree>
+                        </field>
+                    </page>
+
                 </xpath>
             </field>
         </record>

@@ -19,9 +19,9 @@ class TypeWithholding(models.Model):
             }
             return result
 
-    name = fields.Char()
-    value = fields.Float()
-    state = fields.Boolean(default=True, string="Active")
+    name = fields.Char(store=True)
+    value = fields.Float(store=True)
+    state = fields.Boolean(default=True, string="Active", store=True)
 
     @api.onchange("name")
     def upper_name(self):
