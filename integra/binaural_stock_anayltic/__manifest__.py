@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "Binaural Inventario",
+    "name": "Binaural Cuentas anaíticas de Inventario",
     "summary": """
-        Personalizaciones relacionadas al inventario.
+        Permite habilitar las cuentas analíticas en la valorización de inventario.
     """,
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
