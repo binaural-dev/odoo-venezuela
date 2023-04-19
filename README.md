@@ -10,7 +10,7 @@ Modulos
 ----------------
 Modulo | Descripción
 --- | ---
-[binaural_compras](integra/binaural_purchase) | Permite visualizar los pedidos de compra en dólares y bolívares.
+[Binaural Compras](integra/binaural_purchase) | Permite visualizar los pedidos de compra en dólares y bolívares.
 
 [//]: # (end addons)
 
