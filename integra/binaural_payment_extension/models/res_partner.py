@@ -19,16 +19,6 @@ class ResPartner(models.Model):
         "account.account", string="ISLR Account", track_visibility="onchange"
     )
 
-    taxpayer_type = fields.Selection(
-        [
-            ("formal", "Formal"),
-            ("special", "Special"),
-            ("ordinary", "Ordinary"),
-        ],
-        default="ordinary",
-        store=True,
-    )
-
     type_person_id = fields.Many2one(
         "type.person", "Type Person", track_visibility="onchange", store=True
     )
