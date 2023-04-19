@@ -1,7 +1,7 @@
 import logging
 
 from odoo.exceptions import UserError
-from odoo import api, fields, models, Command, _
+from odoo import fields, models, Command, _
 from odoo.tools import float_is_zero
 
 _logger = logging.getLogger(__name__)
@@ -269,7 +269,6 @@ class AccountMove(models.Model):
                     "credit" if credit else "debit": amount_to_show,
                     "debit" if credit else "credit": 0.0,
                     "payment_id_advance": payment.id,
-                    # "foreign_currency_id": payment.currency_foreign_id.id,
                     "foreign_rate": payment.foreign_rate,
                     "reconciled": False,
                 }
@@ -282,7 +281,6 @@ class AccountMove(models.Model):
                     "debit" if credit else "credit": amount_to_show,
                     "credit" if credit else "debit": 0.0,
                     "payment_id_advance": payment.id,
-                    # "foreign_currency_id": payment.currency_foreign_id.id,
                     "foreign_rate": payment.foreign_rate,
                     "reconciled": False,
                 }
@@ -304,8 +302,8 @@ class AccountMove(models.Model):
                 lambda line: line.account_id == payment.destination_account_id
             )
             min_amount = 0
-            if -payment_line_advance[0].amount_residual < self.amount_residual:
-                min_amount = -payment_line_advance[0].amount_residual
+            if -payment_line_advance.amount_residual < self.amount_residual:
+                min_amount = -payment_line_advance.amount_residual
             else:
                 min_amount = self.amount_residual
             if payment.currency_id and payment.currency_id == self.currency_id:
@@ -329,7 +327,7 @@ class AccountMove(models.Model):
                     "state": "draft",
                     "line_ids": line_vals,
                     "foreign_currency_id": payment.foreign_currency_id.id,
-                    "foreign_rate" : payment.foreign_rate,
+                    "foreign_rate": payment.foreign_rate,
                     "company_id": self.company_id.id,
                 }
             )
