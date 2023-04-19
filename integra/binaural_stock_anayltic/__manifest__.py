@@ -8,9 +8,10 @@
     "website": "https://www.binauraldev.com",
     "category": "Stock/Analytic/Accounting",
     "version": "16.0.0.0.1",
-    "depends": ["analytic"],
+    "depends": ["stock_account"],
     "data": [
         # 'security/ir.model.access.csv',
         "views/stock_picking_views.xml",
+        "views/account_move_views.xml"
     ],
 }

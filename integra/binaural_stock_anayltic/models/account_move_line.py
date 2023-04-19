@@ -1,8 +1,10 @@
-from odoo import api, models
+from odoo import api, fields, models
 
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
+
+    account_analytic_id = fields.Many2one("account.analytic.account", string="Analytic Account")
 
     @api.model
     def check_account_type(self, account_type: str) -> bool:
