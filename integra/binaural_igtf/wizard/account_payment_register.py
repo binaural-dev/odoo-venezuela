@@ -43,7 +43,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 payment.is_igtf = False
             if (
                 self.env.company.taxpayer_type == "ordinary"
-                and payment.line_ids.move_id.res_partner_id.taxpayer_type == "ordinary"
+                and payment.line_ids.move_id.partner_id.taxpayer_type == "ordinary"
                 and payment.line_ids.move_id.move_type == "in_invoice"
             ):
                 payment.is_igtf = False
