@@ -1,30 +1,16 @@
 from odoo import api, models, fields, _
-from odoo.exceptions import UserError
-from odoo.tools import frozendict
-from collections import defaultdict
-
-
-import logging
-
-_logging = logging.getLogger(__name__)
 
 
 class AccountPaymentRegisterIgtf(models.TransientModel):
     _inherit = "account.payment.register"
 
-    def default_is_igtf(self):
-        return self.env.company.is_igtf or False
-
-    def default_igtf_percentage(self):
-        return self.env.company.igtf_percentage or 0.0
-
-    is_igtf = fields.Boolean(string="IGTF", default=default_is_igtf, help="IGTF", store=True)
+    is_igtf = fields.Boolean(string="IGTF", compute="_compute_check_igtf", help="IGTF", store=True)
     amount_with_igtf = fields.Float(
         string="Amount with IGTF", compute="_compute_amount_with_igtf", store=True
     )
     igtf_percentage = fields.Float(
         string="IGTF Percentage",
-        default=default_igtf_percentage,
+        compute="_compute_igtf_percentage",
         help="IGTF Percentage",
         store=True,
     )
@@ -46,6 +32,34 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         compute="_compute_amount_without_difference",
         store=True,
     )
+
+    @api.depends("journal_id")
+    def _compute_check_igtf(self):
+        for payment in self:
+            if (
+                self.env.company.taxpayer_type == "ordinary"
+                and payment.line_ids.move_id.move_type == "out_invoice"
+            ):
+                payment.is_igtf = False
+            if (
+                self.env.company.taxpayer_type == "ordinary"
+                and payment.line_ids.move_id.partner_id.taxpayer_type == "ordinary"
+                and payment.line_ids.move_id.move_type == "in_invoice"
+            ):
+                payment.is_igtf = False
+            else:
+                payment.is_igtf = self.env.company.is_igtf
+
+    @api.depends("is_igtf")
+    def _compute_igtf_percentage(self):
+        for payment in self:
+            payment.igtf_percentage = payment.env.company.igtf_percentage
+            if (
+                payment.env.company.taxpayer_type == "special"
+                and payment.partner_id.taxpayer_type != "special"
+                and payment.line_ids.move_id.move_type == "in_invoice"
+            ):
+                payment.igtf_percentage = 2.0
 
     @api.depends("amount", "payment_difference")
     def _compute_amount_without_difference(self):
@@ -83,7 +97,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             ):
                 payment_amount = payment.amount
                 if payment.payment_difference < 0:
-                    payment_amount = payment.amount + payment.payment_difference                    
+                    payment_amount = payment.amount + payment.payment_difference
                 payment.igtf_amount = payment_amount * (payment.igtf_percentage / 100)
 
     def _init_payments(self, to_process, edit_mode=False):
@@ -96,7 +110,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         """
         to_process[0]["create_vals"]["igtf_amount"] = self.igtf_amount
         to_process[0]["create_vals"]["igtf_percentage"] = self.igtf_percentage
-        to_process[0]["create_vals"]["is_igtf_on_foreign_exchange"] = self.is_igtf_on_foreign_exchange
+        to_process[0]["create_vals"][
+            "is_igtf_on_foreign_exchange"
+        ] = self.is_igtf_on_foreign_exchange
 
         res = super(AccountPaymentRegisterIgtf, self)._init_payments(to_process, edit_mode)
         return res
@@ -117,10 +133,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 and payment.currency_id.name == "USD"
                 and payment.is_igtf_on_foreign_exchange
             ):
-                if payment.reconciled_invoice_ids :
+                if payment.reconciled_invoice_ids:
                     payment.reconciled_invoice_ids.bi_igtf += self.amount_without_difference
-               
+
                 if payment.reconciled_bill_ids:
                     payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference
-                   
+
         return res

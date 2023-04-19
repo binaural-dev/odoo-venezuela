@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_partner_binaural_taxpayer" model="ir.ui.view">
+            <field name="name">res.partner.binaural.taxpayer</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='category_id']" position="after">
+                    <group name="taxpayer_type">
+                        <field name="taxpayer_type" required="1" />
+                    </group>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
