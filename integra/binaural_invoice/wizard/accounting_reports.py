@@ -555,6 +555,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return {
                 "amount_untaxed": 0.0,
                 "amount_taxed": 0.0,
+                "tax_base_exempt_aliquot": 0.0,
+                "amount_exempt_aliquot": 0.0,
                 "tax_base_reduced_aliquot": 0.0,
                 "tax_base_general_aliquot": 0.0,
                 "tax_base_extend_aliquot": 0.0,
@@ -596,6 +598,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             {
                 "amount_untaxed": amount_untaxed,
                 "amount_taxed": amount_taxed,
+                "tax_base_exempt_aliquot": 0,
+                "amount_exempt_aliquot": 0,
                 "tax_base_reduced_aliquot": 0,
                 "amount_reduced_aliquot": 0,
                 "tax_base_general_aliquot": 0,
