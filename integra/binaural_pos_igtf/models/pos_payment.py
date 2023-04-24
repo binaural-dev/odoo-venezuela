@@ -67,14 +67,16 @@ class PosPayment(models.Model):
             ):
                 credit_line_vals = pos_session._credit_amounts(
                     {
-                        "account_id": self.env.company.customer_account_igtf_id.id, 
+                        "account_id": self.env.company.customer_account_igtf_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
                     },
                     amounts["amount"],
                     amounts["amount_converted"],
                 )
-            elif not payment.payment_method_id.apply_igtf or only_one_payment:
+            elif not payment.payment_method_id.apply_igtf or (
+                only_one_payment and all_payments_in_usd
+            ):
                 credit_line_vals = pos_session._credit_amounts(
                     {
                         "account_id": accounting_partner.with_company(
@@ -89,7 +91,7 @@ class PosPayment(models.Model):
 
                 add_credit_line_vals = pos_session._credit_amounts(
                     {
-                        "account_id": self.env.company.customer_account_igtf_id.id, 
+                        "account_id": self.env.company.customer_account_igtf_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
                     },
