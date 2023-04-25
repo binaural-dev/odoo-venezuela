@@ -120,7 +120,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def _determinate_resume_books(self, moves, tax_type=None):
         resume_lines = []
-        credit_notes = moves.filtered(lambda m: m.move_type in ["out_refund", "in_refund"])
+        def check_future_dates(move):
+            if move.date < self.date_from or move.date > self.date_to:
+                return False
+            return True
+
+        def filter_credit_notes(move):
+            types = ["out_refund", "in_refund"]
+            return move.move_type in types
+
+        moves = moves.filtered(check_future_dates)
+        credit_notes = moves.filtered(filter_credit_notes)
         moves -= credit_notes
 
         if tax_type == "exempt_aliquot":
@@ -545,6 +555,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return {
                 "amount_untaxed": 0.0,
                 "amount_taxed": 0.0,
+                "tax_base_exempt_aliquot": 0.0,
+                "amount_exempt_aliquot": 0.0,
                 "tax_base_reduced_aliquot": 0.0,
                 "tax_base_general_aliquot": 0.0,
                 "tax_base_extend_aliquot": 0.0,
@@ -586,6 +598,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             {
                 "amount_untaxed": amount_untaxed,
                 "amount_taxed": amount_taxed,
+                "tax_base_exempt_aliquot": 0,
+                "amount_exempt_aliquot": 0,
                 "tax_base_reduced_aliquot": 0,
                 "amount_reduced_aliquot": 0,
                 "tax_base_general_aliquot": 0,

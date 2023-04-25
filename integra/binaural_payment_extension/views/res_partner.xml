@@ -11,7 +11,6 @@
                         <field name="customer_rank" invisible="1"/>
                         <field name="supplier_rank" invisible="1"/>
                         <field name="withholding_type_id" attrs="{'required':[('supplier_rank','&gt;', 0)]}" />
-                        <field name="taxpayer_type" required="1" />
                         <field name="type_person_id" domain="[('state','=',True)]" attrs="{'required':['|',('supplier_rank','&gt;', 0),('customer_rank','&gt;',0)]}" /> 
 			<field name="economic_activity_id"/>
                     </group>

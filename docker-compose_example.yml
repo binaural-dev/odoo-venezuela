@@ -17,6 +17,7 @@ services:
       - ./enterprise:/mnt/extra-addons
       - ./integra:/mnt/integra-addons
       - ./custom:/mnt/custom-addons
+      - ./third-party:/mnt/third-party-addons
     environment:
       - PYTHONUNBUFFERED=0    
     restart: always
