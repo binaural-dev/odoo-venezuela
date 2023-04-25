@@ -7,32 +7,21 @@ class ResPartner(models.Model):
     withholding_type_id = fields.Many2one(
         "account.withholding.type",
         string="Withholding Type",
-        domain=[("state", "=", True)],
-        track_visibility="onchange",
+        domain=[("state", "=", True)]
     )
 
     iva_account = fields.Many2one(
-        "account.account", string="IVA Account", track_visibility="onchange"
+        "account.account", string="IVA Account"
     )
 
     islr_account = fields.Many2one(
-        "account.account", string="ISLR Account", track_visibility="onchange"
-    )
-
-    taxpayer_type = fields.Selection(
-        [
-            ("formal", "Formal"),
-            ("special", "Special"),
-            ("ordinary", "Ordinary"),
-        ],
-        default="ordinary",
-        store=True,
+        "account.account", string="ISLR Account"
     )
 
     type_person_id = fields.Many2one(
-        "type.person", "Type Person", track_visibility="onchange", store=True
+        "type.person", "Type Person", store=True
     )
 
     economic_activity_id = fields.Many2one(
-        "economic.activity", "Default Economic Activity", track_visibility="onchange", store=True
+        "economic.activity", "Default Economic Activity", store=True
     )

@@ -24,7 +24,6 @@ class StockPicking(models.Model):
         default=_get_default_currency,
         help="The foreign currency taken from the configuration.",
     )
-    analytic_account_id = fields.Many2one("account.analytic.account")
 
     @api.depends("sale_id", "purchase_id", "scheduled_date")
     def _compute_foreign_rate(self):

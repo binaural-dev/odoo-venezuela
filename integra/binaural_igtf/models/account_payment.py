@@ -77,7 +77,7 @@ class AccountPaymentIgtf(models.Model):
             dict: Values to create the account.move.line.
         """
         vals = super(AccountPaymentIgtf, self)._prepare_move_line_default_vals(write_off_line_vals)
-        igtf_account = self.env.company.account_igtf_id.id
+        igtf_account = self.env.company.customer_account_igtf_id.id if self.partner_type == "customer" else self.env.company.supplier_account_igtf_id.id
 
         for payment in self:
         
@@ -110,7 +110,7 @@ class AccountPaymentIgtf(models.Model):
         Returns:
             list: list of move line values with the igtf move line values
         """
-        igtf_account = self.env.company.account_igtf_id.id
+        igtf_account = self.env.company.customer_account_igtf_id.id if self.partner_type == "customer" else self.env.company.supplier_account_igtf_id.id
         igtf_amount = self.igtf_amount
 
         vals.append(
@@ -136,7 +136,7 @@ class AccountPaymentIgtf(models.Model):
             list: list of move line values with the igtf move line values
 
         """
-        igtf_account = self.env.company.account_igtf_id.id
+        igtf_account = self.env.company.customer_account_igtf_id.id if self.partner_type == "customer" else self.env.company.supplier_account_igtf_id.id
         igtf_amount = self.igtf_amount
         
         vals.append(

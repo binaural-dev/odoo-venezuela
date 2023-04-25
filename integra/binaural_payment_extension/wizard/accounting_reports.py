@@ -106,7 +106,7 @@ class WizardAccountingReports(models.TransientModel):
         return res_moves
     
     def parse_sale_book_data(self):
-        data = super().parse_purchase_book_data()
+        data = super().parse_sale_book_data()
         for move in data:
             move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
             if self._check_future_retention_dates(move_date):
