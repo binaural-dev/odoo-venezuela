@@ -1,4 +1,4 @@
-from odoo import models, fields, api, Command, _
+from odoo import models, fields, Command
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"

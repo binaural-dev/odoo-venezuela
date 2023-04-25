@@ -629,3 +629,30 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_free_form_binaural_invoice
 msgid "sobre ("
 msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_journal__series_correlative_sequence_id
+msgid "Series control number"
+msgstr "Número de control para series"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_res_config_settings__group_sales_invoicing_series
+msgid "Series Invoicing"
+msgstr "Series de Facturación"
+
+#. module: binaural_invoice
+#: model:res.groups,name:binaural_invoice.group_sales_invoicing_series
+msgid "Series Invoicing Group"
+msgstr "Grupo para Series de Facturación"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_res_company__group_sales_invoicing_series
+msgid "Group Sales Invoicing Series"
+msgstr "Grupo para Series de Ventas"
+
+#. module: binaural_invoice
+#. odoo-python
+#: code:addons/binaural_invoice/models/account_move.py:0
+#, python-format
+msgid "The sale's series sequence must be in the selected journal."
+msgstr "La secuencia de series de ventas debe estar seleccionada en el diario."
