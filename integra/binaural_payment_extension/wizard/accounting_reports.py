@@ -111,8 +111,8 @@ class WizardAccountingReports(models.TransientModel):
             move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
             if self._check_future_retention_dates(move_date):
                 move.update({
-                    "total_purchases_iva": 0,
-                    "total_purchases_not_iva": 0,
+                    "total_sales_iva": 0,
+                    "total_sales_not_iva": 0,
                     "amount_reduced_aliquot": 0,
                     "amount_general_aliquot": 0,
                     "tax_base_reduced_aliquot": 0,
