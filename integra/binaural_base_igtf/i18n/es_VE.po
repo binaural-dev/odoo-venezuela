@@ -46,12 +46,12 @@ msgstr "Opciones de configuración"
 #. module: binaural_base_igtf
 #: model:ir.model.fields,field_description:binaural_base_igtf.field_res_company__customer_account_igtf_id
 msgid "Customer Account Igtf"
-msgstr ""
+msgstr "Cuenta de cliente de IGTF"
 
 #. module: binaural_base_igtf
 #: model:ir.model.fields,field_description:binaural_base_igtf.field_res_config_settings__customer_account_igtf_id
 msgid "Customer IGTF Account"
-msgstr ""
+msgstr "Cuenta de cliente de IGTF"
 
 #. module: binaural_base_igtf
 #: model:ir.model.fields.selection,name:binaural_base_igtf.selection__res_company__taxpayer_type__formal
@@ -122,12 +122,12 @@ msgstr "Especial"
 #. module: binaural_base_igtf
 #: model:ir.model.fields,field_description:binaural_base_igtf.field_res_company__supplier_account_igtf_id
 msgid "Supplier Account Igtf"
-msgstr ""
+msgstr "Cuenta de proveedor de IGTF"
 
 #. module: binaural_base_igtf
 #: model:ir.model.fields,field_description:binaural_base_igtf.field_res_config_settings__supplier_account_igtf_id
 msgid "Supplier IGTF Account"
-msgstr ""
+msgstr "Cuenta de proveedor de IGTF"
 
 #. module: binaural_base_igtf
 #: model:ir.model,name:binaural_base_igtf.model_account_tax

@@ -240,12 +240,16 @@ class AccountMove(models.Model):
         )
         self.has_outstanding = has_outstanding
 
+
     def js_assign_outstanding_line(self, line_id):
         self.ensure_one()
         lines = self.env["account.move.line"].browse(line_id)
         payment = self.env["account.payment"].search([("move_id", "=", lines.move_id.id)], limit=1)
+        _logger.warning("epaleeeeeeeeee")
+
         if payment.is_advance_payment:
             return self._create_advance_payment_moves(line_id)
+
         return super().js_assign_outstanding_line(line_id)
 
     def get_line_vals(self, move_type, account, amount_to_show, payment):
@@ -253,12 +257,12 @@ class AccountMove(models.Model):
             credit = True
             name_1 = "CUENTA POR COBRAR CLIENTE"
             name_2 = "ANTICIPO/CLIENTE"
-            account_2 = payment.destination_account_id.id
+            account_2 = payment.destination_account_id.id if payment else self.env.company.advance_customer_account_id.id
         else:
             credit = False
             name_1 = "CUENTA POR PAGAR PROVEEDOR"
             name_2 = "ANTICIPO/PROVEEDOR"
-            account_2 = payment.destination_account_id.id
+            account_2 = payment.destination_account_id.id if payment else self.env.company.advance_customer_account_id.id
 
         return [
             Command.create(
@@ -291,6 +295,7 @@ class AccountMove(models.Model):
         lines = self.env["account.move.line"].browse(line_id)
         payment = self.env["account.payment"].search([("move_id", "=", lines.move_id.id)], limit=1)
         account = False
+        amount_to_show = 0
 
         for line in self.line_ids.filtered(
             lambda line: line.account_id.account_type in ("asset_receivable", "liability_payable")
@@ -318,42 +323,42 @@ class AccountMove(models.Model):
                     payment.date or fields.Date.today(),
                 )
 
-            line_vals = self.get_line_vals(self.move_type, account, amount_to_show, payment)
-            move = self.env["account.move"].create(
-                {
-                    "name": self.name + " - " + payment.name,
-                    "date": self.date,
-                    "journal_id": payment.journal_id.id if payment.journal_id else 1,
-                    "state": "draft",
-                    "line_ids": line_vals,
-                    "foreign_currency_id": payment.foreign_currency_id.id,
-                    "foreign_rate": payment.foreign_rate,
-                    "company_id": self.company_id.id,
-                }
-            )
-            move.action_post()
+        line_vals = self.get_line_vals(self.move_type, account, amount_to_show, payment)
+        move = self.env["account.move"].create(
+            {
+                "name": self.name + " - " + payment.name if payment.name else self.name,
+                "date": self.date,
+                "journal_id": payment.journal_id.id if payment.journal_id else 1,
+                "state": "draft",
+                "line_ids": line_vals,
+                "foreign_currency_id": payment.foreign_currency_id.id,
+                "foreign_rate": payment.foreign_rate,
+                "company_id": self.company_id.id,
+            }
+        )
+        move.action_post()
 
-            account_move_lines = [
-                line.id
-                for line in move.line_ids
-                if line.name in ("ANTICIPO/CLIENTE", "ANTICIPO/PROVEEDOR")
-            ]
-            lines += self.env["account.move.line"].browse(account_move_lines)
-            lines.reconcile()
+        account_move_lines = [
+            line.id
+            for line in move.line_ids
+            if line.name in ("ANTICIPO/CLIENTE", "ANTICIPO/PROVEEDOR")
+        ]
+        lines += self.env["account.move.line"].browse(account_move_lines)
+        lines.reconcile()
 
-            cta_fv_lines = [
-                line.id
-                for line in move.line_ids
-                if line.name in ("CUENTA POR COBRAR CLIENTE", "CUENTA POR PAGAR PROVEEDOR")
-            ]
-            cta_fv = self.env["account.move.line"].browse(cta_fv_lines)
+        cta_fv_lines = [
+            line.id
+            for line in move.line_ids
+            if line.name in ("CUENTA POR COBRAR CLIENTE", "CUENTA POR PAGAR PROVEEDOR")
+        ]
+        cta_fv = self.env["account.move.line"].browse(cta_fv_lines)
 
-            lines_to_reconcile = cta_fv + self.line_ids.filtered(
-                lambda line: line.account_id == cta_fv[0].account_id and not line.reconciled
-            )
-            lines_to_reconcile.reconcile()
+        lines_to_reconcile = cta_fv + self.line_ids.filtered(
+            lambda line: line.account_id == cta_fv[0].account_id and not line.reconciled
+        )
+        lines_to_reconcile.reconcile()
 
-            return lines_to_reconcile.ids
+        return lines_to_reconcile.ids
 
     def js_remove_outstanding_partial(self, partial_id):
         """Called by the 'payment' widget to remove a reconciled entry to the present invoice.
