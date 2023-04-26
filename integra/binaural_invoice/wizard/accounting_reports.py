@@ -52,7 +52,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def _fields_sale_book_line(self, move, taxes):
         multiplier = -1 if move.move_type == "out_refund" else 1
-        _logger.warning("put0: %s", taxes.get("amount_taxed", 0))
         return {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
