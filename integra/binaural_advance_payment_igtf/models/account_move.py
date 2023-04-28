@@ -67,26 +67,42 @@ class AccountMoveAdvanceIgtf(models.Model):
                 lambda line: line.account_id.account_type == "asset_receivable"
             ).balance
 
+            amount_account_receivable_with_igtf = amount_account_receivable * (
+                move.igtf_percentage / 100
+            )
 
-            if -lines_id["amount_residual"] > amount_account_receivable:
-                amount_filtered = move.line_ids.filtered(
-                    lambda line: line.account_id.account_type == "asset_receivable"
-                ).amount_currency
+            if amount_account_receivable < -lines_id["amount_residual"]:
+                amount_with_igtf = amount_account_receivable + amount_account_receivable_with_igtf
 
-                amount_currency_igtf = amount_filtered * (move.igtf_percentage / 100)
-                amount_currency = amount_filtered + amount_currency_igtf
+                if -lines_id["amount_residual"] < amount_with_igtf:
+                    amount_filtered = -lines_id["amount_residual"]
+                    amount_currency_igtf = amount_account_receivable * (move.igtf_percentage / 100)
+                    amount_currency = amount_filtered
+                    amount = amount_filtered - amount_currency_igtf
+                    amount_currency_with_igtf = amount_currency_igtf
 
-                amount = amount_filtered
-                amount_currency_with_igtf = amount_currency_igtf
+                    # Set the IGTF Value
+                    move.bi_igtf = amount_account_receivable
+
+                else:
+                    amount_filtered = move.line_ids.filtered(
+                        lambda line: line.account_id.account_type == "asset_receivable"
+                    ).amount_currency
+
+                    amount_currency_igtf = amount_filtered * (move.igtf_percentage / 100)
+                    amount_currency = amount_filtered + amount_currency_igtf
+                    amount = amount_filtered
+                    amount_currency_with_igtf = amount_currency_igtf
 
             else:
                 amount_filtered = -lines_id["amount_residual"]
-
                 amount_currency_igtf = amount_filtered * (move.igtf_percentage / 100)
-                amount_currency = amount_filtered 
-
+                amount_currency = amount_filtered
                 amount = amount_filtered - amount_currency_igtf
                 amount_currency_with_igtf = amount_currency_igtf
+
+                # Set the IGTF Value
+                move.bi_igtf = amount_filtered
 
             move_line_ids = [
                 Command.create(
@@ -137,11 +153,9 @@ class AccountMoveAdvanceIgtf(models.Model):
 
         advance_lines = move_id.line_ids.filtered(
             lambda x: x.account_id.id == self.env.company.advance_customer_account_id.id
-           
         )
         move_to_reconcile_lines = move_to_reconcile.line_ids.filtered(
             lambda x: x.account_id.id == self.env.company.advance_customer_account_id.id
-        
         )
 
         move_line_to_reconcile = self.env["account.move.line"].browse([move_to_reconcile_lines.id])

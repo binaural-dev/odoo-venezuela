@@ -121,7 +121,5 @@ class AccountPaymentRegister(models.TransientModel):
         )
         if asset_receivable_lines and payment_line:
             payment_line_to_reconcile = self.env["account.move.line"].browse([payment_line.id])
-
             payment_line_to_reconcile |= asset_receivable_lines
-
             payment_line_to_reconcile.reconcile()
