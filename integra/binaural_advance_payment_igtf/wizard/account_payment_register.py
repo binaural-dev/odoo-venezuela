@@ -31,6 +31,7 @@ class AccountPaymentRegister(models.TransientModel):
                 payment.amount > -payment_invoice_amount
                 and payment.journal_id.fiscal
                 and payment.journal_id.is_igtf
+                and payment.is_igtf_on_foreign_exchange
             ):
                 move_to_reconcile_with_payment_difference = (
                     self._create_move_to_reconcile_with_payment_difference(payment)
@@ -53,6 +54,7 @@ class AccountPaymentRegister(models.TransientModel):
         Returns:
             account.move: Move object
         """
+
         advance_account_id = (
             self.env.company.advance_customer_account_id.id
             if payment.partner_type == "customer"
@@ -112,14 +114,14 @@ class AccountPaymentRegister(models.TransientModel):
             move (account.move): Move object
         """
         asset_receivable_lines = move.line_ids.filtered(
-            lambda x: x.account_id.account_type == "asset_receivable"
+            lambda x: x.account_id.account_type == "asset_receivable" and not x.reconciled
         )
         payment_line = payment.line_ids.filtered(
-            lambda x: x.account_id.account_type == "asset_receivable"
+            lambda x: x.account_id.account_type == "asset_receivable" and not x.reconciled
         )
+        if asset_receivable_lines and payment_line:
+            payment_line_to_reconcile = self.env["account.move.line"].browse([payment_line.id])
 
-        payment_line_to_reconcile = self.env["account.move.line"].browse([payment_line.id])
+            payment_line_to_reconcile |= asset_receivable_lines
 
-        payment_line_to_reconcile += asset_receivable_lines
-
-        payment_line_to_reconcile.reconcile()
+            payment_line_to_reconcile.reconcile()

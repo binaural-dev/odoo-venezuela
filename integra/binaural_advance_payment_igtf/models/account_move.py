@@ -67,17 +67,26 @@ class AccountMoveAdvanceIgtf(models.Model):
                 lambda line: line.account_id.account_type == "asset_receivable"
             ).balance
 
-            if lines_id["amount_residual"] > amount_account_receivable:
-                amount = amount_account_receivable
-                amount_currency_with_igtf = amount_account_receivable * (move.igtf_percentage / 100)
-                amount_currency = amount_account_receivable - amount_currency_with_igtf
 
-            else:
-                amount = move.line_ids.filtered(
+            if -lines_id["amount_residual"] > amount_account_receivable:
+                amount_filtered = move.line_ids.filtered(
                     lambda line: line.account_id.account_type == "asset_receivable"
                 ).amount_currency
-                amount_currency_with_igtf = amount * (move.igtf_percentage / 100)
-                amount_currency = amount + amount_currency_with_igtf
+
+                amount_currency_igtf = amount_filtered * (move.igtf_percentage / 100)
+                amount_currency = amount_filtered + amount_currency_igtf
+
+                amount = amount_filtered
+                amount_currency_with_igtf = amount_currency_igtf
+
+            else:
+                amount_filtered = -lines_id["amount_residual"]
+
+                amount_currency_igtf = amount_filtered * (move.igtf_percentage / 100)
+                amount_currency = amount_filtered 
+
+                amount = amount_filtered - amount_currency_igtf
+                amount_currency_with_igtf = amount_currency_igtf
 
             move_line_ids = [
                 Command.create(
@@ -128,13 +137,11 @@ class AccountMoveAdvanceIgtf(models.Model):
 
         advance_lines = move_id.line_ids.filtered(
             lambda x: x.account_id.id == self.env.company.advance_customer_account_id.id
-            if move_id.move_type == "out_invoice"
-            else x.account_id.id == self.env.company.advance_supplier_account_id.id
+           
         )
         move_to_reconcile_lines = move_to_reconcile.line_ids.filtered(
-            lambda x: x.account_id.account_type == "liability_current"
-            and not x.account_id.id == self.env.company.customer_account_igtf_id.id
-            and not x.account_id.id == self.env.company.supplier_account_igtf_id.id
+            lambda x: x.account_id.id == self.env.company.advance_customer_account_id.id
+        
         )
 
         move_line_to_reconcile = self.env["account.move.line"].browse([move_to_reconcile_lines.id])
@@ -147,7 +154,6 @@ class AccountMoveAdvanceIgtf(models.Model):
         move_account_asset = self.line_ids.filtered(
             lambda x: x.account_id.account_type == "asset_receivable"
         )
-
         move_reconcile = self.env["account.move.line"].browse([move_to_reconcile_asset_account.id])
         move_reconcile += move_account_asset
         move_reconcile.reconcile()
