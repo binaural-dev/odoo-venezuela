@@ -146,7 +146,7 @@ RUN pip install --no-cache-dir -e /opt/odoo \
     && pip list
 
 # # Make an empty odoo.cfg
-RUN echo "[options]\naddons_path = /opt/odoo/addons, /mnt/extra-addons, /mnt/integra-addons, /mnt/custom-addons /mnt/third-party-addons" > /etc/odoo.cfg
+RUN echo "[options]\naddons_path = /opt/odoo/addons, /mnt/extra-addons, /mnt/integra-addons, /mnt/custom-addons, /mnt/third-party-addons" > /etc/odoo.cfg
 ENV ODOO_RC=/etc/odoo.cfg
 ENV OPENERP_SERVER=/etc/odoo.cfg
 
