@@ -4,6 +4,7 @@
     "summary": """
         Permite habilitar las cuentas analíticas en la valorización de inventario.
     """,
+    "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock/Analytic/Accounting",
