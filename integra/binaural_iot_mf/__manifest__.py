@@ -1,8 +1,9 @@
 {
     "name": "Binaural IoT - The Factory KHA",
-    "version": "1.0",
+    "version": "1.1",
     "category": "Accounting",
     "summary": "The Factory KHA (SDK) en IoT",
+    "license": "LGPL-3",
     "description": """
     Implementacion de SDK de The Factory HKA (VE) a Internet of Things (IoT) y
     compatibilidad con Odoo.
@@ -12,13 +13,14 @@
     "maintainer": "@andyengh",
     "support": "contacto@binaural.dev",
     "website": "https://binauraldev.com",
-    "depends": ["iot", "account","web"],
+    "depends": ["iot", "account","web","binaural_invoice","binaural_tax_payer"],
     "data": [
         "views/account_tax.xml",
         "views/account_move.xml",
         "views/iot_device.xml",
         "views/iot_box.xml",
         "views/account_journal.xml",
+        "wizards/accounting_reports_views.xml",
     ],
     "assets": {
         "web.assets_backend": [

@@ -57,7 +57,7 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
           repeat_payments.push(payment.payment_method.id)
         })
         if (bi_igtf !== 0) {
-
+          
           this.igtf_amount = round_pr(bi_igtf * (this.pos.config.igtf_percentage / 100), rounding);
           this.foreign_igtf_amount = round_pr(foreign_bi_igtf * (this.pos.config.igtf_percentage / 100), rounding);
           this.bi_igtf = bi_igtf;

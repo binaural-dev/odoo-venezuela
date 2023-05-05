@@ -1,10 +1,5 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
 from lxml import etree
-import dateutil.parser
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class SaleOrder(models.Model):
@@ -150,49 +145,48 @@ class SaleOrder(models.Model):
                 vat = str(rec.partner_id.vat)
             rec.vat = vat.upper()
 
-    @api.model_create_multi
-    def create(self, vals_list):
+    @api.onchange("name")
+    def _onchange_name(self):
         """
-        Ensure that the foreign_rate and foreign_inverse_rate are computed when the invoice is created.
+        Ensure the foreign_rate and foreign_inverse_rate are computed when the order is still not
+        created.
         """
-        moves = super().create(vals_list)
-        moves._compute_rate()
-        return moves
+        self._compute_rate()
 
     @api.depends("date_order")
     def _compute_rate(self):
         """
-        Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
+        Compute the rate of the sale order using the compute_rate method of the res.currency.rate
+        model.
         """
         Rate = self.env["res.currency.rate"]
-        for move in self:
-            date_order = dateutil.parser.parse(str(move.date_order)).date()
+        for sale in self:
             rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, date_order or fields.Date.today()
+                sale.foreign_currency_id.id, sale.date_order.date() or fields.Date.today()
             )
-            move.update(rate_values)
+            sale.update(rate_values)
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
         """
         Onchange the foreign rate and compute the foreign inverse rate
         """
-        for move in self:
+        for sale in self:
             base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
                 "base.USD", raise_if_not_found=False
             )
-            if not bool(move.foreign_rate):
+            if not bool(sale.foreign_rate):
                 return
-            move.foreign_inverse_rate = (
-                1 / move.foreign_rate
-                if move.foreign_currency_id.id == base_usd_id
-                else move.foreign_rate
+            sale.foreign_inverse_rate = (
+                1 / sale.foreign_rate
+                if sale.foreign_currency_id.id == base_usd_id
+                else sale.foreign_rate
             )
 
     def _create_invoices(self, grouped=False, final=False, date=None):
         """
         This function creates the invoice associated to the order,
-        but with this inheritance it creates multiple invoices if 
+        but with this inheritance it creates multiple invoices if
         it exceeds the configuration limit.
 
         It also sends the custom rate of the order to the invoice
@@ -206,7 +200,9 @@ class SaleOrder(models.Model):
             group = int(group) + 1
 
         if group == 1:
-            return super()._create_invoices(grouped, final, date)
+            res = super()._create_invoices(grouped, final, date)
+            self._update_invoices_rate()
+            return res
 
         res = super()._create_invoices(grouped, final, date)
 
@@ -232,8 +228,19 @@ class SaleOrder(models.Model):
             )
             invoices |= move
 
-        # Update the foreign rate and foreign inverse rate of the invoice
-        for invoice in invoices:
-            invoice.foreign_rate = self.foreign_rate
-            invoice.foreign_inverse_rate = self.foreign_inverse_rate
+        self._update_invoices_rate()
         return invoices
+
+    def _update_invoices_rate(self):
+        """
+        Syncs the rates of the invoices with the rates of the order.
+        """
+        if not self.env.company.use_invoice_rate_from_sale_order:
+            return
+        for sale in self:
+            sale.invoice_ids.write(
+                {
+                    "foreign_rate": sale.foreign_rate,
+                    "foreign_inverse_rate": sale.foreign_inverse_rate,
+                }
+            )

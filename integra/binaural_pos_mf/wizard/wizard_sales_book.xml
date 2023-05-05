@@ -29,11 +29,5 @@
             <field name="target">new</field>
         </record>
 
-        <!-- <menuitem --> 
-        <!--     action="action_pos_sales_book" --> 
-        <!--     id="account_pos_sales_book" --> 
-        <!--     parent="binaural_facturacion_reportes.account_report_menu" --> 
-        <!--     groups="account.group_account_manager" --> 
-        <!--     sequence="5"/> -->
     </data>
 </odoo>

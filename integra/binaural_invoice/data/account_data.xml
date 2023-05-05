@@ -7,6 +7,13 @@
             <field name="code">invoice.correlative</field>
             <field name="padding">5</field>
         </record>
+
+        <record id="series_invoicing_correlative" model="ir.sequence">
+            <field name="name">Número de Control para Series</field>
+            <field name="code">series.invoice.correlative</field>
+            <field name="padding">5</field>
+            <field name="active">False</field>
+        </record>
     </data>
 
 </odoo>

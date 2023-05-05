@@ -5,6 +5,7 @@
     "summary": "Binaural POS with IoT MF",
     "description": "Binaural POS with IoT MF",
     "sequence": "1",
+    "license": "LGPL-3",
     "author": "Binaural.dev",
     "support": "contacto@binaural.dev",
     "depends": ["point_of_sale", "binaural_pos", "pos_iot", "binaural_iot_mf"],
