@@ -93,6 +93,7 @@ class AccountMoveInh(models.Model):
 
         _data = {
             "identifier": data.iot_mf.identifier,
+            "iot_ip": data.iot_box.ip,
             "type": data.move_type,
             "mf_number": data.mf_invoice_number,
         }
@@ -117,23 +118,30 @@ class AccountMoveInh(models.Model):
             return {"valid": False, "message": "La factura no tiene lineas"}
 
         payment_lines = []
-        if len(data._get_reconciled_info_JSON_values()) == 0:
+        payments = data.invoice_payments_widget
+
+        if not payments:
             payment_lines.append({"amount": 0, "payment_method": "01"})
         else:
-            for payment in data._get_reconciled_info_JSON_values():
+            payments = payments["content"]
+            for payment in payments:
+                journal_id = self.env["account.journal"].search(
+                    [("name", "=", payment["journal_name"])], limit=1
+                )
                 new_payment = {
                     "amount": payment["amount"],
-                    "payment_method": payment["mf_payment_method"] or "01",
+                    "payment_method": journal_id["payment_method"] or "01",
                 }
-                if payment["currency"] == "$":
-                    new_payment["amount"] = payment["amount"] * data.foreign_currency_rate
+                if payment["currency_id"] != data.env.ref("base.VEF").id:
+                    new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
+
                 payment_lines.append(new_payment)
 
         _invoice_lines = []
         for line in data.invoice_line_ids:
             price_vef = line.price_unit
             if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
-                price_vef = line.price_unit * data.foreign_currency_rate
+                price_vef = line.price_unit * data.foreign_inverse_rate
             _invoice_lines.append(
                 {
                     "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
@@ -149,10 +157,11 @@ class AccountMoveInh(models.Model):
         _data = {
             "flag_21": data.iot_mf.flag_21,
             "identifier": data.iot_mf.identifier,
+            "iot_ip": data.iot_box.ip,
             "company_id": {"name": data.company_id.name},
             "partner_id": {
                 "name": data.partner_id.name,
-                "vat": data.partner_id.vat,
+                "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
                 "address": data.partner_id.street or False,
                 "phone": data.partner_id.phone or False,
             },
@@ -207,24 +216,30 @@ class AccountMoveInh(models.Model):
             return {"valid": False, "message": "La factura no tiene lineas"}
 
         payment_lines = []
-        if len(data._get_reconciled_info_JSON_values()) == 0:
+        payments = data.invoice_payments_widget
+
+        if not payments:
             payment_lines.append({"amount": 0, "payment_method": "01"})
         else:
-            for payment in data._get_reconciled_info_JSON_values():
+            payments = payments["content"]
+            for payment in payments:
+                journal_id = self.env["account.journal"].search(
+                    [("name", "=", payment["journal_name"])], limit=1
+                )
                 new_payment = {
                     "amount": payment["amount"],
-                    "payment_method": payment["mf_payment_method"],
+                    "payment_method": journal_id["payment_method"] or "01",
                 }
-                if payment["currency"] == "$":
-                    new_payment["amount"] = payment["amount"] * data.foreign_currency_rate
+                if payment["currency_id"] != data.env.ref("base.VEF").id:
+                    new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
+
                 payment_lines.append(new_payment)
 
         _invoice_lines = []
         for line in data.invoice_line_ids:
             price_vef = line.price_unit
             if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
-                price_vef = line.price_unit * data.foreign_currency_rate
-
+                price_vef = line.price_unit * data.foreign_inverse_rate
             _invoice_lines.append(
                 {
                     "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
@@ -240,21 +255,23 @@ class AccountMoveInh(models.Model):
         _data = {
             "flag_21": data.iot_mf.flag_21,
             "identifier": data.iot_mf.identifier,
+            "iot_ip": data.iot_box.ip,
             "company_id": {"name": data.company_id.name},
+            "partner_id": {
+                "name": data.partner_id.name,
+                "vat": f"{data.partner_id.prefix_vat}-{data.partner_id.vat}",
+                "address": data.partner_id.street or False,
+                "phone": data.partner_id.phone or False,
+            },
             "invoice_affected": {
                 "number": data.reversed_entry_id.mf_invoice_number,
                 "serial_machine": data.reversed_entry_id.mf_serial,
                 "date": data.reversed_entry_id.invoice_date.strftime("%d/%m/%Y"),
             },
-            "partner_id": {
-                "name": data.partner_id.name,
-                "vat": data.partner_id.vat,
-                "address": data.partner_id.street or False,
-                "phone": data.partner_id.phone or False,
-            },
             "invoice_lines": _invoice_lines,
             "payment_lines": payment_lines,
         }
+
         return _data
 
     def print_out_refund(self, values):

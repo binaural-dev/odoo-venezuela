@@ -1,12 +1,12 @@
 {
-    "name": "Binaural Anticipos",
+    "name": "Binaural Anticipos IGTF",
     "summary": """
        Modulo para Anticipos en contabilidad Venezolana """,
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Igtf",
-    "version": "16.0.0.0.1",
+    "version": "16.0.0.0.2",
     # any module necessary for this one to work correctly
     "depends": ["base", "binaural_accountant", "binaural_tax", "binaural_rate", "binaural_fiscal", "binaural_igtf", "binaural_advance_payment"],
     # always loaded
