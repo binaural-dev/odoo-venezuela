@@ -4,16 +4,53 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230206\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230410\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-10 20:33+0000\n"
-"PO-Revision-Date: 2023-02-10 20:33+0000\n"
+"POT-Creation-Date: 2023-04-10 15:55+0000\n"
+"PO-Revision-Date: 2023-04-10 15:55+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: binaural_purchase
+#: model_terms:ir.ui.view,arch_db:binaural_purchase.res_config_settings_binaural_purchase
+msgid ""
+"Check this if you want the rate of the invoice to be taken from its\n"
+"\t\t\t\tpurchase order. Else it will take the rate of the date when it is created."
+msgstr ""
+"Marque esta opción si quiere que la factura utilice la tasa de su\n"
+"\t\t\t\torden de compra. De lo contrario utilizará la tasa del día en el que sea creada."
+
+#. module: binaural_purchase
+#: model:ir.model.fields,help:binaural_purchase.field_res_company__use_invoice_rate_from_purchase_order
+msgid ""
+"Check this if you want the rate of the invoice to be taken from its purchase"
+" order. Else it will take the rate of the date it is created."
+msgstr ""
+"Marque esta opción si quiere que la factura utilice la tasa de su orden"
+" de compra. De lo contrario utilizará la tasa del día en el que sea creada."
+
+#. module: binaural_purchase
+#: model:ir.model.fields,help:binaural_purchase.field_res_config_settings__use_invoice_rate_from_purchase_order
+msgid ""
+"Check this if you want the rate of the invoice to be taken from its purchase"
+" order. Else it will take the rate of the date when it is created."
+msgstr ""
+"Marque esta opción si quiere que la factura utilice la tasa de su orden"
+" de compra. De lo contrario utilizará la tasa del día en el que sea creada."
+
+#. module: binaural_purchase
+#: model:ir.model,name:binaural_purchase.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: binaural_purchase
+#: model:ir.model,name:binaural_purchase.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
 
 #. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__filter_partner
@@ -28,11 +65,6 @@ msgid ""
 msgstr ""
 "Filtro de contacto ya sea por cliente o proveedor (dependiendo de lo que se "
 "necesite)"
-
-#. module: binaural_purchase
-#: model:ir.model.fields.selection,name:binaural_purchase.selection__purchase_order__filter_partner__contact
-msgid "Contact"
-msgstr "Contacto"
 
 #. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__foreign_currency_id
@@ -86,7 +118,7 @@ msgstr "Base imponible alterna"
 
 #. module: binaural_purchase
 #: model:ir.model.fields,help:binaural_purchase.field_purchase_order__foreign_taxable_income
-msgid "Foreign Taxable Income of the invoice"
+msgid "Foreign Taxable Income of the order"
 msgstr "Base imponible alterna de la factura"
 
 #. module: binaural_purchase
@@ -96,18 +128,8 @@ msgstr "Total alterno facturado"
 
 #. module: binaural_purchase
 #: model:ir.model.fields,help:binaural_purchase.field_purchase_order__foreign_total_billed
-msgid "Foreign Total Billed of the invoice"
+msgid "Foreign Total Billed of the order"
 msgstr "Total alterno facturado de la factura"
-
-#. module: binaural_purchase
-#: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__foreign_total_due
-msgid "Foreign Total Due"
-msgstr "Total alterno adeudado"
-
-#. module: binaural_purchase
-#: model:ir.model.fields,help:binaural_purchase.field_purchase_order__foreign_total_due
-msgid "Foreign Total Due of the invoice"
-msgstr "Total adeudado de la factura"
 
 #. module: binaural_purchase
 #: model_terms:ir.ui.view,arch_db:binaural_purchase.view_purchase_order_form_binaural_purchase
@@ -120,9 +142,14 @@ msgid "Foreign inverse rate"
 msgstr "Tasa inversa alterna"
 
 #. module: binaural_purchase
-#: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__invoice_date
-msgid "Invoice Date"
-msgstr "Fecha de factura"
+#: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__partner_id_domain
+msgid "Partner Id Domain"
+msgstr ""
+
+#. module: binaural_purchase
+#: model_terms:ir.ui.view,arch_db:binaural_purchase.res_config_settings_binaural_purchase
+msgid "Purchase Configuration"
+msgstr "Configuración de Compras"
 
 #. module: binaural_purchase
 #: model:ir.model,name:binaural_purchase.model_purchase_order
@@ -139,7 +166,7 @@ msgstr "Línea pedido de compra"
 #: model:ir.model.fields,help:binaural_purchase.field_purchase_order_line__foreign_inverse_rate
 msgid ""
 "Rate that will be used as factor to multiply of the foreign currency for "
-"this move."
+"this order."
 msgstr ""
 
 #. module: binaural_purchase
@@ -155,8 +182,14 @@ msgstr "Total gravado"
 
 #. module: binaural_purchase
 #: model:ir.model.fields,help:binaural_purchase.field_purchase_order__total_taxed
-msgid "Total Taxed of the invoice"
-msgstr "Total gravado de la factura"
+msgid "Total Taxed of the order"
+msgstr "Total gravado de la orden"
+
+#. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_res_company__use_invoice_rate_from_purchase_order
+#: model:ir.model.fields,field_description:binaural_purchase.field_res_config_settings__use_invoice_rate_from_purchase_order
+msgid "Use Invoice Rate From Purchase Order"
+msgstr "Usar la tasa de la orden de compra en la factura"
 
 #. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__vat

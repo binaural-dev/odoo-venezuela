@@ -7,13 +7,10 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="before">
                 <header>
-                    <widget name="iot-mf-button" action="get_serial_machine"/>
-                    <!-- <widget name="get_fiscal_serial"/> -->
-                    <!-- <widget name="generate_report_z"/> -->
-                    <!-- <widget name="generate_report_x"/> -->
-                    <!-- <widget name="programacion"/> -->
-                    <!-- <widget name="statusMachine"/> -->
-                    <!-- <widget name="status1"/> -->
+                    <widget name="iot-mf-button" action="get_serial_machine" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget name="iot-mf-button" action="generate_report_z"  attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget name="iot-mf-button" action="generate_report_x" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget name="iot-mf-button" action="programacion" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
                 </header>
             </xpath>
 
@@ -24,6 +21,35 @@
                 <field 
                     name="flag_21"
                     attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                <div colspan="2" groups="base.group_no_one">
+                    <label for="payment_methods"/>
+                    <div class="col-2 col-lg-9" id="igtf_setting">
+                        <div>
+                            <field name="payment_methods" placeholder="ID Payment Method"/>
+                        </div>
+                        <div>
+                            <field name="payment_method_name" placeholder="Name to set on Fiscal machine"/>
+                            <div class="text-muted">
+                                Edit the name of the payment method shown in "programming"
+                                and used to pay on invoices or credit notes
+                            </div>
+                            <widget name="iot-mf-button" action="payment_method" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                        </div>
+                    </div>
+                </div>
+                <br/>
+                <div colspan="2" groups="base.group_no_one">
+                    <label for="command"/>
+                    <div class="col-2 col-lg-9" id="igtf_setting">
+                        <div>
+                            <field name="command" placeholder="Send command to Fiscal Machine"/>
+                            <div class="text-muted">
+                                Send raw command to the fiscal machine
+                            </div>
+                            <widget name="iot-mf-button" action="command" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                        </div>
+                    </div>
+                </div>
             </xpath>
         </field>
     </record>

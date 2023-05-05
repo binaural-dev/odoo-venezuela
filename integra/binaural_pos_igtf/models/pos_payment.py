@@ -13,6 +13,7 @@ class PosPayment(models.Model):
         result = self.env["account.move"]
         amount_igtf = 0
         all_payments_in_usd = False
+        only_one_payment = True if len(self) == 1 else False
         for payment in self:
             if payment.payment_method_id.apply_igtf:
                 all_payments_in_usd = True
@@ -66,19 +67,21 @@ class PosPayment(models.Model):
             ):
                 credit_line_vals = pos_session._credit_amounts(
                     {
-                        "account_id": self.env.company.account_igtf_id.id,  # The field being company dependant, we need to make sure the right value is received.
+                        "account_id": self.env.company.customer_account_igtf_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
                     },
                     amounts["amount"],
                     amounts["amount_converted"],
                 )
-            elif not payment.payment_method_id.apply_igtf:
+            elif not payment.payment_method_id.apply_igtf or (
+                only_one_payment and all_payments_in_usd
+            ):
                 credit_line_vals = pos_session._credit_amounts(
                     {
                         "account_id": accounting_partner.with_company(
                             order.company_id
-                        ).property_account_receivable_id.id,  # The field being company dependant, we need to make sure the right value is received.
+                        ).property_account_receivable_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
                     },
@@ -88,7 +91,7 @@ class PosPayment(models.Model):
 
                 add_credit_line_vals = pos_session._credit_amounts(
                     {
-                        "account_id": self.env.company.account_igtf_id.id,  # The field being company dependant, we need to make sure the right value is received.
+                        "account_id": self.env.company.customer_account_igtf_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
                     },
@@ -100,7 +103,7 @@ class PosPayment(models.Model):
                     {
                         "account_id": accounting_partner.with_company(
                             order.company_id
-                        ).property_account_receivable_id.id,  # The field being company dependant, we need to make sure the right value is received.
+                        ).property_account_receivable_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
                     },

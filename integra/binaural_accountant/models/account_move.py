@@ -210,7 +210,7 @@ class AccountMove(models.Model):
 
         If the move is an invoice or a receipt, the foreign debit and foreign credit will be
         the sum of the foreign_subtotal of the invoice lines when the line has the payable or
-        receivable account of the partner and the sume of the price_subtotal of the invoice lines
+        receivable account of the partner and the sum of the price_subtotal of the invoice lines
         matches with either the debit or the credit of the line.
 
         Else, if the move is not an invoice or the line does not have the payable or receivable
@@ -249,7 +249,7 @@ class AccountMove(models.Model):
         Returns
         -------
         type = tuple(float, float))
-            The subtotal and foreing subtotal of the invoice lines
+            The subtotal and foreign subtotal of the invoice lines
         """
         self.ensure_one()
         return (

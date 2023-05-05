@@ -1,15 +1,63 @@
-import logging
 from datetime import datetime
 import xlsxwriter
 
 from odoo import _, api, models
 from odoo.osv import expression
 
-_logger = logging.getLogger(__name__)
-
 
 class WizardAccountingReports(models.TransientModel):
     _inherit = "wizard.accounting.reports"
+
+    def _determinate_resume_retention_books(self, moves):
+        retention_resume_lines = []
+        retention_moves = moves.filtered(lambda m: bool(m.retention_iva_line_ids.ids))
+        credit_notes = retention_moves.filtered(lambda m: m.move_type in ["out_refund", "in_refund"])
+        retention_moves -= credit_notes
+
+        retention_resume_lines.append(0.0)
+        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids) for move in retention_moves]))
+        retention_resume_lines.append(0.0)
+        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids) * -1 for move in credit_notes]))
+
+        return retention_resume_lines
+
+    def _resume_sale_book_fields(self, moves):
+        res_book = super()._resume_sale_book_fields(moves)
+        res_book.extend([{
+            "name": "Total Retenciones",
+            "format": "number",
+            "values": self._determinate_resume_retention_books(moves)
+        }])
+
+        return res_book
+
+    def _resume_purchase_book_fields(self, moves):
+        res_book = super()._resume_purchase_book_fields(moves)
+        res_book.extend([{
+            "name": "Total Retenciones",
+            "format": "number",
+            "values": self._determinate_resume_retention_books(moves)
+        }])
+        return res_book
+
+    def sale_book_fields(self):
+        fields = super().sale_book_fields()
+        fields.extend(
+            [
+                {
+                    "name": "Fecha Retención",
+                    "field": "date_retention",
+                    "size": 20,
+                },
+                {
+                    "name": "N° Retención",
+                    "field": "number_retention",
+                    "size": 20,
+                },
+                {"name": "IVA retenido", "field": "iva_retained", "format": "number"},
+            ]
+        )
+        return fields
 
     def purchase_book_fields(self):
         fields = super().purchase_book_fields()
@@ -42,6 +90,7 @@ class WizardAccountingReports(models.TransientModel):
             (field_date, "<=", self.date_to),
             ("type", "in", move_type),
             ("type_retention", "=", "iva"),
+            ("state", "=", "emitted")
         ]
         return domain
 
@@ -55,13 +104,30 @@ class WizardAccountingReports(models.TransientModel):
         res_moves |= moves
 
         return res_moves
+    
+    def parse_sale_book_data(self):
+        data = super().parse_sale_book_data()
+        for move in data:
+            move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
+            if self._check_future_retention_dates(move_date):
+                move.update({
+                    "total_sales_iva": 0,
+                    "total_sales_not_iva": 0,
+                    "amount_reduced_aliquot": 0,
+                    "amount_general_aliquot": 0,
+                    "tax_base_reduced_aliquot": 0,
+                    "tax_base_general_aliquot": 0,
+                })
+            retention_data = self.get_retention_iva_values(move.get("_id"))
+            move.update(retention_data)
+
+        return data
 
     def parse_purchase_book_data(self):
         data = super().parse_purchase_book_data()
         for move in data:
             move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
-            _logger.warning("move date: %s", move_date)
-            if (move_date < self.date_from or move_date > self.date_to):
+            if self._check_future_retention_dates(move_date):
                 move.update({
                     "total_purchases_iva": 0,
                     "total_purchases_not_iva": 0,
@@ -72,7 +138,6 @@ class WizardAccountingReports(models.TransientModel):
                     "tax_base_general_aliquot": 0,
                     "tax_base_extend_aliquot": 0,
                 })
-            _logger.warning("move date: %s", type(move.get("document_date")))
             retention_data = self.get_retention_iva_values(move.get("_id"))
             move.update(retention_data)
 
@@ -80,12 +145,12 @@ class WizardAccountingReports(models.TransientModel):
 
     def get_retention_iva_values(self, move_id):
         move = self.env["account.move"].browse(move_id)
-        multiplier = -1 if move.move_type == "in_refund" else 1
+        multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
         ret_lines = move.retention_iva_line_ids
         retention = ret_lines.mapped("retention_id")
         ret_vals = dict()
 
-        if not ret_lines or (retention.date <= self.date_from or retention.date >= self.date_to):
+        if not ret_lines or self._check_future_retention_dates(retention.date):
             return {
                 "date_retention": "",
                 "number_retention": "",
@@ -100,7 +165,14 @@ class WizardAccountingReports(models.TransientModel):
 
     def _sum_retention_total(self, lines):
         is_check_currency_system = self.currency_system
+        retention = lines.mapped("retention_id")
+
+        if self._check_future_retention_dates(retention.date):
+            return 0.0
         if not is_check_currency_system:
             return sum(lines.mapped("foreign_retention_amount"))
 
         return sum(lines.mapped("retention_amount"))
+
+    def _check_future_retention_dates(self, cmp_date):
+        return cmp_date < self.date_from or cmp_date > self.date_to

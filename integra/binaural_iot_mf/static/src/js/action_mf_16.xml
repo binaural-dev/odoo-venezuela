@@ -1,7 +1,0 @@
-<?xml verison="1.0" encoding="utf-8"?>
-<templates>
-    <div t-name="some.template">
-        <span class="val"><t t-esc="widget.count"/></span>
-        <button>Increment</button>
-    </div>
-</templates>

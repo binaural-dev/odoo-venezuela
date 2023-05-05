@@ -1,6 +1,5 @@
 #Binaural Facturacion
 
-- Evasión fiscal
 - Manejo de tasas personalizadas (pago y factura)
 - Formatos personalizados
 - Evitar crear facturas fuera de moneda base (bs)

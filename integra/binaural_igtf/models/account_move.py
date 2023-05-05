@@ -40,7 +40,10 @@ class AccountMoveIgtf(models.Model):
             and move_credit.bi_igtf > 0
         ):
             amount = partial.credit_move_id.payment_id.amount
-            move_credit.write({"bi_igtf": move_credit.bi_igtf - amount})
+            result = move_credit.bi_igtf - amount
+            if result < 0:
+                result = 0
+            move_credit.write({"bi_igtf": result})
 
         if (
             payment_debit.is_igtf
@@ -49,7 +52,10 @@ class AccountMoveIgtf(models.Model):
             and move_debit.bi_igtf > 0
         ):
             amount = partial.debit_move_id.payment_id.amount
-            move_debit.write({"bi_igtf": move_debit.bi_igtf - amount})
+            result = move_debit.bi_igtf - amount
+            if result < 0:
+                result = 0
+            move_debit.write({"bi_igtf": result})
 
         if (
             payment_credit.is_igtf
@@ -58,7 +64,10 @@ class AccountMoveIgtf(models.Model):
             and reverse_move_credit.bi_igtf > 0
         ):
             amount = partial.credit_move_id.payment_id.amount
-            reverse_move_credit.write({"bi_igtf": reverse_move_credit.bi_igtf - amount})
+            result = reverse_move_credit.bi_igtf - amount
+            if result < 0:
+                result = 0
+            reverse_move_credit.write({"bi_igtf": result})
 
         if (
             payment_debit.is_igtf
@@ -67,7 +76,10 @@ class AccountMoveIgtf(models.Model):
             and reverse_move_debit.bi_igtf > 0
         ):
             amount = partial.debit_move_id.payment_id.amount
-            reverse_move_debit.write({"bi_igtf": reverse_move_debit.bi_igtf - amount})
+            result = reverse_move_debit.bi_igtf - amount
+            if result < 0:
+                result = 0
+            reverse_move_debit.write({"bi_igtf": result})
 
     def js_remove_outstanding_partial(self, partial_id):
         self.remove_igtf_from_move(partial_id)

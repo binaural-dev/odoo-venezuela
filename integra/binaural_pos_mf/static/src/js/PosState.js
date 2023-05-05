@@ -80,9 +80,6 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
 
             let amount = vef_base ? el.price : el.get_foreign_unit_price()
 
-            amount = this.format_currency_no_symbol(amount, "Product Price", currency);
-            amount = parseFloat(amount.replace(",", "."))
-
             return {
               price_unit: Math.abs(amount),
               quantity: Math.abs(el.quantity),
@@ -92,13 +89,8 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             }
           })
           invoice['payment_lines'] = order.paymentlines.map((el) => {
-            console.log(el.payment_method)
 
             let amount = vef_base ? el.amount : el.amount * this.config.foreign_inverse_rate 
-
-            amount = this.format_currency_no_symbol(amount, "Product Price", currency);
-            amount = parseFloat(amount.replace(",", "."))
-
             return {
               payment_method: el.payment_method.code_fiscal_printer,
               amount: Math.abs(amount),
@@ -108,7 +100,6 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         return invoice
       }
       async print_out_invoice(data) {
-        console.log("DATA",data)
         this.env.services.ui.block()
         const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
         return new Promise(async (resolve, reject) => {

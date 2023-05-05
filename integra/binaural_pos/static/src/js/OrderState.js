@@ -31,14 +31,10 @@ odoo.define("binaural_pos.OrderState", function(require) {
             this.selected_paymentline.set_amount(0);
           }
 
-          if (!newPaymentline.payment_method.is_foreign_currency) {
-            newPaymentline.set_amount(this.get_due());
-          } else {
-            newPaymentline.set_foreign_amount(this.get_foreign_due())
-            newPaymentline.set_amount(
-              this.get_due()
-            );
-          }
+          newPaymentline.set_foreign_amount(this.get_foreign_due())
+          newPaymentline.set_amount(
+            this.get_due()
+          );
 
           if (payment_method.payment_terminal) {
             newPaymentline.set_payment_status('pending');

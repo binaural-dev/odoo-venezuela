@@ -232,7 +232,8 @@ class SerialFiscalDriver(SerialDriver):
         )
 
     def logger(self, data):
-        self.SendCmd(str(data))
+        self.SendCmd(str(data["data"]))
+        _logger.info(data["data"])
         self.data["value"] = {"status": "true"}
         event_manager.device_changed(self)
 
