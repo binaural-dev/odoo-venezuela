@@ -4,16 +4,91 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230410\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230503\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-10 21:07+0000\n"
-"PO-Revision-Date: 2023-04-10 21:07+0000\n"
+"POT-Creation-Date: 2023-05-04 16:46+0000\n"
+"PO-Revision-Date: 2023-05-04 16:46+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__10
+msgid "10"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__11
+msgid "11"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__12
+msgid "12"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__13
+msgid "13"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__14
+msgid "14"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__15
+msgid "15"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__16
+msgid "16"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__17
+msgid "17"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__18
+msgid "18"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__19
+msgid "19"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__20
+msgid "20 (*)"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__21
+msgid "21 (*)"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__22
+msgid "22 (*)"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__23
+msgid "23 (*)"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__payment_methods__24
+msgid "24 (*)"
+msgstr ""
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__flag_21__30
@@ -36,6 +111,11 @@ msgid "Check if the printer is still connected"
 msgstr "Revisa si la maquina fiscal esta conectada"
 
 #. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__command
+msgid "Command"
+msgstr "Commando"
+
+#. module: binaural_iot_mf
 #. odoo-javascript
 #: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
 #: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
@@ -49,6 +129,15 @@ msgstr "Conexion a la impresora fallò"
 #, python-format
 msgid "Device is not connected"
 msgstr "El dispositivo no esta conteado"
+
+#. module: binaural_iot_mf
+#: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
+msgid ""
+"Edit the name of the payment method shown in \"programming\"\n"
+"                                and used to pay on invoices or credit notes"
+msgstr ""
+"Editar el nombre del metodo de pago mostrado en \"programacion\"\n"
+"                                y es usado para pagar facturas y notas de credito"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_tax__fiscal_code
@@ -118,6 +207,11 @@ msgid "Get Status 1"
 msgstr "Obtener Status 1"
 
 #. module: binaural_iot_mf
+#: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
+msgid "ID Payment Method"
+msgstr "Id del metodo de pago"
+
+#. module: binaural_iot_mf
 #: model:ir.model,name:binaural_iot_mf.model_iot_device
 msgid "IOT Device"
 msgstr "Dispositivo IOT"
@@ -183,6 +277,11 @@ msgid "Max quantity int"
 msgstr "Enteros Maximos de la cantidad"
 
 #. module: binaural_iot_mf
+#: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
+msgid "Name to set on Fiscal machine"
+msgstr "Nombre para colocar en la Maquina fiscal"
+
+#. module: binaural_iot_mf
 #. odoo-javascript
 #: code:addons/binaural_iot_mf/static/src/js/action_mf.js:0
 #: code:addons/binaural_iot_mf/static/src/js/action_mf.js:0
@@ -236,6 +335,30 @@ msgstr "Programacion"
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_journal__payment_method
 msgid "Payment Method"
 msgstr "Metodo de pago"
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__payment_method_name
+msgid "Payment Method Name"
+msgstr "Nombre del metodo de pago"
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__payment_methods
+msgid "Payment Methods"
+msgstr "Metodos de pago"
+
+#. module: binaural_iot_mf
+#. odoo-python
+#: code:addons/binaural_iot_mf/models/iot_device.py:0
+#, python-format
+msgid "Payment method id is empty"
+msgstr "El id del metodo de pago esta vacio"
+
+#. module: binaural_iot_mf
+#. odoo-python
+#: code:addons/binaural_iot_mf/models/iot_device.py:0
+#, python-format
+msgid "Payment method name is empty"
+msgstr "El nombre del metodo de pago esta vacio"
 
 #. module: binaural_iot_mf
 #. odoo-javascript
@@ -313,6 +436,23 @@ msgid "STATUS 1"
 msgstr "Status 1"
 
 #. module: binaural_iot_mf
+#. odoo-javascript
+#: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
+#, python-format
+msgid "Send Command"
+msgstr "Enviar Comando"
+
+#. module: binaural_iot_mf
+#: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
+msgid "Send command to Fiscal Machine"
+msgstr "Enviar comando a la maquina fiscal"
+
+#. module: binaural_iot_mf
+#: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
+msgid "Send raw command to the fiscal machine"
+msgstr "Enviar comando a la maquina fiscal"
+
+#. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_bank_statement_line__mf_invoice_number
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_move__mf_invoice_number
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_payment__mf_invoice_number
@@ -328,6 +468,13 @@ msgstr "Serial de la maquina fiscal"
 #. odoo-javascript
 #: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
 #, python-format
+msgid "Set Payment Method"
+msgstr "Establecer metodo de pago"
+
+#. module: binaural_iot_mf
+#. odoo-javascript
+#: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
+#, python-format
 msgid "Successfully sent to printer!"
 msgstr "Enviado exitosamente a la impresora!"
 
@@ -335,6 +482,13 @@ msgstr "Enviado exitosamente a la impresora!"
 #: model:ir.model,name:binaural_iot_mf.model_account_tax
 msgid "Tax"
 msgstr "Impuesto"
+
+#. module: binaural_iot_mf
+#. odoo-python
+#: code:addons/binaural_iot_mf/models/iot_device.py:0
+#, python-format
+msgid "The command is empty"
+msgstr "El comando esta vacio"
 
 #. module: binaural_iot_mf
 #. odoo-python
