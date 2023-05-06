@@ -13,14 +13,14 @@ class AccountRetention(models.Model):
 
     company_currency_id = fields.Many2one(
         "res.currency",
-        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_id.id,
     )
     foreign_currency_id = fields.Many2one(
         "res.currency",
-        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_foreign_id.id,
     )
     base_currency_is_vef = fields.Boolean(
-        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
     )
 
     company_id = fields.Many2one(
@@ -150,14 +150,6 @@ class AccountRetention(models.Model):
             " that the one that just has been deleted."
         )
     )
-
-    def _compute_currency_fields(self):
-        for retention in self:
-            retention.company_currency_id = self.env.company.currency_id.id
-            retention.foreign_currency_id = self.env.company.currency_foreign_id.id
-            retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
-                "base.VEF"
-            )
 
     @api.depends("type", "partner_id")
     def _compute_allowed_lines_move_ids(self):
