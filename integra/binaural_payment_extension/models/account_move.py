@@ -181,6 +181,7 @@ class AccountMoveRetention(models.Model):
             "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
             "is_retention": True,
             "foreign_rate": self.foreign_rate,
+            "foreign_inverse_rate": self.foreign_inverse_rate,
             "currency_id": self.env.user.company_id.currency_id.id,
         }
         if type_retention == "islr":
