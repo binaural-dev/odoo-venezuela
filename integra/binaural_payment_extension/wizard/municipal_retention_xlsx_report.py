@@ -12,6 +12,7 @@ from ..utils.utils_retention import get_current_date_format
 
 class MunicipalRetentionXlsxReport(models.TransientModel):
     _name = "municipal.retention.xlsx.report"
+    _description = "XLSX Report for municipal retentions"
 
     date_start = fields.Date(
         string="Fecha Inicio", required=True, default=date.today().replace(day=1)
