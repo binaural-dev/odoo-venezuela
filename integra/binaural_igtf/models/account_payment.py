@@ -111,15 +111,16 @@ class AccountPaymentIgtf(models.Model):
             list: list of move line values with the igtf move line values
         """
         igtf_account = self.env.company.customer_account_igtf_id.id if self.partner_type == "customer" else self.env.company.supplier_account_igtf_id.id
+        igtf_account_two_percentage = self.env.company.igtf_two_percentage_account.id 
         igtf_amount = self.igtf_amount
+
 
         vals.append(
             {
                 "name": "IGTF",
-                "debit": 0,
-                "credit": igtf_amount,
+                "currency_id": self.currency_id.id,
                 "amount_currency": -igtf_amount,
-                "account_id": igtf_account,
+                "account_id": igtf_account if self.igtf_percentage == 3 else igtf_account_two_percentage,
                 "partner_id": self.partner_id.id,
             }
         )
@@ -137,15 +138,15 @@ class AccountPaymentIgtf(models.Model):
 
         """
         igtf_account = self.env.company.customer_account_igtf_id.id if self.partner_type == "customer" else self.env.company.supplier_account_igtf_id.id
+        igtf_account_two_percentage = self.env.company.igtf_two_percentage_account.id 
         igtf_amount = self.igtf_amount
         
         vals.append(
             {
                 "name": "IGTF",
-                "debit": igtf_amount,
-                "credit": 0,
+                "currency_id": self.currency_id.id,
                 "amount_currency": igtf_amount,
-                "account_id": igtf_account,
+                "account_id": igtf_account if self.igtf_percentage == 3 else igtf_account_two_percentage,
                 "partner_id": self.partner_id.id,
             }
         )
@@ -164,8 +165,13 @@ class AccountPaymentIgtf(models.Model):
 
         lines = [line for line in vals]
         if self.payment_type == "inbound":
-            credit_line = lines[1]["credit"] - self.igtf_amount
-            vals[1].update({"amount_currency": -credit_line, "credit": credit_line})    
+
+            credit_line = lines[1]["amount_currency"] + self.igtf_amount
+            credit_amount = -credit_line 
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                credit_amount = -credit_line * self.foreign_rate
+            vals[1].update({"amount_currency": credit_line, "credit": credit_amount})
+
             self._create_inbound_move_line_igtf_vals(vals)
            
 
@@ -178,11 +184,14 @@ class AccountPaymentIgtf(models.Model):
         Args:
             vals (list): list of move line values
         """
-
         lines = [line for line in vals]
         if self.payment_type == "outbound":
-            debit_line = lines[1]["debit"] - self.igtf_amount
-            vals[1].update({"amount_currency": debit_line, "debit": debit_line})
+            debit_line = lines[1]["amount_currency"] - self.igtf_amount   
+            debit_amount = debit_line
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                debit_amount = debit_line * self.foreign_rate
+            vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
+
             self._create_outbound_move_line_igtf_vals(vals)
 
 

@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230417\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230508\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-20 19:10+0000\n"
-"PO-Revision-Date: 2023-04-20 19:10+0000\n"
+"POT-Creation-Date: 2023-05-08 19:33+0000\n"
+"PO-Revision-Date: 2023-05-08 19:33+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -93,6 +93,16 @@ msgstr "Porcentaje de IGTF"
 #: model:ir.model.fields,help:binaural_base_igtf.field_account_payment__amount_residual_igtf
 msgid "IGTF Residual"
 msgstr "IGTF Restante"
+
+#. module: binaural_base_igtf
+#: model:ir.model.fields,field_description:binaural_base_igtf.field_res_config_settings__igtf_two_percentage_account
+msgid "IGTF Two Percentage Account"
+msgstr "Cuenta de IGTF 2%"
+
+#. module: binaural_base_igtf
+#: model:ir.model.fields,field_description:binaural_base_igtf.field_res_company__igtf_two_percentage_account
+msgid "Igtf Two Percentage Account"
+msgstr "Cuenta de IGTF 2%"
 
 #. module: binaural_base_igtf
 #: model:ir.model,name:binaural_base_igtf.model_account_move

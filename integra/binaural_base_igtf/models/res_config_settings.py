@@ -29,3 +29,9 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.igtf_percentage",
         readonly=False,
     )
+    igtf_two_percentage_account = fields.Many2one(
+        "account.account",
+        string="IGTF Two Percentage Account",
+        related="company_id.igtf_two_percentage_account",
+        readonly=False,
+    )
