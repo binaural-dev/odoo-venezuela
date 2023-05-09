@@ -22,6 +22,7 @@
         "data/account_data.xml",
         "views/account_invoice_report.xml",
         "views/account_move.xml",
+        "views/account_move_line.xml",
         "views/account_payment.xml",
         "wizard/account_payment_register.xml",
     ],

@@ -10,12 +10,20 @@ class ResConfigSettings(models.TransientModel):
         readonly=False
     )
 
-    account_igtf_id = fields.Many2one(
+    customer_account_igtf_id = fields.Many2one(
         "account.account",
-        string="IGTF Account",
-        related="company_id.account_igtf_id",
+        string="Customer IGTF Account",
+        related="company_id.customer_account_igtf_id",
         readonly=False,
     )
+
+    supplier_account_igtf_id = fields.Many2one(
+        "account.account",
+        string="Supplier IGTF Account",
+        related="company_id.supplier_account_igtf_id",
+        readonly=False,
+    )
+
     igtf_percentage = fields.Float(
         string="IGTF Percentage",
         related="company_id.igtf_percentage",

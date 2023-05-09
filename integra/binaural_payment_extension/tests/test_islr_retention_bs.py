@@ -4,9 +4,6 @@ from .common import AccountRetentionTestCommon
 from odoo.tools import float_compare
 from odoo.exceptions import UserError
 
-import logging
-
-_logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "islr_retention", "base_vef_retention")
 class TestIslrRetentionBs(AccountRetentionTestCommon):
