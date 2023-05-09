@@ -1,2 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_binaural_seller_binaural_seller,access_binaural_seller_binaural_seller,model_binaural_seller_binaural_seller,base.group_user,1,1,1,1
