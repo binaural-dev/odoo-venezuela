@@ -13,8 +13,8 @@
         "hr"
     ],
     "data": [
-        "views/account_move_inherit_view.xml",
-        "views/res_partner_inherit_view_form.xml",
+        "views/account_move.xml",
+        "views/res_partner.xml",
     ],
     "images": ["static/description/icon.png"],
 }
