@@ -81,7 +81,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: run test odoo
-        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test 
+        run: docker run -v $(pwd)/third-party:/mnt/third-party-addons -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test 
           --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /mnt/test/run.sh -m "${{ github.event.pull_request.title }}" -r odoo
   odoo-pytest:
     runs-on: ubuntu-latest
@@ -115,7 +115,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: run odoo-pytest
-        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test
+        run: docker run -v $(pwd)/third-party:/mnt/third-party-addons -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test
           --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /mnt/test/run.sh -m "${{ github.event.pull_request.title }}" -r pytest
   odoo-coverage:
     runs-on: ubuntu-latest
@@ -147,5 +147,5 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: run code coverage
-        run: docker run -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test
+        run: docker run -v $(pwd)/third-party:/mnt/third-party-addons -v $(pwd)/integra:/mnt/integra-addons -v $(pwd)/custom:/mnt/custom-addons -v $(pwd)/test:/mnt/test
           --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /mnt/test/run.sh -m "${{ github.event.pull_request.title }}" -r coverage
