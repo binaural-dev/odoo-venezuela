@@ -49,6 +49,8 @@ class AccountMove(models.Model):
         readonly=False,
     )
 
+    financial_document = fields.Boolean(default=False, copy=False)
+
     foreign_taxable_income = fields.Monetary(
         help="Foreign Taxable Income of the invoice",
         compute="_compute_foreign_taxable_income",
