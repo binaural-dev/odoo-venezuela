@@ -13,10 +13,15 @@
     "category": "Human Resources/Stock/Sales/Invoicing",
     "depends": [
         "web",
+        "website",
+        "portal",
         "binaural_seller",
+        "binaural_sale",
     ],
     "data": [
         "views/hr_employee.xml",
+        "views/portal_budget.xml",
+        "views/website_templates.xml",
     ],
     "images": ["static/description/icon.png"],
 

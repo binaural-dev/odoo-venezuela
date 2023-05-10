@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="portal_budget_form" name="Budget">
+        <t t-call="website.layout">
+            <div class="container">
+                <br/>
+                
+                <div class="d-flex justify-content-center">
+                    <button type="button" class="btn btn-secondary col-5 mx-auto">Cancel</button>
+                    <button type="button" class="btn btn-primary col-5 mx-auto">Confirm</button>
+                </div>
+                            
+                <hr width="100%" />
+                <div class="row mb-1">
+                    <label class="col-sm-2 form-text">Client</label>
+                    <div class="col-sm-4">
+                        <select class="form-control" id="client">
+                            <option value="">Select a client</option>
+                        </select>
+                    </div>
+                    <label class="col-sm-2 form-text">Billing address</label>
+                    <div class="col-sm-4">
+                        <select class="form-control" id="billing_address">
+                            <option value="">Select a billing address</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-1">
+                    <label class="col-sm-2 form-text">Shipping Address</label>
+                    <div class="col-sm-4">
+                        <select class="form-control" id="project">
+                            <option value="">Select a shipping address</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-text">Rate:</label><br/>
+                        <label class="form-label">Usd</label>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-text ">Payment terms:</label><br/>
+                        <label class="form-label">10 days</label>
+                    </div>
+                    <div class="col-sm-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="invoice"/>
+                            <label class="form-check-label" style="font-weight: bolder;">
+                                Invoice required
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <hr width="100%" />
+                <br />
+                <div class="d-grid gap-2 mx-auto">
+                    <label class="form-text" style="color: #35979c ">Order lines</label>
+                    <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#exampleModalFullscreen">Add</button>
+                </div>
+                <br />
+                <div class="row mb-2">
+                    <!-- <t t-call="portal.portal_table"> -->
+                        <table class="table table-primary table-striped">
+                            <thead>
+                            <tr>
+                                <td class="text-center" style="font-weight: bolder;">Product</td>
+                                <td class="text-center" style="font-weight: bolder;">Quantity</td>
+                                <td class="text-center" style="font-weight: bolder;">Price</td>
+                                <td class="text-center" style="font-weight: bolder;">Tax</td>
+                                <td class="text-center" style="font-weight: bolder;">Subtotal</td>
+                                <td></td>
+                            </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="2">
+                                        <label style="font-weight: bolder;">[A0393929] PRODUCT NAME</label><br/>
+                                        <label class="form-label">Cantidad:</label><label class="form-label" style="font-weight: bolder;">10</label>
+                                    </td>
+                                    <td class="text-center">b</td>
+                                    <td class="text-center">c</td>
+                                    <td class="text-center">d</td>
+                                    <td><button type="button" class="btn-close btn-danger"></button></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <label style="font-weight: bolder;">[A0393929] PRODUCT NAME</label><br/>
+                                        <label class="form-label">Cantidad:</label><label class="form-label" style="font-weight: bolder;">10</label>
+                                    </td>
+                                    <td class="text-center">b</td>
+                                    <td class="text-center">c</td>
+                                    <td class="text-center">d</td>
+                                    <td><button type="button" class="btn-close btn-danger"></button></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <label style="font-weight: bolder;">[A0393929] PRODUCT NAME</label><br/>
+                                        <label class="form-label">Cantidad:</label><label class="form-label" style="font-weight: bolder;">10</label>
+                                    </td>
+                                    <td class="text-center">b</td>
+                                    <td class="text-center">c</td>
+                                    <td class="text-center">d</td>
+                                    <td><button type="button" class="btn-close btn-danger"></button></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <label style="font-weight: bolder;">[A0393929] PRODUCT NAME</label><br/>
+                                        <label class="form-label">Cantidad:</label><label class="form-label" style="font-weight: bolder;">10</label>
+                                    </td>
+                                    <td class="text-center">b</td>
+                                    <td class="text-center">c</td>
+                                    <td class="text-center">d</td>
+                                    <td><button type="button" class="btn-close btn-danger"></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    <!-- </t> -->
+                </div>
+                <div class="d-flex justify-content-end">
+                    <label class="form-label">Taxable Base: </label><label class="form-label" style="font-weight: bolder;">10000</label>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <label class="form-label">Tax: </label><label class="form-label" style="font-weight: bolder;">1000</label>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <label class="form-label">Total: </label><label class="form-label" style="font-weight: bolder;">11000</label>
+                </div>
+                <br />
+                <div class="d-flex justify-content-center">
+                    <button type="button" class="btn btn-secondary col-5 mx-auto">Cancel</button>
+                    <button type="button" class="btn btn-primary col-5 mx-auto">Confirm</button>
+                </div>
+                <br />
+
+                <div class="modal fade" id="exampleModalFullscreen" tabindex="-1" aria-labelledby="exampleModalFullscreenLabel"  aria-modal="true" role="dialog">
+                    <div class="modal-dialog modal-fullscreen">
+                        <div class="modal-content">
+                        <div class="modal-header">
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" placeholder="Write the name or code" aria-label="Write the name or code" aria-describedby="button-addon2"/>
+                                <button class="btn btn-primary" type="button" id="button-addon2">Search</button>
+                            </div>
+                        </div>
+                        <div class="modal-header">
+                            <button type="button" class="btn btn-primary col-5" data-bs-dismiss="modal" disabled="disabled">Save</button>
+                            <button type="button" class="btn btn-secondary col-5" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                        <div class="modal-body">
+                            <table class="table table-primary table-striped">
+                            <thead>
+                                <tr>
+                                    <td class="text-center" style="font-weight: bolder;">Product</td>
+                                    <td class="text-center" style="font-weight: bolder;">Quantity</td>
+                                    <td class="text-center" style="font-weight: bolder;">Price</td>
+                                    <!-- <td class="text-center" style="font-weight: bolder;">Tax</td> -->
+                                    <td class="text-center" style="font-weight: bolder;">Subtotal</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center">image</td>
+                                    <td colspan="2">
+                                        <label style="font-weight: bolder;">[A0393929] PRODUCT NAME</label><br/>
+                                        <label class="form-label">Cantidad:</label><label class="form-label" style="font-weight: bolder;">10</label>
+                                    </td>
+                                    <td style="width: 150px;">
+                                    <!-- <div class="col-6"> -->
+                                        <input type="text" class="form-control" placeholder="quantity"/>
+                                        <label class="form-text">Valide</label>
+
+                                    <!-- </div> -->
+                                        
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    <!-- </t> -->
+                                
+                        </div>
+                        <!-- <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary">Save changes</button>
+                        </div> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>
