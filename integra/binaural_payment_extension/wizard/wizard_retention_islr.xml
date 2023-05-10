@@ -25,8 +25,13 @@
             </field>
         </record>
 
-        <act_window id="action_retention_islr" name="XML Retenciones de ISLR" res_model="wizard.retention.islr" view_mode="form" target="new" context="{'default_report': 'islr'}"/>
-
+	<record id="action_retention_islr" model="ir.actions.act_window">
+	    <field name="name">XML Retenciones de ISLR</field>
+	    <field name="res_model">wizard.retention.islr</field>
+	    <field name="view_mode">form</field>
+	    <field name="target">new</field>
+	    <field name="context">{'default_report': 'islr'}</field>
+	</record>
 
         <menuitem
             id="seniat_reports"
