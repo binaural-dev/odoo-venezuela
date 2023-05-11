@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="PaymentScreen" t-inherit="point_of_sale.PaymentScreen" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('js_invoice')]" position="replace">
+            <t t-set="default_invoice" t-value="env.pos.config.always_invoice"/>
+            <div class="button js_invoice"
+                t-att-class="{ highlight: currentOrder.is_to_receipt() != default_invoice }"
+                t-on-click="toggleIsToInvoice">
+                    <i class="fa fa-file-text-o" /> 
+                    <t t-out="currentOrder.is_to_receipt() ? 'Receipt' : 'Invoice'"/>
+            </div>
+        </xpath>
+    </t>
+</templates>
