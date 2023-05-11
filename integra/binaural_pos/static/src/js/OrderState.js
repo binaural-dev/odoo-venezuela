@@ -12,7 +12,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
       constructor() {
         super(...arguments);
         this.to_invoice = true;
-        let always_invoice = !this.pos.config.always_invoice
+        let always_invoice = !this.pos.config.always_invoice;
         this.to_receipt = always_invoice;
       }
       export_as_JSON() {
