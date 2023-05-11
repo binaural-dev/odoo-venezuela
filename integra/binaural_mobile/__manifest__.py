@@ -24,6 +24,11 @@
         "views/website_templates.xml",
         "views/portal_templates.xml",
     ],
+    "assets": {
+        "web.assets_frontend": [
+            "binaural_mobile/static/src/js/portal_budget.js",
+        ]
+    },
     "images": ["static/description/icon.png"],
 
 }
