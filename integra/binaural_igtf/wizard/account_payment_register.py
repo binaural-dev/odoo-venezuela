@@ -1,6 +1,5 @@
 from odoo import api, models, fields, _
 
-
 class AccountPaymentRegisterIgtf(models.TransientModel):
     _inherit = "account.payment.register"
 
@@ -23,7 +22,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         default=False,
         help="IGTF on Foreign Exchange?",
         readonly=False,
-        compute="_compute_is_igtf",
         store=True,
     )
 
@@ -73,7 +71,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in self:
             payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
-    @api.depends("journal_id", "is_igtf", "currency_id")
+    @api.onchange("journal_id", "is_igtf", "currency_id")
     def _compute_is_igtf(self):
         for payment in self:
             if (
@@ -83,6 +81,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 and payment.currency_id.name == "USD"
             ):
                 payment.is_igtf_on_foreign_exchange = True
+            
+            else:
+                payment.is_igtf_on_foreign_exchange = False
 
     @api.depends("amount", "is_igtf", "is_igtf_on_foreign_exchange")
     def _compute_igtf_amount(self):
@@ -133,10 +134,17 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 and payment.currency_id.name == "USD"
                 and payment.is_igtf_on_foreign_exchange
             ):
-                if payment.reconciled_invoice_ids:
-                    payment.reconciled_invoice_ids.bi_igtf += self.amount_without_difference
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    if payment.reconciled_invoice_ids:
+                        payment.reconciled_invoice_ids.bi_igtf += self.amount_without_difference * self.foreign_rate
 
-                if payment.reconciled_bill_ids:
-                    payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference
+                    if payment.reconciled_bill_ids:
+                        payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference * self.foreign_rate
+                else:
+                    if payment.reconciled_invoice_ids:
+                        payment.reconciled_invoice_ids.bi_igtf += self.amount_without_difference
+
+                    if payment.reconciled_bill_ids:
+                        payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference
 
         return res
