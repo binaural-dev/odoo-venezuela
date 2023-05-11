@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+        <record id="view_product_post" model="ir.ui.view">
+              <field name="name">Post to Mercado Libre</field>
+              <field name="model">mercadolibre.product.post</field>
+              <field name="type">form</field>
+              <field name="arch" type="xml">
+                <form string="Publicar/Actualizar en Mercado Libre">
+                    <group string="Opciones de publicación" col="2">
+                      <group>
+                        <field name="force_meli_pub"/>
+                        <field name="force_meli_active"/>
+                        <field name="post_stock"/>
+                        <field name="post_price"/>
+                        <field name="action_pause"/>
+                      </group>
+                    </group>
+                    <footer>
+                        <button name="product_post" string="Publicar" title="Publicar/Actualizar en Mercado Libre"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                    </footer>
+                </form>
+              </field>
+        </record>
+
+        <record id="view_product_template_post" model="ir.ui.view">
+              <field name="name">Post to Mercado Libre</field>
+              <field name="model">mercadolibre.product.template.post</field>
+              <field name="type">form</field>
+              <field name="arch" type="xml">
+                <form string="Publicar/Actualizar en Mercado Libre">
+                    <group string="Opciones de publicación" col="2">
+                      <group>
+                        <field name="force_meli_pub"/>
+                        <field name="force_meli_active"/>
+                        <field name="post_stock"/>
+                        <field name="post_price"/>
+                        <field name="action_pause"/>
+                      </group>
+                    </group>
+                    <footer>
+                        <button name="product_template_post" string="Publicar" title="Publicar/Actualizar en Mercado Libre"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                    </footer>
+                </form>
+              </field>
+        </record>
+
+        <record id="view_product_template_update" model="ir.ui.view">
+              <field name="name">Update from Mercado Libre</field>
+              <field name="model">mercadolibre.product.template.update</field>
+              <field name="type">form</field>
+              <field name="arch" type="xml">
+                <form string="Update from MercadoLibre">
+                    <group string="Opciones de importación" col="2">
+                      <group>
+                        <field name="force_meli_pub"/>
+                        <field name="meli_id"/>
+                        <!--field name="force_create_variants"/-->
+                      </group>
+                    </group>
+                    <footer>
+                        <button name="product_template_update" string="Update from MELI"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                    </footer>
+                </form>
+              </field>
+        </record>
+
+        <record id="view_product_product_update" model="ir.ui.view">
+              <field name="name">Import/Update from Mercado Libre</field>
+              <field name="model">mercadolibre.product.product.update</field>
+              <field name="type">form</field>
+              <field name="arch" type="xml">
+                <form string="Import/Update from MercadoLibre">
+                    <group string="Opciones de importación" col="2">
+                      <group>
+                        <field name="force_meli_pub"/>
+                      </group>
+                    </group>
+                    <footer>
+                        <button name="product_product_update" string="Import/Update from MELI"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                    </footer>
+                </form>
+              </field>
+        </record>
+
+        <record id="view_product_template_import" model="ir.ui.view">
+              <field name="name">Import (massive) from Mercado Libre</field>
+              <field name="model">mercadolibre.product.template.import</field>
+              <field name="type">form</field>
+              <field name="arch" type="xml">
+                <form string="Import from MercadoLibre">
+                    <group string="Opciones de importación" col="2">
+                      <group>
+                        <field name="post_state"/>
+                        <field name="meli_id"/>
+                        <field name="force_meli_pub"/>
+                        <field name="force_create_variants"/>
+                        <field name="force_dont_create"/>
+
+                        <h4>Batch Processing</h4>
+                        <field name="batch_processing_unit"/>
+                        <field name="batch_processing_unit_offset"/>
+                        <field name="batch_actives_to_sync" readonly="0"/>
+                        <field name="batch_paused_to_sync" readonly="0"/>
+
+                        <br/>
+                        <field name="batch_processing_status" readonly="1"/>
+                        <field name="batch_processing" readonly="1"/>
+
+                        <h4>Import Status</h4>
+                        <field name="import_status" readonly="1"/>
+                        <field name="actives_to_sync" readonly="1"/>
+                        <field name="paused_to_sync" readonly="1"/>
+                        <field name="closed_to_sync" readonly="1"/>
+
+                        <h4>Import Report</h4>
+                        <field name="report_import_link" widget="url" readonly="1"/>
+                        <field name="report_import" readonly="0" domain="[('res_id','=',id)]"/>
+
+                      </group>
+                    </group>
+                    <footer>
+                        <button name="product_template_import" string="Import from MELI"  type="object" class="oe_highlight"  />
+                        <button name="check_import_status" string="Check Import Status" type="object"/>
+                        <button name="create_full_report" string="Create Full Report" type="object"/>
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                    </footer>
+                </form>
+              </field>
+        </record>
+
+        <record id="action_product_template_post" model="ir.actions.act_window">
+            <field name="name">Publicar/Actualizar en ML</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_model_id" ref="model_product_template"/>
+            <field name="res_model">mercadolibre.product.template.post</field>
+            <field name="binding_type">action</field>
+            <field name="binding_view_types">list,form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+      <!--act_window id="action_product_template_post"
+          name="Publicar/Actualizar en ML"
+          binding_model="product.template"
+          res_model="mercadolibre.product.template.post"
+          binding_type="action"
+          binding_views="list,form"
+          view_mode="form"
+          target="new"/-->
+
+      <record id="action_product_template_update" model="ir.actions.act_window">
+          <field name="name">Importar desde ML</field>
+          <field name="type">ir.actions.act_window</field>
+          <field name="binding_model_id" ref="model_product_template"/>
+          <field name="res_model">mercadolibre.product.template.update</field>
+          <field name="binding_type">action</field>
+          <field name="binding_view_types">list,form</field>
+          <field name="view_mode">form</field>
+          <field name="target">new</field>
+      </record>
+
+      <!--act_window id="action_product_template_update"
+          name="Importar desde ML"
+          binding_model="product.template"
+          res_model="mercadolibre.product.template.update"
+          binding_type="action"
+          binding_views="list,form"
+          view_mode="form"
+          target="new"/-->
+
+      <record id="action_product_product_update" model="ir.actions.act_window">
+          <field name="name">Importar desde ML</field>
+          <field name="type">ir.actions.act_window</field>
+          <field name="binding_model_id" ref="model_product_product"/>
+          <field name="res_model">mercadolibre.product.product.update</field>
+          <field name="binding_type">action</field>
+          <field name="binding_view_types">list,form</field>
+          <field name="view_mode">form</field>
+          <field name="target">new</field>
+      </record>
+
+        <!--act_window id="action_product_product_update"
+            name="Importar/Update desde ML"
+            binding_model="product.product"
+            res_model="mercadolibre.product.product.update"
+            binding_type="action"
+            binding_views="list,form"
+            view_mode="form"
+            target="new"/-->
+
+    <record id="action_product_post" model="ir.actions.act_window">
+        <field name="name">Publicar/Actualizar en ML</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="binding_model_id" ref="model_product_product"/>
+        <field name="res_model">mercadolibre.product.post</field>
+        <field name="binding_type">action</field>
+        <field name="binding_view_types">list,form</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!--act_window id="action_product_post"
+        name="Publicar/Actualizar en ML"
+        binding_model="product.product"
+        res_model="mercadolibre.product.post"
+        binding_type="action"
+        binding_views="list,form"
+        view_mode="form"
+        target="new"/-->
+
+
+
+    <record id="action_product_template_import" model="ir.actions.act_window">
+          <field name="name">Importar Masivamente ML</field>
+          <field name="type">ir.actions.act_window</field>
+          <field name="binding_model_id" ref="model_res_company"/>
+          <field name="res_model">mercadolibre.product.template.import</field>
+          <field name="binding_type">action</field>
+          <field name="binding_view_types">list,form</field>
+          <field name="view_mode">form</field>
+          <field name="target">new</field>
+    </record>
+
+    <!--act_window id="action_product_template_import"
+        name="Importar masivamente desde ML"
+        src_model="res.company"
+        res_model="mercadolibre.product.template.import"
+        view_type="form"
+	view_mode="form"
+        key2="client_action_multi"
+	target="new"/-->
+
+  </data>
+</odoo>
