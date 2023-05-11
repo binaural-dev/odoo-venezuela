@@ -1,7 +1,4 @@
 from odoo import api, models, fields, _
-import logging
-_logger = logging.getLogger(__name__)
-
 
 class AccountPaymentRegisterIgtf(models.TransientModel):
     _inherit = "account.payment.register"
@@ -83,7 +80,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 and payment.is_igtf
                 and payment.currency_id.name == "USD"
             ):
-                _logger.warning("is_igtf_on_foreign_exchange")
                 payment.is_igtf_on_foreign_exchange = True
             
             else:
