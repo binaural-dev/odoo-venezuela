@@ -1,5 +1,5 @@
 {
-    "name": "Binaural Mobile",
+    "name": "Binaural Movil",
     "summary": """
         Integración para app de vendedores..
     """,
@@ -13,10 +13,16 @@
     "category": "Human Resources/Stock/Sales/Invoicing",
     "depends": [
         "web",
+        "website",
+        "portal",
         "binaural_seller",
+        "binaural_sale",
     ],
     "data": [
         "views/hr_employee.xml",
+        "views/portal_budget.xml",
+        "views/website_templates.xml",
+        "views/portal_templates.xml",
     ],
     "images": ["static/description/icon.png"],
 
