@@ -34,19 +34,10 @@
 	</record>
 
         <menuitem
-            id="seniat_reports"
-            name="Seniat Reports"
-            parent="account.menu_finance_reports"
-            sequence="7" />
-
-        <menuitem
             id="xml_retention_islr"
             name="XML ISLR Retention"
             parent="binaural_payment_extension.seniat_reports"
             action="action_retention_islr"
-            />
-    
+        />
     </data>
-    
-
 </odoo>
