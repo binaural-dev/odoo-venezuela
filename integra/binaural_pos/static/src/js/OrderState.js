@@ -17,9 +17,9 @@ odoo.define("binaural_pos.OrderState", function(require) {
       }
       export_as_JSON() {
         let json = super.export_as_JSON();
-        json["foreign_amount_total"] = this.get_foreign_total_with_tax()
-        json["foreign_currency_rate"] = this.pos.config.foreign_rate
-        json["to_receipt"] = this.is_to_receipt()
+        json["foreign_amount_total"] = this.get_foreign_total_with_tax();
+        json["foreign_currency_rate"] = this.pos.config.foreign_rate;
+        json["to_receipt"] = this.is_to_receipt();
         return json;
       }
       toggle_receipt_invoice(to_receipt) {
@@ -27,7 +27,6 @@ odoo.define("binaural_pos.OrderState", function(require) {
         this.to_receipt = to_receipt;
       }
       is_to_receipt() {
-        console.log(this)
         return this.to_receipt;
       }
       add_paymentline(payment_method) {
