@@ -6,7 +6,7 @@
         t-nocache-_text="_text"
         t-nocache-_item_class="_item_class"
         t-nocache-_link_class="_link_class"
-        t-if="request.env.user.employee_id.id">
+        t-if="request.env.user.employee_id.is_seller">
             <li t-attf-class="#{_item_class}">
                 <a href="/budget" t-attf-class="#{_link_class}">
                     <span t-if="_text">Create budget</span>

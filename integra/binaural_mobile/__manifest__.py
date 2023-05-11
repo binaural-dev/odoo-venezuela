@@ -1,5 +1,5 @@
 {
-    "name": "Binaural Mobile",
+    "name": "Binaural Movil",
     "summary": """
         Integración para app de vendedores..
     """,
@@ -22,6 +22,7 @@
         "views/hr_employee.xml",
         "views/portal_budget.xml",
         "views/website_templates.xml",
+        "views/portal_templates.xml",
     ],
     "images": ["static/description/icon.png"],
 
