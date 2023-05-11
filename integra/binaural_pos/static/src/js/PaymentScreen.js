@@ -22,6 +22,11 @@ odoo.define("binaural_pos.PaymentScreen", function(require) {
           );
         }
       }
+      toggleIsToInvoice() {
+          // click_invoice
+          this.currentOrder.toggle_receipt_invoice(!this.currentOrder.is_to_receipt());
+          this.render(true);
+      }
     }
 
   Registries.Component.extend(PaymentScreen, BinauralPaymentScreen)

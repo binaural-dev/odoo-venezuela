@@ -1,14 +1,30 @@
 from odoo import models, fields, api, _
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class PosOrder(models.Model):
     _inherit = "pos.order"
 
     foreign_currency_id = fields.Many2one("res.currency", related="company_id.currency_foreign_id")
-    foreign_amount_total = fields.Float(string='Total', digits=0, readonly=True, required=True)
+    foreign_amount_total = fields.Float(string="Total", readonly=True, required=True)
+    foreign_currency_rate = fields.Float(readonly=True, required=True)
+    to_receipt = fields.Boolean(readonly=True)
 
     @api.model
     def _order_fields(self, ui_order):
         res = super()._order_fields(ui_order)
         res["foreign_amount_total"] = ui_order["foreign_amount_total"]
+        res["foreign_currency_rate"] = ui_order["foreign_currency_rate"]
+        res["to_receipt"] = ui_order["to_receipt"]
+        return res
+
+    def _prepare_invoice_vals(self):
+        self.ensure_one()
+        res = super()._prepare_invoice_vals()
+        if not self.to_receipt:
+            return res
+        res.update({"journal_id": self.session_id.config_id.receipt_journal_id.id})
         return res
