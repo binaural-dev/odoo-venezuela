@@ -70,56 +70,22 @@
                                 <td class="text-center" style="font-weight: bolder;">Product</td>
                                 <td></td>
                                 <td></td>
-                                <td class="text-center" style="font-weight: bolder;">Tax</td>
+                                <td class="text-center"></td>
                                 <td class="text-center" style="font-weight: bolder;">Price</td>
                                 <td></td>
                             </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td colspan="3">
+                                    <td colspan="4">
                                         <label style="font-weight: bolder;">[A0393929] PRODUCT NAME</label><br/>
                                         <label class="form-label">Cantidad:</label><label class="form-label" style="font-weight: bolder;">10</label><br/>
-                                        <label class="form-text">Unit price:</label><label class="form-text" style="font-weight: bolder;">5</label>
+                                        <label class="form-text">Unit price:</label><label class="form-text" style="font-weight: bolder;">5</label><br/>
+                                        <label class="form-text">Tax:</label><label class="form-text" style="font-weight: bolder;">10%</label>
                                     </td>
                                     <td class="text-center">
-                                    10%
-                                    </td>
-                                    <td class="text-center">
-                                    <div  style="display:flex;">
-                                        <span>1000</span>
-                                    </div>
-                                    </td>
-                                    <td style="width: 50px;"><button type="button" class="btn-close btn-danger"></button></td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3">
-                                        <label style="font-weight: bolder;">[A0393929] PRODUCT NAME</label><br/>
-                                        <label class="form-label">Cantidad:</label><label class="form-label" style="font-weight: bolder;">10</label><br/>
-                                        <label class="form-text">Unit price:</label><label class="form-text" style="font-weight: bolder;">5</label>
-                                    </td>
-                                    <td class="text-center">
-                                    10%
-                                    </td>
-                                    <td class="text-center">
-                                    <div  style="display:flex;">
-                                        <span>1000</span>
-                                    </div>
-                                    </td>
-                                    <td style="width: 50px;"><button type="button" class="btn-close btn-danger"></button></td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3">
-                                        <label style="font-weight: bolder;">[A0393929] PRODUCT NAME</label><br/>
-                                        <label class="form-label">Cantidad:</label><label class="form-label" style="font-weight: bolder;">10</label><br/>
-                                        <label class="form-text">Unit price:</label><label class="form-text" style="font-weight: bolder;">5</label>
-                                    </td>
-                                    <td class="text-center">
-                                    10%
-                                    </td>
-                                    <td class="text-center">
-                                    <div  style="display:flex;">
-                                        <span>1000</span>
+                                    <div  style="display: flex; align-items: center; justify-content: center;">
+                                        <div style="width: 100px; height: 100px;">1000</div>
                                     </div>
                                     </td>
                                     <td style="width: 50px;"><button type="button" class="btn-close btn-danger"></button></td>
@@ -158,15 +124,7 @@
                             </div>
                             <div class="modal-body">
                                 <table class="table table-primary table-striped">
-                                <thead>
-                                    <tr>
-                                        <td class="text-center" style="font-weight: bolder;">Product</td>
-                                        <td class="text-center" style="font-weight: bolder;">Quantity</td>
-                                        <td class="text-center" style="font-weight: bolder;">Price</td>
-                                        <td class="text-center" style="font-weight: bolder;">Subtotal</td>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                                <tbody id="table_inside">
                                     <tr>
                                         <td class="text-center">image</td>
                                         <td colspan="2">
@@ -179,13 +137,10 @@
                                             <label class="form-text">Only valid multiples of 1</label>
                                         </td>
                                     </tr>
+                                    
                                 </tbody>
                             </table>
                             </div>
-                            <!-- <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                    <button type="button" class="btn btn-primary">Save changes</button>
-                            </div> -->
                             </div>
                         </div>
                     </div>

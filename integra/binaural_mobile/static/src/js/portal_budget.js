@@ -47,22 +47,18 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             const directionClient = await ajax.jsonRpc('/budget/direction_client', 'call', {
                 "client": idClient
             });
-            const { delivery } =  JSON.parse(directionClient);
-            const { invoice } =  JSON.parse(directionClient);
-            const { contact } =  JSON.parse(directionClient);
-            const streetinvoice = invoice[0]
-            const streetdelivery = delivery[0]
-            const streetcontact = contact[0]
-            $("#deliverys_address").empty();
-            $("#billing_address").empty();
+            const { status } = JSON.parse(directionClient);
+            const is404 = status === 404;
+            if (is404) return 
+            const { data } = JSON.parse(directionClient);
+            const streetinvoice = data[1]
+            const streetdelivery = data[0]
             if (streetinvoice && streetdelivery) {
+                $("#deliverys_address").empty();
+                $("#billing_address").empty();
                 $("#billing_address").append(`<option value="${streetinvoice.id}">${streetinvoice.street}</option>`);
                 $("#deliverys_address").append(`<option value="${streetdelivery.id}">${streetdelivery.street}</option>`);
-            }else{
-                $("#billing_address").append(`<option value="${streetcontact.id}">${streetcontact.street}</option>`);
-                $("#delivery_address").append(`<option value="${streetcontact.id}">${streetcontact.street}</option>`);
-                console.log("entro2")
             }
         },
-    });
+    })
 });

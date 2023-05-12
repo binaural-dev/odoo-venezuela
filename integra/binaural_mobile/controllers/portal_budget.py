@@ -39,6 +39,7 @@ class PortalBudget(http.Controller):
     
     @http.route(['/budget/client'], type='http', auth="public", methods=['GET'], website=True, sitemap=False)
     def get_clients(self, query="", **kw):
+        data = {"status": 200, "msg": "OK"}
         seller_portal_id = request.env.user.employee_id.id
         domain = [
             ('name', '=ilike', (query or '') + "%"),
@@ -47,6 +48,14 @@ class PortalBudget(http.Controller):
             ("type", "=", "contact")
             ]
         data = get_model_data("res.partner", domain, FIELDFILTERS)
+
+        if not data:
+            data.update(
+                {"status": 404, 
+                "msg": _("not found clients")
+                })
+            return json.dumps(data)
+
         return request.make_response(
             json.dumps(data),
             headers=[("Content-Type", "application/json")]
@@ -56,16 +65,16 @@ class PortalBudget(http.Controller):
     def get_direction_client(self, **kw):
         data = {"status": 200, "msg": "OK"}
 
-        domain = [('parent_id', '=', int(kw.get("client"))),('is_public', '=', True),("type", "in", ["delivery", "invoice","contact"])]
+        domain = [
+            ('parent_id', '=', int(kw.get("client"))),
+            ('is_public', '=', True),
+            ("type", "in", ["delivery", "invoice"])
+            ]
         res_direction = get_model_data("res.partner", domain, ["street", "id", "type"])
+
+        if not res_direction:
+            data.update({"status": 404, "msg": _("not found direction in client")})
+            return json.dumps(data)
         
-        
-
-        dic = {"delivery": [], "invoice": [], "contact": []}
-
-        for res in res_direction:
-            type_a = res.get("type")
-            dic[type_a].append(res)
-
-        data.update({"delivery": dic["delivery"], "invoice": dic["invoice"], "contact": dic["contact"]})
+        data.update({"data": res_direction})
         return json.dumps(data)
