@@ -6,7 +6,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 class ReportMemberList2(models.AbstractModel):
-	_name = 'report.binaural_advance_payment.advance_payment_template_report'
+	_name = 'report.binaural_payment_reports.advance_payment_template_report'
 
 	@api.model
 	def _get_report_values(self, docids, data=None):

@@ -23,8 +23,8 @@
         <field name="name">advance_payment_template_report</field>
         <field name="model">advance.payment.report</field>
         <field name="report_type">qweb-pdf</field>
-        <field name="report_name">binaural_advance_payment.advance_payment_template_report</field>
-        <field name="report_file">binaural_advance_payment.advance_payment_template_report</field>
+        <field name="report_name">binaural_payment_reports.advance_payment_template_report</field>
+        <field name="report_file">binaural_payment_reports.advance_payment_template_report</field>
         <field name="print_report_name">'Expenses - %s - %s' % (object.employee_id.name, (object.name).replace('/', ''))</field>
         <field name="binding_model_id" ref="model_advance_payment_report"/>
         <field name="binding_type">report</field>

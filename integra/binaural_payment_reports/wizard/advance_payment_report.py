@@ -100,13 +100,12 @@ class AdvancePaymentReport(models.TransientModel):
             }
         }
         return (
-            self.env.ref("binaural_advance_payment.action_report_advance_payment_report")
+            self.env.ref("binaural_payment_reports.action_report_advance_payment_report")
             .with_context(landscape=True)
             .report_action(self, data=data)
         )
 
     def generate_report(self, partner):
-        _logger.warning("partner al principio %s", partner)
         search_domain = []
         if self.report_type and self.report_type == "supplier":
             search_domain += [("payment_type", "=", "outbound")]
@@ -128,8 +127,6 @@ class AdvancePaymentReport(models.TransientModel):
             _logger.warning("HAY PARTNER %s", partner)
             search_domain += [("partner_id", "=", partner.id)]
         search_domain += [("state", "=", "posted")]
-
-        _logger.warning("search_domain %s", search_domain)
 
         payments = self.env["account.payment"].sudo().search(search_domain)
 
