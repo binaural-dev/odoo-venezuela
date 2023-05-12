@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record model="ir.ui.view" id="view_meli_posting_tree">
+            <field name="name">mercadolibre.posting.tree</field>
+            <field name="model">mercadolibre.posting</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Ventas publicadas"  default_order="posting_date desc">
+                    <field name="name"/>
+                    <field name="posting_date"/>
+                    <field name="product_id"/>
+                    <field name="meli_seller_custom_field"/>
+                    <field name="meli_id"/>
+                    <field name="meli_permalink" widget="url"/>
+                    <field name="meli_status"/>
+                    <field name="meli_price"/>
+                    <field name="posting_questions"/>
+                </tree>
+            </field>
+        </record>
+
+
+        <record model="ir.ui.view" id="view_meli_posting_form">
+            <field name="name">mercadolibre.posting.form</field>
+            <field name="model">mercadolibre.posting</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+				      <form string="Venta en ML">
+                <group>
+                    <field name="name"/>
+                    <field name="posting_date"/>
+                    <field name="meli_id"/>
+                    <field name="meli_seller_custom_field"/>
+                    <field name="product_id"/>
+                    <field name="meli_permalink" widget="url"/>
+                    <field name="meli_status"/>
+                    <field name="meli_price"/>
+                    <field name="posting_questions"/>
+                    <field name="posting_update"/>
+                  </group>
+                </form>
+            </field>
+        </record>
+
+    <record id="meli_posting_search_view" model="ir.ui.view">
+        <field name="name">MercadoLibre Posting - Search</field>
+        <field name="model">mercadolibre.posting</field>
+        <field name="arch" type="xml">
+          <search string="Search MercadoLibre Posting Information">
+            <field name="name" string="Nombre publicación"/>
+            <field name="meli_id" string="Meli ID"/>
+            <field name="meli_status" string="Status"/>
+            <field name="product_id" string="Producto"/>
+            <field name="meli_price" string="Precio"/>
+          </search>
+        </field>
+    </record>
+
+    <record id="view_posting_update" model="ir.ui.view">
+          <field name="name">Update Meli Posting</field>
+          <field name="model">mercadolibre.posting.update</field>
+          <field name="type">form</field>
+          <field name="arch" type="xml">
+            <form string="Update questions" version="7.0">
+                <footer>
+                    <button name="posting_update" string="Update Posting Questions"  type="object" class="oe_highlight"  />
+                    <button string="Cancel" class="oe_link" special="cancel" />
+                </footer>
+            </form>
+          </field>
+    </record>
+
+    <record id="action_update_meli_postings" model="ir.actions.act_window">
+        <field name="name">Update Meli Posting</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">mercadolibre.posting.update</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record model="ir.actions.act_window" id="action_meli_postings_tree">
+        <field name="name">Ventas publicadas</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">mercadolibre.posting</field>
+        <!--field name="view_type">form</field-->
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="meli_posting_search_view"/>
+    </record>
+
+
+    <menuitem id="menu_meli" name="MercadoLibre" parent="sale.sale_menu_root" sequence="9"/>
+
+    <menuitem id="menu_meli_postings"
+        action="action_meli_postings_tree"
+        parent="menu_meli"
+        name="Ventas publicadas" />
+
+	<record id="action_update_meli_postings" model="ir.actions.act_window">
+	    <field name="name">Actualizar publicaciones desde ML</field>
+	    <field name="type">ir.actions.act_window</field>
+	    <field name="binding_model_id" ref="model_mercadolibre_posting" />
+	    <field name="res_model">mercadolibre.posting.update</field>
+	    <field name="binding_type">action</field>
+	    <field name="binding_view_types">list,form</field>
+	    <field name="view_mode">form</field>
+	    <field name="target">new</field>
+	</record>
+
+    <!--act_window id="action_update_meli_postings"
+        name="Update ML Post"
+        binding_model="mercadolibre.posting"
+        res_model="mercadolibre.posting.update"
+        binding_type="action"
+        binding_views="list,form"
+        view_mode="form"
+        target="new"/-->
+
+  </data>
+</odoo>
