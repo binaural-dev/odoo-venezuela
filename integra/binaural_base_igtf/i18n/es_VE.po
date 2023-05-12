@@ -97,12 +97,12 @@ msgstr "IGTF Restante"
 #. module: binaural_base_igtf
 #: model:ir.model.fields,field_description:binaural_base_igtf.field_res_config_settings__igtf_two_percentage_account
 msgid "IGTF Two Percentage Account"
-msgstr "Cuenta de IGTF 2%"
+msgstr "Cuenta de Proveedor del IGTF 2%"
 
 #. module: binaural_base_igtf
 #: model:ir.model.fields,field_description:binaural_base_igtf.field_res_company__igtf_two_percentage_account
 msgid "Igtf Two Percentage Account"
-msgstr "Cuenta de IGTF 2%"
+msgstr "Cuenta de Proveedor del IGTF 2%"
 
 #. module: binaural_base_igtf
 #: model:ir.model,name:binaural_base_igtf.model_account_move
