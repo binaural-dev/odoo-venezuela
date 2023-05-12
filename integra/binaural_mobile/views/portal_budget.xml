@@ -29,7 +29,7 @@
                     <div class="row mb-1">
                         <label class="col-sm-2 form-text">Shipping Address</label>
                         <div class="col-sm-4">
-                            <select class="form-control" id="delivery_address">
+                            <select class="form-control" id="deliverys_address">
                                 <option value="">Select a shipping address</option>
                             </select>
                         </div>

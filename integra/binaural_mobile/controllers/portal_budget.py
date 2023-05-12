@@ -59,15 +59,7 @@ class PortalBudget(http.Controller):
         domain = [('parent_id', '=', int(kw.get("client"))),('is_public', '=', True),("type", "in", ["delivery", "invoice","contact"])]
         res_direction = get_model_data("res.partner", domain, ["street", "id", "type"])
         
-        if  not res_direction.street:
-            data.update(
-                {
-                    "status": 204,
-                    "msg": _("No billing address found."),
-                    "data": False,
-                }
-            )
-            return json.dumps(data)
+        
 
         dic = {"delivery": [], "invoice": [], "contact": []}
 

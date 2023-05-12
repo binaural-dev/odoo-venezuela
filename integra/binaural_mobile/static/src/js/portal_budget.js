@@ -53,14 +53,15 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             const streetinvoice = invoice[0]
             const streetdelivery = delivery[0]
             const streetcontact = contact[0]
-            $("#delivery_address").empty();
+            $("#deliverys_address").empty();
             $("#billing_address").empty();
             if (streetinvoice && streetdelivery) {
                 $("#billing_address").append(`<option value="${streetinvoice.id}">${streetinvoice.street}</option>`);
-                $("#delivery_address").append(`<option value="${streetdelivery.id}">${streetdelivery.street}</option>`);
+                $("#deliverys_address").append(`<option value="${streetdelivery.id}">${streetdelivery.street}</option>`);
             }else{
                 $("#billing_address").append(`<option value="${streetcontact.id}">${streetcontact.street}</option>`);
                 $("#delivery_address").append(`<option value="${streetcontact.id}">${streetcontact.street}</option>`);
+                console.log("entro2")
             }
         },
     });
