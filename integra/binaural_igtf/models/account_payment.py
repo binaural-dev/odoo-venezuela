@@ -24,7 +24,7 @@ class AccountPaymentIgtf(models.Model):
 
     igtf_percentage = fields.Float(
         string="IGTF Percentage",
-        # compute="_compute_igtf_percentage",
+        compute="_compute_igtf_percentage",
         help="IGTF Percentage",
         store=True,
     )
@@ -41,8 +41,8 @@ class AccountPaymentIgtf(models.Model):
         string="Amount with IGTF", compute="_compute_amount_with_igtf", store=True
     )
 
-    @api.onchange("is_igtf", "partner_id")
-    def _onchenge_igtf_percentage(self):
+    @api.depends("is_igtf", "partner_id")
+    def _compute_igtf_percentage(self):
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
             if (
@@ -108,6 +108,7 @@ class AccountPaymentIgtf(models.Model):
             {
                 "journal_id": igtf_journal,
                 "date": self.date,
+                "partner_id": self.partner_id.id,
                 "payment_igtf_id": self.id,
                 "ref": "IGTF EXPENSE SUPPLIER" + self.name,
                 "line_ids": [
