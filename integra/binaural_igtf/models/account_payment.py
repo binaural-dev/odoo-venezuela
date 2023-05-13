@@ -48,7 +48,7 @@ class AccountPaymentIgtf(models.Model):
             if (
                 payment.env.company.taxpayer_type == "special"
                 and payment.partner_id.taxpayer_type != "special"
-                # and payment.line_ids.move_id.move_type == "in_invoice"
+                and payment.payment_type == "outbound"
             ):
                 payment.igtf_percentage = 2.0
 
@@ -102,7 +102,6 @@ class AccountPaymentIgtf(models.Model):
         igtf_amount = self.igtf_amount
         if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
             igtf_amount = self.igtf_amount * self.foreign_rate
-
 
         move = self.env["account.move"].create(
             {
@@ -276,8 +275,15 @@ class AccountPaymentIgtf(models.Model):
         for payment in self:
             if payment.reconciled_invoice_ids or payment.reconciled_bill_ids and payment.is_igtf:
                 for invoice in payment.reconciled_invoice_ids:
-                    invoice.bi_igtf = invoice.bi_igtf - payment.amount
+                    if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                        invoice.bi_igtf = invoice.bi_igtf - (payment.amount * self.foreign_rate)
+                    else:
+                        invoice.bi_igtf = invoice.bi_igtf - payment.amount
+
                 for bill in payment.reconciled_bill_ids:
-                    bill.bi_igtf = bill.bi_igtf - payment.amount
+                    if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                        bill.bi_igtf = bill.bi_igtf - (payment.amount * self.foreign_rate)
+                    else:
+                        bill.bi_igtf = bill.bi_igtf - payment.amount
 
         return super(AccountPaymentIgtf, self).action_draft()
