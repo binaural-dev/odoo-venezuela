@@ -1,6 +1,6 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-# 	* binaural_last_cost
+# 	* binaural_landed_const
 #
 msgid ""
 msgstr ""
@@ -15,16 +15,16 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
 
-#. module: binaural_last_cost
-#: model_terms:ir.ui.view,arch_db:binaural_last_cost.product_pricelist_item_form_view
+#. module: binaural_landed_const
+#: model_terms:ir.ui.view,arch_db:binaural_landed_const.product_pricelist_item_form_view
 msgid ""
 "<span attrs=\"{'invisible':[('base', '!=', "
 "'latest_standard_price')]}\">Latest Cost  -  </span>"
 msgstr "<span attrs=\"{'invisible':[('base', '!=', "
 "'latest_standard_price')]}\">Ultimo Costo  -  </span>"
 
-#. module: binaural_last_cost
-#: model:ir.model.fields,help:binaural_last_cost.field_product_pricelist_item__base
+#. module: binaural_landed_const
+#: model:ir.model.fields,help:binaural_landed_const.field_product_pricelist_item__base
 msgid ""
 "Base price for computation.\n"
 "Sales Price: The base price will be the Sales Price.\n"
@@ -36,57 +36,57 @@ msgstr ""
 "Precio de coste El precio base será el precio de coste.\n"
 "Otra lista de precios: Cálculo del precio base en base a otra lista de precios."
 
-#. module: binaural_last_cost
-#: model:ir.model.fields,field_description:binaural_last_cost.field_product_pricelist_item__base
+#. module: binaural_landed_const
+#: model:ir.model.fields,field_description:binaural_landed_const.field_product_pricelist_item__base
 msgid "Based on"
 msgstr "Basado en"
 
-#. module: binaural_last_cost
-#: model:ir.model.fields,field_description:binaural_last_cost.field_product_product__last_latest_standard_price
-#: model:ir.model.fields,field_description:binaural_last_cost.field_product_template__last_latest_standard_price
+#. module: binaural_landed_const
+#: model:ir.model.fields,field_description:binaural_landed_const.field_product_product__last_latest_standard_price
+#: model:ir.model.fields,field_description:binaural_landed_const.field_product_template__last_latest_standard_price
 msgid "Last Latest Standard Price"
 msgstr "Último costo antes de la última compra"
 
-#. module: binaural_last_cost
-#: model:ir.model.fields,field_description:binaural_last_cost.field_product_product__latest_standard_price
-#: model:ir.model.fields,field_description:binaural_last_cost.field_product_template__latest_standard_price
-#: model:ir.model.fields,field_description:binaural_last_cost.field_purchase_order_line__latest_standard_price
-#: model:ir.model.fields.selection,name:binaural_last_cost.selection__product_pricelist_item__base__latest_standard_price
+#. module: binaural_landed_const
+#: model:ir.model.fields,field_description:binaural_landed_const.field_product_product__latest_standard_price
+#: model:ir.model.fields,field_description:binaural_landed_const.field_product_template__latest_standard_price
+#: model:ir.model.fields,field_description:binaural_landed_const.field_purchase_order_line__latest_standard_price
+#: model:ir.model.fields.selection,name:binaural_landed_const.selection__product_pricelist_item__base__latest_standard_price
 msgid "Latest Standard Price"
 msgstr "Último Costo"
 
-#. module: binaural_last_cost
-#: model:ir.model,name:binaural_last_cost.model_product_pricelist_item
+#. module: binaural_landed_const
+#: model:ir.model,name:binaural_landed_const.model_product_pricelist_item
 msgid "Pricelist Rule"
 msgstr "Regla de Tarifa"
 
-#. module: binaural_last_cost
-#: model:ir.model,name:binaural_last_cost.model_product_template
+#. module: binaural_landed_const
+#: model:ir.model,name:binaural_landed_const.model_product_template
 msgid "Product"
 msgstr "Producto"
 
-#. module: binaural_last_cost
-#: model:ir.model,name:binaural_last_cost.model_product_product
+#. module: binaural_landed_const
+#: model:ir.model,name:binaural_landed_const.model_product_product
 msgid "Product Variant"
 msgstr "Variantes de producto"
 
-#. module: binaural_last_cost
-#: model:ir.model,name:binaural_last_cost.model_purchase_order
+#. module: binaural_landed_const
+#: model:ir.model,name:binaural_landed_const.model_purchase_order
 msgid "Purchase Order"
 msgstr "Pedido de compra"
 
-#. module: binaural_last_cost
-#: model:ir.model,name:binaural_last_cost.model_purchase_order_line
+#. module: binaural_landed_const
+#: model:ir.model,name:binaural_landed_const.model_purchase_order_line
 msgid "Purchase Order Line"
 msgstr "Línea pedido de compra"
 
-#. module: binaural_last_cost
-#: model:ir.model.fields,field_description:binaural_last_cost.field_purchase_order_line__update_latest_standard_price
+#. module: binaural_landed_const
+#: model:ir.model.fields,field_description:binaural_landed_const.field_purchase_order_line__update_latest_standard_price
 msgid "Update Latest Standard Price"
 msgstr "Actualizar Último Costo"
 
-#. module: binaural_last_cost
-#: model:ir.model.fields,field_description:binaural_last_cost.field_product_product__variants_are_active
-#: model:ir.model.fields,field_description:binaural_last_cost.field_product_template__variants_are_active
+#. module: binaural_landed_const
+#: model:ir.model.fields,field_description:binaural_landed_const.field_product_product__variants_are_active
+#: model:ir.model.fields,field_description:binaural_landed_const.field_product_template__variants_are_active
 msgid "Variants Are Active"
 msgstr "Variantes Activas"
