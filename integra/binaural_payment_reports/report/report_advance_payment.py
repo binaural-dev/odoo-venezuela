@@ -10,7 +10,6 @@ class ReportMemberList2(models.AbstractModel):
 
 	@api.model
 	def _get_report_values(self, docids, data=None):
-		_logger.warning("REPORT VALUES: %s", data)
 		if not data.get('form') or not self.env.context.get('active_model') or not self.env.context.get('active_id'):
 			raise UserError(_("Form content is missing, this report cannot be printed."))
 		ctx = data.get('context',False)
@@ -22,8 +21,7 @@ class ReportMemberList2(models.AbstractModel):
 				name_user = obj_uid.name
 		form = data.get('form',False)
 		if not form:
-			raise UserError("Error en formulario de reporte")
-		print("form",form)
+			raise UserError(_("Error en formulario de reporte"))
 		docs = self.env['advance.payment.report'].browse(self.env.context.get('active_id'))
 
 		report_type = form.get('report_type',False)

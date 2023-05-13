@@ -124,7 +124,6 @@ class AdvancePaymentReport(models.TransientModel):
         else:
             search_domain += [("date", "<=", self.end_date), ("date", ">=", self.start_date)]
         if partner:
-            _logger.warning("HAY PARTNER %s", partner)
             search_domain += [("partner_id", "=", partner.id)]
         search_domain += [("state", "=", "posted")]
 

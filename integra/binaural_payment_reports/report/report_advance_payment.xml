@@ -173,7 +173,7 @@
 	                                            </t>
 	                                            <t t-else="">
 		                                            <td><span t-out="p.amount" t-options='{"widget": "monetary", "display_currency": p.currency_id}'/></td>
-		                                            <t t-set="amount_usd" t-value="p.amount/p.foreign_currency_rate"/>
+		                                            <t t-set="amount_usd" t-value="p.amount/p.foreign_rate"/>
 
 
 													<td colspan="2" style="text-align: right">
@@ -184,11 +184,11 @@
 
 				                                        <span t-out="residual" t-options='{"widget": "monetary", "display_currency": p.company_currency_id}'/>
 			                                        </td>
-		                                            <t t-set="total_by_partner" t-value="total_by_partner+(p.amount/p.foreign_currency_rate)"/>
+		                                            <t t-set="total_by_partner" t-value="total_by_partner+(p.amount/p.foreign_rate)"/>
 	                                            </t>
 
 
-                                                <t t-out="residual_by_partner" t-value="residual_by_partner+residual"/>
+                                                <t t-set="residual_by_partner" t-value="residual_by_partner+residual"/>
                                                 
                                             </tr> <!--pagos asociados-->
                                         <t>
