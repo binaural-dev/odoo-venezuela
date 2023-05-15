@@ -1,0 +1,2 @@
+bravado_core
+swagger_spec_validator
