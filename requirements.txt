@@ -1,2 +1,3 @@
 bravado_core
 swagger_spec_validator
+jsonschema==3.2.0
