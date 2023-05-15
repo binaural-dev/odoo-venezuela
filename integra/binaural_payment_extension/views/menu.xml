@@ -168,5 +168,12 @@
             parent="account.menu_finance_reports"
             sequence="7"
 	/>
+
+	<menuitem
+	    id="menu_retention_line_report"
+	    action="action_retention_line_report"
+	    parent="account.account_reports_management_menu"
+	/>
+
     </data>
 </odoo>
