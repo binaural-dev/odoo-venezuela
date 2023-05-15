@@ -138,6 +138,27 @@ class AdvancePaymentReport(models.TransientModel):
             return new_payments
 
         return payments
+    
+    def generate_report_partner_igtf(self, partner):
+        search_domain = []
+        if self.report_type and self.report_type == "supplier":
+            search_domain += [("move_type", "=", "in_invoice")]
+        else:
+            search_domain += [("move_type", "=", "out_invoice")]
+        if self.payment_type and self.payment_type == "advance":
+            search_domain += [("is_advance_move", "=", True)]
+        if self.at_today:
+            search_domain += [("date", "<=", fields.Date.today())]
+        else:
+            search_domain += [("date", "<=", self.end_date), ("date", ">=", self.start_date)]
+        if partner:
+            search_domain += [("partner_id", "=", partner.id)]
+        search_domain += [("state", "=", "posted")]
+
+        move_advance = self.env["account.move"].sudo().search(search_domain)
+
+        return move_advance
+
 
     def get_residual_by_payment(self,p):
         acum = 0

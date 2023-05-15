@@ -141,6 +141,7 @@
                                         <tbody>
                                             <t t-set="total_by_partner" t-value="0"/>
                                             <t t-set="residual_by_partner" t-value="0"/>
+                                            <t t-set="residual_by_partner_igtf" t-value="0" />
                                             <tr  t-foreach="pagos" t-as="p">
 
                                                 <td style="text-align: center">
