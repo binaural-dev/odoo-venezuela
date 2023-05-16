@@ -26,6 +26,21 @@ odoo.define("binaural_pos_igtf.PaymentScreenStatus", function(require) {
         })
         return is_igtf;
       }
+      get foreignAmountIGTF(){
+        return this.env.pos.format_currency(
+          (this.props.order.get_total_with_tax() * (this.env.pos.config.igtf_percentage / 100)) + this.props.order.get_rounding_applied()
+        );
+      }
+      get foreignTotalDueTextWithIGTF() {
+        return this.env.pos.format_foreign_currency(
+          (this.props.order.get_foreign_total_with_tax() * ((this.env.pos.config.igtf_percentage / 100) + 1)) + this.props.order.get_foreign_rounding_applied()
+        );
+      }
+      get totalDueTextWithIGTF() {
+        return this.env.pos.format_currency(
+          (this.props.order.get_total_with_tax() * ((this.env.pos.config.igtf_percentage / 100) + 1)) + this.props.order.get_rounding_applied()
+        );
+      }
     }
 
   Registries.Component.extend(PaymentScreenStatus, BinauralPaymentScreenStatus)
