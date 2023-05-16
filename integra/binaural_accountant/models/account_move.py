@@ -49,6 +49,8 @@ class AccountMove(models.Model):
         readonly=False,
     )
 
+    financial_document = fields.Boolean(default=False, copy=False)
+
     foreign_taxable_income = fields.Monetary(
         help="Foreign Taxable Income of the invoice",
         compute="_compute_foreign_taxable_income",
@@ -298,8 +300,11 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.foreign_total_billed = 0
-            if move.invoice_line_ids and move.is_invoice(include_receipts=True):
-                move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
+            if not (
+                move.invoice_line_ids and move.is_invoice(include_receipts=True) and move.tax_totals
+            ):
+                continue
+            move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
 
     @api.depends(
         "invoice_line_ids.currency_rate",

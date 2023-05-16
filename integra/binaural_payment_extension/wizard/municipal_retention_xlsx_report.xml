@@ -14,7 +14,7 @@
                 </sheet>
                 <footer>
                     <div style="display: flex; justify-content: center">
-                        <button name="print_xlsx" type="object" string="Descargar Excel de impuesto fiscal" class="btn btn-primary" />
+                        <button name="print_xlsx" type="object" string="Download fiscal tax XLSX" class="btn btn-primary" />
                     </div>
                 </footer>
             </form>

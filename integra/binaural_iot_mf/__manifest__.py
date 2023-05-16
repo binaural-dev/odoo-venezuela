@@ -1,6 +1,6 @@
 {
     "name": "Binaural IoT - The Factory KHA",
-    "version": "1.0",
+    "version": "1.1",
     "category": "Accounting",
     "summary": "The Factory KHA (SDK) en IoT",
     "license": "LGPL-3",
@@ -13,7 +13,7 @@
     "maintainer": "@andyengh",
     "support": "contacto@binaural.dev",
     "website": "https://binauraldev.com",
-    "depends": ["iot", "account","web","binaural_invoice"],
+    "depends": ["iot", "account","web","binaural_invoice","binaural_tax_payer"],
     "data": [
         "views/account_tax.xml",
         "views/account_move.xml",

@@ -12,6 +12,7 @@ from ..utils.utils_retention import get_current_date_format
 
 class MunicipalRetentionXlsxReport(models.TransientModel):
     _name = "municipal.retention.xlsx.report"
+    _description = "XLSX Report for municipal retentions"
 
     date_start = fields.Date(
         string="Fecha Inicio", required=True, default=date.today().replace(day=1)
@@ -32,11 +33,11 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
             )
         return {
             "type": "ir.actions.act_url",
-            "url": "/web/get_excel_municipal_retentions_report?id=%s" % self.id,
+            "url": "/web/get_xlsx_municipal_retentions_report?report_id=%s" % self.id,
             "target": "self",
         }
 
-    def _excel_file(self, table, nombre):
+    def _xlsx_file(self, table, nombre):
         data2 = BytesIO()
         workbook = xlsxwriter.Workbook(data2, {"in_memory": True})
         merge_format = workbook.add_format(
@@ -126,7 +127,7 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         data2 = data2.getvalue()
         return data2
 
-    def _get_excel_municipal_retention_report(self):
+    def _get_xlsx_municipal_retention_report(self):
         domain = self._get_municipal_retention_domain()
         retentions = self.env["account.retention"].search(domain, order="date_accounting asc")
 
@@ -189,8 +190,8 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
 
                 lista.append(rows)
                 numero += 1
-        tabla = pandas.DataFrame(lista)
-        return tabla.fillna(0)
+        table = pandas.DataFrame(lista)
+        return table.fillna(0)
 
     def _get_municipal_retention_domain(self):
         return [

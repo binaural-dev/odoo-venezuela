@@ -1,0 +1,244 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_mobile
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20230508\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-05-11 14:05+0000\n"
+"PO-Revision-Date: 2023-05-11 14:05+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "10"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "10 days"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "1000"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "10000"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "11000"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_layout
+msgid "<i class=\"fa fa-pencil mx-1\"/>Edit Security Settings"
+msgstr "<i class=\"fa fa-pencil mx-1\"/>Editar configuración de seguridad"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_layout
+msgid "<i class=\"fa fa-pencil\"/> Edit"
+msgstr "<i class=\"fa fa-pencil\"/> Editar"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid ""
+"<select class=\"form-control\" id=\"billing_address\">\n"
+"                            <option value=\"\">Select a billing address</option>\n"
+"                        </select>"
+msgstr ""
+"<select class=\"form-control\" id=\"billing_address\">\n"
+"                            <option value=\"\">Selecciona una dirección de facturación</option>\n"
+"                        </select>"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid ""
+"<select class=\"form-control\" id=\"client\">\n"
+"                            <option value=\"\">Select a client</option>\n"
+"                        </select>"
+msgstr ""
+"<select class=\"form-control\" id=\"client\">\n"
+"                            <option value=\"\">Selecciona un cliente</option>\n"
+"                        </select>"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid ""
+"<select class=\"form-control\" id=\"project\">\n"
+"                            <option value=\"\">Select a shipping address</option>\n"
+"                        </select>"
+msgstr ""
+"<select class=\"form-control\" id=\"project\">\n"
+"                            <option value=\"\">Selecciona una dirección de envío</option>\n"
+"                        </select>"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_layout
+msgid "Account Security"
+msgstr "Seguridad de la cuenta"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Add"
+msgstr "Añadir"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Billing address"
+msgstr "Dirección de facturación"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Cantidad:"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Client"
+msgstr "Cliente"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Confirm"
+msgstr "Confirmar"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.budget_link
+msgid "Create budget"
+msgstr "Crear presupuesto"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_layout
+msgid "Details"
+msgstr "Detalles"
+
+#. module: binaural_mobile
+#: model:ir.model,name:binaural_mobile.model_hr_employee
+msgid "Employee"
+msgstr "Empleado"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Invoice required"
+msgstr "Requiere Factura"
+
+#. module: binaural_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_hr_employee__is_seller
+msgid "Is a Seller"
+msgstr "Es un vendedor"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Order lines"
+msgstr "Líneas de pedido"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Payment terms:"
+msgstr "Condiciones de pago:"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Price"
+msgstr "Precio"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Product"
+msgstr "Producto"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Quantity"
+msgstr "Cantidad"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Rate:"
+msgstr "Tarifa:"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Save"
+msgstr "Guardar"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Search"
+msgstr "Buscar"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Shipping Address"
+msgstr "Dirección de envío"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Subtotal"
+msgstr "Subtotal"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Tax"
+msgstr "Impuesto"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Tax:"
+msgstr "Impuesto:"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Taxable Base:"
+msgstr "Base imponible:"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Total:"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Usd"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Valide"
+msgstr "Validar"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Write the name or code"
+msgstr "Escriba el nombre o código"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "[A0393929] PRODUCT NAME"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "image"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "quantity"
+msgstr "Cantidad"

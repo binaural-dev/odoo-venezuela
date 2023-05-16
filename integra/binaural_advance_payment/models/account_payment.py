@@ -56,15 +56,20 @@ class AccountPayment(models.Model):
         for line in self.move_id.line_ids:
             if line.account_id in self._get_valid_liquidity_accounts():
                 liquidity_lines += line
+
+
+                
             elif (
-                line.account_id.account_type in ("asset_receivable", "liability_payable")
+                line.account_id.account_type in ("asset_receivable", "liability_payable", "liability_current", "asset_current")
                 or line.partner_id == line.company_id.partner_id
-                or self.is_advance_payment
             ):
-                counterpart_lines += line
+                counterpart_lines = line
+
             else:
                 writeoff_lines += line
+
         return liquidity_lines, counterpart_lines, writeoff_lines
+
 
     def _synchronize_from_moves(self, changed_fields):
         """Update the account.payment regarding its related account.move.
@@ -136,7 +141,7 @@ class AccountPayment(models.Model):
 
                 if (
                     counterpart_lines.account_id.account_type == "asset_receivable"
-                    or counterpart_lines.account_id.account_type == "asset_current"
+                    or counterpart_lines.account_id.account_type == "liability_current"
                 ):
                     partner_type = "customer"
                 else:
