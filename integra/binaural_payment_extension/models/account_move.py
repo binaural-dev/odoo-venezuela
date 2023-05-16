@@ -8,16 +8,13 @@ class AccountMoveRetention(models.Model):
     company_currency_id = fields.Many2one(
         "res.currency",
         compute="_compute_currency_fields",
-        default=lambda self: self.env.company.currency_id,
     )
     foreign_currency_id = fields.Many2one(
         "res.currency",
         compute="_compute_currency_fields",
-        default=lambda self: self.env.company.currency_foreign_id,
     )
     base_currency_is_vef = fields.Boolean(
         compute="_compute_currency_fields",
-        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
     )
 
     apply_islr_retention = fields.Boolean(
@@ -110,8 +107,8 @@ class AccountMoveRetention(models.Model):
         if not self.env.company.islr_supplier_retention_journal_id:
             raise UserError(_("The company must have a journal for ISLR supplier retention."))
         islr_retention = self.retention_islr_line_ids
-        sum_invoice_amount = sum(islr_retention.mapped("foreign_invoice_amount"))
-        if sum_invoice_amount > self.tax_totals["foreign_amount_untaxed"]:
+        sum_invoice_amount = sum(islr_retention.mapped("invoice_amount"))
+        if sum_invoice_amount > self.tax_totals["amount_untaxed"]:
             raise UserError(
                 _("The amount of the retention is greater than the total amount of the invoice.")
             )
@@ -129,7 +126,7 @@ class AccountMoveRetention(models.Model):
         if not self.env.company.iva_supplier_retention_journal_id:
             raise UserError(_("The company must have a journal for IVA supplier retention."))
         if not any(self.invoice_line_ids.mapped("tax_ids").filtered(lambda x: x.amount > 0)):
-            raise UserError(_('The invoice "%s"has no tax.'), self.name)
+            raise UserError(_("The invoice has no tax."))
 
     def _validate_municipal_retention(self):
         """
@@ -184,6 +181,7 @@ class AccountMoveRetention(models.Model):
             "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
             "is_retention": True,
             "foreign_rate": self.foreign_rate,
+            "foreign_inverse_rate": self.foreign_inverse_rate,
             "currency_id": self.env.user.company_id.currency_id.id,
         }
         if type_retention == "islr":

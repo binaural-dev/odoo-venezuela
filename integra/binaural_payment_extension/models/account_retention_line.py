@@ -107,11 +107,6 @@ class AccountRetentionLine(models.Model):
         store=True,
     )
 
-    check_foreign_currency = fields.Boolean(
-        string="Foreign currency",
-        compute="_compute_check_foreign_currency",
-    )
-
     # foreign currency
     foreign_invoice_amount = fields.Float(
         string="Foreign taxable income", compute="_compute_amounts", store=True, readonly=False

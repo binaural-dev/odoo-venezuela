@@ -158,6 +158,8 @@ class AccountPaymentRegister(models.TransientModel):
             ]
             payment.journal_id = self.env.company.iva_customer_retention_journal_id.id
             payment.compute_retention_amount_from_retention_lines()
+            payment.foreign_rate = vals["to_reconcile"].move_id.foreign_rate
+            payment.foreign_inverse_rate = vals["to_reconcile"].move_id.foreign_inverse_rate
         retention = self._create_retention(payments)
         retention.action_post()
         return payments
@@ -167,9 +169,7 @@ class AccountPaymentRegister(models.TransientModel):
         If the payment is a retention, we avoid the post of the payment because we manage that
         in the retention action_post method.
         """
-        if self.is_retention:
-            return
-        return super()._post_payments(to_process, edit_mode)
+        return super()._post_payments(to_process, edit_mode) if not self.is_retention else None
 
     def _reconcile_payments(self, to_process, edit_mode=False):
         """

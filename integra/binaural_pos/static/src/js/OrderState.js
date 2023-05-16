@@ -12,13 +12,23 @@ odoo.define("binaural_pos.OrderState", function(require) {
       constructor() {
         super(...arguments);
         this.to_invoice = true;
+        let always_invoice = !this.pos.config.always_invoice;
+        this.to_receipt = always_invoice;
       }
       export_as_JSON() {
         let json = super.export_as_JSON();
-        json["foreign_amount_total"] = this.get_foreign_total_with_tax()
+        json["foreign_amount_total"] = this.get_foreign_total_with_tax();
+        json["foreign_currency_rate"] = this.pos.config.foreign_rate;
+        json["to_receipt"] = this.is_to_receipt();
         return json;
       }
-
+      toggle_receipt_invoice(to_receipt) {
+        this.assert_editable();
+        this.to_receipt = to_receipt;
+      }
+      is_to_receipt() {
+        return this.to_receipt;
+      }
       add_paymentline(payment_method) {
         this.assert_editable();
         if (this.electronic_payment_in_progress()) {
