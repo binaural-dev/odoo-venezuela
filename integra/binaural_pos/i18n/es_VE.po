@@ -304,3 +304,10 @@ msgid ""
 "You cannot turn on the igtf in pos if the company is an ordinary taxpayer"
 msgstr ""
 "No puedes encender la configuracion de IGTF cuando la compañia sea Tipo contribuyente ordinario"
+
+#. module: point_of_sale
+#. openerp-web
+#: code:addons/point_of_sale/static/src/xml/pos.xml:1097
+#, python-format
+msgid "at"
+msgstr "a"
