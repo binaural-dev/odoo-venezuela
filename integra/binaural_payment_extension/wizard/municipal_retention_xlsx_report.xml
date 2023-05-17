@@ -27,14 +27,4 @@
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
-
-
-    <menuitem
-	id="municipal_supplier_retention_report_menu"
-	action="municipal_supplier_retention_report_action"
-	parent="binaural_payment_extension.seniat_reports"
-	sequence="1"
-	name="Municipal supplier retention report"
-    />
-
 </odoo>

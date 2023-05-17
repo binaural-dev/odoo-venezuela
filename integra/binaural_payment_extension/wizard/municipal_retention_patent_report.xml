@@ -27,15 +27,5 @@
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
-
-
-    <menuitem
-	id="wizard_report_municipal_retention_report_patent_menu"
-	action="wizard_report_municipal_retention_report_patent_action"
-	parent="binaural_payment_extension.seniat_reports"
-	sequence="2"
-	name="Municipal Patent Report"
-    />
-
 </odoo>
 

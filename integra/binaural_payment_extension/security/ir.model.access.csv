@@ -16,3 +16,4 @@ access_wizard_accounting_reports_iva,binaural_wizard_accounting_reports_iva,mode
 access_municipal_retention_xlsx_report,municipal_retention_xlsx_report,model_municipal_retention_xlsx_report,,1,1,1,1
 access_municipal_retention_patent_report,municipal_retention_patent_report,model_municipal_retention_patent_report,,1,1,1,1
 access_retention_line_report,retention_line_report,model_retention_line_report,,1,0,0,0
+access_arcv_report,arcv_report,model_arcv_report,,1,1,1,0
