@@ -9,11 +9,13 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.0.0.1",
+    "version": "16.0.0.0.2",
     "depends": ["stock"],
     "data": [
         # 'security/ir.model.access.csv',
         "security/security_binaural_stock.xml",
         "views/product_category_views.xml",
+        "views/stock_quant_views.xml",
+        "views/stock_move_line_views.xml",
     ],
 }
