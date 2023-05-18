@@ -12,7 +12,8 @@
     "depends": ["base", "account_reports", "binaural_accountant"],
     # always loaded
     "data": [
+        "data/daily_ledger.xml",
         "data/account_report_actions.xml",
-        "views/menuitems.xml",
+        "data/menuitems.xml",
     ],
 }
