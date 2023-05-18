@@ -5,7 +5,33 @@ from odoo.tools.misc import formatLang, format_date
 class AccountReport(models.Model):
     _inherit = "account.report"
 
-    usd = fields.Boolean(string="USD", default=False)
+    usd = fields.Boolean(
+        string="USD", default=False, help="Check this if the report is gonna be displayed in USD."
+    )
+
+    def _create_menu_item_for_report(self):
+        """
+        Overrides the original method to add the usd_report variable to the context of the action
+        that is created for the report, so that we can generate the report in USD if that is the
+        case.
+        """
+        self.ensure_one()
+
+        action = self.env["ir.actions.client"].create(
+            {
+                "name": self.name,
+                "tag": "account_report",
+                "context": {"report_id": self.id, "usd_report": self.usd},
+            }
+        )
+
+        menu_item_vals = {
+            "name": self.name,
+            "parent_id": self.env["ir.model.data"]._xmlid_to_res_id("account.menu_finance_reports"),
+            "action": f"ir.actions.client,{action.id}",
+        }
+
+        self.env["ir.ui.menu"].create(menu_item_vals)
 
     @api.model
     def format_value(self, value, currency=False, blank_if_zero=True, figure_type=None, digits=1):

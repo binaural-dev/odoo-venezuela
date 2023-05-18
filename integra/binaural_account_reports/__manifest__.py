@@ -15,5 +15,6 @@
         "data/daily_ledger.xml",
         "data/account_report_actions.xml",
         "data/menuitems.xml",
+        "views/account_report_views.xml",
     ],
 }

@@ -43,6 +43,11 @@ msgid "Aged Receivable USD"
 msgstr "Vencido por cobrar $"
 
 #. module: binaural_account_reports
+#: model:ir.model.fields,help:binaural_account_reports.field_account_report__usd
+msgid "Check this if the report is gonna be displayed in USD."
+msgstr "Marque esta casilla si el informe se va a mostrar en $."
+
+#. module: binaural_account_reports
 #: model:ir.model,name:binaural_account_reports.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
