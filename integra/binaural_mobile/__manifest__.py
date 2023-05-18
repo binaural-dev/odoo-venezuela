@@ -15,14 +15,17 @@
         "web",
         "website",
         "portal",
+        "binaural_brand",
         "binaural_seller",
         "binaural_sale",
+        "binaural_stock",
     ],
     "data": [
         "views/hr_employee.xml",
         "views/portal_budget.xml",
         "views/website_templates.xml",
         "views/portal_templates.xml",
+        "views/res_config_settings.xml",
     ],
     "assets": {
         "web.assets_frontend": [
