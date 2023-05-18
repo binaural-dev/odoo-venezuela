@@ -1,5 +1,4 @@
 odoo.define('binaural_pos_sale.SaleOrderManagementScreen', function(require) {
-  console.log("AQUI")
 
   const SaleOrderManagementScreen = require("pos_sale.SaleOrderManagementScreen")
   const Registries = require("point_of_sale.Registries")
