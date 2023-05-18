@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230503\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-17 13:52+0000\n"
-"PO-Revision-Date: 2023-05-17 13:52+0000\n"
+"POT-Creation-Date: 2023-05-18 15:00+0000\n"
+"PO-Revision-Date: 2023-05-18 15:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -159,6 +159,13 @@ msgid "IGTF in POS"
 msgstr "IGTF en TPV"
 
 #. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "Invoice"
+msgstr "Factura"
+
+#. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_method__is_foreign_currency
 msgid "Is Foreign Currency"
 msgstr "Es moneda alterna"
@@ -200,7 +207,8 @@ msgstr "Metodo de pago"
 msgid ""
 "Please create/select a Point of Sale above to show the configuration "
 "options."
-msgstr "Por favor, selecciona o crea un punto de venta para ver su configuracion"
+msgstr ""
+"Por favor, selecciona o crea un punto de venta para ver su configuracion"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -247,6 +255,13 @@ msgid ""
 msgstr ""
 "La tasa que se usará como factor para multiplicar la moneda alterna para los"
 " movimientos."
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "Receipt"
+msgstr "Recibo"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_config__receipt_journal_id
@@ -303,7 +318,8 @@ msgstr "Validar"
 msgid ""
 "You cannot turn on the igtf in pos if the company is an ordinary taxpayer"
 msgstr ""
-"No puedes encender la configuracion de IGTF cuando la compañia sea Tipo contribuyente ordinario"
+"No puedes encender la configuracion de IGTF cuando la compañia sea Tipo "
+"contribuyente ordinario"
 
 #. module: point_of_sale
 #. openerp-web

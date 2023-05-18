@@ -39,7 +39,12 @@
                 t-att-class="{ highlight: currentOrder.is_to_receipt() != default_invoice }"
                 t-on-click="toggleIsToInvoice">
                     <i class="fa fa-file-text-o" /> 
-                    <t t-out="currentOrder.is_to_receipt() ? 'Receipt' : 'Invoice'"/>
+                    <t t-if="currentOrder.is_to_receipt()">
+                        Receipt
+                    </t>
+                    <t t-else="">
+                        Invoice
+                    </t>
             </div>
         </xpath>
     </t>
