@@ -14,6 +14,11 @@ class PosSession(models.Model):
         res["search_params"]["fields"].append("is_foreign_currency")
         return res
 
+    def _loader_params_account_tax(self):
+        res = super()._loader_params_account_tax()
+        res["search_params"]["fields"].append("type_tax_use")
+        return res
+
     def _loader_params_res_partner(self):
         res = super()._loader_params_res_partner()
         res["search_params"]["fields"].append("prefix_vat")
