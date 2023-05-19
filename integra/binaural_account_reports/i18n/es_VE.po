@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230410\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230518\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-11 20:49+0000\n"
-"PO-Revision-Date: 2023-04-11 20:49+0000\n"
+"POT-Creation-Date: 2023-05-18 19:23+0000\n"
+"PO-Revision-Date: 2023-05-18 19:23+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -43,9 +43,42 @@ msgid "Aged Receivable USD"
 msgstr "Vencido por cobrar $"
 
 #. module: binaural_account_reports
+#: model:ir.model.fields,help:binaural_account_reports.field_account_report__usd
+msgid "Check this if the report is gonna be displayed in USD."
+msgstr "Marque esta casilla si el informe se va a mostrar en $."
+
+#. module: binaural_account_reports
 #: model:ir.model,name:binaural_account_reports.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
+
+#. module: binaural_account_reports
+#: model:account.report.column,name:binaural_account_reports.general_ledger_report_credit
+msgid "Credit"
+msgstr "Crédito"
+
+#. module: binaural_account_reports
+#: model:account.report,name:binaural_account_reports.daily_ledger_report
+#: model:ir.actions.client,name:binaural_account_reports.action_account_report_daily_ledger
+#: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_daily_ledger
+msgid "Daily Ledger"
+msgstr "Libro Diario"
+
+#. module: binaural_account_reports
+#: model:ir.model,name:binaural_account_reports.model_account_daily_ledger_report_handler
+msgid "Daily Ledger Custom Handler"
+msgstr "Personalizador del libro diario"
+
+#. module: binaural_account_reports
+#: model:ir.actions.client,name:binaural_account_reports.action_account_report_daily_ledger_usd
+#: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_daily_ledger_usd
+msgid "Daily Ledger USD"
+msgstr "Libro diario $"
+
+#. module: binaural_account_reports
+#: model:account.report.column,name:binaural_account_reports.general_ledger_report_debit
+msgid "Debit"
+msgstr "Débito"
 
 #. module: binaural_account_reports
 #: model:ir.model,name:binaural_account_reports.model_account_general_ledger_report_handler

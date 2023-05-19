@@ -13,6 +13,14 @@ class AccountMoveIgtf(models.Model):
 
     default_is_igtf_config = fields.Boolean(default=default_is_igtf)
 
+    payment_igtf_id = fields.Many2one(
+        "account.payment",
+        string="Payment IGTF",
+        help="Payment IGTF",
+        readonly=True,
+        copy=False,
+    )
+
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
 

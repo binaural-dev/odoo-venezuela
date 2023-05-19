@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "1.1",
+    "version": "1.2",
     "depends": ["base", "binaural_rate", "binaural_tax"],
     "data": [
         "views/res_partner.xml",

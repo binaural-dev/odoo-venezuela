@@ -168,5 +168,49 @@
             parent="account.menu_finance_reports"
             sequence="7"
 	/>
+
+	<menuitem
+	    id="menu_retention_line_report"
+	    action="action_retention_line_report"
+	    parent="account.account_reports_management_menu"
+	/>
+
+	<menuitem
+	    action="action_generate_txt"
+	    id="txt_report"
+	    parent="binaural_payment_extension.seniat_reports"
+	    groups="account.group_account_manager"
+    	/>
+
+        <menuitem
+            id="xml_retention_islr"
+            name="XML ISLR Retention"
+            parent="binaural_payment_extension.seniat_reports"
+            action="action_retention_islr"
+        />
+
+	<menuitem
+	    id="menu_arcv_report"
+	    action="action_arcv_report"
+	    parent="binaural_payment_extension.seniat_reports"
+	    groups="account.group_account_manager"
+	    name="ARCV Report"
+	/>
+
+    	<menuitem
+	    id="wizard_report_municipal_retention_report_patent_menu"
+	    action="wizard_report_municipal_retention_report_patent_action"
+	    parent="binaural_payment_extension.seniat_reports"
+	    sequence="2"
+	    name="Municipal Patent Report"
+	/>
+
+    	<menuitem
+	    id="municipal_supplier_retention_report_menu"
+	    action="municipal_supplier_retention_report_action"
+	    parent="binaural_payment_extension.seniat_reports"
+	    sequence="1"
+	    name="Municipal supplier retention report"
+    	/>
     </data>
 </odoo>

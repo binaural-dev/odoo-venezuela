@@ -36,5 +36,22 @@
 	    />
         </record>
 
+        <record id="action_account_report_daily_ledger" model="ir.actions.client">
+            <field name="name">Daily Ledger</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('binaural_account_reports.daily_ledger_report')}"
+            />
+        </record>
+
+        <record id="action_account_report_daily_ledger_usd" model="ir.actions.client">
+            <field name="name">Daily Ledger USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('binaural_account_reports.daily_ledger_report'), 'usd_report': True}"
+            />
+        </record>
     </data>
 </odoo>

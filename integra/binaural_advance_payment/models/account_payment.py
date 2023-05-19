@@ -60,7 +60,7 @@ class AccountPayment(models.Model):
 
                 
             elif (
-                line.account_id.account_type in ("asset_receivable", "liability_payable", "liability_current")
+                line.account_id.account_type in ("asset_receivable", "liability_payable", "liability_current", "asset_current")
                 or line.partner_id == line.company_id.partner_id
             ):
                 counterpart_lines = line

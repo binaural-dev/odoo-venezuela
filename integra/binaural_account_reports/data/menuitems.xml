@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem
+        id="menu_action_account_report_general_ledger_usd"
+        name="General Ledger USD"
+        action="action_account_report_general_ledger_usd"
+	parent="account_reports.account_reports_audit_reports_menu"
+    />
+    <menuitem
         id="menu_action_account_report_aged_receivable_usd"
         name="Aged Receivable USD"
         action="action_account_report_ar_usd"
@@ -13,15 +19,23 @@
 	parent="account_reports.account_reports_partners_reports_menu"
     />
     <menuitem
-        id="menu_action_account_report_general_ledger_usd"
-        name="General Ledger USD"
-        action="action_account_report_general_ledger_usd"
-	parent="account_reports.account_reports_audit_reports_menu"
-    />
-    <menuitem
         id="menu_action_account_report_partner_ledger_usd"
         name="Partner Ledger USD"
         action="action_account_report_partner_ledger_usd"
 	parent="account_reports.account_reports_partners_reports_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_daily_ledger"
+        name="Daily Ledger"
+        action="action_account_report_daily_ledger"
+	parent="account_reports.account_reports_audit_reports_menu"
+    />
+
+    <menuitem
+        id="menu_action_account_report_daily_ledger_usd"
+        name="Daily Ledger USD"
+        action="action_account_report_daily_ledger_usd"
+	parent="account_reports.account_reports_audit_reports_menu"
     />
 </odoo>
