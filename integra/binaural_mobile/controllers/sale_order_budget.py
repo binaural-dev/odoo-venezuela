@@ -155,29 +155,33 @@ class SaleOrderBudget(http.Controller):
 
     @http.route(
         "/budget/print/order", 
-        type="http", 
-        methods=["GET"], 
+        type="json", 
+        methods=["POST"], 
         auth="public", 
         website=False, 
-        sitemap=False
+        sitemap=False,
+        csrf=False
     )
-    def print_sale_order(self, sale_id, **kwargs):
+    def print_sale_order(self, sale_id=False, **kwargs):
         try:
-            sale = utils.browse_model_data("sale.order", int(sale_id))
+            sale = utils.browse_model_data("sale.order", sale_id)
+            _logger.info("pase por aqui________________________________________________2____")
         except Exception as e:
             return json.dumps({"status": 400, "msg": str(e)})
 
         if sale:
-            request.uid = 2
+            request.update_env = 2
+            _logger.info("pase por aqui_______________________________3.2_____________________")
             pdf, _ = (
                 request.env.ref("sale.action_report_saleorder")
                 .sudo()
                 ._render_qweb_pdf(
-                    [
-                        sale_id,
-                    ]
+                    # [
+                        sale_id
+                    # ]
                 )
             )
+            _logger.info("pase por aqui____________________________________________________4")
             pdf_http_headers = [
                 ("Content-Type", "application/pdf"),
                 ("Content-Length", "%s" % len(pdf)),
@@ -301,7 +305,6 @@ class SaleOrderBudget(http.Controller):
     
     @http.route("/budget/include_tax", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
     def include_taxes_in_sale_order(self, **kwargs):
-        # kwargs = self.convert_kwargs_to_ints(kwargs)
         validation_errors = utils.ValidateRequest.require([
             ["sale_id"],
             ["tax_included"],
@@ -507,16 +510,16 @@ class SaleOrderBudget(http.Controller):
                     "product_quantity": product.free_qty,
                 }
                 return False, message
-            if (
-                product
-                and product.sales_policy > 1
-                and product.available_qty >= product.sales_policy
-                and int(line.get("product_uom_qty")) % product.sales_policy != 0
-            ):
-                message = _(
-                    "The product %(product_name)s have a sales policy, the quantity you want to sale must be a multiple or equal to %(product_policy)d"
-                ) % {"product_name": product.display_name, "product_policy": product.sales_policy}
-                False, message
+            # if (
+            #     product
+            #     # and product.sales_policy > 1
+            #     # and product.available_qty >= product.sales_policy
+            #     # and int(line.get("product_uom_qty")) % product.sales_policy != 0
+            # ):
+            #     message = _(
+            #         "The product %(product_name)s have a sales policy, the quantity you want to sale must be a multiple or equal to %(product_policy)d"
+            #     ) % {"product_name": product.display_name, "product_policy": product.sales_policy}
+            #     False, message
 
         return True, ""
 
@@ -540,16 +543,16 @@ class SaleOrderBudget(http.Controller):
             success, msg = self._confirm_check_availability_sale(line)
             if not success:
                 return False, msg
-            if (
-                product
-                and product.sales_policy > 1
-                and product.available_qty >= product.sales_policy
-                and line.product_uom_qty % product.sales_policy != 0
-            ):
-                message = _(
-                    "The product %(product_name)s have a sales policy, the quantity you want to sale must be a multiple or equal to %(product_policy)d"
-                ) % {"product_name": product.display_name, "product_policy": product.sales_policy}
-                return False, message
+            # if (
+            #     product
+            #     # and product.sales_policy > 1
+            #     # and product.available_qty >= product.sales_policy
+            #     # and line.product_uom_qty % product.sales_policy != 0
+            # ):
+            #     message = _(
+            #         "The product %(product_name)s have a sales policy, the quantity you want to sale must be a multiple or equal to %(product_policy)d"
+            #     ) % {"product_name": product.display_name, "product_policy": product.sales_policy}
+            #     return False, message
 
         return True, ""
 
@@ -598,9 +601,3 @@ class SaleOrderBudget(http.Controller):
             new_order_lines.append(line_cpy)
 
         return new_order_lines
-
-    def convert_kwargs_to_ints(**kwargs):
-        for key, value in kwargs.items():
-            if value == type(str):
-                kwargs[key] = int(value)
-        return kwargs

@@ -16,6 +16,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             "change #invoice": "_onChangeInvoice",
             "click .cancel-btn": "_onClickCancel",
             "click .confirm-btn": "_onClickConfirm",
+            "click #dowload_pdf": "_onClickDowloadPdf",
         },
         init: function(parent, options) {
             this._super.apply(this, arguments);
@@ -60,6 +61,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 }
             });
 
+
         },
         
         _onChangeClient: function(ev) {
@@ -88,7 +90,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             $("#payment_terms_value").val(property_payment_term_id.length > 0 ? property_payment_term_id[0] : "")
             
             $("#openProduct").attr('disabled', false)
-            $("input[id='client']").select2("enable", false);
+            // $("input[id='client']").select2("enable", false);
+            $("#invoice").attr('disabled', false)
 
         },
 
@@ -184,15 +187,18 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                                         "price_unit": price,
                                     }
                                 ],
-                                "note": "",
+                                "note": $("#note").val(),
                             },
-                            "tax_included": true
+                            "tax_included": $("#invoice").is(':checked')
                         })
                         console.log(products)
                         const { status, data } = products;
                         const is400 = status === 400;
                         if (is400) return 
-        
+                        
+                        $("#note").val("")
+                        $("#product_head").show()
+                        $("#number").show()
                         $("#number_order").text(data[0].name)
                         $("#number_order_value").val(data[0].id)
                         this.build_table_products(data)
@@ -212,14 +218,15 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                                         "price_unit": price,
                                     }
                                 ],
-                                "note": "",
+                                "note": $("#note").val(),
                             },
-                            "tax_included": true
+                            "tax_included": $("#invoice").is(':checked')
                         })
                         console.log(products)
                         const { status, data } = products;
                         const is400 = status === 400;
                         if (is400) return 
+                        $("#note").val("")
                         this.build_table_products(data)
                     }
                 }
@@ -230,8 +237,9 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
         build_table_products: function(data) {
             const tbody = $("#product_list")
-            tbody.empty()
+            console.log(data)
             const { order_line } = data[0];
+            tbody.empty()
             order_line.forEach(line => {
                 const { name, product_uom_qty, price_unit, price_subtotal, id } = line
                 tbody.append(`
@@ -250,16 +258,18 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 </tr>
                 `)
             })
-            // if($("#invoice").is(":checked")){
-            //     $("#taxes").text(data[0].amount_tax)
-            //     $("#subtotal").text(data[0].amount_untaxed)
-            //     $("#total").text(data[0].amount_total)
-            // }else{
-                
-            //     $("#taxes").empty()
-            //     $("#subtotal").empty()
-            //     $("#total").text(data[0].amount_untaxed)
-            // }
+            if($("#invoice").is(":checked")){
+                $(".invoice_end").show()
+                $("#taxes").text(data[0].amount_tax)
+                $("#subtotal").text(data[0].amount_untaxed)
+                $("#total").text(data[0].amount_total)
+            }else{
+                $("#taxes").empty()
+                $("#subtotal").empty()
+                $(".invoice_end").hide()
+                $("#total_base").show()
+                $("#total").text(data[0].amount_total)
+            }
         },
 
         _onClickDeleteProduct: function(ev) {
@@ -274,10 +284,12 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             const { status, data } = products;
             const is400 = status === 400;
             if (is400) return
+            this._onChangeInvoice(ev)
             tr.remove()
         },
 
         _onChangeInvoice: async function(ev) {
+            if ($("#number_order_value").val() == '') return
             const tax_included = $("#invoice").prop('checked')
             const products = await ajax.jsonRpc('/budget/include_tax', 'call', {
                 "sale_id" : parseInt($("#number_order_value").val()),
@@ -287,7 +299,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             const { status, data } = products;
             const is400 = status === 400;
             if (is400) return
-            this.build_table_products(data)
+            this.build_table_products([data])
         },
         
         _onClickCancel: function(ev) {
@@ -301,6 +313,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
         },
 
         Confirm_or_Cancel_Budget: async function(confirm) {
+            if ($("#number_order_value").val() == '') return
             const order_value = $("#number_order_value").val()
             if(order_value != ''){
                 const id_order = $("#number_order_value").val()
@@ -312,8 +325,32 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 const { status, data } = budget;
                 const is400 = status === 400;
                 if (is400) return
+                $(".confirm-btn").hide()
+                $(".cancel-btn").hide()
+                if(confirm == "confirm"){
+                    const confirmed = '<h2 class="badge bg-success">Confirmado</h2>'
+                    $("#status").html(confirmed)
+                }else{
+                    const confirmed = '<h2 class="badge bg-danger">Cancelado</h2>'
+                    $("#status").html(confirmed)
+                }
+                $("#openProduct").attr("disabled", true)
+                $(".delete_product").hide()
             }else alert("No se ha creado ninguna orden de venta")
-        }
+        },
+
+        _onClickDowloadPdf : function(ev) {
+            if($("#number_order_value").val() == '') return
+            const sale_id = parseInt($("#number_order_value").val())
+            const budget = ajax.jsonRpc('/budget/print/order', 'call', {
+                "sale_id" : sale_id,
+            })
+            const { status, data } = budget;
+            const is400 = status === 400;
+            if (is400) {alert("tontoooo") 
+            return}
+            console.log(budget)
+        },
 
 
     })

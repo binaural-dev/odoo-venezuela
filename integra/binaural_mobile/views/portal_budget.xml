@@ -11,10 +11,15 @@
                         <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
                         <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                     </div>
-                                
+                    <div class="d-grid gap-2 mx-auto" id="status"></div>
+                    <hr width="100%" />
+                    <div class="d-flex justify-content-center">
+                        <button type="button" class="btn btn-info col-12 mx-auto" id="dowload_pdf">Dowload PDF</button>
+                    </div>
                     <hr width="100%" />
                     <div class="row mb-3">
-                        <label class="form-label" style="font-weight: bolder;" id="number">Number: <label id="number_order"></label></label><input type="hidden" id="number_order_value"/>
+                        <label class="form-label" style="font-weight: bolder; display: none;" id="number">Number: <label id="number_order"></label></label><input type="hidden" id="number_order_value"/>
+                        
                         <label class="col-sm-2 form-text">Client</label>
                         <div class="col-sm-4">
                             <input type="text" placeholder="Clients" class="form-control js_select2" id="client"/>
@@ -43,7 +48,7 @@
                         </div>
                         <div class="col-sm-2">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="invoice"/>
+                                <input class="form-check-input" type="checkbox" id="invoice" disabled="disabled"/>
                                 <label class="form-check-label" style="font-weight: bolder;">
                                     Invoice required
                                 </label>
@@ -65,7 +70,7 @@
                     <br />
                     <div class="row mb-2">
                         <table class="table table-primary table-striped">
-                            <thead>
+                            <thead id="product_head" style="display: none;">
                             <tr>
                                 <td class="text-center" style="font-weight: bolder;">Product</td>
                                 <td></td>
@@ -82,13 +87,13 @@
                     </div>
                     <div id="total_invoice">
                         <div class="d-flex justify-content-end">
-                            <label class="form-label" id="subtotal_base">Taxable Base: </label><label class="form-label" style="font-weight: bolder;" id="subtotal"></label>
+                            <label class="form-label invoice_end" style="display: none;" id="subtotal_base">Taxable Base: </label><label class="form-label" style="font-weight: bolder;" id="subtotal"></label>
                         </div>
                         <div class="d-flex justify-content-end">
-                            <label class="form-label" id="taxes_base">Tax: </label><label class="form-label" style="font-weight: bolder;" id="taxes"></label>
+                            <label class="form-label invoice_end" style="display: none;" id="taxes_base">Tax: </label><label class="form-label" style="font-weight: bolder;" id="taxes"></label>
                         </div>
                         <div class="d-flex justify-content-end">
-                            <label class="form-label" id="total_base">Total: </label><label class="form-label" style="font-weight: bolder;" id="total"></label>
+                            <label class="form-label invoice_end" style="display: none;" id="total_base">Total: </label><label class="form-label" style="font-weight: bolder;" id="total"></label>
                         </div>
                     </div>
                     <br />

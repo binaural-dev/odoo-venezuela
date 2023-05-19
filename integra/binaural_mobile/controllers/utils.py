@@ -237,9 +237,7 @@ def product_duplicate(sale_order: list):
     """
 
     order_lines = sale_order.get("order_line", False)
-    _logger.info(f"ORDER LINES: {order_lines} _____________________________1___________________")
     product_list = [line.get("product_id") for line in order_lines if line.get("product_id", False)]
-    _logger.info(f"PRODUCT LIST: {product_list} _____________________________2___________________")
     product_set = set(product_list)
     _logger.info(f"PRODUCT SET: {product_set} _____________________________3___________________")
     _logger.info(len(product_list) > len(product_set))
