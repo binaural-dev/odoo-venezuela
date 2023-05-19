@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<templates>
+    <!-- Card container -->
+    <t t-name="d_s_cards_listing_wrapper">
+        <div class="row">
+            <t t-foreach="data" t-as="collection">
+                <div t-attf-class="col-md-#{widget.numOfCol} col-sm-6">
+                    <t t-call="#{widget.uiConfigInfo.style}"/>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="tp_product_list_header_1">
+        <h6 class="tp_product_list_header_1 fw-light position-relative border-bottom pb-3 mb-4 mt-2" t-out="collection.title"/>
+    </t>
+
+    <t t-name="tp_product_list_header_2">
+        <h5 class="my-3 fw-light" t-out="collection.title"/>
+    </t>
+    <t t-name="tp_product_list_header_3">
+        <h6 class="mt-2 text-center fw-light" t-out="collection.title"/>
+        <div class="text-center mb-2">
+            <p class="dr_strike_line text-center">
+                <span class="fa fa-star-o"></span>
+            </p>
+        </div>
+    </t>
+
+    <t t-name="tp_product_list_cards_1">
+        <div class="tp_product_list_cards_1">
+            <t t-call="#{widget.uiConfigInfo.header}"/>
+            <t t-foreach="collection.products" t-as="item">
+                <div class="d-flex mb-3 align-items-center">
+                    <a class="d-block flex-shrink-0 me-2 d_link" t-att-href="item.website_url">
+                        <img t-att-src="item.img_medium" class="o_image_64_contain"/>
+                    </a>
+                    <div class="flex-grow-1">
+                        <h6 class="d-product-name fw-light mb-0 mt-2">
+                            <a t-att-href="item.website_url">
+                                <t t-out="item.name"/>
+                            </a>
+                        </h6>
+                        <div class="mt-1" t-if="widget._isActionEnabled('rating') &amp;&amp; item.rating_avg">
+                            <t t-out="item.rating"></t>
+                        </div>
+                        <t t-call="tp-snippet-product-price"/>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="tp_product_list_cards_2">
+        <div class="tp_product_list_cards_2">
+            <t t-call="#{widget.uiConfigInfo.header}"/>
+            <t t-foreach="collection.products" t-as="item">
+                <div t-attf-class="d-flex align-items-center #{product_first ? 'pb-2' : 'py-2'} #{!product_last ? 'border-bottom' : ''}">
+                    <a class="d-block flex-shrink-0 me-2" t-att-href="item.website_url">
+                        <img t-att-src="item.img_medium" class="o_image_64_contain"/>
+                    </a>
+                    <div class="flex-grow-1">
+                        <h6 class="d-product-name fw-light mb-0 mt-2">
+                            <a t-att-href="item.website_url">
+                                <t t-out="item.name"/>
+                            </a>
+                        </h6>
+                        <div class="mt-1" t-if="widget._isActionEnabled('rating') &amp;&amp; item.rating_avg">
+                            <t t-out="item.rating"></t>
+                        </div>
+                        <t t-call="tp-snippet-product-price"/>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="tp_product_list_cards_3">
+        <div class="tp_product_list_cards_3">
+            <t t-call="#{widget.uiConfigInfo.header}"/>
+            <t t-foreach="collection.products" t-as="item">
+                <div t-attf-class="d-flex p-2 mb-3 bg-white border tp-rounded-border position-relative">
+                    <a class="d-block flex-shrink-0 me-3" t-att-href="item.website_url">
+                        <img t-att-src="item.img_medium" class="o_image_64_contain tp-rounded-border"/>
+                    </a>
+                    <div class="flex-grow-1">
+                        <h6 class="d-product-name fw-light mb-0">
+                            <a t-att-href="item.website_url">
+                                <t t-out="item.name"/>
+                            </a>
+                        </h6>
+                        <t t-if="widget._isActionEnabled('rating') &amp;&amp; item.rating_avg">
+                            <t t-out="item.rating"></t>
+                        </t>
+                        <t t-call="tp-snippet-product-price">
+                            <t t-set="_classes" t-value="'mb-0 mt-1'"/>
+                        </t>
+                        <button t-if="widget._isActionEnabled('add_to_cart')" t-att-data-product-product-id="item.product_variant_id" data-bs-toggle="tooltip" data-placement="bottom" class="d_action_btn d_add_to_cart_btn p-0 btn" title="Add to Cart">
+                            <i class="d_action_btn_icon dri dri-cart"></i>
+                        </button>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="tp_product_list_cards_4">
+        <div class="tp_product_list_cards_4">
+            <t t-call="#{widget.uiConfigInfo.header}"/>
+            <t t-foreach="collection.products" t-as="item">
+                <div t-attf-class="d-flex tp-media py-2 mb-3 px-0 bg-white #{!product_last ? 'border-bottom' : ''}">
+                    <div class="tp-img-container flex-shrink-0 position-relative">
+                        <a class="d-block" t-att-href="item.website_url">
+                            <img t-att-src="item.img_medium" class="o_image_64_contain tp-rounded-border"/>
+                        </a>
+                        <button t-if="widget._isActionEnabled('quick_view')" t-att-data-product-template-id="item.id" class="btn d_action_btn h-100 bg-white w-100 d_product_quick_view p-0" data-bs-toggle="tooltip" title="Quick View">
+                            <i class="d_action_btn_icon p-2 tp-rounded-border bg-primary dri dri-eye"></i>
+                        </button>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="d-product-name fw-light mb-1">
+                            <a t-att-href="item.website_url">
+                                <t t-out="item.name"/>
+                            </a>
+                        </h6>
+                        <t t-call="tp-snippet-product-price">
+                            <t t-set="_classes" t-value="'mb-0 mt-1'"/>
+                        </t>
+                        <div class="row">
+                            <t t-if="widget._isActionEnabled('rating')">
+                                <div class="col">
+                                    <t t-out="item.rating"></t>
+                                </div>
+                            </t>
+                            <div class="col text-end">
+                                <button t-if="widget._isActionEnabled('add_to_cart')" t-att-data-product-product-id="item.product_variant_id" data-bs-toggle="tooltip" data-placement="bottom" class="d_action_btn d_add_to_cart_btn tp-hover-color-primary text-muted p-0 px-2 btn" title="Add to Cart">
+                                    <a class="d_action_btn_icon dri dri-cart"></a>
+                                </button>
+                                <button t-if="widget._isActionEnabled('wishlist')" t-att-data-product-product-id="item.product_variant_id" class="btn d_action_btn tp-hover-color-primary text-muted p-0 px-2 border-start d_add_to_wishlist_btn" data-bs-toggle="tooltip" title="Add to Wishlist">
+                                    <a class="d_action_btn_icon dri dri-wishlist"></a>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>

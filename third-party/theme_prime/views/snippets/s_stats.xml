@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_stats_1" name="Stats - 1">
+        <section class="s_stats_1 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-sm-6 col-lg-3 py-4 text-center">
+                        <h2 class="text-o-color-1">200+</h2>
+                        <h6 class="mt-3">Customers</h6>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-4 text-center">
+                        <h2 class="text-o-color-1">156</h2>
+                        <h6 class="mt-3">New Ideas</h6>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-4 text-center">
+                        <h2 class="text-o-color-1">97 %</h2>
+                        <h6 class="mt-3">Happy Clients</h6>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-4 text-center">
+                        <h2 class="text-o-color-1">365 x 7</h2>
+                        <h6 class="mt-3">Customer Support</h6>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_stats_2" name="Stats - 2">
+        <section class="s_stats_2 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-sm-6 col-lg-3 py-3 text-center">
+                        <h6><span class="fa fa-user fa-3x"/></h6>
+                        <h4 class="mt-4"><font style="font-size: 36px;">1200</font></h4>
+                        <h6 class="text-uppercase small">Customers</h6>
+                        <p class="mt-4">
+                            Just some random string to reach eighty charater limit to break.
+                        </p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-3 text-center">
+                        <h6><span class="fa fa-magic fa-3x"/></h6>
+                        <h4 class="mt-4"><font style="font-size: 36px;">237</font></h4>
+                        <h6 class="text-uppercase small">New Ideas</h6>
+                        <p class="mt-4">
+                            To break the lines we are writing some random string here.
+                        </p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-3 text-center">
+                        <h6><span class="fa fa-smile-o fa-3x"/></h6>
+                        <h4 class="mt-4"><font style="font-size: 36px;">1340</font></h4>
+                        <h6 class="text-uppercase small">Happy Clients</h6>
+                        <p class="mt-4">
+                            Diffrent content looks good so not repeating the content here.
+                        </p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-3 text-center">
+                        <h6><span class="fa fa-cube fa-3x"/></h6>
+                        <h4 class="mt-4"><font style="font-size: 36px;">8000</font></h4>
+                        <h6 class="text-uppercase small">Products</h6>
+                        <p class="mt-4">
+                            This is the last paragraph, and i am out of idea what to write.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_stats_3" name="Stats - 3">
+        <section class="s_stats_3 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-sm-6 col-lg-3 py-3 text-center">
+                        <h6><span class="text-o-color-1 fa fa-user fa-3x"/></h6>
+                        <h4 class="mt-4"><font style="font-size: 36px;">1200</font></h4>
+                        <h6>Customers</h6>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-3 text-center">
+                        <h6><span class="text-o-color-1 fa fa-magic fa-3x"/></h6>
+                        <h4 class="mt-4"><font style="font-size: 36px;">237</font></h4>
+                        <h6>New Ideas</h6>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-3 text-center">
+                        <h6><span class="text-o-color-1 fa fa-smile-o fa-3x"/></h6>
+                        <h4 class="mt-4"><font style="font-size: 36px;">1340</font></h4>
+                        <h6>Happy Clients</h6>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-3 text-center">
+                        <h6><span class="text-o-color-1 fa fa-cube fa-3x"/></h6>
+                        <h4 class="mt-4"><font style="font-size: 36px;">8000</font></h4>
+                        <h6>Products</h6>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_stats_4" name="Stats - 4">
+        <section class="s_stats_4 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-sm-6 col-lg-3 py-4">
+                        <i class="fa fa-user fa-2x rounded-circle bg-o-color-1"/>
+                        <div class="pb32 pt32 s_hr text-300" data-snippet="s_hr" data-name="Separator">
+                            <hr class="w-75 me-auto"/>
+                        </div>
+                        <h4>200+</h4>
+                        <p class="mt-4">
+                            Just some random string to reach eighty charater limit to break. Just some random string to reach eighty charater limit to break.
+                        </p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-4">
+                        <i class="fa fa-magic fa-2x rounded-circle bg-o-color-1"/>
+                        <div class="s_hr pt32 pb32" data-snippet="s_hr" data-name="Separator">
+                            <hr class="w-75 me-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                        </div>
+                        <h4>156</h4>
+                        <p class="mt-4">
+                            To break the lines we are writing some random string here. To break the lines we are writing some random string here.
+                        </p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-4">
+                        <i class="fa fa-smile-o fa-2x rounded-circle bg-o-color-1"/>
+                        <div class="s_hr pt32 pb32" data-snippet="s_hr" data-name="Separator">
+                            <hr class="w-75 me-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                        </div>
+                        <h4>97 %</h4>
+                        <p class="mt-4">
+                            Diffrent content looks good so not repeating the content here. Diffrent content looks good so not repeating the content here.
+                        </p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-4">
+                        <i class="fa fa-cube fa-2x rounded-circle bg-o-color-1"/>
+                        <div class="s_hr pt32 pb32" data-snippet="s_hr" data-name="Separator">
+                            <hr class="w-75 me-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                        </div>
+                        <h4>365 x 7</h4>
+                        <p class="mt-4">
+                            This is the last paragraph, and i am out of idea what to write. This is the last paragraph, and i am out of idea what to write.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_stats_5" name="Stats - 5">
+        <section class="s_stats_5 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-sm-6 col-lg-3 py-4">
+                        <h2><font style="font-size: 36px;">200+</font></h2>
+                        <div class="s_hr pt16 pb32" data-snippet="s_hr" data-name="Separator">
+                            <hr class="w-75 me-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                        </div>
+                        <h6>Customers</h6>
+                        <p class="mt-4">
+                            Just some random string to reach eighty charater limit to break. Just some random string to reach eighty charater limit to break.
+                        </p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-4">
+                        <h2><font style="font-size: 36px;">156</font></h2>
+                        <div class="s_hr pt16 pb32" data-snippet="s_hr" data-name="Separator">
+                            <hr class="w-75 me-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                        </div>
+                        <h6>New Ideas</h6>
+                        <p class="mt-4">
+                            To break the lines we are writing some random string here. To break the lines we are writing some random string here.
+                        </p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-4">
+                        <h2><font style="font-size: 36px;">97%</font></h2>
+                        <div class="s_hr pt16 pb32" data-snippet="s_hr" data-name="Separator">
+                            <hr class="w-75 me-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                        </div>
+                        <h6>Happy Clients</h6>
+                        <p class="mt-4">
+                            Diffrent content looks good so not repeating the content here. Diffrent content looks good so not repeating the content here.
+                        </p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 py-4">
+                        <h2><font style="font-size: 36px;">365 x 7</font></h2>
+                        <div class="s_hr pt16 pb32" data-snippet="s_hr" data-name="Separator">
+                            <hr class="w-75 me-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                        </div>
+                        <h6>Customer Support</h6>
+                        <p class="mt-4">
+                            This is the last paragraph, and i am out of idea what to write. This is the last paragraph, and i am out of idea what to write.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+</odoo>

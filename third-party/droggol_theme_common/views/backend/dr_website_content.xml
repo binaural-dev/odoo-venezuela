@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="dr_website_content_view_form" model="ir.ui.view">
+        <field name="name">dr.website.content.view.form</field>
+        <field name="model">dr.website.content</field>
+        <field name="arch" type="xml">
+            <form string="Content">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="open_design_page" icon="fa-paint-brush">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    Design
+                                </span>
+                                <span class="o_stat_text">
+                                    Content
+                                </span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="content_type" widget="radio" attrs="{'readonly': [('id', '!=', False)]}"/>
+                            <field name="identifier" groups="base.group_no_one"/>
+                            <field name="description" attrs="{'invisible': [('content_type', 'in', ['tab', 'attribute_popup'])]}"/>
+                            <field name="icon" attrs="{'invisible': [('content_type', 'in', ['attribute_popup'])]}"/>
+                        </group>
+                    </group>
+                    <p attrs="{'invisible': [('content_type', 'in', ['attribute_popup'])]}">You can find icon at <a href="https://fontawesome.com/v4.7.0/icons/" target="_blank">FontAwesome</a>.</p>
+                    <notebook>
+                        <page name="tab_products" string="Products" attrs="{'invisible': [('content_type', 'in', ['offer_popup', 'attribute_popup'])]}">
+                            <field name="dr_tab_products_ids" />
+                        </page>
+                        <page name="offer_products" string="Products" attrs="{'invisible': [('content_type', 'in', ['tab', 'attribute_popup'])]}">
+                            <field name="dr_offer_products_ids" />
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="dr_website_content_view_tree" model="ir.ui.view">
+        <field name="name">dr.website.content.view.tree</field>
+        <field name="model">dr.website.content</field>
+        <field name="arch" type="xml">
+            <tree string="Content">
+                <field name="sequence" widget="handle"/>
+                <field name="content_type" widget="badge" decoration-info="content_type == 'tab'" decoration-success="content_type == 'offer_popup'" decoration-warning="content_type == 'attribute_popup'"/>
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="dr_website_content_view_search" model="ir.ui.view">
+        <field name="name">dr.website.content.view.search</field>
+        <field name="model">dr.website.content</field>
+        <field name="arch" type="xml">
+            <search string="Content">
+                <field name="name"/>
+                <field name="content_type"/>
+                <group expand="0" string="Group By">
+                    <filter string="Content Type" name="group_by_content_type" domain="[]" context="{'group_by': 'content_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="dr_website_content_action" model="ir.actions.act_window">
+        <field name="name">Contents</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">dr.website.content</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_group_by_content_type': True}</field>
+    </record>
+
+    <menuitem id="menu_dr_website_content"
+        action="dr_website_content_action"
+        parent="website_sale.menu_catalog" sequence="5"/>
+
+</odoo>

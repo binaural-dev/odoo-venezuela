@@ -1,0 +1,14 @@
+.s_banner_13 {
+    @include media-breakpoint-down(md) {
+        .tp-animation-scale img {
+            min-height: 300px;
+            object-fit: cover;
+        }
+    }
+    .tp-banner-content {
+        @include o-position-absolute($bottom: 15%, $left: 50%);
+        transform: translate(-50% , 15%);
+        -webkit-transform: translate(-50%, 15%);
+        padding: 1rem;
+    }
+}

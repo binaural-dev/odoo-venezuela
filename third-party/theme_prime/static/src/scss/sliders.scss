@@ -1,0 +1,21 @@
+.container-fluid {
+    .droggol_product_slider {
+        @include dr-owl-arrows-position-style(-15px);
+    }
+}
+.droggol_product_slider {
+    @include dr-owl-arrows-position-style(-45px);
+    .owl-stage {
+        display: flex;
+        align-items: stretch;
+        margin-bottom: 1rem;
+    }
+    .owl-nav {
+        .fa,.dri {
+            font-size: 1rem;
+        }
+    }
+    .owl-prev, .owl-next {
+        @include d-owl-btn-style();
+    }
+}

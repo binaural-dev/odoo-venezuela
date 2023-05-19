@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+
+    <t t-name="theme_prime.s_tp_documents_snippet_template">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3 my-2">
+            <div class="card mb-3">
+                <div class="row g-0 align-items-stretch dr_not_editable">
+                    <div class="col-3 text-center bg-100 d-flex border-end align-items-center justify-content-center">
+                        <div class="o_image" style="flex-shrink: 0;" t-att-data-mimetype="documentInfo.mimetype"/>
+                    </div>
+                    <div class="col-9">
+                        <div class="card-body py-3">
+                            <p class="fw-bold text-truncate mb-2" t-esc="documentInfo.name" t-att-title="documentInfo.name"/>
+                            <a t-att-href="documentInfo.url" class="btn btn-primary-soft btn-sm mt-1"><i class="fa fa-download"/> Download</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</template>

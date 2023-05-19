@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="dr_website_menu_label_view_tree" model="ir.ui.view">
+        <field name="name">dr.website.menu.label.view.tree</field>
+        <field name="model">dr.website.menu.label</field>
+        <field name="arch" type="xml">
+            <tree string="Labels" editable="bottom">
+                <field name="name"/>
+                <field name="background_color" widget="color"/>
+                <field name="text_color" widget="color"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="dr_website_menu_label_action" model="ir.actions.act_window">
+        <field name="name">Menu Labels</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">dr.website.menu.label</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem name="Menu Labels"
+        id="menu_dr_website_menu_label"
+        action="dr_website_menu_label_action"
+        parent="website.menu_website_global_configuration"
+        sequence="46"
+        groups="base.group_no_one"/>
+
+</odoo>

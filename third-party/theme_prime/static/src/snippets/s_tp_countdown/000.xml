@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+
+    <div t-name="s_countdown_1" class="row s_nb_column_fixed tp-countdown-container dr_not_editable s_col_no_bgcolor">
+        <div class="col-12">
+            <div class="o_not_editable text-center d-flex flex-row flex-wrap d-sm-block">
+                <div class="d-inline-block tp-counter-block me-1 me-sm-4 my-1">
+                    <h2 class="tp-counter-number">
+                        <span class="countdown_days">00</span>
+                    </h2>
+                    <hr class="mt-0 mb-2"/>
+                    <small class="tp-counter-title">DAYS</small>
+                </div>
+                <div class="d-inline-block tp-counter-block me-1 me-sm-4 my-1">
+                    <h2 class="tp-counter-number">
+                        <span class="countdown_hours">00</span>
+                    </h2>
+                    <hr class="mt-0 mb-2"/>
+                    <small class="tp-counter-title">HOURS</small>
+                </div>
+                <div class="d-inline-block tp-counter-block me-1 me-sm-4 my-1">
+                    <h2 class="tp-counter-number">
+                        <span class="countdown_minutes">00</span>
+                    </h2>
+                    <hr class="mt-0 mb-2"/>
+                    <small class="tp-counter-title">MINUTES</small>
+                </div>
+                <div class="d-inline-block tp-counter-block me-1 me-sm-4 my-1">
+                    <h2 class="tp-counter-number">
+                        <span class="countdown_seconds">00</span>
+                    </h2>
+                    <hr class="mt-0 mb-2"/>
+                    <small class="tp-counter-title">SECONDS</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div t-name="s_countdown_2" class="o_not_editable d-flex flex-wrap tp-countdown-container dr_not_editable">
+        <div class="me-3 mb-1">
+            <h3 class="countdown_days d-inline-block">00</h3>
+            <span>d</span>
+        </div>
+        <div class="me-3 mb-1">
+            <h3 class="countdown_hours d-inline-block">00</h3>
+            <span>h</span>
+        </div>
+        <div class="me-3 mb-1">
+            <h3 class="countdown_minutes d-inline-block">00</h3>
+            <span>m</span>
+        </div>
+        <div class="me-3 mb-1">
+            <h3 class="countdown_seconds d-inline-block">00</h3>
+            <span>s</span>
+        </div>
+    </div>
+
+    <div t-name="s_countdown_3" class="row tp-countdown-container dr_not_editable">
+        <div class="col-12 col-lg-6">
+            <div class="o_not_editable d-flex justify-content-between text-center pt16 pb16">
+                <div>
+                    <b class="countdown_days">00</b>
+                    <div class="small">DAYS</div>
+                </div>
+                <div>
+                    <b>:</b>
+                </div>
+                <div>
+                    <b class="countdown_hours">00</b>
+                    <div class="small">HOURS</div>
+                </div>
+                <div>
+                    <b>:</b>
+                </div>
+                <div>
+                    <b class="countdown_minutes">00</b>
+                    <div class="small">MINUTES</div>
+                </div>
+                <div>
+                    <b>:</b>
+                </div>
+                <div>
+                    <b class="countdown_seconds">00</b>
+                    <div class="small">SECONDS</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div t-name="s_countdown_4" class="tp-countdown-container d-flex dr_not_editable g-0">
+        <div class="me-3 d-inline-block text-center">
+            <div class="tp-counter-block mx-auto mb-1">
+                <strong class="countdown_days tp-counter-number">00</strong>
+            </div>
+            <div class="small tp-counter-title">Days</div>
+        </div>
+        <div class="me-3 d-inline-block text-center">
+            <div class="tp-counter-block mx-auto mb-1">
+                <strong class="countdown_hours tp-counter-number">00</strong>
+            </div>
+            <div class="small tp-counter-title">Hours</div>
+        </div>
+        <div class="me-3 d-inline-block text-center">
+            <div class="tp-counter-block mx-auto mb-1">
+                <strong class="countdown_minutes  tp-counter-number">00</strong>
+            </div>
+            <div class="small tp-counter-title">Minutes</div>
+        </div>
+        <div class="me-3 d-inline-block text-center">
+            <div class="tp-counter-block mx-auto mb-1">
+                <strong class="countdown_seconds  tp-counter-number">00</strong>
+            </div>
+            <div class="small tp-counter-title">Seconds</div>
+        </div>
+    </div>
+
+</template>

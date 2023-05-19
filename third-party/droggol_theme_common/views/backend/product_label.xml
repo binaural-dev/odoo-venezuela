@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="dr_product_label_view_form" model="ir.ui.view">
+        <field name="name">dr.product.label.view.form</field>
+        <field name="model">dr.product.label</field>
+        <field name="arch" type="xml">
+            <form string="Label">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="action_open_products" icon="fa-cubes" attrs="{'invisible': [('product_count', '=', 0)]}">
+                            <field string="Products" name="product_count" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="bg-danger" attrs="{'invisible': [('active', '=', True)]}"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="background_color" widget="color"/>
+                            <field name="text_color" widget="color"/>
+                        </group>
+                        <group>
+                            <field name="style"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="dr_product_label_view_tree" model="ir.ui.view">
+        <field name="name">dr.product.label.view.tree</field>
+        <field name="model">dr.product.label</field>
+        <field name="arch" type="xml">
+            <tree string="Labels">
+                <field name="name"/>
+                <field name="background_color" widget="color"/>
+                <field name="text_color" widget="color"/>
+                <field name="style"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="dr_product_label_view_search" model="ir.ui.view">
+        <field name="name">dr.product.label.view.search</field>
+        <field name="model">dr.product.label</field>
+        <field name="arch" type="xml">
+            <search string="Labels">
+                <field name="name"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Style" name="style" domain="" context="{'group_by':'style'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="dr_product_label_action" model="ir.actions.act_window">
+        <field name="name">Labels</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">dr.product.label</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_dr_product_label"
+        action="dr_product_label_action"
+        parent="website_sale.menu_catalog" sequence="5"/>
+
+</odoo>
