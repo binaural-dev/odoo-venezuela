@@ -1,0 +1,218 @@
+//------------------------------------------------------------------------------
+// Utilities
+//------------------------------------------------------------------------------
+.tp-link-dark {
+    color: o-color('o-cc1-headings');
+    transition: 0.2s;
+    &:hover {
+        color: o-color('primary') !important;
+    }
+}
+
+.tp-link-body {
+    color: $body-color;
+    transition: 0.2s;
+    &:hover {
+        color: o-color('primary') !important;
+    }
+}
+
+.tp-cursor-pointer {
+    cursor: pointer;
+}
+
+.tp-heading-font-weight {
+    font-weight: $headings-font-weight;
+}
+
+.tp-underline-title {
+    position: relative;
+    display: block;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid $border-color;
+    &:after {
+        content: '';
+        @include o-position-absolute($bottom: -2px, $left: 0);
+        height: 2px;
+        width: 6rem;
+        background-color: o-color('primary');
+    }
+}
+
+// TODO: Remove .d-product-name class
+.d-product-name, .tp-hover-color-primary {
+    &>a:not([class^="text-"]) {
+        color: o-color('dark') !important;
+        transition: color 0.25s ease-in-out;
+        &:hover {
+            color: o-color('primary') !important;
+            text-decoration: none;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+// Images
+//------------------------------------------------------------------------------
+.tp-image-150-max {
+    max-width: 150px;
+    max-height: 150px;
+}
+.tp-image-100-max {
+    max-width: 100px;
+    max-height: 100px;
+}
+.tp-bg-gradient-50-black:before {
+    content: '';
+    @include o-position-absolute($right: 0, $bottom: 0, $left: 0);
+    height: 50%;
+    width: 100%;
+    background-image: -webkit-gradient(linear, left top, left bottom, from(transparent), to(black));
+    background-image: linear-gradient(180deg, transparent, black);
+    z-index: 1;
+}
+
+//------------------------------------------------------------------------------
+// Animations
+//------------------------------------------------------------------------------
+.tp-animation-scale {
+    overflow: hidden;
+    img {
+        -webkit-transition: all .4s ease;
+        -o-transition: all .4s ease;
+        transition: all .4s ease;
+    }
+    &:hover {
+        img {
+            transform: scale3d(1.05, 1.05, 1.05);
+        }
+    }
+}
+
+.tp-animation-lift {
+    -webkit-transition: all .3s ease;
+    -o-transition: all .3s ease;
+    transition: all .3s ease;
+    &:hover, &:focus {
+        transform: translate3d(0, -10px, 0);
+    }
+}
+
+body:not(.editor_enable) .tp-animation-layla {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+    @include media-breakpoint-up(md) {
+        &:hover {
+            background: linear-gradient(-45deg,#ffffff 0%,#000000 100%);
+            &:before, &:after {
+                opacity: 1;
+                filter: alpha(opacity=100);
+                -webkit-transform: scale(1);
+                -moz-transform: scale(1);
+                -ms-transform: scale(1);
+                -o-transform: scale(1);
+                transform: scale(1);
+                -webkit-transition: opacity 0.35s,transform 0.35s;
+                -o-transition: opacity 0.35s,transform 0.35s;
+                transition: opacity 0.35s,transform 0.35s
+            }
+            img {
+                opacity: .8;
+                filter: alpha(opacity=80);
+                -webkit-transition: opacity 0.35s,transform 0.35s;
+                -o-transition: opacity 0.35s,transform 0.35s;
+                transition: opacity 0.35s,transform 0.35s;
+                -webkit-transform: scale3d(1.05,1.05,1);
+                -moz-transform: scale3d(1.05,1.05,1);
+                -ms-transform: scale3d(1.05,1.05,1);
+                -o-transform: scale3d(1.05,1.05,1);
+                transform: scale3d(1.05,1.05,1)
+            }
+        }
+        &:before, &:after {
+            position: absolute;
+            content: "";
+            opacity: 0;
+            filter: alpha(opacity=0);
+            -webkit-transition: opacity 0.35s,transform 0.35s;
+            -o-transition: opacity 0.35s,transform 0.35s;
+            transition: opacity 0.35s,transform 0.35s;
+            z-index: 1;
+            pointer-events: none;
+        }
+        img {
+            background: #FFF;
+            display: block;
+            opacity: 1;
+            filter: alpha(opacity=100);
+            transition: opacity 0.35s,transform 0.35s;
+        }
+        &:before {
+            @include o-position-absolute($top: 30px, $right: 20px, $bottom:30px, $left: 20px);
+            border-top: 1px solid #fff;
+            border-bottom: 1px solid #fff;
+            -webkit-transform: scale(0,1);
+            -moz-transform: scale(0,1);
+            -ms-transform: scale(0,1);
+            -o-transform: scale(0,1);
+            transform: scale(0,1);
+            -webkit-transform-origin: 0 0;
+            -moz-transform-origin: 0 0;
+            -ms-transform-origin: 0 0;
+            -o-transform-origin: 0 0;
+            transform-origin: 0 0;
+        }
+        &:after {
+            @include o-position-absolute($top: 20px, $right: 30px, $bottom:20px, $left: 30px);
+            border-right: 1px solid #fff;
+            border-left: 1px solid #fff;
+            -webkit-transform: scale(1,0);
+            -moz-transform: scale(1,0);
+            -ms-transform: scale(1,0);
+            -o-transform: scale(1,0);
+            transform: scale(1,0);
+            -webkit-transform-origin: 100% 0;
+            -moz-transform-origin: 100% 0;
+            -ms-transform-origin: 100% 0;
+            -o-transform-origin: 100% 0;
+            transform-origin: 100% 0;
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+// List
+//------------------------------------------------------------------------------
+.tp-list-arrow {
+    > li, > .nav-link {
+        padding-left: 14px !important;
+        position: relative;
+        &::before {
+            content: "\f105";
+            font-family: FontAwesome;
+            font-size: 14px;
+            position: absolute;
+            left: 0;
+        }
+    }
+}
+
+.tp-list-dot {
+    > li, > .nav-link {
+        padding-left: 14px !important;
+        position: relative;
+        &::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+        }
+    }
+}
+
+.tp-outline {
+    outline: 1px solid map-get($grays, '400');
+    background-color: white;
+}

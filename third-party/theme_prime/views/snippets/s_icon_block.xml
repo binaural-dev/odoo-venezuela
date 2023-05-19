@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_icon_block_1" name="Icon Block - 1">
+        <section class="s_icon_block_1 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-rocket text-o-color-1 rounded-circle me-4 bg-200"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Creative ideas</h5>
+                                <p>Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-magic text-o-color-1 rounded-circle me-4 bg-200"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Excellent features</h5>
+                                <p>Suspendisse potenti. Cras a dui et nisl egestas ornare eu quis odio. Sed bibendum in ante.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-laptop text-o-color-1 rounded-circle me-4 bg-200"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Fully responsive</h5>
+                                <p>In hac habitasse platea dictumst. Praesent cursus congue felis, nec pellentesque nulla ornare.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_2" name="Icon Block - 2">
+        <section class="s_icon_block_2 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-lg-4 py-3 text-center">
+                        <i class="fa fa-thumbs-up fa-3x text-o-color-1"/>
+                        <h5 class="mt-3">Best Quality</h5>
+                        <p>Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3 text-center">
+                        <i class="fa fa-tag fa-3x text-o-color-1"/>
+                        <h5 class="mt-3">100% Genuine</h5>
+                        <p>Suspendisse potenti. Cras a dui et nisl egestas ornare eu quis odio. Sed bibendum in ante.</p>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3 text-center">
+                        <i class="fa fa-rocket fa-3x text-o-color-1"/>
+                        <h5 class="mt-3">Trending Collection</h5>
+                        <p>In hac habitasse platea dictumst. Praesent cursus congue felis, nec pellentesque nulla.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_3" name="Icon Block - 3">
+        <section class="s_icon_block_3 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-rocket fa-2x me-4 text-o-color-1"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Creative ideas</h5>
+                                <p>Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Aenean pretium ac enim eget dignissim.</p>
+                                <a href="#">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-magic fa-2x me-4 text-o-color-1"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Excellent features</h5>
+                                <p>Suspendisse potenti. Cras a dui et nisl egestas ornare eu quis odio. Sed bibendum in ante vel accumsan. Praesent scelerisque.</p>
+                                <a href="#">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-laptop fa-2x me-4 text-o-color-1"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Fully responsive</h5>
+                                <p>In hac habitasse platea dictumst. Praesent cursus congue felis, nec pellentesque nulla ornare sed. Aliquam eget aliquam urna.</p>
+                                <a href="#">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-book fa-2x me-4 text-o-color-1"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Extensive documentation</h5>
+                                <p>Aenean varius ligula vel augue condimentum scelerisque. In a urna at tortor tincidunt gravida sit amet vel eros. Integer et.</p>
+                                <a href="#">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-leaf fa-2x me-4 text-o-color-1"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Modern design</h5>
+                                <p>Proin purus dui, feugiat id ipsum eu, varius ornare ex. Mauris elit dolor, consectetur ac accumsan eu, commodo et odio eget.</p>
+                                <a href="#">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fa fa-code fa-2x me-4 text-o-color-1"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Clean code</h5>
+                                <p>Nam blandit arcu vel mi mollis faucibus. Nam justo velit, maximus viverra volutpat eu, hendrerit et velit. Pellentesque tincidunt.</p>
+                                <a href="#">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_4" name="Icon Block - 4">
+        <section class="s_icon_block_4 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-lg-4 py-3">
+                        <i class="fa fa-rocket rounded bg-200"/>
+                        <h5 class="mt-4">Creative ideas</h5>
+                        <p>Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <i class="fa fa-magic rounded bg-200"/>
+                        <h5 class="mt-4">Excellent features</h5>
+                        <p>Suspendisse potenti. Cras a dui et nisl egestas ornare eu quis odio. Sed bibendum in ante vel accumsan.</p>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <i class="fa fa-laptop rounded bg-200"/>
+                        <h5 class="mt-4">Fully responsive</h5>
+                        <p>In hac habitasse platea dictumst. Praesent cursus congue felis, nec pellentesque nulla ornare sed.</p>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <i class="fa fa-book rounded bg-200"/>
+                        <h5 class="mt-4">Extensive documentation</h5>
+                        <p>Aenean varius ligula vel augue condimentum scelerisque. In a urna at tortor tincidunt gravida sit.</p>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <i class="fa fa-leaf rounded bg-200"/>
+                        <h5 class="mt-4">Modern design</h5>
+                        <p>Proin purus dui, feugiat id ipsum eu, varius ornare ex. Mauris elit dolor, consectetur ac accumsan eu.</p>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <i class="fa fa-code rounded bg-200"/>
+                        <h5 class="mt-4">Clean code</h5>
+                        <p>Nam blandit arcu vel mi mollis faucibus. Nam justo velit, maximus viverra volutpat eu, hendrerit et velit.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_5" name="Icon Block - 5">
+        <section class="s_icon_block_5 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-lg-4 py-3 text-center">
+                        <span class="fa fa-phone fa-3x text-o-color-1"/>
+                        <h6 class="mt-3">+91 70466 01320</h6>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3 text-center">
+                        <span class="fa fa-map-marker fa-3x text-o-color-1"/>
+                        <h6 class="mt-3">New York, United States</h6>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3 text-center">
+                        <span class="fa fa-envelope-o fa-3x text-o-color-1"/>
+                        <h6 class="mt-3">info@droggol.com</h6>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_6" name="Icon Block - 6">
+        <section class="s_icon_block_6 pt16 pb16">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 col-md-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-phone rounded-circle text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Phone Number</h6>
+                                <p class="mb-0">+91 70466 01320</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-map-marker rounded-circle text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Address</h6>
+                                <p class="mb-0">New York, United States</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4 py-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-envelope-o rounded-circle text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Email</h6>
+                                <p class="mb-0">info@droggol.com</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_7" name="Icon Block - 7">
+        <section class="s_icon_block_7 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow py-4 h-100">
+                            <div class="p-4 text-center">
+                                <span class="fa fa-rocket fa-2x rounded-circle mb-4 bg-o-color-1"/>
+                                <h5>Creative ideas</h5>
+                                <p>Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>
+                                <a href="#" class="btn btn-link">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow py-4 h-100">
+                            <div class="p-4 text-center">
+                                <span class="fa fa-magic fa-2x rounded-circle mb-4 bg-o-color-1"/>
+                                <h5>Excellent features</h5>
+                                <p>Suspendisse potenti. Cras a dui et nisl egestas ornare eu quis odio. Sed bibendum in ante. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>
+                                <a href="#" class="btn btn-link">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow py-4 h-100">
+                            <div class="p-4 text-center">
+                                <span class="fa fa-laptop fa-2x rounded-circle mb-4 bg-o-color-1"/>
+                                <h5>Fully responsive</h5>
+                                <p>In hac habitasse platea dictumst. Praesent cursus congue felis, nec pellentesque nulla ornare sed. Orci varius natoque penatibus et magnis dis parturient montes, nascetur mus.</p>
+                                <a href="#" class="btn btn-link">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_8" name="Icon Block - 8">
+        <section class="s_icon_block_8 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow p-4 h-100">
+                            <span class="fa fa-rocket fa-3x text-o-color-1 mb-4"/>
+                            <h5>Creative ideas</h5>
+                            <p>Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Orci varius natoque penatibus et magnis. nascetur ridiculus mus.</p>
+                            <a href="#">Learn More</a>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow p-4 h-100">
+                            <span class="fa fa-magic fa-3x text-o-color-1 mb-4"/>
+                            <h5>Excellent features</h5>
+                            <p>Suspendisse potenti. Cras a dui et nisl egestas ornare eu quis odio. Sed bibendum in ante. Suspendisse potenti. Cras a dui et nisl. Sed bibendum in ante.</p>
+                            <a href="#">Learn More</a>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow p-4 h-100">
+                            <span class="fa fa-laptop fa-3x text-o-color-1 mb-4"/>
+                            <h5>Fully responsive</h5>
+                            <p>In hac habitasse platea dictumst. Praesent cursus congue felis, nec pellentesque nulla ornare sed. In hac habitasse platea dictumst. pellentesque nulla sed.</p>
+                            <a href="#">Learn More</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_9" name="Icon Block - 9">
+        <section class="s_icon_block_9 pt32 pb32">
+            <div class="container">
+                <div class="row justify-content-center s_nb_column_fixed">
+                    <div class="col-12 col-md-4 py-3 mx-auto tp-icon-block">
+                        <div class="d-flex px-md-2 px-lg-5">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-rocket fa-2x me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">FREE SHIPPING</h6>
+                                <p class="mb-0">In 2-3 Days</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4 py-3 mx-auto tp-icon-block">
+                        <div class="d-flex px-md-2 px-lg-5">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-refresh fa-2x me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">FREE RETURNS</h6>
+                                <p class="mb-0">No Questions Asked</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4 py-3 mx-auto tp-icon-block">
+                        <div class="d-flex px-md-2 px-lg-5">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-phone fa-2x me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">FREE SUPPORT</h6>
+                                <p class="mb-0">30 Days Support</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_10" name="Icon Block - 10">
+        <section class="s_icon_block_10 pt16 pb16">
+            <div class="container">
+                <div class="row justify-content-center border s_nb_column_fixed">
+                    <div class="col-12 col-sm-6 col-xl-2 p-3 tp-icon-block o_cc o_cc1">
+                        <div class="d-flex align-items-center tp-icon-block-icon">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-truck fa-2x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Free Delivery</h6>
+                                <p class="mb-0">All oders over $100</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-2 p-3 tp-icon-block o_cc o_cc1">
+                        <div class="d-flex align-items-center tp-icon-block-icon">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-credit-card fa-2x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Safe Payment</h6>
+                                <p class="mb-0">100% secure payment</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-2 p-3 tp-icon-block o_cc o_cc1">
+                        <div class="d-flex align-items-center tp-icon-block-icon">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-phone fa-2x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Help Center</h6>
+                                <p class="mb-0">24 X 7 support</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-2 p-3 tp-icon-block o_cc o_cc1">
+                        <div class="d-flex align-items-center tp-icon-block-icon">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-undo fa-2x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Free Returns</h6>
+                                <p class="mb-0">No Questions Asked</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-2 p-3 tp-icon-block o_cc o_cc1">
+                        <div class="d-flex align-items-center tp-icon-block-icon">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-rocket fa-2x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Fast Shipping</h6>
+                                <p class="mb-0">In 2-3 Days</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-sm-6 col-xl-2 p-3 tp-icon-block o_cc o_cc1">
+                        <div class="d-flex align-items-center tp-icon-block-icon">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-smile-o fa-2x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Happy Customers</h6>
+                                <p class="mb-0">12k+ Customers</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_11" name="Icon Block - 11">
+        <section class="s_icon_block_11 pt16 pb16">
+            <div class="container">
+                <div class="row justify-content-center p-3 s_nb_column_fixed">
+                    <div class="col-12 col-sm-6 col-lg-3 tp-icon-block text-center">
+                        <span class="fa fa-2x fa-rocket rounded-circle bg-o-color-1 m-3"></span>
+                        <h5>Free Delivery</h5>
+                        <p>All oders over $100</p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 tp-icon-block text-center">
+                        <span class="fa fa-2x fa-thumbs-up rounded-circle bg-o-color-1 m-3"></span>
+                        <h5>Quality Products</h5>
+                        <p>100% Genuine product</p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 tp-icon-block text-center">
+                        <span class="fa fa-2x fa-phone rounded-circle bg-o-color-1 m-3"></span>
+                        <h5>Customer Support</h5>
+                        <p>Friendly 24/7 customer support</p>
+                    </div>
+                    <div class="col-12 col-sm-6 col-lg-3 tp-icon-block text-center">
+                        <span class="fa fa-2x fa-undo rounded-circle bg-o-color-1 m-3"></span>
+                        <h5>Easy Returns</h5>
+                        <p>No Questions Asked</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_icon_block_12" name="Icon Block - 12">
+        <section class="s_icon_block_12 bg-o-color-1">
+            <div class="container">
+                <div class="row s_nb_column_fixed text-lg-center">
+                    <div class="col-12 col-lg-4">
+                        <h6 class="my-2">
+                            <i class="fa fa-exchange me-2"></i> Free returns
+                        </h6>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <h6 class="my-2">
+                            <i class="fa fa-truck me-2"></i> Free Shipping for order over $200
+                        </h6>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <h6 class="my-2">
+                            <i class="fa fa-life-ring me-2"></i> Free support
+                        </h6>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_icon_block_9_000_scss" model="ir.asset">
+        <field name="name">Icon Block 9 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_icon_block_9/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_icon_block_10_000_scss" model="ir.asset">
+        <field name="name">Icon Block 10 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_icon_block_10/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_icon_block_11_000_scss" model="ir.asset">
+        <field name="name">Icon Block 11 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_icon_block_11/000.scss</field>
+    </record>
+
+</odoo>

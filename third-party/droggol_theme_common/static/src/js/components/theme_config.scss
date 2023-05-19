@@ -1,0 +1,75 @@
+$tp-setting-color: #0080ff;
+
+.tp_config_dialog {
+    border-radius: 16px;
+    .text-primary {
+        color: $tp-setting-color !important;
+    }
+    .bg-tpc-primary {
+        background-color: $tp-setting-color;
+        color: #fff;
+    }
+    .bg-tpc-primary-dark {
+        background-color: darken($tp-setting-color, 10%);
+        color: #fff;
+    }
+    .tp-cp {
+        cursor: pointer;
+    }
+    .pe-24 {
+        padding-right: 24px !important;
+    }
+    header {
+        h4, .btn-close{
+            display: none;
+        }
+    }
+    .tp-setting-tab{
+        font-weight: bold;
+        border-radius: 6px;
+        letter-spacing: 1px;
+        color: #000;
+        &.active {
+            background-color: rgba($tp-setting-color, 0.15);
+            color: $tp-setting-color;
+        }
+    }
+    .o_switch {
+        input + span {
+            padding-left: 4px;
+            padding-right: 2px;
+            width: 37px;
+            height: 21px;
+            background: #c1ccdd !important;
+            &:after {
+                margin-top: 1px;
+                display: inline-block;
+            }
+        }
+        input:checked + span {
+            background: #06bb72 !important;
+            // background: $tp-setting-color !important;
+        }
+    }
+
+    .tp-setting-bg {
+        background-color: #e7f1ff;
+        border-radius: 10px;
+    }
+
+    .form-check-input:checked {
+        background-color: $tp-setting-color;
+        border-color: $tp-setting-color;
+    }
+    .btn-outline-primary {
+        border-color: $tp-setting-color;
+        color: $tp-setting-color;
+        &:hover {
+            background-color: #c1ccdd;
+        }
+    }
+    .btn-check:checked + .btn-outline-primary {
+        background-color: $tp-setting-color;
+        border-color: $tp-setting-color;
+    }
+}

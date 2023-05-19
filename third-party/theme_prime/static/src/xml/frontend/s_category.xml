@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <t t-name="s_tp_category_wrapper_template">
+        <div class="row">
+            <!-- FUCKING HACK MUST BE REMOVE IN V15 BECAUSE DEADLINE IS NEAR FOR THEME 9 DEC 2020 4AM (NOTE FOR: KIG (KISHAN GAJJAR)) -->
+            <t t-if="widget.categoryStyle !== 's_tp_category_style_4' &amp;&amp; widget.categoryStyle !== 's_tp_category_style_5'">
+                <t t-foreach="data" t-as="category">
+                    <div t-attf-class="col-12 col-md-6 col-lg-4 col-xl-3 col-md-3 #{widget.categoryStyle} #{widget.categoryStyle === 's_tp_category_style_1' ? '' : 'mt-4'}">
+                        <t t-call="#{widget.categoryStyle}"/>
+                    </div>
+                </t>
+            </t>
+            <t t-if="widget.categoryStyle === 's_tp_category_style_4'">
+                <t t-foreach="data" t-as="category">
+                    <div t-attf-class="col-12 col-md-6 col-lg-4 mt-4 col-md-3 #{widget.categoryStyle}">
+                        <t t-call="#{widget.categoryStyle}"/>
+                    </div>
+                </t>
+            </t>
+            <t t-if="widget.categoryStyle === 's_tp_category_style_5'">
+                <t t-foreach="data" t-as="category">
+                    <div t-attf-class="col-6 col-md-4 col-lg-2 col-xl-2 mt-4 #{widget.categoryStyle}">
+                        <t t-call="#{widget.categoryStyle}"/>
+                    </div>
+                </t>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="s_tp_category_style_1">
+        <div class="row h-100">
+            <div class="col-3">
+                <img loading="lazy" class="me-2 o_image_64_contain" t-att-src="category.image_url"/>
+            </div>
+            <div class="col-9 d-flex flex-column justify-content-center">
+                <h6 class="tp-hover-color-primary text-truncate">
+                    <a t-att-href="category.website_url">
+                        <span t-esc="category.name"/>
+                    </a>
+                </h6>
+                <p class="text-500 mb-0"><t t-esc="category.count"></t> items</p>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="s_tp_category_style_2">
+        <div class="row border g-0 p-3 h-100">
+            <div class="col-3">
+                <img loading="lazy" class="me-2 o_image_64_contain" t-att-src="category.image_url"/>
+            </div>
+            <div class="col-9 ps-2 d-flex flex-column justify-content-center">
+                <h6 class="tp-hover-color-primary text-truncate">
+                    <a t-att-href="category.website_url">
+                        <span t-esc="category.name"/>
+                    </a>
+                </h6>
+                <p class="text-500 mb-0"><t t-esc="category.count"></t> items</p>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="s_tp_category_style_3">
+        <div class="card">
+            <div class="card-body text-center pt-4">
+                <img loading="lazy" class="o_image_128_max"  t-att-src="category.image_url"/>
+                <h5 class="tp-hover-color-primary mt-2 text-truncate">
+                    <a t-att-href="category.website_url">
+                        <span t-esc="category.name"/>
+                    </a>
+                </h5>
+                <p class="text-500 mt-3 mb-0"><t t-esc="category.count"></t> products</p>
+                <a class="btn btn-link mt-3 btn-sm" t-att-href="category.website_url">View Products</a>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="s_tp_category_style_4">
+        <div class="dr-category-card" t-attf-style="background-image: linear-gradient(0deg, #151617 0%, transparent 50%, transparent 70%, transparent 100%), url(#{category.cover_image});">
+            <div class="dr-category-text w-100 mt-1 p-3">
+                <a  t-att-href="category.website_url" class="btn btn-outline-light rounded-circle float-end" style="padding: 13px 14px;font-size: 14px;line-height: 3px;border-width: 2px;"> <i class="fa fa-arrow-right"/> </a>
+                <h4 class="text-white mb-0"><t t-esc="category.name"/></h4>
+                <small class="text-white"> <span t-esc="category.count"/> products</small>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="s_tp_category_style_5">
+        <div class="card border tp-hover-color-primary tp-rounded-border shadow-sm">
+            <a class="px-2 text-center py-3" t-att-href="category.website_url">
+                <img loading="lazy" class="o_image_128_max" t-att-src="category.image_url"/>
+                <h6 t-esc="category.name" class="my-0 text-truncate"/>
+                <small class="text-muted"><span t-esc="category.count"/> products</small>
+            </a>
+        </div>
+    </t>
+</template>
