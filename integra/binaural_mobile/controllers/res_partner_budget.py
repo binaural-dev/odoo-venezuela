@@ -26,12 +26,12 @@ FIELDNAMES = [
     "child_ids",
     "active",
     "seller_id",
-    "property_payment_term_id",
 ]
+CHILDFIELDNAMES = ["street", "id", "type"]
 CHILD_TYPES = ["invoice", "delivery"]
 FIELDFILTERS = ["id", "name", "seller_id"]
 
-class PortalBudget(http.Controller):
+class ResPartnerBudget(http.Controller):
     
     @http.route(['/budget'], type='http', auth="user", website=True, csrf=False)
     def portal_budget(self, **kw):
@@ -47,34 +47,28 @@ class PortalBudget(http.Controller):
             ('is_public', '=', True),
             ("type", "=", "contact")
             ]
-        data = get_model_data("res.partner", domain, FIELDFILTERS)
+        partners = get_model_data("res.partner", domain, FIELDNAMES)
 
-        if not data:
+        if not partners:
             data.update(
                 {"status": 404, 
                 "msg": _("not found clients")
                 })
             return json.dumps(data)
 
+        for partner in partners:
+            partner.update({"child_ids": self.parse_child_ids(partner.get("child_ids"))})
+
         return request.make_response(
-            json.dumps(data),
+            json.dumps(partners),
             headers=[("Content-Type", "application/json")]
         )
     
-    @http.route("/budget/direction_client", type="json", auth="public", website=True, sitemap=False)
-    def get_direction_client(self, **kw):
-        data = {"status": 200, "msg": "OK"}
-
-        domain = [
-            ('parent_id', '=', int(kw.get("client"))),
-            ('is_public', '=', True),
-            ("type", "in", ["delivery", "invoice"])
-            ]
-        res_direction = get_model_data("res.partner", domain, ["street", "id", "type"])
-
-        if not res_direction:
-            data.update({"status": 404, "msg": _("not found direction in client")})
-            return json.dumps(data)
+    @staticmethod
+    def parse_child_ids(child_ids):
+        if not child_ids:
+            return []
         
-        data.update({"data": res_direction})
-        return json.dumps(data)
+        domain = [("id", "in", child_ids), ("type", "in", CHILD_TYPES)]
+        partner_child = get_model_data("res.partner", domain, CHILDFIELDNAMES)
+        return partner_child
