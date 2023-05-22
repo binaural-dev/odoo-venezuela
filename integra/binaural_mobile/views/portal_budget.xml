@@ -31,9 +31,17 @@
                             </select>
                         </div>
                     </div>
-                    <div class="row mb-1">
-                        <label class="col-sm-2 form-text">Shipping Address</label>
-                        <div class="col-sm-4">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="same_address" checked="checked"/>
+                                <label class="form-check-label" style="font-weight: bolder;">
+                                    Billing address the same as the shipping address
+                                </label>
+                            </div>
+                        </div>
+                        <label class="col-sm-2 form-text div_shipping">Shipping Address</label>
+                        <div class="col-sm-4 div_shipping">
                             <select class="form-control address_selection" t-attf-data-address="delivery" id="project">
                                 <option value="">Select a shipping address</option>
                             </select>
@@ -54,13 +62,25 @@
                                 </label>
                             </div>
                         </div>
-                    </div>
-                    <div class="row mb-1">
                         <label class="col-sm-2 form-text">Note</label>
                         <div class="col-sm-4">
                             <input type="text" class="form-control" id="note"/>
                         </div>
                     </div>
+                    <!-- <div class="row mb-1">
+                        <div class="col-sm-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="invoice" disabled="disabled"/>
+                                <label class="form-check-label" style="font-weight: bolder;">
+                                    Invoice required
+                                </label>
+                            </div>
+                        </div>
+                        <label class="col-sm-2 form-text">Note</label>
+                        <div class="col-sm-4">
+                            <input type="text" class="form-control" id="note"/>
+                        </div>
+                    </div> -->
                     <hr width="100%" />
                     <br />
                     <div class="d-grid gap-2 mx-auto">

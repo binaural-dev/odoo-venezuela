@@ -17,6 +17,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             "click .cancel-btn": "_onClickCancel",
             "click .confirm-btn": "_onClickConfirm",
             "click #dowload_pdf": "_onClickDowloadPdf",
+            "change #same_address": "_onChangeSameAddress",
         },
         init: function(parent, options) {
             this._super.apply(this, arguments);
@@ -61,6 +62,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 }
             });
 
+            this._onChangeSameAddress(true)
 
         },
         
@@ -90,9 +92,17 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             $("#payment_terms_value").val(property_payment_term_id.length > 0 ? property_payment_term_id[0] : "")
             
             $("#openProduct").attr('disabled', false)
-            // $("input[id='client']").select2("enable", false);
+            $("input[id='client']").select2("enable", false);
             $("#invoice").attr('disabled', false)
+            $("#same_address").attr('disabled', false)
+        },
 
+        _onChangeSameAddress : function(ev) {
+            if ($("#same_address").is(':checked')){
+                $(".div_shipping").hide()
+            }else{
+                $(".div_shipping").show()
+            }
         },
 
         _onKeyupSearchText: function(ev) {
@@ -160,15 +170,20 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             var id = 0
             var qty = 0
             var price = 0
+            var address = 0
             
             queryselector.forEach(async input => {
                 if (input.value != ''){ 
+                    if($("#same_address").is(':checked')){
+                        address = parseInt($("#billing_address").val())
+                    }else{
+                        address = parseInt($("#project").val())
+                    }
                     const tr = $(input).closest('tr');
                     price = tr.find('label.price_product').text()
                     const name = tr.find('label.name_product').text()
                     id = tr.find('input.val_product').val()
                     qty = input.value
-                    
                     id = parseInt(id)
                     qty = parseFloat(qty)
                     price = parseFloat(price)
@@ -177,7 +192,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                             "sale_order": {
                                 "partner_id": parseInt($("#client").val()),
                                 "partner_invoice_id": parseInt($("#billing_address").val()),
-                                "partner_shipping_id": parseInt($("#project").val()),
+                                "partner_shipping_id": address,
                                 "pricelist_id": parseInt($("#fee_value").val()),
                                 "payment_term_id": parseInt($("#payment_terms_value").val()),
                                 "order_line": [
@@ -195,12 +210,13 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                         const { status, data } = products;
                         const is400 = status === 400;
                         if (is400) return 
-                        
+                            
                         $("#note").val("")
                         $("#product_head").show()
                         $("#number").show()
                         $("#number_order").text(data[0].name)
                         $("#number_order_value").val(data[0].id)
+                        $("#same_address").attr('disabled', true)
                         this.build_table_products(data)
                     }else{
                         const products = await ajax.jsonRpc('/budget/create/order/line', 'call', {
@@ -208,7 +224,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                                 "id": parseInt($("#number_order_value").val()),
                                 "partner_id": parseInt($("#client").val()),
                                 "partner_invoice_id": parseInt($("#billing_address").val()),
-                                "partner_shipping_id": parseInt($("#project").val()),
+                                "partner_shipping_id": address,
                                 "pricelist_id": parseInt($("#fee_value").val()),
                                 "payment_term_id": parseInt($("#payment_terms_value").val()),
                                 "order_line": [
