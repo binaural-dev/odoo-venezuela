@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230518\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-22 14:37+0000\n"
-"PO-Revision-Date: 2023-05-22 14:37+0000\n"
+"POT-Creation-Date: 2023-05-22 16:01+0000\n"
+"PO-Revision-Date: 2023-05-22 16:01+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -46,6 +46,18 @@ msgstr "Vencido por cobrar $"
 #: model:account.report.column,name:binaural_account_reports.result_statement_column
 msgid "Balance"
 msgstr ""
+
+#. module: binaural_account_reports
+#: model:ir.actions.client,name:binaural_account_reports.action_account_report_bs_usd
+#: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_balance_sheet_usd
+msgid "Balance Sheet USD"
+msgstr "Balance de Situación $"
+
+#. module: binaural_account_reports
+#: model:ir.actions.client,name:binaural_account_reports.action_account_report_cs_usd
+#: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_cash_flow_usd
+msgid "Cash Flow Statement USD"
+msgstr "Estado de Flujos de Efectivo $"
 
 #. module: binaural_account_reports
 #: model:ir.model.fields,help:binaural_account_reports.field_account_report__usd
@@ -94,6 +106,12 @@ msgstr "Débito"
 #: model:account.report.line,name:binaural_account_reports.account_financial_report_depreciation0_result_statement
 msgid "Depreciation"
 msgstr "Depreciación"
+
+#. module: binaural_account_reports
+#: model:ir.actions.client,name:binaural_account_reports.action_account_report_exec_summary_usd
+#: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_exec_summary_usd
+msgid "Executive Summary USD"
+msgstr "Resumen Ejecutivo $"
 
 #. module: binaural_account_reports
 #: model:account.report.line,name:binaural_account_reports.account_financial_report_expense0_result_statement
@@ -152,6 +170,12 @@ msgid "Partner Ledger USD"
 msgstr "Libro mayor de empresa $"
 
 #. module: binaural_account_reports
+#: model:ir.actions.client,name:binaural_account_reports.action_account_report_pl_usd
+#: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_profit_and_loss_usd
+msgid "Profit and Loss USD"
+msgstr "Pérdidas y Ganancias $"
+
+#. module: binaural_account_reports
 #: model:ir.actions.client,name:binaural_account_reports.action_account_report_rs
 #: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_result_statement
 msgid "Result Statement"
@@ -160,7 +184,7 @@ msgstr "Estado de Resultado"
 #. module: binaural_account_reports
 #: model:ir.actions.client,name:binaural_account_reports.action_account_report_rs_usd
 #: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_result_statement_usd
-msgid "Result Statement $"
+msgid "Result Statement USD"
 msgstr "Estado de Resultado $"
 
 #. module: binaural_account_reports
