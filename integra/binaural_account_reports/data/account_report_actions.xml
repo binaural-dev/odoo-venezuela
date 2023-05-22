@@ -53,5 +53,24 @@
                 eval="{'report_id': ref('binaural_account_reports.daily_ledger_report'), 'usd_report': True}"
             />
         </record>
+
+	<record id="action_account_report_rs" model="ir.actions.client">
+            <field name="name">Result Statement</field>
+            <field name="tag">account_report</field>
+	    <field
+		name="context"
+		eval="{'report_id': ref('binaural_account_reports.result_statement')}"
+	    />
+        </record>
+
+	<record id="action_account_report_rs_usd" model="ir.actions.client">
+            <field name="name">Result Statement $</field>
+            <field name="tag">account_report</field>
+	    <field
+		name="context"
+		eval="{'report_id': ref('binaural_account_reports.result_statement'), 'usd_report': True}"
+	    />
+        </record>
+
     </data>
 </odoo>

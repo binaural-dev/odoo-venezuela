@@ -13,6 +13,7 @@
     # always loaded
     "data": [
         "data/daily_ledger.xml",
+        "data/result_statement.xml",
         "data/account_report_actions.xml",
         "data/menuitems.xml",
         "views/account_report_views.xml",
