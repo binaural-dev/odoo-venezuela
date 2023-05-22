@@ -18,7 +18,7 @@ Esta es una documentación de los estándares para el desarrollo de módulos de 
  
 ## FAQ
 
-#### ¿Dónde puedo encontrar la documentación de todo?
+#### ¿Dónde puedo encontrar la documentación de Odoo?
 
 Puedes obtener la documetaciòn original desde su pàgina oficial:
 [Documentaciòn](https://www.odoo.com/documentation/16.0/es/developer.html)
