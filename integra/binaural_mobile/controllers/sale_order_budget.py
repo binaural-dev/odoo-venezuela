@@ -165,13 +165,11 @@ class SaleOrderBudget(http.Controller):
     def print_sale_order(self, sale_id=False, **kwargs):
         try:
             sale = utils.browse_model_data("sale.order", sale_id)
-            _logger.info("pase por aqui________________________________________________2____")
         except Exception as e:
             return json.dumps({"status": 400, "msg": str(e)})
 
         if sale:
             request.update_env = 2
-            _logger.info("pase por aqui_______________________________3.2_____________________")
             pdf, _ = (
                 request.env.ref("sale.action_report_saleorder")
                 .sudo()
@@ -181,7 +179,6 @@ class SaleOrderBudget(http.Controller):
                     # ]
                 )
             )
-            _logger.info("pase por aqui____________________________________________________4")
             pdf_http_headers = [
                 ("Content-Type", "application/pdf"),
                 ("Content-Length", "%s" % len(pdf)),
