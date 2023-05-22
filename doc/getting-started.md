@@ -47,7 +47,7 @@ dentro del apartado `volumes:` se deben colocar las carpetas en donde esten colo
 
 
 ## Enterprise version
-Tambien en la ruta principal se debe colocar el repositorio de Odoo Enterprise en la rama de , por lo que las rutas deberian verse de la siguiente manera:
+Tambien en la ruta principal se debe colocar el repositorio de Odoo Enterprise en la rama `16.0`, por lo que las rutas deberian verse de la siguiente manera:
 
 ```bash
 /integra
