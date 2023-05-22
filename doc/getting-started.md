@@ -30,7 +30,7 @@ En la linea `admin_passwd` es para la contraseña para la administracion de base
 
 ### docker-compose.yml
 
-Antes de correr el ambiente se debe crear en el ruta principal el archivo `.docker-compose.yml` con base en el template [docker-compose_example.yml](../.docker-compose_example.yml)
+Antes de correr el ambiente se debe crear en el ruta principal el archivo `.docker-compose.yml` con base en el template [docker-compose_example.yml](../docker-compose_example.yml)
 
 dentro del apartado `volumes:` se deben colocar las carpetas en donde esten colocados los modulos, en caso de haber mas carpetas, se deben añadir aca, asi como en el `odoo.conf`
 
