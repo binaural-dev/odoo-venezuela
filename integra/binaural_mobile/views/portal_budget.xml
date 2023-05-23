@@ -8,49 +8,60 @@
                 <form role="form" action="/pitagoras_recruitment/recruit" method="POST" class="recruit_form" id="form_recruit">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" id="csrf_token" />
                     <div class="d-flex justify-content-center">
-                        <button type="button" class="btn btn-secondary col-5 mx-auto">Cancel</button>
-                        <button type="button" class="btn btn-primary col-5 mx-auto">Confirm</button>
+                        <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
+                        <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                     </div>
-                                
+                    <div class="d-grid gap-2 mx-auto" id="status"></div>
+                    <hr width="100%" />
+                    <div class="d-flex justify-content-center">
+                        <button type="button" class="btn btn-info col-12 mx-auto" id="dowload_pdf">Dowload PDF</button>
+                    </div>
                     <hr width="100%" />
                     <div class="row mb-3">
-                        <label class="form-label" style="font-weight: bolder;">Number: S0010203</label>
+                        <label class="form-label" style="font-weight: bolder; display: none;" id="number">Number: <label id="number_order"></label></label><input type="hidden" id="number_order_value"/>
+                        
                         <label class="col-sm-2 form-text">Client</label>
                         <div class="col-sm-4">
                             <input type="text" placeholder="Clients" class="form-control js_select2" id="client"/>
                         </div>
                         <label class="col-sm-2 form-text">Billing address</label>
                         <div class="col-sm-4">
-                            <select class="form-control" id="billing_address">
+                            <select class="form-control address_selection" t-attf-data-address="invoice" id="billing_address">
                                 <option value="">Select a billing address</option>
                             </select>
                         </div>
                     </div>
-                    <div class="row mb-1">
-                        <label class="col-sm-2 form-text">Shipping Address</label>
-                        <div class="col-sm-4">
-                            <select class="form-control" id="deliverys_address">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="same_address" checked="checked"/>
+                                <label class="form-check-label" style="font-weight: bolder;">
+                                    Billing address the same as the shipping address
+                                </label>
+                            </div>
+                        </div>
+                        <label class="col-sm-2 form-text div_shipping">Shipping Address</label>
+                        <div class="col-sm-4 div_shipping">
+                            <select class="form-control address_selection" t-attf-data-address="delivery" id="project">
                                 <option value="">Select a shipping address</option>
                             </select>
                         </div>
                         <div class="col-sm-2">
                             <label class="form-text">Rate:</label><br/>
-                            <label class="form-label">Usd</label>
+                            <label class="form-label" for="fee_value" id="fee">No fee</label><input type="hidden" id="fee_value"/>
                         </div>
                         <div class="col-sm-2">
                             <label class="form-text ">Payment terms:</label><br/>
-                            <label class="form-label">10 days</label>
+                            <label class="form-label" for="payment_terms_value" id="payment_terms">No payment terms</label><input type="hidden" id="payment_terms_value"/>
                         </div>
                         <div class="col-sm-2">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="invoice"/>
+                                <input class="form-check-input" type="checkbox" id="invoice" disabled="disabled"/>
                                 <label class="form-check-label" style="font-weight: bolder;">
                                     Invoice required
                                 </label>
                             </div>
                         </div>
-                    </div>
-                    <div class="row mb-1">
                         <label class="col-sm-2 form-text">Note</label>
                         <div class="col-sm-4">
                             <input type="text" class="form-control" id="note"/>
@@ -60,12 +71,12 @@
                     <br />
                     <div class="d-grid gap-2 mx-auto">
                         <label class="form-text" style="color: #35979c ">Order lines</label>
-                        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#exampleModalFullscreen">Add</button>
+                        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addProduct" id="openProduct" disabled="disabled">Add</button>
                     </div>
                     <br />
                     <div class="row mb-2">
                         <table class="table table-primary table-striped">
-                            <thead>
+                            <thead id="product_head" style="display: none;">
                             <tr>
                                 <td class="text-center" style="font-weight: bolder;">Product</td>
                                 <td></td>
@@ -75,72 +86,50 @@
                                 <td></td>
                             </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="4">
-                                        <label style="font-weight: bolder;">[A0393929] PRODUCT NAME</label><br/>
-                                        <label class="form-label">Cantidad:</label><label class="form-label" style="font-weight: bolder;">10</label><br/>
-                                        <label class="form-text">Unit price:</label><label class="form-text" style="font-weight: bolder;">5</label><br/>
-                                        <label class="form-text">Tax:</label><label class="form-text" style="font-weight: bolder;">10%</label>
-                                    </td>
-                                    <td class="text-center">
-                                    <div  style="display: flex; align-items: center; justify-content: center;">
-                                        <div style="width: 100px; height: 100px;">1000</div>
-                                    </div>
-                                    </td>
-                                    <td style="width: 50px;"><button type="button" class="btn-close btn-danger"></button></td>
-                                </tr>
+                            <tbody id="product_list">
+                                
                             </tbody>
                         </table>
                     </div>
-                    <div class="d-flex justify-content-end">
-                        <label class="form-label">Taxable Base: </label><label class="form-label" style="font-weight: bolder;">10000</label>
-                    </div>
-                    <div class="d-flex justify-content-end">
-                        <label class="form-label">Tax: </label><label class="form-label" style="font-weight: bolder;">1000</label>
-                    </div>
-                    <div class="d-flex justify-content-end">
-                        <label class="form-label">Total: </label><label class="form-label" style="font-weight: bolder;">11000</label>
+                    <div id="total_invoice">
+                        <div class="d-flex justify-content-end">
+                            <label class="form-label invoice_end" style="display: none;" id="subtotal_base">Taxable Base: </label><label class="form-label" style="font-weight: bolder;" id="subtotal"></label>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <label class="form-label invoice_end" style="display: none;" id="taxes_base">Tax: </label><label class="form-label" style="font-weight: bolder;" id="taxes"></label>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <label class="form-label invoice_end" style="display: none;" id="total_base">Total: </label><label class="form-label" style="font-weight: bolder;" id="total"></label>
+                        </div>
                     </div>
                     <br />
                     <div class="d-flex justify-content-center">
-                        <button type="button" class="btn btn-secondary col-5 mx-auto">Cancel</button>
-                        <button type="button" class="btn btn-primary col-5 mx-auto">Confirm</button>
+                        <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
+                        <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                     </div>
                     <br />
 
-                    <div class="modal fade" id="exampleModalFullscreen" tabindex="-1" aria-labelledby="exampleModalFullscreenLabel"  aria-modal="true" role="dialog">
+                    <div class="modal fade" id="addProduct" tabindex="-1" aria-labelledby="addProductLabel"  aria-modal="true" role="dialog">
                         <div class="modal-dialog modal-fullscreen">
                             <div class="modal-content">
-                            <div class="modal-header">
-                                <div class="input-group mb-3">
-                                    <input type="text" class="form-control" placeholder="Write the name or code" aria-label="Write the name or code" aria-describedby="button-addon2"/>
-                                    <button class="btn btn-primary" type="button" id="button-addon2">Search</button>
+                                <div class="modal-header">
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" placeholder="Write the name or code" 
+                                        aria-label="Write the name or code" aria-describedby="search_product"
+                                        id="search_text"/>
+                                        <button class="btn btn-primary" type="button" id="search_product">Search</button>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="modal-header">
-                                <button type="button" class="btn btn-primary col-5" data-bs-dismiss="modal" disabled="disabled">Save</button>
-                                <button type="button" class="btn btn-secondary col-5" data-bs-dismiss="modal">Cancel</button>
-                            </div>
-                            <div class="modal-body">
-                                <table class="table table-primary table-striped">
-                                <tbody id="table_inside">
-                                    <tr>
-                                        <td class="text-center">image</td>
-                                        <td colspan="2">
-                                            <label style="font-weight: bolder;">[A0393929] PRODUCT NAME</label><br/>
-                                            <label class="form-text">Price:</label><label class="form-text" style="font-weight: bolder;">10</label><br/>
-                                            <label class="form-text">Available:</label><label class="form-text" style="font-weight: bolder;">100</label>
-                                        </td>
-                                        <td style="width: 150px;">
-                                            <input type="text" class="form-control" placeholder="quantity"/>
-                                            <label class="form-text">Only valid multiples of 1</label>
-                                        </td>
-                                    </tr>
-                                    
-                                </tbody>
-                            </table>
-                            </div>
+                                <div class="modal-header">
+                                    <button type="button" class="btn btn-primary col-5" data-bs-dismiss="modal" id="save_products">Save</button>
+                                    <button type="button" class="btn btn-secondary col-5" data-bs-dismiss="modal" id="exit_products">Cancel</button>
+                                </div>
+                                <div class="modal-body">
+                                    <table class="table table-primary table-striped">
+                                        <tbody id="table_inside">
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>

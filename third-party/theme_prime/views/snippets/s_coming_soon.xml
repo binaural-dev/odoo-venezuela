@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_coming_soon_1" name="Coming Soon - 1">
+        <section class="s_coming_soon s_coming_soon_1 o_full_screen_height">
+            <div class="container-fluid">
+                <div class="row tp-coming-soon-container align-items-center">
+                    <div class="col-md-6 bg-o-color-1 tp-editor-bg-image">
+                        <div class="tp-coming-soon-side-block d-flex justify-content-center flex-column align-items-center">
+                            <t t-call="theme_prime.s_tp_countdown"/>
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-none d-md-block">
+                        <div class="tp-coming-soon-side-block d-flex justify-content-center flex-column align-items-center">
+                            <div class="my-4">
+                                <span class="fa fa-rocket fa-5x text-dark"></span>
+                            </div>
+                            <h6 class="mb-3 tp-stay-tuned">STAY TUNED</h6>
+                            <h1 class="fw-bold text-primary">WE ARE LAUNCHING SOON!</h1>
+                            <h3>Are you ready?</h3>
+                            <p class="mt-2">Subscribe to get a notification as soon as we launch!</p>
+                            <div class="s_newsletter_list js_subscribe w-100 w-md-50 mx-auto my-4" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                                <div class="input-group">
+                                    <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                    <span class="input-group-append">
+                                        <a role="button" href="#" class="btn btn-primary js_subscribe_btn">Subscribe</a>
+                                        <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none" disabled="disabled">Thanks</a>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="s_social_media text-center" data-name="Social Media">
+                                <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                    <i class="fa fa-facebook m-1 rounded-circle shadow-sm"/>
+                                </a>
+                                <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                    <i class="fa fa-twitter m-1 rounded-circle shadow-sm"/>
+                                </a>
+                                <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                    <i class="fa fa-linkedin m-1 rounded-circle shadow-sm"/>
+                                </a>
+                                <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                    <i class="fa fa-github m-1 rounded-circle shadow-sm"/>
+                                </a>
+                                <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                    <i class="fa fa-youtube m-1 rounded-circle shadow-sm"/>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_coming_soon_2" name="Coming Soon - 2">
+        <section class="s_coming_soon s_coming_soon_2 o_full_screen_height" style="background-position: 0% 53.2468%; background-image: url('/web/image/theme_prime.s_coming_soon_2_2');">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="text-center d-none d-md-block">
+                            <div class="my-4">
+                                <img src="/web/image/theme_prime.s_coming_soon_2_1" class="img img-fluid" style="max-width: 160px;"/>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <h1>Coming Soon...</h1>
+                            <p>We are glad to see you, but please be patient. This page is under construction.</p>
+                        </div>
+                        <div class="tp-coming-soon-side-block d-flex justify-content-center flex-column align-items-center py-4">
+                            <t t-call="theme_prime.s_tp_countdown"/>
+                        </div>
+                        <div class="text-center py-4 d-none d-md-block">
+                            <h4>Subscribe</h4>
+                            <p>Subscribe and stay in touch with the latest news, deals and promotions.</p>
+                            <div class="s_newsletter_list js_subscribe w-100 w-md-50 w-xl-25 mx-auto my-4" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                                <div class="input-group">
+                                    <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                    <span class="input-group-append">
+                                        <a role="button" href="#" class="btn btn-primary js_subscribe_btn">Subscribe</a>
+                                        <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none" disabled="disabled">Thanks</a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_coming_soon_1_000_js" model="ir.asset">
+        <field name="name">Coming Soon 1 000 JS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_coming_soon_1/000.js</field>
+    </record>
+
+    <record id="theme_prime.s_coming_soon_1_000_scss" model="ir.asset">
+        <field name="name">Coming Soon 1 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_coming_soon_1/000.scss</field>
+    </record>
+
+</odoo>

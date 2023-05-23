@@ -1,0 +1,4 @@
+.s_banner_4 .tp-banner-content {
+    @include o-position-absolute($bottom: 3rem, $left: 3.5rem);
+    z-index: 2;
+}

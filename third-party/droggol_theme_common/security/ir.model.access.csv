@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dr_product_label_manager,dr.product.label.manager,model_dr_product_label,sales_team.group_sale_manager,1,1,1,1
+access_dr_product_label_public,dr.product.label.public,model_dr_product_label,,1,0,0,0
+access_dr_product_public_category_label_manager,dr.product.public.category.label.manager,model_dr_product_public_category_label,sales_team.group_sale_manager,1,1,1,1
+access_dr_product_public_category_label_public,dr.product.public.category.label.public,model_dr_product_public_category_label,,1,0,0,0
+access_dr_website_content_manager,dr.website.content.manager,model_dr_website_content,sales_team.group_sale_manager,1,1,1,1
+access_dr_website_content_public,dr.website.content.public,model_dr_website_content,,1,0,0,0
+access_dr_website_menu_label_designer,dr.website.menu.label.designer,model_dr_website_menu_label,website.group_website_designer,1,1,1,1
+access_dr_website_menu_label,dr.website.menu.label.public,model_dr_website_menu_label,,1,0,0,0
+access_dr_pwa_shortcuts_designer,dr.pwa.shortcuts.designer,model_dr_pwa_shortcuts,website.group_website_designer,1,1,1,1
+access_dr_pwa_shortcuts,dr.pwa.shortcuts.public,model_dr_pwa_shortcuts,,1,0,0,0
+access_dr_theme_config_designer,dr.theme.config.designer,model_dr_theme_config,website.group_website_designer,1,1,1,1
+access_dr_theme_config,dr.theme.config.public,model_dr_theme_config,,1,0,0,0
+access_dr_category_synonyms_manager,dr.category.synonyms.manager,model_dr_category_synonyms,sales_team.group_sale_manager,1,1,1,1
+access_dr_category_synonyms_public,dr.category.synonyms.public,model_dr_category_synonyms,,1,0,0,0
+access_dr_search_report_manager,dr.search.report.manager,model_dr_search_report,sales_team.group_sale_manager,1,1,1,1

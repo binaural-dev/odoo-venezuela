@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="template_preheader_style_1" inherit_id="website.layout" name="Preheader Style - 1" active="False">
+        <xpath expr="//header/*" position="before">
+            <div class="tp-preheader o_colored_level o_cc" data-name="Preheader">
+                <div class="container">
+                    <div class="row justify-content-lg-between justify-content-center">
+                        <div class="col-auto py-2">
+                            <div class="oe_structure oe_structure_solo">
+                                <section class="s_text_block" data-snippet="s_text_block" data-name="Text">
+                                    <div class="container">
+                                        <div>Summer Special <span class="mx-2">|</span> Get 50% Off <span class="mx-2">|</span> Code #GET50</div>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                        <div class="col-auto py-2 text-end d-none d-lg-block">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_preheader_style_2" inherit_id="website.layout" name="Preheader Style - 2" active="False">
+        <xpath expr="//header/*" position="before">
+            <div class="tp-preheader o_colored_level o_cc" data-name="Preheader">
+                <div class="container">
+                    <div class="row justify-content-lg-between justify-content-center align-items-center">
+                        <div class="col-auto py-2 d-none d-lg-block">
+                            <ul class="list-inline mb-0">
+                                <li class="list-inline-item"><a href="tel:1 (650) 691-3277"><i class="fa fa-1x fa-fw fa-phone"/> 1 (650) 691-3277</a></li>
+                                <li class="list-inline-item"><a href="mailto:info@yourcompany.example.com"><i class="fa fa-1x fa-fw fa-envelope"/> info@yourcompany.example.com</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-auto py-2">
+                            <ul class="list-inline mb-0">
+                                <li class="list-inline-item"><span class="fa fa-truck p-1"/> Free Delivery</li>
+                                <li class="list-inline-item"><span class="fa fa-support p-1"/> 24 x 7 Support</li>
+                                <li class="list-inline-item"><span class="fa fa-refresh p-1"/> 30 Days Return Policy</li>
+                            </ul>
+                        </div>
+                        <div class="col-auto py-2 d-none d-lg-block">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_preheader_style_3" inherit_id="website.layout" name="Preheader Style - 3" active="False">
+        <xpath expr="//header/*" position="before">
+            <div class="tp-preheader o_colored_level o_cc" data-name="Preheader">
+                <div class="container">
+                    <div class="row justify-content-lg-between justify-content-center align-items-center">
+                        <div class="col-auto py-2 d-none d-lg-block">
+                            <ul class="list-inline mb-0">
+                                <li class="list-inline-item mx-2"><a href="#">Contact Us</a></li>
+                                <li class="list-inline-item mx-2"><a href="#">About Us</a></li>
+                                <li class="list-inline-item mx-2"><a href="#">Terms</a></li>
+                                <li class="list-inline-item mx-2"><a href="#">FAQ</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-auto py-2">
+                            <section><div>Free shipping for all order of $150</div></section>
+                        </div>
+                        <div class="col-auto py-2 d-none d-lg-block">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_preheader_style_4" inherit_id="website.layout" name="Preheader Style - 4" active="False">
+        <xpath expr="//header/*" position="before">
+            <div class="tp-preheader o_colored_level o_cc" data-name="Preheader">
+                <div class="container-fluid">
+                    <div class="row justify-content-lg-between justify-content-center align-items-center">
+                        <div class="col-auto py-3">
+                            <div class="oe_structure oe_structure_solo">
+                                <section class="s_text_block" data-snippet="s_text_block" data-name="Text">
+                                    <div class="container">
+                                        <a href="#" class="btn btn-primary ms-2">Men</a>
+                                        <a href="#" class="btn btn-primary ms-2">Women</a>
+                                        <a href="#" class="btn btn-primary ms-2">Kids</a>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                        <div class="col-auto py-3 d-none d-lg-block">
+                            <div class="d-flex align-items-center">
+                                <div class="oe_structure oe_structure_solo">
+                                    <section class="s_text_block" data-snippet="s_text_block" data-name="Text">
+                                        <div class="container">
+                                            <div>Available 24/7 at <b>(001) 123-4567</b></div>
+                                        </div>
+                                    </section>
+                                </div>
+                                <t t-call="theme_prime.component_language_pricelist_selector">
+                                    <t t-set="_classes" t-value="'ms-4'"/>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_preheader_style_5" inherit_id="website.layout" name="Preheader Style - 5" active="False">
+        <xpath expr="//header/*" position="before">
+            <div class="tp-preheader o_colored_level o_cc" data-name="Preheader">
+                <div class="container">
+                    <div class="row justify-content-lg-between justify-content-center align-items-center">
+                        <div class="col-auto py-2 d-none d-lg-block">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </div>
+                        <div class="col-auto py-2 d-none d-lg-block">
+                            <section><div>Free Returns. Standard Shipping. Orders $99.</div></section>
+                        </div>
+                        <div class="col-auto py-2 d-none d-lg-block">
+                            <ul class="list-inline mb-0">
+                                <li class="list-inline-item mx-2"><a href="#">Contact Us</a></li>
+                                <li class="list-inline-item mx-2"><a href="#">About Us</a></li>
+                                <li class="list-inline-item mx-2"><a href="#">Terms</a></li>
+                                <li class="list-inline-item mx-2"><a href="#">FAQ</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-auto py-2">
+                            <div class="s_social_media no_icon_color" data-name="Social Media">
+                                <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                    <i class="fa fa-facebook m-1"/>
+                                </a>
+                                <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                    <i class="fa fa-twitter m-1"/>
+                                </a>
+                                <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                    <i class="fa fa-linkedin m-1"/>
+                                </a>
+                                <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                    <i class="fa fa-github m-1"/>
+                                </a>
+                                <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                    <i class="fa fa-youtube m-1"/>
+                                </a>
+                                <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                    <i class="fa fa-instagram m-1"/>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_preheader_style_6" inherit_id="website.layout" name="Preheader Style - 6" active="False">
+        <xpath expr="//header/*" position="before">
+            <div class="tp-preheader o_colored_level o_cc" data-name="Preheader">
+                <div class="container">
+                    <div class="row justify-content-lg-between justify-content-center align-items-center">
+                        <div class="col-auto py-3 d-none d-lg-block">
+                            <div class="d-flex align-items-center">
+                                <t t-call="theme_prime.component_language_pricelist_selector">
+                                    <t t-set="_classes" t-value="'me-4'"/>
+                                </t>
+                                <div class="oe_structure oe_structure_solo">
+                                    <section class="s_text_block" data-snippet="s_text_block" data-name="Text">
+                                        <div class="container">
+                                            <div>Available 24/7 at <b>(001) 123-4567</b></div>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-auto py-3">
+                            <div class="oe_structure oe_structure_solo">
+                                <section class="s_text_block" data-snippet="s_text_block" data-name="Text">
+                                    <div class="container">
+                                        <b>First purchase offer: Get 15% off.</b> Code applied at checkout. Exclusion apply*
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>

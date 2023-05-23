@@ -14,6 +14,11 @@ odoo.define("binaural_pos.OrderState", function(require) {
         this.to_invoice = true;
         let always_invoice = !this.pos.config.always_invoice;
         this.to_receipt = always_invoice;
+        this.onchage_receipt(always_invoice)
+      }
+      init_from_JSON(json) {
+        super.init_from_JSON(...arguments)
+        this.to_receipt = json["to_receipt"]
       }
       export_as_JSON() {
         let json = super.export_as_JSON();
@@ -22,9 +27,25 @@ odoo.define("binaural_pos.OrderState", function(require) {
         json["to_receipt"] = this.is_to_receipt();
         return json;
       }
+      onchage_receipt(to_receipt) {
+        if (to_receipt) {
+          const taxes = Object.values(this.pos.taxes_by_id)
+          const exempt = taxes.find(el => el.amount == 0 && el.type_tax_use == "sale")
+          this.orderlines.forEach((el) => {
+            el.product.taxes_id = [exempt.id]
+            el.tax_ids = el.product.taxes_id
+          })
+        } else {
+          this.orderlines.forEach((el) => {
+            el.product.taxes_id = el.product.originalTaxes
+            el.tax_ids = el.product.taxes_id
+          })
+        }
+      }
       toggle_receipt_invoice(to_receipt) {
         this.assert_editable();
         this.to_receipt = to_receipt;
+        this.onchage_receipt(to_receipt)
       }
       is_to_receipt() {
         return this.to_receipt;

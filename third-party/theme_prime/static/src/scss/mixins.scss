@@ -1,0 +1,222 @@
+@mixin tp-icon-center($size, $font-size) {
+    padding: 0;
+    height: $size+rem !important;
+    width: $size+rem !important;
+    line-height: $size+rem !important;
+    text-align: center !important;
+    font-size: $font-size+rem !important;
+}
+
+@mixin tp-font-icons {
+    .fa, .dri {
+        @content;
+    }
+}
+
+@mixin tp-scroll($width: 8px, $height: 8px) {
+    @include media-breakpoint-up(md) {
+        &::-webkit-scrollbar {
+            width: $width;
+            height: $height;
+        }
+        &::-webkit-scrollbar-track {
+            background-color: rgba(0,0,0,.07);
+        }
+        &::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,.15);
+        }
+    }
+}
+
+@mixin tp-header-navbar-color-system() {
+    $bg-color: o-color('menu-custom') or o-color('menu') or rgba(0, 0, 0, 0);
+    $color: color-contrast($bg-color);
+    @if $color == $color-contrast-dark {
+        color: $color;
+    } @else {
+        color: rgba($color, 0.8);
+    }
+    &:hover, &.active {
+        @if $color == $color-contrast-dark {
+            color: o-color('primary');
+        } @else {
+            color: $color;
+        }
+    }
+}
+
+@mixin d-owl-btn-style() {
+    &:focus {
+        outline: none;
+    }
+    @include media-breakpoint-down(lg) {
+        height: 30px;
+        width: 30px;
+        .dri {
+            color: map-get($grays, '500');;
+            height: 27px;
+            width: 27px;
+            line-height: 27px !important;
+        }
+    }
+    transition: all 0.3s;
+    &:hover {
+        box-shadow: $box-shadow-sm;
+        color: o-color('primary') !important;
+    }
+    background-color: white !important;
+    height: 40px;
+    width: 40px;
+    border: 1px solid #e1e7ec !important;
+    border-radius: 100%;
+    color: #374250 !important;
+    .dri {
+        line-height: 39px;
+        font-weight: bold;
+    }
+}
+
+@mixin dr-owl-arrows-position-style ($left) {
+    .owl-prev {
+        @include media-breakpoint-down(lg) {
+            left: -15px;
+        }
+        @include o-position-absolute($bottom: 50%, $left: $left);
+    }
+    .owl-next {
+        @include media-breakpoint-down(lg) {
+            right: -15px;
+        }
+        @include o-position-absolute($bottom: 50%, $right: $left);
+    }
+}
+
+@mixin dr-product-attribute-center($max-width: auto) {
+    max-width: $max-width;
+    text-align: center;
+    .modal-body {
+        padding: 0;
+    }
+
+    // Center elements
+    .css_attribute_select {
+        margin: auto;
+    }
+    .variant_attribute .align-items-center {
+        justify-content: center;
+    }
+    .js_add_cart_variants {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+
+    // Carousel
+    section#product_detail {
+        text-align: center;
+        .d_shop_product_details_carousel {
+            .o_carousel_product_indicators {
+                display: none !important;
+                > li {
+                    height: 30px;
+                    width: 30px;
+                    .o_image_64_contain {
+                        height: 30px;
+                        width: 30px;
+                    }
+                }
+            }
+            .carousel-outer {
+                height: 250px !important;
+            }
+        }
+    }
+    .product_price {
+        margin-top: 10px !important;
+        .oe_price_h4 {
+            font-size: 1.09375rem;
+            .oe_price {
+                color: o-color('primary');
+                font-weight: 600;
+            }
+        }
+    }
+    .o_website_rating_static {
+        margin-bottom: -5px;
+    }
+}
+
+
+// Image Hotspot MIXINS
+
+@mixin tp-image-hotspot-shadow-mixin($shadow) {
+    -webkit-box-shadow: $shadow;
+    -moz-box-shadow: $shadow;
+    box-shadow: $shadow;
+}
+
+@mixin tp-kf-hotspot($tp-hotspot-color, $kf-name, $tp-is-scale:null) {
+    @keyframes #{$kf-name} {
+        0% {
+            @include tp-image-hotspot-shadow-mixin(0 0 0 0 rgba($tp-hotspot-color, 0.6));
+        }
+        70% {
+            @include tp-image-hotspot-shadow-mixin(0 0 0 15px rgba($tp-hotspot-color, 0));
+            @if $tp-is-scale {
+                transform: scale(0.8,0.8);
+            }
+        }
+        100% {
+            @include tp-image-hotspot-shadow-mixin(0 0 0 0 rgba($tp-hotspot-color, 0));
+            @if $tp-is-scale {
+                transform: scale(1,1);
+            }
+        }
+    }
+}
+
+@mixin tp-droggol-pack-font-family() {
+    font-family: 'Droggol-Pack' !important;
+    speak: never;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+
+@mixin tp-hotspot-theme-pack($tp-hotspot-color-pack) {
+    @each $color-name, $color-value in $tp-hotspot-color-pack {
+        // &. REF from web_editor.frontend.scss (&.o_#{$module}_#{str-replace($shape, '/', '_')} )
+        &.tp-hotspot-#{$color-name} {
+            background: $color-value;
+            box-shadow: 0 0 0 rgba($color-value, 0.8);
+            animation: pulse-#{$color-name} 1.5s infinite;
+        }
+    }
+}
+
+// Overrided Odoo's mixin
+@mixin o-we-active-wrapper($icon: '\f00c', $top: auto, $right: auto, $bottom: auto, $left: auto) {
+    box-shadow: 0 0 0 3px $o-brand-primary;
+
+    &:not(.fa):not(.dri) {
+        border: 3px solid $o-brand-primary;
+        box-shadow: none;
+        &:before {
+            content: $icon;
+            @include o-position-absolute($top, $right, $bottom, $left);
+            width: 19px;
+            height: 19px;
+            background-color: $o-brand-primary;
+            font-family: 'FontAwesome';
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            z-index: 1;
+            box-shadow: $box-shadow;
+        }
+    }
+}

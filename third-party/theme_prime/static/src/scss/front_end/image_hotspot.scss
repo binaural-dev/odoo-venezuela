@@ -1,0 +1,257 @@
+$tp-hotspot-light: #ffffff;
+$tp-hotspot-dark: #212529;
+$tp-hotspot-color-pack: (
+    'primary': o-color('primary'),
+    'dark': $tp-hotspot-dark,
+    'light': $tp-hotspot-light,
+);
+
+// keyframes
+@include tp-kf-hotspot(o-color('primary'), pulse-primary);
+@include tp-kf-hotspot($tp-hotspot-light, pulse-light);
+@include tp-kf-hotspot($tp-hotspot-dark, pulse-dark);
+@include tp-kf-hotspot($tp-hotspot-light, pulse-primary-pointer, true);
+@include tp-kf-hotspot($tp-hotspot-dark, pulse-dark-pointer, true);
+
+.tp_hotspot {
+    cursor: pointer;
+    border-radius: 50%;
+    &:focus {
+        outline: none;
+    }
+}
+
+.tp_hotspot_style_1 {
+    @include tp-hotspot-theme-pack($tp-hotspot-color-pack);
+    width: 23px;
+    height: 23px;
+    &.tp-hotspot-light:after {
+        border: 2px solid map-get($grays, '600') !important;
+    }
+    &:after {
+        display: inline-block;
+        content: "";
+        @include o-position-absolute($top: 3px, $left: 3px);
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        border: 2px solid white;
+        z-index: 1;
+    }
+}
+
+.tp_hotspot_style_2 {
+    @include tp-droggol-pack-font-family();
+    width: 2rem;
+    height: 2rem;
+    color: white;
+    transition: all 200ms cubic-bezier(0.68, -0.55, 0.265, 2.5);
+    transform: rotate(45deg);
+    &.tp-hotspot-primary {
+        background: o-color('primary');
+    }
+    &.tp-hotspot-dark {
+        background: $tp-hotspot-dark;
+    }
+    &.tp-hotspot-light {
+        background: $tp-hotspot-light;
+        color: map-get($grays, '600');
+    }
+    &:before {
+        content: "\e870";
+        padding-top: 9px;
+        position: absolute;
+        padding-left: 9px;
+    }
+    &:hover {
+        transform: scale(1.1,1.1) rotate(45deg) !important;
+        -webkit-transform: scale(1.1,1.1) rotate(45deg) !important;
+    }
+}
+
+.tp_hotspot_style_3 {
+    @include tp-droggol-pack-font-family();
+    width: 2rem;
+    height: 2rem;
+    color: white;
+    transition: all .2s ease-out;
+    &.tp-hotspot-primary {
+        background: o-color('primary');
+        animation: pulse-primary-pointer 2s infinite;
+    }
+    &.tp-hotspot-dark {
+        background: $tp-hotspot-dark;
+        animation: pulse-dark-pointer 2s infinite;
+    }
+    &.tp-hotspot-light {
+        animation: pulse-primary-pointer 2s infinite;
+        background: $tp-hotspot-light;
+        color: map-get($grays, '600');
+    }
+    &:before {
+        content: "\e902";
+        padding-top: 10px;
+        position: absolute;
+        padding-left: 9px;
+    }
+}
+
+@keyframes tp-animation-hotspot-4 {
+    0% {
+        -webkit-transform: scale(0.68);
+        transform: scale(0.68);
+    }
+    100% {
+        -webkit-transform: scale(1.2);
+        transform: scale(1.2);
+        opacity: 0;
+    }
+}
+
+@mixin tp-hotspot-style-4() {
+    content: "";
+    @include o-position-absolute($top: -27%, $left: -27%);
+    border: 1px solid;
+    width: 150%;
+    height: 150%;
+    border-radius: 50px;
+    opacity: 1;
+    -webkit-animation: 1s tp-animation-hotspot-4 linear infinite;
+    animation: 1s tp-animation-hotspot-4 linear infinite;
+}
+
+.tp_hotspot_style_4 {
+    width: 27px;
+    height: 27px;
+    &.tp-hotspot-primary {
+        background-color: o-color('primary');
+        color: color-contrast(o-color('primary'));
+        &:after, &:before {
+            border-color: o-color('primary');
+        }
+    }
+    & > i {
+        @include o-position-absolute($top: 25%, $left: 20%);
+    }
+    &.tp-hotspot-dark {
+        background-color: $tp-hotspot-dark;
+        &:after, &:before {
+            border-color: $tp-hotspot-dark;
+        }
+        color: #fff;
+    }
+    &.tp-hotspot-light {
+        background-color: $tp-hotspot-light;
+        color: map-get($grays, '600');
+        &:after, &:before {
+            border-color: $tp-hotspot-light;
+        }
+    }
+    &:after, &:before {
+        @include tp-hotspot-style-4();
+    }
+    &:before {
+        animation-delay: 0.5s !important;
+    }
+}
+// 14.1
+// @-webkit-keyframes htmove-scale-sm {
+//   0% {
+//     -webkit-transform: scale(1);
+//             transform: scale(1);
+//   }
+//   50% {
+//     -webkit-transform: scale(1.1);
+//             transform: scale(1.1);
+//   }
+//   100% {
+//     -webkit-transform: scale(1);
+//             transform: scale(1);
+//   }
+// }
+//
+// @keyframes rotate {
+//     0% {
+//       -webkit-transform: scale(1);
+//               transform: scale(1);
+//     }
+//     50% {
+//       -webkit-transform: scale(1.1);
+//               transform: scale(1.1);
+//     }
+//     100% {
+//       -webkit-transform: scale(1);
+//               transform: scale(1);
+//     }
+// }
+// @keyframes rotate-1 {
+//   0% {
+//             -webkit-transform: scale(1) rotate(0);
+//             transform: scale(1) rotate(0);
+//   }
+//     //   50% {
+//     //   -webkit-transform: scale(1.1);
+//     //           transform: scale(1.1);
+//     // }
+//   100% {
+//     -webkit-transform: scale(1) rotate(360deg);
+//       transform: scale(1) rotate(360deg);
+//   }
+// }
+//
+// .tp_hotspot_style_1 {
+//     font-family: "FontAwesome" !important;
+//     font-size: 27px !important;
+//     webkit-animation: rotate-1 1.3s linear infinite both;
+//     animation: rotate-1 1.3s linear infinite both;
+//     will-change: transform;
+//     display: inline-block;
+//     color: o-color('primary');
+//     font: normal normal normal 14px/1 FontAwesome;
+//     font-size: inherit;
+//     text-rendering: auto;
+//     -webkit-font-smoothing: antialiased;
+//     &:before {
+//         content: "\f2dd";
+//     }
+//     &:after {
+//         display: inline-block;
+//         content: "";
+//         background-color: o-color('primary');
+//         @include o-position-absolute($top: 3px, $left: 3px);
+//         width: 21px;
+//         height: 21px;
+//         border-radius: 50%;
+//         border: 2px solid white;
+//         z-index: 1;
+//     }
+// }
+
+.tp-popover-element {
+    max-width: 285px;
+    .popover-body {
+        padding: 12px 0px 12px 6px;
+        overflow: hidden;
+        .tp-popover-container {
+            width: 275px;
+            .tp-add-to-cart-action {
+                @include o-position-absolute($right: 0px, $bottom: -0.75rem);
+                width: 55px;
+                border-top-left-radius: 55px;
+                padding-top: 31px;
+                .dri-cart {
+                    font-size: 1.2rem;
+                    &:before {
+                        @include o-position-absolute($top: 1.3rem, $left: 1.2rem);
+                    }
+                }
+            }
+        }
+    }
+}
+.tp-discount-badge {
+    padding: 2px;
+    border-radius: 2px;
+    background-color: rgba(o-color('danger'), 0.1);
+    color: o-color('danger');
+}

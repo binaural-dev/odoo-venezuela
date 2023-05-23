@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <t t-name="droggol_default_loader">
+        <div class="d_spinner_loader align-items-center justify-content-center d-flex">
+            <div class="bounce1 d-inline-block me-2 rounded-circle"></div>
+            <div class="bounce2 d-inline-block me-2 rounded-circle"></div>
+            <div class="bounce3 d-inline-block me-2 rounded-circle"></div>
+        </div>
+    </t>
+
+    <!-- Remove deprecated notice block in version 16.0 -->
+    <t t-name="tp_block_deprecated_notice">
+        <div class="alert mb-0 alert-warning css_non_editable_mode_hidden text-center" role="alert">
+            <i class="fa fa-exclamation-triangle fa-2x d-block"/>
+            <p class="h6 my-2">Looks like you migrated to Odoo version 16.0 <i class="fa fa-smile-o"/></p>
+            <p class="fw-light">This block is depricated in theme prime Odoo version 16.0. We have more cool things in this version.</p>
+        </div>
+    </t>
+
+    <t t-name="droggol_default_no_data_templ">
+        <div class="d-flex d_default_no_data_templ align-items-center justify-content-center">
+            <div class="text-center">
+                <img t-if="widget.noDataTemplateImg" class="img img-fluid" style="max-height:300px;" t-att-src="widget.noDataTemplateImg"/>
+                <h4 t-if="widget.noDataTemplateString" t-esc="widget.noDataTemplateString" class="mt-3 text-center fw-bold"></h4>
+                <p t-if="widget.noDataTemplateSubString" t-esc="widget.noDataTemplateSubString" class="text-muted text-center"></p>
+                <a t-if="widget.displayAllProductsBtn" href="/shop" class="btn btn-primary">All products <span class="dri dri-chevron-right-l"></span></a>
+            </div>
+        </div>
+    </t>
+</template>
