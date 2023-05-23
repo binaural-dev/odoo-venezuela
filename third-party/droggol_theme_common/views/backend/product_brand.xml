@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="dr_product_brand_values_view_form" model="ir.ui.view">
+        <field name="name">product.attribute.value.view.form</field>
+        <field name="model">product.attribute.value</field>
+        <field name="arch" type="xml">
+            <form string="Brand" create="false">
+                <sheet>
+                    <field name="dr_image" widget="image" class="oe_avatar"/>
+                    <div class="oe_title">
+                        <label for="name" string="Name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="dr_brand_description"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="dr_product_brand_values_view_tree" model="ir.ui.view">
+        <field name="name">product.attribute.value.view.tree</field>
+        <field name="model">product.attribute.value</field>
+        <field name="arch" type="xml">
+            <tree string="Brands" expand="1" create="0">
+                <field name="sequence" widget="handle"/>
+                <field name="name" string="Name"/>
+                <field name="attribute_id" invisible="1"/>
+                <groupby name="attribute_id">
+                    <button name="open_create_brand_value" string="Add New Brand" type="object" class=""/>
+                </groupby>
+            </tree>
+        </field>
+    </record>
+
+    <record id="dr_product_brand_values_view_search" model="ir.ui.view">
+        <field name="name">product.attribute.value.view.search</field>
+        <field name="model">product.attribute.value</field>
+        <field name="arch" type="xml">
+            <search string="Brands">
+                <field name="name"/>
+                <group expand="0" string="Group By">
+                    <filter string="Attributes" name="group_by_attributes" domain="[]" context="{'group_by': 'attribute_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="dr_product_brand_values_action" model="ir.actions.act_window">
+        <field name="name">Brands</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">product.attribute.value</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain" eval="[('attribute_id.dr_is_brand', '=', True)]"/>
+        <field name="context">{'search_default_group_by_attributes': True}</field>
+    </record>
+
+    <menuitem id="menu_dr_product_brand_values"
+        action="dr_product_brand_values_action"
+        parent="website_sale.menu_catalog" sequence="5"/>
+
+</odoo>

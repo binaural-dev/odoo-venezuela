@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_pricing_1" name="Pricing - 1">
+        <section class="s_pricing_1 pb16 pt16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor">
+                    <div class="col-md-6 col-lg-3 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow h-100">
+                            <img src="/web/image/theme_prime.s_pricing_01" class="card-img-top" alt="Pricing Image 01"/>
+                            <div class="p-4">
+                                <h5 class="mt-4 text-center">Beginner</h5>
+                                <p class="mt-4 text-center">Morbi tincidunt ultrices.</p>
+                                <h2 class="my-4 text-center">$9.99</h2>
+                                <ul class="list-group list-group-flush mt-4">
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Cras justo odio
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Dapibus ac facilisis
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Vestibulum at eros
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Cras justo odio
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-times"/> Dapibus ac facilisis
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-times"/> Vestibulum at eros
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-times"/> Cras justo odio
+                                    </li>
+                                </ul>
+                                <a href="#" class="btn btn-primary w-100 mt-3">Order Now</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow h-100">
+                            <img src="/web/image/theme_prime.s_pricing_02" class="card-img-top" alt="Pricing Image 02"/>
+                            <div class="p-4">
+                                <h5 class="mt-4 text-center">Professional</h5>
+                                <p class="mt-4 text-center">Suspendisse egestas ipsum eu.</p>
+                                <h2 class="my-4 text-center">$20.50</h2>
+                                <ul class="list-group list-group-flush mt-4">
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Cras justo odio
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Dapibus ac facilisis
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Vestibulum at eros
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Cras justo odio
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Dapibus ac facilisis
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-times"/> Vestibulum at eros
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-times"/> Cras justo odio
+                                    </li>
+                                </ul>
+                                <a href="#" class="btn btn-primary w-100 mt-3">Order Now</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow h-100">
+                            <img src="/web/image/theme_prime.s_pricing_03" class="card-img-top" alt="Pricing Image 03"/>
+                            <div class="p-4">
+                                <h5 class="mt-4 text-center">Expert</h5>
+                                <p class="mt-4 text-center">Ut efficitur sem sed.</p>
+                                <h2 class="my-4 text-center">$35.00</h2>
+                                <ul class="list-group list-group-flush mt-4">
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Cras justo odio
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Dapibus ac facilisis
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Vestibulum at eros
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Cras justo odio
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Dapibus ac facilisis
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Vestibulum at eros
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-times"/> Cras justo odio
+                                    </li>
+                                </ul>
+                                <a href="#" class="btn btn-primary w-100 mt-3">Order Now</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow h-100">
+                            <img src="/web/image/theme_prime.s_pricing_04" class="card-img-top" alt="Pricing Image 04"/>
+                            <div class="p-4">
+                                <h5 class="mt-4 text-center">Advanced</h5>
+                                <p class="mt-4 text-center">Dapibus ac facilisis.</p>
+                                <h2 class="my-4 text-center">$42.00</h2>
+                                <ul class="list-group list-group-flush mt-4">
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Cras justo odio
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Dapibus ac facilisis
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Vestibulum at eros
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Cras justo odio
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Dapibus ac facilisis
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Vestibulum at eros
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> Cras justo odio
+                                    </li>
+                                </ul>
+                                <a href="#" class="btn btn-primary w-100 mt-3">Order Now</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_pricing_2" name="Pricing - 2">
+        <section class="s_pricing_2 pb16 pt16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor">
+                    <div class="col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow h-100 tp-animation-lift">
+                            <header class="tp-editor-bg-color-n-shadow p-4 text-center bg-o-color-1">
+                                <h5>Beginner</h5>
+                                <div>Morbi tincidunt ultrices</div>
+                            </header>
+                            <img src="/web/image/theme_prime.s_pricing_01" class="w-100" alt="Pricing Image 01"/>
+                            <div class="py-4 px-4 py-lg-5 px-lg-5 text-center">
+                                <p>From</p>
+                                <h2 class="mt-3 text-o-color-1">$330.00</h2>
+                                <p class="mt-3">Morbi tincidunt ultrices fermentum. Suspendisse egestas ipsum eu.</p>
+                                <a href="#" class="btn btn-outline-primary w-100 text-center mt-4">Order Now</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow h-100 tp-animation-lift">
+                            <header class="tp-editor-bg-color-n-shadow p-4 text-center bg-o-color-1">
+                                <h5>Professional</h5>
+                                <div>Morbi tincidunt ultrices</div>
+                            </header>
+                            <img src="/web/image/theme_prime.s_pricing_02" class="w-100" alt="Pricing Image 02"/>
+                            <div class="py-4 px-4 py-lg-5 px-lg-5 text-center">
+                                <p>From</p>
+                                <h2 class="mt-3 text-o-color-1">$430.00</h2>
+                                <p class="mt-3">Morbi tincidunt ultrices fermentum. Suspendisse egestas ipsum eu.</p>
+                                <a href="#" class="btn btn-outline-primary w-100 text-center mt-4">Order Now</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow h-100 tp-animation-lift">
+                            <header class="tp-editor-bg-color-n-shadow p-4 text-center bg-o-color-1">
+                                <h5>Expert</h5>
+                                <div>Morbi tincidunt ultrices</div>
+                            </header>
+                            <img src="/web/image/theme_prime.s_pricing_03" class="w-100" alt="Pricing Image 03"/>
+                            <div class="py-4 px-4 py-lg-5 px-lg-5 text-center">
+                                <p>From</p>
+                                <h2 class="mt-3 text-o-color-1">$530.00</h2>
+                                <p class="mt-3">Morbi tincidunt ultrices fermentum. Suspendisse egestas ipsum eu.</p>
+                                <a href="#" class="btn btn-outline-primary w-100 text-center mt-4">Order Now</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_pricing_3" name="Pricing - 3">
+        <section class="s_pricing_3 pb16 pt16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor">
+                    <div class="col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow p-4 p-lg-5 h-100">
+                            <header>
+                                <h5>Beginner</h5>
+                                <div class="pb16 pt16 s_hr" data-snippet="s_hr" data-name="Separator">
+                                    <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                                </div>
+                                <h2>$ 8.80</h2>
+                            </header>
+                            <p class="mt-4 mb-0">Morbi tincidunt ultrices fermentum. Suspendisse egestas ipsum eu.</p>
+                            <div class="pb16 pt16 s_hr" data-snippet="s_hr" data-name="Separator">
+                                <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                            </div>
+                            <ul class="list-group list-group-flush border-0">
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Cras justo odio
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Dapibus ac facilisis
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Vestibulum at eros
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Cras justo odio
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-times text-o-color-1"/> Dapibus ac facilisis
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-times text-o-color-1"/> Vestibulum at eros
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-times text-o-color-1"/> Cras justo odio
+                                </li>
+                            </ul>
+                            <a href="#" class="btn btn-primary w-100 mt-4">Order Now</a>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow p-4 p-lg-5 h-100">
+                            <header>
+                                <h5>Professional</h5>
+                                <div class="pb16 pt16 s_hr" data-snippet="s_hr" data-name="Separator">
+                                    <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                                </div>
+                                <h2>$ 15.80</h2>
+                            </header>
+                            <p class="mt-4 mb-0">Morbi tincidunt ultrices fermentum. Suspendisse egestas ipsum eu.</p>
+                            <div class="pb16 pt16 s_hr" data-snippet="s_hr" data-name="Separator">
+                                <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                            </div>
+                            <ul class="list-group list-group-flush border-0">
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Cras justo odio
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Dapibus ac facilisis
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Vestibulum at eros
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Cras justo odio
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Dapibus ac facilisis
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-times text-o-color-1"/> Vestibulum at eros
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-times text-o-color-1"/> Cras justo odio
+                                </li>
+                            </ul>
+                            <a href="#" class="btn btn-primary w-100 mt-4">Order Now</a>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow p-4 p-lg-5 h-100">
+                            <header>
+                                <h5>Business</h5>
+                                <div class="pb16 pt16 s_hr" data-snippet="s_hr" data-name="Separator">
+                                    <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                                </div>
+                                <h2>$ 21.00</h2>
+                            </header>
+                            <p class="mt-4 mb-0">Morbi tincidunt ultrices fermentum. Suspendisse egestas ipsum eu.</p>
+                            <div class="pb16 pt16 s_hr" data-snippet="s_hr" data-name="Separator">
+                                <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                            </div>
+                            <ul class="list-group list-group-flush border-0">
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Cras justo odio
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Dapibus ac facilisis
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Vestibulum at eros
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Cras justo odio
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Dapibus ac facilisis
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Vestibulum at eros
+                                </li>
+                                <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                    <span class="p-1 fa fa-check text-o-color-1"/> Cras justo odio
+                                </li>
+                            </ul>
+                            <a href="#" class="btn btn-primary w-100 mt-4">Order Now</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_pricing_4" name="Pricing - 4">
+        <section class="s_pricing_4 pb16 pt16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor">
+                    <div class="col-md-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow h-100">
+                            <div class="pt-3 px-3 text-center">
+                                <div class="s_rating pt16 pb16" data-vcss="001" data-icon="fa-star">
+                                    <h2 class="s_rating_title">Basic</h2>
+                                    <div class="s_rating_icons o_not_editable text-o-color-1">
+                                        <span class="s_rating_active_icons">
+                                            <i class="fa fa-star"/>
+                                            <i class="fa fa-star"/>
+                                            <i class="fa fa-star"/>
+                                        </span>
+                                        <span class="s_rating_inactive_icons">
+                                            <i class="fa fa-star-o"/>
+                                            <i class="fa fa-star-o"/>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pb4 pt4 s_hr" data-snippet="s_hr" data-name="Separator">
+                                <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                            </div>
+                            <div class="p-3">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> Email Addresses
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>50 GB</strong> Disk Space
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> SQL Database
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> Email Addresses
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>50 GB</strong> Disk Space
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> SQL Database
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-times"/> <strong>24 x Support</strong>
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-times"/> <strong>Email Support</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="pb4 pt4 s_hr" data-snippet="s_hr" data-name="Separator">
+                                <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                            </div>
+                            <div class="px-3 pt-2 text-center">
+                                <h1><font style="font-size: 48px;">$3</font></h1>
+                                <p class="mb-0">Per Month</p>
+                            </div>
+                            <div class="px-3 py-3 text-center">
+                                <a href="#" class="btn btn-primary w-100">View More</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow h-100">
+                            <div class="pt-3 px-3 text-center">
+                                <div class="s_rating pt16 pb16" data-vcss="001" data-icon="fa-star">
+                                    <h2 class="s_rating_title">Premium</h2>
+                                    <div class="s_rating_icons o_not_editable text-o-color-1">
+                                        <span class="s_rating_active_icons">
+                                            <i class="fa fa-star"/>
+                                            <i class="fa fa-star"/>
+                                            <i class="fa fa-star"/>
+                                            <i class="fa fa-star"/>
+                                        </span>
+                                        <span class="s_rating_inactive_icons">
+                                            <i class="fa fa-star-o"/>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pb4 pt4 s_hr" data-snippet="s_hr" data-name="Separator">
+                                <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                            </div>
+                            <div class="p-3">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> Email Addresses
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>50 GB</strong> Disk Space
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> SQL Database
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> Email Addresses
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>50 GB</strong> Disk Space
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> SQL Database
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>24 x Support</strong>
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-times"/> <strong>Email Support</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="pb4 pt4 s_hr" data-snippet="s_hr" data-name="Separator">
+                                <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                            </div>
+                            <div class="px-3 pt-2 text-center">
+                                <h1><font style="font-size: 48px;">$8</font></h1>
+                                <p class="mb-0">Per Month</p>
+                            </div>
+                            <div class="px-3 py-3 text-center">
+                                <a href="#" class="btn btn-primary w-100">View More</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 py-3">
+                        <div class="card tp-editor-bg-color-n-shadow h-100">
+                            <div class="pt-3 px-3 text-center">
+                                <div class="s_rating pt16 pb16" data-vcss="001" data-icon="fa-star">
+                                    <h2 class="s_rating_title">Business</h2>
+                                    <div class="s_rating_icons o_not_editable text-o-color-1">
+                                        <span class="s_rating_active_icons">
+                                            <i class="fa fa-star"/>
+                                            <i class="fa fa-star"/>
+                                            <i class="fa fa-star"/>
+                                            <i class="fa fa-star"/>
+                                            <i class="fa fa-star"/>
+                                        </span>
+                                        <span class="s_rating_inactive_icons">
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pb4 pt4 s_hr" data-snippet="s_hr" data-name="Separator">
+                                <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                            </div>
+                            <div class="p-3">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> Email Addresses
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>50 GB</strong> Disk Space
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> SQL Database
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> Email Addresses
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>50 GB</strong> Disk Space
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Unlimited</strong> SQL Database
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>24 x Support</strong>
+                                    </li>
+                                    <li class="list-group-item tp-editor-copy-n-move p-1 border-0 bg-transparent" data-name="Line">
+                                        <span class="p-1 fa fa-check"/> <strong>Email Support</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="pb4 pt4 s_hr" data-snippet="s_hr" data-name="Separator">
+                                <hr class="w-100 mx-auto" style="border-top-width: 1px; border-top-style: solid;"/>
+                            </div>
+                            <div class="px-3 pt-2 text-center">
+                                <h1><font style="font-size: 48px;">$12</font></h1>
+                                <p class="mb-0">Per Month</p>
+                            </div>
+                            <div class="px-3 py-3 text-center">
+                                <a href="#" class="btn btn-primary w-100">View More</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_pricing_5" name="Pricing - 5">
+        <section class="s_pricing_5 pb16 pt16">
+            <div class="container">
+                <div class="row s_nb_column_fixed s_col_no_bgcolor">
+                    <div class="col-lg-6 py-3">
+                        <div class="d-flex tp-editor-bg-color-n-shadow align-items-center border">
+                            <div class="p-4 me-3">
+                                <h2 class="text-o-color-1 mb-0"><b>$19.00</b></h2>
+                                <p>per month</p>
+                                <a href="#" class="btn btn-primary mt-2">Purchase</a>
+                            </div>
+                            <div class="p-4">
+                                <h5>Basic Pass</h5>
+                                <p class="mb-0">
+                                    Ut ac pellentesque tortor. Sed fringilla nibh vel urna porttitor feugiat sit amet ac ex. Duis ut mattis est, eget venenatis leo. Sed et facilisis leo. Class aptent taciti sociosqu.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 py-3">
+                        <div class="d-flex tp-editor-bg-color-n-shadow align-items-center border">
+                            <div class="p-4 me-3">
+                                <h2 class="text-o-color-1 mb-0"><b>$48.99</b></h2>
+                                <p>per month</p>
+                                <a href="#" class="btn btn-primary mt-2">Purchase</a>
+                            </div>
+                            <div class="p-4">
+                                <h5>Advanced Pass</h5>
+                                <p class="mb-0">
+                                    Vivamus at tempor arcu. Vestibulum fermentum facilisis dui, vitae iaculis purus accumsan quis. Quisque sit amet dignissim justo. Nullam ac sodales lorem, id volutpat arcu. Sed justo neque.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+</odoo>

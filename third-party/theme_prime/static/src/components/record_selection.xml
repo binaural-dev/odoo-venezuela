@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="tp_config_field_category" owl="1">
+        <span t-if="record.category_info" class="d-block tp-text-body text-truncate" style="max-width:110px;" t-esc="record.category_info.name"/>
+    </t>
+
+    <t t-name="tp_config_field_brand" owl="1">
+        <img class="tp-rounded-border border" style="height:45px;" t-attf-src="/web/image/product.attribute.value/#{record.brand_info.id}/dr_image"/>
+    </t>
+
+    <t t-name="tp_config_field_product_name" owl="1">
+        <t t-if="environmentModel == 'product.template'">
+            <span style="max-width:100px;" t-out="record.name" class="d-block small text-primary fw-light text-truncate"/>
+            <small class="tp-text-body" t-out="record.price"/>
+            <small class="text-danger ps-1" style="text-decoration: line-through; white-space: nowrap;" t-if="record.has_discounted_price" t-out="record.list_price"/>
+        </t>
+        <t t-if="environmentModel == 'product.public.category'">
+            <t t-set="CategoryData" t-value="this.getCategoryRecord(recordID)"/>
+            <h6 t-if="record.name" class="mb-1 fw-light d-block text-truncate text-primary"><t t-esc="record.name"/></h6>
+            <small class="tp-text-body fw-light"><t t-out="CategoryData.count"/> Products</small>
+        </t>
+        <t t-if="environmentModel == 'product.attribute.value'">
+            <h6 t-out="record.name" class="d-block tp-text-body fw-light text-truncate"/>
+        </t>
+    </t>
+
+    <t t-name="tp_config_field_product_stock_label" owl="1">
+        <span t-if="record.dr_show_out_of_stock == 'OUT_OF_STOCK'" class="badge-soft-danger px-2 mb-0 d-block text-center py-1 small w-100">
+            Out Of Stock
+        </span>
+        <span t-elif="record.dr_show_out_of_stock" class="badge-soft-warning px-2 mb-0 d-block text-center py-1 small w-100">
+            <t t-esc="record.dr_show_out_of_stock"/> Units Left
+        </span>
+        <span t-else=" " class="badge-soft-success px-2 mb-0 d-block text-center py-1 small w-100">
+            In stock
+        </span>
+    </t>
+
+    <t t-name="theme_prime.TpRecordSelector" owl="1">
+        <div class="tp-record-selector m-0">
+            <div t-if="SelectionMode === 'badge'" class="row g-0 mb-4">
+                <div class="col-12 tp-card-selector">
+                    <t t-component="getOWLComponent('TpSearchInput')" t-props="getSubComponent('TpSearchInput')"/>
+                </div>
+                <div class="col-12 py-2">
+                    <t t-foreach="recordsIDs" t-as="recordID" t-key="recordID + state.last_update">
+                        <t t-set="record" t-value="this.getRecord(this.records, recordID, 'id')"/>
+                        <span class="badge border me-2 p-0 mt-2">
+                            <span class="d-inline-block text-primary px-3 py-2" t-esc="record.name"/>
+                            <a class="d-inline-block text-primary p-2 border-start" href="#" t-on-click.prevent="() => this._onClickRemoveItem(record.id)">
+                                <i class="fa fa-times text-500"> </i>
+                            </a>
+                        </span>
+                    </t>
+                </div>
+            </div>
+            <t t-else=" ">
+                <div t-if="hasSwitcher" class="row g-0 mb-4 shadow-sm p-3 align-items-center tp-rounded-border" style="border: 1px dashed #ccc;">
+                    <div class="col-7 d-flex align-items-center">
+                        <h6 class="my-3 text-uppercase tp-text-body small">Records Selection Mode:</h6>
+                    </div>
+                    <div class="col-5">
+                        <t t-component="getOWLComponent('TpDropDown')" t-props="getSubComponent('selectionType')"/>
+                    </div>
+                </div>
+                <div t-attf-class="row g-0 #{componentDefaultVal.selectionType !== 'manual' ? 'd-none' : ' '}">
+                    <div class="col-12 my-3">
+                        <t t-component="getOWLComponent('TpSearchInput')" t-props="getSubComponent('TpSearchInput')"/>
+                    </div>
+                    <div t-if="recordsIDs.length == recordsLimit" class="col-12 my-2">
+                        <div class="alert font-weight-light alert-warning tp-warning-alert alert-dismissible p-2 mb-0 shadow-sm" role="alert">
+                            <i class="fa fa-exclamation-triangle pr-2"></i> You can select only <t t-out="recordsLimit"/> items.
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <table t-attf-class="table mb-0 bg-white p-0 shadow-sm border tp-rounded-border mt-3 #{!recordsIDs.length ? 'd-none' : ''}">
+                            <thead>
+                                <tr>
+                                    <th class="small tp-text-body text-center text-uppercase" scope="col">Image</th>
+                                    <t t-foreach="this.fields" t-as="field" t-key="field">
+                                        <th t-if="fieldsLabel[field]" class="small tp-text-body text-uppercase" scope="col"><t t-esc="fieldsLabel[field]"/></th>
+                                    </t>
+                                    <th class="small tp-text-body text-uppercase" scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody t-ref="tp-records-container" class="tp-selected-record-list">
+                                <t t-foreach="recordsIDs" t-as="recordID" t-key="recordID + state.last_update">
+                                    <t t-set="record" t-value="this.getRecord(this.records, recordID, 'id')"/>
+                                    <tr t-if="record" class="tp-record-item position-relative" t-att-data-record-id="record.id">
+                                        <td class="text-center position-relative">
+                                            <div class="tp-bg-soft-primary tp-sortable-handle h-100 justify-content-center d-flex align-items-center">
+                                                <span class="text-primary fa fa-ellipsis-v"></span>
+                                                <span style="padding-left:2px;" class="text-primary fa fa-ellipsis-v"></span>
+                                            </div>
+                                            <t t-if="environmentModel === 'product.attribute.value'">
+                                                <img style="max-height:60px;" t-attf-src="/web/image?model=#{environmentModel}&amp;id=#{record.id}&amp;field=dr_image" class="img me-auto tp-rounded-border"/>
+                                            </t>
+                                            <t t-else="">
+                                                <img t-if="record.img_small" t-att-src="record.img_small" class="img o_image_40_cover me-auto tp-rounded-border"/>
+                                                <img t-else=" " t-attf-src="/web/image?model=#{environmentModel}&amp;id=#{record.id}&amp;field=image_128" class="img o_image_40_cover me-auto tp-rounded-border"/>
+                                            </t>
+                                        </td>
+                                        <t t-foreach="this.fields" t-as="field" t-key="field">
+                                            <td t-if="fieldsLabel[field]" class="align-middle fw-light tp-text-body">
+                                                <t t-if="Object.keys(getFieldsTemplates).includes(field)">
+                                                    <t t-call="#{getFieldsTemplates[field]}"/>
+                                                </t>
+                                                <t t-else=" ">
+                                                    <span t-if="this.fieldsToMarkup.includes(field)" t-out="record[field]"/>
+                                                    <span t-else="" t-esc="record[field]"/>
+                                                </t>
+                                            </td>
+                                        </t>
+                                        <td class="align-middle">
+                                            <button t-on-click="() => this._onClickEditItem(record.id)" class="btn btn-sm btn-soft-primary rounded-circle me-2 p-2">
+                                                <t t-call="theme_prime.icon_pencil"><t t-set="hw" t-value="12"/></t>
+                                            </button>
+                                            <button t-on-click="() => this._onClickRemoveItem(record.id)" class="btn btn-sm btn-soft-danger rounded-circle me-2 p-2">
+                                                <t t-call="theme_prime.icon_trash"><t t-set="hw" t-value="12"/></t>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <tr>
+                                    <td colspan="4">
+                                        <button t-on-click="() => this._onClickClearItems()" class="btn btn-soft-danger d-block btn-sm rounded-circle me-2">
+                                            <i class="fa fa-trash-o pe-2"></i> Clear Selection
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="my-4 text-center p-3 tp-rounded-border" style="border: 1px dashed #dee2e6;" t-if="!recordsIDs.length">
+                            <img class="img img-fluid mx-auto" style="max-height:200px;" src="/theme_prime/static/src/img/search.png"/>
+                            <h6 class="mt-3 fw-light tp-text-body">Please search and add few records from the input.</h6>
+                            <h6 class="small fw-light tp-text-body-light">No records are selected</h6>
+                        </div>
+                    </div>
+                </div>
+                <div t-if="componentDefaultVal.selectionType === 'advance'">
+                    <t t-component="getOWLComponent('TpDomainComponent')" t-props="{... this.props.componentData.domain_params}"/>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,5 @@
+<?xml version="1.0" ?>
+<templates>
+    <div t-name="theme_prime.snippet_configurator_dialog">
+    </div>
+</templates>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="theme_prime.TpUiComponent" owl="1">
+        <div class="tp-ui-component m-0">
+            <div class="row g-0">
+                <div class="col-12">
+                    <h4 class="fw-light text-primary">Layout</h4>
+                    <small t-if="this.props.allData.isMobile &amp;&amp; !this.componentDefaultVal.mobileConfig" class="tp-text-body-light mb-3 d-block">No specific mobile configuration available for this snippet</small>
+                    <div class="row g-0">
+                        <t t-foreach="currentSubCoreComponents" t-as="component" t-key="component.name">
+                            <div t-attf-class="col-#{component.component === 'TpDropDown' ? '6' : '12' } #{this.props.allData.isMobile and component.name !== 'mobileConfig' ? 'd-none' : ''} #{!this.props.allData.isMobile and component.name === 'mobileConfig' ? 'd-none' : ''}">
+                                <t t-component="this.getOWLComponent(component.component)" t-props="component"/>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="theme_prime.TpCardGrid" owl="1">
+        <div t-if="state.records.length" class="h-100 mt-1" style="border-top: 1px dashed #caccd2;padding-top: 1.5rem;">
+            <h4 class="fw-light px-2 text-primary">Tabs Settings</h4>
+            <small class="px-2 tp-text-body mb-3 d-block">Apply different configuration to each category.</small>
+            <div class="row g-0">
+                <div class="col-12 mt-3">
+                    <t t-component="this.getOWLComponent('TpDropDown')" t-props="{...state, name:'categories', buttonClasses: 'w-100 btn-default bg-white d-flex align-items-center shadow-sm border p-2'}"/>
+                </div>
+            </div>
+            <div class="row g-0 my-3">
+                <t t-foreach="currentSubCoreComponents" t-as="component" t-key="component.name">
+                    <div class="col-6">
+                        <t t-component="this.getOWLComponent(component.component)" t-props="component"/>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="theme_prime.TpComponentGroup" owl="1">
+        <div class="h-100 mb-3">
+            <small class="tp-text-body-light mb-3 d-block">Apply different configuration for mobile.</small>
+            <div class="row g-0">
+                <t t-foreach="currentSubCoreComponents" t-as="component" t-key="component.name">
+                    <div class="col-6">
+                        <t t-component="this.getOWLComponent(component.component)" t-props="component"/>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>

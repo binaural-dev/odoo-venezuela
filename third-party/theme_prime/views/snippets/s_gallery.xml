@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_gallery_1" name="Gallery - 1">
+        <section class="s_gallery tp-image-gallery pt32 pb32">
+            <div class="container">
+                <div class="row">
+                    <t t-set="images" t-value="{'01': {'title': 'Branding', 'description': 'Curology Campaign'}, '02': {'title': 'Packaging', 'description': 'Honest Packaging'}, '03': {'title': 'Marketing', 'description': 'Larq Bright Campaign'}, '04': {'title': 'Ideation', 'description': 'Doodle Pads'}, '05': {'title': 'Branding', 'description': 'Larq Earthtones Collection'}, '06': {'title': 'Product design', 'description': 'Goby Brush Prototype'}}"/>
+                    <div t-foreach="images" t-as="img" class="col-12 col-sm-6 col-md-4 py-3">
+                        <div class="gallery-image gallery-zoom-in-effect rounded">
+                            <img class="img-fluid" t-attf-src="/web/image/theme_prime.s_gallery_#{img}" t-attf-title="Gallery Image #{img}" t-attf-alt="Gallery Image #{img}"/>
+                        </div>
+                        <div class="small mt-3"><t t-out="images[img]['title']"/></div>
+                        <h6 class="mt-1"><t t-out="images[img]['description']"/></h6>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_gallery_2" name="Gallery - 2">
+        <section class="s_gallery tp-image-gallery pt32 pb32">
+            <div class="container">
+                <div class="row s_col_no_bgcolor">
+                   <div t-foreach="list(range(1, 9))" t-as="number" class="col-6 col-md-4 col-lg-3 py-3">
+                        <t t-set="number" t-value="'%02d' % number"/>
+                        <div class="gallery-image gallery-zoom-in-effect rounded">
+                            <img class="img-fluid" t-attf-src="/web/image/theme_prime.s_gallery_#{number}" t-attf-title="Gallery Image #{number}" t-attf-alt="Gallery Image #{number}"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_gallery_3" name="Gallery - 3">
+        <section class="s_gallery tp-image-gallery">
+            <div class="container-fluid px-0">
+                <div class="row s_col_no_bgcolor g-0">
+                   <div t-foreach="list(range(1, 13))" t-as="number" class="col-6 col-sm-4 col-md-3 col-lg-2">
+                        <t t-set="number" t-value="'%02d' % number"/>
+                        <div class="gallery-image gallery-zoom-in-effect gallery-overlay-effect position-relative">
+                            <img class="img-fluid" t-attf-src="/web/image/theme_prime.s_gallery_#{number}" t-attf-title="Gallery Image #{number}" t-attf-alt="Gallery Image #{number}"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_gallery_4" name="Gallery - 4">
+        <section class="s_gallery tp-image-gallery">
+            <div class="container-fluid px-0">
+                <div class="row g-0">
+                   <div t-foreach="list(range(1, 7))" t-as="number" class="col-12 col-md-6 col-lg-4">
+                        <t t-set="number" t-value="'%02d' % number"/>
+                        <div class="gallery-image gallery-text-effect">
+                            <img class="img-fluid" t-attf-src="/web/image/theme_prime.s_gallery_#{number}" t-attf-alt="Gallery Image #{number}"/>
+                            <div class="text-center px-2 py-4 gallery-text-block">
+                                <div class="text-alpha">Fashion card <t t-out="number"/></div>
+                                <p class="mt-2 mb-0">Just adding some random string  heresit.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_gallery_5" name="Gallery - 5">
+        <section class="s_gallery tp-image-gallery pt32 pb32">
+            <div class="container">
+                <div class="row s_col_no_bgcolor">
+                    <div t-foreach="list(range(1, 13))" t-as="number" class="col-6 col-sm-4 col-md-3 col-lg-2 py-3">
+                        <t t-set="number" t-value="'%02d' % number"/>
+                        <div class="gallery-image gallery-zoom-out-effect">
+                            <img class="img-fluid" t-attf-src="/web/image/theme_prime.s_gallery_#{number}" t-attf-title="Gallery Image #{number}" t-attf-alt="Gallery Image #{number}"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_gallery_1_000_js" model="ir.asset">
+        <field name="name">Gallery 1 000 JS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_gallery_1/000.js</field>
+    </record>
+
+    <record id="theme_prime.s_gallery_1_000_scss" model="ir.asset">
+        <field name="name">Gallery 1 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_gallery_1/000.scss</field>
+    </record>
+
+</odoo>

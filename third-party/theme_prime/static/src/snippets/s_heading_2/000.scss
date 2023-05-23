@@ -1,0 +1,19 @@
+.s_heading_2 .tp-heading-container {
+    &.tp-line-bottom:after, &.tp-line-top:before {
+        content: '';
+        display: inline-block;
+        border-color: o-color('primary');
+        border-radius: 50%;
+        width: 1rem;
+    }
+    &.tp-line-bottom:after {
+        margin-top: 1rem;
+        border-top-width: 1rem;
+        border-top-style: solid;
+    }
+    &.tp-line-top:before {
+        margin-bottom: 1rem;
+        border-bottom-width: 1rem;
+        border-bottom-style: solid;
+    }
+}

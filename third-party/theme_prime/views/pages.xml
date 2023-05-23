@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+    ============================================================================
+    Brands
+    ============================================================================
+    -->
+    <template id="all_brands" name="Theme Prime: All Brands">
+        <t t-call="website.layout">
+            <div id="wrap" t-cache="search,brands">
+                <div class="container pt-4">
+                    <div class="row justify-content-between align-items-center">
+                        <div class="col-auto">
+                            <ol class="breadcrumb bg-transparent p-0">
+                                <li class="breadcrumb-item">
+                                    <a href="/">Home</a>
+                                </li>
+                                <li class="breadcrumb-item active">
+                                    <span>Brands</span>
+                                </li>
+                            </ol>
+                            <h1 class="h4">Brands</h1>
+                        </div>
+                        <div class="col-auto">
+                            <form class="mw-100" action="/shop/all-brands" method="get">
+                                <div class="input-group">
+                                    <input type="text" name="search" class="form-control" placeholder="Search brands..." t-att-value="search"/>
+                                    <input type="hidden" t-if="posted_style" name="style" t-att-value="style"/>
+                                    <button class="btn btn-primary" type="submit" id="search"><i class="dri dri-search"/></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <hr/>
+                </div>
+                <div class="oe_structure" id="oe_structure_all_brands"/>
+                <div class="container py-4 tp-all-brands-page">
+                    <div t-if="not is_disable_grouping" class="row pb-4 mb-3">
+                        <div class="col-12">
+                            <ul class="tp-brand-range list-unstyled d-flex flex-nowrap overflow-auto mb-0">
+                                <li>
+                                    <a href="#" data-alphabet="all" class="tp-brand-search-alphabet active d-flex justify-content-center fw-bold text-uppercase border align-items-center">
+                                        All
+                                    </a>
+                                </li>
+                                <li t-foreach="grouped_brands" t-as="alphabet">
+                                    <a t-if="len(grouped_brands[alphabet])" href="#" t-att-data-alphabet="alphabet" class="tp-brand-search-alphabet d-flex justify-content-center fw-bold text-uppercase border align-items-center">
+                                        <t t-out="alphabet"/>
+                                    </a>
+                                    <a t-else="" href="#" class="tp-brand-search-alphabet d-flex justify-content-center fw-bold text-uppercase border align-items-center readonly">
+                                        <t t-out="alphabet"/>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div t-if="len(grouped_brands[alphabet])" class="col-12 tp-grouped-brands" t-foreach="grouped_brands" t-as="alphabet" t-att-data-brand="alphabet">
+                            <h3 t-if="not is_disable_grouping" class="mb-0 fw-bold" t-out="alphabet"/>
+                            <hr t-if="not is_disable_grouping"/>
+                            <div class="row mb-4">
+                                <div class="col-12 col-md-6 col-lg-4 col-xl-3 my-2" t-foreach="grouped_brands[alphabet]" t-as="brand">
+                                    <a class="tp-brand-wrapper d-block border" t-attf-href="/shop?attrib=#{brand.attribute_id.id}-#{brand.id}">
+                                        <div class="row g-0">
+                                            <div class="col-5 border-end p-2 d-flex align-items-center justify-content-center">
+                                                <img class="img img-fluid" t-attf-src="/web/image/product.attribute.value/#{brand.id}/dr_image" t-att-alt="brand.name"/>
+                                            </div>
+                                            <div class="col-5 ps-3 py-4 d-flex align-items-start justify-content-center flex-column">
+                                                <h6 t-field="brand.name" class="w-100 text-truncate"></h6>
+                                                <div class="small text-body"><t t-out="get_brand_count.get(brand.id) or 0"/> Products</div>
+                                            </div>
+                                            <div class="col-2 d-flex align-items-center justify-content-center">
+                                                <button class="btn btn-primary-soft btn-sm px-2 rounded-circle">
+                                                    <i class="dri dri-chevron-right-l fw-bold"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!--
+    ============================================================================
+    PWA Offline
+    ============================================================================
+    -->
+    <template id="pwa_offline_page" name="Theme Prime: PWA - Offline Page">
+        <html>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+            <head>
+                <style>
+                    body {
+                       font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif;
+                        color: #3f3d56;
+                    }
+                    h1, h2 {
+                        margin-top: 0px;
+                    }
+                    div.tp-container {
+                        text-align: center;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        height: 100%;
+                    }
+                    .tp-logo img {
+                        max-width: 150px;
+                        height: auto;
+                    }
+                    .tp-offline-icon {
+                        width: 60%;
+                        max-width: 350px;
+                        margin: 25px 0px;
+                    }
+                    a.btn {
+                        padding: 12px 26px;
+                        color: #fff;
+                        background: #3f3d56;
+                        text-decoration: none;
+                        font-weight: bold;
+                        display: inline-block;
+
+                    }
+                </style>
+            </head>
+            <body >
+                <div class="tp-container">
+                    <div class="tp-logo">
+                        <img src="/pwa/logo.png"/>
+                    </div>
+                    <div>
+                        <img class="tp-offline-icon" src='/theme_prime/static/src/img/pwa_offline.png' style=""/>
+                    </div>
+                    <h1>
+                        You do not have internet connection !
+                    </h1>
+                    <div>
+                        <a class="btn" href="#" onclick="window.location.reload(true);"> RELOAD </a>
+                    </div>
+                </div>
+            </body>
+        </html>
+    </template>
+
+</odoo>

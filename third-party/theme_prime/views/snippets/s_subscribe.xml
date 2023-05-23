@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_subscribe_1" name="Subscribe - 1">
+        <section class="s_subscribe_1 pt32 pb32">
+            <div class="container">
+                <div class="row s_col_no_bgcolor justify-content-center s_nb_column_fixed">
+                    <div class="col-12 text-center">
+                        <h3>Subscribe</h3>
+                    </div>
+                    <div class="col-lg-5 mt-4">
+                        <div class="s_newsletter_list js_subscribe" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                            <div class="input-group input-group-lg shadow-lg">
+                                <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                <a role="button" href="#" class="btn btn-primary js_subscribe_btn o_submit"><i class="fa fa-send-o"/></a>
+                                <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none o_submit" disabled="disabled">Thanks</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 mt48">
+                        <div class="s_social_media text-center" data-snippet="s_social_media" data-name="Social Media">
+                            <small class="s_social_media_title text-muted d-none"><b>Follow us</b></small>
+                            <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                <i class="fa fa-facebook m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                <i class="fa fa-twitter m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                <i class="fa fa-linkedin m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                <i class="fa fa-github m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                <i class="fa fa-youtube m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                <i class="fa fa-instagram m-1 rounded-circle shadow-sm"/>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_subscribe_2" name="Subscribe - 2">
+        <section class="s_subscribe_2 pt32 pb32">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-md-8 align-self-center">
+                        <h3 class="mb-0">Subscribe to our weekly newsletter</h3>
+                    </div>
+                    <div class="col-md-4 align-self-center">
+                        <div class="s_newsletter_list js_subscribe" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                            <div class="input-group">
+                                <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                <a role="button" href="#" class="btn btn-primary js_subscribe_btn o_submit">Subscribe</a>
+                                <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none o_submit" disabled="disabled">Thanks</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_subscribe_3" name="Subscribe - 3">
+        <section class="s_subscribe_3 pt32 pb32">
+            <div class="container">
+                <div class="row s_col_no_bgcolor text-center s_nb_column_fixed">
+                    <div class="col-12">
+                        <h3>Join Our Newsletter Now</h3>
+                        <p>Sign up for all the news about our latest arrivals and get an exclusive early access shopping.</p>
+                        <div class="s_newsletter_list js_subscribe my-3 mx-auto" style="max-width:400px;" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                            <div class="input-group">
+                                <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                <a role="button" href="#" class="btn btn-primary js_subscribe_btn o_submit"><i class="fa fa-send-o"/></a>
+                                <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none o_submit" disabled="disabled">Thanks</a>
+                            </div>
+                        </div>
+                        <div class="my-3">OR</div>
+                        <div class="s_social_media text-center" data-snippet="s_social_media" data-name="Social Media">
+                            <div class="s_social_media_title d-block">
+                                <h3>Follow Us</h3>
+                                <p>Be the first to find out all the latest news, products and trends.</p>
+                            </div>
+                            <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                <i class="fa fa-facebook m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                <i class="fa fa-twitter m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                <i class="fa fa-linkedin m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                <i class="fa fa-github m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                <i class="fa fa-youtube m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                <i class="fa fa-instagram m-1 rounded-circle shadow-sm"/>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_subscribe_4" name="Subscribe - 4">
+        <section class="s_subscribe_4">
+            <div class="container-fluid px-0">
+                <div class="row g-0 s_nb_column_fixed align-items-center text-center">
+                    <div class="col-lg-6">
+                        <img src="/web/image/theme_prime.s_subscribe_4_1" class="img img-fluid" alt="Subscribe Image 01"/>
+                    </div>
+                    <div class="col-lg-4 offset-lg-1 p-4">
+                        <h4>Join Our Mailing List</h4>
+                        <p>Don't miss out. Stay Informed! Monthly Tips, Tracks, and Discounts.</p>
+                        <div class="s_newsletter_list js_subscribe" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                            <div class="input-group">
+                                <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                <a role="button" href="#" class="btn btn-primary js_subscribe_btn o_submit">Subscribe</a>
+                                <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none o_submit" disabled="disabled">Thanks</a>
+                            </div>
+                        </div>
+                        <div class="s_social_media text-center mt-4" data-snippet="s_social_media" data-name="Social Media">
+                            <small class="s_social_media_title text-muted d-none"><b>Follow us</b></small>
+                            <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                <i class="fa fa-facebook m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                <i class="fa fa-twitter m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                <i class="fa fa-linkedin m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                <i class="fa fa-github m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                <i class="fa fa-youtube m-1 rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                <i class="fa fa-instagram m-1 rounded-circle shadow-sm"/>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+</odoo>
