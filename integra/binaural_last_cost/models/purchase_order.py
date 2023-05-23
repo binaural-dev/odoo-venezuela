@@ -17,8 +17,7 @@ class PurchaseOrder(models.Model):
 
         for line in self._get_lines_with_updatable_latest_standard_price():
             product = line.product_id
-            
-            latest_standard_price = line.last_latest_standard_price
+            latest_standard_price = line.latest_standard_price
             price_unit = line.price_unit
             
             product.last_latest_standard_price = latest_standard_price
