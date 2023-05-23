@@ -43,6 +43,20 @@
     />
 
     <menuitem
+	id="menu_action_account_report_financial_situation_statement"
+	name="Financial situation statement"
+	action="action_account_report_fs"
+	parent="account.account_reports_legal_statements_menu"
+    />
+
+    <menuitem
+	id="menu_action_account_report_financial_situation_statement_usd"
+	name="Financial situation statement USD"
+	action="action_account_report_fs_usd"
+	parent="account.account_reports_legal_statements_menu"
+    />
+
+    <menuitem
         id="menu_action_account_report_general_ledger_usd"
         name="General Ledger USD"
         action="action_account_report_general_ledger_usd"
