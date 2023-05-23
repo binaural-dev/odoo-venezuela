@@ -24,7 +24,7 @@ Modulo | Descripción
  - [Tutorial de módulos con Python](doc/readme.md)
  - [Tutorial de módulos con Javascript](doc/readme.md)
  - [Estándares de codigo](doc/code-standard.md)
- - [Estándares de Git](doc/readme.md)
+ - [Estándares de Git](doc/git-standard.md)
  - [Testing](doc/readme.md)
 
 [//]: # (end getting-started)
