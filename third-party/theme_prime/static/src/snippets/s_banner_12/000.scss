@@ -1,0 +1,12 @@
+.s_banner_12 {
+    img {
+        min-height: 16rem;
+        object-fit: cover;
+    }
+    .tp-banner-content {
+        @include o-position-absolute($top: 50%, $left: 15%);
+        transform: translate(-15% , -50%);
+        -webkit-transform: translate(-15%, -50%);
+        z-index: 2;
+    }
+}

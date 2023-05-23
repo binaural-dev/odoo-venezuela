@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="meli_category_search_view" model="ir.ui.view">
+            <field name="name">mercadolibre.category.search</field>
+            <field name="model">mercadolibre.category</field>
+            <field name="arch" type="xml">
+               <search string="Search MercadoLibre Categories Information">
+                 <field name="name" string="Name"/>
+                 <field name="meli_category_id" string="Mercadolibre ID"/>
+                 <field name="public_category" string="Ecommerce Category"/>
+                 <field name="meli_father_category_id" string="Mercadolibre Father ID"/>
+               </search>
+            </field>
+        </record>
+
+        <record id="view_meli_category_import" model="ir.ui.view">
+              <field name="name">mercadolibre.category.import.form</field>
+              <field name="model">mercadolibre.category.import</field>
+              <field name="type">form</field>
+              <field name="arch" type="xml">
+                <form string="Importar categoria desde Mercado Libre">
+                    <group string="Opciones de publicación" col="2">
+                      <group>
+                        <field name="meli_category_id"/>
+                        <field name="meli_recursive_import"/>
+                      </group>
+                    </group>
+                    <footer>
+                        <button name="meli_category_import" string="Importar" title="Importar desde Mercado Libre"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                    </footer>
+                </form>
+              </field>
+        </record>
+
+        <record id="action_mercadolibre_category_import" model="ir.actions.act_window">
+            <field name="name">Importar categoria de ML</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_model_id" ref="model_mercadolibre_category_import" />
+            <field name="res_model">mercadolibre.category.import</field>
+            <field name="binding_type">action</field>
+            <field name="binding_view_types">list,form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!--act_window id="action_mercadolibre_category_import"
+            name="Importar categoria de ML"
+            binding_model="mercadolibre.category"
+            res_model="mercadolibre.category.import"
+            binding_type="action"
+            binding_views="list,form"
+            view_mode="form"
+            target="new"/-->
+
+        <record model="ir.ui.view" id="view_meli_product_public_category_form_view">
+          <field name="name">mercadolibre.website.category.form</field>
+          <field name="model">product.public.category</field>
+          <field name="inherit_id" ref="website_sale.product_public_category_form_view" />
+          <field name="arch" type="xml">
+            <xpath expr="//field[@name='parent_id']" position="after">
+               <field name="mercadolibre_category"/>
+             </xpath>
+          </field>
+        </record>
+
+        <record model="ir.ui.view" id="view_meli_product_attribute_view">
+          <field name="name">mercadolibre.category.attribute.tree</field>
+          <field name="model">product.attribute</field>
+          <field name="inherit_id" ref="product.attribute_tree_view" />
+          <field name="arch" type="xml">
+            <!--<xpath expr="//field[@name='create_variant']" position="after">
+               <field name="meli_default_id_attribute"/>
+             </xpath>-->
+             <field name="create_variant" position="after">
+               <field name="meli_default_id_attribute"/>
+               <field name="meli_default_id_attribute_hidden"/>
+               <field name="meli_default_id_attribute_variation_attribute"/>
+             </field>
+          </field>
+        </record>
+
+        <record model="ir.ui.view" id="view_meli_category_tree">
+            <field name="name">mercadolibre.category.tree</field>
+            <field name="model">mercadolibre.category</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Categorías" >
+                    <field name="name"/>
+                    <field name="meli_category_id"/>
+                    <!--field name="meli_category_attributes" widget="url"/-->
+                    <field name="public_category_id"/>
+                    <field name="public_category" string="Ecommerce Category"/>
+                    <field name="is_branch"/>
+                </tree>
+            </field>
+        </record>
+
+
+        <record model="ir.ui.view" id="view_meli_category_form">
+            <field name="name">mercadolibre.category.form</field>
+            <field name="model">mercadolibre.category</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+              <form string="Category">
+                <div class="oe_button_box">
+                  <button type="action" name="%(action_mercadolibre_category_import)d"
+                    string="Importar"
+                    title="Importar"
+                    class="oe_stat_button"
+                    icon="fa-cloud-download"></button>
+                    <button type="object" name="get_attributes"
+                      string="Importar atributos"
+                      title="Importar atributos"
+                      class="oe_stat_button"
+                      icon="fa-cloud-download"></button>
+                  <button type="object" name="action_import_father_category"
+                    string="Importar Padre"
+                    title="Importar Padre"
+                    class="oe_stat_button"
+                    icon="fa-cloud-download"></button>
+                </div>
+                <group>
+                    <group>
+                      <field name="name"/>
+                      <field name="is_branch"/>
+                      <field name="meli_category_id"/>
+                      <field name="meli_category_url" widget="url"/>
+                      <field name="public_category_id"/>
+                      <field name="public_category" string="Ecommerce Category"/>
+                      <field name="public_categories" string="Ecommerce Categories"/>
+                      <separator name="Settings" />
+                      <field name="meli_category_settings"/>
+                      <field name="meli_setting_minimum_price"/>
+                      <field name="meli_setting_maximum_price"/>
+                    </group>
+                    <group>
+                      <field name="meli_father_category_id"/>
+                      <field name="meli_father_category"/>
+                    </group>
+                </group>
+                <field name="meli_category_attributes" widget="url"/>
+                <field name="meli_category_attribute_ids">
+                  <tree delete="0">
+                    <field name="name"/>
+                    <field name="att_id"/>
+                    <field name="required"/>
+                    <field name="value_type" optional="hide"/>
+                    <field name="hidden" optional="hide"/>
+                    <field name="variation_attribute"/>
+                  </tree>
+                </field>
+              </form>
+            </field>
+        </record>
+
+
+        <record model="ir.actions.act_window" id="action_meli_categories_tree">
+            <field name="name">Categorías</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">mercadolibre.category</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <menuitem id="menu_meli_categories"
+            action="action_meli_categories_tree"
+            parent="menu_meli"
+            name="Categorías" />
+
+    </data>
+</odoo>

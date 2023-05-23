@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_call_to_action_1" name="Call To Action - 1">
+        <section class="s_call_to_action_1 pt56 pb56">
+            <div class="container">
+                <div class="row align-items-center s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-lg-9">
+                        <h2>Order now and get <span class="text-o-color-1">15% OFF</span></h2>
+                        <p class="lead mb-0">We are the creative team of theme prime. No one actually read this so let me write any thing here.</p>
+                    </div>
+                    <div class="col-12 col-lg-3 text-lg-end">
+                        <a href="#" class="btn btn-primary mt-3 mt-lg-0">Shop Now</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_call_to_action_2" name="Call To Action - 2">
+        <section class="s_call_to_action_2 pt56 pb56">
+            <div class="container">
+                <div class="row align-items-center s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-lg-9">
+                        <h4>Contact us at <a href="mailto:info@droggol.com">info@droggol.com</a> or give us a call <a href="tel:+91 70466 01320">+91 70466 01320</a></h4>
+                        <p class="lead mb-0">We are the creative team of theme prime. No one actually read this so let me write any thing here until the content is long enough.</p>
+                    </div>
+                    <div class="col-12 col-lg-3 text-lg-end">
+                        <a href="#" class="btn btn-primary mt-3 mt-lg-0">Purchase Now</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_call_to_action_3" name="Call To Action - 3">
+        <section class="s_call_to_action_3 pt56 pb56">
+            <div class="container">
+                <div class="row align-items-center s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 text-center">
+                        <h2>Hire Us!</h2>
+                        <p class="lead">We are the creative team of theme prime. No one actually read this so let me write any thing here until the content is long enough to break this lines in to multiple lines so this block looks nice and cool. We are creative team but paragraph in not so long so writing again.</p>
+                    </div>
+                    <div class="col-12 text-center">
+                        <a href="#" class="btn btn-primary">Get in touch</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_call_to_action_4" name="Call To Action - 4">
+        <section class="s_call_to_action_4 pt32 pb32 o_cc o_cc2">
+            <div class="container">
+                <div class="row justify-content-center align-items-center text-center text-md-start s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-md-auto">
+                        <p class="lead mb-2 mb-md-0">We offer best in class service for your needs</p>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <a href="/shop" class="btn btn-primary">Order Now</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_call_to_action_5" name="Call To Action - 5">
+        <section class="s_call_to_action_5 pt56 pb56">
+           <div class="container">
+                <div class="row align-items-center s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-lg-3 mb-3 mb-lg-0">
+                        <img class="img-fluid" src="/web/image/theme_prime.s_call_to_action_5_1" alt="CTA Image 01"/>
+                    </div>
+                    <div class="col-lg-7">
+                        <h2>Need to do calculations?</h2>
+                        <p class="lead">We are the creative team of theme prime. No one actually read this so let me write any thing here until the content is long enough to break this lines in to multiple lines.</p>
+                    </div>
+                    <div class="col-lg-2">
+                      <a class="btn btn-primary" href="/shop">Order Now</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+</odoo>

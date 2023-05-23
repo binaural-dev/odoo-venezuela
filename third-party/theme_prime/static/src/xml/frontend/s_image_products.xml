@@ -1,0 +1,49 @@
+<?xml version="1.0" ?>
+<templates>
+
+    <t t-name="s_d_image_products_block_tmpl">
+        <t t-if="data.length">
+            <div class="owl-carousel droggol_product_slider_top">
+                <t t-foreach="data" t-as="products">
+                    <div class="row g-0">
+                        <t t-foreach="products" t-as="item">
+                            <div class="col-lg-4 col-6 mt-2 px-2">
+                                <div class="card border p-1 mb-2" style="border-radius:4px;">
+                                    <div class="row g-0">
+                                        <div class="col-md-4">
+                                            <div class="d-flex align-items-center h-100 w-100 justify-content-center">
+                                                <img loading="lazy" t-att-src="item.img_medium" class="card-img d_product_img"/>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8 ps-2">
+                                            <div class="card-body p-1">
+                                                <a t-if="item.category_info" class="text-decoration-none" t-att-href="item.category_info.website_url">
+                                                    <small class="dr_category_lable" t-esc="item.category_info.name"/>
+                                                </a>
+                                                <t t-else="">
+                                                    <br/>
+                                                </t>
+                                                <h6 class="card-title mt-1 mb-2 text-truncate fw-light d-product-name">
+                                                    <a t-att-href="item.website_url">
+                                                        <t t-out="item.name"/>
+                                                    </a>
+                                                </h6>
+                                                <div t-if="widget.shopConfig.is_rating_active &amp;&amp; item.rating_avg" class="d-star-rating mb-2 d-none d-md-block">
+                                                    <t t-raw="item.rating"/>
+                                                </div>
+                                                <t t-call="tp-snippet-product-price"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </div>
+        </t>
+        <t t-elif="widget.noDataTemplate">
+            <t t-call="#{widget.noDataTemplate}"></t>
+        </t>
+    </t>
+</templates>

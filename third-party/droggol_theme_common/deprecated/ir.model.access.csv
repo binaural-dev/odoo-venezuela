@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_dr_product_brand_manager,dr.product.brand.manager,model_dr_product_brand,sales_team.group_sale_manager,1,1,1,1
+access_dr_product_tabs_manager,dr.product.tabs.manager,model_dr_product_tabs,sales_team.group_sale_manager,1,1,1,1
+access_dr_product_tabs_public,dr.product.tabs.public,model_dr_product_tabs,,1,0,0,0
+access_dr_product_offer_manager,dr.product.offer.manager,model_dr_product_offer,sales_team.group_sale_manager,1,1,1,1
+access_dr_product_offer_public,dr.product.offer.public,model_dr_product_offer,,1,0,0,0
+access_dr_product_tags_manager,dr.product.tags.manager,model_dr_product_tags,sales_team.group_sale_manager,1,1,1,1
+access_dr_product_tags_public,dr.product.tags.public,model_dr_product_tags,,1,0,0,0
