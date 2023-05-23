@@ -1,0 +1,38 @@
+{
+	"name": "Integra Dev Container" ,
+	"dockerComposeFile": [
+		"../docker-compose.yml"
+	],
+	"remoteUser": "root",
+	"service": "odoo",
+	"workspaceFolder": "/mnt",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"python.defaultInterpreterPath": "/usr/bin/python3",
+				"python.autoComplete.extraPaths": [
+					// "${workspaceFolder}/custom-addons",
+					"${workspaceFolder}/extra-addons",
+					"${workspaceFolder}/integra-addons",
+					"${workspaceFolder}/third-party-addons"
+				]
+			},
+			"extensions": [
+				// ---------- Python Base Extensions ----------
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				// ----------  Python Code Quality Extensions ----------
+				"njpwerner.autodocstring",
+				"ms-python.black-formatter",
+				"ms-python.isort",
+				// ---------- Odoo Related Extensions ----------
+				"jigar-patel.OdooSnippets",
+				"janisdd.vscode-edit-csv",
+				"mechatroner.rainbow-csv",
+				"redhat.vscode-yaml",
+				"redhat.vscode-xml"
+				// ---------- Personal Extensions ----------
+			]
+		}
+	}
+}

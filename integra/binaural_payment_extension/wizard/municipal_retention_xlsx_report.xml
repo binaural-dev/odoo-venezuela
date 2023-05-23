@@ -14,7 +14,7 @@
                 </sheet>
                 <footer>
                     <div style="display: flex; justify-content: center">
-                        <button name="print_xlsx" type="object" string="Descargar Excel de impuesto fiscal" class="btn btn-primary" />
+                        <button name="print_xlsx" type="object" string="Download fiscal tax XLSX" class="btn btn-primary" />
                     </div>
                 </footer>
             </form>
@@ -27,14 +27,4 @@
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
-
-
-    <menuitem
-	id="municipal_supplier_retention_report_menu"
-	action="municipal_supplier_retention_report_action"
-	parent="binaural_payment_extension.seniat_reports"
-	sequence="1"
-	name="Municipal supplier retention report"
-    />
-
 </odoo>

@@ -13,14 +13,14 @@ class AccountRetention(models.Model):
 
     company_currency_id = fields.Many2one(
         "res.currency",
-        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_id.id,
     )
     foreign_currency_id = fields.Many2one(
         "res.currency",
-        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_foreign_id.id,
     )
     base_currency_is_vef = fields.Boolean(
-        compute="_compute_currency_fields",
+        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
     )
 
     company_id = fields.Many2one(
@@ -150,14 +150,6 @@ class AccountRetention(models.Model):
             " that the one that just has been deleted."
         )
     )
-
-    def _compute_currency_fields(self):
-        for retention in self:
-            retention.company_currency_id = self.env.company.currency_id.id
-            retention.foreign_currency_id = self.env.company.currency_foreign_id.id
-            retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
-                "base.VEF"
-            )
 
     @api.depends("type", "partner_id")
     def _compute_allowed_lines_move_ids(self):
@@ -448,6 +440,7 @@ class AccountRetention(models.Model):
         self, payment_vals, account_retention_line_empty_recordset
     ):
         Payment = self.env["account.payment"]
+        Rate = self.env["res.currency.rate"]
         payment_vals["partner_type"] = "supplier"
         payment_vals["journal_id"] = self.env.company.iva_supplier_retention_journal_id.id
         in_refund_lines = self.retention_line_ids.filtered(
@@ -472,6 +465,9 @@ class AccountRetention(models.Model):
             payment_vals["payment_type"] = "inbound"
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
+            payment.update(
+                {"foreign_inverse_rate": Rate.compute_inverse_rate(payment.foreign_rate)}
+            )
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()
         for lines in in_invoices_dict.values():
@@ -481,6 +477,9 @@ class AccountRetention(models.Model):
             payment_vals["payment_type"] = "outbound"
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
+            payment.update(
+                {"foreign_inverse_rate": Rate.compute_inverse_rate(payment.foreign_rate)}
+            )
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()
 
@@ -488,6 +487,7 @@ class AccountRetention(models.Model):
         self, payment_vals, account_retention_line_empty_recordset
     ):
         Payment = self.env["account.payment"]
+        Rate = self.env["res.currency.rate"]
         payment_vals["partner_type"] = "customer"
         payment_vals["journal_id"] = self.env.company.iva_customer_retention_journal_id.id
         out_refund_lines = self.retention_line_ids.filtered(
@@ -512,6 +512,9 @@ class AccountRetention(models.Model):
             payment_vals["payment_type"] = "outbound"
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
+            payment.update(
+                {"foreign_inverse_rate": Rate.compute_inverse_rate(payment.foreign_rate)}
+            )
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()
         for lines in out_invoices_dict.values():
@@ -521,6 +524,9 @@ class AccountRetention(models.Model):
             payment_vals["payment_type"] = "inbound"
             payment_vals["foreign_rate"] = lines[0].foreign_currency_rate
             payment = Payment.create(payment_vals)
+            payment.update(
+                {"foreign_inverse_rate": Rate.compute_inverse_rate(payment.foreign_rate)}
+            )
             lines.write({"payment_id": payment.id})
             payment.compute_retention_amount_from_retention_lines()
 
@@ -673,6 +679,7 @@ class AccountRetention(models.Model):
                     "payment_method_id": self.env.ref(payment_method_ref).id,
                     "is_retention": True,
                     "foreign_rate": line.move_id.foreign_rate,
+                    "foreign_inverse_rate": line.move_id.foreign_inverse_rate,
                     "retention_line_ids": line,
                     "currency_id": self.env.user.company_id.currency_id.id,
                 }

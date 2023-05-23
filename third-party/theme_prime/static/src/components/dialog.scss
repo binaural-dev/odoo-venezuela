@@ -1,0 +1,300 @@
+$tp-dialog-light-bg: #f2f7ff;
+$tp-config-color-pack: (
+    'primary': #0080FF,
+    'danger': #FF5C75,
+    'warning': #FFAD0A,
+    'success': #28a745,
+    'default': #f7f8fb,
+);
+
+@mixin tp-config-mixin() {
+
+    @each $color-name,
+    $color-value in $tp-config-color-pack {
+        .text-#{$color-name} {
+            color: $color-value !important;
+        }
+        .bg-#{$color-name} {
+            background-color: $color-value  !important;
+            color: white !important;
+        }
+        .tp-bg-soft-#{$color-name} {
+            background-color: rgba($color-value, 0.1) !important;
+            color: $color-value  !important;
+        }
+        .btn-#{$color-name}, .badge-#{$color-name} {
+            background-color: $color-value  !important;
+            color: white !important;
+            box-shadow: 0 1px 8px rgba($color-value, 0.1) !important;
+            border: 0;
+            transition: background,background-color 0.8s;
+            border-radius: 5px !important;
+            &:hover {
+                background-color: darken($color-value, 10%) !important;
+                box-shadow: none;
+            }
+        }
+        .btn-soft-#{$color-name}, .badge-soft-#{$color-name} {
+            background-color: rgba($color-value, 0.1) !important;
+            color: $color-value  !important;
+            transition: background,background-color 0.8s;
+            border-radius: 5px !important;
+            cursor: pointer;
+        }
+    }
+    .btn-lg {
+        padding: 1rem 1.5rem 1rem 1.5rem !important;
+        font-size: 1.25rem !important;
+    }
+}
+
+.tp-snippet-config-dialog {
+    // Generic
+    @include tp-config-mixin();
+    .tp-rounded-circle {
+        height: 35px;
+        width: 35px;
+        line-height: 35px;
+        text-align: center;
+    }
+    .btn-primary, .bg-primary {
+        background: linear-gradient(to right top, #0080ff, #178aff, #2a94ff, #3c9dff, #4da6ff) !important;
+    }
+    .accordion-button:not(.btn) {
+        font-size: 1.30rem;
+        padding: 1.5rem 1rem !important;
+        background-color: white;
+        transition: all 0.8s;
+        &:not(.collapsed) {
+            color: #0080FF;
+            background-color: #f7f8fb;
+        }
+    }
+    .border, .border-start, .border-bottom, .border-end, .border-top {
+        border-color: #dee2e6 !important;
+    }
+    .btn-default {
+        color: #3b4a56 !important;
+        &:hover {
+            background-color: darken(#f7f8fb, 2%) !important;;
+            color: #3b4a56 !important;
+        }
+    }
+    .modal-dialog.modal-md {
+        max-width: 450px;
+        .tp_snippet_config_dialog {
+            border-radius: 20px;
+            overflow: hidden;
+        }
+    }
+    .modal-body {
+        padding-top: 0px !important;
+    }
+    .bg-white {
+        background-color: white !important;
+    }
+    .tp-light-bg {
+        background-color: #f7f8fb !important;
+    }
+    .form-check-input:checked {
+        background-color: #0080FF !important;
+        border-color: #0080FF !important;
+    }
+    .form-check:not(.form-switch) {
+        .form-check-input:checked {
+            border-radius: 2px !important;
+        }
+    }
+    .tp-text-body {
+        color: #4d5e80 !important;
+    }
+    .tp-text-body-light {
+        color: #c2c9d8 !important;
+    }
+    .tp-rounded-border {
+        border-radius: 5px !important;
+    }
+    .tp-dropdown-menu {
+        @include o-position-absolute($top: 45px, $left: 10px);
+        overflow: unset;
+        &.tp-rounded-border::after {
+            border-top: 1px solid $border-color;
+            border-left: 1px solid $border-color;
+        }
+        .dropdown-item {
+            background-color: rgba(242, 247, 255, 0.40);
+            &:focus,
+            &:hover {
+                background-color: darken(#f2f7ff, 2%) !important;
+            }
+        }
+        &::after {
+            content: ' ';
+            @include o-position-absolute($top: -7px, $left: 13px);
+            height: 13px;
+            width: 13px;
+            transform: rotate(45deg);
+            background-color: white;
+            z-index: 1;
+        }
+    }
+    .container {
+        max-width: 1400px;
+    }
+    button {
+        font-size: 90%;
+        padding: 12px 20px;
+        &.btn-sm {
+            font-size: 75%;
+            padding: 6px 10px;
+        }
+    }
+    .tp-cursor-pointer {
+        cursor: pointer !important;
+    }
+    // Preview frame
+    .tp_preview_window {
+        position: relative;
+        height: 100%;
+        transition: margin-right ease 400ms;
+        &.tp_mobile_mode {
+            .tp_preview_container {
+                position: relative;
+                left: 50%;
+                top: 470px;
+                height: 735px !important;
+                width: 362px;
+                transform: translate(-50%, -50%);
+                .tp-preview-iframe {
+                    position: absolute;
+                }
+            }
+            .tp_desktop_body {
+                display: none;
+            }
+            .tp_mobile_body {
+                @include o-position-absolute($top: -36px, $left: -20px);
+                pointer-events: none;
+                display: block;
+            }
+        }
+        .tp_preview_container {
+            transform: scale(0.8, 0.8);
+            transform-origin: left;
+            height: 580px;
+            width: 125%;
+        }
+        .tp_mobile_body {
+            display: none;
+        }
+    }
+    // Modal
+    .modal-fullscreen {
+        max-width: 1680px;
+        .modal-content {
+            height: 100%;
+            border-radius: 5px;
+            background-color: $tp-dialog-light-bg;
+            background-image: radial-gradient(#4d5e80 0.95px, $tp-dialog-light-bg 0.95px);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+        }
+    }
+    // Custom
+    .btn-sm.tp-switch-to-selector {
+        @include o-position-absolute($top: 15%, $left: 41%);
+    }
+    // Record Selection
+    .tp-record-selector {
+        .tp-ghost-sortable {
+            background-color: #e6f2ff;
+            & > * {
+                opacity: 0;
+            }
+        }
+        .tp-selected-record-list {
+            .tp-active-row {
+                background-color: #f3f9ff;
+                outline: 1px solid #0080ff;
+                border-radius: 5px;
+            }
+            .tp-record-item {
+                &:hover {
+                    .tp-sortable-handle {
+                        width: 15px;
+                        opacity: 1;
+                    }
+                }
+            }
+            .tp-sortable-handle {
+                @include o-position-absolute($top: 0px, $bottom: 0px, $left:0px);
+                cursor: ns-resize;
+                border-top-right-radius: 15px;
+                border-bottom-right-radius: 15px;
+            }
+            .tp-sortable-handle {
+                transition: all 0.4s;
+                -webkit-transition: all 0.4s;
+                width: 0px;
+                opacity: 0;
+                z-index: 10;
+            }
+        }
+    }
+    // Search Input
+    .tp-search-dropdown {
+        .tp-search-input {
+            padding: 12px 30px;
+            &:disabled {
+                opacity: 0.7;
+            }
+        }
+        .tp-search-icon {
+            @include o-position-absolute($top: 0.7rem, $left: 0.4rem);
+            background-color: transparent;
+        }
+    }
+    .tp-range-input {
+        -webkit-appearance: none;
+        background-color: #dbdee6;
+        border-radius: 5px;
+        height: 3px;
+        &::-webkit-slider-runnable-track {
+            height: 15px;
+            -webkit-appearance: none;
+            color: #dbdee6;
+            // margin-top: -1px;
+        }
+        &::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #0080FF;
+            cursor: pointer;
+            border: 2px solid #cce6ff;
+        }
+    }
+    .tp-domain-builder-container {
+        .tp-domain-action-btn-block {
+            @include o-position-absolute($top: 0px, $right: 0px);
+        }
+        .tp-domain-operator {
+            .tp-rounded-circle {
+                @include o-position-absolute($top: 21%, $right: -9%);
+            }
+        }
+    }
+}
+
+
+// TODO: improve this (ask KIG)
+.tp-card-selector {
+    .tp-search-input{
+        padding: 6px 26px !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    .tp-search-icon {
+        top: 0.3rem !important;
+    }
+}

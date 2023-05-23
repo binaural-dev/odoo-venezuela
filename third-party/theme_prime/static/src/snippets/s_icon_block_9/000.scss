@@ -1,0 +1,6 @@
+@include media-breakpoint-up(md) {
+    .s_icon_block_9 .tp-icon-block:not(:last-child) {
+        border-right: 1px solid $border-color;
+        border-color: $border-color;
+    }
+}

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_shop_offer_1" name="Shop Offer - 1">
+        <section class="s_shop_offer_1 parallax s_parallax_is_fixed pt120 pb120 s_parallax_no_overflow_hidden oe_img_bg o_bg_img_center" data-scroll-background-ratio="0" data-snippet="s_shop_offer_1" data-name="Shop Offer - 1" style="background-image: url('/web/image/theme_prime.s_shop_offer_1_1'); background-position: 50% 0;">
+            <div class="container">
+                <div class="row s_nb_column_fixed">
+                    <div class="col-12 text-center">
+                        <h5>Up to <span class="text-o-color-1">20%</span> off</h5>
+                        <h3>Winter Collection</h3>
+                        <a href="#" class="btn btn-primary mt-4">Shop Now</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_shop_offer_2" name="Shop Offer - 2">
+        <section class="s_shop_offer_2 pt16 pb16">
+            <div class="container">
+                <div class="row s_nb_column_fixed">
+                    <div class="col-12 py-2">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-rocket fa-2x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Free Delivery</h6>
+                                <p class="mb-0">Within 48 hours get free delivery</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 py-2">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-refresh fa-2x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">30 Days Return</h6>
+                                <p class="mb-0">Get 30-day money-back guarantee</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 py-2">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-thumbs-up fa-2x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Quality Product</h6>
+                                <p class="mb-0">Receive 100% genuine products</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_shop_offer_3" name="Shop Offer - 3">
+        <section class="s_shop_offer_3">
+            <div class="container">
+                <div class="row g-0 s_nb_column_fixed">
+                    <div class="col-12">
+                        <img class="img img-fluid" src="/web/image/theme_prime.s_shop_offer_3_1" alt="Shop Offer Image 01"/>
+                        <a href="/shop" class="btn btn-primary w-100">Get it Now</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_shop_offer_4" name="Shop Offer - 4">
+        <section class="s_shop_offer_4">
+            <div class="container">
+                <div class="row g-0 s_nb_column_fixed">
+                    <div class="col-12">
+                        <div class="position-relative">
+                            <img src="/web/image/theme_prime.s_shop_offer_4_1" class="img img-fluid" alt="Shop Offer Image 01"/>
+                            <div class="tp-banner-text text-center w-100">
+                                <h2>Newly Launched</h2>
+                                <h5>Limited Collection</h5>
+                                <div class="s_btn pt16" data-name="Buttons">
+                                    <a href="/shop" class="btn btn-primary">Shop Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_shop_offer_5" name="Shop Offer - 5">
+        <section class="s_shop_offer_5">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 pt32 pb32">
+                        <i class="fa fa-thumbs-up bg-o-color-1 rounded-circle shadow mx-auto d-block fa-2x"/>
+                        <h5 class="mt-4" style="text-align: center;">Best Quality</h5>
+                        <p class="mb-0" style="text-align: center;">Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_shop_offer_4_000_scss" model="ir.asset">
+        <field name="name">Shop Offer 4 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_shop_offer_4/000.scss</field>
+    </record>
+
+</odoo>
