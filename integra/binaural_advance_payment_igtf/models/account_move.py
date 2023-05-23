@@ -88,11 +88,15 @@ class AccountMoveAdvanceIgtf(models.Model):
                     amount_filtered = move.line_ids.filtered(
                         lambda line: line.account_id.account_type == "asset_receivable"
                     ).amount_currency
-
+                    
                     amount_currency_igtf = amount_filtered * (move.igtf_percentage / 100)
                     amount_currency = amount_filtered + amount_currency_igtf
                     amount = amount_filtered
                     amount_currency_with_igtf = amount_currency_igtf
+
+                    #Set the IGTF Value
+                    move.bi_igtf = amount_filtered
+
 
             else:
                 amount_filtered = -lines_id["amount_residual"]

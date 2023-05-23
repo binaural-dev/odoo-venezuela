@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_tp_countdown" name="Countdown">
+        <div class="tp-countdown tp-editor-inner-snippet style-1 position-left tp-dark pt16 pb8" t-att-data-due-date="datetime.datetime.now().timestamp() + 228307" data-countdown-style="s_countdown_1">
+            <div class="container tp-countdown-wrapper">
+                <div class="row pt16 tp-end-msg-container css_non_editable_mode_hidden s_nb_column_fixed">
+                    <div class="col-12">
+                        <div class="text-center alert alert-info css_non_editable_mode_hidden o_not_editable" t-ignore="True" role="status">
+                            The following message will become visible <strong>only</strong> once the countdown ends.
+                        </div>
+                        <div class="oe_structure">
+                            <section class="s_picture">
+                                <div class="container">
+                                    <div class="row s_nb_column_fixed">
+                                        <div class="col-12">
+                                            <h2>Happy Shopping!</h2>
+                                            <p>As promised, we will offer surprise coupon for our next sale.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="s_tp_countdown_options" inherit_id="website.snippet_options">
+        <xpath expr="." position="inside">
+            <div data-js="dr_countdown" data-selector=".tp-countdown">
+                <we-datetimepicker string="Due Date" data-select-data-attribute="" data-attribute-name="dueDate"/>
+                <we-select string="Style" data-attribute-name="countdownStyle">
+                    <we-button data-name="style-1" data-select-class="style-1" data-select-data-attribute="s_countdown_1">Style - 1</we-button>
+                    <we-button data-name="style-2" data-select-class="style-2" data-select-data-attribute="s_countdown_2">Style - 2</we-button>
+                    <we-button data-name="style-3" data-select-class="style-3" data-select-data-attribute="s_countdown_3">Style - 3</we-button>
+                    <we-button data-name="style-4" data-select-class="style-4" data-select-data-attribute="s_countdown_4">Style - 4</we-button>
+                </we-select>
+                <we-button-group string="Theme" class="ms-auto" data-dependencies="style-1, style-4">
+                    <we-button data-select-class="" title="None"><i class="fa fa-fw fa-ban"/></we-button>
+                    <we-button data-select-class="tp-light" title="Light"><i class="fa fa-fw fa-sun-o"/></we-button>
+                    <we-button data-select-class="tp-dark" title="Dark"><i class="fa fa-fw fa-moon-o"/></we-button>
+                </we-button-group>
+                <we-button-group string="Alignment" class="ms-auto" data-dependencies="style-2, style-3, style-4">
+                    <we-button data-select-class="position-left"><i class="fa fa-fw fa-align-left"/></we-button>
+                    <we-button data-select-class="position-center"><i class="fa fa-fw fa-align-center"/></we-button>
+                    <we-button data-select-class="position-right"><i class="fa fa-fw fa-align-right"/></we-button>
+                </we-button-group>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_tp_countdown_000_scss" model="ir.asset">
+        <field name="name">Tp Countdown 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_tp_countdown/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_tp_countdown_000_js" model="ir.asset">
+        <field name="name">Tp Countdown 000 JS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_tp_countdown/000.js</field>
+    </record>
+
+</odoo>

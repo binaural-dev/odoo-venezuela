@@ -32,6 +32,9 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         return json;
       }
       update_igtf() {
+        if (this.to_receipt){
+          return
+        }
         var rounding = this.pos.currency.rounding;
         const paymentlines = this.get_paymentlines();
 

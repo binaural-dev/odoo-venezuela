@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+<!-- Search Bar autocomplete item -->
+<div t-name="website.s_searchbar.autocomplete.droggol" class="o_dropdown_menu show w-100 p-0 dr_search_autocomplete">
+    <t t-set="result" t-value="widget.results"/>
+    <t t-if="fuzzySearch">
+        <span class="dropdown-item-text text-muted">No results found for '<t t-esc="search"/>'. Showing results for '<a href="#" class="s_searchbar_fuzzy_submit" t-esc="fuzzySearch"/>'.</span>
+    </t>
+    <t t-elif="!result.result_length">
+        <div class="text-center p-3">
+            <img class="img-fluid img mx-auto" style="max-width:300px;" src="/theme_prime/static/src/img/no_result.png"/>
+            <p class="dropdown-item-text mb-1 text-muted fw-bold">No results found for '<span class="text-primary" t-esc="search"/>'.</p>
+            <small class="d-block mb-3">Please try another search.</small>
+            <a t-attf-href="/shop" class="btn btn-primary-soft btn-sm"> See all products <span class="dri dri-chevron-right-l"></span></a>
+        </div>
+    </t>
+    <small t-if="result.categories.results_count" class="text-muted d-block pt-2 ps-2 pb-0"> <i class="fa fa-circle text-primary" style="transform: scale(0.6);"></i> Categories: </small>
+    <div class="mt-0 mb-2 mx-2" t-if="result.categories.results_count">
+        <!-- <small class="text-muted d-block">Categories:</small> -->
+        <a t-att-href="category['website_url']" t-foreach="result.categories.results" t-as="category" class="btn tp-category-pill btn-sm btn-default border me-2 mt-2" data-type="category">
+            <span class="tp-category-text d-inline-block" t-out="category.name"/>
+        </a>
+    </div>
+    <hr class="m-0" t-if="result.categories.results_count"/>
+    <small t-if="result.products.results_count or result.autocomplete.results_count" class="text-muted d-block pt-2 ps-2 pb-0"> <i class="fa fa-circle text-success" style="transform: scale(0.6);"></i> Your search: </small>
+    <t t-if="result.products.results_count">
+        <!-- <small class="text-muted d-block px-2 pt-2"> <i class="fa fa-circle text-success" style="transform: scale(0.6);"></i> Your search:</small> -->
+        <a t-foreach="result.products.results" t-as="product" t-att-href="product['website_url']" class="dropdown-item text-wrap px-2 dr_item" data-type="product">
+            <div class="d-flex align-items-center o_search_result_item p-2">
+                <div t-if="product['image_url']" class="flex-shrink-0 me-3">
+                    <img t-att-src="product['image_url']" class="o_image_40_cover"/>
+                </div>
+                <i t-else="" t-attf-class="o_image_40_cover text-center pt16 fa #{product['_fa']}" style="font-size: 34px;"/>
+                <div class="flex-grow-1 px-3">
+                    <t t-set="description" t-value="product['description']"/>
+                    <t t-set="extra_link" t-value="product['extra_link_url'] and product['extra_link']"/>
+                    <t t-set="extra_link_html" t-value="!product['extra_link_url'] and product['extra_link']"/>
+                    <div t-attf-class="h6 #{description ? '' : 'mb-0'}" t-out="product['name']"/>
+                    <!-- <p t-if="description" class="mb-0" t-out="description"/> -->
+                    <t t-if="extra_link or extra_link_html">
+                        <button t-if="extra_link" class="extra_link btn btn-link btn-sm" t-att-data-target="product['extra_link_url']" t-out="extra_link"/>
+                        <t t-if="extra_link_html" t-out="extra_link_html"/>
+                    </t>
+                </div>
+                <div t-if="!widget.isB2bActive" class="flex-shrink-0">
+                    <t t-if="product['detail_strike']">
+                        <span class="text-muted text-nowrap small" style="text-decoration: line-through;">
+                            <t t-out="product['detail_strike']"/>
+                        </span>
+                        <br/>
+                    </t>
+                    <b t-if="product['detail']" class="text-nowrap text-primary">
+                        <t t-out="product['detail']"/>
+                    </b>
+                    <t t-if="product['detail_extra']">
+                        <br/>
+                        <span class="text-nowrap" t-out="product['detail_extra']"/>
+                    </t>
+                </div>
+            </div>
+        </a>
+    </t>
+    <t t-if="result.autocomplete.results_count">
+        <a t-foreach="result.autocomplete.results" t-as="auto" t-att-href="auto['website_url']" class="dropdown-item text-wrap px-2 dr_item text-wrap" data-type="autocomplete">
+            <div class="d-flex align-items-center o_search_result_item p-2">
+                <i class="dri dri-search text-muted" style="margin: 5px;"></i> <div class="h6 m-0 ms-2" t-out="auto['name']"/>
+            </div>
+        </a>
+    </t>
+    <small t-if="result.suggestions.results_count" class="text-muted d-block pt-2 ps-2 pb-0 border-top"> <i class="fa fa-circle text-warning" style="transform: scale(0.6);"></i> Suggestions: </small>
+    <t t-if="result.suggestions.results_count">
+        <a t-foreach="result.suggestions.results" t-as="suggestion" t-att-href="suggestion['website_url']" class="dropdown-item text-wrap px-2 dr_item text-wrap" data-type="suggestion">
+            <div class="d-flex align-items-center o_search_result_item p-2">
+                <i class="dri dri-search text-muted" style="margin: 5px;"></i> <div class="h6 m-0 ms-2" t-out="suggestion['name']"/>
+            </div>
+        </a>
+    </t>
+    <a t-if="result.global_match" t-att-href="result.global_match['website_url']" class="dropdown-item dr_item p-3 text-wrap btn-block btn-primary-soft btn " data-type="autocomplete">
+        <div t-attf-class="h6 m-0" t-out="result.global_match['name']"/>
+    </a>
+</div>
+
+</templates>

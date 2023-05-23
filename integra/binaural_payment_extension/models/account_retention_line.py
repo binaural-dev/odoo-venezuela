@@ -31,6 +31,7 @@ class AccountRetentionLine(models.Model):
             ("in_debit", "In debit"),
         ],
     )
+    date_accounting = fields.Date(related="retention_id.date_accounting", store=True)
     aliquot = fields.Float(digits=(16, 2))
     amount_tax_ret = fields.Float(string="Retained tax", digits=(16, 2))
     base_ret = fields.Float("Retained base", digits=(16, 2))
@@ -379,3 +380,49 @@ class AccountRetentionLine(models.Model):
                         " the invoice."
                     )
                 )
+
+    def get_invoice_paid_amount_not_related_with_retentions(self):
+        """
+        Returns the amount paid on the invoice that is not related with the retentions for the ISLR
+        supplier retention lines.
+        """
+        # We need to get the lines without duplicate invoices because the invoice can have more
+        # than one retention line.
+        lines_without_duplicate_invoices = self.env[self._name]
+        for line in self.filtered(
+            lambda l: l.retention_id and l.retention_id.type_retention == "islr"
+        ):
+            if line.move_id in lines_without_duplicate_invoices.mapped("move_id"):
+                continue
+            lines_without_duplicate_invoices |= line
+
+        for line in lines_without_duplicate_invoices:
+            partials = self.env["account.partial.reconcile"].search(
+                [
+                    (
+                        "credit_move_id",
+                        "=",
+                        line.move_id.line_ids.filtered(
+                            lambda l: l.account_id.account_type == "liability_payable"
+                            and l.credit > 0
+                        )[0].id,
+                    )
+                ]
+            )
+            retention_payments = self.env["account.payment"].search(
+                [
+                    ("move_id.line_ids", "in", partials.mapped("debit_move_id").ids),
+                    ("is_retention", "=", True),
+                ]
+            )
+            # The invoice paid amount not related with retentions is the sum of the debit amounts
+            # of the partials that are not related with the retention payments.
+            invoice_paid_amount_not_related_with_retentions = sum(
+                partial.debit_amount_currency
+                if partial.debit_currency_id == self.env.ref("base.VEF")
+                else partial.debit_amount_currency * partial.debit_move_id.foreign_inverse_rate
+                for partial in partials.filtered(
+                    lambda p: p.debit_move_id not in retention_payments.mapped("move_id.line_ids")
+                )
+            )
+            return invoice_paid_amount_not_related_with_retentions

@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <t t-name="s_d_single_product_count_down_temp">
+        <div t-if="data.length" class="owl-carousel droggol_product_slider_single_product">
+            <t t-foreach="data" t-as="product">
+                <div class="container">
+                    <div class="row justify-content-center align-items-center">
+                        <div class="col-lg-5 col-md-6 text-md-start text-center order-md-1 order-12">
+                            <h1 class="fw-bold d-product-name">
+                                <a t-att-href="product.website_url">
+                                    <t t-esc="product.name"/>
+                                </a>
+                            </h1>
+                            <div class="d-product-price my-2">
+                                <h3 class="d-inline-block text-primary" t-raw="product.price"/>
+                                <p t-if="product.has_discounted_price" class="text-muted d-inline-block mb-0" style="text-decoration: line-through; white-space: nowrap;" t-raw="product.list_price"/>
+                            </div>
+                            <p t-if="product.description_sale" t-esc="product.description_sale"/>
+                            <div t-if="product.offer_data" class="d_offer_block mt-2">
+                                <div class="mb-2 h6 fw-bold" t-esc="product.offer_data.offer_msg"/>
+                                <div t-if="product.offer_data" class="row style-4 tp-countdown py-2 g-0 my-2" data-countdown-style="s_countdown_4" t-att-data-due-date="product.offer_data.date_end">
+                                    <div class="col-12 mt-3 end_msg_container css_non_editable_mode_hidden">
+                                        <h6 class="mb-0" t-esc="product.offer_data.offer_finish_msg"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <a class="btn btn-primary my-2" t-att-href="product.website_url">
+                                Shop now <i class="dri dri-arrow-right-l"></i>
+                            </a>
+                        </div>
+                        <div class="col-md-6 offset-md-1 my-3 order-1 order-md-12">
+                            <div class="">
+                                <img class="d-block mx-auto dr_product_img" t-att-src="product.img_large"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+        <t t-elif="widget.noDataTemplate">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <t t-call="#{widget.noDataTemplate}"></t>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </t>
+
+    <t t-name="s_single_category_snippet">
+        <t t-if="data.length">
+            <div class="p-3 mb-0 bg-white border d_category_name mx-2 tp-rounded-border shadow-sm">
+                <h5 class="m-0 w-75 fw-light text-truncate" t-esc="widget.categoryName"></h5>
+            </div>
+            <div class="owl-carousel droggol_product_category_slider o_not_editable">
+                <t t-foreach="data" t-as="products">
+                    <div class="row g-0">
+                        <t t-foreach="products" t-as="product">
+                            <div class="col-lg-3 col-6 mt-3 px-2">
+                                <t t-call="#{widget.uiConfigInfo.style}"/>
+                            </div>
+                        </t>
+                    </div>
+                </t>
+            </div>
+        </t>
+        <t t-elif="widget.noDataTemplate">
+            <t t-call="#{widget.noDataTemplate}"></t>
+        </t>
+    </t>
+    <t t-name="tp_category_product_card_style_1">
+        <t t-call="tp_category_utils_card_style">
+            <t t-set="cardStyle" t-value="'tp_category_product_card_style_1'"/>
+        </t>
+    </t>
+    <t t-name="tp_category_utils_card_style">
+        <div t-attf-class="card #{cardStyle}">
+            <div class="d_products_cover position-relative">
+                <button t-if="widget._isActionEnabled('add_to_cart') &amp;&amp; cardStyle === 'tp_category_product_card_style_1'" t-att-data-product-product-id="product.product_variant_id" data-bs-toggle="tooltip" data-placement="bottom" class="btn btn-light text-center border rounded-circle d_action_btn d_add_to_cart_btn p-0" title="Add to Cart">
+                    <i class="d_action_btn_icon dri dri-cart"></i>
+                </button>
+                <a t-att-href="product.website_url">
+                    <!-- TO-DO MAX-HEIGHT -->
+                    <img t-att-src="product.img_medium" class="card-img-top d-product-img"/>
+                </a>
+            </div>
+            <div t-attf-class="card-body p-2 #{cardStyle === 'tp_category_product_card_style_3' ? 'text-center' : ''}">
+                <t t-call="tp_category_info">
+                    <t t-set="item" t-value="product"/>
+                </t>
+                <h6 class="card-title mt-1 mb-1 text-truncate fw-light d-product-name">
+                    <a t-att-href="product.website_url">
+                        <t t-out="product.name"/>
+                    </a>
+                </h6>
+                <div class="row">
+                    <div class="col-12 d-product-price">
+                        <div t-if="widget._isActionEnabled('rating')" class="col-12 mb-1 small">
+                            <t t-out="product.rating"/>
+                        </div>
+                        <t t-call="tp-snippet-product-price">
+                            <t t-set="item" t-value="product"/>
+                            <t t-set="_classes" t-value="'mb-1 d-inline-block'"/>
+                            <t t-set="hide_discount" t-value="'true'"/>
+                        </t>
+                        <button t-if="widget._isActionEnabled('add_to_cart') &amp;&amp; cardStyle === 'tp_category_product_card_style_2'" t-att-data-product-product-id="product.product_variant_id" data-bs-toggle="tooltip" data-placement="bottom" class="btn btn-primary tp-rounded-border d-block d_action_btn d_add_to_cart_btn float-end btn-sm" title="Add to Cart">
+                            <i class="d_action_btn_icon dri dri-cart"></i> Buy
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div t-if="widget._isActionEnabled('add_to_cart') &amp;&amp; cardStyle === 'tp_category_product_card_style_3'" class="d-grid gap-2 mt-n2 mb-2">
+                <button t-att-data-product-product-id="product.product_variant_id" data-bs-toggle="tooltip" data-placement="bottom" class="btn btn-primary d_action_btn d_add_to_cart_btn mx-2" title="Add to Cart">
+                    <i class="d_action_btn_icon dri dri-cart"></i> Add to Cart
+                </button>
+            </div>
+        </div>
+    </t>
+    <t t-name="tp_category_product_card_style_2">
+        <t t-call="tp_category_utils_card_style">
+            <t t-set="cardStyle" t-value="'tp_category_product_card_style_2'"/>
+        </t>
+    </t>
+    <t t-name="tp_category_product_card_style_3">
+        <t t-call="tp_category_utils_card_style">
+            <t t-set="cardStyle" t-value="'tp_category_product_card_style_3'"/>
+        </t>
+    </t>
+    <!-- Full Product with cover -->
+    <t t-name="s_d_single_product_cover_snippet">
+        <t t-if="_.isArray(data)">
+            <t t-if="widget.noDataTemplate">
+                <div class="py-4">
+                    <t t-call="#{widget.noDataTemplate}"/>
+                </div>
+            </t>
+        </t>
+        <t t-else="">
+            <t t-raw="data"/>
+        </t>
+    </t>
+
+    <!-- Full Product -->
+    <t t-name="s_single_product_snippet">
+        <div class="droggol_product_slider o_not_editable">
+            <div class="d_single_product_body py-2 pt-3 shadow-sm border tp-rounded-border m-1 bg-white">
+                <t t-if="_.isArray(data)">
+                    <t t-if="widget.noDataTemplate">
+                        <div class="py-4">
+                            <t t-call="#{widget.noDataTemplate}"/>
+                        </div>
+                    </t>
+                </t>
+                <t t-else="">
+                    <t t-raw="data"/>
+                </t>
+            </div>
+        </div>
+    </t>
+
+    <!-- Top categories -->
+    <div class="row" t-name="s_top_categories_snippet">
+        <t t-if="data.length">
+            <t t-foreach="data" t-as="category">
+                <div class="col-12 col-md-4 my-2" t-if="category.productIDs.length">
+                    <div class="card h-100 d-flex">
+                        <a t-if="widget.uiConfigInfo.style === 'tp_category_category_card_style_1'" t-att-href="category.website_url" class="d-flex align-items-center" style="flex-grow:1;">
+                            <div class="pe-1" style="width: 67%;">
+                                <img style="max-height: 376px; object-fit:contain;" loading="lazy" t-attf-src="/web/image/product.template/#{category.productIDs[0]}/image_512" class="d-block w-100"/>
+                            </div>
+                            <div class="ps-1" style="width: 33%;">
+                                <img style="max-height: 188px; object-fit:contain;" loading="lazy" t-attf-src="/web/image/product.template/#{category.productIDs[1]}/image_512" class="d-block w-100 pb-2"/>
+                                <img style="max-height: 188px; object-fit:contain;" loading="lazy" t-attf-src="/web/image/product.template/#{category.productIDs[2]}/image_512" class="d-block w-100"/>
+                            </div>
+                        </a>
+                        <a t-if="widget.uiConfigInfo.style === 'tp_category_category_card_style_2'" t-att-href="category.website_url" class="d-flex align-items-center" style="flex-grow:1;">
+                            <div class="row g-0">
+                                <div class="col-6">
+                                    <img loading="lazy" style="max-height: 220px;object-fit: cover;border-radius: 10px;" t-attf-src="/web/image/product.template/#{category.productIDs[0]}/image_512" class="d-block p-1 w-100"/>
+                                </div>
+                                <div class="col-6">
+                                    <img loading="lazy" style="max-height: 220px;object-fit: cover;border-radius: 10px;" t-attf-src="/web/image/product.template/#{category.productIDs[1]}/image_512" class="d-block p-1 w-100"/>
+                                </div>
+                                <div class="col-6">
+                                    <img loading="lazy" style="max-height: 220px;object-fit: cover;border-radius: 10px;" t-attf-src="/web/image/product.template/#{category.productIDs[2]}/image_512" class="d-block p-1 w-100"/>
+                                </div>
+                                <div class="col-6">
+                                    <img loading="lazy" style="max-height: 220px;object-fit: cover;border-radius: 10px;" t-attf-src="/web/image/product.template/#{category.productIDs[3]}/image_512" class="d-block p-1 w-100"/>
+                                </div>
+                            </div>
+                        </a>
+                        <div class="card-body p-4" style="flex-grow:0;">
+                            <h4 class="text-center" t-esc="category.name"/>
+                            <p t-if="category.min_price" class="text-center text-muted"><t t-if="category.price_public_visibility">Starting from</t> <t t-raw="category.min_price"></t></p>
+                            <div class="text-center">
+                                <a class="btn btn-outline-primary rounded-circle" t-att-href="category.website_url">View Products</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </t>
+        <t t-elif="widget.noDataTemplate">
+            <!-- V14 we need to render noDataTemplate if all categories dont have products -->
+            <div class="col-12">
+                <t t-call="#{widget.noDataTemplate}"></t>
+            </div>
+        </t>
+    </div>
+
+
+
+</template>

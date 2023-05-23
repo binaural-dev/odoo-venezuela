@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="dr_search_report_view_tree" model="ir.ui.view">
+        <field name="name">dr.search.report.view.tree</field>
+        <field name="model">dr.search.report</field>
+        <field name="arch" type="xml">
+            <tree string="Search Report" create="0">
+                <field name="search_time"/>
+                <field name="search_term"/>
+                <field name="user_id"/>
+                <field name="lang_id"/>
+                <field name="country_id"/>
+                <field name="website_id"/>
+                <field name="clicked_type"
+                    widget='badge'
+                    decoration-info="clicked_type == 'product'"
+                    decoration-warning="clicked_type == 'category'"
+                    decoration-success="clicked_type == 'autocomplete'"
+                    decoration-danger="clicked_type == 'suggestion'"/>
+                <field name="device_type"
+                    widget='badge'
+                    decoration-info="device_type == 'mobile'"
+                    decoration-success="device_type == 'desktop'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="dr_search_report_view_graph" model="ir.ui.view">
+        <field name="name">dr.search.report.view.graph</field>
+        <field name="model">dr.search.report</field>
+        <field name="arch" type="xml">
+            <graph string="Search Report">
+                <field name="search_time" interval="day"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="dr_search_report_view_pivot" model="ir.ui.view">
+        <field name="name">dr.search.report.view.pivot</field>
+        <field name="model">dr.search.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Search Report">
+                <field name="clicked_type" type="col"/>
+                <field name="search_time" interval="day" type="row"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="dr_search_report_view_search" model="ir.ui.view">
+        <field name="name">dr.search.report.view.search</field>
+        <field name="model">dr.search.report</field>
+        <field name="arch" type="xml">
+            <search string="Search Visitor">
+                <field name="clicked_type"/>
+                <field name="user_id"/>
+                <field name="lang_id"/>
+                <field name="country_id"/>
+                <filter name="product" string="Product" domain="[('clicked_type', '=', 'product')]"/>
+                <filter name="category" string="Category" domain="[('clicked_type', '=', 'category')]"/>
+                <filter name="autocomplete" string="Autocomplete" domain="[('clicked_type', '=', 'autocomplete')]"/>
+                <filter name="suggestion" string="Suggestion" domain="[('clicked_type', '=', 'suggestion')]"/>
+                <separator/>
+                <filter name="mobile" string="Mobile" domain="[('device_type', '=', 'mobile')]"/>
+                <filter name="desktop" string="Desktop" domain="[('device_type', '=', 'desktop')]"/>
+                <separator/>
+                <filter string="Empty Term" name="empty_search" domain="[('autocomplete_count', '=', 0), ('suggestion_count', '=', 0), ('category_count', '=', 0), ('product_count', '=', 0)]"/>
+                <group string="Group By">
+                    <filter string="Type" name="group_by_clicked_type" domain="[]" context="{'group_by': 'clicked_type'}"/>
+                    <filter string="User" name="group_by_user_id" domain="[]" context="{'group_by': 'user_id'}"/>
+                    <filter string="Language" name="group_by_lang_id" domain="[]" context="{'group_by': 'lang_id'}"/>
+                    <filter string="Country" name="group_by_country_id" domain="[]" context="{'group_by': 'country_id'}"/>
+                    <filter string="Date" name="group_by_search_time" domain="[]" context="{'group_by': 'search_time'}"/>
+                    <filter string="Clicked String" name="group_by_clicked_string" domain="[]" context="{'group_by': 'clicked_string'}"/>
+                    <filter string="Device Type" name="group_by_device_type" domain="[]" context="{'group_by': 'device_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="dr_search_report_action" model="ir.actions.act_window">
+        <field name="name">Search Report</field>
+        <field name="res_model">dr.search.report</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
+    </record>
+
+    <record id="dr_search_report_view_form" model="ir.ui.view">
+        <field name="name">dr.search.report.view.form</field>
+        <field name="model">dr.search.report</field>
+        <field name="arch" type="xml">
+            <form string="Search Report">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="search_term"/>
+                        </h1>
+                    </div>
+                    <group id="general_info">
+                        <group>
+                            <field name="search_time"/>
+                            <field name="user_id"/>
+                            <field name="lang_id"/>
+                            <field name="country_id"/>
+                            <field name="website_id"/>
+                            <field name="device_type"/>
+                        </group>
+                        <group>
+                            <field name="autocomplete_count"/>
+                            <field name="suggestion_count"/>
+                            <field name="category_count"/>
+                            <field name="product_count"/>
+                            <field name="clicked_string"/>
+                            <field name="clicked_href"/>
+                            <field name="clicked_type"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <menuitem id="dr_search_report_menu" name="Search Report" sequence="60" parent="website.menu_reporting" action="droggol_theme_common.dr_search_report_action"/>
+
+</odoo>

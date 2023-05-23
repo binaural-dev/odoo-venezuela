@@ -13,6 +13,8 @@ class PosConfig(models.Model):
         default=0.0,
         readonly=False,
     )
+    receipt_journal_id = fields.Many2one("account.journal")
+    always_invoice = fields.Boolean(default=True)
 
     foreign_rate = fields.Float(
         compute="_compute_rate",

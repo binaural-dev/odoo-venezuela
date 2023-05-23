@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_clients_1" name="Clients - 1">
+        <section class="s_clients_1 pt16 pb16">
+            <div class="container">
+                <div class="row tp-client-list s_nb_column_fixed">
+                    <div t-foreach="list(range(1, 13))" t-as="number" class="col-6 col-sm-4 col-md-3 col-lg-2 tp-client-box">
+                        <t t-set="number" t-value="'%02d' % number"/>
+                        <div class="p-4 text-center tp-animation-scale">
+                            <img class="img img-fluid tp-cursor-pointer" t-attf-src="/web/image/theme_prime.s_client_#{number}" t-attf-alt="Client Image #{number}"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_clients_2" name="Clients - 2">
+        <section class="s_clients_2 pt16 pb16">
+            <div class="container">
+                <div class="row s_nb_column_fixed">
+                    <div t-foreach="list(range(1, 7))" t-as="number" class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 px-sm-0">
+                        <t t-set="number" t-value="'%02d' % number"/>
+                        <div class="tp-client-box p-5 text-center">
+                            <img class="img img-fluid tp-client-image" t-attf-src="/web/image/theme_prime.s_client_#{number}" t-attf-alt="Client Image #{number}"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_clients_3" name="Clients - 3">
+        <section class="s_clients_3 pt16 pb16">
+            <div class="container">
+                <div class="row s_nb_column_fixed">
+                    <div t-foreach="list(range(1, 9))" t-as="number" class="col-12 col-md-3 tp-client-box">
+                        <t t-set="number" t-value="'%02d' % number"/>
+                        <div class="p-4 text-center">
+                            <img class="img img-fluid tp-client-image" t-attf-src="/web/image/theme_prime.s_client_#{number}" t-attf-alt="Client Image #{number}"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_clients_4" name="Clients - 4">
+        <section class="s_clients_4 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <t t-set="clients" t-value="{'01': 'Droggol', '02': 'Twilio', '03': 'Airbnb', '04': 'Atlassian', '05': 'CircleCI', '06': 'Fitbit'}"/>
+                    <div t-foreach="clients" t-as="client" class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 py-3">
+                        <div class="tp-client-box tp-editor-bg-color-n-shadow border py-3 text-center">
+                            <img class="img img-fluid" t-attf-src="/theme_prime/static/src/img/snippets/s_client_#{client}.png" t-attf-alt="Client Image #{client}"/>
+                            <h6 class="mt-2 mb-0"><t t-out="clients[client]"/></h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_clients_1_000_scss" model="ir.asset">
+        <field name="name">Clients 1 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_clients_1/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_clients_2_000_scss" model="ir.asset">
+        <field name="name">Clients 2 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_clients_2/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_clients_3_000_scss" model="ir.asset">
+        <field name="name">Clients 3 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_clients_3/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_clients_4_000_scss" model="ir.asset">
+        <field name="name">Clients 4 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_clients_4/000.scss</field>
+    </record>
+
+</odoo>

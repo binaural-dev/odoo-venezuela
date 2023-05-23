@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_heading_1" name="Heading - 1">
+        <section class="s_heading_1 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 tp-heading-container text-center tp-line-thickness-normal tp-line-width-normal tp-line-bottom">
+                        <h2>Access wide range of products</h2>
+                        <p class="lead mb-0">Quality products from our shop.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_heading_2" name="Heading - 2">
+        <section class="s_heading_2 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 tp-heading-container text-center tp-line-bottom">
+                        <h6 class="text-uppercase text-o-color-1 fw-bold mb-3">NEW PRODUCTS EVERY DAY</h6>
+                        <h2 class="text-uppercase fw-bold">EXPLORE GREAT RANGE OF PRODUCTS</h2>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_heading_3" name="Heading - 3">
+        <section class="s_heading_3 pt16 pb16">
+            <div class="container">
+                <div class="row justify-content-center s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-lg-8 text-center">
+                        <span class="badge text-bg-primary rounded-pill">Discover</span>
+                        <h2 class="mt-3">Featured Products</h2>
+                        <p class="lead">
+                            We add new products every day. Explore our great range of products.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_heading_4" name="Heading - 4">
+        <section class="s_heading_4 pt16 pb16">
+            <div class="container">
+                <div class="row justify-content-center s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-lg-8 text-center">
+                        <span class="fa fa-users fa-2x bg-o-color-1 rounded-circle"></span>
+                        <h2 class="mt-3">Our Creative <font class="text-o-color-1">Team</font></h2>
+                        <p class="lead">We are the creative team of theme prime. No one actually read this so let me write any thing here.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_heading_5" name="Heading - 5">
+        <section class="s_heading_5 pt16 pb16">
+            <div class="container">
+                <div class="row justify-content-center s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-lg-8 text-center">
+                        <h2><font class="text-gradient" style="background-image: linear-gradient(135deg, rgb(255, 204, 51) 0%, rgb(226, 51, 255) 100%);">New Arrivals</font></h2>
+                        <p class="lead">We are the creative team of theme prime. No one actually read this so let me write any thing here.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_heading_6" name="Heading - 6">
+        <section class="s_heading_6 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12">
+                        <h3 class="tp-underline-title pb-3">Your title here</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_heading_options" inherit_id="website.snippet_options">
+        <xpath expr="." position="inside">
+            <div data-selector=".s_heading_1" data-target=".tp-heading-container">
+                <we-button-group string="Line Position" class="ms-auto">
+                    <we-button data-select-class="tp-line-top">
+                        <i class="fa fa-fw fa-arrow-up"/>
+                    </we-button>
+                    <we-button data-select-class="tp-line-bottom">
+                        <i class="fa fa-fw fa-arrow-down"/>
+                    </we-button>
+                </we-button-group>
+                <we-button-group string="Alignment" class="ms-auto">
+                    <we-button data-select-class="text-start">
+                        <i class="fa fa-fw fa-align-left"/>
+                    </we-button>
+                    <we-button data-select-class="text-center">
+                        <i class="fa fa-fw fa-align-center"/>
+                    </we-button>
+                    <we-button data-select-class="text-end">
+                        <i class="fa fa-fw fa-align-right"/>
+                    </we-button>
+                </we-button-group>
+                <we-select string="Thickness">
+                    <we-button data-select-class="tp-line-thickness-light">Light</we-button>
+                    <we-button data-select-class="tp-line-thickness-normal">Normal</we-button>
+                    <we-button data-select-class="tp-line-thickness-bold">Bold</we-button>
+                </we-select>
+                <we-select string="Width">
+                    <we-button data-select-class="tp-line-width-short">Short</we-button>
+                    <we-button data-select-class="tp-line-width-normal">Normal</we-button>
+                    <we-button data-select-class="tp-line-width-long">Long</we-button>
+                </we-select>
+            </div>
+            <div data-selector=".s_heading_2" data-target=".tp-heading-container">
+                <we-button-group string="Dot Position" class="ms-auto">
+                    <we-button data-select-class="tp-line-top">
+                        <i class="fa fa-fw fa-arrow-up"/>
+                    </we-button>
+                    <we-button data-select-class="tp-line-bottom">
+                        <i class="fa fa-fw fa-arrow-down"/>
+                    </we-button>
+                </we-button-group>
+                <we-button-group string="Alignment" class="ms-auto">
+                    <we-button data-select-class="text-start">
+                        <i class="fa fa-fw fa-align-left"/>
+                    </we-button>
+                    <we-button data-select-class="text-center">
+                        <i class="fa fa-fw fa-align-center"/>
+                    </we-button>
+                    <we-button data-select-class="text-end">
+                        <i class="fa fa-fw fa-align-right"/>
+                    </we-button>
+                </we-button-group>
+            </div>
+        </xpath>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_heading_1_000_scss" model="ir.asset">
+        <field name="name">Heading 1 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_heading_1/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_heading_2_000_scss" model="ir.asset">
+        <field name="name">Heading 2 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_heading_2/000.scss</field>
+    </record>
+
+</odoo>
