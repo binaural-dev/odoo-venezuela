@@ -8,12 +8,12 @@ Esta es una documentación de los estándares para el desarrollo de módulos de 
 ## DOCUMENTACIÓN
 
  - [Instalacion y configuracion](getting-started.md)
- - [Herramientas y recomendaciones](manage-module.md)
- - [Tutorial de módulos con Python](manage-module.md)
- - [Tutorial de módulos con Javascript](manage-module.md)
- - [Estándares de codigo](standards.md)
- - [Estándares de Git](standards.md)
- - [Testing](standards.md)
+ - [Herramientas y recomendaciones](readme.md)
+ - [Tutorial de módulos con Python](readm.md)
+ - [Tutorial de módulos con Javascript](readme.md)
+ - [Estándares de codigo](code-standard.md)
+ - [Estándares de Git](readme.md)
+ - [Testing](readme.md)
 
  
 ## FAQ
