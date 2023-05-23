@@ -1,0 +1,68 @@
+@mixin tp-countdown-color-mixin() {
+    &.tp-light {
+        .tp-counter-block {
+            background: o-color('white');
+            .tp-counter-number {
+                color: o-color('primary');
+            }
+            hr {
+                border-color: o-color('200');
+            }
+        }
+        .tp-counter-title {
+            color: o-color('800');
+        }
+    }
+    &.tp-dark {
+        .tp-counter-block {
+            background: o-color('800');
+            .tp-counter-number {
+                color: o-color('white');
+            }
+            hr {
+                border-color: rgba(o-color('white'), 0.5);
+            }
+        }
+        .tp-counter-title {
+            color: o-color('white');
+        }
+    }
+}
+
+.tp-countdown {
+    &.style-1 {
+        @include tp-countdown-color-mixin();
+        .tp-counter-block {
+            padding: 16px 22px;
+            flex: 1;
+            border-radius: $border-radius;
+            min-width: 90px;
+        }
+    }
+
+    &.style-2, &.style-3, &.style-4 {
+        &.position-left .tp-countdown-container { justify-content: flex-start; }
+        &.position-center .tp-countdown-container { justify-content: center; }
+        &.position-right .tp-countdown-container { justify-content: flex-end; }
+    }
+
+    &.style-4 {
+        @include tp-countdown-color-mixin();
+        .tp-counter-block {
+            padding: 0;
+            height: 42px;
+            width: 42px;
+            line-height: 42px;
+            text-align: center;
+            border: 1px solid $border-color;
+            background-color: map-get($theme-colors, 'light');
+            border-radius: 50rem;
+        }
+        &.tp-dark .tp-counter-title {
+            color: o-color('800') !important;
+        }
+        &.tp-light .tp-counter-title {
+            color: o-color('600') !important;
+        }
+    }
+}

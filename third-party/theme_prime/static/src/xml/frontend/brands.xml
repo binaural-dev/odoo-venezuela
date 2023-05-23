@@ -1,0 +1,83 @@
+<?xml version="1.0" ?>
+<templates>
+    <t t-name="s_d_brand_snippet">
+        <div class="row g-0 dr_not_editable">
+            <t t-if="data.length">
+                <t t-foreach="data" t-as="brand">
+                    <t t-call="#{widget.cardStyle}"/>
+                </t>
+            </t>
+            <t t-elif="widget.noDataTemplate">
+                <div class="col-12">
+                    <t t-call="#{widget.noDataTemplate}"></t>
+                </div>
+            </t>
+        </div>
+    </t>
+
+
+    <t t-name="tp_brand_card_style_1">
+        <div class="col-md-3 col-6 tp_brand_card_style_1">
+            <a t-attf-href="/shop?attrib=#{brand.attribute_id[0]}-#{brand.id}">
+                <div class="card mb-3 py-3 mx-2">
+                    <a class="d-block rounded-3 tp-animation-scale" t-attf-href="/shop?attrib=#{brand.attribute_id[0]}-#{brand.id}">
+                        <img class="d-block img img-fluid w-50 mx-auto" loading="lazy" t-attf-src="/web/image/product.attribute.value/#{brand.id}/dr_image" />
+                    </a>
+                </div>
+            </a>
+        </div>
+    </t>
+
+    <t t-name="tp_brand_card_style_2">
+        <div class="col-md-3 col-6 tp_brand_card_style_2">
+            <a t-attf-href="/shop?attrib=#{brand.attribute_id[0]}-#{brand.id}">
+                <div class="card mb-3 text-center py-3 mx-2">
+                    <a class="d-block rounded-3 tp-animation-scale" t-attf-href="/shop?attrib=#{brand.attribute_id[0]}-#{brand.id}">
+                        <img class="d-block img img-fluid w-50 mx-auto" loading="lazy" t-attf-src="/web/image/product.attribute.value/#{brand.id}/dr_image" />
+                    </a>
+                    <h5 class="tp-hover-color-primary mt-2 text-truncate">
+                        <a t-attf-href="/shop?attrib=#{brand.attribute_id[0]}-#{brand.id}">
+                            <t t-out="brand.name"/>
+                        </a>
+                    </h5>
+                    <small><span t-out="brand.product_count or '0'"/> products</small>
+                </div>
+            </a>
+        </div>
+    </t>
+
+    <t t-name="tp_brand_card_style_3">
+        <div class="col-md-3 col-6 tp_brand_card_style_3">
+            <div class="card mb-3 py-3 mx-2">
+                <div class="row g-0">
+                    <div class="col-md-4 d-flex align-items-center">
+                        <a t-attf-href="/shop?attrib=#{brand.attribute_id[0]}-#{brand.id}">
+                            <img t-attf-src="/web/image/product.attribute.value/#{brand.id}/dr_image" class="card-img" loading="lazy"/>
+                        </a>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card-body text-center text-md-start p-2">
+                            <h5 class="tp-hover-color-primary mt-1 mb-0 text-truncate">
+                                <a t-attf-href="/shop?attrib=#{brand.attribute_id[0]}-#{brand.id}">
+                                    <t t-out="brand.name"/>
+                                </a>
+                            </h5>
+                            <small class="text-muted"><span t-out="brand.product_count or '0'"/> products</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="tp_brand_card_style_4">
+        <div class="col-md-3 col-6">
+            <div class="tp-animation-scale p-3 tp_brand_card_style_4 w-100">
+                <a t-attf-href="/shop?attrib=#{brand.attribute_id[0]}-#{brand.id}">
+                    <img t-attf-src="/web/image/product.attribute.value/#{brand.id}/dr_image" class="img o_image_128_max img-fluid mx-auto tp-cursor-pointer" loading="lazy"/>
+                </a>
+            </div>
+        </div>
+    </t>
+
+</templates>

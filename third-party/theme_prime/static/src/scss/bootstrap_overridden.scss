@@ -1,0 +1,50 @@
+// Square UI
+$btn-border-radius: if(o-website-value('tp-square-ui'), 0rem, o-website-value('btn-border-radius'));
+$btn-border-radius-lg: if(o-website-value('tp-square-ui'), 0rem, o-website-value('btn-border-radius-lg'));
+$btn-border-radius-sm: if(o-website-value('tp-square-ui'), 0rem, o-website-value('btn-border-radius-sm'));
+
+$input-border-radius: if(o-website-value('tp-square-ui'), 0rem, o-website-value('input-border-radius'));
+$input-border-radius-lg: if(o-website-value('tp-square-ui'), 0rem, o-website-value('input-border-radius-lg'));
+$input-border-radius-sm: if(o-website-value('tp-square-ui'), 0rem, o-website-value('input-border-radius-sm'));
+
+$border-radius: if(o-website-value('tp-square-ui'), 0rem, null);
+$border-radius-sm: if(o-website-value('tp-square-ui'), 0rem, null);
+$border-radius-lg: if(o-website-value('tp-square-ui'), 0rem, null);
+
+$badge-padding-x: 0.8em;
+$badge-padding-y: 0.6em;
+
+$line-height-base: 1.4;
+$headings-line-height: 1.4;
+
+$tooltip-bg: o-color('dark');
+$tooltip-margin: 0.5rem;
+
+$box-shadow-sm: 0 .125rem .25rem rgba(o-color('black'), .075);
+$box-shadow: 0 .5rem 1rem rgba(o-color('black'), .15);
+$box-shadow-lg: 0 1.5rem 4rem rgba(o-color('black'), .1);
+
+$dropdown-border-width: 0;
+$dropdown-box-shadow: $box-shadow-lg;
+$dropdown-header-color: o-color('primary');
+
+$dropdown-link-hover-color: o-color('primary');
+$dropdown-link-hover-bg: transparent;
+
+$input-border-color: o-color('300');
+$input-placeholder-color: o-color('500');
+$input-focus-box-shadow: none;
+$input-focus-border-color: o-color('primary');
+
+$form-check-input-border-radius: 0;
+$form-check-input-focus-box-shadow: none;
+
+$navbar-toggler-focus-width: none;
+
+$pagination-focus-box-shadow: none;
+$pagination-border-width: 0;
+
+$card-border-color: o-color('300');
+
+$lead-font-weight: 400;
+$lead-font-size: $font-size-base * 1.16;

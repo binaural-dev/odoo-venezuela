@@ -1,0 +1,48 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_seller
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20230508\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-05-08 20:59+0000\n"
+"PO-Revision-Date: 2023-05-08 20:59+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_seller
+#: model:ir.model,name:binaural_seller.model_res_partner
+msgid "Contact"
+msgstr "Contacto"
+
+#. module: binaural_seller
+#: model:ir.model,name:binaural_seller.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: binaural_seller
+#: model:ir.model.fields,help:binaural_seller.field_account_bank_statement_line__seller_id
+#: model:ir.model.fields,help:binaural_seller.field_account_move__seller_id
+#: model:ir.model.fields,help:binaural_seller.field_account_payment__seller_id
+msgid "Partner's seller reference."
+msgstr "Referencia del vendedor del contacto."
+
+#. module: binaural_seller
+#: model:ir.model.fields,field_description:binaural_seller.field_account_bank_statement_line__seller_id
+#: model:ir.model.fields,field_description:binaural_seller.field_account_move__seller_id
+#: model:ir.model.fields,field_description:binaural_seller.field_account_payment__seller_id
+#: model:ir.model.fields,field_description:binaural_seller.field_res_partner__seller_id
+#: model:ir.model.fields,field_description:binaural_seller.field_res_users__seller_id
+msgid "Seller"
+msgstr "Vendedor"
+
+#. module: binaural_seller
+#: model:ir.model.fields,help:binaural_seller.field_res_partner__seller_id
+#: model:ir.model.fields,help:binaural_seller.field_res_users__seller_id
+msgid "Seller associated with the partner."
+msgstr "Vendedor asociado al contacto."

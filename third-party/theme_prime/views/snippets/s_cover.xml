@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_cover_1" name="Cover - 1">
+        <section class="s_cover_1">
+            <t t-set="uniq" t-value="datetime.datetime.now().microsecond"/>
+            <div t-attf-id="myCarousel{{uniq}}" class="s_carousel tp-custom-carousel s_carousel_rounded carousel slide" data-bs-interval="10000">
+                <!-- Indicators -->
+                <ol class="carousel-indicators">
+                    <li t-attf-data-bs-target="#myCarousel{{uniq}}" data-bs-slide-to="0" class="active"/>
+                    <li t-attf-data-bs-target="#myCarousel{{uniq}}" data-bs-slide-to="1"/>
+                </ol>
+                <!-- Content -->
+                <div class="carousel-inner">
+                    <!-- #01 -->
+                    <div class="carousel-item active" data-name="Slide">
+                        <div class="container-fluid px-0">
+                            <div class="row content g-0 align-items-center s_col_no_bgcolor s_nb_column_fixed">
+                                <div class="tp-editor-bg-color-n-shadow border order-2 order-lg-1 jumbotron rounded px-4 offset-lg-1 col-lg-4 pt24 pb24 o_cc o_cc1 border" data-name="Box">
+                                    <img class="img img-fluid" src="/web/image/theme_prime.s_cover_1_brand_1" style="width: 25%;" alt="Cover Brand Image 01"></img>
+                                    <h2 class="mt-2">Special Collection</h2>
+                                    <h5>Starting at $120.00</h5>
+                                    <a href="/shop" class="btn btn-primary mt-2">Shop Now</a>
+                                </div>
+                                <div class="order-1 order-lg-2 offset-lg-1 col-lg-6">
+                                    <img class="img img-fluid" src="/web/image/theme_prime.s_cover_1_1" alt="Cover Image 01"></img>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- #02 -->
+                    <div class="carousel-item" data-name="Slide">
+                        <div class="container-fluid px-0">
+                            <div class="row content g-0 align-items-center s_col_no_bgcolor s_nb_column_fixed">
+                                <div class="tp-editor-bg-color-n-shadow border order-2 order-lg-1 jumbotron rounded px-4 offset-lg-1 col-lg-4 pt24 pb24 o_cc o_cc1 border" data-name="Box">
+                                    <img class="img img-fluid" src="/web/image/theme_prime.s_cover_1_brand_2" style="width: 25%;" alt="Cover Brand Image 01"></img>
+                                    <h2 class="mt-2">Fresh Collection</h2>
+                                    <h5>Starting at $35.00</h5>
+                                    <a href="/shop" class="btn btn-primary mt-2">Shop Now</a>
+                                </div>
+                                <div class="order-1 order-lg-2 offset-lg-1 col-lg-6">
+                                    <img class="img img-fluid" src="/web/image/theme_prime.s_cover_1_2" alt="Cover Image 02"></img>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Controls -->
+                <a class="carousel-control-prev o_not_editable" contenteditable="false" t-attf-href="#myCarousel{{uniq}}" data-bs-slide="prev" role="img" aria-label="Previous" title="Previous">
+                    <span class="fa fa-chevron-left"></span>
+                    <span class="visually-hidden">Previous</span>
+                </a>
+                <a class="carousel-control-next o_not_editable" contenteditable="false" t-attf-href="#myCarousel{{uniq}}" data-bs-slide="next" role="img" aria-label="Next" title="Next">
+                    <span class="fa fa-chevron-right"></span>
+                    <span class="visually-hidden">Next</span>
+                </a>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_cover_2" name="Cover - 2">
+        <section class="s_cover_2">
+            <t t-set="uniq" t-value="datetime.datetime.now().microsecond"/>
+            <div t-attf-id="myCarousel{{uniq}}" class="s_carousel tp-custom-carousel s_carousel_rounded carousel slide" data-bs-interval="10000">
+                <!-- Indicators -->
+                <ol class="carousel-indicators">
+                    <li t-attf-data-bs-target="#myCarousel{{uniq}}" data-bs-slide-to="0" class="active"/>
+                    <li t-attf-data-bs-target="#myCarousel{{uniq}}" data-bs-slide-to="1"/>
+                </ol>
+                <!-- Content -->
+                <div class="carousel-inner">
+                    <!-- #01 -->
+                    <div class="carousel-item active oe_img_bg o_bg_img_center pt192 pb192" style="background-image: url('/web/image/theme_prime.s_cover_2_1');" data-name="Slide">
+                        <div class="container">
+                            <div class="row content">
+                                <div class="carousel-content col-lg-5">
+                                    <h4>JUST NEWLY ARRIVED!</h4>
+                                    <h2 class="display-4 fw-bold">High Quality Fabric Collection</h2>
+                                    <p class="lead"><font style="font-size: 20px;">In hac habitasse platea dictumst. Praesent cursus congue felis, nec pellentesque nulla ornare sed.</font></p>
+                                    <a href="/shop" class="btn btn-primary mt-2">READ MORE</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- #02 -->
+                    <div class="carousel-item oe_img_bg o_bg_img_center pt192 pb192" style="background-image: url('/web/image/theme_prime.s_cover_2_2');" data-name="Slide">
+                        <div class="container">
+                            <div class="row content">
+                                <div class="carousel-content col-lg-5">
+                                    <h4 style="text-align: center;">GET FLAT 20% OFF</h4>
+                                    <h2 style="text-align: center;" class="display-4 fw-bold">Flexible Styled Collection By Prime</h2>
+                                    <p style="text-align: center;" class="lead"><font style="font-size: 20px;">In hac habitasse platea dictumst. Praesent cursus congue felis, nec pellentesque nulla ornare sed.</font></p>
+                                    <div style="text-align: center;">
+                                        <a href="/shop" class="btn btn-primary mt-2">READ MORE</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Controls -->
+                <a class="carousel-control-prev o_not_editable" contenteditable="false" t-attf-href="#myCarousel{{uniq}}" data-bs-slide="prev" role="img" aria-label="Previous" title="Previous">
+                    <span class="fa fa-chevron-left tp-icon-center-2 dr-p-icon border-0 shadow rounded-circle"></span>
+                    <span class="visually-hidden">Previous</span>
+                </a>
+                <a class="carousel-control-next o_not_editable" contenteditable="false" t-attf-href="#myCarousel{{uniq}}" data-bs-slide="next" role="img" aria-label="Next" title="Next">
+                    <span class="fa fa-chevron-right tp-icon-center-2 dr-p-icon border-0 shadow rounded-circle"></span>
+                    <span class="visually-hidden">Next</span>
+                </a>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_cover_3" name="Cover - 3">
+        <section class="s_cover_3 parallax s_parallax_is_fixed o_full_screen_height pt168 pb144 s_parallax_no_overflow_hidden oe_img_bg o_bg_img_center" data-scroll-background-ratio="0" style="background-image: url('/web/image/theme_prime.s_cover_3_1'); background-position: 50% 0;">
+            <div class="container tp-cover-container">
+                <div class="row s_nb_column_fixed">
+                    <div class="jumbotron rounded pt32 pb32 col-lg-5" data-name="Box">
+                        <h3>New Arrivals</h3>
+                        <h2 class="display-4 fw-bold">Fresh Collection By Prime</h2>
+                        <p class="lead"><font style="font-size: 20px;">In hac habitasse platea dictumst. Praesent cursus congue felis, nec pellentesque nulla ornare sed.</font></p>
+                        <a href="/shop" class="btn btn-primary mt-2 rounded-circle">Discover More</a>
+                    </div>
+                </div>
+            </div>
+            <div class="container s_icon_block_9 tp-cover-icon-container d-none d-lg-block">
+                <div class="row justify-content-center bg-white shadow-sm s_nb_column_fixed">
+                    <div class="col-12 col-md-3 py-3 mx-auto tp-icon-block">
+                        <div class="d-flex px-md-2 px-lg-5">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-rocket fa-2x me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Free Shipping</h6>
+                                <p class="mb-0">In 2-3 Days</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3 py-3 mx-auto tp-icon-block">
+                        <div class="d-flex px-md-2 px-lg-5">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-refresh fa-2x me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Free Returns</h6>
+                                <p class="mb-0">No Questions Asked</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3 py-3 mx-auto tp-icon-block">
+                        <div class="d-flex px-md-2 px-lg-5">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-phone fa-2x me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Free Support</h6>
+                                <p class="mb-0">30 Days Support</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3 py-3 mx-auto tp-icon-block">
+                        <div class="d-flex px-md-2 px-lg-5">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-tag fa-2x me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">100% Genuine</h6>
+                                <p class="mb-0">High Quality Products</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_cover_4" name="Cover - 4">
+        <section class="s_cover_4 pt40 pb40">
+            <div class="container">
+                <div class="row s_nb_column_fixed align-items-center">
+                    <div class="col-lg-6 p-4 order-2 order-lg-1">
+                        <h1>Maximus Note 8i</h1>
+                        <p>Powered by a 10 nm octa-core Qualcomm Snapdragon 712 AIE processor, this phone can seamlessly execute any task. You can game more and multitask without experiencing any lag. Experience a boost in performance and efficiency with this phone.</p>
+                        <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                            <div class="col-12 col-sm-6 py-3">
+                                <div class="d-flex align-items-center">
+                                    <img class="flex-shrink-0 img-fluid me-3" src="/web/image/theme_prime.s_cover_4_2" style="width: 25% !important;"/>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Wireless Charging</h6>
+                                        <span>Full battery in no time</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 py-3">
+                                <div class="d-flex align-items-center">
+                                    <img class="flex-shrink-0 img-fluid me-3" src="/web/image/theme_prime.s_cover_4_3" style="width: 25% !important;"/>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Super Fast CPU</h6>
+                                        <span>Powerful Performance</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 py-3">
+                                <div class="d-flex align-items-center">
+                                    <img class="flex-shrink-0 img-fluid me-3" src="/web/image/theme_prime.s_cover_4_4" style="width: 25% !important;"/>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">128 GB Harddisk</h6>
+                                        <span>More content</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 py-3">
+                                <div class="d-flex align-items-center">
+                                    <img class="flex-shrink-0 img-fluid me-3" src="/web/image/theme_prime.s_cover_4_5" style="width: 25% !important;"/>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">64 MP Camara</h6>
+                                        <span>With super Macro Lens</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="#" class="btn btn-primary mt-4">Shop Now</a>
+                    </div>
+                    <div class="col-lg-6 order-1 order-lg-2">
+                        <img src="/web/image/theme_prime.s_cover_4_1" class="img img-fluid" alt="Cover Image 01"/>
+                    </div>
+                </div>
+                <t t-call="theme_prime.s_icon_block_10"/>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_cover_5" name="Cover - 5">
+        <section class="s_cover_5 parallax s_parallax_is_fixed o_full_screen_height pt168 pb144 s_parallax_no_overflow_hidden oe_img_bg o_bg_img_center" data-scroll-background-ratio="0" style="background-image: url('/web/image/theme_prime.s_cover_3_1'); background-position: 50% 0;">
+            <div class="container tp-cover-container">
+                <div class="row s_nb_column_fixed">
+                    <div class="jumbotron rounded pt32 pb32 col-lg-5" data-name="Box">
+                        <div class="s_alert clearfix w-100 alert-primary border-0 d-flex align-items-center s_alert_md" data-snippet="s_alert" data-name="Alert" style="border-radius: 50rem;padding:.375rem 1rem .375rem .5rem;max-width:450px;">
+                            <span class="s_badge badge text-bg-primary o_default_snippet_text py-1 m-0 px-2" style="border-radius: 50rem;" data-name="Badge">
+                                <i class="fa fa-1x fa-fw fa-star-o o_not-animable m-0"></i> BEST
+                            </span>
+                            <div class="s_alert_content mx-2 d-inline-block">
+                                <p class="o_default_snippet_text text-primary fw-light h6">Quality products by <strong>Prime team</strong></p>
+                            </div>
+                        </div>
+                        <h2 class="display-4 fw-bold">Best Products In Every Categories.</h2>
+                        <p class="lead">
+                            We have everything that you need for your next adventure.
+                        </p>
+                        <t t-call="website.website_search_box_input">
+                            <t t-set="_form_classes" t-valuef="w-100 tp-cover-search-input o_wsale_products_searchbar_form o_not_editable tp-rounded-border p-1 bg-white border"/>
+                            <t t-set="_classes" t-valuef=" "/>
+                            <t t-set="_submit_classes" t-valuef="btn-primary tp-rounded-border"/>
+                            <t t-set="search_type" t-valuef="products"/>
+                            <t t-set="placeholder">Search for products, brands and more ...</t>
+                            <t t-set="action" t-value="'/shop'"/>
+                        </t>
+                        <div class="s_social_media mt-5 tp-followus-icons" data-name="Social Media">
+                            <h5 class="s_social_media_title d-block mb-2">Follow Us On:</h5>
+                            <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                <i class="fa fa-facebook rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                <i class="fa fa-twitter rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                <i class="fa fa-linkedin rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                <i class="fa fa-instagram rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                <i class="fa fa-youtube rounded-circle shadow-sm"/>
+                            </a>
+                            <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                <i class="fa fa-github rounded-circle shadow-sm"/>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_cover_3_scss" model="ir.asset">
+        <field name="name">Cover 3 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_cover_3/000.scss</field>
+    </record>
+
+</odoo>

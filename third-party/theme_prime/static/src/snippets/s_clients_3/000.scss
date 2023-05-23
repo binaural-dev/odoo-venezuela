@@ -1,0 +1,10 @@
+.s_clients_3 .tp-client-image {
+    width: 120px;
+    -webkit-transition: all .3s ease;
+    -o-transition: all .3s ease;
+    transition: all .3s ease;
+    opacity: 0.6;
+    &:hover {
+        opacity: 1;
+    }
+}

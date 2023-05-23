@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="dynamic_filter_template_blog_post_prime_layout_1" name="Prime Layout - 1">
+        <figure t-foreach="records" t-as="data" class="s_blog_posts_post my-2 w-100" data-number-of-elements="3">
+            <t t-set="record" t-value="data['_record']"/>
+            <div class="border">
+                <t t-set="_cp" t-value="json.loads(record.cover_properties)"/>
+                <div class="tp-cover-image" t-attf-style="background-image: #{_cp.get('background-image')};">
+                    <div t-if="len(record.tag_ids)" class="p-3">
+                        <span t-foreach="record.tag_ids" t-as="tag" class="m-1 badge text-bg-primary rounded-pill">
+                            <t t-out="tag.name"/>
+                        </span>
+                    </div>
+                </div>
+                <figcaption class="text-center w-100 h-100 p-3 d-flex flex-column flex-grow-1">
+                    <h4 class="text-truncate s_latest_posts_post_title mt-3">
+                        <a t-attf-href="/blog/#{record.blog_id.id}/post/#{record.id}" class="tp-link-dark" t-out="record.name"/>
+                    </h4>
+                    <div class="d-flex align-items-center my-2 justify-content-center">
+                        <i class="fa fa-calendar me-2"></i>
+                        <span t-field="record.post_date" t-options='{"format": "d MMMM, yyyy"}'/>
+                        <span class="mx-2">•</span>
+                        <span t-field="record.author_avatar" t-options='{"widget": "image", "class": "rounded-circle tp-blog-avatar"}'/>
+                        <span class="mx-1">Posted by</span>
+                        <span t-field="record.author_id" t-options='{"widget": "contact", "fields": ["name"]}'/>
+                    </div>
+                    <p t-out="record.teaser"/>
+                    <a class="my-2 btn btn-primary-soft" t-attf-href="/blog/#{record.blog_id.id}/post/#{record.id}">Continue Reading</a>
+                </figcaption>
+            </div>
+        </figure>
+    </template>
+
+    <template id="dynamic_filter_template_blog_post_prime_layout_2" name="Prime Layout - 2">
+        <figure t-foreach="records" t-as="data" class="s_blog_posts_post my-2 w-100" data-number-of-elements="3">
+            <t t-set="record" t-value="data['_record']"/>
+            <a t-attf-href="/blog/#{record.blog_id.id}/post/#{record.id}" class="card mb-2 tp-blog-container tp-animation-lift">
+                <t t-set="_cp" t-value="json.loads(record.cover_properties)"/>
+                <div class="card-img-top">
+                    <div class="tp-cover-image" t-attf-style="background-image: #{_cp.get('background-image')};"/>
+                    <div class="position-relative">
+                        <div class="tp-svg-img">
+                            <svg preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="140px" viewBox="20 -20 300 100" style="top: -70%;">
+                                <path d="M30.913,43.944c0,0,42.911-34.464,87.51-14.191c77.31,35.14,113.304-1.952,146.638-4.729 c48.654-4.056,69.94,16.218,69.94,16.218v54.396H30.913V43.944z" opacity="0.4" fill="#f0f1f3"></path>
+                                <path d="M-35.667,44.628c0,0,42.91-34.463,87.51-14.191c77.31,35.141,113.304-1.952,146.639-4.729 c48.653-4.055,69.939,16.218,69.939,16.218v54.396H-35.667V44.628z" opacity="0.4" fill="#f0f1f3"></path>
+                                <path d="M43.415,98.342c0,0,48.283-68.927,109.133-68.927c65.886,0,97.983,67.914,97.983,67.914v3.716 H42.401L43.415,98.342z" opacity="0" fill="#fff"></path>
+                                <path d="M-34.667,62.998c0,0,56-45.667,120.316-27.839C167.484,57.842,197,41.332,232.286,30.428 c53.07-16.399,104.047,36.903,104.047,36.903l1.333,36.667l-372-2.954L-34.667,62.998z" fill="#fff"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body px-4 py-1">
+                    <h3 class="text-truncate mt-3 mb-2" t-out="record.name"/>
+                    <p class="text-body" t-out="record.teaser"/>
+                    <div t-if="len(record.tag_ids)">
+                        <t t-foreach="record.tag_ids" t-as="tag">
+                            <span class="badge text-bg-dark rounded-pill me-1" t-out="tag.name"/>
+                        </t>
+                    </div>
+                    <div class="align-items-center justify-content-between d-flex position-relative w-100 o_not_editable pb-2">
+                        <div class="align-items-center d-flex">
+                            <span t-field="record.author_avatar" t-options='{"widget": "image", "class": "rounded-circle me-2 tp-blog-avatar"}'/>
+                            <small t-field="record.author_id" t-options='{"widget": "contact", "fields": ["name"]}'/>
+                        </div>
+                        <div>
+                            <small t-field="record.post_date" t-options='{"format": "d MMMM, yyyy"}'/>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </figure>
+    </template>
+
+    <template id="dynamic_filter_template_blog_post_prime_layout_3" name="Prime Layout - 3">
+        <figure t-foreach="records" t-as="data" class="s_blog_posts_post my-2 w-100" data-number-of-elements="3">
+            <t t-set="record" t-value="data['_record']"/>
+            <a t-attf-href="/blog/#{record.blog_id.id}/post/#{record.id}" class="card mb-2 tp-animation-lift">
+                <t t-set="_cp" t-value="json.loads(record.cover_properties)"/>
+                <div class="tp-cover-image" t-attf-style="background-image: #{_cp.get('background-image')};"/>
+                <div class="card-body">
+                    <h4 class="text-truncate" t-out="record.name"/>
+                    <p class="text-body" t-out="record.teaser"/>
+                    <div t-if="len(record.tag_ids)">
+                        <t t-foreach="record.tag_ids" t-as="tag">
+                            <span class="badge text-bg-light me-1" t-out="tag.name"/>
+                        </t>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center bg-white">
+                    <div class="d-flex align-items-center">
+                        <span t-field="record.author_avatar" t-options='{"widget": "image", "class": "rounded-circle me-2 tp-blog-avatar"}'/>
+                        <small t-field="record.author_id" t-options='{"widget": "contact", "fields": ["name"]}'/>
+                    </div>
+                    <div class="ms-auto">
+                        <small t-field="record.post_date" t-options='{"format": "d MMMM, yyyy"}'/>
+                    </div>
+                </div>
+            </a>
+        </figure>
+    </template>
+
+    <template id="dynamic_filter_template_blog_post_prime_layout_4" name="Prime Layout - 4">
+        <figure t-foreach="records" t-as="data" class="s_blog_posts_post my-2 w-100" data-number-of-elements="4">
+            <t t-set="record" t-value="data['_record']"/>
+            <div class="card border-0 mb-2">
+                <t t-set="_cp" t-value="json.loads(record.cover_properties)"/>
+                <a t-attf-href="/blog/#{record.blog_id.id}/post/#{record.id}" class="tp-cover-image" t-attf-style="background-image: #{_cp.get('background-image')};">
+                    <div class="tp-date d-flex flex-column bg-white text-center shadow">
+                        <h4 class="pt-2 mb-1" t-field="record.post_date" t-options='{"format": "dd"}'/>
+                        <span class="text-uppercase pb-2 fw-bold small" t-field="record.post_date" t-options='{"format": "MMM"}'/>
+                    </div>
+                </a>
+                <div class="card-body text-center">
+                    <a t-attf-href="/blog/#{record.blog_id.id}/post/#{record.id}" class="tp-link-dark">
+                        <h4 class="text-truncate" t-out="record.name"/>
+                    </a>
+                    <span class="text-body">Posted by <span t-field="record.author_avatar" t-options='{"widget": "image", "class": "rounded-circle tp-blog-avatar"}'/> <t t-out="record.author_id.name"/></span>
+                </div>
+            </div>
+        </figure>
+    </template>
+
+</odoo>

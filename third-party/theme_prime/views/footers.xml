@@ -1,0 +1,1609 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="template_footer_style_1" inherit_id="website.layout" name="Footer Style - 1" active="False">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block pt64 pb32" data-snippet="s_text_block" data-name="Text">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-12 text-center mb-5">
+                                <a href="/" class="o_footer_logo logo">
+                                    <img src="/website/static/src/img/website_logo.svg" class="img-fluid" aria-label="Logo of MyCompany" title="MyCompany" role="img"/>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-lg-6 col-xl-5 mb-4">
+                                <h5>Products</h5>
+                                <div class="row">
+                                    <div class="col-4">
+                                        <ul class="list-unstyled">
+                                            <li class="my-2"><a href="#">Smartphone</a></li>
+                                            <li class="my-2"><a href="#">Laptop</a></li>
+                                            <li class="my-2"><a href="#">Mouse</a></li>
+                                            <li class="my-2"><a href="#">Monitor</a></li>
+                                            <li class="my-2"><a href="#">Watch</a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-4">
+                                        <ul class="list-unstyled">
+                                            <li class="my-2"><a href="#">Tablet</a></li>
+                                            <li class="my-2"><a href="#">Accessorie</a></li>
+                                            <li class="my-2"><a href="#">Mouses Pad</a></li>
+                                            <li class="my-2"><a href="#">Handset</a></li>
+                                            <li class="my-2"><a href="#">Phablet</a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-4">
+                                        <ul class="list-unstyled">
+                                            <li class="my-2"><a href="#">Speakers</a></li>
+                                            <li class="my-2"><a href="#">Camera</a></li>
+                                            <li class="my-2"><a href="#">Play Station</a></li>
+                                            <li class="my-2"><a href="#">Xbox</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 col-xl-3 mb-4">
+                                <h5>Brands</h5>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <ul class="list-unstyled">
+                                            <li class="my-2"><a href="#">Logitech</a></li>
+                                            <li class="my-2"><a href="#">Samsung</a></li>
+                                            <li class="my-2"><a href="#">Microsoft</a></li>
+                                            <li class="my-2"><a href="#">Apple</a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-6">
+                                        <ul class="list-unstyled">
+                                            <li class="my-2"><a href="#">Huawei</a></li>
+                                            <li class="my-2"><a href="#">Motorola</a></li>
+                                            <li class="my-2"><a href="#">Sony</a></li>
+                                            <li class="my-2"><a href="#">Nokia</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 col-xl-4 mb-4">
+                                <h5>MyCompany</h5>
+                                <div>250 Executive Park Blvd, Suite 3400 <br/> San Francisco CA 94134 <br/>United States</div>
+                                <ul class="list-unstyled">
+                                    <li class="py-1"><i class="fa fa-1x fa-fw fa-envelope me-1"/><a href="mailto:info@yourcompany.com">info@yourcompany.com</a></li>
+                                    <li class="py-1"><i class="fa fa-1x fa-fw fa-phone me-1"/><span class="o_force_ltr"><a href="tel:1 (650) 691-3277">+1 (650) 691-3277</a></span></li>
+                                </ul>
+                            </div>
+                            <div class="col-lg-6 col-xl-5 mb-4">
+                                <h5>We Accept</h5>
+                                <ul class="list-inline tp-payment-icons">
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/visa.png" alt="Visa"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/american_express.png" alt="American Express"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/maestro.png" alt="Maestro"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/jcb.png" alt="JCB"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/discover.png" alt="Discover"/>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-lg-6 col-xl-3 mb-4">
+                                <h5>Follow Us On</h5>
+                                <div class="s_social_media no_icon_color tp-followus-icons" data-name="Social Media">
+                                    <h5 class="s_social_media_title d-none">Follow Us On</h5>
+                                    <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                        <i class="fa fa-facebook"/>
+                                    </a>
+                                    <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                        <i class="fa fa-twitter"/>
+                                    </a>
+                                    <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                        <i class="fa fa-linkedin"/>
+                                    </a>
+                                    <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                        <i class="fa fa-instagram"/>
+                                    </a>
+                                    <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                        <i class="fa fa-youtube"/>
+                                    </a>
+                                    <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                        <i class="fa fa-github"/>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 col-xl-3 mb-4">
+                                <h5>Subscribe</h5>
+                                <div class="s_newsletter_list js_subscribe" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                                    <div class="input-group">
+                                        <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                        <a role="button" href="#" class="btn btn-primary js_subscribe_btn o_submit"><i class="fa fa-send-o"/></a>
+                                        <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none o_submit" disabled="disabled">Thanks</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="class" add="tp-custom-copyright" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="after">
+            <div class="container">
+                <div class="row justify-content-between">
+                    <div class="col-12 col-lg-auto">
+                        <div class="my-2">
+                            Copyright &amp;copy; MyCompany
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto text-lg-end" t-if="(len(languages) &gt; 1 or (website and (editable or translatable))) or (website_sale_pricelists and len(website_sale_pricelists)&gt;1)">
+                        <ul class="list-inline my-2">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_footer_style_2" inherit_id="website.layout" name="Footer Style - 2" active="False">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block pt40 pb24" data-snippet="s_text_block" data-name="Text">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-12 col-sm-6 col-md-6 col-lg-4">
+                                <h6>Shop departments</h6>
+                                <div class="s_hr pb8" data-name="Separator">
+                                    <hr class="w-50 me-auto" style="border-top-width: 1px; border-color: var(--600);"/>
+                                </div>
+                                <ul class="list-unstyled tp-list-arrow">
+                                    <li class="my-2">
+                                        <a href="#">Athletic Apparel</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sneakers &amp; Athletic</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sunglasses &amp; Eyewear</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Jeans</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">T-Shirts</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Swimwear</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Clogs &amp; Mules</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Bags</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Footwear</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Kidswear</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">T-shirts</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Polo T-shirts</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-6 col-lg-4">
+                                <h6>Account &amp; other info</h6>
+                                <div class="s_hr pb8" data-name="Separator">
+                                    <hr class="w-50 me-auto" style="border-top-width: 1px; border-color: var(--600);"/>
+                                </div>
+                                <ul class="list-unstyled tp-list-arrow">
+                                    <li class="my-2">
+                                        <a href="#">My account</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Your Orders</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Shipping Info</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Delivery data</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#"> Our Policy</a>
+                                    </li>
+                                </ul>
+                                <h6 class="mt-4">About us</h6>
+                                <div class="s_hr pb8" data-name="Separator">
+                                    <hr class="w-50 me-auto" style="border-top-width: 1px; border-color: var(--600);"/>
+                                </div>
+                                <ul class="list-unstyled tp-list-arrow">
+                                    <li class="my-2">
+                                        <a href="#">Our Stores</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Contact us</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Locate store</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">News</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Blog</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <h6>Stay informed</h6>
+                                <div class="s_hr pb8" data-name="Separator">
+                                    <hr class="w-100 me-auto" style="border-top-width: 1px; border-color: var(--600);"/>
+                                </div>
+                                <div class="s_newsletter_list js_subscribe" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fa fa-envelope-o"/>
+                                        </span>
+                                        <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                        <a role="button" href="#" class="btn btn-primary js_subscribe_btn o_submit"><i class="fa fa-send-o"/></a>
+                                        <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none o_submit" disabled="disabled">Thanks</a>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small> * Subscribe to our newsletter to receive early discount offers and new products info. </small>
+                                </div>
+
+                                <h6 class="mt-4">Download our apps</h6>
+                                <div class="s_hr pb8" data-name="Separator">
+                                    <hr class="w-100 me-auto" style="border-top-width: 1px; border-color: var(--600);"/>
+                                </div>
+                                <div class="d-flex">
+                                    <a href="#" class="me-2">
+                                        <img class="img img-fluid" src="/theme_prime/static/src/img/content/app-store-1.png"/>
+                                    </a>
+                                    <a href="#" class="ms-2">
+                                        <img class="img img-fluid" src="/theme_prime/static/src/img/content/app-store-2.png"/>
+                                    </a>
+                                </div>
+
+                                <h6 class="mt-4">We accept</h6>
+                                <div class="s_hr pb8" data-name="Separator">
+                                    <hr class="w-100 me-auto" style="border-top-width: 1px; border-color: var(--600);"/>
+                                </div>
+                                <ul class="list-inline tp-payment-icons">
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/visa.png" alt="Visa"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/american_express.png" alt="American Express"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/maestro.png" alt="Maestro"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/jcb.png" alt="JCB"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/discover.png" alt="Discover"/>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="class" add="tp-custom-copyright" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="after">
+            <section class="tp-icon-blocks pt16 pb16">
+                <div class="container">
+                    <div class="row justify-content-center p-3 s_nb_column_fixed">
+                        <div class="col-12 col-sm-6 col-lg-3 s_col_no_bgcolor tp-icon-block text-center">
+                            <span class="fa fa-2x fa-rocket rounded-circle tp-light-bg m-3"></span>
+                            <h6>Free Delivery</h6>
+                            <p>All oders over $100</p>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3 s_col_no_bgcolor tp-icon-block text-center">
+                            <span class="fa fa-2x fa-thumbs-up rounded-circle tp-light-bg m-3"></span>
+                            <h6>Quality Products</h6>
+                            <p>100% Genuine product</p>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3 s_col_no_bgcolor tp-icon-block text-center">
+                            <span class="fa fa-2x fa-phone rounded-circle tp-light-bg m-3"></span>
+                            <h6>Customer Support</h6>
+                            <p>Friendly 24/7 customer support</p>
+                        </div>
+                        <div class="col-12 col-sm-6 col-lg-3 s_col_no_bgcolor tp-icon-block text-center">
+                            <span class="fa fa-2x fa-undo rounded-circle tp-light-bg m-3"></span>
+                            <h6>Easy Returns</h6>
+                            <p>No Questions Asked</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <div class="container py-2">
+                <div class="row justify-content-between">
+                    <div class="col-lg-auto text-center text-lg-start">
+                        <div class="my-2">Copyright &amp;copy; MyCompany</div>
+                    </div>
+                    <div class="col-lg-auto text-center">
+                        <div class="s_social_media no_icon_color my-2" data-name="Social Media">
+                            <h5 class="s_social_media_title d-none">Follow Us On</h5>
+                            <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                <i class="fa fa-facebook"/>
+                            </a>
+                            <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                <i class="fa fa-twitter"/>
+                            </a>
+                            <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                <i class="fa fa-linkedin"/>
+                            </a>
+                            <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                <i class="fa fa-instagram"/>
+                            </a>
+                            <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                <i class="fa fa-youtube"/>
+                            </a>
+                            <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                <i class="fa fa-github"/>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-auto text-center text-lg-end" t-if="(len(languages) &gt; 1 or (website and (editable or translatable))) or (website_sale_pricelists and len(website_sale_pricelists)&gt;1)">
+                        <ul class="list-inline my-2">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_footer_style_3" inherit_id="website.layout" name="Footer Style - 3" active="False">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block pt48 pb36" data-snippet="s_text_block" data-name="Text">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-6 col-lg-4 mb-4">
+                                <h5 class="mb-3">
+                                    Categories
+                                </h5>
+                                <ul class="list-unstyled">
+                                    <li class="my-2">
+                                        <a href="#">Athletic Apparel</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sneakers &amp; Athletic</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sunglasses &amp; Eyewear</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Jeans</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">T-Shirts</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Swimwear</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Clogs &amp; Mules</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Bags</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sandals</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Belts</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Hats</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Jewelry</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-6 col-lg-4 mb-4">
+                                <h5 class="mb-3">
+                                    Account Info
+                                </h5>
+                                <ul class="list-unstyled">
+                                    <li class="my-2">
+                                        <a href="#">Your account</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Refunds &amp; replacements</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Order tracking</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Delivery info</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Taxes &amp; fees</a>
+                                    </li>
+                                </ul>
+                                <h5 class="mt-4 mb-3">
+                                    Useful Links
+                                </h5>
+                                <ul class="list-unstyled">
+                                    <li class="my-2">
+                                        <a href="#">Blog</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Community</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Forums</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Pricing and Plans</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-4 mb-4">
+                                <h5 class="mb-3">
+                                    Contacts
+                                </h5>
+                                <div>
+                                    <div>250 Executive Park Blvd, Suite 3400 <br/> San Francisco CA 94134 <br/>United States</div>
+                                    <ul class="list-unstyled">
+                                        <li class="py-1"><i class="fa fa-1x fa-fw fa-envelope me-1"/><a href="mailto:info@yourcompany.com">info@yourcompany.com</a></li>
+                                        <li class="py-1"><i class="fa fa-1x fa-fw fa-phone me-1"/><span class="o_force_ltr"><a href="tel:1 (650) 691-3277">+1 (650) 691-3277</a></span></li>
+                                    </ul>
+                                </div>
+                                <h5 class="mt-4 mb-3">
+                                    Subscribe
+                                </h5>
+                                <div class="s_newsletter_list js_subscribe w-75" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                                    <div class="input-group">
+                                        <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                        <a role="button" href="#" class="btn btn-primary js_subscribe_btn o_submit"><i class="fa fa-send-o"/></a>
+                                        <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none o_submit" disabled="disabled">Thanks</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="class" add="tp-custom-copyright" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="after">
+            <div class="container">
+                <div class="row py-4 tp-icon-blocks">
+                    <div class="col-12 col-lg-6 col-xl-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-rocket fa-2x text-primary"/>
+                            </div>
+                            <div class="flex-grow-1 ps-3">
+                                <h6>Fast and free delivery</h6>
+                                <p>Free delivery for all orders</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 col-xl-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-undo fa-2x text-primary"/>
+                            </div>
+                            <div class="flex-grow-1 ps-3">
+                                <h6>Money back guarantee</h6>
+                                <p>We return money within 30 days</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 col-xl-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-phone fa-2x text-primary"/>
+                            </div>
+                            <div class="flex-grow-1 ps-3">
+                                <h6>24/7 customer support</h6>
+                                <p>Friendly 24/7 customer support</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 col-xl-3">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-credit-card fa-2x text-primary"/>
+                            </div>
+                            <div class="flex-grow-1 ps-3">
+                                <h6>Secure online payment</h6>
+                                <p>We process SSL сertificate</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row py-4 justify-content-between">
+                    <div class="col-12 col-lg-auto text-center text-lg-start">
+                        <div>
+                            <a href="/" class="o_footer_logo logo">
+                                <img src="/website/static/src/img/website_logo.svg" class="img-fluid" aria-label="Logo of MyCompany" title="MyCompany" role="img"/>
+                            </a>
+                            <t t-if="(len(languages) &gt; 1 or (website and (editable or translatable))) or (website_sale_pricelists and len(website_sale_pricelists)&gt;1)">
+                                <ul class="list-inline d-sm-inline-block ms-3 my-2">
+                                    <t t-call="theme_prime.component_language_pricelist_selector"/>
+                                </ul>
+                            </t>
+                        </div>
+                        <ul class="list-inline my-3">
+                            <li class="list-inline-item mx-2"><a href="#">Home</a></li>
+                            <li class="list-inline-item mx-2"><a href="#">About Us</a></li>
+                            <li class="list-inline-item mx-2"><a href="#">Contact Us</a></li>
+                            <li class="list-inline-item mx-2"><a href="#">Privacy Policy</a></li>
+                            <li class="list-inline-item mx-2"><a href="#">Terms of Use</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-12 col-lg-auto text-center text-lg-end">
+                        <div class="s_social_media no_icon_color tp-followus-icons" data-name="Social Media">
+                            <h5 class="s_social_media_title d-none">Follow Us On</h5>
+                            <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                <i class="fa fa-facebook"/>
+                            </a>
+                            <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                <i class="fa fa-twitter"/>
+                            </a>
+                            <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                <i class="fa fa-linkedin"/>
+                            </a>
+                            <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                <i class="fa fa-instagram"/>
+                            </a>
+                            <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                <i class="fa fa-youtube"/>
+                            </a>
+                            <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                <i class="fa fa-github"/>
+                            </a>
+                        </div>
+                        <ul class="list-inline my-3 tp-payment-icons">
+                            <li class="list-inline-item my-1">
+                                <img src="/theme_prime/static/src/img/payment/visa.png" alt="Visa"/>
+                            </li>
+                            <li class="list-inline-item my-1">
+                                <img src="/theme_prime/static/src/img/payment/american_express.png" alt="American Express"/>
+                            </li>
+                            <li class="list-inline-item my-1">
+                                <img src="/theme_prime/static/src/img/payment/maestro.png" alt="Maestro"/>
+                            </li>
+                            <li class="list-inline-item my-1">
+                                <img src="/theme_prime/static/src/img/payment/jcb.png" alt="JCB"/>
+                            </li>
+                            <li class="list-inline-item my-1">
+                                <img src="/theme_prime/static/src/img/payment/discover.png" alt="Discover"/>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="my-2">
+                            Copyright &amp;copy; MyCompany
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_footer_style_4" inherit_id="website.layout" name="Footer Style - 4" active="False">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block pt48 pb36" data-snippet="s_text_block" data-name="Text">
+                    <div class="container">
+                        <div class="row py-4 tp-icon-blocks">
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <span class="fa fa-rocket fa-2x text-primary"/>
+                                    </div>
+                                    <div class="flex-grow-1 ps-3">
+                                        <h6>Fast and free delivery</h6>
+                                        <p>Free delivery for all orders</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <span class="fa fa-undo fa-2x text-primary"/>
+                                    </div>
+                                    <div class="flex-grow-1 ps-3">
+                                        <h6>Money back guarantee</h6>
+                                        <p>We return money within 30 days</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <span class="fa fa-phone fa-2x text-primary"/>
+                                    </div>
+                                    <div class="flex-grow-1 ps-3">
+                                        <h6>24/7 customer support</h6>
+                                        <p>Friendly 24/7 customer support</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 col-xl-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <span class="fa fa-credit-card fa-2x text-primary"/>
+                                    </div>
+                                    <div class="flex-grow-1 ps-3">
+                                        <h6>Secure online payment</h6>
+                                        <p>We process SSL сertificate</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row pt-5">
+                            <div class="col-6 col-md-4 col-lg-3 mb-4">
+                                <h6 class="mb-3">
+                                    Categories
+                                </h6>
+                                <ul class="list-unstyled tp-list-dot">
+                                    <li class="my-2">
+                                        <a href="#">Jeans</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">T-Shirts</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Swimwear</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Clogs &amp; Mules</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Bags</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Accessories</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-3 mb-4">
+                                <h6 class="mb-3">
+                                    Useful Links
+                                </h6>
+                                <ul class="list-unstyled tp-list-dot">
+                                    <li class="my-2">
+                                        <a href="#">Blog</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Community</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Forums</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Pricing and Plans</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Careers</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">FAQ</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-6 col-md-4 col-lg-3 mb-4">
+                                <h6 class="mb-3">
+                                    About Us
+                                </h6>
+                                <ul class="list-unstyled tp-list-dot">
+                                    <li class="my-2">
+                                        <a href="#">All services</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="/aboutus">About Us</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="/contactus">Contact Us</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Privacy Policy</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Terms of Use</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-md-4 col-lg-3 mb-4">
+                                <h6 class="mb-3">
+                                    Contact Us
+                                </h6>
+                                <div>
+                                    <div>250 Executive Park Blvd, Suite 3400 <br/> San Francisco CA 94134 <br/>United States</div>
+                                    <ul class="list-unstyled">
+                                        <li class="py-1"><i class="fa fa-1x fa-fw fa-envelope me-1"/><a href="mailto:info@yourcompany.com">info@yourcompany.com</a></li>
+                                        <li class="py-1"><i class="fa fa-1x fa-fw fa-phone me-1"/><span class="o_force_ltr"><a href="tel:1 (650) 691-3277">+1 (650) 691-3277</a></span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-12 text-center">
+                                <ul class="list-inline tp-payment-icons">
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/visa.png" alt="Visa"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/american_express.png" alt="American Express"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/maestro.png" alt="Maestro"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/jcb.png" alt="JCB"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/discover.png" alt="Discover"/>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 text-center">
+                                <div class="s_social_media mb-4" data-name="Social Media">
+                                    <h5 class="s_social_media_title d-none">Follow us</h5>
+                                    <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                        <i class="fa fa-facebook rounded-circle shadow-sm"/>
+                                    </a>
+                                    <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                        <i class="fa fa-twitter rounded-circle shadow-sm"/>
+                                    </a>
+                                    <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                        <i class="fa fa-linkedin rounded-circle shadow-sm"/>
+                                    </a>
+                                    <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                        <i class="fa fa-youtube rounded-circle shadow-sm"/>
+                                    </a>
+                                    <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                        <i class="fa fa-instagram rounded-circle shadow-sm"/>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="class" add="tp-custom-copyright" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="after">
+            <div class="container">
+                <div class="row justify-content-between">
+                    <div class="col-12 col-lg-auto">
+                        <div class="my-2">
+                            Copyright &amp;copy; MyCompany
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-auto text-lg-end" t-if="(len(languages) &gt; 1 or (website and (editable or translatable))) or (website_sale_pricelists and len(website_sale_pricelists)&gt;1)">
+                        <ul class="list-inline my-2">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_footer_style_5" inherit_id="website.layout" name="Footer Style - 5" active="False">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block pt40 pb16" data-snippet="s_text_block" data-name="Text">
+                    <div class="container">
+                        <div class="row tp-logo-container">
+                            <div class="col-12 text-center">
+                                <a href="/" class="o_footer_logo logo mb-2 d-block">
+                                    <img src="/website/static/src/img/website_logo.svg" class="img-fluid" aria-label="Logo of MyCompany" title="MyCompany" role="img"/>
+                                </a>
+                                <p class="mb-4">
+                                    We are a team of passionate people whose goal is to improve everyone's life through disruptive products. We build great products to solve your business problems. Our products are designed for small to medium size companies willing to optimize their performance.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-12 col-lg-6 col-xl-3 mb-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <span class="fa fa-phone fa-3x text-primary"/>
+                                    </div>
+                                    <div class="flex-grow-1 ps-3">
+                                        <h6>Customer Care</h6>
+                                        <h5><a href="tel:(+800) 123 456 789">(+800) 123 456 789</a></h5>
+                                    </div>
+                                </div>
+                                <div class="mt-3">250 Executive Park Blvd, Suite 3400 <br/> San Francisco CA 94134 <br/>United States</div>
+                                <ul class="list-unstyled">
+                                    <li class="py-1"><i class="fa fa-1x fa-fw fa-envelope me-1"/><a href="mailto:info@yourcompany.com">info@yourcompany.com</a></li>
+                                    <li class="py-1"><i class="fa fa-1x fa-fw fa-phone me-1"/><span class="o_force_ltr"><a href="tel:1 (650) 691-3277">+1 (650) 691-3277</a></span></li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-6 col-xl-2 mb-3">
+                                <h6 class="mb-3">
+                                    Categories
+                                </h6>
+                                <ul class="list-unstyled tp-list-dot">
+                                    <li class="my-2">
+                                        <a href="#">Athletic Apparel</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sneakers &amp; Athletic</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sunglasses &amp; Eyewear</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Jeans</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">T-Shirts</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-6 col-xl-2 mb-3">
+                                <h6 class="mb-3">
+                                    Quick Links
+                                </h6>
+                                <ul class="list-unstyled tp-list-dot">
+                                    <li class="my-2">
+                                        <a href="#">Blog</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Forums</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Pricing and Plans</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Careers</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">FAQ</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-6 col-xl-2 mb-3">
+                                <h6 class="mb-3">
+                                    About Us
+                                </h6>
+                                <ul class="list-unstyled tp-list-dot">
+                                    <li class="my-2">
+                                        <a href="#">All services</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="/aboutus">About Us</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="/contactus">Contact Us</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Privacy Policy</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Terms of Use</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-6 col-xl-3 mb-3">
+                                <h6 class="mb-3">
+                                    Subscribe
+                                </h6>
+                                <div class="s_newsletter_list js_subscribe mb-3" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                                    <div class="input-group">
+                                        <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                        <a role="button" href="#" class="btn btn-primary js_subscribe_btn o_submit"><i class="fa fa-send-o"/></a>
+                                        <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none o_submit" disabled="disabled">Thanks</a>
+                                    </div>
+                                </div>
+                                <h6 class="mb-3 mt-4">
+                                    Payment
+                                </h6>
+                                <ul class="list-inline tp-payment-icons">
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/visa.png" alt="Visa"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/american_express.png" alt="American Express"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/maestro.png" alt="Maestro"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/jcb.png" alt="JCB"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/discover.png" alt="Discover"/>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="class" add="tp-custom-copyright" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="after">
+            <div class="container">
+                <div class="row justify-content-between">
+                    <div class="col-lg-auto text-center text-lg-start">
+                        <div class="my-2">Copyright &amp;copy; MyCompany</div>
+                    </div>
+                    <div class="col-lg-auto text-center">
+                        <div class="s_social_media no_icon_color my-2" data-name="Social Media">
+                            <h5 class="s_social_media_title d-none">Follow Us On</h5>
+                            <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                <i class="fa fa-facebook"/>
+                            </a>
+                            <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                <i class="fa fa-twitter"/>
+                            </a>
+                            <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                <i class="fa fa-linkedin"/>
+                            </a>
+                            <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                <i class="fa fa-instagram"/>
+                            </a>
+                            <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                <i class="fa fa-youtube"/>
+                            </a>
+                            <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                <i class="fa fa-github"/>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-auto text-center text-lg-end" t-if="(len(languages) &gt; 1 or (website and (editable or translatable))) or (website_sale_pricelists and len(website_sale_pricelists)&gt;1)">
+                        <ul class="list-inline my-2">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_footer_style_6" inherit_id="website.layout" name="Footer Style - 6" active="False">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="tp-newsletter-block">
+                    <div class="container pt32 pb32">
+                        <div class="row s_nb_column_fixed s_col_no_bgcolor">
+                            <div class="col-md-8 align-self-center">
+                                <h3 class="mb-0">Subscribe to our weekly newsletter</h3>
+                            </div>
+                            <div class="col-md-4 align-self-center">
+                                <div class="s_newsletter_list js_subscribe" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                                    <div class="input-group">
+                                        <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                        <a role="button" href="#" class="btn btn-primary js_subscribe_btn o_submit"><i class="fa fa-send-o"/></a>
+                                        <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none o_submit" disabled="disabled">Thanks</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section class="s_text_block pt48 pb24" data-snippet="s_text_block" data-name="Text">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-12 col-lg-3 mb-3">
+                                <a href="/" class="o_footer_logo logo">
+                                    <img src="/website/static/src/img/website_logo.svg" class="img-fluid" aria-label="Logo of MyCompany" title="MyCompany" role="img"/>
+                                </a>
+                                <div class="s_social_media tp-followus-icons mt-4" data-name="Social Media">
+                                    <h5 class="s_social_media_title d-none">Follow us</h5>
+                                    <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                        <i class="fa fa-facebook rounded-circle shadow-sm"/>
+                                    </a>
+                                    <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                        <i class="fa fa-twitter rounded-circle shadow-sm"/>
+                                    </a>
+                                    <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                        <i class="fa fa-linkedin rounded-circle shadow-sm"/>
+                                    </a>
+                                    <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                        <i class="fa fa-instagram rounded-circle shadow-sm"/>
+                                    </a>
+                                    <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                        <i class="fa fa-youtube rounded-circle shadow-sm"/>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg-2 mb-3">
+                                <h6>
+                                    Categories
+                                </h6>
+                                <div class="s_hr pb8" data-name="Separator">
+                                    <hr class="w-25 me-auto border-primary" style="border-top-width: 1px;"/>
+                                </div>
+                                <ul class="list-unstyled mb-0">
+                                    <li class="my-2">
+                                        <a href="#">Athletic Apparel</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sneakers &amp; Athletic</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sunglasses &amp; Eyewear</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Jeans</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">T-Shirts</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Swimwear</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-2 mb-3">
+                                <h6>
+                                    Account Info
+                                </h6>
+                                <div class="s_hr pb8" data-name="Separator">
+                                    <hr class="w-25 me-auto border-primary" style="border-top-width: 1px;"/>
+                                </div>
+                                <ul class="list-unstyled mb-0">
+                                    <li class="my-2">
+                                        <a href="#">Your account</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Refunds &amp; replacements</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Order tracking</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Delivery info</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Taxes &amp; fees</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-2 mb-3">
+                                <h6>
+                                    Useful Links
+                                </h6>
+                                <div class="s_hr pb8" data-name="Separator">
+                                    <hr class="w-25 me-auto border-primary" style="border-top-width: 1px;"/>
+                                </div>
+                                <ul class="list-unstyled mb-0">
+                                    <li class="my-2">
+                                        <a href="#">Blog</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Community</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Forums</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Pricing and Plans</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-3 mb-3">
+                                <h6>About Us</h6>
+                                <div class="s_hr pb8" data-name="Separator">
+                                    <hr class="w-25 me-auto border-primary" style="border-top-width: 1px;"/>
+                                </div>
+                                <p>
+                                    We are a team of passionate people whose goal is to improve everyone's life through disruptive products. We build great products to solve your business problems.
+                                </p>
+                                <p>
+                                    Our products are designed for small to medium size companies willing to optimize their performance.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="class" add="tp-custom-copyright" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="after">
+            <div class="container">
+                <div class="row justify-content-between">
+                    <div class="col-12 col-md-auto text-center text-md-start">
+                        <div class="my-2">
+                            Copyright &amp;copy; MyCompany
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-auto text-center text-md-end" t-if="(len(languages) &gt; 1 or (website and (editable or translatable))) or (website_sale_pricelists and len(website_sale_pricelists)&gt;1)">
+                        <ul class="list-inline my-2">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_footer_style_7" inherit_id="website.layout" name="Footer Style - 7" active="False">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block pt64 pb16" data-snippet="s_text_block" data-name="Text">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-12 col-md-6 col-xl-4 mb-4">
+                                <h6 class="mb-3">About Us</h6>
+                                <div>We are a team of passionate people whose goal is to improve everyone's life through disruptive products. We build great products to solve your business problems.</div>
+                                <h6 class="mt-4 mb-3">Download our apps</h6>
+                                <div class="d-flex tp-store-img">
+                                    <a href="#" class="me-2">
+                                        <img class="img img-fluid" src="/theme_prime/static/src/img/content/app-store-1.png"/>
+                                    </a>
+                                    <a href="#" class="ms-2">
+                                        <img class="img img-fluid" src="/theme_prime/static/src/img/content/app-store-2.png"/>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-xl-2 mb-4">
+                                <h6 class="mb-3">
+                                    Categories
+                                </h6>
+                                <ul class="list-unstyled mb-0 tp-list-arrow">
+                                    <li class="my-2">
+                                        <a href="#">Athletic Apparel</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sneakers &amp; Athletic</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Sunglasses &amp; Eyewear</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Jeans</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">T-Shirts</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Swimwear</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-md-6 col-xl-2 mb-4">
+                                <h6 class="mb-3">
+                                    Account Info
+                                </h6>
+                                <ul class="list-unstyled mb-0 tp-list-arrow">
+                                    <li class="my-2">
+                                        <a href="#">Your account</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Refunds &amp; replacements</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Order tracking</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Delivery info</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Taxes &amp; fees</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-md-6 col-xl-2 mb-4">
+                                <h6 class="mb-3">
+                                    About Us
+                                </h6>
+                                <ul class="list-unstyled mb-0 tp-list-arrow">
+                                    <li class="my-2">
+                                        <a href="#">All services</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="/aboutus">About Us</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="/contactus">Contact Us</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Privacy Policy</a>
+                                    </li>
+                                    <li class="my-2">
+                                        <a href="#">Terms of Use</a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-md-6 col-xl-2 mb-4">
+                                <h6 class="mb-3">Store Information</h6>
+                                <div>250 Executive Park Blvd, Suite 3400 <br/> San Francisco CA 94134 <br/>United States</div>
+                                <ul class="list-unstyled mb-0">
+                                    <li class="py-1"><i class="fa fa-1x fa-fw fa-envelope me-1"/><a href="mailto:info@yourcompany.com">info@yourcompany.com</a></li>
+                                    <li class="py-1"><i class="fa fa-1x fa-fw fa-phone me-1"/><span class="o_force_ltr"><a href="tel:1 (650) 691-3277">+1 (650) 691-3277</a></span></li>
+                                </ul>
+                            </div>
+                            <div class="col-12">
+                                <ul class="list-inline tp-payment-icons text-center my-3">
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/visa.png" alt="Visa"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/american_express.png" alt="American Express"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/maestro.png" alt="Maestro"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/jcb.png" alt="JCB"/>
+                                    </li>
+                                    <li class="list-inline-item my-1">
+                                        <img src="/theme_prime/static/src/img/payment/discover.png" alt="Discover"/>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="class" add="tp-custom-copyright" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="after">
+            <div class="container">
+                <div class="row justify-content-between">
+                    <div class="col-lg-auto text-center text-lg-start">
+                        <div class="my-2">Copyright &amp;copy; MyCompany</div>
+                    </div>
+                    <div class="col-lg-auto text-center">
+                        <div class="s_social_media no_icon_color my-2" data-name="Social Media">
+                            <h5 class="s_social_media_title d-none">Follow Us On</h5>
+                            <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                <i class="fa fa-facebook"/>
+                            </a>
+                            <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                <i class="fa fa-twitter"/>
+                            </a>
+                            <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                <i class="fa fa-linkedin"/>
+                            </a>
+                            <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                <i class="fa fa-instagram"/>
+                            </a>
+                            <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                <i class="fa fa-youtube"/>
+                            </a>
+                            <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                <i class="fa fa-github"/>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-auto text-center text-lg-end" t-if="(len(languages) &gt; 1 or (website and (editable or translatable))) or (website_sale_pricelists and len(website_sale_pricelists)&gt;1)">
+                        <ul class="list-inline my-2">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_footer_style_8" inherit_id="website.layout" name="Footer Style - 8" active="False">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block pt48 pb24" data-snippet="s_text_block" data-name="Text">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-12 text-center pb-4">
+                                <a href="/" class="o_footer_logo logo">
+                                    <img src="/website/static/src/img/website_logo.svg" class="img-fluid" aria-label="Logo of MyCompany" title="MyCompany" role="img"/>
+                                </a>
+                            </div>
+                            <div class="col-12 text-center">
+                                <ul class="list-inline">
+                                    <li class="list-inline-item mx-2 my-1"><a href="#">Home</a></li>
+                                    <li class="list-inline-item mx-2 my-1"><a href="#">About Us</a></li>
+                                    <li class="list-inline-item mx-2 my-1"><a href="#">Contact Us</a></li>
+                                    <li class="list-inline-item mx-2 my-1"><a href="#">Privacy Policy</a></li>
+                                    <li class="list-inline-item mx-2 my-1"><a href="#">Terms of Use</a></li>
+                                </ul>
+                            </div>
+                            <div class="col-12 text-center">
+                                <div class="s_social_media no_icon_color tp-followus-icons" data-name="Social Media">
+                                    <h5 class="s_social_media_title d-none">Follow Us On</h5>
+                                    <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                        <i class="fa fa-facebook"/>
+                                    </a>
+                                    <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                        <i class="fa fa-twitter"/>
+                                    </a>
+                                    <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                        <i class="fa fa-linkedin"/>
+                                    </a>
+                                    <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                        <i class="fa fa-instagram"/>
+                                    </a>
+                                    <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                        <i class="fa fa-youtube m-1"/>
+                                    </a>
+                                    <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                        <i class="fa fa-github"/>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="class" add="tp-custom-copyright" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="after">
+            <div class="container">
+                <div class="row justify-content-between">
+                    <div class="col-12 col-md-auto text-center text-md-start">
+                        <div class="my-2">
+                            Copyright &amp;copy; MyCompany
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-auto text-center text-md-end" t-if="(len(languages) &gt; 1 or (website and (editable or translatable))) or (website_sale_pricelists and len(website_sale_pricelists)&gt;1)">
+                        <ul class="list-inline my-2">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_footer_style_9" inherit_id="website.layout" name="Footer Style - 9" active="False">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block pt48 pb48" data-snippet="s_text_block" data-name="Text">
+                    <div class="container">
+                        <div class="row align-items-center">
+                            <div class="col-12 col-lg-3 text-center text-lg-start">
+                                <a href="/" class="o_footer_logo logo">
+                                    <img src="/website/static/src/img/website_logo.svg" class="img-fluid" aria-label="Logo of MyCompany" title="MyCompany" role="img"/>
+                                </a>
+                            </div>
+                            <div class="col-12 col-lg-6 text-center">
+                                <ul class="list-inline my-2 m-lg-0">
+                                    <li class="list-inline-item mx-3 my-1"><a href="#">Home</a></li>
+                                    <li class="list-inline-item mx-3 my-1"><a href="#">About Us</a></li>
+                                    <li class="list-inline-item mx-3 my-1"><a href="#">Contact Us</a></li>
+                                    <li class="list-inline-item mx-3 my-1"><a href="#">Privacy Policy</a></li>
+                                    <li class="list-inline-item mx-3 my-1"><a href="#">Terms of Use</a></li>
+                                </ul>
+                            </div>
+                            <div class="col-12 col-lg-3 text-center text-lg-end">
+                                <div class="s_social_media no_icon_color tp-followus-icons my-2" data-name="Social Media">
+                                    <h5 class="s_social_media_title d-none">Follow Us On</h5>
+                                    <a href="/website/social/facebook" class="s_social_media_facebook" target="_blank">
+                                        <i class="fa fa-facebook"/>
+                                    </a>
+                                    <a href="/website/social/twitter" class="s_social_media_twitter" target="_blank">
+                                        <i class="fa fa-twitter"/>
+                                    </a>
+                                    <a href="/website/social/linkedin" class="s_social_media_linkedin" target="_blank">
+                                        <i class="fa fa-linkedin"/>
+                                    </a>
+                                    <a href="/website/social/instagram" class="s_social_media_instagram" target="_blank">
+                                        <i class="fa fa-instagram"/>
+                                    </a>
+                                    <a href="/website/social/youtube" class="s_social_media_youtube" target="_blank">
+                                        <i class="fa fa-youtube m-1"/>
+                                    </a>
+                                    <a href="/website/social/github" class="s_social_media_github" target="_blank">
+                                        <i class="fa fa-github"/>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="class" add="tp-custom-copyright" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="after">
+            <div class="container">
+                <div class="row justify-content-between">
+                    <div class="col-12 col-md-auto text-center text-md-start">
+                        <div class="my-2">
+                            Copyright &amp;copy; MyCompany
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-auto text-center text-md-end" t-if="(len(languages) &gt; 1 or (website and (editable or translatable))) or (website_sale_pricelists and len(website_sale_pricelists)&gt;1)">
+                        <ul class="list-inline my-2">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="template_footer_style_10" inherit_id="website.layout" name="Footer Style - 10" active="False">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <div id="footer" class="oe_structure oe_structure_solo" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block" data-snippet="s_text_block" data-name="Text">
+                    <div class="container py-4 py-lg-0">
+                        <div class="row">
+                            <div class="col-12 col-md-6 col-lg-3 tp-block">
+                                <div class="p-2">
+                                    <h6 class="mb-4">
+                                        Information
+                                    </h6>
+                                    <ul class="list-unstyled">
+                                        <li class="my-2">
+                                            <a href="/aboutus">About Us</a>
+                                        </li>
+                                        <li class="my-2">
+                                            <a href="/contactus">Contact Us</a>
+                                        </li>
+                                        <li class="my-2">
+                                            <a href="#">Privacy Policy</a>
+                                        </li>
+                                        <li class="my-2">
+                                            <a href="#">Terms of Use</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-3 tp-block">
+                                <div class="p-2">
+                                    <h6 class="mb-4">
+                                        Quick links
+                                    </h6>
+                                    <ul class="list-unstyled">
+                                        <li class="my-2">
+                                            <a href="#">My Account</a>
+                                        </li>
+                                        <li class="my-2">
+                                            <a href="#">Cart</a>
+                                        </li>
+                                        <li class="my-2">
+                                            <a href="#">Wishlist</a>
+                                        </li>
+                                        <li class="my-2">
+                                            <a href="#">Product Compare</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-3 tp-block">
+                                <div class="p-2">
+                                    <h6 class="mb-4">
+                                        Our store
+                                    </h6>
+                                    <div class="mt-4">
+                                        Find a location nearest<br/>
+                                        you. <a href="#">See Our Stores</a>
+                                    </div>
+                                    <ul class="list-unstyled mt-4">
+                                        <li class="py-1"><i class="fa fa-1x fa-fw fa-envelope me-1"/><a href="mailto:info@yourcompany.com">info@yourcompany.com</a></li>
+                                        <li class="py-1"><i class="fa fa-1x fa-fw fa-phone me-1"/><span class="o_force_ltr"><a href="tel:1 (650) 691-3277">+1 (650) 691-3277</a></span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-3 tp-block">
+                                <div class="p-2">
+                                    <h6 class="mb-4">
+                                        Subscribe
+                                    </h6>
+                                    <div class="mb-4">
+                                        Enter your email below to know latest collection and product launch.
+                                    </div>
+                                    <div class="s_newsletter_list js_subscribe" data-vxml="001" data-list-id="0" data-name="Newsletter Form">
+                                        <div class="input-group">
+                                            <input type="email" name="email" class="js_subscribe_value form-control" placeholder="your email..."/>
+                                            <a role="button" href="#" class="btn btn-primary js_subscribe_btn o_submit"><i class="fa fa-send-o"/></a>
+                                            <a role="button" href="#" class="btn btn-success js_subscribed_btn d-none o_submit" disabled="disabled">Thanks</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]" position="attributes">
+            <attribute name="class" add="tp-custom-copyright" separator=" "/>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="attributes">
+            <attribute name="t-if">False</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('o_footer_copyright')]/div[hasclass('container')]" position="after">
+            <div class="container">
+                <div class="row justify-content-between">
+                    <div class="col-12 col-lg-4">
+                        <ul class="list-inline tp-payment-icons my-3">
+                            <li class="list-inline-item my-1">
+                                <img src="/theme_prime/static/src/img/payment/visa.png" alt="Visa"/>
+                            </li>
+                            <li class="list-inline-item my-1">
+                                <img src="/theme_prime/static/src/img/payment/american_express.png" alt="American Express"/>
+                            </li>
+                            <li class="list-inline-item my-1">
+                                <img src="/theme_prime/static/src/img/payment/maestro.png" alt="Maestro"/>
+                            </li>
+                            <li class="list-inline-item my-1">
+                                <img src="/theme_prime/static/src/img/payment/jcb.png" alt="JCB"/>
+                            </li>
+                            <li class="list-inline-item my-1">
+                                <img src="/theme_prime/static/src/img/payment/discover.png" alt="Discover"/>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-12 col-lg-4 text-lg-center">
+                        <div class="my-3">
+                            Copyright &amp;copy; MyCompany
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 text-lg-end" t-if="(len(languages) &gt; 1 or (website and (editable or translatable))) or (website_sale_pricelists and len(website_sale_pricelists)&gt;1)">
+                        <ul class="list-inline my-3">
+                            <t t-call="theme_prime.component_language_pricelist_selector"/>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>

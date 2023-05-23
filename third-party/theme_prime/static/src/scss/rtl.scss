@@ -1,0 +1,36 @@
+.o_rtl {
+    .oe_website_sale {
+        #products_grid_before .tp-price-filter {
+            .irs--square {
+                direction: rtl;
+            }
+            .irs-min {
+                right: 0;
+                left: unset;
+            }
+            .irs-max {
+                left: 0;
+                right: unset;
+            }
+            .form-row {
+                flex-direction: row-reverse;
+            }
+        }
+    }
+    .drift-zoom-pane.tp-zoom-pane {
+        direction: rtl;
+    }
+    #o-carousel-product .carousel-control-prev > span, #o-carousel-product .carousel-control-next > span {
+        transform: rotate(-180deg) !important;
+    }
+}
+
+//------------------------------------------------------------------------------
+// Owl RTL
+//------------------------------------------------------------------------------
+.owl-carousel.owl-rtl .owl-item {
+    float: left !important;
+}
+.owl-carousel.owl-rtl {
+    direction: ltr !important;
+}

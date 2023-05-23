@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230410\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230509\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-11 20:06+0000\n"
-"PO-Revision-Date: 2023-04-11 20:06+0000\n"
+"POT-Creation-Date: 2023-05-09 15:09+0000\n"
+"PO-Revision-Date: 2023-05-09 15:09+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -20,6 +20,13 @@ msgstr ""
 #: model:ir.model.constraint,message:binaural_accountant.constraint_account_move_unique_name_ve
 msgid "Another entry with the same name already exists."
 msgstr "Ya existe un asiento con el mismo nombre."
+
+#. module: binaural_accountant
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__financial_document
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_move__financial_document
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__financial_document
+msgid "Financial Document"
+msgstr "Documento financiero"
 
 #. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.view_account_move_line_form_binaural_invoice

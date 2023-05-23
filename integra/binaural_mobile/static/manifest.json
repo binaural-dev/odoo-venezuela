@@ -1,0 +1,34 @@
+{
+  "background_color": "#ffffff",
+  "description": "Home | My Website",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "PELock",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "PELock",
+  "start_url": "/budget",
+  "theme_color": "#ffffff",
+  "categories": [
+    "personalization"
+  ],
+  "screenshots": [],
+  "icons": [
+    {
+      "src": "/web/image/website/1/favicon?unique=0468191",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "https://carlos-lin-binaural-test-integrapwa.odoo.com/web/image/website/1/logo/300x300?unique=0468191"
+    },
+    {
+      "src": "https://carlos-lin-binaural-test-integrapwa.odoo.com/web/image/website/1/logo?unique=0468191"
+    },
+    {
+      "src": "/favicon.ico",
+      "type": "image/x-icon"
+    }
+  ],
+  "shortcuts": [],
+  "lang": "es"
+}
