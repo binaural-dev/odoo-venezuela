@@ -27,7 +27,7 @@ Y el codigo abierto desde su [Github](https://github.com/odoo/odoo/)
 
 #### ¿Cómo puedo obtener la versión de Odoo Enterprise?
 
-Debes ponerte en contacto con el equipo de Binaural para obtener el acceso, o en caso de tenerlo desde el repositorio privado [Enterprise](https://github.com/odoo/enterprise/)
+Dentro de nuestra organizacion se tiene un fork de [Enterprise](https://github.com/binaural-dev/enterprise), sin embargo para obtener el enterprise orginal debes colocarte en contacto con el equipo de Binaural.
 
 
 
