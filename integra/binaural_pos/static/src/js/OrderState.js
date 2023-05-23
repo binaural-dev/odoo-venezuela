@@ -16,6 +16,10 @@ odoo.define("binaural_pos.OrderState", function(require) {
         this.to_receipt = always_invoice;
         this.onchage_receipt(always_invoice)
       }
+      init_from_JSON(json) {
+        super.init_from_JSON(...arguments)
+        this.to_receipt = json["to_receipt"]
+      }
       export_as_JSON() {
         let json = super.export_as_JSON();
         json["foreign_amount_total"] = this.get_foreign_total_with_tax();
