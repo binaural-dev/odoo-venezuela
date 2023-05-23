@@ -12,7 +12,7 @@ Esta es una documentación de los estándares para el desarrollo de módulos de 
  - [Tutorial de módulos con Python](readm.md)
  - [Tutorial de módulos con Javascript](readme.md)
  - [Estándares de codigo](code-standard.md)
- - [Estándares de Git](readme.md)
+ - [Estándares de Git](git-standard.md)
  - [Testing](readme.md)
 
  
