@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+    ============================================================================
+    Page Sidebar
+    ============================================================================
+    -->
+    <template id="page_sidebars" inherit_id="website.layout" name="Theme Prime: Page Sidebar">
+        <xpath expr="//header" position="before">
+            <!--
+            ============================================================================
+            Menu Sidebar
+            ============================================================================
+            -->
+            <div groups="!website.group_website_restricted_editor" t-cache="user_id,request.httprequest.path" class="offcanvas offcanvas-start tp-menu-sidebar tp-offcanvas-sidebar" tabindex="-1" aria-hidden="true">
+                <div class="offcanvas-body p-0">
+                    <div class="p-3 tp-user-info-container">
+                        <div class="d-flex justify-content-between">
+                            <div class="border border-white p-1">
+                                <span class="tp-user-logo text-bg-primary fw-bold rounded d-inline-block text-center">
+                                    <i t-if="user_id._is_public()" class="dri dri-user"/>
+                                    <t t-else="" t-out="user_id.name.upper()[:1]"/>
+                                </span>
+                            </div>
+                            <div class="flex-shrink-1">
+                                <button type="button" class="btn-close text-white" data-bs-dismiss="offcanvas" title="Close" aria-label="Close"></button>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex align-items-center justify-content-between">
+                            <h6 class="mb-0 text-white">
+                                <t t-if="user_id._is_public()">
+                                    <t t-if="is_view_active('portal.user_sign_in')">
+                                        <a href="/web/login" class="link-light">
+                                            Login <t t-if="request.env['res.users']._get_signup_invitation_scope() == 'b2c'"><span class="mx-1">•</span> Register</t>
+                                        </a>
+                                    </t>
+                                    <t t-else="">Welcome !</t>
+                                </t>
+                                <span t-else="" class="cursor-pointer tp-account-info-sidebar-action" data-position="start">
+                                    <t t-out="user_id.name"/>
+                                    <i class="fa fa-angle-right ms-2"/>
+                                </span>
+                            </h6>
+                        </div>
+                    </div>
+                    <ul class="nav navbar-nav py-2 border-bottom tp-hook-special-menu" t-if="website._get_dr_theme_config('json_sidebar_config').get('menu_sidebar_show_category')">
+                        <li class="nav-item">
+                            <a role="menuitem" href="/" class="nav-link tp-category-action" data-position="start">
+                                <div class="d-flex align-items-center fw-bold">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-grid" viewBox="0 0 16 16">
+                                        <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/>
+                                    </svg>
+                                    <span class="ms-2">Shop By Categories</span>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                    <t t-call="website.navbar_nav">
+                        <t t-set="_nav_class" t-value="'flex-grow-1'"/>
+                        <t t-foreach="website.menu_id.child_id" t-as="submenu">
+                            <t t-call="website.submenu">
+                                <t t-set="item_class" t-value="'nav-item'"/>
+                                <t t-set="link_class" t-value="'nav-link'"/>
+                            </t>
+                        </t>
+                    </t>
+                    <ul class="nav navbar-nav py-2 border-top tp-hook-extra-menu">
+                        <li class="nav-item" t-nocache="The number of products is dynamic, this rendering cannot be cached.">
+                            <a href="/shop/cart" class="nav-link">
+                                <div class="d-flex align-items-center">
+                                    <i class="dri dri-cart"/>
+                                    <div class="d-flex align-items-center">
+                                        <t t-set="website_sale_cart_quantity" t-value="request.session['website_sale_cart_quantity'] if 'website_sale_cart_quantity' in request.session else website.sale_get_order().cart_quantity or 0"/>
+                                        <h6 class="mb-0 ms-2">My Cart</h6> <span class="ms-2">(<span class="my_cart_quantity" t-att-data-order-id="request.session.get('sale_order_id', '')"><t t-out="website_sale_cart_quantity"/></span>)</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        <li class="nav-item" t-nocache="The wishlist may vary and depends on the user.">
+                            <a href="/shop/wishlist" class="nav-link">
+                                <div class="d-flex align-items-center">
+                                    <i class="dri dri-wishlist"/>
+                                    <div class="d-flex align-items-center">
+                                        <t t-set="wishlist_quantity" t-value="len(request.env['product.wishlist'].current())"/>
+                                        <h6 class="mb-0 ms-2">My Wishlist</h6> <span class="ms-2">(<span class="tp-wishlist-counter"><t t-out="wishlist_quantity"/></span>)</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <t t-call="theme_prime.component_language_pricelist_selector">
+                    <t t-set="_classes" t-valuef="d-flex justify-content-center py-2 border-top"/>
+                    <t t-set="_dropdown_classes" t-valuef="text-dark"/>
+                </t>
+            </div>
+            <!--
+            ============================================================================
+            Account Info Sidebar
+            ============================================================================
+            -->
+            <div t-cache="user_id" class="offcanvas offcanvas-end tp-account-info-sidebar tp-offcanvas-sidebar bg-200" tabindex="-1" aria-hidden="true">
+                <div class="d-flex justify-content-between align-items-center bg-white border-bottom p-3">
+                    <div class="d-flex align-items-center">
+                        <i class="dri dri-user tp-bg-soft-primary text-primary rounded-circle me-3 tp-header-icon"></i>
+                        <h5 class="mb-0" t-if="user_id._is_public()">Guest</h5>
+                        <div t-else="">
+                            <h5 class="mb-0"><t t-out="user_id.name"/></h5>
+                            <span class="text-muted"><t t-out="user_id.email"/></span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" title="Close" aria-label="Close"></button>
+                </div>
+                <div class="tp-scrollable-y flex-grow-1">
+                    <ul t-if="user_id._is_public()" class="list-group p-2 mt-2 tp-hook-public-user">
+                        <a href="/web/login" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <div class="d-flex align-items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-box-arrow-in-right" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0v-2z"/>
+                                    <path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+                                </svg>
+                                <h6 class="mb-0 ms-3">Login</h6>
+                            </div>
+                        </a>
+                        <a t-if="request.env['res.users']._get_signup_invitation_scope() == 'b2c'" href="/web/signup" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <div class="d-flex align-items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-person-plus" viewBox="0 0 16 16">
+                                    <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+                                    <path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/>
+                                </svg>
+                                <h6 class="mb-0 ms-3">Register</h6>
+                            </div>
+                        </a>
+                    </ul>
+                    <ul class="list-group p-2 mt-2 tp-hook-generic">
+                        <a href="/shop/cart" class="list-group-item list-group-item-action d-flex align-items-center" t-nocache="The number of products is dynamic, this rendering cannot be cached.">
+                            <div class="d-flex align-items-center">
+                                <i class="dri dri-cart"/>
+                                <div class="d-flex align-items-center">
+                                    <t t-set="website_sale_cart_quantity" t-value="request.session['website_sale_cart_quantity'] if 'website_sale_cart_quantity' in request.session else website.sale_get_order().cart_quantity or 0"/>
+                                    <h6 class="mb-0 ms-3">My Cart</h6> <span class="ms-2">(<span class="my_cart_quantity" t-att-data-order-id="request.session.get('sale_order_id', '')"><t t-out="website_sale_cart_quantity"/></span>)</span>
+                                </div>
+                            </div>
+                        </a>
+                        <a href="/shop/wishlist" class="list-group-item list-group-item-action d-flex align-items-center" t-nocache="The wishlist may vary and depends on the user.">
+                            <div class="d-flex align-items-center">
+                                <i class="dri dri-wishlist"/>
+                                <div class="d-flex align-items-center">
+                                    <t t-set="wishlist_quantity" t-value="len(request.env['product.wishlist'].current())"/>
+                                    <h6 class="mb-0 ms-3">My Wishlist</h6> <span class="ms-2">(<span class="tp-wishlist-counter"><t t-out="len(request.env['product.wishlist'].current())"/></span>)</span>
+                                </div>
+                            </div>
+                        </a>
+                    </ul>
+                    <ul class="list-group p-2 tp-hook-logged-user" t-if="not user_id._is_public()">
+                        <a href="/my" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="dri dri-user"/>
+                                <h6 class="mb-0 ms-3">My Account</h6>
+                            </div>
+                        </a>
+                        <a href="/my/orders" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-list"/>
+                                <h6 class="mb-0 ms-3">My Orders</h6>
+                            </div>
+                        </a>
+                        <a href="/my/account" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <div class="d-flex align-items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                                    <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                    <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                                </svg>
+                                <h6 class="mb-0 ms-3">Edit Profile</h6>
+                            </div>
+                        </a>
+                        <a href="/my/payment_method" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-credit-card"/>
+                                <h6 class="mb-0 ms-3">Manage Payment Methods</h6>
+                            </div>
+                        </a>
+                        <a href="/my/security" class="list-group-item list-group-item-action d-flex align-items-center">
+                            <div class="d-flex align-items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-shield-check" viewBox="0 0 16 16">
+                                    <path d="M5.338 1.59a61.44 61.44 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.725 10.725 0 0 0 2.287 2.233c.346.244.652.42.893.533.12.057.218.095.293.118a.55.55 0 0 0 .101.025.615.615 0 0 0 .1-.025c.076-.023.174-.061.294-.118.24-.113.547-.29.893-.533a10.726 10.726 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.775 11.775 0 0 1-2.517 2.453 7.159 7.159 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7.158 7.158 0 0 1-1.048-.625 11.777 11.777 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 62.456 62.456 0 0 1 5.072.56z"/>
+                                    <path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0z"/>
+                                </svg>
+                                <h6 class="mb-0 ms-3">Change Password</h6>
+                            </div>
+                        </a>
+                    </ul>
+                    <ul t-if="not user_id._is_public()" class="list-group p-2 tp-hook-logout">
+                        <a class="list-group-item list-group-item-action d-flex align-items-center link-danger" href="/web/session/logout?redirect=/">
+                            <div class="d-flex align-items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
+                                    <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+                                </svg>
+                                <h6 class="mb-0 ms-3">Logout</h6>
+                            </div>
+                        </a>
+                    </ul>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <!--
+    ============================================================================
+    Cart Sidebar
+    ============================================================================
+    -->
+    <template id="cart_sidebar" name="Theme Prime: Cart Sidebar">
+        <div class="tp-cart-sidebar d-flex flex-column h-100">
+            <div class="d-flex justify-content-between align-items-center border-bottom p-3">
+                <div class="d-flex align-items-center">
+                    <i class="dri dri-cart text-primary me-3 tp-header-icon"></i>
+                    <h5 class="mb-0">
+                        Your Cart
+                    </h5>
+                    <a t-if="order.website_order_line" href="#" class="text-muted small tp-clear-cart ms-2">(Clear Cart)</a>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" title="Close" aria-label="Close"></button>
+            </div>
+            <t t-if="order and order.website_order_line">
+                <div class="tp-scrollable-y position-relative flex-grow-1 p-3 bg-200">
+                    <t t-foreach="order.website_order_line" t-as="line">
+                        <div class="d-flex p-3 mb-3 shadow-sm bg-white position-relative tp-product-card">
+                            <div class="flex-shrink-0">
+                                <span t-if="line._is_not_sellable_line() and line.product_id.image_128">
+                                    <img t-att-src="image_data_uri(line.product_id.image_128)" class="img o_image_64_max rounded border" t-att-alt="line.name_short"/>
+                                </span>
+                                <span t-else="" t-field="line.product_id.image_128" t-options="{'widget': 'image', 'qweb_img_responsive': False, 'class': 'rounded o_image_64_max border'}" />
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <a href="#" class="tp-remove-line tp-icon-center-1 dr-d-icon shadow rounded-circle text-muted position-absolute top-0 start-100 translate-middle" title="Remove from Cart">
+                                    <i class="fa fa-times"/>
+                                </a>
+                                <h6><a class="tp-link-dark" t-att-href="line.product_id.website_url" t-out="line.name_short"/></h6>
+                                <div class="css_quantity input-group input-group-sm">
+                                    <t t-if="not line._is_not_sellable_line()">
+                                        <a href="#" class="btn btn-link js_add_cart_json d-none d-md-inline-block" aria-label="Remove one" title="Remove one">
+                                            <i class="fa fa-minus"/>
+                                        </a>
+                                        <input type="text" class="js_quantity form-control quantity" t-att-data-line-id="line.id" t-att-data-product-id="line.product_id.id" t-att-value="int(line.product_uom_qty) == line.product_uom_qty and int(line.product_uom_qty) or line.product_uom_qty" />
+                                        <a href="#" class="btn btn-link js_add_cart_json d-none d-md-inline-block" aria-label="Add one" title="Add one">
+                                            <i class="fa fa-plus"/>
+                                        </a>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="text-muted w-100" t-out="int(line.product_uom_qty)"/>
+                                        <input type="hidden" class="js_quantity form-control quantity" t-att-data-line-id="line.id" t-att-data-product-id="line.product_id.id" t-att-value="line.product_uom_qty" />
+                                    </t>
+                                </div>
+                                <div class="mt-2 d-inline-block float-end">
+                                    <t groups="account.group_show_line_subtotals_tax_excluded">
+                                        <h6 t-field="line.price_reduce_taxexcl" class="text-primary mb-0" style="white-space: nowrap;" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                    </t>
+                                    <t groups="account.group_show_line_subtotals_tax_included">
+                                        <h6 t-field="line.price_reduce_taxinc" class="text-primary mb-0" style="white-space: nowrap;" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+                <div class="tp-hook-total border-top">
+                    <div class="d-flex justify-content-between p-3">
+                        <h6 class="mb-0">Subtotal</h6>
+                        <h6 t-field="order.amount_untaxed" class="monetary_field mb-0" style="white-space: nowrap;" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                    </div>
+                    <div class="d-flex justify-content-between p-3 pt-0">
+                        <h6 class="mb-0">Taxes</h6>
+                        <h6 t-field="order.amount_tax" class="monetary_field mb-0" style="white-space: nowrap;" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                    </div>
+                    <div t-if="is_view_active('website_sale.reduction_code')" class="d-flex justify-content-end p-3 pt-0">
+                        <a href="#" class="show_coupon">Apply promo code</a>
+                        <div class="coupon_form d-none w-100">
+                            <t t-call="website_sale.coupon_form">
+                                <t t-set="website_sale_order" t-value="order"/>
+                            </t>
+                        </div>
+                    </div>
+                    <t t-set="free_delivery_details" t-value="order._get_free_delivery_details()"/>
+                    <div t-if="website._get_dr_theme_config('json_sidebar_config').get('cart_sidebar_free_delivery_progress') and free_delivery_details" class="row mx-0 py-3 border-top">
+                        <div class="col-12">
+                            <t t-if="free_delivery_details['order_amount'] >= free_delivery_details['free_over']">
+                                <div class="mb-1 text-success"><i class="fa fa-truck"/> You are eligible for <strong>free shipping!</strong></div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped bg-success" role="progressbar" style="width: 100%"></div>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div class="mb-1">You're <strong class="text-primary" t-esc="free_delivery_details['remaining_amount']" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/> away from <strong>free shipping!</strong></div>
+                                <div class="progress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" t-attf-style="width: #{free_delivery_details['progress']}%"></div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                    <div class="row mx-0 pb-3">
+                        <div class="col-12">
+                            <a class="btn btn-primary btn-lg shadow d-flex align-items-center justify-content-between tp-proceed-btn" href="/shop/cart">
+                                <div class="d-flex flex-column align-items-start">
+                                    <span class="tp-total-cart-items"><t t-esc="order.cart_quantity"/> items</span>
+                                    <span t-field="order.amount_total" class="tp-total-amount fw-bold" style="white-space: nowrap;" t-options="{'widget': 'monetary', 'display_currency': order.currency_id}"/>
+                                </div>
+                                <small>Proceed <i class="fa fa-angle-right ms-1"/></small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </t>
+            <div t-else="" class="text-center">
+                <t t-call="theme_prime.tp_svg_cart">
+                    <t t-set="_classes" t-value="'m-5'"/>
+                </t>
+                <h5 class="my-4">Your cart is empty!</h5>
+                <a class="btn btn-primary" href="/shop">
+                    Shop Now
+                </a>
+            </div>
+        </div>
+    </template>
+
+    <!--
+    ============================================================================
+    Search Sidebar
+    ============================================================================
+    -->
+    <template id="search_sidebar" name="Theme Prime: Search Sidebar">
+        <div class="row g-0">
+            <div class="col-12">
+                <t t-call="website.website_search_box_input">
+                    <t t-set="_form_classes" t-valuef="o_wsale_products_searchbar_form o_not_editable p-2"/>
+                    <t t-set="_classes" t-valuef=" "/>
+                    <t t-set="search_type" t-valuef="products"/>
+                    <t t-set="action" t-value="'/shop'"/>
+                </t>
+            </div>
+        </div>
+    </template>
+
+    <!--
+    ============================================================================
+    Similar Products Sidebar
+    ============================================================================
+    -->
+    <template id="similar_products_sidebar" name="Theme Prime: Similar Products Sidebar">
+        <div class="tp-scrollable-y flex-grow-1 p-3 bg-200" t-if="len(products)">
+            <t t-foreach="products" t-as="product_id">
+                <div class="tp-product-card d-flex p-3 mb-3 shadow-sm bg-white">
+                    <a class="flex-shrink-0" t-att-href="product_id.website_url">
+                        <span t-field="product_id.image_128" t-options="{'widget': 'image', 'qweb_img_responsive': False, 'class': 'rounded border'}" />
+                    </a>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="d-flex justify-content-between align-items-center position-relative">
+                            <a t-if="product_id.public_categ_ids" class="text-muted" t-attf-href="/shop/category/#{product_id.public_categ_ids[0].id}">
+                                <small t-field="product_id.public_categ_ids[0].name"/>
+                            </a>
+                            <div class="position-absolute" style="left: auto; right: 0;">
+                                <t t-call="theme_prime.product_label">
+                                    <t t-set="label" t-value="product_id.dr_label_id"/>
+                                    <t t-set="style" t-valuef="2"/>
+                                    <t t-set="_classes" t-valuef="position-relative top-0 start-0"/>
+                                </t>
+                            </div>
+                        </div>
+                        <h6 class="my-1">
+                            <a class="tp-link-dark" t-att-href="product_id.website_url">
+                                <span t-field="product_id.name"/>
+                            </a>
+                        </h6>
+                        <div class="mt-1">
+                            <div t-if="request.website._dr_has_b2b_access()">
+                                <t t-set="product_combination_info" t-value="product_id._get_combination_info(only_template=True, add_qty=1, pricelist=website.pricelist_id)"/>
+                                <h6 class="text-primary d-inline-block mb-0" t-out="product_combination_info['price']" t-options="{'widget': 'monetary', 'display_currency': website.pricelist_id.currency_id}"/>
+                                <small t-attf-class="oe_default_price ms-1 {{'' if product_combination_info['has_discounted_price'] else 'd-none'}}" style="text-decoration: line-through; white-space: nowrap;" t-out="product_combination_info['list_price']" t-options="{'widget': 'monetary', 'display_currency': website.pricelist_id.currency_id}"/>
+                                <t t-call="theme_prime.discount_percentage">
+                                    <t t-set="combination_info" t-value="product_combination_info"/>
+                                </t>
+                            </div>
+                            <div t-else="">
+                                <t t-call="theme_prime.tp_b2b_price_label"/>
+                            </div>
+                        </div>
+                        <t t-if="is_view_active('website_sale.product_comment')">
+                            <t t-set="rating_stats" t-value="product_id.sudo().rating_get_stats()"/>
+                            <t t-if="rating_stats['total']" t-call="theme_prime.product_rating">
+                                <t t-set="rating_avg" t-value="product_id.rating_avg"/>
+                                <t t-set="_classes" t-valuef="mt-1 small"/>
+                            </t>
+                        </t>
+                    </div>
+                </div>
+            </t>
+        </div>
+        <t t-else="">
+            <t t-call="theme_prime.tp_svg_cart">
+                <t t-set="_classes" t-value="'m-5'"/>
+            </t>
+            <h5 class="my-4 text-center">No similar products found!</h5>
+        </t>
+    </template>
+
+</odoo>

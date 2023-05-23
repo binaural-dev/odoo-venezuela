@@ -1,0 +1,99 @@
+@mixin tp-bottombar-component-style-1 {
+    .tp-bottom-action-btn {
+        height: 35px;
+        width: 35px;
+        text-align: center;
+        &.tp-active-btn {
+            .tp-action-btn-label {
+                color: o-color('primary');
+            }
+            .tp-action-btn-icon {
+                color: o-color('primary');
+            }
+        }
+        sup {
+            @include o-position-absolute($top: -4px);
+            padding: 0.2em 0.4em;
+            border-radius: 40px;
+            vertical-align: top;
+            font-size: 0.5rem;
+        }
+        &:not(:last-child) {
+            margin-right: 0.5rem;
+        }
+        .tp-action-btn-label {
+            font-size: 60%;
+            color: map-get($grays, '500');
+        }
+        .tp-action-btn-icon {
+            color: map-get($grays, '500');
+            font-size: 1.2rem;
+            margin-top: 2px;
+        }
+        .dropdown-toggle:after {
+            @include o-position-absolute($top: 2px);
+            color: map-get($grays, '500');
+        }
+        .js_language_selector {
+            > a {
+                flex-direction: column;
+            }
+            .tp-action-btn-label {
+                margin-top: 3px;
+            }
+            .dropdown-toggle:after {
+                top: 4px;right: -6px;;
+            }
+            .o_lang_flag {
+                margin-right: 0;
+            }
+        }
+    }
+    // ul second
+    .tp-bottombar-secondary-element {
+        transition: all 0.4s;
+        -webkit-transition: all 0.4s;
+        transform: translateY(145px);
+        opacity: 0;
+        &.tp-drawer-open {
+            opacity: 1;
+            transform: translateY(0px);
+        }
+    }
+    .tp-drawer-action-btn {
+        background-color: #343a40;
+        .tp-drawer-icon {
+            font-size: 1rem;
+            line-height: 1.5rem;
+            color: white;
+        }
+    }
+}
+.tp-bottombar-component-style-1 {
+    border-top: 2px solid $border-color;
+    border-top-right-radius: 1rem;
+    border-top-left-radius: 1rem;
+    @include tp-bottombar-component-style-1();
+    @include media-breakpoint-up(md) {
+        display: none;
+    }
+    @include media-breakpoint-down(lg) {
+        display: block;
+        position: fixed;
+        &.tp-has-drower-element {
+            bottom: -4rem;
+        }
+        &.tp-bottombar-not-visible {
+            bottom: -10.6rem;
+        }
+        bottom: 0;
+        left: 0;
+        transition: all 0.4s;
+        -webkit-transition: all 0.4s;
+        z-index: $zindex-website-header;
+        background-color: white;
+        &.tp-drawer-is-open {
+            bottom: -1px;
+        }
+    }
+}

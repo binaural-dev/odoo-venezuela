@@ -1,0 +1,36 @@
+<?xml version="1.0" ?>
+<templates>
+    <t t-name="s_d_products_grid_tmpl_suggested">
+        <t t-if="data.length">
+            <div t-foreach="data" t-as="product" class="card w-100">
+                <a class="card-img-top" t-att-href="product.website_url">
+                    <img loading="lazy" t-att-src="product.img_medium" class="img img-fluid" t-att-alt="product.name"/>
+                </a>
+                <t t-if="product.label_id">
+                    <span t-raw="product.label_template"/>
+                </t>
+                <div class="card-body p-2">
+                    <div class="card-text">
+                        <t t-if="product.category_info">
+                            <a class="text-decoration-none" t-att-href="product.category_info.website_url">
+                                <small class="dr_category_lable" t-esc="product.category_info.name"/>
+                            </a>
+                        </t>
+                        <t t-else="">
+                            <br/>
+                        </t>
+                        <h6 class="text-truncate my-1" t-att-title="product.name">
+                            <a class="tp-link-dark" t-att-href="product.website_url">
+                                <span t-esc="product.name" />
+                            </a>
+                        </h6>
+                        <div>
+                            <h6 class="text-primary d-inline mb-0" t-raw="product.price"/>
+                            <small t-if="product.has_discounted_price" class="text-muted d-inline-block mb-0" style="text-decoration: line-through; white-space: nowrap;" t-raw="product.list_price"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </t>
+</templates>

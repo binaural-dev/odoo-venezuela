@@ -32,12 +32,5 @@
 	    <field name="target">new</field>
 	    <field name="context">{'default_report': 'islr'}</field>
 	</record>
-
-        <menuitem
-            id="xml_retention_islr"
-            name="XML ISLR Retention"
-            parent="binaural_payment_extension.seniat_reports"
-            action="action_retention_islr"
-        />
     </data>
 </odoo>

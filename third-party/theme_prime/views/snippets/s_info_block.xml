@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_info_block_1" name="Info Block - 1">
+        <section class="s_info_block_1 tp-editor-snippet-valign">
+            <div class="container-fluid px-0">
+                <div class="row g-0 s_nb_column_fixed align-items-center">
+                    <div class="col-lg-4 offset-lg-1 p-4">
+                        <h2>Proin est justo, euismod sit.</h2>
+                        <p>Suspendisse est nunc, laoreet eget odio id, finibus convallis ipsum. Praesent eu nisi egestas, gravida dolor eget, suscipit lectus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Nulla tincidunt eu.</p>
+                        <a href="#" class="btn btn-primary mt-2">Shop Now</a>
+                    </div>
+                    <div class="col-lg-6 offset-lg-1">
+                        <img src="/web/image/theme_prime.s_info_block_1_1" class="img img-fluid" alt="Info Block Image 01"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_info_block_2" name="Info Block - 2">
+        <section class="s_info_block_2 tp-editor-snippet-valign">
+            <div class="container-fluid px-0">
+                <div class="row g-0 s_nb_column_fixed align-items-center">
+                    <div class="col-lg-6">
+                        <img src="/web/image/theme_prime.s_info_block_2_1" class="img img-fluid" alt="Info Block Image 01"/>
+                    </div>
+                    <div class="col-lg-4 offset-lg-1 p-4">
+                        <h2>Cras in feugiat eros</h2>
+                        <p>Suspendisse est nunc, laoreet eget odio id, finibus convallis ipsum. Praesent eu nisi egestas.</p>
+                        <p>Vestibulum id laoreet sapien. Aliquam porttitor neque ut urna efficitur, eget tincidunt diam convallis. Vestibulum molestie nunc consectetur cursus tincidunt. Aenean interdum justo a tellus condimentum gravida.</p>
+                        <a href="#" class="btn btn-primary mt-2">Shop Now</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_info_block_3" name="Info Block - 3">
+        <section class="s_info_block_3 tp-editor-snippet-valign pt16 pb16">
+            <div class="container-fluid">
+                <div class="row align-items-center s_nb_column_fixed">
+                    <div class="col-6 col-lg-3 mb-4 mb-lg-0">
+                        <div class="tp-animation-scale">
+                            <img src="/web/image/theme_prime.s_info_block_3_1" class="img img-fluid" alt="Info Block Image 01"/>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3 mb-4 mb-lg-0">
+                        <div class="tp-animation-scale">
+                            <img src="/web/image/theme_prime.s_info_block_3_2" class="img img-fluid" alt="Info Block Image 02"/>
+                        </div>
+                    </div>
+                    <div class="col-12 offset-lg-1 col-lg-4">
+                        <h5>New Arrivals</h5>
+                        <h2>Coming Soon</h2>
+                        <p>Vestibulum id laoreet sapien. Aliquam porttitor neque ut urna efficitur, eget tincidunt diam convallis. Vestibulum molestie nunc consectetur cursus tincidunt. Aenean interdum justo a tellus condimentum gravida.</p>
+                        <a href="#" class="btn btn-primary mt-2">Shop Now</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_info_block_4" name="Info Block - 4">
+        <section class="s_info_block_4 pt32 pb32">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12">
+                        <h5 class="text-o-color-1" style="text-align: center;">New Arrivals</h5>
+                        <h2 style="text-align: center;">Spring Collections</h2>
+                        <p style="text-align: center;">
+                            Vestibulum id laoreet sapien. Aliquam porttitor neque ut urna efficitur, eget tincidunt diam convallis.<br/>
+                            interdum justo a tellus condimentum gretur cursus tincidunt. Aenean interdum justo a tellus condimentum gravida.<br/>
+                            cursus id laoreet sapien. Aliquam porttitor neque ut urna efficitur, eget tincidunt diam convallis.<br/>
+                            tellus justo a tellus condimentum gretur cursus tincidunt. Aenean interdum justo a tellus condimentum gravida.
+                        </p>
+                        <div style="text-align: center;">
+                            <a href="#" class="btn btn-primary mt-2">Shop Now</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="row justify-content-center s_col_no_bgcolor s_nb_column_fixed mt-4">
+                    <div class="col-12 col-lg-3 mb-2 mb-lg-0">
+                        <img src="/web/image/theme_prime.s_info_block_4_1" class="img img-fluid" alt="Info Block Image 01"/>
+                    </div>
+                    <div class="col-12 col-lg-3 mb-2 mb-lg-0">
+                        <img src="/web/image/theme_prime.s_info_block_4_2" class="img img-fluid" alt="Info Block Image 02"/>
+                    </div>
+                    <div class="col-12 col-lg-3 mb-2 mb-lg-0">
+                        <img src="/web/image/theme_prime.s_info_block_4_3" class="img img-fluid" alt="Info Block Image 03"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_info_block_5" name="Info Block - 5">
+        <section class="s_info_block_5 pt16 pb16">
+            <div class="container-fluid">
+                <div class="row align-items-center s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-6 col-lg-3 order-0 order-lg-0 mb-4 mb-lg-0">
+                        <img src="/web/image/theme_prime.s_info_block_5_1" class="img img-fluid" alt="Info Block Image 01"/>
+                    </div>
+                    <div class="col-12 col-sm-12 offset-lg-1 col-lg-4 order-1 order-lg-1">
+                        <h5 class="text-center">New Arrivals</h5>
+                        <h1 class="text-center">Trendy Collection</h1>
+                        <p class="text-center">Vestibulum id laoreet sapien. Aliquam porttitor neque ut urna efficitur, eget tincidunt diam convallis. Vestibulum molestie nunc consectetur cursus tincidunt. Aenean interdum justo a tellus condimentum gravida.</p>
+                        <div class="text-center">
+                            <a href="#" class="btn btn-primary mt-2">Shop Now</a>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3 offset-lg-1 order-0 order-lg-2 mb-4 mb-lg-0">
+                        <img src="/web/image/theme_prime.s_info_block_5_2" class="img img-fluid" alt="Info Block Image 02"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_info_block_6" name="Info Block - 6">
+        <section class="s_info_block_6 pt16 pb16 tp-editor-snippet-valign">
+            <div class="container-fluid">
+                <div class="row align-items-center s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 offset-lg-1 col-lg-5 order-2 order-lg-0">
+                        <h5>On the Ear</h5>
+                        <h1>Bluetooth Headset</h1>
+                        <p>Vestibulum id laoreet sapien. Aliquam porttitor neque ut urna efficitur, eget tincidunt diam convallis. Vestibulum molestie nunc consectetur cursus tincidunt. Aenean interdum justo a tellus condimentum gravida.</p>
+                        <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                            <div class="col-sm-4">
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> 24x7 customer support
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> Cash on delivery
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> 30 days replacement
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> Fast delivery
+                                </p>
+                            </div>
+                            <div class="col-sm-4">
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> 12k+ happy customers
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> 100% secure payment
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> Quality products
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> Easy returns
+                                </p>
+                            </div>
+                        </div>
+                        <a href="#" class="btn btn-primary mt-2">Shop Now</a>
+                    </div>
+                    <div class="col-12 col-lg-6 mb-4 mb-lg-0">
+                        <img src="/web/image/theme_prime.s_info_block_6_1" class="img img-fluid mx-auto" alt="Info Block Image 01"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_info_block_7" name="Info Block - 7">
+        <section class="s_info_block_7 parallax s_parallax_is_fixed pt96 pb96 bg-black-50 s_parallax_no_overflow_hidden oe_img_bg o_bg_img_center" data-scroll-background-ratio="1" style="background-image: url('/web/image/theme_prime.s_info_block_7_1'); background-position: 50% 0;">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-lg-7 align-self-center order-lg-1 order-2 p-4">
+                        <h2 class="h1 mb-4">Premium Collection</h2>
+                        <p class="lead">
+                            We are the creative team of theme prime. No one actually read this so let me write any thing here until it paragraph breaks into to multiple lines. Thanks for reading this.
+                        </p>
+                        <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                            <div class="col-6 col-md-4">
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> 24x7 customer support
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> Cash on delivery
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> 30 days replacement
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> Fast delivery
+                                </p>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> 12k+ happy customers
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> 100% secure payment
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> Quality products
+                                </p>
+                                <p class="mb-2 tp-editor-copy-n-move" data-name="Line">
+                                    <i class="fa fa-check-circle-o"/> Easy returns
+                                </p>
+                            </div>
+                        </div>
+                        <a href="#" class="btn btn-primary mt-2">Shop Now</a>
+                    </div>
+                    <div class="col-lg-5 position-relative my-4 order-1 order-lg-2">
+                        <div class="d-flex tp-offer-block h-100 align-items-center justify-content-center">
+                            <div class="tp-offer-label-lg">50</div>
+                            <div class="mt-4">
+                                <span class="tp-offer-label-md">%</span>
+                                <span class="d-block text-uppercase tp-offer-label-sm">off</span>
+                            </div>
+                        </div>
+                        <div class="rounded-circle o_colored_level o_cc o_cc4 tp-badge-container tp-editor-bg-color-n-shadow">
+                            <div class="tp-badge text-center">
+                                <div class="fw-bold">NEW</div>
+                                <div>Products</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_info_block_8" name="Info Block - 8">
+        <section class="s_info_block_8 pt16 pb16">
+            <div class="container">
+                <div class="row align-items-center s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-md-4">
+                        <div class="d-flex align-items-center my-4 tp-editor-copy-n-move">
+                            <div class="flex-grow-1">
+                                <h5 style="text-align: right;">Free Delivery</h5>
+                                <p style="text-align: right;">All the lorem ipsum generators on the Internet<br/> tend to repeat predefined chunks as necessary.</p>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-truck fa-3x text-o-color-1 ms-3"/>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center my-4 tp-editor-copy-n-move">
+                            <div class="flex-grow-1">
+                                <h5 style="text-align: right;">30 Days Return</h5>
+                                <p style="text-align: right;">Consectetur, from a Lorem Ipsum passage, and<br/> going through the cites of the word in classical.</p>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-refresh fa-3x text-o-color-1 ms-3"/>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center my-4 tp-editor-copy-n-move">
+                            <div class="flex-grow-1">
+                                <h5 style="text-align: right;">Genuine Product</h5>
+                                <p style="text-align: right;">Many desktop publishing packages and web<br/> page editors now use lorem ipsum as their.</p>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-magic fa-3x text-o-color-1 ms-3"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <img src="/web/image/theme_prime.s_info_block_8_1" class="img img-fluid mx-auto" alt="Info Block Image 01"/>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <div class="d-flex align-items-center my-4 tp-editor-copy-n-move">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-phone fa-3x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>24X7 Support</h5>
+                                <p>All the lorem ipsum generators on the Internet<br/> tend to repeat predefined chunks as necessary.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center my-4 tp-editor-copy-n-move">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-rocket fa-3x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Fast Service</h5>
+                                <p>Consectetur, from a Lorem Ipsum passage, and<br/> going through the cites of the word in classical.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center my-4 tp-editor-copy-n-move">
+                            <div class="flex-shrink-0">
+                                <span class="fa fa-thumbs-o-up fa-3x text-o-color-1 me-3"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5>Customer Satisfaction</h5>
+                                <p>Many desktop publishing packages and web<br/> page editors now use lorem ipsum as their.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_info_block_7_000_scss" model="ir.asset">
+        <field name="name">Info Block 7 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_info_block_7/000.scss</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,23 @@
+body:not(.editor_enable) .s_coming_soon {
+    @include o-position-absolute(0, 0, 0, 0);
+    z-index: $zindex-fixed;
+    background-color: o-color('white');
+}
+.s_coming_soon_1 .tp-coming-soon-container {
+    min-height: 100vh;
+    .tp-coming-soon-side-block {
+        min-height: 100vh;
+        .tp-stay-tuned {
+            letter-spacing: 10px;
+        }
+    }
+}
+// Hide snippet in snippet debug page
+.o_panel .s_coming_soon {
+    display: none;
+}
+html[data-view-xmlid="website.snippets_debug_page_view"] {
+    body {
+        overflow: auto !important;
+    }
+}

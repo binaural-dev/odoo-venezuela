@@ -1,0 +1,95 @@
+$o-base-color-palette: map-merge($o-base-color-palette, (
+    'copyright': 5,
+    'preheader': 5,
+    'preheader-custom': null,
+    'tp-header-box-color': 1,
+    'tp-header-box-color-custom': null,
+));
+
+$o-color-palettes: map-merge($o-color-palettes,
+    (
+        'prime-1': (
+            'o-color-1': #0080FF,
+            'o-color-2': #7bdeff,
+            'o-color-3': #f9fafe,
+            'o-color-4': #FFFFFF,
+            'o-color-5': #232f3e,
+
+            'o-cc1-text': #4d5b7c,
+            'o-cc1-headings': 'o-color-5',
+            'o-cc1-btn-secondary': 'o-color-2',
+
+            'o-cc2-text': #4d5b7c,
+            'o-cc2-link': 'o-color-1',
+            'o-cc2-headings': 'o-color-1',
+
+            'o-cc3-text': 'o-color-4',
+            'o-cc3-link': 'o-color-1',
+            'o-cc3-headings': 'o-color-4',
+
+            'o-cc4-text': 'o-color-3',
+            'o-cc4-link': 'o-color-3',
+            'o-cc4-headings': 'o-color-4',
+
+            'o-cc5-text': 'o-color-3',
+            'o-cc5-link': 'o-color-3',
+            'o-cc5-headings': 'o-color-4',
+
+            'preheader': 5,
+            'tp-header-box-color': 1,
+            'menu': 1,
+            'footer': 5,
+            'copyright': 5,
+        ),
+    )
+);
+
+$o-selected-color-palettes-names: append($o-selected-color-palettes-names, 'prime-1');
+
+$o-website-values-palettes: (
+    (
+        'color-palettes-name': 'prime-1',
+        'font-size-base': (14 / 16) * 1rem, // 0.875rem
+
+        'link-underline': 'never',
+
+        'btn-border-radius': 0,
+        'btn-border-radius-sm': 0,
+        'btn-border-radius-lg': 0,
+
+        'input-border-radius': 0,
+        'input-border-radius-sm': 0,
+        'input-border-radius-lg': 0,
+
+        'font': 'Roboto',
+        'headings-font': 'Poppins',
+        'navbar-font': 'Poppins',
+        'buttons-font': 'Poppins',
+
+        'logo-height': 3.5rem,
+
+        'preheader-gradient': null,
+        'tp-header-box-color-gradient': null,
+
+        'tp-square-ui': true,
+        'tp-preheader-template': 'none',
+        'tp-back-to-top': true,
+        'tp-icon-pack': 1,
+    ),
+);
+
+$o-theme-font-configs: map-merge((
+    'Poppins': (
+        'family': ('Poppins', sans-serif),
+        'url': 'Poppins:300,300i,400,400i,500,500i,600,600i',
+    ),
+), $o-theme-font-configs);
+
+$o-theme-font-configs: map-merge($o-theme-font-configs, (
+    'Roboto': (
+        'family': ('Roboto', sans-serif),
+        'url': 'Roboto:300,300i,400,400i,500,500i,700,700i',
+    ),
+));
+
+$o-theme-headings-font-weight: 500;

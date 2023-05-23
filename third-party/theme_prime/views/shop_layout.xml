@@ -1,0 +1,857 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="shop_layout" name="Theme Prime: Shop Layout">
+        <t t-call="website.layout">
+            <t t-set="additional_title">Shop</t>
+
+            <t t-if="_config_shop_filters.get('filter_style') == '1'">
+                <t t-set="_filter_collapsible_plus_style" t-value="True"/>
+            </t>
+            <t t-elif="_config_shop_filters.get('filter_style') == '2'">
+                <t t-set="_filter_collapsible_plus_style" t-value="True"/>
+                <t t-set="_filter_attribute_title_classes" t-valuef="tp-underline-title"/>
+            </t>
+            <t t-elif="_config_shop_filters.get('filter_style') == '3'">
+                <t t-set="_filter_attribute_classes" t-valuef="border tp-rounded-border-radius bg-white my-2"/>
+                <t t-set="_filter_attribute_title_classes" t-valuef="px-3"/>
+                <t t-set="_filter_attribute_collapse_area_classes" t-valuef="border-top p-3"/>
+            </t>
+            <t t-elif="_config_shop_filters.get('filter_style') == '4'">
+                <t t-set="_bordered_classes" t-valuef="bordered"/>
+                <t t-set="_filter_attribute_classes" t-valuef="border-bottom"/>
+                <t t-set="_filter_attribute_collapse_area_classes" t-valuef="mb-3"/>
+            </t>
+            <t t-elif="_config_shop_filters.get('filter_style') == '5'">
+                <t t-set="_filter_container_classes" t-valuef="border mt-3"/>
+                <t t-set="_filter_attribute_classes" t-valuef="border-bottom bg-white"/>
+                <t t-set="_filter_attribute_title_classes" t-valuef="px-3"/>
+                <t t-set="_filter_attribute_collapse_area_classes" t-valuef="px-3 pb-2"/>
+                <t t-set="_filter_collapsible_plus_style" t-value="True"/>
+            </t>
+            <t t-set="_filter_category_activated" t-value="is_view_active('website_sale.products_categories')"/>
+            <t t-set="_filter_attributes_activated" t-value="is_view_active('website_sale.products_attributes')"/>
+            <t t-set="_filters_activated" t-value="_filter_category_activated or _filter_attributes_activated"/>
+
+            <t t-set="website_sale_sortable" t-value="website._get_product_sort_mapping()"/>
+            <t t-set="isSortingBy" t-value="[sort for sort in website_sale_sortable if sort[0]==request.params.get('order', '')]"/>
+
+            <div id="wrap" class="js_sale tp-shop-page">
+                <div class="oe_structure oe_empty oe_structure_not_nearest" id="oe_structure_website_sale_products_1"/>
+                <div class="container oe_website_sale tp-shop-layout pt-2" t-att-data-ppg="ppg" t-att-data-ppr="ppr" t-att-data-default-sort="website.shop_default_sort">
+                    <div class="o_wsale_products_grid_table_wrapper"/> <!-- Class is used in JS for filters, Put it here to make it works. -->
+                    <t t-if="_config_category_pills.get('active')" t-call="theme_prime.shop_category_pills"/>
+                    <div t-attf-class="py-2 tp-shop-topbar #{_bordered_classes}">
+                        <div class="d-lg-none d-flex align-items-center justify-content-between">
+                            <h5 class="mb-0">Shop</h5>
+                            <span><t t-out="search_count"/> items found.</span>
+                        </div>
+                        <div class="d-none d-lg-flex row justify-content-between align-items-center">
+                            <div class="col-auto">
+                                <div class="d-flex align-items-lg-center">
+                                    <a href="#" t-if="_filters_activated and _config_shop_filters.get('show_in_sidebar')" class="tp-open-filter-sidebar btn btn-primary-soft me-2 p-0">
+                                        <span class="d-inline-block text-bg-primary px-2 py-1"><i class="fa fa-filter"/> </span> <strong class="d-inline-block ps-1 pe-2">Show Filters</strong>
+                                    </a>
+                                    <ol t-if="category" t-attf-class="breadcrumb m-0 p-0 bg-transparent">
+                                        <li class="breadcrumb-item">
+                                            <a href="#" t-att-data-link-href="keep('/shop', category=0)">Products</a>
+                                        </li>
+                                        <t t-foreach="category.parents_and_self" t-as="cat">
+                                            <li t-if="cat == category" class="breadcrumb-item">
+                                                <span class="d-inline-block" t-field="cat.name"/>
+                                                - <t t-out="search_count"/> items
+                                            </li>
+                                            <li t-else="" class="breadcrumb-item">
+                                                <a href="#" t-att-data-link-href="keep('/shop/category/%s' % slug(cat), category=0)" t-field="cat.name"/>
+                                            </li>
+                                        </t>
+                                    </ol>
+                                    <div t-else="" class="d-flex">
+                                        <h6 class="mb-0 me-1">All Products</h6> - <t t-out="search_count"/> items
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <div class="d-flex flex-wrap justify-content-end">
+                                    <t t-set="website_sale_pricelists" t-value="website.get_pricelist_available(show_visible=True)" />
+                                    <div t-attf-class="o_pricelist_dropdown dropdown#{'' if website_sale_pricelists and len(website_sale_pricelists)&gt;1 else ' d-none'}">
+                                        <t t-set="curr_pl" t-value="website.pricelist_id" />
+                                        <span class="h6 me-1">Pricelist :</span>
+                                        <a role="button" href="#" class="dropdown-toggle btn btn-link px-0 text-body shadow-none" data-bs-toggle="dropdown">
+                                            <t t-esc="curr_pl and curr_pl.name or ' - '" />
+                                        </a>
+                                        <div class="dropdown-menu" role="menu">
+                                            <t t-foreach="website_sale_pricelists" t-as="pl">
+                                                <a role="menuitem" t-att-href="'/shop/change_pricelist/%s' % pl.id" class="dropdown-item">
+                                                    <span class="switcher_pricelist" t-att-data-pl_id="pl.id" t-esc="pl.name" />
+                                                </a>
+                                            </t>
+                                        </div>
+                                    </div>
+                                    <t t-if="is_view_active('website_sale.sort')">
+                                        <div class="o_sortby_dropdown dropdown dropdown_sorty_by ms-3">
+                                            <span class="d-none d-lg-inline h6 me-1">Sort By :</span>
+                                            <a role="button" href="#" class="dropdown-toggle btn btn-link px-0 text-body shadow-none" data-bs-toggle="dropdown">
+                                                <span class="d-none d-lg-inline">
+                                                    <t t-if="isSortingBy" t-out="isSortingBy[0][1]"/>
+                                                    <span t-else="" t-field="website.shop_default_sort"/>
+                                                </span>
+                                                <i class="fa fa-sort-amount-asc d-lg-none"/>
+                                            </a>
+                                            <div class="dropdown-menu dropdown-menu-end" role="menu">
+                                                <t t-foreach="website_sale_sortable" t-as="sortby">
+                                                    <a role="menuitem" rel="noindex,nofollow" t-att-href="keep('/shop', order=sortby[0])" class="dropdown-item">
+                                                        <span t-out="sortby[1]"/>
+                                                    </a>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
+                                    <div t-if="_config_shop_layout.get('show_view_switcher')" class="btn-group ms-3" role="group" aria-label="View">
+                                        <a href="#" title="Grid View" t-att-data-link-href="keep(page=page, view_mode='grid')" t-attf-class="btn btn-light border bg-white shadow-none text-muted #{view_mode == 'grid' and 'active text-primary' or ''}"><i class="fa fa-th"/></a>
+                                        <a href="#" title="List View" t-att-data-link-href="keep(page=page, view_mode='list')" t-attf-class="btn btn-light border bg-white shadow-none text-muted #{view_mode == 'list' and 'active text-primary' or ''}"><i class="fa fa-bars"/></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <t t-call="theme_prime.selected_attributes"/>
+                    </div>
+                    <div t-attf-class="row tp-shop-row #{_bordered_classes}">
+                        <div t-if="_filters_activated" id="products_grid_before" t-attf-class="col-lg-3 #{_config_shop_filters.get('filter_position') == 'right' and 'order-1' or None} #{_config_shop_filters.get('show_in_sidebar') and 'd-none' or 'd-none d-lg-block'}">
+                            <div class="tp-filters-container">
+                                <div t-att-class="_filter_container_classes">
+                                    <t t-call="theme_prime.shop_layout_filters"/>
+                                </div>
+                                <div t-attf-class="mb-3 #{_filter_extra_content_classes}">
+                                    <a class="btn btn-dark w-100 my-3" t-att-href="'/shop/category/%s?view_mode=%s' % (str(category.id), view_mode) if category else '/shop?view_mode=%s' % view_mode">RESET</a>
+                                    <div class="oe_structure" t-field="website.dr_sale_special_offer" data-editor-message="Drag offer blocks here to customize"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="products_grid" t-attf-class="#{(_filters_activated and not _config_shop_filters.get('show_in_sidebar')) and 'col-lg-9' or 'col-12'} tp-product-image-fill-#{_config_product_item.get('image_fill')} tp-product-image-size-#{_config_product_item.get('image_size')}">
+                            <t t-if="products">
+                                <t t-if="category">
+                                    <t t-set='editor_msg'>Drag building blocks here to customize the header for "<t t-esc='category.name'/>" category.</t>
+                                    <div class="o_editable" id="category_header" t-att-data-editor-message="editor_msg" t-field="category.website_description"/>
+                                </t>
+                                <div class="o_not_editable">
+                                    <div t-if="view_mode == 'grid'" t-attf-class="row row-cols-2 row-cols-md-#{ppr >= 3 and 3 or ppr} row-cols-lg-#{ppr} g-2 g-lg-3 mt-0">
+                                        <div t-attf-class="col tp-product-item tp-product-item-grid-#{_config_product_item.get('style')}" t-att-data-product-template-id="product.id" t-foreach="products" t-as="product">
+                                            <t t-call="{{ 'theme_prime.product_item_grid_%s' % _config_product_item.get('style') }}">
+                                                <t t-set="product_image_size" t-value="product._get_image_size_based_grid(ppr, view_mode)"/>
+                                                <t t-set="product_variant_id" t-value="product._get_first_possible_variant_id()"/>
+                                                <t t-set="product_id" t-value="request.env['product.product'].browse(product_variant_id)"/>
+                                                <t t-set="template_price_vals" t-value="get_product_prices(product)"/>
+                                                <t t-set="product_href" t-value="keep(product.website_url, page=(pager['page']['num'] if pager['page']['num']&gt;1 else None))" />
+                                            </t>
+                                        </div>
+                                    </div>
+                                    <div t-if="view_mode == 'list'" class="row">
+                                        <div class="col-12 tp-product-item tp-product-list-item my-2 my-md-0" t-att-data-product-template-id="product.id" t-foreach="products" t-as="product">
+                                            <t t-call="theme_prime.product_item_list_1">
+                                                <t t-set="product_image_size" t-value="product._get_image_size_based_grid(ppr, view_mode)"/>
+                                                <t t-set="product_variant_id" t-value="product._get_first_possible_variant_id()"/>
+                                                <t t-set="template_price_vals" t-value="get_product_prices(product)"/>
+                                                <t t-set="product_href" t-value="keep(product.website_url, page=(pager['page']['num'] if pager['page']['num']&gt;1 else None))" />
+                                            </t>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-column align-items-center justify-content-center my-4 tp-product-pager">
+                                        <t t-if="_config_shop_layout['load_more_products'] == 'pager'" t-call="website.pager"/>
+                                        <t t-elif="_config_shop_layout['load_more_products'] == 'button'">
+                                            <t t-if="pager['page_count'] > 1">
+                                                <a href="#" class="btn btn-primary tp-load-more-btn shadow-none" t-if="not pager['page']['num'] == pager['page_count']" t-att-href="pager['page_next']['url']">
+                                                    <i class="fa fa-refresh me-1"></i> Load more
+                                                </a>
+                                                <h6 t-else="" class="text-center mb-0">All products are loaded.</h6>
+                                            </t>
+                                        </t>
+                                        <t t-elif="_config_shop_layout['load_more_products'] == 'scroll'">
+                                            <t t-if="pager['page_count'] > 1">
+                                                <a href="#" class="tp-load-more-on-scroll invisible" t-if="not pager['page']['num'] == pager['page_count']" t-att-href="pager['page_next']['url']">
+                                                    Load more
+                                                </a>
+                                                <h6 t-else="" class="text-center mb-0">All products are loaded.</h6>
+                                            </t>
+                                        </t>
+                                    </div>
+                                </div>
+                            </t>
+                            <div t-else="" class="tp-hook-no-search">
+                                <div t-if="not search" class="my-5">
+                                    <div class="text-center">
+                                        <h2 class="mt-4">We couldn't find any product!</h2>
+                                        <p t-if="category">No product defined in category <span class="text-dark" t-out="category.display_name"/>.</p>
+                                    </div>
+                                    <div groups="sales_team.group_sale_manager" class="text-center mt48">
+                                        <div class="text-muted">Click<i>'New'</i> in the top-right corner to create your first product.</div>
+                                    </div>
+                                </div>
+                                <div t-else="" class="my-5">
+                                    <div class="text-center">
+                                        <div>You searched for <span class="text-primary" t-out="search"/>.</div>
+                                        <t t-call="theme_prime.tp_svg_no_products">
+                                            <t t-set="_classes" t-value="'m-5 mx-auto w-25'"/>
+                                        </t>
+                                        <h2 class="mt-4">We couldn't find any matches!</h2>
+                                        <p>Please check the spelling or try searching something else</p>
+                                    </div>
+                                    <div class="col-12 col-md-6 col-lg-5 mx-auto mt-4">
+                                        <t t-call="website.website_search_box_input">
+                                            <t t-set="_form_classes" t-valuef="o_wsale_products_searchbar_form w-100 mx-auto"/>
+                                            <t t-set="_classes" t-valuef="w-100"/>
+                                            <t t-set="search_type" t-valuef="products"/>
+                                            <t t-set="action" t-value="keep('/shop'+ ('/category/'+slug(category)) if category else None, search=0) or '/shop'"/>
+                                            <t t-set="display_image" t-valuef="true"/>
+                                            <t t-set="display_description" t-valuef="true"/>
+                                            <t t-set="display_extra_link" t-valuef="false"/>
+                                            <t t-set="display_detail" t-valuef="false"/>
+                                        </t>
+                                    </div>
+                                    <div t-ignore="true" groups="sales_team.group_sale_manager" class="text-center mt48">
+                                        <div class="text-muted">Click<i>'New'</i> in the top-right corner to create your first product.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="oe_structure oe_empty oe_structure_not_nearest" id="oe_structure_website_sale_products_2"/>
+                <!-- Sort By Sidebar-->
+                <div t-if="is_view_active('website_sale.sort')" class="offcanvas offcanvas-bottom h-auto tp-offcanvas-sidebar" id="tp-shop-sort-sidebar" tabindex="-1">
+                    <div class="d-flex justify-content-between align-items-center border-bottom p-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-sort-amount-desc text-primary me-3 tp-header-icon"></i>
+                            <h5 class="mb-0">Sort By</h5>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" title="Close" aria-label="Close"></button>
+                    </div>
+                    <div class="offcanvas-body p-0">
+                        <ul class="list-group">
+                            <a t-foreach="website_sale_sortable" t-as="sortby" t-attf-class="list-group-item list-group-item-action border-start-0 border-end-0 py-3 #{'active' if sortby[0] == request.params.get('order', website.shop_default_sort) else None}" t-att-href="keep('/shop', order=sortby[0])">
+                                <span t-out="sortby[1]"/>
+                            </a>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="shop_category_pills" name="Theme Prime: Shop Category Pills">
+        <div class="tp-category-pill-container">
+            <t t-set="_categories_to_display" t-value="categories"/>
+            <t t-if="category and _config_category_pills.get('show_child_categories')">
+                <t t-set="_categories_to_display" t-value="category.child_id"/>
+                <t t-if="not category.child_id">
+                    <t t-set="_categories_to_display" t-value="category.parent_id.child_id"/>
+                </t>
+            </t>
+            <div t-if="_categories_to_display" t-attf-class="row py-3 #{'d-lg-none' if _config_category_pills.get('hide_in_desktop') else ''}">
+                <div class="col-12">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-lg-none">
+                            <a t-if="category.parent_id or category.child_id" href="#" t-att-data-link-href="category.parent_id and keep('/shop/category/%s' % slug(category.parent_id), category=0) or '/shop'">
+                                <h6 class="mb-0 tp-link-dark">
+                                    <i class="fa fa-angle-left me-1"/>
+                                    <span t-if="category.parent_id" t-out="category.parent_id.name"/>
+                                    <span t-else="">All Products</span>
+                                </h6>
+                            </a>
+                            <h5 class="mb-0" t-else="">Categories</h5>
+                        </div>
+                        <h5 class="d-none d-lg-block mb-0">Categories</h5>
+                        <a href="#" class="tp-category-action ms-3 tp-link-dark d-lg-none">See All <i class="fa fa-angle-right ms-1"/></a>
+                    </div>
+                    <ul t-attf-class="list-inline tp-category-pills-container style-#{_config_category_pills.get('style')} mb-0 pb-1">
+                        <t t-foreach="_categories_to_display" t-as="_category">
+                            <li t-if="_config_category_pills.get('style') == '1'" t-attf-class="list-inline-item me-3 tp-category-pill #{_category.id == category.id and 'active' or ''}">
+                                <a t-att-title="_category.name" href="#" t-att-data-link-href="keep('/shop/category/%s' % slug(_category), category=0)" class="text-center h-100 d-flex flex-column justify-content-between align-items-center">
+                                    <img class="tp-category-img" t-attf-src="/web/image/product.public.category/#{_category.id}/image_128"/>
+                                    <h6 class="mb-0 text-truncate small w-100" t-out="_category.name"/>
+                                </a>
+                            </li>
+                            <li t-elif="_config_category_pills.get('style') == '2'" class="list-inline-item me-2">
+                                <a t-att-title="_category.name" href="#" t-att-data-link-href="keep('/shop/category/%s' % slug(_category), category=0)" t-attf-class="tp-category-pill d-block rounded-pill #{_category.id == category.id and 'active' or ''}">
+                                    <t t-out="_category.name"/>
+                                </a>
+                            </li>
+                            <li t-elif="_config_category_pills.get('style') == '3'" class="list-inline-item me-3">
+                                <a t-att-title="_category.name" href="#" t-att-data-link-href="keep('/shop/category/%s' % slug(_category), category=0)" t-attf-class="d-flex align-items-center py-1 ps-2 pe-3 tp-category-pill #{_category.id == category.id and 'active' or ''}">
+                                    <img class="tp-category-img" t-attf-src="/web/image/product.public.category/#{_category.id}/image_128"/>
+                                    <h6 class="mb-0 ms-2" t-out="_category.name"/>
+                                </a>
+                            </li>
+                            <li t-elif="_config_category_pills.get('style') == '4'" class="list-inline-item me-3">
+                                <a t-att-title="_category.name" href="#" t-att-data-link-href="keep('/shop/category/%s' % slug(_category), category=0)" t-attf-class="d-flex align-items-center rounded-pill p-1 pe-3 tp-category-pill #{_category.id == category.id and 'active' or ''}">
+                                    <img class="tp-category-img rounded-circle border" t-attf-src="/web/image/product.public.category/#{_category.id}/image_128"/>
+                                    <h6 class="mb-0 ms-2" t-out="_category.name"/>
+                                </a>
+                            </li>
+                            <li t-elif="_config_category_pills.get('style') == '5'" class="list-inline-item me-3">
+                                <a t-att-title="_category.name" href="#" t-att-data-link-href="keep('/shop/category/%s' % slug(_category), category=0)" t-attf-class="tp-category-pill d-block #{_category.id == category.id and 'active' or ''}">
+                                    <img class="tp-category-img" t-attf-src="/web/image/product.public.category/#{_category.id}/image_128"/>
+                                </a>
+                            </li>
+                        </t>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="selected_attributes" name="Theme Prime: Selected Attributes">
+        <t t-set="_selected_min_price" t-value="request.httprequest.args.get('min_price')"/>
+        <t t-set="_selected_max_price" t-value="request.httprequest.args.get('max_price')"/>
+        <div class="row g-0 tp-selected-attributes" t-if="selected_attributes and is_view_active('website_sale.products_attributes')">
+            <div class="col-12">
+                <ul class="list-inline mt-2 mb-0">
+                    <li class="list-inline-item me-3 my-1 border-end pe-3">
+                        <div class="tp-attribute clear d-flex align-items-center cursor-pointer">
+                            <span>Clear Filters</span>
+                            <i class="dri dri-cross-l ms-1 tp-attribute-remove"/>
+                        </div>
+                    </li>
+                    <li class="list-inline-item me-3 my-1" t-foreach="request.env['product.attribute.value'].browse(attrib_set)" t-as="attribute_value_id">
+                        <div class="tp-attribute d-flex align-items-center cursor-pointer d-flex align-items-center" t-attf-data-id="attribute_#{attribute_value_id.attribute_id.id}-#{attribute_value_id.id}">
+                            <span
+                                t-if="attribute_value_id.attribute_id.display_type == 'color'"
+                                class="tp-attribute-color mx-1"
+                                t-attf-style="background-color: #{attribute_value_id.html_color or attribute_value_id.name}"/>
+                            <span t-field="attribute_value_id.name"/>
+                            <i class="dri dri-cross-l ms-1 tp-attribute-remove"/>
+                        </div>
+                    </li>
+                    <li class="list-inline-item me-3 my-1" t-foreach="request.env['product.tag'].browse(selected_tags)" t-as="tag">
+                        <span class="tp-attribute d-flex align-items-center cursor-pointer" t-attf-data-id="tag-#{tag.id}">
+                            <span t-field="tag.name"/>
+                            <i class="dri dri-cross-l ms-1 tp-attribute-remove"/>
+                        </span>
+                    </li>
+                    <li class="list-inline-item me-3 my-1" t-foreach="selected_ratings" t-as="rating">
+                        <span class="tp-attribute d-flex align-items-center cursor-pointer" t-attf-data-id="rating-#{rating}">
+                            <span t-out="rating"/>
+                            <div class="o_website_rating_static d-inline-block mx-1">
+                                <i class="fa fa-star"/>
+                            </div>
+                            <span>&amp; above</span>
+                            <i class="dri dri-cross-l ms-1 tp-attribute-remove"/>
+                        </span>
+                    </li>
+                    <li class="list-inline-item me-3 my-1" t-if="selected_hide_out_of_stock">
+                        <span class="tp-attribute d-flex align-items-center cursor-pointer" data-id="hide_out_of_stock">
+                            <span>Hide out of stock</span>
+                            <i class="dri dri-cross-l ms-1 tp-attribute-remove"/>
+                        </span>
+                    </li>
+                    <li t-if="_selected_min_price or _selected_max_price" class="list-inline-item me-3 my-1">
+                        <span class="tp-attribute d-flex align-items-center cursor-pointer" data-type="price">
+                            <span class="me-1" t-out="pricelist.currency_id.symbol"/>
+                            <span t-out="'%s - %s' % (_selected_min_price or min_price, _selected_max_price or max_price)"/>
+                            <i class="dri dri-cross-l ms-1 tp-attribute-remove"/>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </template>
+
+    <template id="product_item_actions" name="Theme Prime: Product Item Actions">
+        <div t-attf-class="d-flex flex-column position-absolute tp-action-buttons #{_classes} o_wsale_product_btn">
+            <button type="button" role="button" class="btn btn-link p-0 tp-action-buttons-toggler d-lg-none">
+                <i class="fa fa-angle-down" role="img" aria-label="More options"/>
+            </button>
+            <a href="#" role="button" class="a-submit d-none tp-action-toggle" aria-label="Shopping cart">
+                <i class="dri dri-cart"/>
+            </a>
+            <a t-if="_config_product_item.get('show_quick_view')" href="#" class="tp-product-quick-view-action d-none d-lg-flex tp-action-toggle" t-att-data-product-id="product.id" title="Quick View">
+                <i class="dri dri-eye"/>
+            </a>
+            <button t-if="_config_product_item.get('show_wishlist') and product_variant_id" type="button" role="button" class="btn btn-link p-0 o_add_wishlist d-none d-lg-flex tp-action-toggle" t-att-disabled="product._is_in_wishlist() or None" title="Add to Wishlist" t-att-data-product-template-id="product.id" t-att-data-product-product-id="product_variant_id" data-action="o_wishlist">
+                <i class="dri dri-wishlist" role="img" aria-label="Add to wishlist"/>
+            </button>
+            <t t-if="_config_product_item.get('show_compare')">
+                <t t-set="categories_for_display" t-value="product.valid_product_template_attribute_line_ids._prepare_categories_for_display()"/>
+                <button t-if="product_variant_id and categories_for_display" type="button" role="button" class="d-none d-lg-flex btn btn-link p-0 o_add_compare" title="Add to Compare" aria-label="Compare" t-att-data-product-product-id="product_variant_id" data-action="o_comparelist"><span class="dri dri-compare"></span></button>
+            </t>
+            <a t-if="_config_product_item.get('show_similar_products')" href="#" class="tp_show_similar_products d-none d-lg-flex tp-action-toggle" title="View Similar Products" t-att-data-product-template-id="product.id">
+                <i class="fa fa-clone"/>
+            </a>
+        </div>
+    </template>
+
+    <template id="product_item_price" name="Theme Prime: Product Item Price">
+        <div t-if="request.website._dr_has_b2b_access()" t-attf-class="product_price #{_classes}" itemprop="offers" itemscope="itemscope" itemtype="http://schema.org/Offer">
+            <span t-attf-class="#{_size or 'h6'} text-primary mb-0" t-if="template_price_vals['price_reduce'] or not website.prevent_zero_price_sale" t-out="template_price_vals['price_reduce']" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+            <span t-attf-class="#{_size or 'h6'} mb-0" t-else="" t-field="website.prevent_zero_price_sale_text"/>
+            <t t-if="'base_price' in template_price_vals">
+                <del t-attf-class="text-body ms-1 #{_size or 'h6'} mb-0" style="white-space: nowrap;">
+                    <span class="small" t-out="template_price_vals['base_price']" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}" />
+                </del>
+            </t>
+            <span itemprop="price" style="display:none;" t-out="template_price_vals['price_reduce']" />
+            <span itemprop="priceCurrency" style="display:none;" t-out="website.currency_id.name" />
+            <small t-if="'base_price' in template_price_vals" class="tp-discount-percentage d-none d-md-inline-block ms-1">
+                (<t t-out="round((template_price_vals['base_price'] - template_price_vals['price_reduce']) / template_price_vals['base_price'] * 100)"/>% OFF)
+            </small>
+        </div>
+        <div t-else="" t-attf-class="#{_classes}">
+            <t t-call="theme_prime.tp_b2b_price_label"/>
+        </div>
+    </template>
+
+    <template id="product_item_list_1" name="Theme Prime: Product Item - List 1">
+        <form action="/shop/cart/update" method="post" itemscope="itemscope" itemtype="http://schema.org/Product">
+            <input name="product_id" t-att-value="product_variant_id" type="hidden"/>
+            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" t-nocache="The csrf token must always be up to date."/>
+            <div class="tp-product-wrapper">
+                <div class="tp-product-top position-relative overflow-hidden">
+                    <a t-att-href="product_href" class="tp-product-image-container d-block h-100" itemprop="url">
+                        <img t-attf-src="/web/image/product.template/#{product.id}/#{product_image_size}" loading="lazy" class="h-100 w-100 tp-product-image"/>
+                    </a>
+                    <t t-call="theme_prime.product_label">
+                        <t t-set="label" t-value="product.dr_label_id"/>
+                    </t>
+                    <t t-call="theme_prime.product_label">
+                        <t t-set="stock" t-value="True"/>
+                    </t>
+                    <t t-call="theme_prime.product_item_actions"/>
+                </div>
+                <div class="tp-product-content py-3">
+                    <h5 class="text-center text-md-start">
+                        <a class="tp-link-dark text-truncate d-block" t-att-title="product.name" itemprop="name" t-att-href="product_href" t-att-content="product.name" t-field="product.name" />
+                    </h5>
+                    <t t-call="theme_prime.product_item_price">
+                        <t t-set="_classes" t-valuef="text-center text-md-start"/>
+                        <t t-set="_size" t-valuef="h5"/>
+                    </t>
+                    <t t-if="_config_product_item.get('show_product_preview_swatches')" t-call="theme_prime.product_preview_swatches">
+                        <t t-set="_classes" t-valuef="mt-2 d-flex justify-content-center justify-content-md-start"/>
+                        <t t-set="parent_selector" t-valuef="form"/>
+                        <t t-set="img_selector" t-valuef=".tp-product-image-container img"/>
+                        <t t-set="img_size" t-value="product_image_size"/>
+                    </t>
+                    <div t-if="product.description_sale" class="text-center text-md-start mt-2" itemprop="description" t-field="product.description_sale"/>
+                    <t t-if="_config_product_item.get('show_rating') and is_view_active('website_sale.product_comment')">
+                        <t t-set="rating_stats" t-value="product.sudo().rating_get_stats()"/>
+                        <t t-if="rating_stats['total']" t-call="theme_prime.product_rating">
+                            <t t-set="rating_avg" t-value="product.rating_avg"/>
+                            <t t-set="_classes" t-valuef="text-center text-md-start mt-1"/>
+                        </t>
+                    </t>
+                    <div class="text-center text-md-start o_wsale_product_btn mt-3" t-if="_config_product_item.get('show_add_to_cart') and product_variant_id and (template_price_vals['price_reduce'] or not website.prevent_zero_price_sale) and product._website_show_quick_add()">
+                        <a href="#" role="button" class="a-submit btn btn-primary" aria-label="Shopping cart">
+                            <i class="dri dri-cart"/> Add to Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </template>
+
+    <template id="product_item_grid_1" name="Theme Prime: Product Item - Grid 1">
+        <form action="/shop/cart/update" method="post" itemscope="itemscope" itemtype="http://schema.org/Product" class="h-100 bg-white">
+            <input name="product_id" t-att-value="product_variant_id" type="hidden"/>
+            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" t-nocache="The csrf token must always be up to date."/>
+            <div class="tp-product-wrapper h-100 border">
+                <div class="tp-product-top position-relative overflow-hidden">
+                    <a t-att-href="product_href" class="tp-product-image-container d-block h-100" itemprop="url">
+                        <img t-attf-src="/web/image/product.template/#{product.id}/#{product_image_size}" loading="lazy" class="img-fluid h-100 w-100 tp-product-image"/>
+                    </a>
+                    <t t-call="theme_prime.product_label">
+                        <t t-set="label" t-value="product.dr_label_id"/>
+                    </t>
+                    <t t-call="theme_prime.product_label">
+                        <t t-set="stock" t-value="True"/>
+                    </t>
+                    <t t-if="_config_product_item.get('show_rating') and is_view_active('website_sale.product_comment')">
+                        <t t-set="rating_stats" t-value="product.sudo().rating_get_stats()"/>
+                        <div t-if="rating_stats['total']" class="tp-product-rating-count rounded-pill bg-white" t-attf-title="#{rating_stats['total']} Reviews">
+                            <i class="fa fa-star"></i>
+                            <span class="ms-1 text-body" t-out="'%.1f' % rating_stats['avg']"/>
+                        </div>
+                    </t>
+                    <t t-call="theme_prime.product_item_actions"/>
+                    <div class="tp-add-to-cart-btn o_wsale_product_btn d-none d-lg-block" t-if="_config_product_item.get('show_add_to_cart') and product_variant_id and (template_price_vals['price_reduce'] or not website.prevent_zero_price_sale) and product._website_show_quick_add()">
+                        <a href="#" role="button" class="a-submit btn btn-primary w-100 shadow-none" aria-label="Shopping cart">
+                            <i class="dri dri-cart"/> Add to Cart
+                        </a>
+                    </div>
+                </div>
+                <div class="tp-product-content border-top p-2 position-relative text-center text-lg-start">
+                    <h6 class="mb-1 tp-product-title">
+                        <a class="tp-link-dark text-truncate d-block" t-att-title="product.name" itemprop="name" t-att-href="product_href" t-att-content="product.name" t-field="product.name" />
+                    </h6>
+                    <t t-call="theme_prime.product_item_price"/>
+                    <t t-if="is_view_active('website_sale.product_comment')">
+                        <t t-set="rating_stats" t-value="product.sudo().rating_get_stats()"/>
+                        <t t-if="rating_stats['total']" t-call="theme_prime.product_rating">
+                            <t t-set="rating_avg" t-value="product.rating_avg"/>
+                            <t t-set="_classes" t-valuef="mt-1 small d-lg-none"/>
+                        </t>
+                    </t>
+                    <t t-if="_config_product_item.get('show_product_preview_swatches')" t-call="theme_prime.product_preview_swatches">
+                        <t t-set="_classes" t-valuef="tp-product-preview-swatches-md bg-white d-flex mt-1 p-lg-2 justify-content-center justify-content-lg-start"/>
+                        <t t-set="_limit" t-value="4"/>
+                        <t t-set="parent_selector" t-valuef="form"/>
+                        <t t-set="img_selector" t-valuef=".tp-product-image-container img"/>
+                        <t t-set="img_size" t-value="product_image_size"/>
+                    </t>
+                </div>
+            </div>
+        </form>
+    </template>
+
+    <template id="product_item_grid_2" name="Theme Prime: Product Item - Grid 2">
+        <form action="/shop/cart/update" method="post" itemscope="itemscope" itemtype="http://schema.org/Product" class="h-100 bg-white">
+            <input name="product_id" t-att-value="product_variant_id" type="hidden"/>
+            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" t-nocache="The csrf token must always be up to date."/>
+            <div class="tp-product-wrapper border overflow-hidden tp-rounded-border-radius h-100">
+                <div class="tp-product-top position-relative overflow-hidden">
+                    <a t-att-href="product_href" class="tp-product-image-container d-block" itemprop="url">
+                        <img t-attf-src="/web/image/product.template/#{product.id}/#{product_image_size}" loading="lazy" class="img-fluid h-100 w-100 tp-product-image"/>
+                    </a>
+                    <t t-call="theme_prime.product_label">
+                        <t t-set="label" t-value="product.dr_label_id"/>
+                    </t>
+                    <t t-call="theme_prime.product_label">
+                        <t t-set="stock" t-value="True"/>
+                    </t>
+                    <t t-if="_config_product_item.get('show_rating') and is_view_active('website_sale.product_comment')">
+                        <t t-set="rating_stats" t-value="product.sudo().rating_get_stats()"/>
+                        <div t-if="rating_stats['total']" class="tp-product-rating-count rounded-pill bg-white" t-attf-title="#{rating_stats['total']} Reviews">
+                            <i class="fa fa-star"></i>
+                            <span class="ms-1 text-body" t-out="'%.1f' % rating_stats['avg']"/>
+                        </div>
+                    </t>
+                    <t t-call="theme_prime.product_item_actions">
+                        <t t-set="_classes" t-valuef="tp-action-buttons-rounded"/>
+                    </t>
+                    <div class="tp-add-to-cart-btn o_wsale_product_btn d-none d-lg-block p-2" t-if="_config_product_item.get('show_add_to_cart') and product_variant_id and (template_price_vals['price_reduce'] or not website.prevent_zero_price_sale) and product._website_show_quick_add()">
+                        <a href="#" role="button" class="a-submit btn btn-primary w-100 shadow-none rounded-pill" aria-label="Shopping cart">
+                            <i class="dri dri-cart"/> Add to Cart
+                        </a>
+                    </div>
+                </div>
+                <div class="tp-product-content p-2 text-center text-lg-start">
+                    <h6 class="mb-1 tp-product-title">
+                        <a class="tp-link-dark text-truncate d-block" t-att-title="product.name" itemprop="name" t-att-href="product_href" t-att-content="product.name" t-field="product.name" />
+                    </h6>
+                    <div class="d-flex flex-wrap flex-column flex-lg-row justify-content-center justify-content-lg-between align-items-center position-relative">
+                        <t t-call="theme_prime.product_item_price">
+                            <t t-set="_classes" t-valuef="me-2"/>
+                        </t>
+                        <t t-if="_config_product_item.get('show_product_preview_swatches')" t-call="theme_prime.product_preview_swatches">
+                            <t t-set="_classes" t-valuef="tp-product-preview-swatches-sm bg-white mt-1 mt-lg-0"/>
+                            <t t-set="parent_selector" t-valuef="form"/>
+                            <t t-set="img_selector" t-valuef=".tp-product-image-container img"/>
+                            <t t-set="img_size" t-value="product_image_size"/>
+                        </t>
+                    </div>
+                    <t t-if="is_view_active('website_sale.product_comment')">
+                        <t t-set="rating_stats" t-value="product.sudo().rating_get_stats()"/>
+                        <t t-if="rating_stats['total']" t-call="theme_prime.product_rating">
+                            <t t-set="rating_avg" t-value="product.rating_avg"/>
+                            <t t-set="_classes" t-valuef="mt-1 small d-lg-none"/>
+                        </t>
+                    </t>
+                </div>
+            </div>
+        </form>
+    </template>
+
+    <template id="shop_layout_filters" name="Theme Prime: Shop Layout Filters">
+        <t t-set="_filter_collapsible" t-value="_config_shop_filters.get('collapsible_attribute')"/>
+        <t t-set="_filter_show_attribute_count" t-value="_config_shop_filters.get('show_attribute_count')"/>
+        <!-- Categories -->
+        <ul t-if="_filter_category_activated" class="nav nav-pills flex-column">
+            <li t-attf-class="nav-item tp-filter-attribute tp-hook-categories #{_filter_attribute_classes}">
+                <t t-call="theme_prime.filter_attribute">
+                    <t t-set="string">
+                        <span>Categories</span>
+                    </t>
+                    <t t-set="is_selected" t-value="bool(category)"/>
+                    <t t-set="_filter_collapsible" t-value="_config_shop_filters.get('collapsible_category')"/>
+
+                    <ul class="nav flex-column ms-0" id="o_shop_collapse_category">
+                        <form>
+                            <li class="nav-item">
+                                <div t-att-data-link-href="keep('/shop', category=0)" class="custom-control form-check mb-1 d-inline-block">
+                                    <input type="radio" style="pointer-events:none;" class="form-check-input o_not_editable" t-att-id="all_products" t-att-value="all_products" t-att-checked="'true' if not category else None"/>
+                                    <label class="form-check-label fw-normal" t-att-for="all_products">All Products</label>
+                                </div>
+                            </li>
+                            <t t-foreach="categories" t-as="c">
+                                <t t-if="is_view_active('website_sale.option_collapse_products_categories')" t-call="website_sale.option_collapse_categories_recursive" />
+                                <t t-else="" t-call="website_sale.categories_recursive" />
+                            </t>
+                        </form>
+                    </ul>
+                </t>
+            </li>
+        </ul>
+        <form t-if="_filter_attributes_activated" class="js_attributes" method="get">
+            <input t-if="category" type="hidden" name="category" t-att-value="category.id" />
+            <input type="hidden" name="search" t-att-value="search" />
+            <input type="hidden" name="order" t-att-value="order"/>
+            <input t-if="view_mode" type="hidden" name="view_mode" t-att-value="view_mode"/>
+
+            <ul class="nav nav-pills flex-column">
+                <!-- Price -->
+                <li t-if="is_view_active('website_sale.filter_products_price') and available_min_price != available_max_price and website._dr_has_b2b_access()" t-attf-class="nav-item tp-filter-attribute tp-hook-filter-price #{_filter_attribute_classes}">
+                    <t t-call="theme_prime.filter_attribute">
+                        <t t-set="string">
+                            <span>Price</span>
+                        </t>
+                        <t t-set="is_selected" t-value="request.httprequest.args.get('min_price') or request.httprequest.args.get('max_price')"/>
+
+                        <t t-call="theme_prime.filter_attribute_range">
+                            <t t-set="key" t-value="'price'"/>
+                            <t t-set="prefix" t-value="pricelist.currency_id.symbol" />
+                            <t t-set="from_value" t-value="'%.2f' % min_price"/>
+                            <t t-set="to_value" t-value="'%.2f' % max_price"/>
+                            <t t-set="min_value" t-value="'%f' % (available_min_price)"/>
+                            <t t-set="max_value" t-value="'%f' % (available_max_price)"/>
+                        </t>
+                    </t>
+                </li>
+                <!-- Attributes -->
+                <t t-foreach="attributes" t-as="attribute">
+                    <li t-if="attribute.value_ids and len(attribute.value_ids) &gt; 1 and attribute.visibility == 'visible'" t-attf-class="nav-item tp-filter-attribute #{_filter_attribute_classes}">
+                        <t t-call="theme_prime.filter_attribute">
+                            <t t-set="string">
+                                <span t-field="attribute.name" />
+                            </t>
+                            <t t-set="is_selected" t-value="attribute.id in attributes_ids"/>
+                            <t t-set="show_search" t-value="attribute.dr_is_show_shop_search and attribute.display_type != 'select'"/>
+
+                            <t t-set="name" t-value="'attribute_%s' % attribute.id"/>
+                            <t t-set="items" t-value="attribute.value_ids"/>
+                            <t t-set="selected" t-value="attrib_set"/>
+                            <t t-set="is_attribute" t-value="attribute"/>
+                            <t t-set="hide_extra_value" t-value="_config_shop_filters.get('hide_extra_attrib_value')"/>
+                            <t t-set="show_count" t-value="_filter_show_attribute_count"/>
+                            <t t-set="count_list" t-value="get_attrib_count"/>
+
+                            <t t-if="attribute.display_type == 'select'">
+                                <t t-call="theme_prime.filter_attribute_select"/>
+                            </t>
+                            <t t-if="attribute.display_type in ['radio', 'pills', 'radio_circle', 'radio_square']">
+                                <t t-call="theme_prime.filter_attribute_checkbox"/>
+                            </t>
+                            <t t-if="attribute.display_type == 'radio_image'">
+                                <t t-if="attribute.dr_radio_image_style == 'default'">
+                                    <t t-call="theme_prime.filter_attribute_checkbox"/>
+                                </t>
+                                <t t-elif="attribute.dr_radio_image_style in ['image', 'image_compact']">
+                                    <t t-set="show_image" t-value="True"/>
+                                    <t t-set="image_model" t-value="'product.attribute.value'"/>
+                                    <t t-set="image_field" t-value="'dr_image'"/>
+                                    <t t-set="compact_image" t-value="attribute.dr_radio_image_style == 'image_compact'"/>
+                                    <t t-call="theme_prime.filter_attribute_image"/>
+                                </t>
+                                <t t-elif="attribute.dr_radio_image_style == 'image_text'">
+                                    <t t-set="show_image" t-value="True"/>
+                                    <t t-set="image_model" t-value="'product.attribute.value'"/>
+                                    <t t-set="image_field" t-value="'dr_image'"/>
+                                    <t t-call="theme_prime.filter_attribute_checkbox"/>
+                                </t>
+                            </t>
+                            <t t-if="attribute.display_type == 'color'">
+                                <t t-set="show_color" t-value="True"/>
+                                <t t-call="theme_prime.filter_attribute_checkbox"/>
+                            </t>
+                        </t>
+                    </li>
+                </t>
+                <!-- Availability -->
+                <li t-if="_config_shop_filters.get('show_availability_filter')" t-attf-class="nav-item tp-filter-attribute tp-hook-filter-availability #{_filter_attribute_classes}">
+                    <t t-call="theme_prime.filter_attribute">
+                        <t t-set="string">
+                            <span>Availability</span>
+                        </t>
+                        <t t-set="is_selected" t-value="selected_hide_out_of_stock"/>
+
+                        <ul class="nav nav-pills flex-column ms-0 flex-nowrap tp-filter-attribute-scrollbar">
+                            <li class="nav-item">
+                                <div class="form-check mb-2 ms-1">
+                                    <input type="checkbox" name="hide_out_of_stock" class="form-check-input" id="hide_out_of_stock" value="1" t-att-checked="'checked' if is_selected else None"/>
+                                    <label class="form-check-label fw-normal w-100" for="hide_out_of_stock">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div class="d-flex align-items-center">
+                                                Hide out of stock
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </li>
+                        </ul>
+                    </t>
+                </li>
+                <!-- Rating -->
+                <li t-if="_config_shop_filters.get('show_rating_filter') and is_view_active('website_sale.product_comment')" t-attf-class="nav-item tp-filter-attribute tp-hook-filter-rating #{_filter_attribute_classes}">
+                    <t t-call="theme_prime.filter_attribute">
+                        <t t-set="string">
+                            <span>Rating</span>
+                        </t>
+                        <t t-set="is_selected" t-value="selected_ratings"/>
+
+                        <ul class="nav nav-pills flex-column ms-0 flex-nowrap tp-filter-attribute-scrollbar">
+                            <t t-foreach="[4,3,2,1]" t-as="rating">
+                                <li class="nav-item">
+                                    <div class="form-check mb-2 ms-1">
+                                        <input type="checkbox" name="rating" class="form-check-input" t-attf-id="rating-#{rating}" t-att-value="rating" t-att-checked="'checked' if rating in selected_ratings else None"/>
+                                        <label class="form-check-label fw-normal w-100" t-attf-for="rating-#{rating}">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="d-flex align-items-center">
+                                                    <t t-out="rating"/>
+                                                    <div class="o_website_rating_static mx-1">
+                                                        <i class="fa fa-star"/>
+                                                    </div>
+                                                    <span> &amp; above</span>
+                                                </div>
+                                                <span class="tp-filter-count ms-1" t-if="_filter_show_attribute_count and get_ratings_count.get(rating)">
+                                                    <t t-out="get_ratings_count.get(rating)"/>
+                                                </span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </li>
+                            </t>
+                        </ul>
+                    </t>
+                </li>
+                <!-- Tags -->
+                <li t-if="tags" t-attf-class="nav-item tp-filter-attribute tp-hook-filter-tags #{_filter_attribute_classes}">
+                    <t t-call="theme_prime.filter_attribute">
+                        <t t-set="string">
+                            <span>Tags</span>
+                        </t>
+                        <t t-set="is_selected" t-value="selected_tags"/>
+                        <t t-set="show_search" t-value="True"/>
+
+                        <t t-set="name" t-value="'tag'"/>
+                        <t t-set="items" t-value="tags"/>
+                        <t t-set="selected" t-value="selected_tags"/>
+
+                        <t t-call="theme_prime.filter_attribute_checkbox"/>
+                    </t>
+                </li>
+            </ul>
+        </form>
+    </template>
+
+    <template id="categorie_link" inherit_id="website_sale.categorie_link" name="Theme Prime: Category Link">
+        <xpath expr="//label[@t-field='c.name']" position="replace">
+            <label class="form-check-label fw-normal" t-att-for="c.id">
+                <span t-field="c.name"/>
+                <span class="tp-filter-count ms-1" t-if="_config_shop_layout.get('layout') == 'prime' and _config_shop_filters.get('show_category_count') and get_category_count.get(c.id, 0)">
+                    (<t t-out="get_category_count.get(c.id, 0)"/>)
+                </span>
+            </label>
+        </xpath>
+    </template>
+
+    <!--
+    ============================================================================
+    Shop Filter Attributes
+    ============================================================================
+    -->
+    <template id="filter_attribute" name="Theme Prime: Attribute">
+        <div t-attf-class="d-flex justify-content-between align-items-center tp-filter-attribute-title py-3 #{_filter_attribute_title_classes} #{_filter_collapsible and 'collapsible cursor-pointer' or None} #{is_selected and 'expanded' or None}">
+            <h6 class="mb-0">
+                <span t-out="string"/>
+            </h6>
+            <span t-if="_filter_collapsible" class="tp-collapse-indicator">
+                <t t-if="_filter_collapsible_plus_style">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-dash-lg" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M2 8a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11A.5.5 0 0 1 2 8Z"/>
+                    </svg>
+                </t>
+                <i t-else="" class="dri dri-chevron-right-l"/>
+            </span>
+        </div>
+        <div t-attf-class="tp-filter-attribute-collapsible-area #{_filter_attribute_collapse_area_classes} #{_filter_collapsible and 'collapsible' or None}" t-attf-style="display: #{(is_selected or not _filter_collapsible) and 'block' or 'none'}">
+            <div t-if="show_search" class="input-group mb-3 tp-search-input-group position-relative">
+                <input type="text" class="form-control tp-search-attribute-value" placeholder="Search..."/>
+                <i class="dri dri-search-l tp-search-icon"/>
+            </div>
+            <t t-out="0"/>
+        </div>
+    </template>
+
+    <template id="filter_attribute_checkbox" name="Theme Prime: Attribute Checkbox List">
+        <ul class="nav nav-pills flex-column ms-0 flex-nowrap tp-filter-attribute-scrollbar">
+            <t t-foreach="items.sorted(lambda i: i.id in selected, reverse=True)" t-as="item">
+                <li class="nav-item" t-att-data-search-term="item.name.lower()" t-if="(count_list.get(item.id) or item.id in selected) if hide_extra_value else True">
+                    <div class="form-check mb-2 ms-1">
+                        <input type="checkbox" t-att-name="'attrib' if is_attribute else name" class="form-check-input" t-attf-id="#{name}-#{item.id}" t-att-value="'%s-%s' % (is_attribute.id, item.id) if is_attribute else item.id" t-att-checked="'checked' if item.id in selected else None"/>
+                        <label class="form-check-label fw-normal w-100" t-attf-for="#{name}-#{item.id}">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <span t-if="show_image" class="tp-attribute-image-box border me-1" t-attf-style="background-image: url('/web/image/#{image_model}/#{item.id}/#{image_field}');"/>
+                                    <span t-if="show_color" class="tp-attribute-color-box me-1" t-attf-style="background-color: #{item.html_color or item.name}"/>
+                                    <span t-field="item.name"/>
+                                </div>
+                                <span class="tp-filter-count ms-1" t-if="show_count and count_list.get(item.id)">
+                                    <t t-out="count_list.get(item.id)"/>
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+                </li>
+            </t>
+        </ul>
+    </template>
+
+    <template id="filter_attribute_select" name="Theme Prime: Attribute Select">
+        <select class="form-control" t-att-name="'attrib' if is_attribute else name">
+            <option value="" />
+            <t t-foreach="items" t-as="item" t-if="count_list.get(item.id) if hide_extra_value else True">
+                <option t-attf-id="#{name}-#{item.id}" t-att-value="'%s-%s' % (is_attribute.id, item.id) if is_attribute else item.id" t-out="item.name" t-att-selected="item.id in selected" />
+            </t>
+        </select>
+    </template>
+
+    <template id="filter_attribute_image" name="Theme Prime: Attribute Image">
+        <ul class="nav nav-pills ms-0 tp-filter-attribute-scrollbar tp-filter-image-style">
+            <t t-foreach="items.sorted(lambda i: i.id in selected, reverse=True)" t-as="item">
+                <li t-attf-class="nav-item p-1 #{compact_image and 'compact' or ''}" t-att-data-search-term="item.name.lower()" t-if="count_list.get(item.id) if hide_extra_value else True">
+                    <input type="checkbox" t-att-name="'attrib' if is_attribute else name" class="d-none" t-attf-id="#{name}-#{item.id}" t-att-value="'%s-%s' % (is_attribute.id, item.id) if is_attribute else item.id" t-att-checked="'checked' if item.id in selected else None"/>
+                    <label t-attf-for="#{name}-#{item.id}">
+                        <img class="w-100" t-att-title="item.name" t-attf-src="/web/image/#{image_model}/#{item.id}/#{image_field}"/>
+                    </label>
+                </li>
+            </t>
+        </ul>
+    </template>
+
+    <template id="filter_attribute_range" name="Theme Prime: Attribute Range">
+        <div class="tp-range-filter">
+            <input class="tp-slider d-none" t-att-data-key="key" t-att-data-min="min_value" t-att-data-max="max_value" t-att-data-from="from_value" t-att-data-to="to_value" t-att-data-prefix="prefix" />
+            <div class="d-flex align-items-center justify-content-center mt-2">
+                <div class="input-group position-relative">
+                    <span class="position-absolute prefix" t-out="prefix"/>
+                    <input type="text" class="form-control ps-4 min" t-att-value="from_value" placeholder="From"/>
+                </div>
+                <div class="mx-3 text-center">
+                    -
+                </div>
+                <div class="input-group position-relative">
+                    <span class="position-absolute prefix" t-out="prefix"/>
+                    <input type="text" class="form-control ps-4 max" t-att-value="to_value" placeholder="To"/>
+                </div>
+            </div>
+            <input t-if="request.httprequest.args.get('min_%s' % key)" type="hidden" t-attf-name="min_#{key}" t-att-value="from_value"/>
+            <input t-if="request.httprequest.args.get('max_%s' % key)" type="hidden" t-attf-name="max_#{key}" t-att-value="to_value"/>
+            <div class="d-flex align-items-center justify-content-between mt-3">
+                <div class="text-danger tp-validate-msg"/>
+                <button type="submit" class="btn btn-sm btn-primary apply">FILTER</button>
+            </div>
+        </div>
+    </template>
+
+</odoo>

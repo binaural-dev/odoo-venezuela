@@ -9,6 +9,7 @@ from dateutil.relativedelta import relativedelta
 
 class MunicipalRetentionPatentReport(models.TransientModel):
     _name = "municipal.retention.patent.report"
+    _description = "Municipal Retention Patent Report"
 
     date_start = fields.Date(required=True, default=date.today().replace(day=1))
     date_end = fields.Date(

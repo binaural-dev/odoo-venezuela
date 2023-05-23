@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.droggol.theme.common</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="website_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_website_create_new']" position="after">
+                <button name="dr_open_theme_custom_modules" type="object" string="Theme Customizations" class="col-auto btn-info ms-2 text-nowrap" style="line-height: 0.5;" icon="fa-cog" noSaveDialog="true" attrs="{'invisible': [('dr_has_custom_module', '=', False)]}"/>
+                <field name="dr_has_custom_module" invisible="1"/>
+            </xpath>
+            <div id="sale_product_catalog_settings" position="inside">
+                <div class="col-12 col-lg-6 o_setting_box" id="discount_sale_order_lines" title="Apply manual discounts on sales order lines or display discounts computed from pricelists (option to activate in the pricelist configuration).">
+                    <div class="o_setting_left_pane">
+                        <field name="group_discount_per_so_line"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="group_discount_per_so_line"/>
+                        <div class="text-muted">
+                            Grant discounts on sales order lines
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="sale_product_catalog_settings" position="after">
+                <h2>Progressive Web Apps (PWA)</h2>
+                <div class="row mt16 o_settings_container" id="pwa_settings">
+                    <div class="col-12 o_setting_box">
+                        <div class="o_setting_left_pane">
+                            <field name="dr_pwa_activated"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label string="Enable Progressive Web Apps" for="dr_pwa_activated"/>
+                            <span class="fa fa-lg fa-globe" title="Values set here are website-specific." groups="website.group_multi_website"/>
+                            <div class="text-muted">
+                                Allows users to install your website as an application on mobile and desktop.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="dr_pwa_name_setting" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                        <div class="o_setting_right_pane">
+                            <label string="Name" for="dr_pwa_name"/>
+                            <div class="text-muted">
+                                Used in the app install prompt.
+                            </div>
+                            <field name="dr_pwa_name" class="mt-2" attrs="{'required': [('dr_pwa_activated', '=', True)]}"/>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="dr_pwa_short_name_setting" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                        <div class="o_setting_right_pane">
+                            <label string="Short Name" for="dr_pwa_short_name"/>
+                            <div class="text-muted">
+                                Used on the user's home screen, launcher, or other places.
+                            </div>
+                            <field name="dr_pwa_short_name" class="mt-2" attrs="{'required': [('dr_pwa_activated', '=', True)]}"/>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="dr_pwa_background_color_setting" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                        <div class="o_setting_right_pane">
+                            <label string="Background Color" for="dr_pwa_background_color"/>
+                            <div class="text-muted">
+                                Used on the splash screen when the application is first launched.
+                            </div>
+                            <field name="dr_pwa_background_color" widget="color" class="mt-2" attrs="{'required': [('dr_pwa_activated', '=', True)]}"/>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="dr_pwa_theme_color_setting" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                        <div class="o_setting_right_pane">
+                            <label string="Theme Color" for="dr_pwa_theme_color"/>
+                            <div class="text-muted">
+                                Used on toolbar, and may be in the app's preview in task switchers.
+                            </div>
+                            <field name="dr_pwa_theme_color" widget="color" class="mt-2" attrs="{'required': [('dr_pwa_activated', '=', True)]}"/>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="dr_pwa_icon_192_setting" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                        <div class="o_setting_right_pane">
+                            <label string="Icon (192x192)" for="dr_pwa_icon_192"/>
+                            <div class="text-muted">
+                                These icons are used in places like the home screen, app launcher, task switcher, splash screen, etc.
+                            </div>
+                            <field name="dr_pwa_icon_192" widget="image" class="w-25 mt-2" attrs="{'required': [('dr_pwa_activated', '=', True)]}"/>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="dr_pwa_icon_512_setting" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                        <div class="o_setting_right_pane">
+                            <label string="Icon (512x512)" for="dr_pwa_icon_512"/>
+                            <div class="text-muted">
+                                These icons are used in places like the home screen, app launcher, task switcher, splash screen, etc.
+                            </div>
+                            <field name="dr_pwa_icon_512" widget="image" class="w-25 mt-2" attrs="{'required': [('dr_pwa_activated', '=', True)]}"/>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="dr_pwa_start_url_setting" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                        <div class="o_setting_right_pane">
+                            <label string="Start URL" for="dr_pwa_start_url"/>
+                            <div class="text-muted">
+                                Your application will start from this URL when it is launched.
+                            </div>
+                            <field name="dr_pwa_start_url" class="mt-2" attrs="{'required': [('dr_pwa_activated', '=', True)]}"/>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="dr_pwa_shortcuts_setting" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                        <div class="o_setting_right_pane">
+                            <label string="App Shortcuts" for="dr_pwa_shortcuts"/>
+                            <div class="text-muted">
+                                App shortcuts help users quickly start common or recommended tasks within your web app.
+                            </div>
+                            <field name="dr_pwa_shortcuts" invisible="1"/>
+                            <button name="dr_open_pwa_shortcuts" noSaveDialog="true" icon="fa-cogs me-1" type="object" string="Configure Shortcuts" class="btn-link"/>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="dr_pwa_offline_page_setting" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                        <div class="o_setting_left_pane">
+                            <field name="dr_pwa_offline_page" class="mt-2"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label string="Enable Offline Page" for="dr_pwa_offline_page"/>
+                            <div class="text-muted">
+                                Show offline page when there is no internet.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </field>
+    </record>
+
+</odoo>

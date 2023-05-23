@@ -22,17 +22,9 @@
 
     <record id="action_generate_txt" model="ir.actions.act_window">
         <field name="name">Generate TXT</field>
-        <field name="type">ir.actions.act_window</field>
         <field name="res_model">wizard.retention.iva</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
-
-    <menuitem
-	action="action_generate_txt"
-	id="txt_report"
-	parent="binaural_payment_extension.seniat_reports"
-	groups="account.group_account_manager"
-    />
 </odoo>
 

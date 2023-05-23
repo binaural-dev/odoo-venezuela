@@ -1,0 +1,19 @@
+body.editor_enable .dr_not_editable > * {
+    pointer-events: none;
+}
+
+.tp-preview-container {
+    .dr_not_editable > * {
+        pointer-events: all !important;
+    }
+}
+.o_panel[id^="tp_snippet"] {
+    .oe_snippet .oe_snippet_thumbnail .oe_snippet_thumbnail_img {
+        background-color: o-color('primary');
+        padding-top: 80%;
+    }
+}
+// Avoid horizontal scroll in edit mode
+.editor_enable .droggol_product_slider {
+    @include dr-owl-arrows-position-style(-15px);
+}

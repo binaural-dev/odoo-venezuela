@@ -1,0 +1,18 @@
+.s_clients_2 .tp-client-box {
+    margin-left: -1px;
+    margin-bottom: -1px;
+    border: 1px solid $border-color;
+    .tp-client-image {
+        width: 120px;
+        cursor: pointer;
+        -webkit-transition: all .3s ease;
+        -o-transition: all .3s ease;
+        transition: all .3s ease;
+        opacity: 0.5;
+        filter: grayscale(100%);
+        &:hover {
+            opacity: 1;
+            filter: grayscale(0);
+        }
+    }
+}

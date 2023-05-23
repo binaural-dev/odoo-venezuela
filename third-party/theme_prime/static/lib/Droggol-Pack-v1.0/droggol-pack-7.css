@@ -1,0 +1,93 @@
+@font-face {
+  font-family: 'Droggol-Pack';
+  src:  url('fonts/Droggol-Pack.eot?4iwoe7');
+  src:  url('fonts/Droggol-Pack.eot?4iwoe7#iefix') format('embedded-opentype'),
+    url('fonts/Droggol-Pack.ttf?4iwoe7') format('truetype'),
+    url('fonts/Droggol-Pack.woff?4iwoe7') format('woff'),
+    url('fonts/Droggol-Pack.svg?4iwoe7#Droggol-Pack') format('svg');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^="dri-"], [class*=" dri-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'Droggol-Pack' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dri-search:before {
+  content: "\e91c";
+}
+.dri-user:before {
+  content: "\e91d";
+}
+.dri-wishlist:before {
+  content: "\e91e";
+}
+.dri-cart:before {
+  content: "\e91f";
+}
+.dri-eye:before {
+  content: "\e920";
+}
+.dri-bolt:before {
+  content: "\e921";
+}
+.dri-compare:before {
+  content: "\e922";
+}
+.dri-home-l:before {
+  content: "\e800";
+}
+.dri-tag-l:before {
+  content: "\e82f";
+}
+.dri-phone-l:before {
+  content: "\e830";
+}
+.dri-rocket-l:before {
+  content: "\e84b";
+}
+.dri-cross-l:before {
+  content: "\e870";
+}
+.dri-chevron-up-l:before {
+  content: "\e873";
+}
+.dri-chevron-down-l:before {
+  content: "\e874";
+}
+.dri-chevron-left-l:before {
+  content: "\e875";
+}
+.dri-chevron-right-l:before {
+  content: "\e876";
+}
+.dri-arrow-left-l:before {
+  content: "\e879";
+}
+.dri-arrow-right-l:before {
+  content: "\e87a";
+}
+.dri-search-l:before {
+  content: "\e86f";
+}
+.dri-sync-l:before {
+  content: "\e862";
+}
+.dri-menu-circle-l:before {
+  content: "\e87e";
+}
+.dri-category:before {
+  content: "\e923";
+}

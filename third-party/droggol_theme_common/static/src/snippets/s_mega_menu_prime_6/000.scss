@@ -1,0 +1,7 @@
+.s_mega_menu_prime_6 .tp-banner-block {
+    min-height: 400px;
+    .tp-banner-text {
+        @include o-position-absolute($right: 18px, $bottom: 20px, $left: 18px);
+        padding: 1rem;
+    }
+}

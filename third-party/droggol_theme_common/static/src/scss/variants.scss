@@ -1,0 +1,59 @@
+//------------------------------------------------------------------------------
+// Variants
+//------------------------------------------------------------------------------
+.dr-attribute-info-btn {
+    display: none;
+}
+.dr-attribute-item {
+    .dr-value-item {
+        &.circle {
+            padding: 0;
+            height: 38px;
+            width: 38px;
+            line-height: 38px;
+            text-align: center;
+            border-radius: 50%;
+        }
+        &.square {
+            padding: 6px 12px;
+            border-radius: $border-radius;
+        }
+        &.circle, &.square {
+            background-color: o-color('white');
+            border: 1px solid o-color('300');
+            transition: 0.2s;
+            font-weight: $font-weight-normal;
+            cursor: pointer;
+            &:hover {
+                border-color: o-color('primary');
+                color: o-color('primary');
+            }
+        }
+        &.image {
+            margin-right: 0.4rem;
+            border-width: 0;
+            transition: 0.2s;
+            cursor: pointer;
+            box-shadow: 0px 0px 0px 2px o-color('300');
+            &:hover {
+                box-shadow: 0px 0px 0px 2px o-color('primary');
+            }
+            img {
+                padding: 2px;
+                object-fit: contain;
+                height: 40px;
+                width: 40px;
+            }
+        }
+    }
+    input:checked ~ .radio_input_value .dr-value-item {
+        &.circle, &.square {
+            background-color: o-color('primary');
+            border-color: o-color('primary');
+            color: color-contrast(o-color('primary'));
+        }
+        &.image {
+            box-shadow: 0px 0px 0px 2px o-color('primary');
+        }
+    }
+}

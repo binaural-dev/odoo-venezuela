@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<templates>
+
+    <t t-name="tp_category_info">
+        <t t-if="widget._isActionEnabled('category_info')">
+            <p t-if="item.category_info" t-attf-class="mb-0 #{_classes}">
+                <a t-att-href="item.category_info.website_url">
+                    <small class="dr_category_lable mb-0" t-out="item.category_info.name"/>
+                </a>
+            </p>
+            <t t-else="">
+                <br/>
+            </t>
+        </t>
+    </t>
+
+    <t t-name="s_mobile_product_name">
+        <p class="card-title mt-1 mb-1 text-truncate fw-light d-product-name">
+            <a t-att-href="item.website_url">
+                <t t-out="item.name"/>
+            </a>
+        </p>
+    </t>
+
+    <t t-name="dr_s_lable_tmpl">
+        <t t-if="widget._isActionEnabled('label') &amp;&amp; item.label_id">
+            <span class="tp-lable-generic-tmpl" t-out="item.label_template"/>
+        </t>
+        <span t-out="item.dr_stock_label"/>
+    </t>
+
+    <t t-name="tp-snippet-product-price">
+        <div t-attf-class="d-product-price #{!item.visibility ? 'small' : 'h6'} #{_classes}">
+            <span t-attf-class="d-inline-block mb-0 fw-light #{!notPrimary ? 'text-primary' : ''} #{!item.visibility ? 'small mb-3' : 'h6'}" t-out="item.price"/>
+            <h6 t-if="item.has_discounted_price &amp;&amp; item.list_price !== ' '" t-attf-class="#{hide_discount &amp;&amp; widget &amp;&amp; widget.isMobile ? 'd-none' : 'd-inline-block'} text-muted mb-0 small" style="text-decoration: line-through; white-space: nowrap;" t-esc="item.list_price"/>
+        </div>
+    </t>
+
+    <t t-name="tp-snippet-colors-pills">
+        <div t-attf-class="tp-snippet-colors-pills #{_classes}">
+            <h6 t-if="widget._isActionEnabled('colors') and _is_label_classes and item.colors" t-att-class="_is_label_classes">Colors:</h6>
+            <t t-if="widget._isActionEnabled('colors')" t-out="item.colors"/>
+        </div>
+    </t>
+
+</templates>
