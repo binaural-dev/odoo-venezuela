@@ -74,8 +74,7 @@ def browse_model_data(model_name: str, ids=None, is_sudo=True):
     elif ids.__class__ in IdType:
         ids = (ids,)
     else:
-        # ids = tuple(ids)
-        _logger.info(f"IDS: {ids} _____________________________5___________________")
+        ids = tuple(ids)
     model = request.env[model_name]
     if is_sudo:
         model = request.env[model_name].sudo()
@@ -239,8 +238,6 @@ def product_duplicate(sale_order: list):
     order_lines = sale_order.get("order_line", False)
     product_list = [line.get("product_id") for line in order_lines if line.get("product_id", False)]
     product_set = set(product_list)
-    _logger.info(f"PRODUCT SET: {product_set} _____________________________3___________________")
-    _logger.info(len(product_list) > len(product_set))
     return len(product_list) > len(product_set)
 
 

@@ -126,19 +126,11 @@ class SaleOrderBudget(http.Controller):
         sitemap=False,
     )
     def confirm_or_cancel_order(self, sale_id=False, confirm=False, uid=False, **kwargs):
-        # 
         data = {"status": 200, "msg": _("Success")}
         try:
-            # if uid:
-            #     request.uid = int(uid)
-            #     can_access, msg = utils.check_access(uid)
-            #     if not can_access:
-            #         return {"status": 401, "msg": msg}
-
             if sale_id:
                 sale = utils.browse_model_data("sale.order", sale_id)
                 if confirm == "confirm":
-                    _logger.info("pase por aqui siis")
                     success, msg = self.check_lines_validations_order(sale.order_line)
                     if not success:
                         data.update({"status": 400, "msg": msg})
@@ -146,45 +138,12 @@ class SaleOrderBudget(http.Controller):
                     sale.action_confirm()
                     sale._create_analytic_account()
                 elif confirm == "cancel":
-                    _logger.info("pase por aqui no")
                     sale.action_cancel()
                 return data
         except Exception as e:
             data.update({"status": 400, "msg": e})
             return data
-
-    @http.route(
-        "/budget/print/order", 
-        type="json", 
-        methods=["POST"], 
-        auth="public", 
-        website=False, 
-        sitemap=False,
-        csrf=False
-    )
-    def print_sale_order(self, sale_id=False, **kwargs):
-        try:
-            sale = utils.browse_model_data("sale.order", sale_id)
-        except Exception as e:
-            return json.dumps({"status": 400, "msg": str(e)})
-
-        if sale:
-            request.update_env = 2
-            pdf, _ = (
-                request.env.ref("sale.action_report_saleorder")
-                .sudo()
-                ._render_qweb_pdf(
-                    # [
-                        sale_id
-                    # ]
-                )
-            )
-            pdf_http_headers = [
-                ("Content-Type", "application/pdf"),
-                ("Content-Length", "%s" % len(pdf)),
-            ]
-            return request.make_response(pdf, headers=pdf_http_headers)
-
+    
     @http.route(
         "/budget/order/create",
         type="json",
@@ -205,18 +164,6 @@ class SaleOrderBudget(http.Controller):
 
         request.update_env(user=request.session.uid)
 
-
-    # if sale_id:
-    #     try:
-    #         domain = [("id", "=", sale_id)]
-    #         sale = utils.search_model_data("sale.order", domain)
-    #         # sale.order_line.unlink()
-    #         lines = utils.set_order_line(sale_order, tax_included)
-    #         sale_order["order_line"] = lines
-    #     except Exception as e:
-    #         data.update({"status": 400, "msg": str(e)})
-    #         return data
-    # else:
         lines = utils.set_order_line(sale_order, tax_included)
         sale_order["order_line"] = lines
         sale_order.update({"date_order": datetime.today()})
