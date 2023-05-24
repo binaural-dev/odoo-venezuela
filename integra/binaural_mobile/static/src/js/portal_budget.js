@@ -3,6 +3,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
     const publicWidget = require('web.public.widget');
     const ajax = require('web.ajax');
+    const { _t } = require('web.core');
     
     publicWidget.registry.portalBudgetForm = publicWidget.Widget.extend({
         selector: '.o_portal_budget_form',
@@ -125,10 +126,11 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 const { status } = JSON.parse(products);
                 const is204 = status === 204;
                 if (is204){
+                    var noFound = _t("No products found with the code or name:")
                     tbody.empty()
                     tbody.append(`
                         <div class="alert alert-primary" style="font-weight: bolder;" role="alert">
-                            No products found with the code or name: ${product_code}
+                            ${noFound} ${product_code}
                         </div>
                     `)
                     $('#save_products').attr('disabled', true)
@@ -137,6 +139,10 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $('#save_products').attr('disabled', false) 
                 const { data } = JSON.parse(products);
                 tbody.empty()
+                var priceLabel = _t("Price")
+                var availableLabel = _t("Available")
+                var qtyLabel = _t("Qty")
+                var multiplesLabel = _t("Only multiples of")
                 data.forEach(product => {
                     const { name, default_code, list_price, qty_available, image, id } = product
                     tbody.append(`
@@ -145,12 +151,12 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                             <td colspan="2">
                                 <label style="font-weight: bolder;" class="name_product">[${default_code}] ${name}</label><br/>
                                 <input type="hidden" class="val_product" value="${id}"/>
-                                <label class="form-text">Price:</label><label class="form-text price_product" style="font-weight: bolder;">${list_price}</label><br/>
-                                <label class="form-text">Available:</label><label class="form-text" style="font-weight: bolder;">${qty_available}</label>
+                                <label class="form-text">${priceLabel}:</label><label class="form-text price_product" style="font-weight: bolder;">${list_price}</label><br/>
+                                <label class="form-text">${availableLabel}:</label><label class="form-text" style="font-weight: bolder;">${qty_available}</label>
                             </td>
                             <td style="width: 150px;">
-                                <input type="text" class="form-control qty_product" placeholder="Quantity"/>
-                                <label class="form-text">Only valid multiples of 1</label>
+                                <input type="text" class="form-control qty_product" placeholder="${qtyLabel}"/>
+                                <label class="form-text">${multiplesLabel} 1</label>
                             </td>
                         </tr>
                     `)
@@ -256,14 +262,16 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             console.log(data)
             const { order_line } = data[0];
             tbody.empty()
+            var qtyLabel = _t("Qty:")
+            var unitLabel = _t("Unit price:")
             order_line.forEach(line => {
                 const { name, product_uom_qty, price_unit, price_subtotal, id } = line
                 tbody.append(`
                 <tr>
                     <td colspan="4">
                         <label style="font-weight: bolder;">${name}</label> <input type="hidden" value="${id}"> <br/>
-                        <label class="form-label">Cantidad:</label><label class="form-label" style="font-weight: bolder;">${product_uom_qty}</label><br/>
-                        <label class="form-text">Unit price:</label><label class="form-text" style="font-weight: bolder;">${price_unit}</label><br/>
+                        <label class="form-label">${qtyLabel}</label><label class="form-label" style="font-weight: bolder;">${product_uom_qty}</label><br/>
+                        <label class="form-text">${unitLabel}</label><label class="form-text" style="font-weight: bolder;">${price_unit}</label><br/>
                     </td>
                     <td class="text-center">
                         <div  style="display: flex; align-items: center; justify-content: center;">
@@ -288,11 +296,11 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             }
         },
 
-        _onClickDeleteProduct: function(ev) {
+        _onClickDeleteProduct: async function(ev) {
             const tr = $(ev.target).closest('tr');
             const id = tr.find('input').val()
             const id_order = $("#number_order_value").val()
-            const products = ajax.jsonRpc('/budget/delete_line', 'call', {
+            const products = await ajax.jsonRpc('/budget/delete_line', 'call', {
                 "sale_order_id" : parseInt(id_order),
                 "line_id" : parseInt(id)
             })
@@ -330,45 +338,50 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
         Confirm_or_Cancel_Budget: async function(confirm) {
             if ($("#number_order_value").val() == '') return
-            const order_value = $("#number_order_value").val()
-            if(order_value != ''){
-                const id_order = $("#number_order_value").val()
-                const budget = await ajax.jsonRpc('/budget/confirm_or_cancel_order', 'call', {
-                    "sale_id" : parseInt(id_order),
-                    "confirm" : confirm
-                })
-                console.log(budget)
-                const { status, data } = budget;
-                const is400 = status === 400;
-                if (is400) return
-                $(".confirm-btn").hide()
-                $(".cancel-btn").hide()
-                if(confirm == "confirm"){
-                    const confirmed = '<h2 class="badge bg-success">Confirmado</h2>'
-                    $("#status").html(confirmed)
-                }else{
-                    const confirmed = '<h2 class="badge bg-danger">Cancelado</h2>'
-                    $("#status").html(confirmed)
-                }
-                $("#openProduct").attr("disabled", true)
-                $(".delete_product").hide()
-            }else alert("No se ha creado ninguna orden de venta")
-        },
-
-        _onClickDowloadPdf : function(ev) {
-            if($("#number_order_value").val() == '') return
-            const sale_id = parseInt($("#number_order_value").val())
-            const budget = ajax.jsonRpc('/budget/print/order', 'call', {
-                "sale_id" : sale_id,
+            const id_order = $("#number_order_value").val()
+            const budget = await ajax.jsonRpc('/budget/confirm_or_cancel_order', 'call', {
+                "sale_id" : parseInt(id_order),
+                "confirm" : confirm
             })
+            console.log(budget)
             const { status, data } = budget;
             const is400 = status === 400;
-            if (is400) {alert("tontoooo") 
-            return}
-            console.log(budget)
+            if (is400) return
+            $(".confirm-btn").hide()
+            $(".cancel-btn").hide()
+            if(confirm == "confirm"){
+                var Confirm = _t("Confirmed") 
+                const confirmed = '<h2 class="badge bg-success">'+ Confirm +'</h2>'
+                $("#status").html(confirmed)
+            }else{
+                var Confirm = _t("Cancelled") 
+                const confirmed = '<h2 class="badge bg-success">'+ Confirm +'</h2>'
+                $("#status").html(confirmed)
+            }
+            $("#invoice").attr("disabled", true)
+            $("#openProduct").attr("disabled", true)
+            $(".delete_product").hide()
         },
 
+        _onClickDowloadPdf : async function(ev) {
+            if($("#number_order_value").val() == '') return
+            const sale_id = parseInt($("#number_order_value").val())
+            const session_id = this._generateUUID();
+            const url = `/my/orders/${sale_id}?access_token=${session_id}&report_type=pdf&download=true`
 
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = 'myfile.pdf';
+            downloadLink.click();
+
+        },
+
+        _generateUUID: function() {
+            return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+            const r = (Math.random() * 16) | 0, v = c == "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+            });
+        },
     })
 });
 

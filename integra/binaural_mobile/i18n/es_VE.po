@@ -4,30 +4,16 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230508\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230524\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-17 13:21+0000\n"
-"PO-Revision-Date: 2023-05-17 13:21+0000\n"
+"POT-Creation-Date: 2023-05-24 20:31+0000\n"
+"PO-Revision-Date: 2023-05-24 20:31+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
-
-#. module: binaural_mobile
-#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
-msgid ""
-"<br/>\n"
-"                            <span class=\"form-label\" id=\"fee\">No fee</span>"
-msgstr "No fee"
-
-#. module: binaural_mobile
-#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
-msgid ""
-"<br/>\n"
-"                            <span class=\"form-label\" id=\"payment_terms\">No payment terms</span>"
-msgstr "No payment terms"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_layout
@@ -43,7 +29,6 @@ msgstr "<i class=\"fa fa-pencil\"/> Editar"
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "<option value=\"\">Select a billing address</option>"
 msgstr "<option value=\"\">Selecciona una dirección de facturación</option>"
-
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -65,12 +50,24 @@ msgstr "Añadir"
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "An already processed quotation can't be modified."
-msgstr ""
+msgstr "No se puede modificar un presupuesto ya procesado."
+
+#. module: binaural_mobile
+#. odoo-javascript
+#: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
+#, python-format
+msgid "Available"
+msgstr "Disponible"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Billing address"
 msgstr "Dirección de facturación"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Billing address the same as the shipping address"
+msgstr "Dirección de facturación igual que la dirección de envío"
 
 #. module: binaural_mobile
 #. odoo-python
@@ -81,6 +78,13 @@ msgid "Cancel"
 msgstr "Cancelar"
 
 #. module: binaural_mobile
+#. odoo-javascript
+#: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
+#, python-format
+msgid "Cancelled"
+msgstr "Cancelado"
+
+#. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Client"
 msgstr "Cliente"
@@ -88,12 +92,19 @@ msgstr "Cliente"
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Clients"
-msgstr ""
+msgstr "Clientes"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Confirm"
 msgstr "Confirmar"
+
+#. module: binaural_mobile
+#. odoo-javascript
+#: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
+#, python-format
+msgid "Confirmed"
+msgstr "Confirmado"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.budget_link
@@ -106,11 +117,16 @@ msgid "Details"
 msgstr "Detalles"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Dowload PDF"
+msgstr "Descargar PDF"
+
+#. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/models/sale_order.py:0
 #, python-format
 msgid "Draft"
-msgstr ""
+msgstr "Borrador"
 
 #. module: binaural_mobile
 #: model:ir.model,name:binaural_mobile.model_hr_employee
@@ -120,14 +136,14 @@ msgstr "Empleado"
 #. module: binaural_mobile
 #: model:ir.model.fields,help:binaural_mobile.field_sale_order__tax_included
 msgid "Indicates if a sale order was includes taxes."
-msgstr ""
+msgstr "Indica si un pedido de venta incluye impuestos."
 
 #. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/models/sale_order.py:0
 #, python-format
 msgid "Invoice"
-msgstr ""
+msgstr "Factura"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -144,43 +160,67 @@ msgstr "Es un vendedor"
 #: code:addons/binaural_mobile/controllers/utils.py:0
 #, python-format
 msgid "Is required"
-msgstr ""
+msgstr "Es requerido"
 
 #. module: binaural_mobile
 #: model:ir.model.fields,help:binaural_mobile.field_sale_order__journal_id
 msgid "Journal used when a invoice is generated with or without taxes."
-msgstr ""
+msgstr "Diario utilizado cuando se genera una factura con o sin impuestos."
 
 #. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/product_brand_budget.py:0
 #, python-format
 msgid "No brands were found"
-msgstr ""
+msgstr "No se encontraron marcas"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "No fee"
+msgstr "Sin tarifa"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "No payment terms"
+msgstr "Sin condiciones de pago"
 
 #. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/product_product_budget.py:0
 #, python-format
 msgid "No products available"
-msgstr ""
+msgstr "No hay productos disponibles"
+
+#. module: binaural_mobile
+#. odoo-javascript
+#: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
+#, python-format
+msgid "No products found with the code or name:"
+msgstr "No se encontraron productos con el código o nombre:"
 
 #. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "No sale order were found."
-msgstr ""
+msgstr "Sin pedidos de venta encontrados."
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Note"
-msgstr ""
+msgstr "Nota"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
-msgid "Number: S0010203"
-msgstr ""
+msgid "Number:"
+msgstr "Número:"
+
+#. module: binaural_mobile
+#. odoo-javascript
+#: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
+#, python-format
+msgid "Only multiples of"
+msgstr "Solo múltiplos de"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -193,7 +233,10 @@ msgid "Payment terms:"
 msgstr "Condiciones de pago:"
 
 #. module: binaural_mobile
+#. odoo-javascript
+#: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+#, python-format
 msgid "Price"
 msgstr "Price:"
 
@@ -201,6 +244,20 @@ msgstr "Price:"
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Product"
 msgstr "Producto"
+
+#. module: binaural_mobile
+#. odoo-javascript
+#: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
+#, python-format
+msgid "Qty"
+msgstr "Cantidad"
+
+#. module: binaural_mobile
+#. odoo-javascript
+#: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
+#, python-format
+msgid "Qty:"
+msgstr "Cantidad:"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -212,12 +269,12 @@ msgstr "Tarifa:"
 #: code:addons/binaural_mobile/models/sale_order.py:0
 #, python-format
 msgid "Sale Order"
-msgstr ""
+msgstr "Pedido de venta"
 
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_sale_order__journal_id
 msgid "Sales Journal"
-msgstr ""
+msgstr "Diario de ventas"
 
 #. module: binaural_mobile
 #: model:ir.model,name:binaural_mobile.model_sale_order
@@ -237,7 +294,7 @@ msgstr "Buscar"
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_sale_order__state_seller
 msgid "Seller State"
-msgstr ""
+msgstr "Estado del vendedor"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -262,7 +319,7 @@ msgstr ""
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_sale_order__tax_included
 msgid "Tax Included"
-msgstr ""
+msgstr "Impuesto incluido"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -279,17 +336,7 @@ msgstr "Base imponible:"
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "The Sale Order does not exist."
-msgstr ""
-
-#. module: binaural_mobile
-#. odoo-python
-#: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
-#: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
-#, python-format
-msgid ""
-"The product %(product_name)s have a sales policy, the quantity you want to "
-"sale must be a multiple or equal to %(product_policy)d"
-msgstr ""
+msgstr "La orden de venta no existe."
 
 #. module: binaural_mobile
 #. odoo-python
@@ -306,52 +353,59 @@ msgstr ""
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "The request couldn't be complete due a source conflict."
-msgstr ""
+msgstr "La solicitud no se pudo completar debido a un conflicto de origen."
 
 #. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "There are duplicated products."
-msgstr ""
+msgstr "Hay productos duplicados."
 
 #. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "There was an error adding lines to the sale order."
-msgstr ""
+msgstr "Hubo un error al agregar líneas al pedido de venta."
 
 #. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "There was an error creating the Sale Order"
-msgstr ""
+msgstr "Hubo un error al crear el pedido de venta"
 
 #. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "There was an error handling the request"
-msgstr ""
+msgstr "Hubo un error al procesar la solicitud"
 
 #. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "There's no main warehouse assigned"
-msgstr ""
+msgstr "No hay almacén principal asignado"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Total:"
-msgstr ""
+msgstr "Total:"
 
 #. module: binaural_mobile
 #: model:ir.model.fields,help:binaural_mobile.field_sale_order__state_seller
 msgid "Track the actual order state to display in-app."
 msgstr ""
+
+#. module: binaural_mobile
+#. odoo-javascript
+#: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
+#, python-format
+msgid "Unit price:"
+msgstr "Precio unitario:"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -372,11 +426,11 @@ msgstr ""
 #: code:addons/binaural_mobile/controllers/utils.py:0
 #, python-format
 msgid "You don't have access to this feature."
-msgstr ""
+msgstr "No tienes acceso a esta función."
 
 #. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/res_partner_budget.py:0
 #, python-format
 msgid "not found clients"
-msgstr ""
+msgstr "No se encontraron clientes"
