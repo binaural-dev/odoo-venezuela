@@ -1,5 +1,6 @@
 from dateutil.relativedelta import relativedelta
 from itertools import chain
+from ..tools.utils import get_is_foreign_currency
 
 from odoo import fields, models
 
@@ -16,16 +17,7 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
             + ([current_groupby] if current_groupby else [])
         )
 
-        foreign_currency_id = self.env.company.currency_foreign_id.id
-
-        base_vef_id = self.env["ir.model.data"]._xmlid_to_res_id(
-            "base.VEF", raise_if_not_found=False
-        )
-        usd_report = self.env.context.get("usd_report", False)
-
-        report_in_foreign_currency = usd_report
-        if foreign_currency_id == base_vef_id:
-            report_in_foreign_currency = not usd_report
+        report_in_foreign_currency = get_is_foreign_currency(self.env)
 
         def minus_days(date_obj, days):
             return fields.Date.to_string(date_obj - relativedelta(days=days))
