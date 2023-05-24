@@ -1,3 +1,7 @@
-from . import product_category
-from . import res_config
-from . import product_product
+from . import (
+    product_category,
+    product_product,
+    product_template,
+    res_company,
+    res_config,
+)

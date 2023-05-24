@@ -14,6 +14,7 @@
     "data": [
         # 'security/ir.model.access.csv',
         "security/security_binaural_stock.xml",
+        "security/binaural_stock_groups.xml",
         "views/product_category_views.xml",
         "views/res_config.xml",
         "views/stock_quant_views.xml",
