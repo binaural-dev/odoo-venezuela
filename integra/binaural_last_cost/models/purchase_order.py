@@ -44,7 +44,7 @@ class PurchaseOrder(models.Model):
         for line in self._get_lines_with_updatable_latest_standard_price():
             product = line.product_id
             template = product.product_tmpl_id
-            template_last_latest_standard_price = product_template.last_latest_standard_price
+            template_last_latest_standard_price = template.last_latest_standard_price
             
             product_last_latest_standard_price = product.last_latest_standard_price
             product.latest_standard_price = product_last_latest_standard_price
