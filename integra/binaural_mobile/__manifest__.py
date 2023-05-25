@@ -26,6 +26,7 @@
         "views/website_templates.xml",
         "views/portal_templates.xml",
         "views/res_config_settings.xml",
+        "views/sale_order_views.xml",
     ],
     "assets": {
         "web.assets_frontend": [
