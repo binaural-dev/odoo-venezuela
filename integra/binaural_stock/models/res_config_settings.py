@@ -5,7 +5,8 @@ class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
     group_product_available_quantity_on_sale = fields.Boolean(
-        related="company_id.group_sales_invoicing_series",
+        "Show Available Quantity From All Warehouses",
+        related="company_id.group_product_available_quantity_on_sale",
         readonly=False,
         implied_group="binaural_stock.group_product_available_quantity_on_sale",
     )

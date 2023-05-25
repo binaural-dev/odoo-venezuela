@@ -1,5 +1,3 @@
-from odoo import api, models, _
-from odoo.exceptions import ValidationError
 from collections import defaultdict
 
 from odoo import _, api, models
@@ -8,6 +6,11 @@ from odoo.exceptions import ValidationError
 
 class ProductProduct(models.Model):
     _inherit = "product.product"
+
+    def button_dummy(self):
+        # TDE FIXME: this button is very interesting
+        # Variante del maldito Raiver e.e
+        return True
 
     @api.constrains("barcode")
     def _check_barcode_uniqueness(self):
