@@ -7,7 +7,7 @@
     "author": "Binaural C.A.",
     "website": "https://binauraldev.com",
     "category": "Technical",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "depends": ["product", "purchase"],
     "data": [
         "views/product_pricelist_views.xml",

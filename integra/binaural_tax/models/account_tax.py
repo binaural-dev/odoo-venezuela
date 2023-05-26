@@ -2,6 +2,9 @@ from odoo.tools.float_utils import float_round
 from odoo import api, models, _
 from odoo.exceptions import ValidationError
 
+import logging
+_logger = logging.getLogger(__name__)
+
 
 class AccountTax(models.Model):
     _inherit = "account.tax"
@@ -36,11 +39,18 @@ class AccountTax(models.Model):
 
         taxes = []
 
-        for base_line in base_lines:
-            base_line["price_unit"] = base_line["record"].foreign_price
-            base_line["price_subtotal"] = base_line["record"].foreign_subtotal
-            base_line["currency"] = foreign_currency
-
+        for base_line in base_lines:                
+            is_exists_foreign_price = 'foreign_price' in base_line["record"]
+            
+            if is_exists_foreign_price:
+                base_line["price_unit"] = base_line["record"].foreign_price 
+                base_line["price_subtotal"] = base_line["record"].foreign_subtotal
+                base_line["currency"] = foreign_currency
+            else:
+                base_line["price_unit"] = base_line["record"].price_unit
+                base_line["price_subtotal"] = base_line["record"].price_subtotal
+                base_line["currency"] = base_line["record"].currency_id
+            
             if base_line["taxes"]:
                 taxes.append(
                     {
@@ -65,10 +75,11 @@ class AccountTax(models.Model):
                             ),
                             precision_rounding=foreign_currency.rounding,
                         )
+                        
                 tax_line["tax_amount"] = float_round(
                     tax_line["tax_amount"], precision_rounding=foreign_currency.rounding
                 )
-
+                
         foreign_taxes = super()._prepare_tax_totals(base_lines, foreign_currency, tax_lines)
 
         res["groups_by_foreign_subtotal"] = foreign_taxes["groups_by_subtotal"]
