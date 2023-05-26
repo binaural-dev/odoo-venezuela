@@ -160,21 +160,19 @@ class SaleOrderBudget(http.Controller):
         sale_order = kwargs.get("sale_order")
         tax_included = kwargs.get("tax_included", False)
         sale_order["tax_included"] = tax_included
-        sale_id = int(sale_order.pop("id", False))
-
+        seller_id = request.env.user.id
         request.update_env(user=request.session.uid)
 
         lines = utils.set_order_line(sale_order, tax_included)
         sale_order["order_line"] = lines
-        sale_order.update({"date_order": datetime.today()})
+        sale_order.update({
+            "date_order": datetime.today(),
+            "user_id": seller_id
+            })
 
         sale = False
         try:
-            if not sale_id:
-                sale = utils.create_record("sale.order", sale_order)
-
-            else:
-                sale = utils.update_record("sale.order", sale_id, sale_order)
+            sale = utils.create_record("sale.order", sale_order)
 
             data.update({"data": sale})
         except Exception as e:

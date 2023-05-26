@@ -25,12 +25,14 @@
         "views/portal_budget.xml",
         "views/website_templates.xml",
         "views/portal_templates.xml",
+        "views/portal_invoice_seller.xml",
         "views/res_config_settings.xml",
         "views/sale_order_views.xml",
     ],
     "assets": {
         "web.assets_frontend": [
             "binaural_mobile/static/src/js/portal_budget.js",
+            "binaural_mobile/static/src/js/portal_invoice.js",
         ]
     },
     "images": ["static/description/icon.png"],
