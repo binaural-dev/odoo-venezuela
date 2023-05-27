@@ -11,6 +11,7 @@
     "depends": ["binaural_rate", "delivery"],
     "data": [
         # 'security/ir.model.access.csv',
-        "views/delivery_carrier_views.xml"
+        "views/delivery_carrier_views.xml",
+        "views/delivery_rule_views.xml"
     ],
 }

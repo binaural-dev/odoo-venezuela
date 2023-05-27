@@ -1,6 +1,7 @@
 import logging
 
 from odoo import _, api, fields, models
+from odoo.tools.float_utils import float_is_zero
 
 _logger = logging.getLogger(__name__)
 
@@ -8,9 +9,19 @@ _logger = logging.getLogger(__name__)
 class PriceRule(models.Model):
     _inherit = "delivery.price.rule"
 
+    is_foreign_currency = fields.Boolean()
     foreign_list_base_price = fields.Float(digits="Product Price", required=True, default=0.0)
     list_base_price = fields.Float(compute="_compute_base_price")
 
+    @api.depends("foreign_list_base_price", "carrier_id.foreign_rate", "is_foreign_currency")
     def _compute_base_price(self):
         for rule in self:
-            pass
+            foreign_rate = rule.carrier_id.foreign_rate
+            digits = rule.carrier_id._fields["foreign_rate"].get_digits(self.env)[1]
+            _logger.warning("inverse_currency: %s", rule.list_base_price)
+            inverse_list_base_price = rule.list_base_price or 0.0
+
+            if not float_is_zero(foreign_rate, precision_digits=digits) and rule.is_foreign_currency:
+                inverse_list_base_price = rule.foreign_list_base_price / foreign_rate
+
+            rule.update({"list_base_price": inverse_list_base_price})
