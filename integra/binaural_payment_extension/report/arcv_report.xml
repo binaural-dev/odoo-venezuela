@@ -54,18 +54,14 @@
                             	<br/>
 	                        <table class="table-condensed" style="width:100%">
 	                            <tr>
-					<td style="border: 1px solid black;" colspan="4">
+					<td style="border: 1px solid black;" colspan="6">
 					    <label class="fw">Periodo: </label>
 					    <span t-out="data['period']['start']"/> -
 					    <span t-out="data['period']['end']"/>
 				        </td>
-					<td style="border: 1px solid black;" colspan="4">
+					<td style="border: 1px solid black;" colspan="6">
 					    <label class="fw">Fecha: </label>
 					    <span t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
-					</td>
-					<td style="border: 1px solid black;" colspan="4">
-					    <label class="fw">Nro. Comprobante: </label>
-					    <span t-out="data['correlative']"/>
 					</td>
 				    </tr>
 	                        </table>
