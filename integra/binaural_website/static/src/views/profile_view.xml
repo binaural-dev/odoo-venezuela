@@ -29,13 +29,13 @@
                             <div class="clearfix" />
 
                             <div t-attf-class="form-group #{error.get('company_name') and 'o_has_error' or ''} col-xl-6">
-                                <label class="col-form-label label-optional" for="company_name">Company Name</label>
+                                <label class="col-form-label label-optional" for="company_name"><b>Company Name</b></label>
                                 <p t-if="not partner_can_edit_vat" t-attf-class="form-control" readonly="1" t-esc="partner.commercial_company_name" title="Changing company name is not allowed once document(s) have been issued for your account. Please contact us directly for this operation."/>
                                 <input t-else="" type="text" name="company_name" t-attf-class="form-control #{error.get('company_name') and 'is-invalid' or ''}" t-att-value="company_name or partner.commercial_company_name"/>
                             </div>
 
                             <div t-attf-class="form-group #{error.get('vat') and 'o_has_error' or ''} col-xl-6">
-                                <label class="col-form-label label-optional" for="vat">VAT Number</label>
+                                <label class="col-form-label label-optional" for="vat"><b>VAT Number</b></label>
                                 <t t-set="vat_not_editable_message">Changing VAT number is not allowed once document(s) have been issued for your account. Please contact us directly for this operation.</t>
                                 <input type="text" name="vat" t-attf-class="form-control #{error.get('vat') and 'is-invalid' or ''}" t-att-value="vat or partner.vat" t-att-readonly="None if partner_can_edit_vat else '1'" t-att-title="None if partner_can_edit_vat else vat_not_editable_message" />
                             </div>
@@ -59,7 +59,7 @@
                             </div>
 
                             <div t-attf-class="form-group #{error.get('zip') and 'o_has_error' or ''} col-xl-6">
-                                <label class="col-form-label label-optional" for="zipcode">Zip / Postal Code</label>
+                                <label class="col-form-label label-optional" for="zipcode"><b>ZIP / Postal Code</b></label>
                                 <input type="text" name="zipcode" t-attf-class="form-control #{error.get('zip') and 'is-invalid' or ''}" t-att-value="zipcode or partner.zip" />
                             </div>
 
@@ -88,11 +88,11 @@
                             </div>
 
                             <div t-attf-class="form-group #{error.get('city_id') and 'o_has_error' or ''} col-xl-6">
-                                <label class="col-form-label label-optional" for="city_id">City</label>
+                                <label class="col-form-label label-optional" for="city_id"><b>City</b></label>
                                 <select name="city_id" t-attf-class="form-control #{error.get('city_id') and 'is-invalid' or ''}" id="city_id">
                                     <option value="">select...</option>
                                     <t t-foreach="cities or []" t-as="city">
-                                        <option t-att-value="city.id" style="display:none;" t-att-data-state_id="city.state_id.id" t-att-selected="city.id == partner.city_id.id">
+                                        <option t-att-value="city.id" t-att-data-state_id="city.state_id.id" t-att-selected="city.id == partner.city_id.id">
                                             <t t-esc="city.name" />
                                         </option>
                                     </t>
