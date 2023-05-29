@@ -7,9 +7,18 @@
         <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
         <field name="arch" type="xml">
 	        <xpath expr="//div[@name='binaural_rate_settings']" position="after">
-                <h2>Configuraciones Binaural</h2>
+                <h2>Stock Settings</h2>
                 <div class="row mt16 o_settings_container" name="Binaural_warehouse_settings">
-                    
+                    <div class="col-5 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane">
+                            <field name="group_product_available_quantity_on_sale" class="oe_inline" required="1"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="group_product_available_quantity_on_sale" />
+                            <div class="text-muted">Allows to show the available quantity (Total minus reserved) in both product template and variant of it.</div>
+                        </div>
+                    </div>
+
                     <div class="col-6 col-lg-6 o_setting_box">
                         <div class="o_setting_left_pane">
                             <field name="use_main_warehouse"/>
@@ -17,7 +26,7 @@
                         <div class="o_setting_right_pane">
                             <label for="use_main_warehouse"/>
                             <div class="text-muted">
-                                Establece un almacén de ventas principal.
+                                Define a main sell's warehouse.
                             </div>
                             <div class="content-group">
                                 <div class="mt16" attrs="{'invisible': [('use_main_warehouse', '=', False)]}">
@@ -27,7 +36,7 @@
                         </div>
                     </div>
                 </div>
-			</xpath>
+            </xpath>
         </field>
     </record>
 </odoo>

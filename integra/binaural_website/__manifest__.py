@@ -9,7 +9,7 @@
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
     'category': 'Website',
-
+    'version': '0.1.1',
     # any module necessary for this one to work correctly
     'depends': ['base','website','binaural_location'],
     

@@ -57,18 +57,20 @@ body {
 // Header
 //------------------------------------------------------------------------------
 // Affixed Header
-.o_header_affixed {
-    // Background color
-    background: o-color('white');
-    // Logo height
-    &.o_header_is_scrolled .navbar-brand img {
-        height: $o-theme-navbar-logo-height;
-    }
-    // Hide preheader and header box
-    .tp-preheader, .tp-header-box {
-        display: none;
-    }
-}
+// TODO Does not allow fixing the header
+// TODO By andy: Sorry :( 
+// .o_header_affixed {
+//     // Background color
+//     background: o-color('white');
+//     // Logo height
+//     &.o_header_is_scrolled .navbar-brand img {
+//         height: $o-theme-navbar-logo-height;
+//     }
+//     // Hide preheader and header box
+//     .tp-preheader, .tp-header-box {
+//         display: none;
+//     }
+// }
 
 // Menu label
 #wrapwrap > header > .navbar #top_menu {
