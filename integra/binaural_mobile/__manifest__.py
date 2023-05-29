@@ -21,6 +21,7 @@
         "binaural_stock",
     ],
     "data": [
+        "data/ir_rule.xml",
         "views/hr_employee.xml",
         "views/portal_budget.xml",
         "views/website_templates.xml",
