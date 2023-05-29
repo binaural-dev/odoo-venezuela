@@ -42,6 +42,7 @@ class ProductProductBudget(http.Controller):
             ]
         
         res_company = request.env["res.company"].sudo().search([])
+        
         if len(res_company) > 1:
             domain = expression.AND([domain, [("company_id", "=", company_id)]])
         
