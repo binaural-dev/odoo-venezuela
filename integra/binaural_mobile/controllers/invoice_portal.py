@@ -5,7 +5,6 @@ from odoo import _, http
 from odoo.http import request
 from odoo.osv import expression
 from odoo.addons.account.controllers.portal import PortalAccount
-# from .common_routes import brand
 from . import utils
 
 _logger = logging.getLogger(__name__)
@@ -53,7 +52,3 @@ class PortalAccount(PortalAccount):
             'invoice': invoice,
             'payment_state': payment_state,
         })
-    
-
-    
-    
