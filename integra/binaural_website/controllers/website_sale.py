@@ -3,9 +3,6 @@ from odoo import http
 from odoo.addons.portal.controllers.portal import CustomerPortal
 from odoo.addons.website_sale.controllers.main import WebsiteSale
 
-import logging
-_logger = logging.getLogger(__name__)
-
 
 class WebsiteSaleBinauralSitioWeb(WebsiteSale):
     @http.route(['/shop/address'], type='http', methods=['GET', 'POST'], auth="public", website=True, sitemap=False)
@@ -16,8 +13,7 @@ class WebsiteSaleBinauralSitioWeb(WebsiteSale):
         redirection = self.checkout_redirection(order)
         if redirection:
             return redirection
-
-        _logger.warning("ALOOOO")
+        
         mode = (False, False)
         can_edit_vat = False
         def_country_id = order.partner_id.country_id
