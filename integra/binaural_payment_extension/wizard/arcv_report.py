@@ -9,15 +9,6 @@ class ArcvReport(models.TransientModel):
     partner_id = fields.Many2one("res.partner", required=True)
     date_start = fields.Date(required=True)
     date_end = fields.Date(required=True)
-    correlative = fields.Char()
-
-    def sequence(self):
-        sequence = self.env["ir.sequence"].search([("code", "=", "sequence.arcv")])
-        if not sequence:
-            sequence = self.env["ir.sequence"].create(
-                {"name": "Numero de control de ARCV", "code": "arcv.control.number", "padding": 4}
-            )
-        return sequence
 
     def print_arcv(self):
         retentions_by_month_and_percentage_fees = (
@@ -108,7 +99,6 @@ class ArcvReport(models.TransientModel):
                 },
                 ...
             ],
-            "correlative": "0001",
         }
 
         Parameters
@@ -152,6 +142,5 @@ class ArcvReport(models.TransientModel):
                 "vat": f"{self.partner_id.prefix_vat}-{self.partner_id.vat}",
             },
             "retentions": retentions_data,
-            "correlative": self.correlative,
         }
         return data
