@@ -120,9 +120,9 @@ class MunicipalRetentionPatentReport(models.TransientModel):
             worksheet2.write_array_formula(f"G{line}", f"=G{str(col2+1)}*C{line}", money_format)
             worksheet2.write_array_formula(f"I{line}", f"=H{line}*0.9", money_format)
             worksheet2.write_array_formula(f"J{line}", f"=H{line}-I{line}", money_format)
-            worksheet2.write_array_formula(f"L{line}", f"=I{line}*K{line}/1000", money_format)
+            worksheet2.write_array_formula(f"L{line}", f"=I{line}*K{line}/100", money_format)
             worksheet2.write_array_formula(
-                f"N{line}", f"=IF(L{line}>M{line};L{line};M{line})", money_format
+                f"N{line}", f"=IF(L{line}>M{line},L{line},M{line})", money_format
             )
             worksheet2.write_array_formula(f"O{line}", f"=J{line}*K{line}/1000", money_format)
             worksheet2.write_formula(f"P{line}", f"=N{line}", money_format)
