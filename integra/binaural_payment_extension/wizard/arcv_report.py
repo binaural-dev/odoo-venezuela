@@ -53,7 +53,6 @@ class ArcvReport(models.TransientModel):
             ],
             order="date_accounting",
         )
-        islr_retention_lines.get_invoice_paid_amount_not_related_with_retentions()
 
         # We use a defaultdict to avoid having to check if the key exists before adding a new
         # element to the list.
