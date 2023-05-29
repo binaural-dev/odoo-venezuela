@@ -4,5 +4,6 @@
     <record id="account.account_invoice_rule_portal" model="ir.rule">
         <field name="domain_force">[('state', 'not in', ('cancel', 'draft')), ('message_partner_ids','child_of',[user.commercial_partner_id.id])]</field>
     </record>
+    <!-- ('move_type', 'in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund')),  -->
 
 </odoo>
