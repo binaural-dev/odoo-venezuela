@@ -8,7 +8,9 @@
     "version": "16.2",
     "category": "Hr/Invoicing/Account",
     "depends": [
+        "account",
         "contacts",
+        "sale",
         "account_accountant",
         "hr"
     ],

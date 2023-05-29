@@ -1,0 +1,373 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* sh_price_checker_kiosk
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 14.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-12-15 13:51+0000\n"
+"PO-Revision-Date: 2020-12-15 13:51+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Available Stock"
+msgstr "المخزون المتوفر"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Barcode"
+msgstr "الرمز الشريطي"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields.selection,name:sh_price_checker_kiosk.selection__res_company__sh_display_portrait__bottom
+msgid "Bottom"
+msgstr "الأسفل"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Category"
+msgstr "الفئة"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.actions.client,name:sh_price_checker_kiosk.checker_action_kiosk_mode
+msgid "Checker Kiosk"
+msgstr "كشك المدقق"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Code"
+msgstr "الشفرة"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model,name:sh_price_checker_kiosk.model_res_company
+msgid "Companies"
+msgstr "الشركات"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__company_id
+msgid "Company"
+msgstr "شركة"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_company_logo
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_company_logo
+#, python-format
+msgid "Company Logo"
+msgstr "شعار الشركة"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model,name:sh_price_checker_kiosk.model_res_config_settings
+msgid "Config Settings"
+msgstr "إعدادات التكوين"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.ui.menu,name:sh_price_checker_kiosk.menu_config
+msgid "Configuration"
+msgstr "ترتيب"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_product_product__display_name
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__display_name
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_users__display_name
+msgid "Display Name"
+msgstr "اسم العرض"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_display
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_display
+msgid "Display Setting"
+msgstr "إعداد عرض"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Enter Product Barcode or Scan Product Barcode."
+msgstr "أدخل الرمز الشريطي للمنتج أو امسح الرمز الشريطي للمنتج."
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Go"
+msgstr "اذهب"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_product_product__id
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__id
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__id
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_users__id
+msgid "ID"
+msgstr "هوية شخصية"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields.selection,name:sh_price_checker_kiosk.selection__res_company__sh_display_view__landscape
+msgid "Landscape"
+msgstr "المناظر الطبيعيه"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_product_product____last_update
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company____last_update
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings____last_update
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_users____last_update
+msgid "Last Modified on"
+msgstr "تاريخ آخر تعديل"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields.selection,name:sh_price_checker_kiosk.selection__res_company__sh_display_landscape__left
+msgid "Left"
+msgstr "اليسار"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Name"
+msgstr "اسم"
+
+#. module: sh_price_checker_kiosk
+#: code:addons/sh_price_checker_kiosk/models/product.py:0
+#, python-format
+msgid "Not Found Corresponding to %(barcode)s"
+msgstr "لم يتم العثور على الموافق %(barcode)s"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields.selection,name:sh_price_checker_kiosk.selection__res_company__sh_display_view__portrait
+msgid "Portrait"
+msgstr "صورة"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.ui.menu,name:sh_price_checker_kiosk.price_checker_main_menu
+#: model:ir.ui.menu,name:sh_price_checker_kiosk.price_checker_menu
+#: model:ir.ui.menu,name:sh_price_checker_kiosk.price_checker_sub_menu
+#: model:res.groups,name:sh_price_checker_kiosk.price_checker_group
+#: model_terms:ir.ui.view,arch_db:sh_price_checker_kiosk.price_checker_config_setting_form_view
+msgid "Price Checker"
+msgstr "مدقق السعر"
+
+#. module: sh_price_checker_kiosk
+#: model_terms:ir.ui.view,arch_db:sh_price_checker_kiosk.price_checker_config_setting_form_view
+msgid "Price Checker Configuration"
+msgstr "تكوين مدقق السعر"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.actions.act_window,name:sh_price_checker_kiosk.action_price_checker_config_settings
+msgid "Price Checker Settings"
+msgstr "إعدادات مدقق الأسعار"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model,name:sh_price_checker_kiosk.model_product_product
+msgid "Product"
+msgstr "المنتج"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Product Information"
+msgstr "معلومات المنتج"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_display_landscape
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_display_portrait
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_display_landscape
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_display_portrait
+#, python-format
+msgid "Product Specification"
+msgstr "مواصفات المنتج"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_display_view
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_display_view
+msgid "Product Specification Orientation"
+msgstr "اتجاه مواصفات المنتج"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_users__sh_direct_redirect
+msgid "Redirect to Kiosk ?"
+msgstr "إعادة التوجيه إلى Kiosk؟"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields.selection,name:sh_price_checker_kiosk.selection__res_company__sh_display_landscape__right
+msgid "Right"
+msgstr "حق"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Sales Description"
+msgstr "وصف المبيعات"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Sales Price"
+msgstr "سعر المبيعات"
+
+#. module: sh_price_checker_kiosk
+#. openerp-web
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#: code:addons/sh_price_checker_kiosk/static/src/xml/checker_kiosk.xml:0
+#, python-format
+msgid "Scan Product Barcode."
+msgstr "مسح الباركود للمنتج."
+
+#. module: sh_price_checker_kiosk
+#: model:ir.ui.menu,name:sh_price_checker_kiosk.menu_price_checker_general_settings
+msgid "Settings"
+msgstr "إعدادات"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_product_stock
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_product_stock
+msgid "Show Available Stock"
+msgstr "إظهار المخزون المتاح"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_touch_kyboard
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_touch_kyboard
+msgid "Show Keyboard"
+msgstr "إظهار لوحة المفاتيح"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_product_barcode
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_product_barcode
+msgid "Show Product Barcode"
+msgstr "إظهار الرمز الشريطي للمنتج"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_product_category
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_product_category
+msgid "Show Product Category"
+msgstr "عرض فئة المنتج"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_product_code
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_product_code
+msgid "Show Product Code"
+msgstr "إظهار كود المنتج"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_product_image
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_product_image
+msgid "Show Product Image"
+msgstr "إظهار صورة المنتج"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_product_sale_description
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_product_sale_description
+msgid "Show Product Sales Description"
+msgstr "إظهار وصف مبيعات المنتج"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_product_sale_price
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_product_sale_price
+msgid "Show Product Sales Price"
+msgstr "عرض سعر مبيعات المنتج"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_product_attribute
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_product_attribute
+msgid "Show Product Specification"
+msgstr "عرض مواصفات المنتج"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_welcome_message
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_welcome_message
+msgid "Show Welcome Message"
+msgstr "إظهار رسالة الترحيب"
+
+#. module: sh_price_checker_kiosk
+#: code:addons/sh_price_checker_kiosk/models/product.py:0
+#, python-format
+msgid "Successfully Found Product corresponding to %(barcode)s"
+msgstr "تم العثور على منتج مطابق لـ %(barcode)s"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields.selection,name:sh_price_checker_kiosk.selection__res_company__sh_display_portrait__top
+msgid "Top"
+msgstr "أعلى"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model,name:sh_price_checker_kiosk.model_res_users
+msgid "Users"
+msgstr "المستخدمون"
+
+#. module: sh_price_checker_kiosk
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_company__sh_message
+#: model:ir.model.fields,field_description:sh_price_checker_kiosk.field_res_config_settings__sh_message
+msgid "Welcome Message"
+msgstr "رسالة ترحيب"

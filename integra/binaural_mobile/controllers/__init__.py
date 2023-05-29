@@ -1,3 +1,4 @@
+from . import invoice_portal
 from . import res_partner_budget
 from . import product_product_budget
 from . import product_pricelist_budget

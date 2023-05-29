@@ -1,0 +1,13 @@
+appdirs
+click
+docutils==0.16.*
+ERPpeek==1.7.1
+github3.py>1
+polib
+PyYAML
+requests
+selenium
+toml>0.10.0
+towncrier>=21.3
+twine
+wheel
