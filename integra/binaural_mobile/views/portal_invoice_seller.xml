@@ -36,7 +36,6 @@
                             </a>
                         </t>
                         <t t-else="">
-                        <!-- t-attf-href="/report/pdf/binaural_invoice.template_invoice_sale_note_binaural_invoice/{{invoice.id}}" target="_blank" -->
                             <a id="dowload-NV" t-attf-href="/report/pdf/binaural_invoice.template_invoice_sale_note_binaural_invoice/{{invoice.id}}" target="_blank" class="btn btn-info col-10 mx-auto">
                                 <i class="fa fa-download"/> Download PDF
                             </a>
