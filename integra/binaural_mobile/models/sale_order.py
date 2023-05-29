@@ -37,7 +37,7 @@ class SaleOrder(models.Model):
         for invoice in res:
             if invoice.state == "draft":
                 invoice.journal_id = self.journal_id.id
-                
+                invoice.invoice_user_id = self.user_id.id
 
         return res
 
