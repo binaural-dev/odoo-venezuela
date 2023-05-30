@@ -1,0 +1,16 @@
+<odoo>
+    <data>
+        <record id="view_picking_form_inherited_zmart" model="ir.ui.view">
+            <field name="name">stock.picking.form.zmart</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='location_dest_id']" position="after">
+                    <field name="transport_number"/>
+                    <field name="name_company"/>
+                    <field name="vl_number"/>
+                </xpath> 
+            </field>
+        </record>
+    </data>
+</odoo>
