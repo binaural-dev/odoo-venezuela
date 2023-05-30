@@ -21,13 +21,10 @@
     <template id="portal_invoices_seller" name="Invoice">
         <t t-call="portal.portal_layout">
             <t t-set="breadcrumbs_searchbar" t-value="True"/>
-
             <t t-call="portal.portal_searchbar">
                 <t t-set="title"></t>
             </t>
-
             <div class="container o_portal_invoices_seller">
-
                 <div class="row mb-3">
                     <div class="d-flex justify-content-center">
                         <t t-if="invoice.journal_id.fiscal ">

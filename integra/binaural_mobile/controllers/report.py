@@ -1,13 +1,6 @@
-import logging
-import json
-
 from odoo import _, http
 from odoo.http import request
-from odoo.osv import expression
 from odoo.addons.web.controllers.report import ReportController
-from . import utils
-
-_logger = logging.getLogger(__name__)
 
 class ReportController(ReportController):
     @http.route([
