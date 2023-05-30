@@ -1,5 +1,8 @@
 from odoo import models, fields, api
+from odoo.exceptions import AccessDenied
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class PosSession(models.Model):
     _inherit = "pos.session"
@@ -49,3 +52,7 @@ class PosSession(models.Model):
         if res[0]["id"] != self.config_id.currency_id.id:
             return [res[1], res[0]]
         return res
+
+
+    def is_user_authorized(self):
+        return self.env.user.authorized_discount_pos

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+	<record id="view_res_users_form_inherit" model="ir.ui.view">
+			<field name="name">res.users.form.inherit</field>
+			<field name="model">res.users</field>
+			<field name="inherit_id" ref="base.view_users_form"/>
+			<field name="arch" type="xml">
+				
+				<field name="in_group_45" position="after">
+					<field name="authorized_discount_pos"/>
+		</field>
+		</field>
+	</record>
+	
+	<!-- <template id="assets_backend" name="tu_modulo assets" inherit_id="point_of_sale.assets_backend">
+    <xpath expr="//script[last()]" position="after">
+        <script type="text/javascript" src="/binaural_pos/static/src/js/DiscountButton.js"></script>
+    </xpath>
+</template> -->
+
+	
+</odoo>
