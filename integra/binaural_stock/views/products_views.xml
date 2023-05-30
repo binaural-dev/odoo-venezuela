@@ -19,6 +19,10 @@
                     </button>
                 </t>
             </xpath>
+
+            <xpath expr="//field[@name='barcode']" position="before">
+                <field name="alternate_code"/>
+            </xpath>
         </field>
     </record>
 
