@@ -8,7 +8,7 @@
     "website": "https://binauraldev.com/",
     "version": "16.0.0.0.5",
     # any module necessary for this one to work correctly
-    "depends": ["base", "point_of_sale", "binaural_rate", "binaural_contact","pos_discount"],
+    "depends": ["base", "point_of_sale", "binaural_rate", "binaural_contact"],
     # always loaded
     "data": [
         "views/pos_payment_method.xml", 
