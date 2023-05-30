@@ -30,12 +30,14 @@ class GenerateProductCatalogWizard(models.TransientModel):
     entry_page = fields.Binary(string="Entry Page", default=lambda self: self.env.company.entry_page)
     back_over = fields.Binary(string="Back Over", default=lambda self: self.env.company.back_over)
 
+    show_available_qty = fields.Boolean(string="Show Available Qty")
     show_sales_policy = fields.Boolean(string="Show Sales Policy")
     products_by_page = fields.Integer('Products by page', default=lambda self: self.env.company.products_by_page)
     padding_top = fields.Float('Margin top', default=lambda self: self.env.company.padding_top)
     padding_sides = fields.Float('Margin sides', default=lambda self: self.env.company.padding_sides)
     border_width = fields.Integer('Border width', default=lambda self: self.env.company.border_width)
     primary_color = fields.Char('Primary color', default=lambda self: self.env.company.primary_color)
+
 
     def print_report(self):
         return super(GenerateProductCatalogWizard,self).print_report()

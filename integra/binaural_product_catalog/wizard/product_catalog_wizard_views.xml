@@ -59,6 +59,7 @@
             </field>
 
             <field name="sh_add_uom_catalog" position="after">
+                <!-- <field name="show_available_qty" /> -->
                 <field name="show_sales_policy" />
                 <field name="primary_color"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
                 <field name="products_by_page"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />

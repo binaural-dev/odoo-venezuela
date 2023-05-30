@@ -24,6 +24,7 @@ class ProductCatalogReport(models.AbstractModel):
             'padding_sides': data['padding_sides'],
             'border_width': data['border_width'],
             'primary_color': data['primary_color'],
+            'show_available_qty': data['show_available_qty'],
         }
         
         return default_data
