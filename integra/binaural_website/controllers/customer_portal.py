@@ -1,5 +1,7 @@
 from odoo.http import request, route
 from odoo.addons.portal.controllers.portal import CustomerPortal
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class CustomerPortalBinauralSitioWeb(CustomerPortal):
@@ -26,7 +28,7 @@ class CustomerPortalBinauralSitioWeb(CustomerPortal):
                     except:
                         values[field] = False
                 values.update({'zip': values.pop('zipcode', '')})
-                if 'city_id' in post:
+                if 'city_id' in post and post['city_id'] != "":
                     values.update({'city_id':int(post['city_id'])})
                 partner.sudo().write(values)
                 if redirect:
@@ -48,5 +50,4 @@ class CustomerPortalBinauralSitioWeb(CustomerPortal):
         })
 
         response = request.render("portal.portal_my_details", values)
-        response.headers['X-Frame-Options'] = 'DENY'
         return response
