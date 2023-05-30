@@ -8,11 +8,7 @@ class ProductTemplate(models.Model):
   def action_product_catalog_wizard(self):
     
     view_id = self.env.ref('sh_product_catalog_generator.generate_product_catalog_wizard_view').id
-    
-    _logger.warning('---------------------')
-    _logger.warning(self.env.context.get('active_ids'))
-    _logger.warning('---------------------')
-    
+
     return {
         'name':_("Cata"),#Name You want to display on wizard
         'view_mode': 'form',
@@ -21,7 +17,7 @@ class ProductTemplate(models.Model):
         'res_model': 'product.catalog.wizard',# With . Example sale.order
         'type': 'ir.actions.act_window',
         'target': 'new',
-        # 'domain': '[if you need]',
-        # 'context': {'if you need'}
+          # 'domain': '[if you need]',
+          # 'context': {'if you need'}
     }
     # return self.env.ref('sh_product_catalog_generator.generate_product_catalog_wizard_action')
