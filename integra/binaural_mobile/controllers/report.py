@@ -15,4 +15,5 @@ class ReportController(ReportController):
         '/report/<converter>/<reportname>/<docids>',
     ], type='http', auth='user', website=True)
     def report_routes(self, reportname, docids=None, converter=None, **data):
-        request.update_env(user=2)
+        if request.env.user.employee_id.is_seller:
+            request.update_env(user=2)
