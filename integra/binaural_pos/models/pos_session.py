@@ -1,8 +1,4 @@
 from odoo import models, fields, api
-from odoo.exceptions import AccessDenied
-import logging
-
-_logger = logging.getLogger(__name__)
 
 class PosSession(models.Model):
     _inherit = "pos.session"
