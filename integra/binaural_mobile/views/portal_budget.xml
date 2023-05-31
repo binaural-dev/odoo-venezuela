@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <template id="portal_my_quotations" inherit_id="sale.portal_my_quotations">
+        <xpath expr="//t[2]" position="inside">
+            <t t-if="request.env.user.employee_id.is_seller">
+                <a t-attf-href="/budget" class="btn btn-primary btn-sm"> Create budget</a>
+            </t>
+        </xpath>
+    </template>
+
     <template id="portal_budget_form" name="Budget">
         <t t-call="website.layout">
             <div class="container o_portal_budget_form">
