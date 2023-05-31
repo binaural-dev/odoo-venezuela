@@ -317,6 +317,10 @@ class SerialFiscalDriver(SerialDriver):
             if invoice["partner_id"]["phone"]:
                 cmd.append(str("i01Telefono:" + invoice["partner_id"]["phone"]))
 
+            if len(invoice.get("info",[])) > 0:
+                for index, info in enumerate(invoice.get("info")):
+                    cmd.append(f"i{str(index+2).zfill(2)}{info}")
+
             for item in invoice["invoice_lines"]:
                 code = ""
                 if item["code"]:
@@ -416,6 +420,11 @@ class SerialFiscalDriver(SerialDriver):
                 cmd.append(str("i00Direccion:" + invoice["partner_id"]["address"]))
             if invoice["partner_id"]["phone"]:
                 cmd.append(str("i01Telefono:" + invoice["partner_id"]["phone"]))
+
+            if len(invoice.get("info",[])) > 0:
+                for index, info in enumerate(invoice.get("info")):
+                    cmd.append(f"i{str(index+2).zfill(2)}{info}")
+
 
             for item in invoice["invoice_lines"]:
                 code = ""
