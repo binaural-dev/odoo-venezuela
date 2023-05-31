@@ -416,10 +416,15 @@ class product_template_import(models.TransientModel):
             report_import_link = "/web/content/"+str(last_attachment.id)+"?download=true&access_token="+str(last_attachment.access_token)
 
 
+        # result =  {
+        #     'actives_to_sync': str(len(actives_to_sync))+" / "+str(actives_total),
+        #     'paused_to_sync': str(len(paused_to_sync))+" / "+str(paused_total),
+        #     'closed_to_sync': str(len(closed_to_sync))+" / "+str(closed_total),
+        # }
         result =  {
-            'actives_to_sync': str(len(actives_to_sync))+" / "+str(actives_total),
-            'paused_to_sync': str(len(paused_to_sync))+" / "+str(paused_total),
-            'closed_to_sync': str(len(closed_to_sync))+" / "+str(closed_total),
+            'actives_to_sync': actives_to_sync,
+            'paused_to_sync': paused_to_sync,
+            'closed_to_sync': closed_to_sync
         }
 
         result.update({'report_import': last_attachment})

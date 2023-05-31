@@ -19,12 +19,13 @@ product_message_type = "notification"
 def get_price_from_pl( pricelist, product, quantity ):
     pl = pricelist
     return_val = {}
-    return_val = pl.price_get( product.id, quantity)
+    #return_val = pl.price_get( product.id, quantity)
+    return_val = [product.id, quantity]
     return return_val
 
-#Autocommit
+#Autocommit: ARREGLAR, PROBLEMAS CON VERSION DE PSYCOPG2
 def Autocommit( self, act=False ):
-    self._cr.autocommit(act)
+    #self._cr.autocommit(act)
     return False
     
 def UpdateProductType( product ):      
