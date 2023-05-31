@@ -39,6 +39,7 @@ class ProductProductBudget(http.Controller):
             ("active", "=", True), 
             ("sale_ok", "=", True), 
             ("type", "=", "product"), 
+            ("qty_available", ">", 0)
             ]
         
         res_company = request.env["res.company"].sudo().search([])
