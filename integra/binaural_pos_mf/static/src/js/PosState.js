@@ -15,6 +15,10 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
       get currentOrder() {
         return this.get_order();
       }
+
+      aditionalInfo(){
+        return []
+      }
       async get_data_invoice(order) {
         console.log(this)
         const currency = { symbol: 'Bs', position: 'after', rounding: 0.01, decimals: 2 };
@@ -36,6 +40,8 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           invoice['partner_id']['address'] = client.address || false
           invoice['partner_id']['phone'] = client.phone || false
         }
+
+        invoice["info"] = this.aditionalInfo()
 
         let uid = order.uid
         const values = Object.values(this.env.pos.toRefundLines)
