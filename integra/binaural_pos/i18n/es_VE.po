@@ -327,3 +327,8 @@ msgstr ""
 #, python-format
 msgid "at"
 msgstr "a"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_res_users__authorized_discount_pos
+msgid "authorized personnel to use discount in pos"
+msgstr "Personal autorizado para usar descuento en POS"

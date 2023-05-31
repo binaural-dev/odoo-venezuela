@@ -15,6 +15,11 @@ class ProductTemplate(models.Model):
         store=True,
     )
 
+    alternate_code = fields.Char(
+        string="Alternate Code",
+        help="Alternate code for the product",
+    )
+
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Maldito Raiver e.e

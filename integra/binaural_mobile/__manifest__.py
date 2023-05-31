@@ -15,6 +15,7 @@
         "web",
         "website",
         "portal",
+        "website_sale",
         "binaural_brand",
         "binaural_seller",
         "binaural_sale",
@@ -37,5 +38,6 @@
         ]
     },
     "images": ["static/description/icon.png"],
+    "application": True,
 
 }
