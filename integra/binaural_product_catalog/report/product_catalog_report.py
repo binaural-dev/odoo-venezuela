@@ -12,6 +12,10 @@ class ProductCatalogReport(models.AbstractModel):
     @api.model
     def _get_report_values(self, docids, data=None):
         default_data = super(ProductCatalogReport, self)._get_report_values(docids, data=data)
+        
+        _logger.warning("-----default_data['product_dict_list'] default_data['product_dict_list']default_data['product_dict_list']----------------")
+        _logger.warning(default_data['product_dict_list'])
+        _logger.warning('---------------------')
 
         default_data = {
             **default_data,

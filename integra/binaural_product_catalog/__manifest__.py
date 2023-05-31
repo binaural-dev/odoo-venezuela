@@ -11,6 +11,7 @@
     "depends": ["stock", "sh_product_catalog_generator", "binaural_stock"],
     "data": [
         'views/product_template.xml',
+        'views/product_product.xml',
         'views/res_config_settings.xml',
         'wizard/product_catalog_wizard_views.xml',
         "report/product_catalog_report_views.xml",
