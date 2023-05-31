@@ -1,5 +1,0 @@
-app id: 4738400535889718
-Secret Key: 6A1tTYJJlbKVlKGLI33NwCgbesGRA1wQ
-Redirect Uri: https://stagingonprotec.binauraldev.com/meli_login
-Vendedor Id: 92748607
-Category to import: MLV1648
