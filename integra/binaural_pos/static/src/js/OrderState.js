@@ -28,6 +28,8 @@ odoo.define("binaural_pos.OrderState", function(require) {
         return json;
       }
       onchage_receipt(to_receipt) {
+        if(this.pos.config.pos_tax_inside) return
+
         if(to_receipt == undefined){
           return
         }
