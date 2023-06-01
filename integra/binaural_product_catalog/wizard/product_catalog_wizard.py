@@ -12,6 +12,24 @@ class GenerateProductCatalogWizard(models.TransientModel):
     _inherit = 'product.catalog.wizard'
     _description = 'Product Catalog Wizard'
 
+
+    def _get_default_products(self):    
+        default_product_active_ids = self.env.context.get('default_product_active_ids', [])
+        
+        if default_product_active_ids:
+            return default_product_active_ids
+        
+        active_ids = self.env.context.get('active_ids', [])
+        
+        products_templates = self.env['product.template'].search([('id', 'in', active_ids)])
+        
+        group_product_variant = self.env["ir.config_parameter"].sudo().get_param("group_product_variant")  
+        
+        if group_product_variant:
+            return products_templates.mapped('product_variant_ids')
+        
+        return products_templates.mapped('product_variant_id')
+
     style = fields.Selection(
         [
             ('style_1', 'Style 1'),
@@ -25,7 +43,7 @@ class GenerateProductCatalogWizard(models.TransientModel):
         string='Style'
     )
     image = fields.Boolean(string='Image', default=True)
-    product_ids = fields.Many2many('product.product', string='Products', default=lambda self: self.env.context.get('active_ids', []))
+    product_ids = fields.Many2many('product.product', string='Products', default=_get_default_products)
     background = fields.Binary(string="Background", default=lambda self: self.env.company.background)
     entry_page = fields.Binary(string="Entry Page", default=lambda self: self.env.company.entry_page)
     back_over = fields.Binary(string="Back Over", default=lambda self: self.env.company.back_over)
