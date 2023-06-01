@@ -161,7 +161,6 @@ class AccountMove(models.Model):
             The view of the account move form with the foreign currency symbol added to the page
             title.
         """
-        foreign_currency_symbol = ""
         foreign_currency_id = self.env.company.currency_foreign_id.id
 
         res = super().get_view(view_id, view_type, **options)
@@ -170,7 +169,7 @@ class AccountMove(models.Model):
             foreign_currency_record = self.env["res.currency"].search(
                 [("id", "=", int(foreign_currency_id))]
             )
-            foreign_currency_symbol = foreign_currency_record.symbol
+            foreign_currency_symbol = foreign_currency_record.symbol or ""
             if view_type == "form":
                 view_id = self.env.ref(
                     "binaural_accountant.view_account_move_form_binaural_invoice"
