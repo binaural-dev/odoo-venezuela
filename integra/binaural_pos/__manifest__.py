@@ -8,14 +8,13 @@
     "website": "https://binauraldev.com/",
     "version": "16.0.0.0.6",
     # any module necessary for this one to work correctly
-    "depends": ["base", "point_of_sale", "binaural_rate", "binaural_contact"],
+    "depends": ["base", "point_of_sale", "binaural_rate", "binaural_contact", "binaural_stock"],
     # always loaded
     "data": [
-        "views/pos_payment_method.xml", 
+        "views/pos_payment_method.xml",
         "views/pos_order.xml",
         "views/res_config_settings.xml",
-        "views/res_users_views.xml"
-        ],
+    ],
     "images": ["static/description/icon.png"],
     "application": True,
     "assets": {
@@ -24,8 +23,8 @@
             "binaural_pos/static/src/xml/*.xml",
             "binaural_pos/static/src/css/*.css",
         ],
-        'point_of_sale.qunit_suite_tests': [
-            'binaural_pos/static/tests/unit/**/*',
+        "point_of_sale.qunit_suite_tests": [
+            "binaural_pos/static/tests/unit/**/*",
         ],
     },
 }

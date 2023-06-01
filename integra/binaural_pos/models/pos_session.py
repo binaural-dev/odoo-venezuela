@@ -34,6 +34,11 @@ class PosSession(models.Model):
         res["search_params"]["fields"].append("inverse_rate")
         return res
 
+    def _loader_params_product_product(self):
+        params = super()._loader_params_product_product()
+        params["search_params"]["fields"].append("free_qty")
+        return params
+
     def _get_pos_ui_res_currency(self, params):
         """
         This method is used to get the res.currency for the pos
