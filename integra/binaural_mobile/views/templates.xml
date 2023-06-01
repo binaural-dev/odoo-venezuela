@@ -68,10 +68,10 @@
                 </div>
                 <div class="d-flex justify-content-between">
                     <t t-if="product.brand_id.name">
-                        <label class="form-text " t-out="product.brand_id.name"></label>
+                        <label class="small badge text-bg-info orders_label_text_align" t-out="product.brand_id.name"/>
                     </t>
                     <t t-if="product.alternate_code">
-                        <label class="form-text" t-out="product.alternate_code"></label>
+                        <label class="form-text" t-out="product.alternate_code"/>
                     </t>
                 </div>
                 <div class="d-flex justify-content-between">
