@@ -6,14 +6,19 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230524\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-24 20:31+0000\n"
-"PO-Revision-Date: 2023-05-24 20:31+0000\n"
+"POT-Creation-Date: 2023-06-01 15:51+0000\n"
+"PO-Revision-Date: 2023-06-01 15:51+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "<i class=\"fa fa-download\"/> Download PDF"
+msgstr "<i class=\"fa fa-download\"/> Descargar PDF"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_layout
@@ -24,6 +29,15 @@ msgstr "<i class=\"fa fa-pencil mx-1\"/>Editar configuración de seguridad"
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_layout
 msgid "<i class=\"fa fa-pencil\"/> Edit"
 msgstr "<i class=\"fa fa-pencil\"/> Editar"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.product
+msgid ""
+"<i class=\"fa fa-shopping-cart me-2\"/>\n"
+"                        <span style=\"font-weight: bold\">ADD TO CART</span>"
+msgstr ""
+"<i class=\"fa fa-shopping-cart me-2\"/>\n"
+"                        <span style=\"font-weight: bold\">AÑADIR AL CARRITO</span>"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -46,6 +60,16 @@ msgid "Add"
 msgstr "Añadir"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.product
+msgid "Add one"
+msgstr "Añadir uno"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.product
+msgid "Alternate code"
+msgstr "Código alterno"
+
+#. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
@@ -60,6 +84,11 @@ msgid "Available"
 msgstr "Disponible"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.product
+msgid "Barcode"
+msgstr "Código de barras"
+
+#. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Billing address"
 msgstr "Dirección de facturación"
@@ -68,6 +97,11 @@ msgstr "Dirección de facturación"
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Billing address the same as the shipping address"
 msgstr "Dirección de facturación igual que la dirección de envío"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.product
+msgid "Brand"
+msgstr "Marca"
 
 #. module: binaural_mobile
 #. odoo-python
@@ -90,6 +124,11 @@ msgid "Client"
 msgstr "Cliente"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "Client:"
+msgstr "Cliente:"
+
+#. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Clients"
 msgstr "Clientes"
@@ -108,8 +147,14 @@ msgstr "Confirmado"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.budget_link
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_quotations
 msgid "Create budget"
 msgstr "Crear presupuesto"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.product
+msgid "Default code"
+msgstr "Referencia interna"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_layout
@@ -129,6 +174,11 @@ msgid "Draft"
 msgstr "Borrador"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_invoices
+msgid "Draft Invoice"
+msgstr "Factura borrador"
+
+#. module: binaural_mobile
 #: model:ir.model,name:binaural_mobile.model_hr_employee
 msgid "Employee"
 msgstr "Empleado"
@@ -144,6 +194,16 @@ msgstr "Indica si un pedido de venta incluye impuestos."
 #, python-format
 msgid "Invoice"
 msgstr "Factura"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "Invoice date:"
+msgstr "Fecha de factura:"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "Invoice number:"
+msgstr "Número de factura:"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -199,6 +259,11 @@ msgid "No products found with the code or name:"
 msgstr "No se encontraron productos con el código o nombre:"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "No reception date"
+msgstr "Sin fecha de recepción"
+
+#. module: binaural_mobile
 #. odoo-python
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
@@ -228,6 +293,16 @@ msgid "Order lines"
 msgstr "Líneas de pedido"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "Origin document:"
+msgstr "Origen del documento:"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.products_item
+msgid "Out of stock"
+msgstr "No disponible"
+
+#. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Payment terms:"
 msgstr "Condiciones de pago:"
@@ -238,16 +313,28 @@ msgstr "Condiciones de pago:"
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 #, python-format
 msgid "Price"
-msgstr "Price:"
+msgstr "Precio:"
 
 #. module: binaural_mobile
+#: model:ir.model,name:binaural_mobile.model_product_template
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Product"
 msgstr "Producto"
 
 #. module: binaural_mobile
+#: model:ir.model,name:binaural_mobile.model_product_product
+msgid "Product Variant"
+msgstr "Variantes de producto"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_home
+msgid "Products"
+msgstr "Productos"
+
+#. module: binaural_mobile
 #. odoo-javascript
 #: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.product
 #, python-format
 msgid "Qty"
 msgstr "Cantidad"
@@ -255,6 +342,7 @@ msgstr "Cantidad"
 #. module: binaural_mobile
 #. odoo-javascript
 #: code:addons/binaural_mobile/static/src/js/portal_budget.js:0
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.products_item
 #, python-format
 msgid "Qty:"
 msgstr "Cantidad:"
@@ -263,6 +351,16 @@ msgstr "Cantidad:"
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Rate:"
 msgstr "Tarifa:"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "Reception date:"
+msgstr "Fecha de recepción:"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.product
+msgid "Remove one"
+msgstr "Remover uno"
 
 #. module: binaural_mobile
 #. odoo-python
@@ -323,11 +421,13 @@ msgstr "Impuesto incluido"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
 msgid "Tax:"
 msgstr "Impuesto:"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
 msgid "Taxable Base:"
 msgstr "Base imponible:"
 
@@ -392,8 +492,9 @@ msgstr "No hay almacén principal asignado"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
 msgid "Total:"
-msgstr "Total:"
+msgstr ""
 
 #. module: binaural_mobile
 #: model:ir.model.fields,help:binaural_mobile.field_sale_order__state_seller
@@ -406,6 +507,11 @@ msgstr ""
 #, python-format
 msgid "Unit price:"
 msgstr "Precio unitario:"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "Valid date:"
+msgstr "Fecha válida:"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -427,6 +533,11 @@ msgstr ""
 #, python-format
 msgid "You don't have access to this feature."
 msgstr "No tienes acceso a esta función."
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "form-label"
+msgstr ""
 
 #. module: binaural_mobile
 #. odoo-python
