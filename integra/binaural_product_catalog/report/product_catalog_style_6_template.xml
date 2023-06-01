@@ -212,7 +212,7 @@
 
         .card-catalog__specifications p {
           color: #1D1E1C;
-          font-size: 14px;
+          font-size: 13px !important;
           line-height: 13px;
           list-decoration: none !important;
           margin: 0px !important;
@@ -300,7 +300,7 @@
                       <p class="helvetica-bold" t-if="int_ref">SKU: <span t-esc="o.get('default_code')" style="text-transform: uppercase;" /></p>
                       <p class="helvetica-bold" t-if="show_sales_policy">Política ventas: <span t-esc="o.get('sales_policy') if o.get('sales_policy') else 0" /></p>
                       <p class="helvetica-bold" t-if="sh_add_uom_catalog">UOM: <span t-esc="o.get('uom_id', '')" /></p>
-                      <p class="helvetica-bold" t-if="show_available_qty">Cantidad Disp.: <span t-esc="o.get('free_qty', 0)" t-options="{'widget': 'float', 'precision': 0}" /></p>
+                      <p class="helvetica-bold" t-if="show_available_qty">Cantidad Disp.: <span t-esc="o.get('quantity', 0)" t-options="{'widget': 'float', 'precision': 0}" /></p>
                       <!-- <p class="helvetica-bold">Código de barras: <span t-field="o.barcode" /></p> -->
                       <!-- <p class="helvetica-bold">Referencia alterna: <span t-field="o.default_code_alternative"/></p>
                       <p class="helvetica-bold">Cantidad / Bulto: <span t-esc="o.qty_package if o.qty_package else 0"/></p>
