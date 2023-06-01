@@ -1,7 +1,7 @@
 {
-    "name": "Binaural Product Catalog",
+    "name": "Binaural Catálogo de Productos",
     "summary": """
-        Binaural Product Catalog - Customization for product catalog
+        Binaural Catálogo de Productos
     """,
     "license": "LGPL-3",
     "author": "Binauraldev",
