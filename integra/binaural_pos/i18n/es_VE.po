@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230503\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230529\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-01 00:41+0000\n"
-"PO-Revision-Date: 2023-06-01 00:41+0000\n"
+"POT-Creation-Date: 2023-06-01 19:47+0000\n"
+"PO-Revision-Date: 2023-06-01 19:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -39,6 +39,13 @@ msgstr "El documento de identidad es requerido"
 #: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__always_invoice
 msgid "Always Invoice"
 msgstr "Facturar siempre"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/ProductItem.xml:0
+#, python-format
+msgid "Available:"
+msgstr "Disponible:"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -237,6 +244,13 @@ msgid "Point of Sale Session"
 msgstr "Sesión TPV"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_config__pos_show_free_qty
+#: model:ir.model.fields,field_description:binaural_pos.field_res_company__pos_show_free_qty
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_show_free_qty
+msgid "Pos Show Free Qty"
+msgstr "Mostrar Cantidad Disponible"
+
+#. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_config__pos_tax_inside
 #: model:ir.model.fields,field_description:binaural_pos.field_res_company__pos_tax_inside
 #: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_tax_inside
@@ -290,6 +304,11 @@ msgid "Settings on this page will apply to this point of sale."
 msgstr "Las configuraciones en esta pagina se aplicaran a este punto de venta"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "Show free quantity on POS"
+msgstr "Mostrar la cantidad disponible en el punto de venta"
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/xml/PaymentScreenStatus.xml:0
 #, python-format
@@ -329,10 +348,3 @@ msgid ""
 msgstr ""
 "No puedes encender la configuracion de IGTF cuando la compañia sea Tipo "
 "contribuyente ordinario"
-
-#. module: point_of_sale
-#. openerp-web
-#: code:addons/point_of_sale/static/src/xml/pos.xml:1097
-#, python-format
-msgid "at"
-msgstr "a"

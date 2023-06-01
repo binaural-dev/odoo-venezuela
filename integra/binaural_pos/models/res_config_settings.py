@@ -1,10 +1,6 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
@@ -23,6 +19,7 @@ class ResConfigSettings(models.TransientModel):
         "account.journal", related="pos_config_id.receipt_journal_id", readonly=False
     )
     always_invoice = fields.Boolean(related="pos_config_id.always_invoice", readonly=False)
+    pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty", readonly=False)
 
     @api.onchange("module_binaural_pos_igtf")
     def _onchange_module_binaural_pos_igtf(self):
