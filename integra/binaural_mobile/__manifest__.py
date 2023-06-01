@@ -22,7 +22,7 @@
         "binaural_stock",
     ],
     "data": [
-        "security/ir.model.access.csv",
+        # "security/ir.model.access.csv",
         "data/ir_rule.xml",
         "views/hr_employee.xml",
         "views/portal_budget.xml",
