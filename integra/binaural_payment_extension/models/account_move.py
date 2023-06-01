@@ -86,6 +86,7 @@ class AccountMoveRetention(models.Model):
                 move.islr_voucher_number = retention.number
 
             if move.retention_municipal_line_ids:
+                move._validate_municipal_retention()
                 retention = move._create_supplier_retention("municipal")
                 retention.action_post()
                 move.islr_voucher_number = retention.number
