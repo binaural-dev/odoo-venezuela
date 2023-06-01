@@ -15,12 +15,14 @@
         "web",
         "website",
         "portal",
+        "website_sale",
         "binaural_brand",
         "binaural_seller",
         "binaural_sale",
         "binaural_stock",
     ],
     "data": [
+        # "security/ir.model.access.csv",
         "data/ir_rule.xml",
         "views/hr_employee.xml",
         "views/portal_budget.xml",
@@ -29,6 +31,7 @@
         "views/portal_invoice_seller.xml",
         "views/res_config_settings.xml",
         "views/sale_order_views.xml",
+        "views/templates.xml",
     ],
     "assets": {
         "web.assets_frontend": [
@@ -37,5 +40,6 @@
         ]
     },
     "images": ["static/description/icon.png"],
+    "application": True,
 
 }
