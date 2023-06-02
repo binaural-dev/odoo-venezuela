@@ -1,2 +1,2 @@
 pdf2image
-git+https://github.com/binaural-dev/python-sdk.git
+git+https://github.com/mercadolibre/python-sdk.git
