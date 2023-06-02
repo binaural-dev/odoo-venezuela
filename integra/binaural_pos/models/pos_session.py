@@ -37,6 +37,7 @@ class PosSession(models.Model):
     def _loader_params_product_product(self):
         params = super()._loader_params_product_product()
         params["search_params"]["fields"].append("free_qty")
+        params["search_params"]["fields"].append("qty_available")
         return params
 
     def _get_pos_ui_res_currency(self, params):

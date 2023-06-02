@@ -20,6 +20,7 @@ class ResConfigSettings(models.TransientModel):
     )
     always_invoice = fields.Boolean(related="pos_config_id.always_invoice", readonly=False)
     pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty", readonly=False)
+    amount_to_zero = fields.Boolean(related="pos_config_id.amount_to_zero", readonly=False)
 
     @api.onchange("module_binaural_pos_igtf")
     def _onchange_module_binaural_pos_igtf(self):
