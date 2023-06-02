@@ -24,9 +24,9 @@ class ResConfigSettings(models.TransientModel):
     )
     always_invoice = fields.Boolean(related="pos_config_id.always_invoice", readonly=False)
 
-    @api.onchange("module_binaural_pos_igtf")
-    def _onchange_module_binaural_pos_igtf(self):
-        if self.module_binaural_pos_igtf and self.company_id.taxpayer_type == "ordinary":
-            raise ValidationError(
-                _("You cannot turn on the igtf in pos if the company is an ordinary taxpayer")
-            )
+    # @api.onchange("module_binaural_pos_igtf")
+    # def _onchange_module_binaural_pos_igtf(self):
+    #     if self.module_binaural_pos_igtf and self.company_id.taxpayer_type == "ordinary":
+    #         raise ValidationError(
+    #             _("You cannot turn on the igtf in pos if the company is an ordinary taxpayer")
+    #         )
