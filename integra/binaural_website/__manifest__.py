@@ -1,29 +1,23 @@
 {
-    'name': "Binaural Sitio Web",
-
-    'summary': """
+    "name": "Binaural Sitio Web",
+    "summary": """
        Modulo para sitio web""",
-
-    'license': 'LGPL-3',
-    
-    'author': "Binauraldev",
-    'website': "https://binauraldev.com/",
-    'category': 'Website',
-    'version': '0.2.0',
+    "license": "LGPL-3",
+    "author": "Binauraldev",
+    "website": "https://binauraldev.com/",
+    "category": "Website",
+    "version": "0.2.1",
     # any module necessary for this one to work correctly
-    'depends': ['base','website','binaural_location','website_sale'],
-    
+    "depends": ["binaural_location", "website_sale"],
     "data": [
-        "static/src/views/profile_view.xml",
-        "static/src/views/website_sale_view.xml",
+        "data/ir_model_fields.xml",
+        "views/profile_view.xml",
+        "views/templates.xml",
     ],
-    
     "assets": {
-        'web.assets_frontend': [
-            'binaural_website/static/src/js/profile.js',
-            'binaural_website/static/src/js/website_sale.js'
+        "web.assets_frontend": [
+            "binaural_website/static/src/js/website_sale_extend.js",
         ]
     },
-
-    'application':True,
+    "application": True,
 }
