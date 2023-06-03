@@ -1,0 +1,66 @@
+// BiProductScreen js
+odoo.define('binaural_pos.ProductScreen', function(require) {
+	"use strict";
+
+	const Registries = require('point_of_sale.Registries');
+	const ProductScreen = require('point_of_sale.ProductScreen');
+    const { _t } = require('web.core');
+
+	const BinauralProductScreen = (ProductScreen) =>
+		class BinauralProductScreen extends ProductScreen {
+			super() {
+				super.setup();
+			}
+			async _onClickPay() {
+				var self = this;
+				let order = this.env.pos.get_order();
+				let lines = order.get_orderlines();
+				let pos_config = self.env.pos.config;				
+				let call_super = true;
+				let prod_used_qty = {};
+                var order_t = _t('Deny Order')
+                var is_out = _t(' is out of stock.');
+				if(pos_config.amount_to_zero){
+					$.each(lines, function( i, line ){
+						let prd = line.product;
+						if (prd.type == 'product'){
+							if(prd.id in prod_used_qty){
+								let old_qty = prod_used_qty[prd.id][1];
+								prod_used_qty[prd.id] = [prd.qty_available,line.quantity+old_qty]
+							}else{
+								prod_used_qty[prd.id] = [prd.qty_available,line.quantity]
+							}
+						}
+						if(prd.qty_available <= 0){
+							call_super = false;
+							let wrning = prd.display_name + _t(is_out);
+							self.showPopup('ErrorPopup', {
+								title: self.env._t('Zero Quantity Not allowed'),
+								body: self.env._t(wrning),
+							});
+						}
+						else{
+							if(line.quantity > prd.qty_available){
+								call_super = false;
+								let wrning = prd.display_name + _t(is_out);
+								self.showPopup('ErrorPopup', {
+									title: self.env._t(order_t),
+									body: self.env._t(wrning),
+								});
+
+							}	
+
+						}
+					});
+				}
+				if(call_super){
+					super._onClickPay();
+				}
+			}
+		};
+
+	Registries.Component.extend(ProductScreen, BinauralProductScreen);
+
+	return BinauralProductScreen;
+
+});

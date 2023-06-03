@@ -24,6 +24,7 @@ class PosConfig(models.Model):
         readonly=False,
     )
     pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty")
+    amount_to_zero = fields.Boolean("Amount to zero")
 
     @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")
     def _compute_rate(self):
