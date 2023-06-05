@@ -124,7 +124,7 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 
         _onBarcodeScanned() {
             this._super.apply(this, arguments);
-            _
+            
             const delay = $('#screen_delay').val() * 1000
             const searchButton = $(".o_mrp_kiosk_button_done")
             const screenDiv = $('#screen_div')
