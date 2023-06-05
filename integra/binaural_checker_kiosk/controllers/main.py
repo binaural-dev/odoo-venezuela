@@ -44,3 +44,5 @@ class LoginChecker(http.Controller):
                 return redirect if redirect else '/web'
             
         return redirect if redirect else '/web'
+
+    
