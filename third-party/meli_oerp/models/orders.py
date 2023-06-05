@@ -644,7 +644,7 @@ class mercadolibre_orders(models.Model):
     def _set_product_unit_price( self, product_related_obj, Item, config=None ):
         order = self
         #unit price after applied taxes
-        unit_price = float(Item['unit_price'])- float(float(order.coupon_amount)/float(Item['quantity']))
+        unit_price = float(Item['full_unit_price'])- float(float(order.coupon_amount)/float(Item['quantity']))
         upd_line = {
             "price_unit": ml_product_price_conversion( self, product_related_obj=product_related_obj, price=unit_price, config=config )
         }
@@ -669,16 +669,19 @@ class mercadolibre_orders(models.Model):
                     'seller_sku': oitem.seller_sku,
                     'seller_custom_field': oitem.seller_custom_field,
                 },
-                "unit_price": oitem.unit_price,
-                "currency_id": oitem.currency_id,
+                "unit_price": oitem.full_unit_price,
+                #"currency_id": oitem.currency_id,
+                "currency_id": 'USD',
                 'quantity': oitem.quantity,
 
             })
+            sum_amount+= float(oitem.full_unit_price)*float(oitem.quantity)
         orderjson = {
             "id": self.order_id,
             "status": self.status,
             "status_detail": self.status_detail,
-            "total_amount": self.total_amount,
+            #"total_amount": self.total_amount,
+            "total_amount": sum_amount,
             "paid_amount": self.paid_amount,
             "coupon_amount": self.coupon_amount,
             "financing_fee_amount": self.financing_fee_amount,
@@ -1848,7 +1851,7 @@ class mercadolibre_orders(models.Model):
                     'order_item_variation_id': Item['item']['variation_id'],
                     'order_item_title': Item['item']['title'],
                     'order_item_category_id': Item['item']['category_id'],
-                    'unit_price': Item['unit_price'],
+                    'unit_price': Item['full_unit_price'],
                     'quantity': Item['quantity'],
                     'currency_id': Item['currency_id'],
                     'seller_sku': ('seller_sku' in Item['item'] and Item['item']['seller_sku']) or '',
