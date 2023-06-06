@@ -10,11 +10,15 @@ class SaleOrder(models.Model):
 
     def set_delivery_line(self, carrier, amount):
         date_rate = fields.Date.context_today(self)
+        _logger.warning("the current date: %s", date_rate)
+        _logger.warning("carrier date: %s", carrier.date_rate)
         if not carrier.date_rate:
+            _logger.warning("this")
             carrier.date_rate = date_rate
             return super().set_delivery_line(carrier, amount)
 
         if date_rate > carrier.date_rate:
+            _logger.warning("there")
             carrier.date_rate = date_rate
 
         res = super().set_delivery_line(carrier, amount)

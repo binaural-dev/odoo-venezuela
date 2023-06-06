@@ -43,10 +43,13 @@ class DeliveryCarrier(models.Model):
 
     @api.depends("create_date", "date_rate")
     def _compute_rate(self):
+        _logger.warning("fuaaaaa")
         Rate = self.env["res.currency.rate"]
         date_rate = self.date_rate or fields.Date.context_today(self)
         for delivery in self:
             foreign_currency_id = delivery.foreign_currency_id.id
+            _logger.warning("currency?: %s", foreign_currency_id)
 
             rate = Rate.compute_rate(foreign_currency_id, date_rate)
+            _logger.warning("rateee: %s", rate)
             delivery.update(rate)

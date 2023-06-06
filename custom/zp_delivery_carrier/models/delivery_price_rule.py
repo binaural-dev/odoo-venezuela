@@ -10,8 +10,17 @@ class PriceRule(models.Model):
     _inherit = "delivery.price.rule"
 
     is_foreign_currency = fields.Boolean()
-    foreign_list_base_price = fields.Float(digits="Product Price", required=True, default=0.0)
-    list_base_price = fields.Float(compute="_compute_base_price")
+    foreign_list_base_price = fields.Float(digits="Product Price", required=True, default=1.0)
+    list_base_price = fields.Float(compute="_compute_base_price", store=True)
+
+    def write(self, vals):
+        if "foreign_list_base_price" in vals.keys():
+            return super.write(vals)
+
+        if "is_foreign_currency" in vals.keys() and not vals.get("is_foreign_currency"):
+            vals.update({"foreign_list_base_price": 1.0})
+        
+        return super().write(vals)
 
     @api.depends("foreign_list_base_price", "carrier_id.foreign_rate", "is_foreign_currency")
     def _compute_base_price(self):
@@ -19,9 +28,14 @@ class PriceRule(models.Model):
             foreign_rate = rule.carrier_id.foreign_rate
             digits = rule.carrier_id._fields["foreign_rate"].get_digits(self.env)[1]
             _logger.warning("inverse_currency: %s", rule.list_base_price)
+            _logger.warning("is being foreign: %s", rule.is_foreign_currency)
+            _logger.warning("alt price: %s", rule.foreign_list_base_price)
             inverse_list_base_price = rule.list_base_price or 0.0
 
-            if not float_is_zero(foreign_rate, precision_digits=digits) and rule.is_foreign_currency:
+            if (
+                not float_is_zero(foreign_rate, precision_digits=digits)
+                and rule.is_foreign_currency
+            ):
                 inverse_list_base_price = rule.foreign_list_base_price / foreign_rate
 
             rule.update({"list_base_price": inverse_list_base_price})
