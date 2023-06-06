@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+      <record id="view_product_template_post" model="ir.ui.view">
+            <field name="name">Post to Mercado Libre</field>
+            <field name="model">mercadolibre.product.template.post</field>
+            <field name="inherit_id" ref="meli_oerp.view_product_template_post"/>
+            <field name="arch" type="xml">
+              <xpath expr="//field[@name='force_meli_pub']" position="before">
+                      <field name="force_meli_new_pub"/>
+                        <field name="force_meli_new_title" attrs="{'invisible': [('force_meli_new_pub','=',False)]}"/>
+                        <field name="force_meli_new_price" attrs="{'invisible': [('force_meli_new_pub','=',False)]}"/>
+                        <field name="force_meli_new_pricelist" attrs="{'invisible': [('force_meli_new_pub','=',False)]}"/>
+                      <field name="connectors"/>
+              </xpath>
+            </field>
+      </record>
+      
+      <record id="view_product_template_binding_post" model="ir.ui.view">
+            <field name="name">Post Binding to Mercado Libre</field>
+            <field name="model">mercadolibre.product.template.binding.post</field>
+            <field name="inherit_id" ref="meli_oerp.view_product_template_post"/>
+            <field name="arch" type="xml">
+              <xpath expr="//button[@name='product_template_post']" position="attributes">
+                <attribute name="title" >Publicar/Actualizar Publicacion en Mercado Libre</attribute>
+              </xpath>              
+            </field>
+      </record>
+
+      <record id="view_product_template_update_multiple" model="ir.ui.view">
+            <field name="name">Update from Mercado Libre</field>
+            <field name="model">mercadolibre.product.template.update</field>
+            <field name="inherit_id" ref="meli_oerp.view_product_template_update" />
+            <field name="arch" type="xml">
+              <xpath expr="//field[@name='force_meli_pub']" position="after">
+                      <field name="connection_account"/>
+                      <!--field name="force_create_variants"/-->
+              </xpath>
+            </field>
+      </record>
+
+
+      <!-- View wizard - Update Binding for Product Template: MercadoLibre-->
+      <record id="view_binding_product_template_update_from_mercadolibre" model="ir.ui.view">
+            <field name="name">Update Product Template Binding From MercadoLibre</field>
+            <field name="model">mercadolibre.binder.update.wiz</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+              <form string="Update Product Template Binding" version="7.0">
+                  <h2>Check Options and Update</h2>
+                  <group>
+                    <group>
+                      <field name="update_odoo_product"/>
+                      <field name="update_odoo_product_variants"/>
+                      <field name="update_images"/>
+                    </group>
+                  </group>
+                  <footer>
+                      <button name="binding_product_template_update" string="Update Binding"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                  </footer>
+              </form>
+            </field>
+      </record>
+      <!-- Action wizard - Remove from Connector: MercadoLibre-->
+      <record id="action_binding_product_template_update_from_mercadolibre" model="ir.actions.act_window">
+          <field name="name">Update Product Template Binding From MercadoLibre</field>
+          <field name="type">ir.actions.act_window</field>
+          <field name="binding_model_id" ref="model_mercadolibre_product_template" />
+          <field name="view_id" ref="view_binding_product_template_update_from_mercadolibre"/>
+          <field name="binding_type">action</field>
+          <field name="binding_view_types">list,form</field>
+          <field name="res_model">mercadolibre.binder.update.wiz</field>
+          <field name="view_mode">form</field>
+          <field name="target">new</field>
+      </record>
+      <!--act_window id="action_binding_product_template_update_from_mercadolibre"
+    			name="Update Product Template Binding From MercadoLibre"
+    			binding_model="mercadolibre.product_template"
+    			res_model="mercadolibre.binder.update.wiz"
+          view_id="view_binding_product_template_update_from_mercadolibre"
+          view_mode="form"
+    			binding_views="list,form"
+          target="new"/-->
+
+      <!-- View wizard - Update Binding for Product Variant: MercadoLibre-->
+      <record id="view_binding_product_variant_update_from_mercadolibre" model="ir.ui.view">
+            <field name="name">Update Product Variant Binding From MercadoLibre</field>
+            <field name="model">mercadolibre.binder.variant.update.wiz</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+              <form string="Update Product Variant Binding" >
+                  <h2>Check Options and Update</h2>
+                  <!--field name="update_odoo_product"/-->
+                  <!--field name="update_odoo_product_variants"/-->
+                  <!--field name="update_images"/-->
+                  <group>
+                    <group>
+                      <field name="update_stock"/>
+                      <field name="update_price"/>
+                    </group>
+                  </group>
+                  <footer>
+                      <button name="binding_product_variant_update" string="Update Binding (variant)"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                  </footer>
+              </form>
+            </field>
+      </record>
+      <!-- Action wizard - Remove from Connector: MercadoLibre-->
+      <record id="action_binding_product_variant_update_from_mercadolibre" model="ir.actions.act_window">
+          <field name="name">Update Product Variant Binding From MercadoLibre</field>
+          <field name="type">ir.actions.act_window</field>
+          <field name="binding_model_id" ref="model_mercadolibre_product" />
+          <field name="view_id" ref="view_binding_product_variant_update_from_mercadolibre"/>
+          <field name="binding_type">action</field>
+          <field name="binding_view_types">list,form</field>
+          <field name="res_model">mercadolibre.binder.variant.update.wiz</field>
+          <field name="view_mode">form</field>
+          <field name="target">new</field>
+      </record>
+      <!--act_window id="action_binding_product_variant_update_from_mercadolibre"
+    			name="Update Product Variant Binding From MercadoLibre"
+    			binding_model="mercadolibre.product"
+    			res_model="mercadolibre.binder.variant.update.wiz"
+          view_id="view_binding_product_variant_update_from_mercadolibre"
+          view_mode="form"
+    			binding_views="list,form"
+          target="new"/-->
+
+      <!-- View wizard - Remove from Connector: MercadoLibre-->
+      <record id="view_product_template_remove_from_mercadolibre" model="ir.ui.view">
+            <field name="name">Remove Product From MercadoLibre / Unbind</field>
+            <field name="model">mercadolibre.binder.wiz</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+              <form string="Remove Product" version="7.0">
+                  <h2>Choose MercadoLibre Account to unbind this product from</h2>
+                  <field name="connectors" widget="many2many_tags"/>
+                  <br/>
+                  <label for="meli_id">MercadoLibre Id To Unbind</label>
+                  <field name="meli_id"/>
+                  <footer>
+                      <button name="product_template_remove_from_connector" string="Remove From Connector / Unbind"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                  </footer>
+              </form>
+            </field>
+      </record>
+      <!-- Action wizard - Remove from Connector: MercadoLibre-->
+      <record id="action_product_template_remove_from_mercadolibre" model="ir.actions.act_window">
+          <field name="name">Remove Product From MercadoLibre / Unbind</field>
+          <field name="type">ir.actions.act_window</field>
+          <field name="binding_model_id" ref="model_product_template" />
+          <field name="view_id" ref="view_product_template_remove_from_mercadolibre"/>
+          <field name="binding_type">action</field>
+          <field name="binding_view_types">list,form</field>
+          <field name="res_model">mercadolibre.binder.wiz</field>
+          <field name="view_mode">form</field>
+          <field name="target">new</field>
+      </record>
+      <!--act_window id="action_product_template_remove_from_mercadolibre"
+    			name="Remove Product From MercadoLibre / Unbind"
+    			binding_model="product.template"
+    			res_model="mercadolibre.binder.wiz"
+          view_id="view_product_template_remove_from_mercadolibre"
+          view_mode="form"
+    			binding_views="list,form"
+          target="new"/-->
+
+
+      <!-- View wizard  - Add to Connector: MercadoLibre-->
+      <record id="view_product_template_add_to_mercadolibre" model="ir.ui.view">
+            <field name="name">Add Product To MercadoLibre / Bind</field>
+            <field name="model">mercadolibre.binder.wiz</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+              <form string="Add Product" version="7.0">
+                  <h2>Choose MercadoLibre Account to bind</h2>
+                  <field name="connectors" widget="many2many_tags"/>
+                  <br/>
+                  <label for="meli_id">MercadoLibre Id</label>
+                  <field name="meli_id"/>
+                  <br/>
+                  <label for="bind_only">Solo asociar producto y variantes usando SKU (No modifica el producto de Odoo)</label>
+                  <field name="bind_only"/>
+                  <br/>
+                  <footer>
+                      <button name="product_template_add_to_connector" string="Add To Connector / Bind"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                  </footer>
+              </form>
+            </field>
+      </record>
+      <!-- Action wizard - Add to Connector: MercadoLibre-->
+      <record id="action_product_template_add_to_mercadolibre" model="ir.actions.act_window">
+          <field name="name">Add Product To MercadoLibre / Bind</field>
+          <field name="type">ir.actions.act_window</field>
+          <field name="binding_model_id" ref="model_product_template" />
+          <field name="view_id" ref="view_product_template_add_to_mercadolibre"/>
+          <field name="binding_type">action</field>
+          <field name="binding_view_types">list,form</field>
+          <field name="res_model">mercadolibre.binder.wiz</field>
+          <field name="view_mode">form</field>
+          <field name="target">new</field>
+      </record>
+      <!--act_window id="action_product_template_add_to_mercadolibre"
+    			name="Add Product To MercadoLibre / Bind"
+    			binding_model="product.template"
+    			res_model="mercadolibre.binder.wiz"
+          view_id="view_product_template_add_to_mercadolibre"
+    			binding_views="list,form"
+          view_mode="form"
+    			target="new"/-->
+
+
+    <!-- PRODUCT PRODUCT -->
+
+          <!-- View wizard - Remove Variant from Connector: MercadoLibre-->
+          <record id="view_product_product_remove_from_mercadolibre" model="ir.ui.view">
+                <field name="name">Remove Product Variant From MercadoLibre / Unbind</field>
+                <field name="model">mercadolibre.variant.binder.wiz</field>
+                <field name="type">form</field>
+                <field name="arch" type="xml">
+                  <form string="Remove Product" version="7.0">
+                      <h2>Choose MercadoLibre Account to unbind</h2>
+                      <field name="connectors" widget="many2many_tags"/>
+                      <br/>
+                      <label for="meli_id">MercadoLibre Id</label>
+                      <field name="meli_id"/>
+                      <br/>
+                      <label for="meli_id_variation">MercadoLibre Id Variation</label>
+                      <field name="meli_id_variation"/>
+                      <footer>
+                          <button name="product_product_remove_from_connector" string="Remove From Connector / Unbind"  type="object" class="oe_highlight"  />
+                            <button string="Cancel" class="oe_link" special="cancel" />
+                      </footer>
+                  </form>
+                </field>
+          </record>
+          <!-- Action wizard - Remove from Connector: MercadoLibre-->
+          <record id="action_product_product_remove_from_mercadolibre" model="ir.actions.act_window">
+              <field name="name">Remove Product Variant From MercadoLibre / Unbind</field>
+              <field name="type">ir.actions.act_window</field>
+              <field name="binding_model_id" ref="model_product_product" />
+              <field name="view_id" ref="view_product_product_remove_from_mercadolibre"/>
+              <field name="binding_type">action</field>
+              <field name="binding_view_types">list,form</field>
+              <field name="res_model">mercadolibre.variant.binder.wiz</field>
+              <field name="view_mode">form</field>
+              <field name="target">new</field>
+          </record>
+          <!--act_window id="action_product_product_remove_from_mercadolibre"
+        			name="Remove Product Variant From MercadoLibre / Unbind"
+        			binding_model="product.product"
+        			res_model="mercadolibre.variant.binder.wiz"
+              view_id="view_product_product_remove_from_mercadolibre"
+        			view_mode="form"
+              binding_views="list,form"
+              target="new"/-->
+
+
+          <!-- View wizard  - Add to Connector: MercadoLibre-->
+          <record id="view_product_product_add_to_mercadolibre" model="ir.ui.view">
+                <field name="name">Add Product Variant To MercadoLibre / Bind</field>
+                <field name="model">mercadolibre.variant.binder.wiz</field>
+                <field name="type">form</field>
+                <field name="arch" type="xml">
+                  <form string="Add Product" version="7.0">
+                      <h2>Choose MercadoLibre Account to bind</h2>
+                      <field name="connectors" widget="many2many_tags"/>
+                      <field name="meli_id"/>
+                      <field name="meli_id_variation"/>
+                      <footer>
+                          <button name="product_product_add_to_connector" string="Add To Connector / Bind"  type="object" class="oe_highlight"  />
+                            <button string="Cancel" class="oe_link" special="cancel" />
+                      </footer>
+                  </form>
+                </field>
+          </record>
+          <!-- Action wizard - Add to Connector: MercadoLibre-->
+          <record id="action_product_product_add_to_mercadolibre" model="ir.actions.act_window">
+              <field name="name">Add Product Variant To MercadoLibre / Bind</field>
+              <field name="type">ir.actions.act_window</field>
+              <field name="binding_model_id" ref="model_product_product" />
+              <field name="view_id" ref="view_product_product_add_to_mercadolibre"/>
+              <field name="binding_type">action</field>
+              <field name="binding_view_types">list,form</field>
+              <field name="res_model">mercadolibre.variant.binder.wiz</field>
+              <field name="view_mode">form</field>
+              <field name="target">new</field>
+          </record>
+          <!--act_window id="action_product_product_add_to_mercadolibre"
+        			name="Add Product Variant To MercadoLibre / Bind"
+        			binding_model="product.product"
+        			res_model="mercadolibre.variant.binder.wiz"
+              view_id="view_product_product_add_to_mercadolibre"
+              view_mode="form"
+              binding_views="list,form"
+              target="new"/-->
+
+
+
+          <!-- NOTIFICATIONS -->
+          <!-- View wizard FORM  - Notifications Process-->
+          <record id="view_mercadolibre_notification_wiz" model="ir.ui.view">
+                <field name="name">Process Notification Wiz Form</field>
+                <field name="model">mercadolibre.notification.wiz</field>
+                <field name="type">form</field>
+                <field name="arch" type="xml">
+                  <form string="Notification Process" version="7.0">
+                      <h2>Choose account to filter notification</h2>
+                      <group>
+                        <group>
+                          <field name="connection_account"/>
+                          <field name='reprocess_force'/>
+                        </group>
+                      </group>
+                      <footer>
+                          <button name="process_notifications" string="Procesar"  type="object" class="oe_highlight"  />
+                            <button string="Cancel" class="oe_link" special="cancel" />
+                      </footer>
+                  </form>
+                </field>
+          </record>
+          <!-- Action wizard - Add to Connector: MercadoLibre-->
+          <record id="action_mercadolibre_notification_wiz" model="ir.actions.act_window">
+              <field name="name">Procesar Notificaciones</field>
+              <field name="type">ir.actions.act_window</field>
+              <field name="binding_model_id" ref="model_mercadolibre_notification" />
+              <field name="view_id" ref="view_mercadolibre_notification_wiz"/>
+              <field name="binding_type">action</field>
+              <field name="binding_view_types">list,form</field>
+              <field name="res_model">mercadolibre.notification.wiz</field>
+              <field name="view_mode">form</field>
+              <field name="target">new</field>
+          </record>
+          <!--act_window id="action_mercadolibre_notification_wiz"
+              name="MercadoLibre Notifications Process"
+              binding_model="mercadolibre.notification"
+              res_model="mercadolibre.notification.wiz"
+              view_id="view_mercadolibre_notification_wiz"
+              view_mode="form"
+              binding_views="list,form"
+              target="new"/-->
+              
+        
+        
+        <!-- FIX VARIANT ATTRIBUTES -->
+        <!-- View wizard FORM  - Variant Fix -->
+        <!--record id="view_mercadolibre_variant_fixer_wiz" model="ir.ui.view">
+              <field name="name">Fix Variant Attributes</field>
+              <field name="model">mercadolibre.variant.fixer.wiz</field>
+              <field name="type">form</field>
+              <field name="arch" type="xml">
+                <form string="Variant Fix" version="7.0">
+                    <h2>Just check and process</h2>
+                    <group>
+                      <group>
+                        <field name="fix_attributes"/>
+                      </group>
+                    </group>
+                    <footer>
+                        <button name="fix_variant" string="Fix Variants"  type="object" class="oe_highlight"  />
+                          <button string="Cancel" class="oe_link" special="cancel" />
+                    </footer>
+                </form>
+              </field>
+        </record-->
+        <!-- Action wizard - Add to Connector: MercadoLibre-->
+        <!--record id="action_mercadolibre_variant_fixer_wiz" model="ir.actions.act_window">
+            <field name="name">Fix Variant Attributes</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_model_id" ref="model_product_product" />
+            <field name="view_id" ref="view_mercadolibre_variant_fixer_wiz"/>
+            <field name="binding_type">action</field>
+            <field name="binding_view_types">list,form</field>
+            <field name="res_model">mercadolibre.variant.fixer.wiz</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record-->
+
+          <record id="action_product_template_import" model="ir.actions.act_window">
+                <field name="name">Importar Masivamente ML</field>
+                <field name="type">ir.actions.act_window</field>
+                <field name="binding_model_id" ref="model_mercadolibre_account"/>
+                <field name="res_model">mercadolibre.product.template.import</field>
+                <field name="binding_type">action</field>
+                <field name="binding_view_types">list,form</field>
+                <field name="view_mode">form</field>
+                <field name="target">new</field>
+          </record>
+          
+          <record id="action_product_template_binding_post" model="ir.actions.act_window">
+              <field name="name">Publicar/Actualizar Publicacion en ML</field>
+              <field name="type">ir.actions.act_window</field>
+              <field name="binding_model_id" ref="model_mercadolibre_product_template"/>
+              <field name="res_model">mercadolibre.product.template.binding.post</field>
+              <field name="view_id" ref="meli_oerp_multiple.view_product_template_binding_post"/>
+              <field name="binding_type">action</field>
+              <field name="binding_view_types">list,form</field>
+              <field name="view_mode">form</field>
+              <field name="target">new</field>
+          </record>
+
+
+    </data>
+</odoo>

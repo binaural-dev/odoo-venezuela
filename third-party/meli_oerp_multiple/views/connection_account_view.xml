@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+			<record model="ir.ui.view" id="view_connection_account_mercadolibre">
+					<field name="name">mercadolibre.account.form</field>
+					<field name="model">mercadolibre.account</field>
+					<field name="arch" type="xml">
+
+						<form string="MercadoLibre Account">
+							<header>
+								<field name="status" widget="statusbar"/>
+							</header>
+							<sheet>
+								<div class="oe_title">
+									<h1><field name="name"/></h1>
+								</div>
+                <group>
+                  <div class="btn-group oe_button_box" name="button_box_mel" style="width: auto;">
+
+                    <button name='meli_login' type="object"
+  											string="Iniciar sesión"
+  											title="Iniciar sesión en ML"
+  											attrs="{'invisible':[('status','=','connected')]}"
+  											class="btn btn-primary oe_stat_button"
+  											icon="fa-user-circle"/>
+
+    									<button name='meli_logout' type="object"
+    											string="Cerrar sesión"
+    											title="Cerrar sesión con ML"
+    											attrs="{'invisible':[('status','=','disconnected')]}"
+    											class="btn btn-primary oe_stat_button"
+    											icon="fa-user-circle"/>
+
+                          <button name='meli_refresh_token' type="object"
+        											string="Refrescar Token"
+        											title="Refrescar Token"
+                              attrs="{'invisible':[('status','=','disconnected')]}"
+        											class="btn btn-primary oe_stat_button"
+        											icon="fa-refresh"/>
+
+                      <button name='meli_query_orders' type="object"
+                          string="Importar pedidos"
+                          title="Iniciar búsqueda de órdenes/pedidos de ML a Odoo"
+                          icon="fa-cloud-download"
+                          attrs="{'invisible':[('status','=','disconnected')]}"
+                          class="btn btn-primary oe_stat_button"/>
+
+                      <!--button name='meli_query_products' type="object"
+                          string="Importar productos"
+                          title="Iniciar importación de todos los productos desde ML a Odoo"
+                          attrs="{'invisible':[('status','=','disconnected')]}"
+                          icon="fa-cloud-download"
+                          class="oe_stat_button"/-->
+
+                      <button type="action" name="%(action_product_template_import)d"
+                            string="Importar Masivamente"
+                            title="Importar Masivamente"
+                          attrs="{'invisible':[('status','=','disconnected')]}"
+                            class="btn btn-primary oe_stat_button"
+                            icon="fa-cloud-download"></button>
+
+                      <button name='meli_update_local_products' type="object"
+                          string="Actualizar productos"
+                          title="Iniciar actualización de productos y stock desde ML a Odoo"
+                          attrs="{'invisible':[('status','=','disconnected')]}"
+                          icon="fa-cloud-download"
+                          class="btn btn-primary oe_stat_button"/>
+
+                      <button name='meli_import_categories' type="object"
+                          string="Importar categorías"
+                          title="Iniciar importación de categorías de ML a Odoo (eCommerce)"
+                          attrs="{'invisible':[('status','=','disconnected')]}"
+                          icon="fa-cloud-download"
+                          class="btn btn-primary oe_stat_button"/>
+
+                      <button name='meli_pause_all' type="object"
+                              string="Pausar no registrados"
+                              title="Pausar todos los productos publicados en ML que no estan en Odoo"
+                              confirm="¿Está seguro que quiere pausar todos sus productos de ML?"
+                              attrs="{'invisible':[('status','=','disconnected')]}"
+                              icon="fa-pause"
+                              class="btn btn-primary oe_stat_button"/>
+  									<!--button name='orders_update_order' type="object"
+  										string="Actualizar"
+  										attrs="{'invisible':[('order_id','=',False)]}"
+  										class="oe_stat_button"
+  										icon="fa-refresh"/-->
+  								</div>
+                </group>
+                <notebook>
+                  <page string="Credentials">
+                    <group>
+                      <group>
+                        <field name="redirect_uri"/>
+                      </group>
+                    </group>
+                    <group>
+                      <group>
+                          <field name="type"/>
+                          <field name="meli_login_id"/>
+                          <field name="client_id"/>
+                          <field name="secret_key"/>
+                          <field name="seller_id"/>
+                          <field name="cron_refresh" readonly="0"/>
+                      </group>
+                      <group>
+                          <field name="configuration"/>
+                          <field name="country_id"/>
+                          <field name="company_id"/>
+                          <field name="access_token" readonly="0"/>
+                          <field name="refresh_token" readonly="0"/>
+                      </group>
+                    </group>
+                  </page>
+                  <page string="Product Bindings">
+                     <field name="mercadolibre_product_template_bindings">
+                         <tree>
+                           <field name="name"/>
+			   <field name="conn_id"/>
+                           <field name="sku"/>
+                         </tree>
+                     </field>
+                 </page>
+                 <page string="Variant Bindings">
+                     <field name="mercadolibre_product_bindings">
+                         <tree>
+                           <field name="name"/>
+                           <field name="conn_id"/>
+                           <field name="conn_variation_id"/>
+                           <field name="sku"/>
+                         </tree>
+                     </field>
+                 </page>
+                 <page string="Orders">
+                     <field name="mercadolibre_orders">
+                         <tree>
+                           <field name="name"/>
+                           <field name="sale_order"/>
+                           <field name="status"/>
+                           <field name="shipment_status"/>
+                         </tree>
+                     </field>
+                 </page>
+                </notebook>
+							</sheet>
+						</form>
+
+
+
+							<!--div class="oe_button_box" name="button_box_mel" style="width: auto;">
+
+								<button name='meli_query_orders' type="object"
+										string="Importar pedidos"
+										title="Iniciar búsqueda de órdenes/pedidos de ML a Odoo"
+										icon="fa-cloud-download"
+										attrs="{'invisible':[('mercadolibre_state','=',True)]}"
+										class="oe_stat_button"/>
+
+								<button name='meli_query_products' type="object"
+										string="Importar productos"
+										title="Iniciar importación de todos los productos desde ML a Odoo"
+										attrs="{'invisible':[('mercadolibre_state','=',True)]}"
+										icon="fa-cloud-download"
+										class="oe_stat_button"/>
+
+								<button name='meli_update_local_products' type="object"
+										string="Actualizar productos"
+										title="Iniciar actualización de productos y stock desde ML a Odoo"
+										attrs="{'invisible':[('mercadolibre_state','=',True)]}"
+										icon="fa-cloud-download"
+										class="oe_stat_button"/>
+
+								<button name='meli_import_categories' type="object"
+										string="Importar categorías"
+										title="Iniciar importación de categorías de ML a Odoo (eCommerce)"
+										attrs="{'invisible':[('mercadolibre_state','=',True)]}"
+										icon="fa-cloud-download"
+										class="oe_stat_button"/>
+
+								<button name='meli_pause_all' type="object"
+												string="Pausar no registrados"
+												title="Pausar todos los productos publicados en ML que no estan en Odoo"
+												confirm="¿Está seguro que quiere pausar todos sus productos de ML?"
+												attrs="{'invisible':[('mercadolibre_state','=',True)]}"
+												icon="fa-pause"
+												class="oe_stat_button"/>
+								</div-->
+								<!--
+										name = fields.Char(string='Name',index=True)
+									    type = fields.Selection([("custom","Custom")],string='Connector',index=True)
+									    company_id = fields.Many2one("res.company",string="Company",index=True)
+									    country_id = fields.Many2one("res.country",string="Country",index=True)
+
+									    client_id = fields.Char(string='Client Id/App Id', help='Client ID/App Id',size=128,index=True)
+									    secret_key = fields.Char(string='Secret Key/App Key', help='Secret Key/App Key',size=128,index=True)
+									    access_token = fields.Text( string='Access Token/Api Token', help='Access Token/Api Token', size=256,index=True)
+									    state = fields.Boolean( compute=get_connector_state, string='State', help="Estado de la conexión", store=False )
+									    seller_id = fields.Char(string='App Seller Id', help='App Seller Id',size=128,index=True)
+
+									    configuration = fields.Many2one( "ocapi.connection.configuration", string="Connection Parameters Configuration", help="Connection Parameters Configuration"  )
+
+									</group>
+								</group>
+							-->
+					</field>
+			</record>
+
+
+      <record model="ir.ui.view" id="view_connection_configuration_mercadolibre">
+					<field name="name">mercadolibre.configuration.form</field>
+					<field name="model">mercadolibre.configuration</field>
+					<field name="arch" type="xml">
+						<form string="MercadoLibre Configuration">
+							<header>
+								<field name="mode" widget="statusbar"/>
+							</header>
+							<sheet>
+								<div class="oe_title">
+									<h1><field name="name"/></h1>
+								</div>
+                <group>
+                  <div class="oe_button_box" name="button_box_mel" style="width: auto;">
+                    <button name='copy_from_company' type="object"
+  											string="Copiar de Cia"
+  											title="Copiar de Cia"
+  											class="oe_stat_button"
+  											icon="fa-user-circle"/>
+                  </div>
+                </group>
+                <group name="accounts" string="Accounts">
+                  <group>
+                    <field name="accounts"/>
+                  </group>
+                </group>
+                <group string="Configuración básica" col="2">
+                  <group>
+                    <field name="mercadolibre_pricelist" invisible="0"/>
+                    <field name="mercadolibre_pricelist_usd" invisible="0"/>
+                    <field name="mercadolibre_tax_included" invisible="0" groups="base.group_no_one"/>
+                    <field name="mercadolibre_buying_mode" invisible="0"/>
+                    <field name="mercadolibre_currency" invisible="0"/>
+                    <field name="mercadolibre_condition" invisible="0"/>
+                    <field name="mercadolibre_payment_term" invisible="0"/>
+                    <field name="mercadolibre_official_store_id" invisible="0"/>
+                  </group>
+                  <group>
+                    <field name="mercadolibre_warranty" invisible="0"/>
+                    <field name="mercadolibre_listing_type" invisible="0"/>
+                    <field name="mercadolibre_seller_user" invisible="0"/>
+                    <field name="mercadolibre_seller_team" invisible="0"/>
+                    <field name="mercadolibre_attributes" invisible="0"/>
+                    <field name="mercadolibre_exclude_attributes"  widget="many2many" options="{'no_create': True}">
+                      <tree>
+                        <field name="attribute_id"/>
+                        <field name="name"/>
+                      </tree>
+                    </field>
+                    <field name="mercadolibre_remove_unsync_images" invisible="0"/>
+                  </group>
+                  <group string="ocapi basic">
+                    <field name="seller_user"/>
+                  </group>
+                </group>
+                <group string="Categorías" name="Categories"  col="2">
+                  <group>
+                    <field name="mercadolibre_category_import" invisible="0"/>
+                    <field name="mercadolibre_recursive_import" invisible="0"/>
+                  </group>
+                  <group>
+                    <field name="mercadolibre_create_website_categories" invisible="0"/>
+                  </group>
+                </group>
+                <group string="Automatización ML a Odoo" name="autoget"  col="2">
+                  <group>
+                    <field name="mercadolibre_process_notifications" invisible="0"/>
+                    <field name="mercadolibre_cron_get_orders" invisible="0"/>
+                    <field name="mercadolibre_filter_order_datetime_start" invisible="0"/>
+                    <field name="mercadolibre_filter_order_datetime" invisible="0"/>
+                    <field name="mercadolibre_filter_order_datetime_to" invisible="0"/>
+                    <field name="mercadolibre_cron_get_orders_shipment" invisible="0"/>
+                    <field name="mercadolibre_cron_get_orders_shipment_client" invisible="0"/>
+                    <field name="mercadolibre_cron_get_questions" invisible="0"/>
+                    <field name="mercadolibre_import_search_sku" invisible="0"/>
+                    <field name="mercadolibre_order_total_config" invisible="0"/>
+                  </group>
+                  <group>
+                    <field name="mercadolibre_create_product_from_order" invisible="0"/>
+                    <field name="mercadolibre_update_existings_variants" invisible="0"/>
+                    <field name="mercadolibre_cron_get_update_products" invisible="0"/>
+                    <field name="mercadolibre_cron_get_new_products" invisible="0"/>
+                    <field name="mercadolibre_update_local_stock" invisible="0"/>
+                    <field name="mercadolibre_order_confirmation" invisible="0"/>
+                    <field name="mercadolibre_order_confirmation_full" invisible="0"/>
+                    <!--
+                      <field name="mercadolibre_overwrite_template" invisible="0"/>
+                      <field name="mercadolibre_overwrite_variant" invisible="0"/>
+                    -->
+                  </group>
+                  <group string="ocapi" invisible="1">
+                    <field name="import_sales"/>
+                    <field name="import_products"/>
+                    <field name="import_price_list"/>
+                    <field name="import_stock"/>
+                    <field name="import_stock_locations"/>
+                    <field name="import_price_lists"/>
+                    <field name="import_sales_action"/>
+                  </group>
+
+                </group>
+                <group string="Automatización Odoo a ML" name="autopost"  col="2">
+                  <group>
+                    <field name="mercadolibre_cron_post_update_products" invisible="0"/>
+                    <field name="mercadolibre_cron_post_new_products" invisible="0"/>
+                    <field name="mercadolibre_cron_post_update_stock" invisible="0"/>
+                    <field name="mercadolibre_cron_post_update_price" invisible="0"/>
+                  </group>
+                  <group>
+                    <field name="mercadolibre_post_default_code" invisible="0"/>
+                    <field name="mercadolibre_product_template_override_variant" invisible="0"/>
+                    <field name="mercadolibre_product_template_override_method" invisble="0"/>
+                    <hr/>
+                    <field name="mercadolibre_product_attribute_creation" invisible="0"/>
+                    <field name="mercadolibre_do_not_use_first_image" invisible="0"/>
+                    <field name="mercadolibre_process_offset" invisible="1"/>
+                  </group>
+                  <group string="ocapi" invisible="1">
+                    <field name="publish_products"/>
+                    <field name="publish_price_list"/>
+                    <field name="publish_stock"/>
+                    <field name="publish_stock_locations"/>
+                    <field name="publish_price_lists"/>
+                  </group>
+                </group>
+                <group string="Configuración Stock" name="meli_oerp_stock"  col="2">
+                  <group>
+                    <field name="mercadolibre_stock_virtual_available" invisible="0"/>
+                    <field name="mercadolibre_stock_warehouse" invisible="0"/>
+                    <field name="mercadolibre_stock_location_to_post" invisible="0"/>
+                    <field name="publish_stock"/>
+                    <!--field name="mercadolibre_stock_location_to_post" invisible="0"  domain = "[('mercadolibre_active','=',True),('company_id', '=', id)]"/-->
+                    <!--field name="mercadolibre_stock_location_to_post_many" invisible="0" domain = "[('mercadolibre_active','=',True)]"/-->
+                  </group>
+                  <group>
+                    <field name="mercadolibre_stock_warehouse_full" invisible="0"/>
+                    <field name="mercadolibre_stock_location_to_post_full" invisible="0"/>
+                    <!--field name="mercadolibre_stock_location_to_post_full" invisible="0"  domain = "[('mercadolibre_logistic_type','=','fulfillment'),'|',('mercadolibre_active','=',True),('company_id', '=', id)]"/-->
+                  </group>
+                  <group>
+                    <field name="mercadolibre_order_confirmation_delivery" invisible="0"/>
+                  </group>
+                  <group>
+                    <field name="mercadolibre_order_confirmation_delivery_full" invisible="0"/>
+                  </group>
+                  <group>
+                    <field name="mercadolibre_stock_sku_mapping" invisible="0">
+                      <tree>
+                        <field name="type"/>
+                        <field name="name"/>
+                        <field name="sku"/>
+                        <field name="security_virtual_stock_to_pause"/>
+                        <field name="security_quantity_stock_to_pause"/>
+                      </tree>
+                    </field>
+                  </group>
+                </group>
+                <group string="Configuración Contabilidad" name="meli_oerp_accounting"  col="2">
+                  <group string="Payments configuration" name="payments_config">
+                    <field name="mercadolibre_process_payments_res_partner" invisible="0"/>
+                    <field name="mercadolibre_process_payments_journal" invisible="0"/>
+                    <!--field name="mercadolibre_account_payment_receiptbook_id" invisible="0"/>
+                    <field name="mercadolibre_account_payment_supplier_receiptbook_id" invisible="0"/-->
+                  </group>
+                  <group string="Automatic Record Payment" name="automatic_payment">
+                    <field name="mercadolibre_process_payments_customer" invisible="0"/>
+                    <field name="mercadolibre_process_payments_supplier_fea" invisible="0"/>
+                    <field name="mercadolibre_process_payments_supplier_shipment" invisible="0"/>
+                  </group>
+                  <group>
+                    <field name="mercadolibre_invoice_journal_id" invisible="0"/>
+                    <field name="mercadolibre_invoice_journal_id_full" invisible="0"/>
+                    <field name="mercadolibre_order_confirmation_invoice" invisible="0"/>
+                  </group>
+                  <group>
+                    <field name="mercadolibre_order_confirmation_invoice_full" invisible="0"/>
+                  </group>
+                </group>
+                <group>
+                  <group>
+                    <field name="mercadolibre_post_invoice" invisible="0"/>
+                    <field name="mercadolibre_post_invoice_dont_send" invisible="0"/>
+                  </group>
+                </group>
+              </sheet>
+            </form>
+          </field>
+      </record>
+
+
+      </data>
+</odoo>
