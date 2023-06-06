@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+      <record model="ir.ui.view" id="product_normal_ocapi_form_view">
+          <field name="name">product.normal.ocapi.form.inherit</field>
+          <field name="model">product.product</field>
+          <field name="inherit_id" ref="product.product_normal_form_view" />
+          <field name="arch" type="xml">
+            <!--label for="sale_ok" position="after">
+                  <field name="meli_pub" />
+                  <label for="meli_pub" />
+                  <field name="meli_master" />
+                  <label for="meli_master" />
+              </label-->
+              <data>
+                  <notebook>
+										<page string="Connectors Bindings" invisible="1">
+											<field name="ocapi_connection_bindings" invisible="0">
+                          <tree>
+                            <field name="connection_account"/>
+                            <field name="name"/>
+                            <field name="sku"/>
+                            <field name="conn_id"/>
+                            <field name="conn_variation_id"/>
+                            <field name="price"/>
+                            <field name="stock"/>
+                          </tree>
+                      </field>
+										</page>
+								</notebook>
+              </data>
+					</field>
+			</record>
+
+      <record model="ir.ui.view" id="product_tpl_ocapi_form_view">
+        <field name="name">product.tpl.ocapi.form.inherit</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view" />
+        <field name="arch" type="xml">
+            <!--label for="sale_ok" position="after">
+                  <field name="meli_pub" />
+                  <label for="meli_pub" />
+                  <field name="meli_master" />
+                  <label for="meli_master" />
+              </label-->
+              <data>
+                  <notebook>
+                    <page string="Connectors Bindings"  invisible="1">
+                      <field name="ocapi_connection_bindings" invisible="0">
+                          <tree>
+                            <field name="connection_account"/>
+                            <field name="name"/>
+                            <field name="sku"/>
+                            <field name="conn_id"/>
+                            <field name="conn_variation_id"/>
+                            <field name="price"/>
+                            <field name="stock"/>
+                          </tree>
+                      </field>
+                    </page>
+                </notebook>
+              </data>
+          </field>
+      </record>
+
+
+      <record id="ocapi_products_search_view" model="ir.ui.view">
+      	<field name="name">Products - Search</field>
+      	<field name="model">product.template</field>
+      	<field name="arch" type="xml">
+      		<search  string="Search Ocapi Products">
+      			<field name="name" />
+      		</search>
+      	</field>
+      </record>
+      <record id="ocapi_bindings_product_template_search_view" model="ir.ui.view">
+      	<field name="name">Product Templates Bindings - Search</field>
+      	<field name="model">ocapi.connection.binding.product_template</field>
+      	<field name="arch" type="xml">
+      		<search  string="Search Product Template Bindings">
+      			<field name="name" />
+      		</search>
+      	</field>
+      </record>
+
+      <record model="ir.ui.view" id="view_meli_product_template_tree">
+      	<field name="name">ocapi.product.template.tree</field>
+      	<field name="model">product.template</field>
+      	<field name="arch" type="xml">
+      		<tree create="0" edit="1" delete="1" default_order='id desc'>
+      			<field name="name" />
+      		</tree>
+      	</field>
+      </record>
+      <record model="ir.ui.view" id="view_meli_bindings_product_template_tree">
+      	<field name="name">ocapi.connection.binding.product_template.tree</field>
+      	<field name="model">ocapi.connection.binding.product_template</field>
+      	<field name="arch" type="xml">
+      		<tree create="0" edit="1" delete="1" default_order='id desc'>
+      			<field name="name" />
+      		</tree>
+      	</field>
+      </record>
+
+      <record model="ir.actions.act_window" id="action_ocapi_products_tree">
+      	<field name="name">Products</field>
+      	<field name="type">ir.actions.act_window</field>
+      	<field name="res_model">product.template</field>
+      	<!--field name="view_type">form</field-->
+      	<field name="view_mode">tree,form</field>
+      	<field name="search_view_id" ref="ocapi_products_search_view" />
+      </record>
+      <record model="ir.actions.act_window" id="action_ocapi_bindings_product_template_tree">
+      	<field name="name">Product Templates Bindings</field>
+      	<field name="type">ir.actions.act_window</field>
+      	<field name="res_model">ocapi.connection.binding.product_template</field>
+      	<!--field name="view_type">form</field-->
+      	<field name="view_mode">tree,form</field>
+      	<field name="search_view_id" ref="ocapi_bindings_product_template_search_view" />
+      </record>
+
+
+      <menuitem id="menu_ocapi_connectors" name="Connectors" parent="sale.sale_menu_root" sequence="5"
+          groups="odoo_connector_api.group_ocapi_connectors_manager" active="False" />
+
+      <menuitem id="menu_ocapi_products"
+                action="action_ocapi_products_tree"
+                parent="menu_ocapi_connectors"
+                name="Products"  sequence="2"/>
+
+      <menuitem id="menu_ocapi_bindings_product_template"
+                action="action_ocapi_bindings_product_template_tree"
+                parent="menu_ocapi_connectors"
+                name="Product Templates Bindings"  sequence="2"/>
+
+
+		</data>
+</odoo>

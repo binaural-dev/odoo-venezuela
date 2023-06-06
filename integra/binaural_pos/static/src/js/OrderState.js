@@ -32,9 +32,9 @@ odoo.define("binaural_pos.OrderState", function(require) {
         return json;
       }
       onchage_receipt(to_receipt) {
-        if(this.pos.config.pos_tax_inside) return
+        if (this.pos.config.pos_tax_inside) return
 
-        if(to_receipt == undefined){
+        if (to_receipt == undefined) {
           return
         }
         if (to_receipt) {
@@ -123,7 +123,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
         return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
       }
       get_foreign_total_paid() {
-        return round_pr(this.paymentlines.reduce((function(sum, paymentLine) {
+        return round_pr(this.paymentlines.reduce(((sum, paymentLine) => {
           if (paymentLine.is_done()) {
             sum += paymentLine.get_foreign_amount();
           }
@@ -146,27 +146,20 @@ odoo.define("binaural_pos.OrderState", function(require) {
         return round_pr(Math.max(0, change), this.pos.currency.rounding);
       }
       get_foreign_due(paymentline) {
-        try {
-
-          if (!paymentline) {
-            var due = this.get_foreign_total_with_tax() - this.get_foreign_total_paid() + this.get_foreign_rounding_applied();
-          } else {
-            var due = this.get_foreign_total_with_tax();
-            var lines = this.paymentlines;
-            for (var i = 0; i < lines.length; i++) {
-              if (lines[i] === paymentline) {
-                break;
-              } else {
-                due -= lines[i].get_foreign_amount();
-              }
+        if (!paymentline) {
+          var due = this.get_foreign_total_with_tax() - this.get_foreign_total_paid() + this.get_foreign_rounding_applied();
+        } else {
+          var due = this.get_foreign_total_with_tax();
+          var lines = this.paymentlines;
+          for (var i = 0; i < lines.length; i++) {
+            if (lines[i] === paymentline) {
+              break;
+            } else {
+              due -= lines[i].get_foreign_amount();
             }
           }
-          return round_pr(due, this.pos.foreign_currency.rounding);
-        } catch (err) {
-          console.log(err);
-
-          return round_pr(4, this.pos.foreign_currency.rounding);
         }
+        return round_pr(due, this.pos.foreign_currency.rounding);
       }
       get_foreign_rounding_applied() {
         if (this.pos.config.cash_rounding) {
