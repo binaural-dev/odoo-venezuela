@@ -22,6 +22,7 @@
                         t-att-value="props.partner.vat or ''"
                         placeholder="Document" 
                         t-on-blur="onblur"
+                        t-on-keyup="onEnter"
                         t-on-change="captureChange" />
                 </div>
                 <input class="detail partner-name partner-main" 
