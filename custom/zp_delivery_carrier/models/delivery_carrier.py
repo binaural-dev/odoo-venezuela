@@ -41,15 +41,42 @@ class DeliveryCarrier(models.Model):
         store=True,
     )
 
+    def _update_currency_date(self, date: fields.Date):
+        """Updates the ``date_rate`` of the shipment method.
+
+        Parameters
+        ----------
+        date : fields.Date
+            The date you want to set.
+        """
+        self.ensure_one()
+        if date != fields.Date.context_today(self):
+            date = fields.Date.context_today(self)
+
+        if not self.date_rate or date != self.date_rate:
+            self.date_rate = date
+
     @api.depends("create_date", "date_rate")
     def _compute_rate(self):
-        _logger.warning("fuaaaaa")
         Rate = self.env["res.currency.rate"]
         date_rate = self.date_rate or fields.Date.context_today(self)
         for delivery in self:
             foreign_currency_id = delivery.foreign_currency_id.id
-            _logger.warning("currency?: %s", foreign_currency_id)
 
             rate = Rate.compute_rate(foreign_currency_id, date_rate)
-            _logger.warning("rateee: %s", rate)
             delivery.update(rate)
+    
+    def rate_shipment(self, order):
+        ''' Compute the price of the order shipment
+
+        :param order: record of sale.order
+        :return dict: {'success': boolean,
+                       'price': a float,
+                       'error_message': a string containing an error message,
+                       'warning_message': a string containing a warning message}
+                       # TODO maybe the currency code?
+        '''
+        self.ensure_one()
+        self._update_currency_date(order.date_order.date())
+
+        return super().rate_shipment(order)

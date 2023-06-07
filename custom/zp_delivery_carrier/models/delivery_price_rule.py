@@ -9,7 +9,7 @@ _logger = logging.getLogger(__name__)
 class PriceRule(models.Model):
     _inherit = "delivery.price.rule"
 
-    is_foreign_currency = fields.Boolean()
+    is_foreign_currency = fields.Boolean("Use Foreign Currency")
     foreign_list_base_price = fields.Float(digits="Product Price", required=True, default=1.0)
     list_base_price = fields.Float(compute="_compute_base_price", store=True)
 
@@ -27,9 +27,6 @@ class PriceRule(models.Model):
         for rule in self:
             foreign_rate = rule.carrier_id.foreign_rate
             digits = rule.carrier_id._fields["foreign_rate"].get_digits(self.env)[1]
-            _logger.warning("inverse_currency: %s", rule.list_base_price)
-            _logger.warning("is being foreign: %s", rule.is_foreign_currency)
-            _logger.warning("alt price: %s", rule.foreign_list_base_price)
             inverse_list_base_price = rule.list_base_price or 0.0
 
             if (

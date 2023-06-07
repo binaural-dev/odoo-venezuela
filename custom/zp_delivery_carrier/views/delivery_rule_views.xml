@@ -23,7 +23,6 @@
             </xpath>
 
             <xpath expr="//field[@name='list_base_price']" position="attributes">
-                <!-- <attribute name="force_save">1</attribute> -->
                 <attribute name="attrs">{'readonly': [('is_foreign_currency', '=', True)]}</attribute>
             </xpath>
         </field>
