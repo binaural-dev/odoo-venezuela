@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_purchase_order_form_inherited_zmart" model="ir.ui.view">
+            <field name="name">Extension de formulario de compra: agregar campo compania,nuro de tramporte y vl</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+                <field name="partner_ref" position="after">
+                    <field name="name_company"/>
+                    <field name="transport_number"/>
+                    <field name="vl_number"/>
+                </field>
+            </field>
+        </record>
+    </data>
+</odoo>
