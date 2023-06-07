@@ -48,6 +48,8 @@ class AccountMoveIgtf(models.Model):
             and move_credit.bi_igtf > 0
         ):
             amount = partial.credit_move_id.payment_id.amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * move_credit.foreign_rate
             result = move_credit.bi_igtf - amount
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                 result = move_credit.bi_igtf - (amount * self.foreign_rate)
@@ -62,6 +64,8 @@ class AccountMoveIgtf(models.Model):
             and move_debit.bi_igtf > 0
         ):
             amount = partial.debit_move_id.payment_id.amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * move_debit.foreign_rate
             result = move_debit.bi_igtf - amount
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                 result = move_debit.bi_igtf - (amount * self.foreign_rate)
@@ -76,6 +80,8 @@ class AccountMoveIgtf(models.Model):
             and reverse_move_credit.bi_igtf > 0
         ):
             amount = partial.credit_move_id.payment_id.amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * reverse_move_credit.foreign_rate
             result = reverse_move_credit.bi_igtf - amount
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                 result = reverse_move_credit.bi_igtf - (amount * self.foreign_rate)
@@ -90,6 +96,8 @@ class AccountMoveIgtf(models.Model):
             and reverse_move_debit.bi_igtf > 0
         ):
             amount = partial.debit_move_id.payment_id.amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * reverse_move_debit.foreign_rate
             result = reverse_move_debit.bi_igtf - amount
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                 result = reverse_move_debit.bi_igtf - (amount * self.foreign_rate)

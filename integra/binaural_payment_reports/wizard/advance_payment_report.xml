@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="advance_payment_report_view_form" model="ir.ui.view">
+            <field name="name">advance.payment.report.view.form</field>
+            <field name="model">advance.payment.report</field>
+            <field name="arch" type="xml">
+                <form string="Listado de partners">
+                    <group>
+                        <group>
+                            <field name="report_type" readonly="1" force_save="1" />
+                            <field name="payment_type" />
+                            <field name="all_partner" />
+                            <field name="partner_id" attrs="{'invisible':[('all_partner','=',True)]}"/>
+                            <field name="residual_type" />
+                            <field name="at_today" />
+                            <field name="start_date" attrs="{'invisible':[('at_today','=',True)]}"/>
+                            <field name="end_date" attrs="{'invisible':[('at_today','=',True)]}"/>
+                        </group>
+                    </group>
+
+                    <footer>
+                        <button name="print_pdf_payments" string="Print report" type="object" class="oe_highlight"/>
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_report_advance_payment_list" model="ir.actions.act_window" >
+            <field name="name">PDF Listado de anticipos de clientes</field>
+            <field name="res_model">advance.payment.report</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_view_types">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field><!--inline-->
+            <field name="context">{'default_report_type': 'customer','default_payment_type':'advance'}</field>
+        </record>
+
+        <record id="action_report_advance_payment_list_supplier" model="ir.actions.act_window" >
+            <field name="name">PDF Listado de anticipos de proveedores</field>
+            <field name="res_model">advance.payment.report</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_view_types">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field><!--inline-->
+            <field name="context">{'default_report_type': 'supplier','default_payment_type':'advance'}</field>
+        </record>
+        <menuitem name="Listado anticipo de clientes" id="binaural_payment_reports.action_payment_report_list_id" parent="account.menu_finance_reports" action="action_report_advance_payment_list"/>
+        <menuitem name="Listado anticipo de proveedores" id="binaural_payment_reports.action_payment_report_list_id_provider" parent="account.menu_finance_reports" action="action_report_advance_payment_list_supplier"/>
+    </data>
+</odoo>
