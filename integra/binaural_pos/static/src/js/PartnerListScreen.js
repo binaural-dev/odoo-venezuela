@@ -1,4 +1,4 @@
-odoo.define("binaural_pos.PartnerDetailsEdit", function(require) {
+odoo.define("binaural_pos.PartnerListScreen", function(require) {
 
   const PartnerDetailsEdit = require("point_of_sale.PartnerDetailsEdit")
   const Registries = require("point_of_sale.Registries")
