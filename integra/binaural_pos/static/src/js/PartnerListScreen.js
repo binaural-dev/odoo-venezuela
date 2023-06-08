@@ -1,82 +1,49 @@
-odoo.define("binaural_pos.PartnerDetailsEdit", function(require) {
+odoo.define("binaural_pos.PartnerListScreen", function(require) {
 
-  const PartnerDetailsEdit = require("point_of_sale.PartnerDetailsEdit")
+  const PartnerListScreen = require("point_of_sale.PartnerListScreen")
   const Registries = require("point_of_sale.Registries")
   const { _t } = require('web.core');
-  const { useRef } = owl;
 
-  const BinauralPartnerDetailsEdit = (PaymentScreenStatus) =>
-    class BinauralPartnerDetailsEdit extends PaymentScreenStatus {
+  const { onMounted } = owl;
+
+  const BinauralPartnerListScreen = (PartnerListScreen) =>
+    class BinauralPartnerListScreen extends PartnerListScreen {
       setup() {
-        super.setup();
-
-        this.nameField = useRef('inputName');
-
-        let countries = this.env.pos.countries;
-        let country_ve = countries.filter((country) => country["code"] == "VE")
-
-        if (!this.props.partner.hasOwnProperty("country_id")
-          && this.props.partner["country_id"] == false) {
-          this.props.partner["country_id"] = [country_ve[0]["id"], country_ve[0]["name"]]
+        super.setup()
+        onMounted(() => {
+          this.searchWordInputRef.el.focus()
+        })
+      }
+      async updatePartnerList(event) {
+        await super.updatePartnerList(event)
+        if(event.code === "Enter" && this.partners.length === 0){
+          this.createPartner()
         }
-        this.changes = {
-          ...this.changes,
-          vat: this.props.partner.vat || "",
-          prefix_vat: this.props.partner.prefix_vat || "V",
-          name: this.props.partner.name || "",
+        if(event.code === "Enter" && this.partners.length === 1){
+          this.editPartner(this.partners[0])
         }
       }
 
-      async onEnter(event) {
-        if (event.code === "Enter") {
-          let name = await this.searchRif(event.target.value)
-          this.nameField.el.value = name
-          this.changes.name = name
-        }
-      }
-
-      async onblur(event) {
-        if (this.nameField.el.value == "") {
-          let name = await this.searchRif(event.target.value)
-          this.nameField.el.value = name
-          this.changes.name = name
-        }
-      }
-
-      async searchRif(rif) {
+      async createPartner() {
         let data = await this.env.services.rpc({
           model: 'res.partner',
           method: 'get_default_name_by_vat_param',
-          args: [[], "V", rif],
+          args: [[], "V", this.state.query],
         });
-
-        if (data == "Esta cédula de identidad no se encuentra inscrito en el Registro Electoral.") {
+        if (data === "Esta cédula de identidad no se encuentra inscrito en el Registro Electoral."){
           data = "N/D"
         }
-        return data
-      }
-      async saveChanges() {
-        let processedChanges = {};
-        for (let [key, value] of Object.entries(this.changes)) {
-          if (this.intFields.includes(key)) {
-            processedChanges[key] = parseInt(value) || false;
-          } else {
-            processedChanges[key] = value;
-          }
+        // initialize the edit screen with default details about country & state
+        this.state.editModeProps.partner = {
+          country_id: this.env.pos.company.country_id,
+          state_id: this.env.pos.company.state_id,
+          vat: this.state.query,
+          name: data,
         }
-
-        if ((!this.props.partner.vat && !processedChanges.vat) ||
-          processedChanges.vat === '') {
-          return this.showPopup('ErrorPopup', {
-            title: _t('A Customer VAT Is Required'),
-          });
-        }
-
-        super.saveChanges();
-
+        this.activateEditMode();
       }
     }
 
-  Registries.Component.extend(PartnerDetailsEdit, BinauralPartnerDetailsEdit)
-  return BinauralPartnerDetailsEdit
+  Registries.Component.extend(PartnerListScreen, BinauralPartnerListScreen)
+  return BinauralPartnerListScreen
 })
