@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_partner_binaural_form_contacts" model="ir.ui.view">
+        <field name="name">res_partner_binaural_form_contacts</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_registry']" position="after">
+                <field name="sales_area"/>
+            </xpath>
+            <xpath expr="//sheet/notebook/page[@name='internal_notes']" position="before">
+                <page name="Identificación Fiscal" >
+                    <group>
+                        <field name="rif"/>
+                        <field name="commercial_register"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
