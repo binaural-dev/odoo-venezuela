@@ -7,8 +7,8 @@
             <field name="sh_product_image" eval="True" />
             <field name="sh_product_barcode" eval="True" />
             <field name="sh_display" eval="True" />
-            <field name="sh_display_view">portrait</field>
-            <field name="sh_display_portrait">top</field>
+            <field name="sh_display_view">landscape</field>
+            <field name="sh_display_portrait">right</field>
         </record>
     
     </data>
