@@ -1,0 +1,100 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* sale_zmart
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20230508\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-06-09 20:06+0000\n"
+"PO-Revision-Date: 2023-06-09 20:06+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__name_company
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__name_company
+msgid "Company"
+msgstr "Empresa"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__create_uid
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_type__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__create_date
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_type__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__display_name
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_type__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__id
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_type__id
+msgid "ID"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_company____last_update
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_type____last_update
+msgid "Last Modified on"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__write_uid
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_type__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__write_date
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_type__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__name
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_type__name
+msgid "Name"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model,name:sale_zmart.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_type
+msgid "Shipping type"
+msgstr "Tipo de envio"
+
+#. module: sale_zmart
+#: model:ir.model,name:sale_zmart.model_stock_picking
+msgid "Transfer"
+msgstr "Transferir"
+
+#. module: sale_zmart
+#: model:ir.model,name:sale_zmart.model_sale_company
+msgid "sale.company"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model,name:sale_zmart.model_sale_shipping_type
+msgid "sale.shipping.type"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_type
+msgid "shipping type"
+msgstr "Tipo de envio"
