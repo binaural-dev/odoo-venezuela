@@ -1,0 +1,30 @@
+from odoo import models, fields,api,_
+
+class ProductTemplateZmart(models.Model):
+	_inherit = 'product.template'
+
+	oem = fields.Many2one('product.template.oem')
+	oem_code = fields.Char(related='oem.code')
+	zmart_code = fields.Char(related='default_code', string="zmart code")
+	serie = fields.Char()
+	color = fields.Char()
+	performance_pages = fields.Char()
+	compatibility = fields.Char()
+	warranty = fields.Char()
+	specification = fields.Char()
+	tariff_code = fields.Many2one('product.template.tariff')
+	gross_weight_inner_box = fields.Float()
+	gross_weight_master_carton = fields.Float()
+	master_box_volume = fields.Float()
+	packaging_type = fields.Many2one('product.template.packaging')
+	sales_units_pieces = fields.Float()
+	quantity_of_inner_per_master = fields.Float()
+	quantity_units_per_master_box = fields.Float()
+	barcode_inner_box = fields.Char()
+	barcode_master_box = fields.Char()
+	long_unit = fields.Float()
+	wide_unit = fields.Float()
+	high_unit = fields.Float()
+	long_bulk = fields.Float()
+	wide_bulk = fields.Float()
+	high_bulk = fields.Float()
