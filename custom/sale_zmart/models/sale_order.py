@@ -11,3 +11,14 @@ class SaleOrderZmart(models.Model):
         'sale.company', 
         string="Company"
     )
+    priority = fields.Selection(
+        [
+            ("high", "High"),
+            ("medium", "Medium"),
+            ("low", "Low"),
+        ],
+        default="low",
+        store=True,
+        required=True
+    )
+    date_in_store = fields.Date()

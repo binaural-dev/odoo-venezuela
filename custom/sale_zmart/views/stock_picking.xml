@@ -8,6 +8,7 @@
                 <xpath expr="//field[@name='location_dest_id']" position="after">
                     <field name="shipping_type" attrs="{'invisible': [('picking_type_code', '==', 'incoming')]}"/>
                     <field name="name_company" attrs="{'invisible': [('picking_type_code', '==', 'incoming')]}"/>
+                    <field name="packing_factor" attrs="{'invisible': [('picking_type_code', '!=', 'internal')]}"/>
                 </xpath> 
             </field>
         </record>
