@@ -6,9 +6,9 @@
             <field name="inherit_id" ref="stock.view_picking_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='location_dest_id']" position="after">
-                    <field name="transport_number" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/>
-                    <field name="name_company" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/>
-                    <field name="vl_number" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/>
+                    <field name="shipping_type" attrs="{'invisible': [('picking_type_code', '==', 'incoming')]}"/>
+                    <field name="name_company" attrs="{'invisible': [('picking_type_code', '==', 'incoming')]}"/>
+                    <field name="packing_factor" attrs="{'invisible': [('picking_type_code', '!=', 'internal')]}"/>
                 </xpath> 
             </field>
         </record>
