@@ -14,22 +14,25 @@ odoo.define("binaural_pos.PartnerListScreen", function(require) {
           this.searchWordInputRef.el.focus()
         })
       }
-      async _onPressEnterKey() {
-        if (!this.state.query) return;
-        const result = await this.searchPartner();
-
-        if (this.partners.length < 1) {
+      async updatePartnerList(event) {
+        await super.updatePartnerList(event)
+        if(event.code === "Enter" && this.partners.length === 0){
           this.createPartner()
+        }
+        if(event.code === "Enter" && this.partners.length === 1){
+          this.editPartner(this.partners[0])
         }
       }
 
       async createPartner() {
-
-        const data = await this.env.services.rpc({
+        let data = await this.env.services.rpc({
           model: 'res.partner',
           method: 'get_default_name_by_vat_param',
           args: [[], "V", this.state.query],
         });
+        if (data === "Esta cédula de identidad no se encuentra inscrito en el Registro Electoral."){
+          data = "N/D"
+        }
         // initialize the edit screen with default details about country & state
         this.state.editModeProps.partner = {
           country_id: this.env.pos.company.country_id,

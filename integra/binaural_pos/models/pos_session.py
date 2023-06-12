@@ -1,6 +1,5 @@
 from odoo import models, fields, api
 
-
 class PosSession(models.Model):
     _inherit = "pos.session"
 
@@ -35,6 +34,12 @@ class PosSession(models.Model):
         res["search_params"]["fields"].append("inverse_rate")
         return res
 
+    def _loader_params_product_product(self):
+        params = super()._loader_params_product_product()
+        params["search_params"]["fields"].append("free_qty")
+        params["search_params"]["fields"].append("qty_available")
+        return params
+
     def _get_pos_ui_res_currency(self, params):
         """
         This method is used to get the res.currency for the pos
@@ -49,3 +54,7 @@ class PosSession(models.Model):
         if res[0]["id"] != self.config_id.currency_id.id:
             return [res[1], res[0]]
         return res
+
+
+    def is_user_authorized(self):
+        return self.env.user.authorized_discount_pos

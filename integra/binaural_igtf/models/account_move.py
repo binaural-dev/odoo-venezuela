@@ -49,6 +49,8 @@ class AccountMoveIgtf(models.Model):
         ):
             amount = partial.credit_move_id.payment_id.amount
             result = move_credit.bi_igtf - amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                result = move_credit.bi_igtf - (amount * self.foreign_rate)
             if result < 0:
                 result = 0
             move_credit.write({"bi_igtf": result})
@@ -61,6 +63,8 @@ class AccountMoveIgtf(models.Model):
         ):
             amount = partial.debit_move_id.payment_id.amount
             result = move_debit.bi_igtf - amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                result = move_debit.bi_igtf - (amount * self.foreign_rate)
             if result < 0:
                 result = 0
             move_debit.write({"bi_igtf": result})
@@ -73,6 +77,8 @@ class AccountMoveIgtf(models.Model):
         ):
             amount = partial.credit_move_id.payment_id.amount
             result = reverse_move_credit.bi_igtf - amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                result = reverse_move_credit.bi_igtf - (amount * self.foreign_rate)
             if result < 0:
                 result = 0
             reverse_move_credit.write({"bi_igtf": result})
@@ -85,6 +91,8 @@ class AccountMoveIgtf(models.Model):
         ):
             amount = partial.debit_move_id.payment_id.amount
             result = reverse_move_debit.bi_igtf - amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                result = reverse_move_debit.bi_igtf - (amount * self.foreign_rate)
             if result < 0:
                 result = 0
             reverse_move_debit.write({"bi_igtf": result})

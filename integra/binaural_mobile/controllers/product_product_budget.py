@@ -35,7 +35,17 @@ class ProductProductBudget(http.Controller):
         data = {"status": 200, "msg": _("Success")}
         name_search = kw.get("product")
         company_id = request.env.user.company_id.id
-        domain = [("active", "=", True), ("sale_ok", "=", True), ("type", "=", "product"), ("company_id", "=", company_id)]
+        domain = [
+            ("active", "=", True), 
+            ("sale_ok", "=", True), 
+            ("type", "=", "product"), 
+            ("qty_available", ">", 0)
+            ]
+        
+        res_company = request.env["res.company"].sudo().search([])
+        
+        if len(res_company) > 1:
+            domain = expression.AND([domain, [("company_id", "=", company_id)]])
         
         if name_search:
             search = utils.search_name("product.product", name_search, domain)

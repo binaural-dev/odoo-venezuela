@@ -41,7 +41,22 @@ FLAG_21 = {
         "max_payment_amount_decimal": 2,
         "max_qty_int": 14,
         "max_qty_decimal": 3,
-    }
+    },
+    "00": {
+        "max_amount_int": 8,
+        "max_amount_decimal": 2,
+        "max_payment_amount_int": 10,
+        "max_payment_amount_decimal": 2,
+        "max_qty_int": 5,
+        "max_qty_decimal": 3,
+    },
+}
+
+TAX = {
+    "0": " ",
+    "1": "!",
+    "2": '"',
+    "3": "#",
 }
 
 
@@ -317,28 +332,47 @@ class SerialFiscalDriver(SerialDriver):
             if invoice["partner_id"]["phone"]:
                 cmd.append(str("i01Telefono:" + invoice["partner_id"]["phone"]))
 
+            if len(invoice.get("info", [])) > 0:
+                for index, info in enumerate(invoice.get("info")):
+                    cmd.append(f"i{str(index+2).zfill(2)}{info}")
+
             for item in invoice["invoice_lines"]:
                 code = ""
                 if item["code"]:
                     code = "|" + str(item["code"]) + "|"
                 amount_i, amount_d = self.split_amount(item["price_unit"])
                 qty_i, qty_d = self.split_amount(item["quantity"])
-                cmd.append(
-                    str(
-                        "GC`"
-                        + str(item["tax"])
-                        + amount_i.zfill(FLAG_21[invoice["flag_21"]]["max_amount_int"])
-                        + ","
-                        + amount_d.zfill(FLAG_21[invoice["flag_21"]]["max_amount_decimal"])
-                        + "||"
-                        + qty_i.zfill(FLAG_21[invoice["flag_21"]]["max_qty_int"])
-                        + ","
-                        + qty_d.zfill(FLAG_21[invoice["flag_21"]]["max_qty_decimal"])
-                        + "||"
-                        + code
-                        + item["name"][0:127]
+
+                if invoice.get("traditional_line",True):
+                    cmd.append(
+                        str(
+                            "d"
+                            + str(item.get("tax", "0"))
+                            + amount_i.zfill(FLAG_21[invoice["flag_21"]]["max_amount_int"])
+                            + amount_d.zfill(FLAG_21[invoice["flag_21"]]["max_amount_decimal"])
+                            + qty_i.zfill(FLAG_21[invoice["flag_21"]]["max_qty_int"])
+                            + qty_d.zfill(FLAG_21[invoice["flag_21"]]["max_qty_decimal"])
+                            + f"{code}"
+                            + item["name"][0:127]
+                        )
                     )
-                )
+                else:
+                    cmd.append(
+                        str(
+                            "GC+"
+                            + str(item["tax"])
+                            + amount_i.zfill(FLAG_21[invoice["flag_21"]]["max_amount_int"])
+                            + ","
+                            + amount_d.zfill(FLAG_21[invoice["flag_21"]]["max_amount_decimal"])
+                            + "||"
+                            + qty_i.zfill(FLAG_21[invoice["flag_21"]]["max_qty_int"])
+                            + ","
+                            + qty_d.zfill(FLAG_21[invoice["flag_21"]]["max_qty_decimal"])
+                            + "||"
+                            + code
+                            + item["name"][0:127].replace("Ñ","N").replace("ñ","n")
+                        )
+                    )
             cmd.append(str("3"))  # sub total en factura
 
             if len(invoice["payment_lines"]) == 1 or invoice["payment_lines"][0]["amount"] == 0:
@@ -365,14 +399,14 @@ class SerialFiscalDriver(SerialDriver):
                 _logger.warning(f"{command}")
                 self.SendCmd(command)
 
-            time.sleep(3)
-            status = self.ReadFpStatus(True)
-            if status["data"]["error"]["code"] != "0":
-                raise Exception(status["data"]["error"]["msg"])
-            if status["data"]["status"]["code"] not in ["1", "4"]:
-                _logger.warning(status["data"]["status"]["code"])
-                self.SendCmd("7")
-                raise Exception("No se ha podido completar con la nota de credito y se ha anulado")
+            # time.sleep(3)
+            # status = self.ReadFpStatus(True)
+            # if status["data"]["error"]["code"] != "0":
+            #     raise Exception(status["data"]["error"]["msg"])
+            # if status["data"]["status"]["code"] not in ["1", "4"]:
+            #     _logger.warning(status["data"]["status"]["code"])
+            #     self.SendCmd("7")
+            #     raise Exception("No se ha podido completar con la nota de credito y se ha anulado")
 
             msg = "Nota de credito impresa correctamente"
 
@@ -417,31 +451,57 @@ class SerialFiscalDriver(SerialDriver):
             if invoice["partner_id"]["phone"]:
                 cmd.append(str("i01Telefono:" + invoice["partner_id"]["phone"]))
 
+            if len(invoice.get("info",[])) > 0:
+                for index, info in enumerate(invoice.get("info")):
+                    cmd.append(f"i{str(index+2).zfill(2)}{info}")
+
+
             for item in invoice["invoice_lines"]:
                 code = ""
                 if item["code"]:
                     code = "|" + str(item["code"]) + "|"
                 amount_i, amount_d = self.split_amount(item["price_unit"])
                 qty_i, qty_d = self.split_amount(item["quantity"])
-                cmd.append(
-                    str(
-                        "GF+"
-                        + str(item["tax"])
-                        + amount_i.zfill(FLAG_21[invoice["flag_21"]]["max_amount_int"])
-                        + ","
-                        + amount_d.zfill(FLAG_21[invoice["flag_21"]]["max_amount_decimal"])
-                        + "||"
-                        + qty_i.zfill(FLAG_21[invoice["flag_21"]]["max_qty_int"])
-                        + ","
-                        + qty_d.zfill(FLAG_21[invoice["flag_21"]]["max_qty_decimal"])
-                        + "||"
-                        + code
-                        + item["name"][0:127]
+                if invoice.get("traditional_line",True):
+                    cmd.append(
+                        str(
+                            TAX.get(str(item.get("tax", " ")), " ")
+                            + amount_i.zfill(FLAG_21[invoice["flag_21"]]["max_amount_int"])
+                            + amount_d.zfill(FLAG_21[invoice["flag_21"]]["max_amount_decimal"])
+                            + qty_i.zfill(FLAG_21[invoice["flag_21"]]["max_qty_int"])
+                            + qty_d.zfill(FLAG_21[invoice["flag_21"]]["max_qty_decimal"])
+                            + f"{code}"
+                            + item["name"][0:127].replace("Ñ","N").replace("ñ","n")
+                        )
                     )
-                )
+                else:
+                    cmd.append(
+                        str(
+                            "GF+"
+                            + str(item["tax"])
+                            + amount_i.zfill(14)
+                            + ","
+                            + amount_d.zfill(2)
+                            + "||"
+                            + qty_i.zfill(14)
+                            + ","
+                            + qty_d.zfill(3)
+                            + "||"
+                            + code
+                            + item["name"][0:127]
+                        )
+                    )
+
             cmd.append(str("3"))  # sub total en factura
 
+            def filter_unique_type_method(payment):
+                return payment["payment_method"] == "20"
+
             if len(invoice["payment_lines"]) == 1 or invoice["payment_lines"][0]["amount"] == 0:
+                cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
+            elif len(invoice["payment_lines"]) > 1 and len(
+                list(filter(filter_unique_type_method, invoice["payment_lines"]))
+            ) == len(invoice["payment_lines"]):
                 cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
             else:
                 for item in invoice["payment_lines"]:
@@ -465,14 +525,14 @@ class SerialFiscalDriver(SerialDriver):
                 _logger.warning(command)
                 self.SendCmd(command)
 
-            time.sleep(3)
-            status = self.ReadFpStatus(True)
-            if status["data"]["error"]["code"] != "0":
-                raise Exception(status["data"]["error"]["msg"])
-            if status["data"]["status"]["code"] not in ["1", "4"]:
-                _logger.warning(status["data"]["status"]["code"])
-                self.SendCmd("7")
-                raise Exception("No se ha podido completar con la factura y se ha anulado")
+            # time.sleep(5)
+            # status = self.ReadFpStatus(True)
+            # if status["data"]["error"]["code"] != "0":
+            #     raise Exception(status["data"]["error"]["msg"])
+            # if status["data"]["status"]["code"] not in ["1", "4"]:
+            #     _logger.warning(status["data"]["status"]["code"])
+            #     self.SendCmd("7")
+            #     raise Exception("No se ha podido completar con la factura y se ha anulado")
 
             msg = "Factura impresa correctamente"
             trama = self._States("S1")
@@ -498,15 +558,14 @@ class SerialFiscalDriver(SerialDriver):
         return response
 
     def split_amount(self, amount, dec=2):
-        init_dec = dec
-        amount_i, amount_d = divmod(amount, 1)
-        amount_i = str(int(amount_i)).replace(".", "")
-        dec = pow(10, dec)
-        amount_d *= dec
-        amount_d = str(int(amount_d)).replace(".", "")
-        if len(amount_d) < init_dec:
-            amount_d = amount_d + "0"
-        return amount_i, amount_d
+        txt = "{price:.2f}"
+        if dec == 3:
+            txt = "{price:.3f}"
+        if dec == 4:
+            txt = "{price:.4f}"
+        amount_str = txt.format(price=amount)
+        amounts = str(amount_str).split(".")
+        return amounts[0], amounts[1]
 
     def get_last_out_refund_number(self, data):
         try:
@@ -873,7 +932,10 @@ class SerialFiscalDriver(SerialDriver):
 
     def _read(self, bytes):
         connection = self._connection
-        msj = connection.read(bytes)
+        msj = b''
+        while msj == b'':
+            msj = connection.read(bytes)
+            _logger.info(msj)
         return msj.decode()
 
     def _AssembleQueryToSend(self, linea):

@@ -12,10 +12,10 @@ odoo.define("binaural_pos.OrderlineState", function(require) {
     class BinauralOrderline extends Orderline {
       constructor(){
         super(...arguments)
-        this.order.onchage_receipt(this.order.to_receipt)
+        this.order.toggle_receipt_invoice(this.order.to_receipt)
       }
       isExempt() {
-        const product_tax = this.get_product().taxes_id;
+        const product_tax = this.tax_ids || this.product.taxes_id;
         if (product_tax.length < 1) {
           return true
         }
