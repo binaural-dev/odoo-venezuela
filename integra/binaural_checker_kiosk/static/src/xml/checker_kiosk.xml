@@ -196,7 +196,7 @@
                                                 width: 100%;
                                                 heigth: 100%;
                                                 display: flex;
-                                                justify-content: space-evenly;
+                                                justify-content: space-around;
                                                 align-items: center;
                                                 margin-top: 3%;
                                                 position: relative;
@@ -230,7 +230,7 @@
                                                 class="col-12 o_hidden"
                                                 id="logo_col-2"
                                             >
-                                        		<img 
+                                                <img 
                                                     id="sh_company_logo_img"
                                                     class="o_hidden img-fluid img-custom"
                                                     t-attf-src="{{widget.company_image_url}}"
@@ -241,19 +241,20 @@
                                                         <td 
                                                             align="center"
                                                             id="sh_product_name"
-                                                            style="font-weight: 600"
+                                                            style="font-weight: 600; font-size: 2.6rem;"
                                                         />
                                                     </tr>
                                                     <tr>
                                                         <td 
                                                             align="center"
-                                                            id="sh_product_barcode" 
+                                                            id="sh_product_barcode"
+                                                            style="font-size: 2.4rem;" 
                                                         />
                                                     </tr>
                                                 </table>
                                         	</div>
                                             <div class="customize-2">
-                                                <table class="col-4">
+                                                <table class="col-4" style="position: relative; left: 7%">
                                                     <tr>
                                                         <td     
                                                             id="sh_product_image"
@@ -265,6 +266,7 @@
                                                 <table 
                                                     id="product_detail_table"
                                                     class="col-4"
+                                                    style="position: relative; left: -7%"
                                                 >                                                    
                                                     <tr>
                                                         <td 
@@ -276,21 +278,21 @@
                                                         <td 
                                                             align="center"
                                                             id="price_with_iva"
-                                                            style="font-weight: 600; font-size: 2rem"
-                                                        />
-                                                    </tr>
-                                                    <tr>
-                                                        <td 
-                                                            align="center"
-                                                            id="tax_base"
-                                                            style="font-weight: 600; font-size: 1.3 rem"
+                                                            style="font-weight: 600; font-size: 2.2rem"
                                                         />
                                                     </tr>
                                                     <tr>
                                                         <td 
                                                             id="iva"
                                                             align="center"
-                                                            style="font-weight: 600; font-size: 1.3 rem"
+                                                            style="font-weight: 600; font-size: 1.6rem"
+                                                        />
+                                                    </tr>
+                                                    <tr>
+                                                        <td 
+                                                            align="center"
+                                                            id="tax_base"
+                                                            style="font-weight: 600; font-size: 1.6rem"
                                                         />
                                                     </tr>
                                                 </table>    

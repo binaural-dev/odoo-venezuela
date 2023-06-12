@@ -34,6 +34,8 @@ class LoginChecker(http.Controller):
         redirect = '/web#action='+str(action_id.id)+'&menu_id='+str(menu_id.id)+'&cids='+str(company_id)
         uid = request.session.authenticate(db, login, password)
         
+        request.env.user.company_id = company_id
+        
         return request.redirect(self._login_redirect(uid, redirect=redirect))
     
     def _login_redirect(self, uid, redirect=None):
