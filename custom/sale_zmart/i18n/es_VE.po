@@ -128,3 +128,10 @@ msgstr "Fecha en Almacen"
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__packing_factor
 msgid "Packing Factor"
 msgstr "Factor de embalaje"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_account_bank_statement_line__printed
+#: model:ir.model.fields,field_description:sale_zmart.field_account_move__printed
+#: model:ir.model.fields,field_description:sale_zmart.field_account_payment__printed
+msgid "Printed"
+msgstr "Impreso"

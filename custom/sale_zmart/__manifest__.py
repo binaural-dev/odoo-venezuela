@@ -16,6 +16,7 @@
         "security/ir.model.access.csv",
         "views/sale_order.xml",
         "views/stock_picking.xml",
+        "views/account_move.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
