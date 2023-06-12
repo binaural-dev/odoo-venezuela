@@ -28,7 +28,7 @@
                             </div>
                             <div class="o_setting_right_pane">
                                 <label for="group_sales_invoicing_series" />
-                                <div class="text-muted">Allow to enable the sales invoicing sequence.</div>
+                                <div class="text-muted">It allow enable the invoicing sequences by series in sale's journals.</div>
                             </div>
                         </div>
                     </div>

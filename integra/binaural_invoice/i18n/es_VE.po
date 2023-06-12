@@ -194,8 +194,8 @@ msgstr ""
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.res_config_settings_binaural_invoice
-msgid "Allow to enable the sales invoicing sequence."
-msgstr "Permite habilitar las secuencias de ventas para facturación"
+msgid "It allow enable the invoicing sequences by series in sale's journals."
+msgstr "Permite habilitar las secuencias de la facturación por series en los diarios de ventas." 
 
 #. module: binaural_invoice
 #: model:ir.model.fields.selection,name:binaural_invoice.selection__wizard_accounting_reports__report__purchase
