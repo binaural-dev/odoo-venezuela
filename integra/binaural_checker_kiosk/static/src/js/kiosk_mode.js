@@ -30,17 +30,28 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 								$("#sh_product_code").html(result.sh_product_code);
 								$("#sh_product_weight").html(result.sh_product_weight);
 								$('#sh_product_image').html('');
-								console.log($("#sh_product_image"))
-								$('#sh_product_image').append(
-									'<img class="img img-responsive" width="auto !important;" style="max-height:100%;max-width:100%;" src="data:image/jpeg;base64,' + result.sh_product_image + '" alt="Product Image" />'
-								);
+	
+								if(result.sh_product_image){
+									$('#sh_product_image').append(
+								 		'<img class="img img-responsive" width="auto !important;" style="max-height:60%;max-width:60%;" src="data:image/jpeg;base64,' + result.sh_product_image + '" alt="Product Image" />'
+									);
+								 }else {
+									$("#sh_product_image").append(
+										'<img class="img img-responsive" width="auto !important;" style="max-height:60%;max-width:60%;" src="/binaural_checker_kiosk/static/src/img/default.png" alt="Product Image" />'
+									)
+								}
+							
 								$("#sh_product_barcode").html(result.sh_product_barcode);
 								$("#sh_product_weight").html(result.sh_product_weight);
 								$("#sh_product_pricelist").html(result.sh_product_pricelist);
 								$("#sh_product_sale_price").html(result.sh_product_sale_price);
 								$("#iva").html(result.sh_product_sale_price);
 								$("#tax_base").html(result.iva);
-								$("#foreign_sale_price_with_iva").html(result.foreign_sale_price_with_iva);
+									$("#sh_company_logo_img").html("")
+								$("#sh_company_logo_img").append(
+									'<img class="img img-responsive img-fluid" style="width: 500px; heigth: 500px" t-attf-src="data:image/jpeg;base64,' + result.company_logo + '" alt="Company Logo" />'
+								)
+							$("#foreign_sale_price_with_iva").html(result.foreign_sale_price_with_iva);
 
 								let count = 1
 								result.sh_product_stock.forEach(object => {
@@ -53,12 +64,6 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 										count++;
 									}
 								})
-
-								if (!result.price_with_iva) {
-									$("#price_with_iva").parent().addClass("o_hidden");
-								} else {
-									$("#price_with_iva").parent().removeClass("o_hidden");
-								}
 
 								$("#logo_col-2").removeClass("o_hidden");
 
@@ -146,15 +151,38 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
             }
         },
 
-        _onBarcodeScanned() {
+        async _onBarcodeScanned() {
             this._super.apply(this, arguments);
             
             const delay = $('#screen_delay').val() * 1000
             const searchButton = $(".o_mrp_kiosk_button_done")
             const screenDiv = $('#screen_div')
             const code = $("#code")
-            
-            setTimeout(function() {
+            const productImage = $("#sh_product_image")
+			const companyLogo = $("#sh_company_logo_img")
+			
+			const result = await this._rpc({
+				model: 'product.product',
+				method: 'all_scan_search',
+				args: [mo_no],
+			})
+
+			companyLogo.html("")
+			companyLogo.append(
+				'<img class="img img-responsive img-fluid" style="width: 500px; heigth: 500px" t-attf-src="data:image/jpeg;base64,' + result.company_logo + '" alt="Company Logo" />'
+			)
+
+			if(result.sh_product_image){
+				productImage.append(
+					'<img class="img img-responsive" width="auto !important;" style="max-height:60%;max-width:60%;" src="data:image/jpeg;base64,' + result.sh_product_image + '" alt="Product Image" />'
+				);
+			}else {
+				productImage.append(
+					'<img class="img img-responsive" width="auto !important;" style="max-height:60%;max-width:60%;" src="/binaural_checker_kiosk/static/src/img/default.png" alt="Product Image" />'
+				);
+			}
+
+			setTimeout(function() {
                 const lansdcapeValue = $('#display_landscape').val()
                 const isLeft = lansdcapeValue == 'left'
                 const isRight = lansdcapeValue == 'right'
@@ -162,17 +190,18 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
                 const isLeftOrRight = isLeft || isRight
 
                 if (isLeftOrRight) {
-				    screenDiv.addClass("col-12");
+				            screenDiv.addClass("col-12");
                     screenDiv.removeClass("col-7");
-				}
+				        }
 
                 $("#main_div").addClass("o_hidden");
-				$("#success").css("display", "none");
+				        $("#success").css("display", "none");
 
                 //redisplay the reader input and message
                 code.removeClass("d-none");
                 searchButton.removeClass("d-none");
                 screenDiv.removeClass("col-7");
+                $("sh_product_image").html("")
 				
             },delay)
 
