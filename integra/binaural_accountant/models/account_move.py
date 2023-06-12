@@ -235,8 +235,6 @@ class AccountMove(models.Model):
         is_invoice = self.is_invoice(include_receipts=True)
         receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
         for line in self.line_ids:
-            if line.account_id.account_type in receivable_and_payable_account_types:
-                continue
             # If the line is an adjustment line, the foreign debit and foreign credit will be the
             # foreign debit and foreign credit adjustment fields.
             if (line.foreign_debit_adjustment + line.foreign_credit_adjustment) != 0:
@@ -279,6 +277,10 @@ class AccountMove(models.Model):
         account_payable_or_receivable_line = self.line_ids.filtered(
             lambda l: l.account_id.account_type in receivable_and_payable_account_types
         )
+
+        if len(account_payable_or_receivable_line) > 0:
+            return
+
         if account_payable_or_receivable_line.debit > 0:
             account_payable_or_receivable_line.foreign_debit = sum(
                 self.line_ids.mapped("foreign_credit")
