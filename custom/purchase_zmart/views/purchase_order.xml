@@ -6,6 +6,10 @@
             <field name="model">purchase.order</field>
             <field name="inherit_id" ref="purchase.purchase_order_form"/>
             <field name="arch" type="xml">
+                <button name="button_cancel" position="after">
+                    <button name="button_report_purchase_order" string="Imprimir Presupuesto/Pedido" type="object" class="oe_highlight"/>
+                    <button name="button_report_purchase_quotation" string="Solicitud de Presupuesto" type="object" class="oe_highlight"/>
+                </button>
                 <field name="date_order" position="after">
                     <field name="date_in_store"/>
                 </field>

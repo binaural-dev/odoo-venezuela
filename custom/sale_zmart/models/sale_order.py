@@ -21,3 +21,6 @@ class SaleOrderZmart(models.Model):
         store=True,
         required=True
     )
+
+    def button_sale_order(self):
+        return self.env.ref('sale.action_report_saleorder').report_action(self)
