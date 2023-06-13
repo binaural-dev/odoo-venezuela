@@ -15,9 +15,6 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
-            <button name="button_draft" position="after">
-                <button name="action_invoice_sent" string="Print and Mark as Printed" type="object" class="oe_highlight"/>
-            </button>
             <xpath expr="//field[@name='payment_reference']" position="after">
                 <field name="printed" readonly="true"/>
             </xpath>
