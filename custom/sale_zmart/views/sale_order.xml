@@ -6,6 +6,9 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form" />
         <field name="arch" type="xml">
+            <button name="action_cancel" position="after">
+                <button name="button_sale_order" string="Imprimir Presupuesto/Pedido" type="object" class="oe_highlight"/>
+            </button>
             <xpath expr="//field[@name='partner_invoice_id']" position="before">
                 <field name="shipping_type"/>
                 <field name="name_company"/>
