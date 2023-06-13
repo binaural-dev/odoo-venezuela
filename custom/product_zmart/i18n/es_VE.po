@@ -18,7 +18,7 @@ msgstr ""
 #. module: product_zmart
 #: model_terms:ir.ui.view,arch_db:product_zmart.product_template_form_zmart
 msgid "Additional Information"
-msgstr "Informacion adicional"
+msgstr "Información adicional"
 
 #. module: product_zmart
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__barcode_inner_box
@@ -37,7 +37,7 @@ msgstr "Código de Barra Caja Master"
 #: model:ir.model.fields,field_description:product_zmart.field_product_template__oem_code
 #: model:ir.model.fields,field_description:product_zmart.field_product_template_oem__code
 msgid "Code"
-msgstr "Codigo oem"
+msgstr "OEM"
 
 #. module: product_zmart
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__color
@@ -147,7 +147,7 @@ msgstr "Largo"
 #: model:ir.model.fields,field_description:product_zmart.field_product_template__master_box_volume
 #: model_terms:ir.ui.view,arch_db:product_zmart.product_template_form_zmart
 msgid "Master Box Volume"
-msgstr "Volumen Caja Maste(CBM)"
+msgstr "Volumen Caja Master(CBM)"
 
 #. module: product_zmart
 #: model:ir.model.fields,field_description:product_zmart.field_product_template_oem__name
@@ -160,7 +160,7 @@ msgstr "Nombre"
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__oem
 #: model:ir.model.fields,field_description:product_zmart.field_product_template__oem
 msgid "Oem"
-msgstr ""
+msgstr "OEM"
 
 #. module: product_zmart
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__packaging_type
@@ -183,7 +183,7 @@ msgstr "Producto"
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__quantity_of_inner_per_master
 #: model:ir.model.fields,field_description:product_zmart.field_product_template__quantity_of_inner_per_master
 msgid "Quantity Of Inner Per Master"
-msgstr "Cantidad de Inner por Caja Máster"
+msgstr "Cantidad de Inner por Caja Master"
 
 #. module: product_zmart
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__quantity_units_per_master_box
@@ -207,7 +207,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__specification
 #: model:ir.model.fields,field_description:product_zmart.field_product_template__specification
 msgid "Specification"
-msgstr "Especificacion"
+msgstr "Especificación"
 
 #. module: product_zmart
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__tariff_code
@@ -219,7 +219,7 @@ msgstr "Código Arancelario"
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__warranty
 #: model:ir.model.fields,field_description:product_zmart.field_product_template__warranty
 msgid "Warranty"
-msgstr "Garantia"
+msgstr "Garantía"
 
 #. module: product_zmart
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__wide_bulk
@@ -248,7 +248,7 @@ msgstr ""
 #. module: product_zmart
 #: model_terms:ir.ui.view,arch_db:product_zmart.product_template_form_zmart
 msgid "dimension box"
-msgstr "Dimension Caja Master"
+msgstr "Dimensión Caja Master"
 
 #. module: product_zmart
 #: model_terms:ir.ui.view,arch_db:product_zmart.product_template_form_zmart
