@@ -81,7 +81,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:contact_zmart.field_res_partner__sales_area
 #: model:ir.model.fields,field_description:contact_zmart.field_res_users__sales_area
 msgid "Sales Area"
-msgstr "Area de ventas"
+msgstr "Zona de ventas"
 
 #. module: contact_zmart
 #: model:ir.model,name:contact_zmart.model_res_partner_sale

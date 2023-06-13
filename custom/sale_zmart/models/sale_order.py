@@ -21,4 +21,3 @@ class SaleOrderZmart(models.Model):
         store=True,
         required=True
     )
-    date_in_store = fields.Date()
