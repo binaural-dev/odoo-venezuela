@@ -218,8 +218,15 @@
             <field name="arch" type="xml">
               <xpath expr="//field[@name='company_id']" position="before">
                   <field name="connection_account"/>
+                  <field name="brand"/>
+                  <group>
+                    <button name='brand_fix' type="object"
+                      string="Actualizar Marcas"
+                      class="oe_stat_button"
+                      icon="fa-refresh"/>
+                  </group>
               </xpath>
-            </field>      
+            </field>
         </record>
 
         <!--record model="ir.ui.view" id="view_mercadolibre_orders_form">

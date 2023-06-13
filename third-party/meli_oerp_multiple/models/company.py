@@ -34,9 +34,6 @@ class ResCompany(models.Model):
     mercadolibre_connections = fields.Many2many( "mercadolibre.account", string="MercadoLibre Connection Accounts", help="MercadoLibre Connection Accounts" )
 
     def get_meli_state( self ):
-        # recoger el estado y devolver True o False (meli)
-        #False if logged ok
-        #True if need login
         _logger.info('meli_oerp_multiple company get_meli_state() ')
         company = self or self.env.user.company_id
         for comp in company:

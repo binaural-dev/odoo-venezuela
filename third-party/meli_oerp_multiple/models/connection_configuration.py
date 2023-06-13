@@ -51,6 +51,22 @@ class MercadoLibreConnectionConfiguration(models.Model):
     #mercadolibre_channels = fields.Many2many("mercadolibre.channel", string="MercadoLibre Channels")
     accounts = fields.One2many( "mercadolibre.account","configuration", string="Accounts", help="Accounts"  )
 
+    def _connection_account( self ):
+        for mc in self:
+            mc.connection_account = False
+            if mc.accounts:
+                mc.connection_account = (mc.accounts and mc.accounts[0]) or False
+
+    connection_account = fields.Many2one("mercadolibre.account",compute=_connection_account)
+
+    def _connection_account_company( self ):
+        for mc in self:
+            mc.company_id = False
+            mc._connection_account()
+            if mc.connection_account:
+                mc.company_id = (mc.connection_account and mc.connection_account.company_id) or False
+    company_id = fields.Many2one("res.company", string="Company",index=True)
+
     #Import #extending because of relational table name conflicts, conflict with publish price list (TODO: let one)
     import_price_lists = fields.Many2many("product.pricelist",relation='mercadolibre_conf_import_pricelist_rel',column1='configuration_id',column2='pricelist_id',string="Import Price Lists")
 
@@ -74,16 +90,20 @@ class MercadoLibreConnectionConfiguration(models.Model):
     mercadolibre_cron_post_update_price = fields.Boolean(string='Publicar Precio',help='Cron Post Updated Price')
     mercadolibre_create_website_categories = fields.Boolean(string='Crear categorías',help='Create Website eCommerce Categories from imported products ML categories')
     mercadolibre_pricelist = fields.Many2one( "product.pricelist", "Product Pricelist default", help="Select price list for ML product"
-        "when published from Odoo to ML")
+        "when published from Odoo to ML", required=True)
     mercadolibre_pricelist_usd = fields.Many2one( "product.pricelist", "Product Pricelist default USD", help="USD Select price list for ML product"
         "when published from Odoo to ML")
 
-    mercadolibre_order_total_config = fields.Selection( [('manual','Manual'),('manual_conflict','Manual conflict'),('paid_amount','Paid Amount'),('total_amount','Total Amount')] , string="Total Config.", help='Order Total Config, stategy to calculate order/invoice total amount.' )
+    mercadolibre_order_total_config = fields.Selection( [('manual','Manual'),('manual_conflict','Manual conflict'),('paid_amount','Paid Amount'),('total_amount','Total Amount')] ,
+                                                        default='paid_amount',
+                                                        string="Total Config.",
+                                                        help='Order Total Config, stategy to calculate order/invoice total amount.',
+                                                        required=True )
 
 
     mercadolibre_buying_mode = fields.Selection( [("buy_it_now","Compre ahora"),
                                                   ("classified","Clasificado")],
-                                                  string='Método de compra predeterminado')
+                                                  string='Método de compra predeterminado', required=True)
     mercadolibre_currency = fields.Selection([  ("ARS","Peso Argentino (ARS)"),
                                                 ("MXN","Peso Mexicano (MXN)"),
                                                 ("COP","Peso Colombiano (COP)"),
@@ -95,12 +115,14 @@ class MercadoLibreConnectionConfiguration(models.Model):
                                                 ("UYU","Peso Uruguayo (UYU)"),
                                                 ("VES","Bolivar Soberano (VES)"),
                                                 ("USD","Dolar Estadounidense (USD)")],
-                                                string='Moneda predeterminada')
+                                                string='Moneda predeterminada', required=True)
     mercadolibre_condition = fields.Selection([ ("new", "Nuevo"),
                                                 ("used", "Usado"),
                                                 ("not_specified","No especificado")],
+                                                default='new',
                                                 string='Condición',
-                                                help='Condición del producto predeterminado')
+                                                help='Condición del producto predeterminado',
+                                                required=True)
     mercadolibre_warranty = fields.Char(string='Garantía', size=256, help='Garantía del producto predeterminado. Es obligatorio y debe ser un número seguido por una unidad temporal. Ej. 2 meses, 3 años.')
     mercadolibre_listing_type = fields.Selection([("free","Libre"),
                                                 ("bronze","Bronce/Clásica-(UY)"),
@@ -109,8 +131,10 @@ class MercadoLibreConnectionConfiguration(models.Model):
                                                 ("gold_premium","Gold Premium/Oro Premium"),
                                                 ("gold_special","Gold Special/Clásica/Premium-(UY)"),
                                                 ("gold_pro","Oro Pro")],
+                                                default='gold_special',
                                                 string='Tipo de lista',
-                                                help='Tipo de lista  predeterminada para todos los productos')
+                                                help='Tipo de lista  predeterminada para todos los productos',
+                                                required=True)
     mercadolibre_attributes = fields.Boolean(string='Apply product attributes')
     mercadolibre_exclude_attributes = fields.Many2many('product.attribute.value',
         string='Valores excluidos', help='Seleccionar valores que serán excluidos para las publicaciones de variantes')
@@ -132,7 +156,8 @@ class MercadoLibreConnectionConfiguration(models.Model):
                                                 ("paid_delivered_with_invoice", "Pagado>Facturado y Entregado")],
                                                 default='manual',
                                                 string='Acción al recibir un pedido',
-                                                help='Acción al confirmar una orden o pedido de venta')
+                                                help='Acción al confirmar una orden o pedido de venta',
+                                                required=True)
     mercadolibre_order_confirmation_full = fields.Selection([ ("manual", "Manual"),
                                                 ("paid_confirm", "Pagado>Confirmado"),
                                                 ("paid_delivered", "Pagado>Entregado"),
@@ -140,12 +165,14 @@ class MercadoLibreConnectionConfiguration(models.Model):
                                                 ("paid_delivered_with_invoice", "Pagado>Facturado y Entregado")],
                                                 default='manual',
                                                 string='Acción al recibir un pedido en FULL',
-                                                help='Acción al confirmar una orden o pedido de venta en FULL')
+                                                help='Acción al confirmar una orden o pedido de venta en FULL',
+                                                required=True)
     mercadolibre_product_attribute_creation = fields.Selection([ ("manual", "Manual"),
                                                 ("full", "Sincronizado completo (uno a uno, sin importar si se usa o no)"),
                                                 ("dynamic", "Dinámico (cuando se asocia un producto a una categoría (ML) con atributos (ML))") ],
                                                 default='manual',
-                                                string='Create Product Attributes')
+                                                string='Create Product Attributes',
+                                                required=True)
     #'mercadolibre_login': fields.selection( [ ("unknown", "Desconocida"), ("logged","Abierta"), ("not logged","Cerrada")],string='Estado de la sesión'), )
     mercadolibre_overwrite_template = fields.Boolean(string='Overwrite product template',help='Sobreescribir siempre Nombre y Descripción de la plantilla.')
     mercadolibre_overwrite_variant = fields.Boolean(string='Overwrite product variant',help='Sobreescribir siempre Nombre y Descripción de la variante.')
@@ -153,11 +180,14 @@ class MercadoLibreConnectionConfiguration(models.Model):
 
     mercadolibre_create_product_from_order = fields.Boolean(string='Importar productos inexistentes',help='Importar productos desde la orden si no se encuentran en la base.')
     mercadolibre_update_existings_variants = fields.Boolean(string='Actualiza/agrega variantes',help='Permite agregar y actualizar variantes de un producto existente (No recomendable cuando se está ya en modo Odoo a ML, solo usar cuando se importa por primera vez de ML a Odoo, para no romper el stock)')
+    mercadolibre_update_product_company = fields.Boolean(string='Setea la empresa del producto',default=False,help='Setea la empresa del producto con la empresa de la cuenta')
     mercadolibre_tax_included = fields.Selection( string='Tax Included',
                                                   help='Esto se aplica al importar ordenes, productos y tambien al publicar, sobre la lista de precio seleccionada o sobre el precio de lista.',
                                                   selection=[ ('auto','Configuración del sistema'),
                                                               ('tax_included','Impuestos ya incluídos del precio de lista'),
-                                                              ('tax_excluded','Impuestos excluídos del precio de lista') ] )
+                                                              ('tax_excluded','Impuestos excluídos del precio de lista') ],
+                                                  default='auto',
+                                                  required=True )
 
     mercadolibre_do_not_use_first_image = fields.Boolean(string="Do not use first image")
     mercadolibre_cron_post_new_products = fields.Boolean(string='Incluir nuevos productos',help='Cron Post New Products, Product Templates or Variants with Meli Publication field checked')
@@ -171,30 +201,34 @@ class MercadoLibreConnectionConfiguration(models.Model):
     mercadolibre_seller_team = fields.Many2one("crm.team", string="Equipo de ventas ML", help="Equipo de ventas asociado a las ventas de ML")
     mercadolibre_remove_unsync_images = fields.Boolean(string='Removing unsync images (ml id defined for image but no longer in ML publication)')
 
-    mercadolibre_official_store_id = fields.Char(string="Official Store Id")
+    mercadolibre_official_store_id = fields.Char(string="Official Store Id",index=True)
 
-    mercadolibre_payment_term = fields.Many2one("account.payment.term",string="Payment Term")
+    mercadolibre_payment_term = fields.Many2one("account.payment.term",string="Payment Term", required=True)
 
     ## STOCK Configuration
 
-    mercadolibre_stock_warehouse = fields.Many2one("stock.warehouse", string="Stock Warehouse Default", help="Almacen predeterminado")
+    mercadolibre_stock_warehouse = fields.Many2one("stock.warehouse", string="Stock Warehouse Default", help="Almacen predeterminado", required=True)
     mercadolibre_stock_location_to_post = fields.Many2one("stock.location", string="Stock Location To Post", help="Ubicación desde dónde publicar el stock")
     #mercadolibre_stock_location_to_post_many = fields.Many2many("stock.location", string="Stock Location To Post", help="Ubicaciones desde dónde publicar el stock")
 
-    mercadolibre_stock_warehouse_full = fields.Many2one("stock.warehouse", string="Stock Warehouse Default for FULL", help="Almacen predeterminado para modo fulfillment")
+    mercadolibre_stock_warehouse_full = fields.Many2one("stock.warehouse", string="Stock Warehouse Default for FULL", help="Almacen predeterminado para modo fulfillment", required=True)
     mercadolibre_stock_location_to_post_full = fields.Many2one("stock.location", string="Stock Location To Post for Full", help="Ubicación desde dónde publicar el stock en modo Full")
 
     mercadolibre_order_confirmation_delivery = fields.Selection([ ("manual", "No entregar"),
                                                 ("paid_confirm_deliver", "Pagado > Entregar"),
                                                 ("paid_confirm_shipped_deliver", "Pagado > Entregado > Entregar")],
                                                 string='Acción de la entrega al confirmar un pedido',
-                                                help='Acción de la entrega al confirmar una orden o pedido de venta')
+                                                default='manual',
+                                                help='Acción de la entrega al confirmar una orden o pedido de venta',
+                                                required=True)
 
     mercadolibre_order_confirmation_delivery_full = fields.Selection([ ("manual", "No entregar"),
                                                 ("paid_confirm_deliver", "Pagado > Entregar"),
                                                 ("paid_confirm_shipped_deliver", "Pagado > Entregado > Entregar")],
                                                 string='(FULL) Acción de la entrega al confirmar un pedido',
-                                                help='(FULL) Acción de la entrega al confirmar una orden o pedido de venta')
+                                                default='manual',
+                                                help='(FULL) Acción de la entrega al confirmar una orden o pedido de venta',
+                                                required=True)
 
     #TODO: process shippings
     mercadolibre_stock_filter_order_datetime = fields.Datetime("Order Closed Date (For shipping)")
@@ -202,7 +236,9 @@ class MercadoLibreConnectionConfiguration(models.Model):
 
 
     #TODO: activate
-    mercadolibre_stock_virtual_available = fields.Selection([("virtual","Virtual (quantity-reserved)"),("theoretical","En mano (quantity)")],default='virtual')
+    mercadolibre_stock_virtual_available = fields.Selection([("virtual","Virtual (quantity-reserved)"),("theoretical","En mano (quantity)")],
+                                                            default='virtual',
+                                                            required=True)
 
     mercadolibre_stock_sku_mapping = fields.Many2many("meli_oerp.sku.rule",string="Sku Rules")
 
@@ -232,8 +268,10 @@ class MercadoLibreConnectionConfiguration(models.Model):
                                                 ("paid_confirm_delivered_invoice", "Entregado > Facturar"),
                                                 #("paid_confirm_invoice_deliver", "Pagado > Facturar > Entregar")
                                                 ],
+                                                default='manual',
                                                 string='Acción al confirmar un pedido',
-                                                help='Acción al confirmar una orden o pedido de venta')
+                                                help='Acción al confirmar una orden o pedido de venta',
+                                                required=True)
 
     mercadolibre_order_confirmation_invoice_full = fields.Selection([ ("manual", "No facturar"),
                                                 ("paid_confirm_invoice", "Pagado > Facturar"),
@@ -241,8 +279,10 @@ class MercadoLibreConnectionConfiguration(models.Model):
                                                 ("paid_confirm_delivered_invoice", "Entregado > Facturar"),
                                                 #("paid_confirm_invoice_deliver", "Pagado > Facturar > Entregar")
                                                 ],
+                                                default='manual',
                                                 string='(FULL) Acción al confirmar un pedido',
-                                                help='(FULL) Acción al confirmar una orden o pedido de venta')
+                                                help='(FULL) Acción al confirmar una orden o pedido de venta',
+                                                required=True)
 
     mercadolibre_post_invoice = fields.Boolean(string="Post Invoice Automatic",help="Try to post invoice, when order is revisited or refreshed.")
     mercadolibre_post_invoice_dont_send = fields.Boolean(string="Dont really send, just prepare to post invoice.")

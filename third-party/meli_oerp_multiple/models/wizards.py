@@ -504,24 +504,24 @@ class product_template_import(models.TransientModel):
 
         if not account:
             return warningobj.error(title="No account defined")
-            
+
         company = (account and account.company_id) or company
         meli = self.env['meli.util'].get_new_instance(company, account )
         if meli.need_login():
             return meli.redirect_login()
-            
+
         csv_report_header = ""
         csv_report = ""
         csv_report_di = []
-        
+
         # meli_id / #variations / meli sku / meli_price / meli_stock -  import status (missing, duplicate, sync) / price to pub / stock to pub  / price status / stock status
-        
+
         #LIST FIRST active publications and see if they are in the database
         #LIST SECOND paused publications and see if they are in the database
         #LIST OTHER STATES
         ### ACTIVE AND PAUSED
         meli_id = None
-        
+
         post_state_filter = { 'status': 'active' }
         fetched_meli_ids_active = account.fetch_list_meli_ids( params=post_state_filter )
         actives_total = len(fetched_meli_ids_active)
@@ -538,17 +538,17 @@ class product_template_import(models.TransientModel):
             mli_rec = {'meli_sku': '', 'meli_id': mli, 'meli_status': 'active', 'imp_status': 'synced' }
             #fetchm = meli.get("/items/"+mli, { 'access_token': meli.access_token } )
             rjson = account.fetch_meli_product( meli_id = mli, meli=meli )
-            if rjson:                
+            if rjson:
                 mli_rec["meli_sku"] = account.fetch_meli_sku( meli_id = mli, meli=meli, rjson=rjson )
                 mli_rec["meli_variations"] = ( "variations" in rjson and rjson["variations"] and len(rjson["variations"]) ) or 1
                 mli_rec["odoo_binds"] =  '0'
 
                 mli_rec["meli_price"] = rjson["price"]
                 mli_rec["odoo_price"] =  ''
-                
+
                 mli_rec["meli_qty"] = rjson["available_quantity"]
                 mli_rec["odoo_stock"] =  ''
-                
+
             if mli not in odoo_meli_ids:
                 actives_to_sync.append(mli)
                 mli_rec['imp_status'] = 'missing'
@@ -560,19 +560,19 @@ class product_template_import(models.TransientModel):
                         ml_bind_product_id[0].binding_product_tmpl_id.product_template_rebind()
                         ml_bind_product_id = account.search_meli_binding_product( meli_id = mli )
                         binds = (len(ml_bind_product_id))
-                        
+
                     mli_rec["odoo_binds"] =  binds
                     #ml_bind_product_id[0].update_price()
                     mli_rec["odoo_price"] = ml_bind_product_id[0].meli_price
                     mli_rec["odoo_stock"] = ml_bind_product_id.mapped('stock')
 
-                               
+
             csv_report_di.append(mli_rec)
             if co==40:
                 co = 0
                 #_logger.info(len(csv_report_di)+str("/")+str(actives_total+paused_total))
 
-        ### PAUSED        
+        ### PAUSED
         paused_to_sync = []
         co = 0
         for mli in fetched_meli_ids_paused:
@@ -587,10 +587,10 @@ class product_template_import(models.TransientModel):
 
                 mli_rec["meli_price"] = ("price" in rjson and rjson["price"]) or ""
                 mli_rec["odoo_price"] =  ''
-                
+
                 mli_rec["meli_qty"] = ("available_quantity" in rjson and rjson["available_quantity"]) or ""
                 mli_rec["odoo_stock"] =  ''
-                
+
             if mli not in odoo_meli_ids:
                 paused_to_sync.append(mli)
                 mli_rec['imp_status'] = 'missing'
@@ -602,22 +602,22 @@ class product_template_import(models.TransientModel):
                         ml_bind_product_id[0].binding_product_tmpl_id.product_template_rebind()
                         ml_bind_product_id = account.search_meli_binding_product( meli_id = mli )
                         binds = (len(ml_bind_product_id))
-                        
+
                     mli_rec["odoo_binds"] =  binds
                     #ml_bind_product_id[0].update_price()
                     mli_rec["odoo_price"] = ml_bind_product_id[0].meli_price
                     mli_rec["odoo_stock"] = ml_bind_product_id.mapped('stock')
-                    
-                
+
+
             csv_report_di.append(mli_rec)
             if co==40:
                 co = 0
                 #_logger.info(len(csv_report_di)+str("/")+str(actives_total+paused_total))
-            
+
         sep = ""
         if (len(csv_report_di)):
             for field in csv_report_di[0]:
-                csv_report_header+= sep+str(field)                
+                csv_report_header+= sep+str(field)
                 sep = ";"
             csv_report+= csv_report_header+"\n"
 
@@ -626,9 +626,9 @@ class product_template_import(models.TransientModel):
                 for field in sync:
                     csv_report+= sep+'"'+str(sync[field])+'"'
                     sep = ";"
-                csv_report+= "\n"            
+                csv_report+= "\n"
 
-        
+
         #csv_report_attachment_last = self.env["ir.attachment"].search([('res_id','=',self.id)], order='id desc', limit=1 )
         #if (csv_report_attachment_last):
         #    csv_report_last = csv_report_attachment_last.index_content
@@ -660,15 +660,23 @@ class product_template_import(models.TransientModel):
             #<a class="fa fa-download" t-attf-title="Download Attachment {{asset.name}}" t-attf-href="/web/content/#{asset.attachment.id}?download=true&amp;access_token=#{asset.attachment.access_token}" target="_blank"></a>
             _logger.info("Creating full report OK!")
             return warningobj.info(title='Creating full report OK!', message=""+str(csv_report_attachment_link), message_html='<a href="'+str(csv_report_attachment_link)+'" target="_blank">Descargar reporte competo en CSV</a>')
-            
 
-        
-            
+
+
+
         _logger.error("Creating full report failed: "+str(csv_report_encoded))
         return {
         #    "type": "set_scrollTop",
-                    
+
         }
+
+    def list_meli_ids( self, context=None, config=None, meli=None ):
+        context = context or self.env.context
+        company = self.env.user.company_id
+        account_ids = ('active_ids' in context and context['active_ids']) or []
+        account = self.env['mercadolibre.account'].browse(account_ids)
+        odoo_meli_ids = (account and account.list_meli_ids()) or []
+        return odoo_meli_ids
 
 
     def check_sync_status( self, context=None, config=None, meli=None ):
@@ -814,7 +822,7 @@ class product_template_import(models.TransientModel):
             json_report = res["json_report"]
             full_report = json_report["synced"]+json_report["missing"]+json_report["duplicates"]
             csv_report_header = ""
-            csv_report = ""            
+            csv_report = ""
 
             if full_report:
                 sep = ""
