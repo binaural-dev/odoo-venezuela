@@ -48,3 +48,8 @@ msgstr "Numero de transporte"
 #: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__vl_number
 msgid "VL Number"
 msgstr "Numero de vl"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__date_in_store
+msgid "Date In Store"
+msgstr "Fecha en Almacén"
