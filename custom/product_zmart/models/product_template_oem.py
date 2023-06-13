@@ -5,8 +5,11 @@ from odoo.exceptions import ValidationError
 class ProductTemplateOemZmart(models.Model):
     _name = "product.template.oem"
     
-    name = fields.Char(string="Name", required=True)
-    code = fields.Char(string="Code", required=True)
+    name = fields.Char(
+        string = "OEM", 
+        required = True,
+        store = True
+        )
     
     @api.constrains('name')
     def constraint_unique_name(self):

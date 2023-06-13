@@ -33,13 +33,6 @@ msgid "Barcode Master Box"
 msgstr "Código de Barra Caja Master"
 
 #. module: product_zmart
-#: model:ir.model.fields,field_description:product_zmart.field_product_product__oem_code
-#: model:ir.model.fields,field_description:product_zmart.field_product_template__oem_code
-#: model:ir.model.fields,field_description:product_zmart.field_product_template_oem__code
-msgid "Code"
-msgstr "OEM"
-
-#. module: product_zmart
 #: model:ir.model.fields,field_description:product_zmart.field_product_product__color
 #: model:ir.model.fields,field_description:product_zmart.field_product_template__color
 msgid "Color"
@@ -147,7 +140,7 @@ msgstr "Largo"
 #: model:ir.model.fields,field_description:product_zmart.field_product_template__master_box_volume
 #: model_terms:ir.ui.view,arch_db:product_zmart.product_template_form_zmart
 msgid "Master Box Volume"
-msgstr "Volumen Caja Master(CBM)"
+msgstr "Volúmen Caja Master(CBM)"
 
 #. module: product_zmart
 #: model:ir.model.fields,field_description:product_zmart.field_product_template_oem__name
@@ -271,6 +264,36 @@ msgid "product.template.tariff"
 msgstr ""
 
 #. module: product_zmart
-#: model:ir.model.fields,field_description:product_zmart.field_product_template__zmart_code
-msgid "zmart code"
-msgstr "Codigo Zmart"
+#: model:ir.model.fields,field_description:product_zmart.field_product_product__unit_of_measurement
+#: model:ir.model.fields,field_description:product_zmart.field_product_template__unit_of_measurement
+msgid "Unit Of Measurement"
+msgstr "Und. Medición"
+
+#. module: product_zmart
+#: model:ir.model.fields,field_description:product_zmart.field_product_product__volume_ml
+#: model:ir.model.fields,field_description:product_zmart.field_product_template__volume_ml
+msgid "Volume Ml"
+msgstr "Volúmen ml"
+
+#. module: product_zmart
+#: model_terms:ir.ui.view,arch_db:product_zmart.product_template_form_zmart
+msgid "sales unit gross weight"
+msgstr "Peso Bruto Unidad de Venta"
+
+#. module: product_zmart
+#: model:ir.model.fields,field_description:product_zmart.field_product_product__unit_of_meassure_master_carton
+#: model:ir.model.fields,field_description:product_zmart.field_product_template__unit_of_meassure_master_carton
+msgid "Unit Of Meassure Master Carton"
+msgstr "Unidad de Medición"
+
+#. module: product_zmart
+#: model:ir.model.fields,field_description:product_zmart.field_product_product__unit_of_measurement_inner_box
+#: model:ir.model.fields,field_description:product_zmart.field_product_template__unit_of_measurement_inner_box
+msgid "Unit Of Measurement Inner Box"
+msgstr "Unidad de Medición"
+
+#. module: product_zmart
+#: model:ir.model.fields,field_description:product_zmart.field_product_product__unit_of_measurement_unit_sale
+#: model:ir.model.fields,field_description:product_zmart.field_product_template__unit_of_measurement_unit_sale
+msgid "Unit Of Measurement Unit Sale"
+msgstr "Unidad de Medición"
