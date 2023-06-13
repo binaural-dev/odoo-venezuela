@@ -5,6 +5,6 @@ class StockPickingBinauralInventario(models.Model):
 
     shipping_type = fields.Many2one(related='sale_id.shipping_type', string="Shipping type")
     name_company = fields.Many2one(related='sale_id.name_company', string="Company")
-    packing_factor = fields.Char()
+    packing_factor = fields.Char(store="True")
     
     
