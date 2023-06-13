@@ -177,6 +177,7 @@ _logger = logging.getLogger(__name__)
 
 DEVICE_NAME = "/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0"
 DEVICE_SHORT_NAME = "/dev/ttyACM"
+DEVICE_WINDOWS = "COM"
 
 FiscalProtocol = SerialProtocol(
     name="FiscalMachine",
@@ -214,8 +215,10 @@ class SerialFiscalDriver(SerialDriver):
 
     @classmethod
     def supported(cls, device):
-        if device["identifier"].__contains__(DEVICE_NAME) or device["identifier"].__contains__(
-            DEVICE_SHORT_NAME
+        if (
+            device["identifier"].__contains__(DEVICE_NAME)
+            or device["identifier"].__contains__(DEVICE_SHORT_NAME)
+            or device["identifier"].__contains__(DEVICE_WINDOWS)
         ):
             try:
                 protocol = cls._protocol
@@ -343,7 +346,7 @@ class SerialFiscalDriver(SerialDriver):
                 amount_i, amount_d = self.split_amount(item["price_unit"])
                 qty_i, qty_d = self.split_amount(item["quantity"])
 
-                if invoice.get("traditional_line",True):
+                if invoice.get("traditional_line", True):
                     cmd.append(
                         str(
                             "d"
@@ -370,7 +373,7 @@ class SerialFiscalDriver(SerialDriver):
                             + qty_d.zfill(FLAG_21[invoice["flag_21"]]["max_qty_decimal"])
                             + "||"
                             + code
-                            + item["name"][0:127].replace("Ñ","N").replace("ñ","n")
+                            + item["name"][0:127].replace("Ñ", "N").replace("ñ", "n")
                         )
                     )
             cmd.append(str("3"))  # sub total en factura
@@ -451,10 +454,9 @@ class SerialFiscalDriver(SerialDriver):
             if invoice["partner_id"]["phone"]:
                 cmd.append(str("i01Telefono:" + invoice["partner_id"]["phone"]))
 
-            if len(invoice.get("info",[])) > 0:
+            if len(invoice.get("info", [])) > 0:
                 for index, info in enumerate(invoice.get("info")):
                     cmd.append(f"i{str(index+2).zfill(2)}{info}")
-
 
             for item in invoice["invoice_lines"]:
                 code = ""
@@ -462,7 +464,7 @@ class SerialFiscalDriver(SerialDriver):
                     code = "|" + str(item["code"]) + "|"
                 amount_i, amount_d = self.split_amount(item["price_unit"])
                 qty_i, qty_d = self.split_amount(item["quantity"])
-                if invoice.get("traditional_line",True):
+                if invoice.get("traditional_line", True):
                     cmd.append(
                         str(
                             TAX.get(str(item.get("tax", " ")), " ")
@@ -471,7 +473,7 @@ class SerialFiscalDriver(SerialDriver):
                             + qty_i.zfill(FLAG_21[invoice["flag_21"]]["max_qty_int"])
                             + qty_d.zfill(FLAG_21[invoice["flag_21"]]["max_qty_decimal"])
                             + f"{code}"
-                            + item["name"][0:127].replace("Ñ","N").replace("ñ","n")
+                            + item["name"][0:127].replace("Ñ", "N").replace("ñ", "n")
                         )
                     )
                 else:
@@ -932,8 +934,8 @@ class SerialFiscalDriver(SerialDriver):
 
     def _read(self, bytes):
         connection = self._connection
-        msj = b''
-        while msj == b'':
+        msj = b""
+        while msj == b"":
             msj = connection.read(bytes)
             _logger.info(msj)
         return msj.decode()
