@@ -29,6 +29,7 @@ import requests
 import json
 
 from odoo.addons.meli_oerp_stock.models.order import SaleOrder
+from odoo.addons.meli_oerp.models.versions import *
 
 class SaleOrder(models.Model):
 
@@ -42,15 +43,15 @@ class SaleOrder(models.Model):
         config = None
         if not account and self.meli_orders:
             account = self.meli_orders[0].connection_account
-            
-        
+
+
         for order in self:
             if not account:
                 account = order.connection_account
 
             company = account.company_id
             if not config:
-                config = account.configuration    
+                config = account.configuration
 
             if ((order.meli_shipment and order.meli_shipment.logistic_type == "fulfillment")
                 or order.meli_shipment_logistic_type=="fulfillment"):
@@ -124,10 +125,66 @@ class MercadoLibreOrder(models.Model):
 
     connection_account = fields.Many2one( "mercadolibre.account", string="MercadoLibre Account" )
 
+    def brand_fix( self ):
+        self._meli_brand_fix()
+
+    def _meli_brand_fix( self ):
+        _logger.info("_meli_brand_fix")
+        mos = self.search([('brand','=',None)],order='connection_account')
+        _logger.info("_meli_brand_fix "+str(mos))
+        account = None
+        mercadolibre_brands = []
+        for mo in mos:
+            mo.brand = None
+
+            if (account!= mo.connection_account):
+                account = mo.connection_account
+                mercadolibre_brands = account._mercadolibre_brands()
+
+            if mo.order_items:
+                moi = mo.order_items[0]
+                if moi:
+                    for br in mercadolibre_brands:
+                        if moi.order_item_id:
+                            binds = self.env["mercadolibre.product_template"].search([('conn_id','=ilike',str(moi.order_item_id))])
+                            if (binds):
+                                for bind in binds:
+                                    if (bind.meli_official_store_id and str(br.official_store_id)==str(bind.meli_official_store_id) ):
+                                        mo.brand = br
+                                    if (not bind.meli_official_store_id):
+                                        mo.orders_update_order()
+
+
+    def _meli_brand( self ):
+        account = None
+        mercadolibre_brands = []
+        for mo in self:
+            mo.brand = None
+            if mo.order_items:
+                moi = mo.order_items[0]
+                if moi:
+            #        #associate brand with product official_store_id
+                    if (account!= mo.connection_account):
+                        account = mo.connection_account
+                        mercadolibre_brands = account._mercadolibre_brands()
+                    #_logger:info("Brands:"+str(mercadolibre_brands))
+                    for br in mercadolibre_brands:
+                        if moi.order_item_id:
+                            binds = self.env["mercadolibre.product_template"].search([('conn_id','=ilike',str(moi.order_item_id))])
+                            #_logger:info("bind:"+str(bind and bind.meli_official_store_id))
+                            if (binds):
+                                for bind in binds:
+                                    if (bind.meli_official_store_id and str(br.official_store_id)==str(bind.meli_official_store_id) ):
+                                        mo.brand = br
+
+    brand = fields.Many2one("mercadolibre.brand", string="Brand" )
+
+
     def update_order_status( self, meli=None, config=None):
         for order in self:
             account = ("connection_account" in order._fields and order.connection_account)
             config = config or account.configuration
+            order._meli_brand()
 
             company = (config and 'company_id' in config._fields and config.company_id) or self.env.user.company_id
             config = config or company
@@ -189,12 +246,6 @@ class MercadoLibreOrder(models.Model):
         if not meli_item:
             return None
 
-        meli_id = meli_item['id']
-        meli_id_variation = ("variation_id" in meli_item and meli_item['variation_id'])
-        seller_sku = ('seller_sku' in meli_item and meli_item['seller_sku']) or ('seller_custom_field' in meli_item and meli_item['seller_custom_field'])
-
-        _logger.info("search_meli_product (multiple): seller_sku: "+str(seller_sku))
-
         account = None
         account_filter = []
 
@@ -204,6 +255,32 @@ class MercadoLibreOrder(models.Model):
         else:
             _logger.error("search_meli_product (multiple): no account")
             return []
+
+        meli_id = meli_item['id']
+        meli_id_variation = ("variation_id" in meli_item and meli_item['variation_id'])
+        seller_sku = ('seller_sku' in meli_item and meli_item['seller_sku']) or ('seller_custom_field' in meli_item and meli_item['seller_custom_field'])
+
+        rjson = account.fetch_meli_product( meli_id=meli_id, meli=meli )
+        #_logger.info("rjson: " + str(rjson) )
+        meli_official_store_id = rjson and "official_store_id" in rjson and rjson["official_store_id"]
+        account_store_id = account
+
+        if (str(account.official_store_id)!=str(meli_official_store_id)):
+            #change account
+            _logger.info("search_meli_product > changing account:"+str(meli_official_store_id))
+            account_store_id = self.env['mercadolibre.account'].search( [( 'official_store_id', '=ilike', str(meli_official_store_id) )], limit=1 )
+            _logger.info("search_meli_product > account_store_id:"+str(account_store_id))
+            if (account_store_id):
+                account_filter = [('connection_account','=',account_store_id.id)]
+
+        if (not (seller_sku)):
+            #check product actual sku
+            seller_sku = account.fetch_meli_sku(
+                                    meli_id=meli_id,
+                                    meli_id_variation=meli_id_variation,
+                                    meli=meli)
+
+        _logger.info("search_meli_product (multiple): seller_sku: "+str(seller_sku))
 
         bindP = False
 
@@ -217,6 +294,8 @@ class MercadoLibreOrder(models.Model):
             bindP = binding_obj.search([('conn_id','=',meli_id)]
                                         + account_filter,
                                         limit=1)
+                                        
+        _logger.info("search_meli_product (multiple): bindP: "+str(bindP))                                        
 
         product_related = (bindP and bindP.product_id)
 
@@ -234,8 +313,18 @@ class MercadoLibreOrder(models.Model):
         #classic meli_oerp version:
         if (meli_id_variation):
             product_related = product_obj.search([ ('meli_id','=',meli_id), ('meli_id_variation','=',meli_id_variation) ])
+            if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
+                product_related = product_obj.sudo().search([ ('meli_id','=',meli_id), ('meli_id_variation','=',meli_id_variation) ])
+                for p in product_related:
+                    p.company_id = account.company_id
+                    p.product_tmpl_id.company_id = account.company_id
         else:
             product_related = product_obj.search([('meli_id','=', meli_id)])
+            if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
+                product_related = product_obj.sudo().search([ ('meli_id','=',meli_id) ])
+                for p in product_related:
+                    p.company_id = account.company_id
+                    p.product_tmpl_id.company_id = account.company_id
 
         _logger.info("product_related from product:"+str(product_related))
 
@@ -251,13 +340,24 @@ class MercadoLibreOrder(models.Model):
             if (seller_sku):
                 _logger.info("search_meli_product (multiple): Search using seller_sku: "+str(seller_sku))
                 product_related = product_obj.search([('default_code','=ilike',seller_sku)])
-
+                if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
+                    product_related = product_obj.sudo().search([('default_code','=ilike',seller_sku)])
+                    if product_related:
+                        for p in product_related:
+                            p.company_id = account.company_id
+                            p.product_tmpl_id.company_id = account.company_id
 
             #2ND attempt only old "seller_custom_field"
-            if (not product_related and 'seller_custom_field' in meli_item):
+            if (not product_related and 'seller_custom_field' in meli_item and meli_item['seller_custom_field']):
                 seller_sku = ('seller_custom_field' in meli_item and meli_item['seller_custom_field'])
                 _logger.info("search_meli_product (multiple): Search using seller_custom_field: "+str(seller_sku))
                 product_related = product_obj.search([('default_code','=ilike',seller_sku)])
+                if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
+                    product_related = product_obj.sudo().search([('default_code','=ilike',seller_sku)])
+                    if product_related:
+                        for p in product_related:
+                            p.company_id = account.company_id
+                            p.product_tmpl_id.company_id = account.company_id
 
             #TODO: 3RD attempt using barcode
             #if (not product_related):
@@ -275,19 +375,22 @@ class MercadoLibreOrder(models.Model):
                         'meli_pub': True,
                     }
                     _logger.info("Binding item:"+str(prod_fields) +" product_related:"+str(product_related) )
+                    if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
+                        prod_fields['company_id'] = account.company_id.id
                     product_related.write((prod_fields))
                     if (product_related.product_tmpl_id):
                         product_related.product_tmpl_id.meli_pub = True
-                    if (config.mercadolibre_create_product_from_order):
+                    if (config.mercadolibre_create_product_from_order and seller_sku):
                         product_related.product_meli_get_product(meli=meli)
-                    product_related.mercadolibre_bind_to( account=account, binding_product_tmpl_id=False, meli_id=meli_item['id'], meli=meli, bind_only=True )
+                    #brand_account =
+                    product_related.mercadolibre_bind_to( account=account_store_id, binding_product_tmpl_id=False, meli_id=meli_item['id'], meli_id_variation=meli_item['variation_id'], meli=meli, bind_only=True )
                     #if (seller_sku):
                     #    prod_fields['default_code'] = seller_sku
                 elif (product_related.meli_id):
-                    _logger.info("Add mercadolibre bind to: " +str(meli_item['id']))
+                    _logger.info("Add mercadolibre bind to: " +str(meli_item['id'])+" - "+str(meli_item['variation_id']))
                     if (product_related.product_tmpl_id):
                         product_related.product_tmpl_id.meli_pub = True
-                    product_related.mercadolibre_bind_to( account=account, binding_product_tmpl_id=False, meli_id=meli_item['id'], meli=meli, bind_only=True )
+                    product_related.mercadolibre_bind_to( account=account_store_id, binding_product_tmpl_id=False, meli_id=meli_item['id'], meli_id_variation=meli_item['variation_id'], meli=meli, bind_only=True )
 
             else:
                 combination = []
@@ -310,11 +413,15 @@ class MercadoLibreOrder(models.Model):
                             'meli_id': rjson3['id'],
                             'meli_pub': True,
                         }
+                        prod_fields.update(ProductType())
                         if (seller_sku):
                             prod_fields['default_code'] = seller_sku
+                        if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
+                            prod_fields['company_id'] = account.company_id.id
                         #prod_fields['default_code'] = rjson3['id']
                         #productcreated = False
-                        if config.mercadolibre_create_product_from_order and seller_sku:
+                        if (config.mercadolibre_create_product_from_order and seller_sku):
+                            _logger.info( "Creando producto: "+str(prod_fields) )
                             productcreated = self.env['product.product'].create((prod_fields))
                         if (productcreated):
                             if (productcreated.product_tmpl_id):
@@ -323,9 +430,9 @@ class MercadoLibreOrder(models.Model):
                             #pdb.set_trace()
                             _logger.info(productcreated)
                             productcreated.product_meli_get_product(meli=meli)
-                            productcreated.mercadolibre_bind_to( account=account, binding_product_tmpl_id=False, meli_id=meli_item['id'], meli=meli, bind_only=True )
+                            productcreated.mercadolibre_bind_to( account=account_store_id, binding_product_tmpl_id=False, meli_id=meli_item['id'], meli=meli, bind_only=True )
                         else:
-                            _logger.info( "product couldnt be created")
+                            _logger.info( "product couldnt be created. Crear producto desde la orden? "+str(config.mercadolibre_create_product_from_order))
                         product_related = productcreated
                     except Exception as e:
                         _logger.info("Error creando producto.")
@@ -346,6 +453,7 @@ class MercadoLibreOrder(models.Model):
 
         order_obj = self.env['mercadolibre.orders']
         order = self
+        order._meli_brand()
 
         account = order.connection_account
 
@@ -389,7 +497,8 @@ class MercadoLibreOrder(models.Model):
                 #self._cr.commit()
             except Exception as e:
                 _logger.info("orders_update_order > Error actualizando ORDEN")
-                _logger.error(e, exc_info=True)                
+                _logger.error(e, exc_info=True)
+                order.message_post(body=str("Error actualizando ORDEN: ")+str(e),message_type=order_message_type)
                 pass
 
             _logger.info("orders_update_order journal_id: "+str(order.name))
@@ -414,6 +523,7 @@ class MercadoLibreOrder(models.Model):
         res2 = {}
 
         if self.sale_order:
+            self._meli_brand()
             #_logger.info("meli_oerp_multiple >> calling _meli_order_update")
             #res2 = super(SaleOrderMul, self.sale_order)._meli_order_update(account=self.connection_account)
             res2 = self.sale_order.multi_meli_order_update(account=self.connection_account)
@@ -499,7 +609,7 @@ class mercadolibre_shipment_print(models.TransientModel):
         company = self.env.user.company_id
         if not config:
             config = company
-            
+
         _logger.info( "shipment_print context: " + str(context) )
         shipment_ids = ('active_ids' in context and context['active_ids']) or []
         #check if model is stock_picking or mercadolibre.shipment
@@ -509,13 +619,13 @@ class mercadolibre_shipment_print(models.TransientModel):
         if active_model == "stock.picking":
             shipment_ids_from_pick = []
             for spick_id in shipment_ids:
-                spick = self.env["stock.picking"].browse(spick_id)            
+                spick = self.env["stock.picking"].browse(spick_id)
                 sale_order = spick.sale_id
                 if sale_order and sale_order.meli_shipment:
                     shipment_ids_from_pick.append(sale_order.meli_shipment.id)
             shipment_ids = shipment_ids_from_pick
             _logger.info("stock.picking shipment_ids:"+str(shipment_ids))
-            
+
         shipment_obj = self.env['mercadolibre.shipment']
         warningobj = self.env['meli.warning']
 

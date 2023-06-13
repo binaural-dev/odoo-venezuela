@@ -21,6 +21,7 @@
                   <field name="sku"/>
                   <field name="barcode"/>
                   <field name="conn_id"/>
+                  <field name="conn_variation_id"/>
                   <field name="price" />
                   <field name="meli_price" attrs="{'readonly':[('meli_price_fixed', '=', False)]}"/>
                   <field name="meli_price_fixed" />
@@ -29,6 +30,7 @@
                   <field name="stock_update" />
                   <field name="stock_error" />
                   <field name="meli_shipping_logistic_type"/>
+                  <field name="meli_official_store_id"/>
                 </group>
               </group>
               <!--label for="sale_ok" position="after">
@@ -104,7 +106,7 @@
                     <field name="conn_id"/>
                     <field name="conn_variation_id"/>
                     <field name="sku"/>
-                    <field name="barcode" optional="hide"/>
+                    <field name="barcode" optional="show"/>
                     <field name="meli_status"/>
                     <field name="meli_sub_status" optional="hide"/>
                     <field name="stock"/>
@@ -427,9 +429,10 @@
                       <field name="mercadolibre_bindings" invisible="0">
                           <tree create="0" edit="1" delete="0" default_order='connection_account asc, name asc'>
                             <field name="connection_account"/>
+                            <field name="meli_official_store_id"/>
                             <field name="name"/>
                             <field name="sku"/>
-                            <!--field name="barcode"/-->
+                            <field name="barcode"/>
                             <field name="conn_id" string="MercadoLibre Id"/>
                             <field name="conn_variation_id"  string="Variant Id"/>
                             <field name="price"/>
@@ -598,14 +601,15 @@
       	<field name="model">mercadolibre.product_template</field>
       	<field name="arch" type="xml">
       		<tree create="1" edit="1" delete="1" default_order='name asc, connection_account asc'>
-            <!--field name="sku" /-->
       			<field name="name" />
             <!--field name="active" /-->
             <field name="connection_account" />
+            <field name="meli_official_store_id"/>
             <field name="sku"/>
             <field name="barcode"/>
             <field name="conn_id" string="MercadoLibre Id"/>
             <field name="meli_variants_status"/>
+            <field name="variant_bindings"/>
             <field name="product_tmpl_id"/>
       		</tree>
       	</field>
@@ -628,8 +632,8 @@
             <field name="stock" />
             <!--field name="meli_status"/>
             <field name="meli_sub_status"/-->
-            <!--field name="meli_permalink" widget="url"/-->
-            <!--field name="meli_permalink_edit" widget="url"/-->
+            <field name="meli_permalink" widget="url"/>
+            <field name="meli_permalink_edit" widget="url"/>
             <field name="product_id"/>
             <!--field name="active"  optional="hide"/-->
             <field name="full_update" optional="hide"/>
