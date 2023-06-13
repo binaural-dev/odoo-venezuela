@@ -30,6 +30,7 @@ import math
 
 from . import versions
 from .versions import *
+from odoo.addons.meli_oerp.models.versions import *
 
 from odoo.exceptions import UserError, ValidationError
 
@@ -50,6 +51,7 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
     _inherit = "ocapi.connection.binding.product_template"
 
     connection_account = fields.Many2one( "mercadolibre.account", string="MercadoLibre Account" )
+    company_id = fields.Many2one("res.company", related="connection_account.company_id",string="Company")
     variant_bindings = fields.One2many("mercadolibre.product","binding_product_tmpl_id",string="Product Variant Bindings")
 
     image_bindings = fields.One2many('mercadolibre.product.image', "binding_product_tmpl_id", string="Product Template Images")
@@ -62,6 +64,7 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
     meli_price = fields.Char(string='Precio de venta', size=128,index=True)
     meli_price_fixed = fields.Boolean(string='Price is fixed')
     meli_pricelist = fields.Many2one("product.pricelist",string="Pricelist")
+    meli_official_store_id = fields.Char(string="ML Off. Store Id",index=True)
 
     @api.onchange('meli_price_fixed')
     def _onchange_meli_price_fixed( self ):
@@ -197,8 +200,7 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
                 _logger.info("Pricelist:"+str(pl and pl.name))
                 if (meli_price):
                     bind.update_pl_price(meli_price=meli_price)
-                #if not update from pricelist
-                return_val = pl.price_get( product.id, 1.0 )
+                return_val = get_price_from_pl( pl, product, 1.0 )
                 if pl.id in return_val:
                     new_price = return_val[pl.id]
 
@@ -627,8 +629,18 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
             catid, wwwid = self.env["mercadolibre.category"].meli_get_category( rjson['category_id'], meli=meli, create_missing_website=config.mercadolibre_create_website_categories )
             desplain = ("description" in rjson and rjson["description"]) or ""
             meli_ids = rjson["id"]
-            seller_sku = product_tmpl_id.product_variant_ids.mapped("default_code") or ("seller_sku" in rjson and rjson["seller_sku"]) or product_tmpl_id.default_code
-            barcode = product_tmpl_id.product_variant_ids.mapped("barcode") or ("barcode" in rjson and rjson["barcode"]) or product_tmpl_id.barcode
+            #seller_sku = product_tmpl_id.product_variant_ids.mapped("default_code") or
+            #            ("seller_sku" in rjson and rjson["seller_sku"]) or
+            #            product_tmpl_id.default_code
+            #barcode = product_tmpl_id.product_variant_ids.mapped("barcode") or
+            #        ("barcode" in rjson and rjson["barcode"]) or
+            #        product_tmpl_id.barcode
+            seller_sku = (rjson and "seller_skus" in rjson and rjson["seller_skus"])
+            seller_sku = seller_sku or (rjson and "seller_sku" in rjson and rjson["seller_sku"])
+
+            barcode = (rjson and "barcodes" in rjson and rjson["barcodes"])
+            barcode = barcode or (rjson and "barcode" in rjson and rjson["barcode"])
+
             fields = {
                 #'meli_permalink': rjson['permalink'],
                 'meli_title': rjson['title'].encode("utf-8"),
@@ -650,21 +662,39 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
                 #'meli_video': str(vid),
                 #'meli_dimensions': meli_dim_str,
             }
+            if "meli_official_store_id" in bindT._fields:
+                fields["meli_official_store_id"] = ('official_store_id' in rjson and rjson['official_store_id']) or ""
+                meli_official_store_id = fields["meli_official_store_id"]
+                if (str(account.official_store_id)!=str(meli_official_store_id)):
+                    #change account
+                    #_logger.info("copy_from_rjson > changing account:"+str(meli_official_store_id))
+                    account_store_id = self.env['mercadolibre.account'].search( [( 'official_store_id', '=ilike', str(meli_official_store_id) )], limit=1 )
+                    #_logger.info("copy_from_rjson > account_store_id:"+str(account_store_id))
+                    if (account_store_id):
+                        bindT.connection_account = account_store_id
+                        account = bindT.connection_account
+                        config = account.configuration
+
+
+
+
             meli_shipping_logistic_type = ( rjson and "shipping" in rjson and "logistic_type" in rjson["shipping"] and rjson["shipping"]["logistic_type"] ) or ""
             meli_shipping_logistic_type and fields.update({'meli_shipping_logistic_type': meli_shipping_logistic_type })
 
             meli_shipping_free = ( rjson and "shipping" in rjson and "free_shipping" in rjson["shipping"] and rjson["shipping"]["free_shipping"] ) or False
             meli_shipping_free and fields.update({'meli_shipping_free': meli_shipping_free })
 
+            #_logger.info("copy in bindT: "+str(fields))
             bindT.write(fields)
 
             for bind in bindT.variant_bindings:
+                bind.connection_account = account
                 bind.copy_from_rjson( rjson=rjson, meli=meli )
 
-            seller_sku = product_tmpl_id.product_variant_ids.mapped("default_code") or ("seller_sku" in rjson and rjson["seller_sku"]) or product_tmpl_id.default_code
-            barcode = product_tmpl_id.product_variant_ids.mapped("barcode") or ("barcode" in rjson and rjson["barcode"]) or product_tmpl_id.barcode
-            fields = {'sku': seller_sku or "",'barcode': barcode or ""}
-            bindT.write(fields)
+            #seller_sku = product_tmpl_id.product_variant_ids.mapped("default_code") or ("seller_sku" in rjson and rjson["seller_sku"]) or product_tmpl_id.default_code
+            #barcode = product_tmpl_id.product_variant_ids.mapped("barcode") or ("barcode" in rjson and rjson["barcode"]) or product_tmpl_id.barcode
+            #fields = {'sku': seller_sku or "",'barcode': barcode or ""}
+            #bindT.write(fields)
 
 
     def fetch_meli_product( self, meli = None, rjson = None, from_meli_oerp = False, fetch_variants = False ):
@@ -869,6 +899,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
     _inherit = ["ocapi.connection.binding.product"]
 
     connection_account = fields.Many2one( "mercadolibre.account", string="MercadoLibre Account" )
+    company_id = fields.Many2one("res.company", related="connection_account.company_id",string="Company")
     binding_product_tmpl_id = fields.Many2one("mercadolibre.product_template",string="Product Template Binding")
 
     image_bindings = fields.One2many('mercadolibre.product.image', "binding_product_variant_id", string="Product Variant Images")
@@ -1026,6 +1057,124 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
             bind.meli_stock_moves_update = bind.product_id and bind.product_id.meli_stock_moves_update
 
     meli_stock_moves_update = fields.Datetime(compute=_meli_stock_moves_update,string="Stock Last Move",help="Ultimo movimiento de stock")
+
+    def get_stock_str(self):
+        stocks = []
+        stocks_str = ""
+        stocks_on_hand = 0.0
+        stocks_available = 0.0
+        #ss = variant._product_available()
+
+        variant = self.product_id
+        account = self.connection_account
+        if not variant or not account:
+            return stocks_str, stocks_on_hand, stocks_available
+
+        #_logger.info("account.configuration.publish_stock_locations")
+        #_logger.info(account.configuration.publish_stock_locations.mapped("id"))
+        #locids = account.configuration.publish_stock_locations.mapped("id")
+        locids = account.get_location_ids()
+        sq = self.env["stock.quant"].search([('product_id','=',variant.id),('location_id','in',locids)],order="location_id asc")
+        if (sq):
+            #_logger.info( sq )
+            #_logger.info( sq.name )
+            for s in sq:
+                #TODO: filtrar por configuration.locations
+                #TODO: merge de stocks
+                #TODO: solo publicar available
+                if ( s.location_id.usage == "internal"):
+                    _logger.info( s )
+                    sjson = {
+                        "warehouseId": s.location_id.id,
+                        "warehouse": s.location_id.display_name,
+                        "quantity": s.quantity,
+                        "reserved": s.reserved_quantity,
+                        "available": s.quantity - s.reserved_quantity
+                    }
+                    #stocks.append(sjson)
+                    stocks_str+= str(sjson["warehouse"])+str(": ")+str(sjson["quantity"])+str("/")+str(str(sjson["available"]))
+                    stocks_str+= " "
+                    stocks_on_hand+= sjson["quantity"]
+                    stocks_available+= sjson["available"]
+                    #variant.stock = sjson["available"]
+
+        return stocks_str, stocks_on_hand, stocks_available
+
+    def _search_stock_resume_on_hand(self, operator, value):
+        ids = []
+        if (operator == '>' or operator == '<' or operator == '=' or operator == '>=' or operator == '<='):
+
+            company = self.env.user.company_id
+            account = company.producteca_connections and company.producteca_connections[0]
+            if not account:
+                return []
+
+            locids = account.configuration.publish_stock_locations.mapped("id")
+            sq = self.env["stock.quant"].search([('location_id','in',locids),('quantity',operator,value)],order="quantity asc")
+            if sq:
+                pids = sq.mapped("product_id")
+                vbids = self.search([('product_id','in', pids.ids)])
+                if vbids:
+                    ids = [('id','in',vbids.ids)]
+
+        return ids
+
+    def _search_stock_resume_available(self, operator, value):
+        ids = []
+        if (operator == '>' or operator == '<' or operator == '=' or operator == '>=' or operator == '<='):
+
+            company = self.env.user.company_id
+            account = company.producteca_connections and company.producteca_connections[0]
+
+            if not account:
+                return []
+            locids = account.configuration.publish_stock_locations.mapped("id")
+
+            rsq = self.env["stock.quant"].search([('location_id','in',locids),('reserved_quantity','>',0.0)],order="reserved_quantity asc")
+            sq = self.env["stock.quant"].search([('location_id','in',locids),('quantity',operator,value)],order="quantity asc")
+
+            pids = []
+
+            if sq:
+                products_quantity = sq.mapped("product_id")
+                pids = products_quantity
+
+            if rsq:
+                products_reserved = rsq.mapped("product_id")
+                pids_reserved = products_reserved.ids
+                products_not_reserved = products_quantity - products_reserved
+                for q in rsq:
+                    qav = q.quantity - q.reserved_quantity
+                    if OPERATORS[operator](qav, value):
+                        products_not_reserved+= q.product_id
+                pids = products_not_reserved
+
+            if pids:
+                #_logger.info(pids.ids)
+                vbids = self.search([('product_id','in', pids.ids)])
+                #_logger.info(vbids)
+                if vbids:
+                    ids = [('id','in',vbids.ids)]
+
+        return ids
+
+
+    def _meli_stock_resume(self):
+        #_logger.info("Calculate stock resume")
+        for bind in self:
+            bind.meli_stock_resume = ""
+            stocks_str, stocks_on_hand, stocks_available = bind.get_stock_str()
+            bind.meli_stock_resume = stocks_str
+            bind.meli_stock_resume_on_hand = stocks_on_hand
+            bind.meli_stock_resume_available = stocks_available
+
+    #meli_stock_resume = fields.Char(string="Stock Resumen", compute="_meli_stock_resume", store=False )
+    #meli_stock_resume_on_hand = fields.Float(string="Qty On hand", compute="_meli_stock_resume"
+                        #, search="_search_stock_resume_on_hand"
+    #                    )
+    #meli_stock_resume_available = fields.Float(string="Qty Available", compute="_meli_stock_resume"
+    #                    #, search="_search_stock_resume_available"
+    #                    )
     meli_permalink = fields.Char( compute=product_get_meli_update, size=256, string='Link',help='PermaLink in MercadoLibre', store=False )
     meli_permalink_edit = fields.Char( compute=product_get_meli_update, size=256, string='Link Edit',help='PermaLink Edit in MercadoLibre', store=False )
     meli_state = fields.Boolean( compute=product_get_meli_update, string='Login',help="Inicio de sesión requerida", store=False )
@@ -1139,6 +1288,13 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                         seller_sku = ("seller_sku" in var and var["seller_sku"]) or ""
                         barcode = ("barcode" in var and var["barcode"]) or ""
                         variant_stock = ("available_quantity" in var and var["available_quantity"])
+                    if (not bind.conn_variation_id):
+                        if (len(rjson["variations"])==1):
+                            seller_sku = ("seller_sku" in var and var["seller_sku"]) or None
+                            barcode = ("barcode" in var and var["barcode"]) or None
+                            variant_stock = ("available_quantity" in var and var["available_quantity"])
+                            bind.conn_variation_id = str(var["id"])
+
                 if not seller_sku:
                     _logger.error("seller sku not found: meli_id: "+str(bind.conn_id)+" varid: "+str(bind.conn_variation_id))
             if not seller_sku:
@@ -1203,7 +1359,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
             if (config.mercadolibre_update_local_stock):
                 product = bind.product_id
                 _logger.info("product_update_stock: "+str(bind.stock))
-                _logger.info("product_update_stock: rjson: "+str(rjson))
+                #_logger.info("product_update_stock: rjson: "+str(rjson))
                 _logger.info("meli: "+str(meli))
                 _logger.info("account: "+str(account))
                 product and product.product_update_stock(stock=bind.stock, meli_id=meli_id, meli=meli, config=config )
@@ -1304,7 +1460,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 if (meli_price):
                     bind.update_pl_price(meli_price=meli_price)
                 #if not update from pricelist
-                return_val = pl.price_get( product.id, 1.0 )
+                return_val = get_price_from_pl( pl, product, 1.0 )
                 if pl.id in return_val:
                     new_price = return_val[pl.id]
                     #added taxes here
@@ -1389,11 +1545,13 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 meli = self.env['meli.util'].get_new_instance( account.company_id, account )
 
             rjson = rjson or account.fetch_meli_product( meli_id=meli_id, meli=meli )
+            #is this binding the master odoo product meli id?
             meli_oerp_match_import = (product.meli_id and meli_id and product.meli_id==meli_id)
-            bind_only = (meli_oerp_match_import==False) #just bind
+            #just bind, never import
+            bind_only = (meli_oerp_match_import==False)
             #TODO: recheck to not import ML to Odoo Product if this is not the principal bind conn_id
             if (not product.meli_id or meli_oerp_match_import):
-                _logger.info("product_meli_get_product: bind_only: "+str(bind_only))
+                _logger.info("product_meli_get_product: meli_oerp_match_import:" + str(meli_oerp_match_import) +" bind_only: "+str(bind_only))
                 res = product.product_meli_get_product( meli_id=meli_id, account=account, meli=meli, rjson=rjson )
                 _logger.info("variant get product >> product_meli_get_product res:"+str(res))
                 if res and "error" in res:
@@ -1931,7 +2089,7 @@ class MercadoLibreConnectionBindingSaleOrder(models.Model):
             self.env['mercadolibre.orders'].orders_query_recent( meli=meli, config=config )
             return {}
 
-        #self._cr.autocommit(False)
+        Autocommit( self )
 
         try:
             self.orders_query_iterate( offset=0, account=account, meli=meli )

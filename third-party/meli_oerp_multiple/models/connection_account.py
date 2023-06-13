@@ -33,11 +33,32 @@ except ImportError:
     from urllib.parse import urlencode
 from . import versions
 from .versions import *
+from odoo.addons.meli_oerp.models.versions import *
 import json
 import base64
 
 import hashlib
 from datetime import datetime
+
+
+class MercadoLibreBrand(models.Model):
+
+    _name = 'mercadolibre.brand'
+    _description = 'MercadoLibre Brand'
+
+    name = fields.Char(string="Name",required=True,index=True)
+
+    #https://api.mercadolibre.com/users/609389670/brands
+    official_store_id = fields.Char(string="Official Store Id",required=True,index=True)
+    site_id = fields.Char(string="Site Id",required=True,index=True)
+    seller_id = fields.Char(string="Seller id",required=True,index=True)
+
+    fantasy_name = fields.Char(string="Name",required=True,index=True)
+    status = fields.Char(string="Status",required=True,index=True)
+    type = fields.Char(string="Type",required=True,index=True)
+
+    permalink = fields.Char(string="Permalink",required=True,index=True)
+
 
 class MercadoLibreConnectionAccount(models.Model):
 
@@ -53,13 +74,77 @@ class MercadoLibreConnectionAccount(models.Model):
 				ondelete={'mercadolibre': 'set default'},
 				index=True,
 				required=True)
-    country_id = fields.Many2one("res.country",string="Country",index=True)
+    country_id = fields.Many2one("res.country",string="Country",index=True, required=True)
 
     refresh_token = fields.Char(string='Refresh Token', help='Refresh Token',size=128)
-    meli_login_id = fields.Char( string="Meli Login Id", index=True)
-    redirect_uri = fields.Char( string='Redirect Uri', help='Redirect uri (https://myodoodomain.com/meli_login/[meli_login_id])',size=1024, index=True)
+    meli_login_id = fields.Char( string="Meli Login Id", help="https://compania.odoo.com/meli_login/{Meli Login Id}  Por ejemplo, si el Redirect Uri es: https://compania.odoo.com/meli_login/micanaluno el Meli Login Id es: micanaluno", index=True, required=True)
+    redirect_uri = fields.Char( string='Redirect Uri', help='Redirect uri (https://myodoodomain.com/meli_login/[meli_login_id])',size=1024, index=True, required=True)
     cron_refresh = fields.Boolean(string="Cron Refresh", index=True)
     code = fields.Char( string="Code", index=True)
+    official_store_id = fields.Char(string="Official Store Id",related="configuration.mercadolibre_official_store_id")
+
+
+    def _mercadolibre_brands( self ):
+        brands = []
+        for ac in self:
+            company = ac.company_id or ac.env.user.company_id
+            ac_official_store_id = ac.official_store_id
+            seller_id = ac.seller_id
+            meli = self.env['meli.util'].get_new_instance( company, ac )
+            #ac.mercadolibre_brands = [(5)]
+            if meli:
+                response = meli.get("/users/"+str(seller_id)+"/brands", {'access_token':meli.access_token })
+                rjson = response and response.json()
+                #_logger.info("_mercadolibre_brands rjson: "+str(rjson))
+                if rjson and not "error" in rjson and "brands" in rjson:
+                    #search and create
+                    for bra in rjson["brands"]:
+                        #_logger.info("_mercadolibre_brands bra: "+str(bra))
+
+                        brand = {
+                            "name": "name" in bra and bra["name"],
+                            "site_id": "site_id" in bra and bra["site_id"],
+                            "official_store_id": "official_store_id" in bra and bra["official_store_id"],
+                            "seller_id": seller_id,
+
+                            "fantasy_name": "fantasy_name" in bra and bra["fantasy_name"],
+                            "status": "status" in bra and bra["status"],
+                            "type": "type" in bra and bra["type"],
+                            "permalink": "permalink" in bra and bra["permalink"],
+                        }
+
+                        official_store_id = 'official_store_id' in bra and bra['official_store_id']
+                        br = self.env["mercadolibre.brand"].search([('official_store_id','=',str(official_store_id) )])
+                        if not br or not br.id:
+                            #skip
+
+                            br = self.env["mercadolibre.brand"].create(brand)
+                            #if br:
+                            #    _logger.info("Created mercadolibre.brand: "+str(brand)+" id:"+str(br))
+                        else:
+                            br.write(brand)
+
+                        brands.append(br)
+
+
+        return brands
+                        #    ac.mercadolibre_brands = [(4,0,[br.id])]
+
+    #mercadolibre_brands = fields.Many2many("mercadolibre.brand",relation='mercadolibre_account_brands_rel',string="Brands")
+
+
+    def _meli_brand( self ):
+        for ac in self:
+            ac.brand = None
+            #if not ac.mercadolibre_brands:
+            mercadolibre_brands = ac._mercadolibre_brands()
+            _logger.info("mercadolibre_brands: "+str(mercadolibre_brands))
+            if mercadolibre_brands:
+                for br in mercadolibre_brands:
+                    if br.official_store_id and str(br.official_store_id)==str(ac.official_store_id):
+                        ac.brand = br
+
+    brand = fields.Many2one("mercadolibre.brand",compute=_meli_brand,string="Brand" )
 
     def create_credentials(self, context=None):
         context = context or self.env.context
@@ -100,22 +185,20 @@ class MercadoLibreConnectionAccount(models.Model):
         return access_token
 
     def get_connector_state(self):
-        #ocapi_state = True
-        #for connacc in self:
-        #    connacc.state = ocapi_state
+
         for connacc in self:
-            #company = self or self.env.user.company_id
+            connacc.status = "disconnected"
             _logger.info( 'meli_oerp_multiple account get_connector_state() ' + str(connacc and connacc.name) )
             meli = self.env['meli.util'].get_new_instance( connacc.company_id, connacc )
             if meli:
                 if meli.needlogin_state:
-                    #connacc.state = True
                     connacc.status = "disconnected"
                 else:
-                    #connacc.state = False
                     connacc.status = "connected"
 
-    status = fields.Selection([("disconnected","Disconnected"),("connected","Connected")],string="Status",compute='get_connector_state')
+    status = fields.Selection([("disconnected","Disconnected"),("connected","Connected")],
+                                string="Status",
+                                compute='get_connector_state')
     state = fields.Boolean( compute='get_connector_state', string="State", help="Estado de la conexión", readonly=False )
 
     mercadolibre_product_template_bindings = fields.One2many( "mercadolibre.product_template", "connection_account", string="Product Bindings" )
@@ -301,6 +384,12 @@ class MercadoLibreConnectionAccount(models.Model):
         #we have variants
         if "variations" in rjson and len(rjson["variations"]):
             vindex = -1
+            rjson['seller_skus'] = '['
+            rjson['barcodes'] = '['
+            rjson['variation_ids'] = '['
+            comai = ''
+            comas = ''
+            comab = ''
             for var in rjson['variations']:
                 vindex = vindex+1
                 vjson = rjson['variations'][vindex]
@@ -322,12 +411,23 @@ class MercadoLibreConnectionAccount(models.Model):
                         for att in vjson["attributes"]:
                             if ("id" in att and att["id"] == "SELLER_SKU"):
                                 rjson['variations'][vindex]["seller_sku"] = att["value_name"]
+                                rjson['seller_skus']+= comas+str(att["value_name"])
+                                comas = ','
                                 if (len(rjson["variations"])==1):
                                     rjson['seller_sku'] = att["value_name"]
 
+
                             if ("id" in att and att["id"] == "GTIN"):
                                 rjson['variations'][vindex]["barcode"] = att["value_name"]
+                                rjson['barcodes']+= comab+str(att["value_name"])
+                                comab = ','
 
+                    rjson['variation_ids']+= comai+str(meli_id_variation)
+                    comai = ','
+
+            rjson['seller_skus']+= ']'
+            rjson['barcodes']+= ']'
+            rjson['variation_ids']+= ']'
         #_logger.info("Fetch Meli Product, rjson: " +str(rjson))
 
         return rjson
@@ -523,6 +623,7 @@ class MercadoLibreConnectionAccount(models.Model):
                 'meli_id': meli_id,
                 'meli_pub': True,
             }
+            prod_fields.update(ProductType())
             #prod_fields['default_code'] = rjson3['id']
             productcreated = self.env['product.product'].create((prod_fields))
             if (productcreated):
@@ -644,7 +745,7 @@ class MercadoLibreConnectionAccount(models.Model):
         if product_ids:
             cn = 0
             ct = len(product_ids)
-            #self._cr.autocommit(False)
+            Autocommit(self)
             try:
                 for obj in product_ids:
                     cn = cn + 1
@@ -665,7 +766,70 @@ class MercadoLibreConnectionAccount(models.Model):
 
         return {}
 
-    #Toma y lista los ids de las publicaciones del sitio de MercadoLibre
+
+    def filter_meli_ids( self, results, store_id=None ):
+
+        account = self
+
+        company = account.company_id or self.env.user.company_id
+
+
+        meli = self.env['meli.util'].get_new_instance( company, account )
+        if meli.need_login():
+            return meli.redirect_login()
+
+        official_store_id = store_id
+        if not official_store_id:
+            return results
+
+        c = 0
+        n20 = 0
+        rresults = []
+        #_logger.info("results:"+str(results))
+        if not results:
+            return rresults
+
+        ids = ""
+        coma = ""
+        maxc = (results and len(results)) or 0
+        for meli_id in results:
+            c+=1
+            n20+=1
+
+            #read id and official_store_id to check
+            #hacer paquetes de 20 !!!!!! /items?ids=$ITEM_ID1,$ITEM_ID2&attributes=$ATTRIBUTE1,$ATTRIBUTE2,$ATTRIBUTE3
+
+            #armamos el paquete
+            ids+= coma+str(meli_id)
+            coma = ","
+
+            if n20==20 or c==maxc:
+                item_params = {
+                    "ids": str(ids),
+                    "attributes": "id,official_store_id"
+                }
+                #_logger.info("item_params:"+str(item_params))
+                responseItem = meli.get("/items"+str('?ids='+str(ids)+'&attributes='+str('id,official_store_id')), {} )
+                #[ { "code": 200, "body": { "id": "MLM863472529", "official_store_id": 3476 } },
+                #_logger.info("responseItem:"+str(responseItem and responseItem.json()))
+                if responseItem.json():
+                    for rr in responseItem.json():
+                        #_logger.info("rr:"+str(rr))
+                        if ("code" in rr and rr["code"]==200):
+                            if ("body" in rr and rr["body"]):
+                                st_id = "official_store_id" in rr["body"] and rr["body"]["official_store_id"]
+                                ml_id = "id" in rr["body"] and rr["body"]["id"]
+                                if (st_id and official_store_id and str(st_id)==str(official_store_id) ):
+                                    rresults.append(ml_id)
+                ids = ""
+                n20 = 0
+        #_logger.info("rresults:"+str(rresults))
+
+        return rresults
+
+
+
+    #Toma y lista los ids de las publicaciones del sitio de MercadoLibre, filtrados por official_store_id
     def fetch_list_meli_ids( self, params=None ):
 
         account = self
@@ -679,6 +843,9 @@ class MercadoLibreConnectionAccount(models.Model):
         if meli.need_login():
             return meli.redirect_login()
 
+        config = account.configuration
+        official_store_id = config.mercadolibre_official_store_id or None
+
         response = meli.get("/users/"+str(account.seller_id)+"/items/search",
                             {'access_token':meli.access_token,
                             'search_type': 'scan',
@@ -687,7 +854,10 @@ class MercadoLibreConnectionAccount(models.Model):
 
         rjson = response.json()
         scroll_id = ""
-        results = (rjson and "results" in rjson and rjson["results"]) or []
+        results = []
+        ofresults = (rjson and "results" in rjson and rjson["results"]) or []
+        filt_results = self.filter_meli_ids(  ofresults, store_id=official_store_id  )
+        results+= filt_results or []
         condition_last_off = True
         total = (rjson and "paging" in rjson and "total" in rjson["paging"] and rjson["paging"]["total"]) or 0
         _logger.info("fetch_list_meli_ids: params:"+str(params)+" total:"+str(total))
@@ -720,7 +890,11 @@ class MercadoLibreConnectionAccount(models.Model):
                         "target": "new",}
                 condition_last_off = True
             else:
-                results+= (rjson2 and "results" in rjson2 and rjson2["results"]) or []
+                #results+= (rjson2 and "results" in rjson2 and rjson2["results"]) or []
+
+                ofresults = (rjson2 and "results" in rjson2 and rjson2["results"]) or None
+                filt_results = self.filter_meli_ids(  ofresults, store_id=official_store_id  )
+                results+= filt_results or []
                 condition_last_off = (total>0 and len(results)>=total)
 
         return results
@@ -793,120 +967,39 @@ class MercadoLibreConnectionAccount(models.Model):
         if meli_id:
             post_state_filter.update( { 'meli_id': meli_id } )
 
+        official_store_id = (account.official_store_id) or None
 
         url_get = "/users/"+str(account.seller_id)+"/items/search"
+
         #_logger.info(meli.access_token)
-        response = meli.get(url_get, {'access_token':meli.access_token,
-                                    'offset': ((search_offset+search_limit)<1000 and search_offset) or 0,
-                                    'limit': search_limit,
-                                    **post_state_filter
-                                    } )
-        rjson = response.json()
-        _logger.info( "response from "+str(url_get)+": "+str(rjson) )
-
-        if 'error' in rjson:
-            _logger.error(rjson)
-
-        if 'results' in rjson:
-            results = rjson['results']
+        meli_ids = self.fetch_list_meli_ids( params=post_state_filter )
+        _logger.info("meli_ids: "+str(meli_ids))
 
         #download?
-        totalmax = 0
+        totalmax = len(meli_ids)
         offset = search_offset
-        if 'paging' in rjson:
-            totalmax = rjson['paging']['total']
-            offset = ('offset' in rjson['paging'] and rjson['paging']['offset']) or search_offset
-        else:
-            return ""
 
         _logger.info( "totalmax: "+str(totalmax)+" offset:"+str(offset) )
 
-        scroll_id = False
-
-        if (totalmax>1000 or totalmax>10):
+        if (totalmax>1000 or totalmax>1):
             #USE SCAN METHOD....
-            _logger.info( "use scan method: "+str(totalmax) )
-            response = meli.get("/users/"+account.seller_id+"/items/search",
-                                #?"+urlencode({'search_type': 'scan','limit': 2 })
-                                {'access_token':meli.access_token,
-                                'search_type': 'scan',
-                                'limit': search_limit,
-                                **post_state_filter })
-            rjson = response.json()
-            _logger.info( rjson )
-
             condition_last_off = True
             ioff = 0
             cof = 0
-            scroll_id = ""
             results = []
-            if ('scroll_id' in rjson):
-                scroll_id = rjson['scroll_id']
-                #ioff = offset+rjson['paging']['limit']
-                for rs in rjson['results']:
-                    if (cof>=offset and rs not in odoo_meli_ids):
-                        results.append(rs)
+
+            for meli_id in meli_ids:
+                ioff = cof
+                if meli_id:
+                    if ( cof>=offset and meli_id not in odoo_meli_ids ):
+                        results.append( meli_id )
                     cof+= 1
 
-                condition_last_off = False
                 if (batch_processing_unit and batch_processing_unit>0 and results and len(results)>=batch_processing_unit):
-                    condition_last_off = (search_limit<=len(results))
-
-                #_logger.info(results)
-
-            while (condition_last_off!=True):
-                ioff = cof
-                _logger.info( "Prefetch products ("+str(ioff)+"/"+str(rjson['paging']['total'])+")" )
-                #_logger.info( scroll_id )
-                search_params = {
-                    'access_token': meli.access_token,
-                    'search_type': 'scan',
-                    'limit': str(search_limit),
-                    'scroll_id': scroll_id,
-                    **post_state_filter
-                }
-                #_logger.info( urlencode(search_params) )
-                response = meli.get("/users/"+str(account.seller_id)+"/items/search", search_params )
-                #?"+urlencode({'search_type': 'scan','limit': 2, 'scroll_id': scroll_id }
-                #_logger.info(response)
-                rjson2 = response.json()
-                #_logger.info(rjson2)
-                if 'error' in rjson2:
-                    _logger.error(rjson2)
-                    if rjson2['message']=='invalid_token' or rjson2['message']=='expired_token':
-                        ACCESS_TOKEN = ''
-                        REFRESH_TOKEN = ''
-                        account.write({'access_token': ACCESS_TOKEN, 'refresh_token': REFRESH_TOKEN, 'code': '' } )
-                        condition = True
-                        return {
-                            "type": "ir.actions.act_url",
-                            "url": url_login_meli,
-                            "target": "new",}
-                    condition_last_off = True
-                else:
-                    #_logger.info(rjson2)
-
-                    for rs in rjson2['results']:
-                        if (cof>=offset and rs not in odoo_meli_ids):
-                            results.append(rs)
-                        cof+= 1
-
-                    #_logger.info(results)
-                    #ioff+= min( rjson2['paging']['limit'], len(rjson2['results']) )
-
-                    if (len(results)>=rjson2['paging']['total']):
-                        condition_last_off = True
-                    elif ('scroll_id' in rjson2):
-                        scroll_id = rjson2['scroll_id']
-                        condition_last_off = False
-                    else:
-                        condition_last_off = True
-
-                    if (batch_processing_unit and batch_processing_unit>0 and results and len(results)>=batch_processing_unit):
-                        break;
+                    break;
 
 
-        if (totalmax<=1000 and len(results)<totalmax and ('paging' in rjson and totalmax>rjson['paging']['limit']) ):
+        if (1==2 and totalmax<=1000 and len(results)<totalmax and ('paging' in rjson and totalmax>rjson['paging']['limit']) ):
             pages = rjson['paging']['total'] / rjson['paging']['limit']
             ioff = offset+rjson['paging']['limit']
             condition_last_off = False
@@ -956,8 +1049,9 @@ class MercadoLibreConnectionAccount(models.Model):
         synced = []
         res = {}
         if (results):
-            #self._cr.autocommit(False)
+            Autocommit( self )
             try:
+                _logger.info("results: "+str(results))
                 for item_id in results:
                     _logger.info("item_id: "+str(item_id))
                     iitem+= 1
@@ -988,6 +1082,9 @@ class MercadoLibreConnectionAccount(models.Model):
                     product_id, binding_id  = account.search_meli_product( meli_id = item_id, meli=meli, rjson=rjson )
                     #posting_id = self.env['product.product'].search([('meli_id','=',item_id)])
 
+                    if product_id:
+                        UpdateProductType( product_id )
+
                     if (product_id or force_dont_create):
 
                         if (product_id and len(product_id)>1):
@@ -1003,6 +1100,10 @@ class MercadoLibreConnectionAccount(models.Model):
                             _logger.error( "Item already in database but duplicated: " + str(product_id.mapped('name')) + " skus:" + str(product_id.mapped('default_code')) )
 
                         if product_id and len(product_id)==1:
+
+                            if product_id and product_id.detailed_type!='product':
+                                product_id.detailed_type = 'product'
+
                             _logger.info( "Item(s) already in database: " + str(product_id.mapped('display_name')) + str(" #")+str(len(product_id)) )
 
                             if force_meli_pub:
@@ -1053,6 +1154,8 @@ class MercadoLibreConnectionAccount(models.Model):
                         #    product_id[0].mercadolibre_bind_to( account=account, meli_id = item_id)
                     #elif (not company.mercadolibre_import_search_sku):
                     else:
+                        if (official_store_id and "official_store_id" in rjson and str(official_store_id)!=str(rjson["official_store_id"])):
+                            continue;
                         #idcreated = self.pool.get('product.product').create(cr,uid,{ 'name': rjson3['title'], 'meli_id': rjson3['id'] })
                         try:
                             account.create_meli_product( meli_id = item_id, meli=meli, rjson=rjson )
@@ -1203,7 +1306,6 @@ class MercadoLibreConnectionAccount(models.Model):
                         try:
                             _logger.info( "Update Stock: #" + str(icount) +'/'+str(maxcommits)+ ' meli_id:'+str(obj.meli_id)  )
                             resjson = obj.product_post_stock(meli=meli)
-                            #resjson = None
                             logs+= str(obj.sku)+" "+str(obj.meli_id)+": "+str(obj.meli_available_quantity)+"\n"
                             if resjson and "error" in resjson:
                                 errors+= str(obj.sku)+" "+str(obj.meli_id)+" >> "+str(resjson)+"\n"

@@ -136,7 +136,7 @@ class MeliUtilMultiple(models.AbstractModel):
 
                         api_rest_client.needlogin_state = True
 
-                        _logger.error(rjson)
+                        _logger.info(rjson)
 
                         if rjson["error"]=="not_found":
                             api_rest_client.needlogin_state = True
@@ -175,7 +175,7 @@ class MeliUtilMultiple(models.AbstractModel):
                                 except Exception as e:
                                     errors += str(e)
                                     logs += str(e)
-                                    _logger.error(e)
+                                    _logger.info(e)
                                     pass;
                                 except:
                                     pass;
@@ -199,7 +199,7 @@ class MeliUtilMultiple(models.AbstractModel):
             #raise osv.except_osv( _('MELI WARNING'), _('NO INTERNET CONNECTION TO API.MERCADOLIBRE.COM: complete the Cliend Id, and Secret Key and try again'))
             api_rest_client.needlogin_state = True
             error_msg = 'MELI WARNING: NO INTERNET CONNECTION TO API.MERCADOLIBRE.COM: complete the Cliend Id, and Secret Key and try again '
-            _logger.error(error_msg)
+            _logger.info(error_msg)
 
         if api_rest_client.access_token=='' or api_rest_client.access_token==False:
             api_rest_client.needlogin_state = True
@@ -230,7 +230,7 @@ class MeliUtilMultiple(models.AbstractModel):
                 account.write({'access_token': '', 'refresh_token': '', 'code': '', 'cron_refresh': False } )
 
         except Exception as e:
-            _logger.error(e)
+            _logger.info(e)
 
         #if api_rest_client.needlogin_state:
         #    account.status = "disconnected"

@@ -11,4 +11,34 @@
             <field name="name">Hide</field>
             <field name="comment">Hide.</field>
     </record>
+
+    <record model="ir.rule" id="mercadolibre_product_comp_rule">
+        <field name="name">MercadoLibre Product multi-company</field>
+        <field name="model_id" ref="model_mercadolibre_product"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record model="ir.rule" id="mercadolibre_product_template_comp_rule">
+        <field name="name">MercadoLibre Product Template multi-company</field>
+        <field name="model_id" ref="model_mercadolibre_product_template"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record model="ir.rule" id="mercadolibre_notification_comp_rule">
+        <field name="name">MercadoLibre Notification multi-company</field>
+        <field name="model_id" ref="model_mercadolibre_notification"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record model="ir.rule" id="mercadolibre_account_comp_rule">
+        <field name="name">MercadoLibre Account multi-company</field>
+        <field name="model_id" ref="model_mercadolibre_account"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record model="ir.rule" id="mercadolibre_configuration_comp_rule">
+        <field name="name">MercadoLibre Configuration multi-company</field>
+        <field name="model_id" ref="model_mercadolibre_configuration"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id', 'in', company_ids)]</field>
+    </record>
 </odoo>

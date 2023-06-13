@@ -50,6 +50,7 @@ class MercadoLibreConnectionNotification(models.Model):
     connection_account = fields.Many2one( "mercadolibre.account", string="MercadoLibre Account" )
 
     company = fields.Many2one("res.company",string="Noti. Company")
+    company_id = fields.Many2one("res.company", related="connection_account.company_id",string="Company")
     user = fields.Many2one("res.users",string="User")
 
     limit_attempts = fields.Integer(string='Attempts limit')

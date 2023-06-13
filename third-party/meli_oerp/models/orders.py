@@ -669,13 +669,13 @@ class mercadolibre_orders(models.Model):
                     'seller_sku': oitem.seller_sku,
                     'seller_custom_field': oitem.seller_custom_field,
                 },
-                "unit_price": oitem.full_unit_price,
+                "unit_price": oitem.unit_price,
                 #"currency_id": oitem.currency_id,
                 "currency_id": 'USD',
                 'quantity': oitem.quantity,
 
             })
-            sum_amount+= float(oitem.full_unit_price)*float(oitem.quantity)
+        sum_amount+= float(oitem.full_unit_price)*float(oitem.quantity)
         orderjson = {
             "id": self.order_id,
             "status": self.status,
@@ -1851,6 +1851,7 @@ class mercadolibre_orders(models.Model):
                     'order_item_variation_id': Item['item']['variation_id'],
                     'order_item_title': Item['item']['title'],
                     'order_item_category_id': Item['item']['category_id'],
+                    #'unit_price': Item['unit_price'],
                     'unit_price': Item['full_unit_price'],
                     'quantity': Item['quantity'],
                     'currency_id': Item['currency_id'],
