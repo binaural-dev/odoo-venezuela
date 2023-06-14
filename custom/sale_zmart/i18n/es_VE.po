@@ -77,7 +77,7 @@ msgstr "Pedido de venta"
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_type
 msgid "Shipping type"
-msgstr "Tipo de envio"
+msgstr "Tipo de entrega"
 
 #. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_stock_picking
@@ -97,7 +97,7 @@ msgstr ""
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_type
 msgid "shipping type"
-msgstr "Tipo de envio"
+msgstr "Tipo de entrega"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__priority
@@ -130,8 +130,6 @@ msgid "Packing Factor"
 msgstr "Factor de embalaje"
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_account_bank_statement_line__printed
-#: model:ir.model.fields,field_description:sale_zmart.field_account_move__printed
-#: model:ir.model.fields,field_description:sale_zmart.field_account_payment__printed
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__printed
 msgid "Printed"
 msgstr "Impreso"

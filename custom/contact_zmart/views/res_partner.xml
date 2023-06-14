@@ -9,10 +9,13 @@
                 <field name="sales_area"/>
             </xpath>
             <xpath expr="//sheet/notebook/page[@name='internal_notes']" position="before">
-                <page name="Identificación Fiscal" >
+                <page name="Documentación Legal" >
                     <group>
-                        <field name="rif"/>
-                        <field name="commercial_register"/>
+                        <field name="rif" widget="many2many_binary"/>
+                        <field name="legal_representante" widget="many2many_binary"/>
+                        <field name="commercial_register" widget="many2many_binary"/>
+                        <field name="commercial_reference" widget="many2many_binary"/>
+                        <field name="bank_reference" widget="many2many_binary"/>
                     </group>
                 </page>
             </xpath>

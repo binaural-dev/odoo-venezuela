@@ -14,6 +14,7 @@
                 <field name="name_company"/>
             </xpath>
             <xpath expr="//field[@name='payment_term_id']" position="after">
+                <field name="printed" readonly="True"/>
                 <field name="priority"/>
             </xpath>
         </field>
@@ -25,6 +26,8 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='user_id']" position="before">
                 <field name="priority"/>
+                <field name="shipping_type"/>
+                <field name="printed"/>
             </xpath>
         </field>
     </record>
