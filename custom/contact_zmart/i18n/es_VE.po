@@ -75,7 +75,7 @@ msgstr "Nombre"
 #: model:ir.model.fields,field_description:contact_zmart.field_res_partner__rif
 #: model:ir.model.fields,field_description:contact_zmart.field_res_users__rif
 msgid "Rif"
-msgstr ""
+msgstr "Registro de Información Fiscal(RIF)"
 
 #. module: contact_zmart
 #: model:ir.model.fields,field_description:contact_zmart.field_res_partner__sales_area
@@ -87,3 +87,21 @@ msgstr "Zona de ventas"
 #: model:ir.model,name:contact_zmart.model_res_partner_sale
 msgid "res.partner.sale"
 msgstr ""
+
+#. module: contact_zmart
+#: model:ir.model.fields,field_description:contact_zmart.field_res_partner__bank_reference
+#: model:ir.model.fields,field_description:contact_zmart.field_res_users__bank_reference
+msgid "Bank Reference"
+msgstr "Referencia Bancaria"
+
+#. module: contact_zmart
+#: model:ir.model.fields,field_description:contact_zmart.field_res_partner__commercial_reference
+#: model:ir.model.fields,field_description:contact_zmart.field_res_users__commercial_reference
+msgid "Commercial Reference"
+msgstr "Referencia Comercial"
+
+#. module: contact_zmart
+#: model:ir.model.fields,field_description:contact_zmart.field_res_partner__legal_representante
+#: model:ir.model.fields,field_description:contact_zmart.field_res_users__legal_representante
+msgid "Legal Representante"
+msgstr "Identificación Representante Legal"
