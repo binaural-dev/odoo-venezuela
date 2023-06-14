@@ -20,7 +20,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__name_company
 #: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__name_company
 msgid "Company"
-msgstr "Empresa"
+msgstr "Empresa de Transporte"
 
 #. module: purchase_zmart
 #: model:ir.model.fields,field_description:purchase_zmart.field_purchase_company__name
@@ -53,3 +53,28 @@ msgstr "Numero de vl"
 #: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__date_in_store
 msgid "Date In Store"
 msgstr "Fecha en Almacén"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__aduana_agent
+msgid "Aduana Agent"
+msgstr "Agente/Aduanas"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__exit_etd
+msgid "Exit Etd"
+msgstr "Salida(ETD)"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__inlay_port
+msgid "Inlay Port"
+msgstr "Llegada Puerto (ETA)"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__order_in_transit
+msgid "Order In Transit"
+msgstr "Orden en Tránsito"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__type_company
+msgid "Type Company"
+msgstr "Tipo"
