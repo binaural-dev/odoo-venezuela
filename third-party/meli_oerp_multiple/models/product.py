@@ -99,6 +99,18 @@ class product_template(models.Model):
             meli_title = rjson and "title" in rjson and rjson["title"].encode("utf-8")
             meli_title = meli_title or product_tmpl_id.meli_title or product_tmpl_id.name
 
+            meli_sku = (rjson and "seller_skus" in rjson and rjson["seller_skus"])
+            meli_sku = meli_sku or (rjson and "seller_sku" in rjson and rjson["seller_sku"])
+
+            meli_barcode = (rjson and "barcodes" in rjson and rjson["barcodes"])
+            meli_barcode = meli_barcode or (rjson and "barcode" in rjson and rjson["barcode"])
+
+            meli_variation_ids = (rjson and "variation_ids" in rjson and rjson["variation_ids"])
+
+            #TODO: clean old code
+            #meli_sku = product_tmpl_id.product_variant_ids.mapped("default_code") or product_tmpl_id.default_code or ''
+            #meli_barcode = product_tmpl_id.product_variant_ids.mapped("barcode") or product_tmpl_id.barcode or ''
+
             _logger.info(_("mercadolibre_bind_to >> Adding/Update product (tpl) %s to %s, id: %s, bind_variants: %i") % (product_tmpl_id.display_name, account.name, str(meli_id), bind_variants))
             try:
                 prod_binding = {
@@ -107,21 +119,22 @@ class product_template(models.Model):
                     "name": meli_title,
                     "meli_title": meli_title,
                     "description": product_tmpl_id.description_sale,
-                    "sku": product_tmpl_id.product_variant_ids.mapped("default_code") or product_tmpl_id.default_code or '',
-                    "barcode": product_tmpl_id.product_variant_ids.mapped("barcode") or product_tmpl_id.barcode or '',
+                    "sku": meli_sku,
+                    "barcode": meli_barcode,
                     "conn_id": meli_id,
-                    #"meli_id": meli_id,
-                    #"meli_id": meli_id or None
-                    #"price": product.ocapi_price(account),
-                    #"stock": product.ocapi_stock(account),
+                    "conn_variation_id": meli_variation_ids
                 }
                 pt_bind = self.env["mercadolibre.product_template"].search([ ("product_tmpl_id","=",product_tmpl_id.id),
                                                                              ("connection_account","=",account.id),
                                                                              ("conn_id", "=", meli_id)])
+                _logger.info("prod_binding: "+str(prod_binding))
                 if len(pt_bind):
                     pt_bind = pt_bind[0]
-                    self.env["mercadolibre.product_template"].write([prod_binding])
+                    _logger.info("prod_binding: writing")
+                    pt_bind.write(prod_binding)
+                    _logger.info("prod_binding: writing:"+str(pt_bind.conn_variation_id))
                 else:
+                    _logger.info("prod_binding: creating")
                     pt_bind = self.env["mercadolibre.product_template"].create([prod_binding])
 
                 if pt_bind:
@@ -150,7 +163,7 @@ class product_template(models.Model):
                             #drop all UNASSIGNED bindings for this meli_id_variation
                             un_pv_bind = self.env["mercadolibre.product"].search([ ("conn_id","=",meli_id),
                                                                                 ("conn_variation_id","=",False),
-                                                                                ("product_tmpl_id","=",product_tmpl_id.id),
+                                                                                #("product_tmpl_id","=",product_tmpl_id.id),
                                                                                 ("connection_account","=",account.id)])
                             if un_pv_bind:
                                 pvba = None
@@ -295,6 +308,7 @@ class product_template(models.Model):
         return res
 
     def action_meli_pause(self):
+        #product.meli_stock_block()
         for product in self:
             for bind in product.mercadolibre_bindings:
                 bind.product_meli_status_pause()
@@ -503,12 +517,15 @@ class product_product(models.Model):
         _logger.info( "mercadolibre_bind_to >> product bind_only: " + str(bind_only)+" meli_id: "+str(meli_id)+" meli_id_variation: "+str(meli_id_variation)+" context:"+str(self.env.context) )
         for product in self:
 
-            for bind in product.mercadolibre_bindings:
-                if (account.id in bind.connection_account.ids):
-                    #account ok, now check if conn_id/meli_id is ok.
-                    if ( bind.conn_id == meli_id ):
-                        _logger.info("No need to add")
-                        continue;
+            #for bind in product.mercadolibre_bindings:
+            #    if (account.id in bind.connection_account.ids):
+            #        #account ok, now check if conn_id/meli_id is ok.
+            #        if ( bind.conn_id == meli_id ):
+            #            _logger.info("No need to add")
+            #            if (bind.binding_product_tmpl_id and
+            #                product.product_tmpl_id.id==bind.binding_product_tmpl_id.id):
+            #                binding_product_tmpl_id = bind.binding_product_tmpl_id
+            #                continue;
 
             if not meli:
                 meli = self.env['meli.util'].get_new_instance( account.company_id, account)
@@ -517,22 +534,22 @@ class product_product(models.Model):
                 rjson = rjson or account.fetch_meli_product( meli_id = meli_id, meli=meli )
 
             meli_title = (rjson and "title" in rjson and rjson["title"].encode("utf-8")) or product.name
-            seller_sku = False
+            seller_sku = account.fetch_meli_sku( meli_id = meli_id, meli_id_variation = meli_id_variation, meli=meli, rjson=rjson)
             barcode = False
 
             #TODO: check if id variation correspond really to this default_code/sku or attribute combination
             product_not_imported = (product and not product.meli_id and meli_id and (1==1))
             product_imported_not_matching_binding = (product and product.meli_id and meli_id and product.meli_id!=meli_id)
+            #define bind_only depending on importing status
             bind_only = bind_only or ( product_not_imported ) or (product_imported_not_matching_binding)
             _logger.info("bind_only: "+str(bind_only))
             if (meli_id_variation==None and bind_only==True):
                 meli_id_variation = product.mercadolibre_bind_variation_id( account=account, meli_id=meli_id, meli=meli, rjson=rjson )
 
-
             meli_id_variation = meli_id_variation or (bind_only==False and meli_id and product.meli_id==meli_id and product.meli_id_variation)
             seller_sku = seller_sku or (bind_only==False and product.default_code) or ''
-            barcode = barcode or (bind_only==False and product.barcode) or ''
-            _logger.info(_("mercadolibre_bind_to >> Adding/Update product %s to %s, id: %s, var id: %s, sku: %s") % (product.display_name, account.name, str(meli_id), str(meli_id_variation),str(seller_sku)))
+            barcode = barcode or (bind_only==False and product.barcode) or None
+            _logger.info(_("mercadolibre_bind_to >> Adding/Update product %s to %s, id: %s, var id: %s, sku: %s, barcode: %s") % (product.display_name, account.name, str(meli_id), str(meli_id_variation),str(seller_sku),str(barcode)))
 
             try:
 
@@ -561,7 +578,10 @@ class product_product(models.Model):
                     pt_bind = self.env["mercadolibre.product_template"].search([("conn_id","=",meli_id),
                                                                                 ("product_tmpl_id","=",product.product_tmpl_id.id),
                                                                                 ("connection_account","=",account.id)])
+                    _logger.info("search ptbind : conn_id:"+str(meli_id)+ " product_tmpl_id:"+str(product.product_tmpl_id.id)+"connection_account: "+str(account.name))
+                    _logger.info("search ptbind : "+str(pt_bind))
                     if pt_bind and len(pt_bind):
+                        #si hay mas de uno, toma el primero, luego debemos limpiar los faltantes
                         prod_binding["binding_product_tmpl_id"] = pt_bind[0].id
                     else:
                         _logger.info( "Binding template: " + str(product.product_tmpl_id) )
@@ -646,7 +666,7 @@ class product_product(models.Model):
                         un_pv_bind = self.env["mercadolibre.product"].search([ ("conn_id","=",meli_id),
                                                                             ("conn_variation_id","=",meli_id_variation),
                                                                             ("product_id","=",False),
-                                                                            ("product_tmpl_id","=",product.product_tmpl_id.id),
+                                                                            #("product_tmpl_id","=",product.product_tmpl_id.id),
                                                                             ("connection_account","=",account.id)])
                         if un_pv_bind:
                             pvba = None
@@ -661,7 +681,7 @@ class product_product(models.Model):
                         un_pv_bind = self.env["mercadolibre.product"].search([ ("conn_id","=",meli_id),
                                                                             ("conn_variation_id","=",False),
                                                                             ("product_id","=",False),
-                                                                            ("product_tmpl_id","=",product.product_tmpl_id.id),
+                                                                            #("product_tmpl_id","=",product.product_tmpl_id.id),
                                                                             ("connection_account","=",account.id)])
                         if un_pv_bind:
                             pvba = None
@@ -743,8 +763,10 @@ class product_product(models.Model):
         try:
             #response = meli.get("/items/"+product.meli_id, {'access_token':meli.access_token})
             #_logger.info(response)
-            rjson = rjson or account.fetch_meli_product( meli_id=product.meli_id )
+            rjson = rjson or account.fetch_meli_product( meli_id=product.meli_id, meli=meli )
             #_logger.info(rjson)
+            if not rjson:
+                return { "error": "No meli data" }
         except IOError as e:
             _logger.error( "I/O error({0}): {1}".format(e.errno, e.strerror) )
             return { "error": "product_meli_get_product I/O error({0}): {1}".format(e.errno, e.strerror) }
@@ -755,7 +777,7 @@ class product_product(models.Model):
         des = ''
         desplain = ''
         vid = ''
-        if 'error' in rjson:
+        if rjson and 'error' in rjson:
             return { "error": rjson["error"] }
 
         #TODO: traer la descripcion: con
@@ -798,6 +820,7 @@ class product_product(models.Model):
         except Exception as e:
             _logger.error(e, exc_info=True)
             rjson['price'] = 0.0
+            pass;
 
         imagen_id = ''
         meli_dim_str = ''
@@ -814,6 +837,7 @@ class product_product(models.Model):
                 product._meli_set_product_price( product_template, rjson['price'], config=config )
         except:
             rjson['price'] = 0.0
+            pass;
 
         try:
             rjson['warranty'] = rjson['warranty']
@@ -889,6 +913,10 @@ class product_product(models.Model):
         product.write( meli_fields )
         product_template.write( tmpl_fields )
 
+        if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
+            _logger.info(" > mercadolibre_update_product_company ")
+            product_template.company_id = account.company_id
+
         if (rjson['available_quantity']>=0):
             if (product_template.type not in ['product']):
                 try:
@@ -947,7 +975,8 @@ class product_product(models.Model):
             else:
                 att_shipping['value_name'] = 'No'
 
-            rjson['variations'].append({'attribute_combinations': [ att_shipping ]})
+            #TODO: remove! warning! obsolete!
+            #rjson['variations'].append({'attribute_combinations': [ att_shipping ]})
 
         #_logger.info(rjson['variations'])
         #COMPLETING ATTRIBUTES VARIATION INFORMATION FROM /items/[MLID]/variations/[VARID]...
@@ -1033,28 +1062,31 @@ class product_product(models.Model):
                 for att in att_value_ids(variant):
                     _v_default_code = _v_default_code + att.attribute_id.name+':'+att.name+';'
                 _logger.info("_v_default_code: " + _v_default_code)
+                therecanbeonlyone = len(rjson['variations'])==1 and len(product_template.product_variant_ids)==1
                 for variation in rjson['variations']:
                     #_logger.info(variation)
                     _logger.info("variation[default_code]: " + variation["default_code"])
-                    if ( len(variation["default_code"]) and variant.is_variant_in_combination( variation["default_code"], _v_default_code ) ):
+                    match_variation = len(variation["default_code"]) and variant.is_variant_in_combination( variation["default_code"], _v_default_code )
+                    _logger.info("Updating variant: "+str(len(rjson['variations']))+" match_variation:"+str(match_variation)+" therecanbeonlyone:"+str(therecanbeonlyone))
+                    if ( match_variation or therecanbeonlyone ):
+                        _logger.info("Updating variant with variation")
                         if ("seller_custom_field" in variation or "seller_sku" in variation):
                             _logger.info("has_sku")
                             #_logger.info(variation["seller_custom_field"])
+                            variant.default_code = ("seller_sku" in variation and variation["seller_sku"]) or variation["seller_custom_field"]
+                            bcode = ("barcode" in variation and variation["barcode"]) or None
                             try:
-                                variant.default_code = ("seller_sku" in variation and variation["seller_sku"]) or variation["seller_custom_field"]
-                                bcode = ("barcode" in variation and variation["barcode"]) or ''
-                                #try:
-                                #    variant.barcode = bcode
-                                #except:
-                                #    _logger.error("Duplicate variant.barcode:"+str(bcode))
-                                #    pass;
-                                if (len(rjson['variations'])==1):
-                                    variant.product_tmpl_id.default_code = variant.default_code
-                                    try:
-                                        variant.product_tmpl_id.barcode = variant.barcode
-                                    except:
-                                        _logger.error("Duplicate product_tmpl_id.barcode: "+str(bcode))
-                                        pass;
+                                bcodes = self.env["product.product"].search([('barcode','=',bcode),('active','=',True)])
+                                bcodes_archived = self.env["product.product"].search([('barcode','=',bcode),('active','=',False)])
+
+                                if not bcodes and bcodes_archived:
+                                    _logger.error("Error barcode already defined! In archived product variant!!"+str(bcode))
+                                    bcodes = bcodes_archived
+
+                                if bcodes and len(bcodes):
+                                    _logger.error("Error barcode already defined! "+str(bcode))
+                                else:
+                                    variant.barcode = bcode
                             except:
                                 pass;
                             variant.meli_id_variation = variation["id"]
@@ -1093,12 +1125,22 @@ class product_product(models.Model):
             if seller_sku:
                 product.default_code = seller_sku
                 product.set_bom()
-            bcode = ("barcode" in rjson and rjson["barcode"]) or ''
-            try:
-                #product.barcode = bcode
-                product_tmpl_id.barcode = bcode
-            except:
-                _logger.error("Duplicate barcode: "+str(bcode))
+            bcode = ("barcode" in rjson and rjson["barcode"]) or None
+            if bcode:
+                try:
+                    bcodes = self.env["product.product"].search([('barcode','=',bcode),('active','=',True)])
+                    bcodes_archived = self.env["product.product"].search([('barcode','=',bcode),('active','=',False)])
+
+                    if not bcodes and bcodes_archived:
+                        _logger.error("Error barcode already defined! In archived product variant!!"+str(bcode))
+                        bcodes = bcodes_archived
+
+                    if bcodes and len(bcodes):
+                        _logger.error("Error barcode already defined! "+str(bcode))
+                    else:
+                        product.barcode = bcode
+                except:
+                    pass;
 
         if (config.mercadolibre_update_local_stock):
             product_template.type = 'product'
@@ -1159,6 +1201,30 @@ class product_product(models.Model):
 
         if (config.mercadolibre_update_existings_variants and 'attributes' in rjson):
             self._get_non_variant_attributes(rjson['attributes'])
+
+
+        posting_fields = {
+            'posting_date': str(datetime.now()),
+            'meli_id': rjson['id'],
+            'meli_variation_id': ('variations' in rjson and len(rjson['variations'])) and rjson['variations'][0]["id"],
+            'product_id': product.id,
+            'name': 'Post ('+str(product.meli_id)+'): ' + product.meli_title
+        }
+        posting = self.env['mercadolibre.posting'].search( [
+                                                        ('meli_id','=',posting_fields['meli_id']) ,
+                                                        ('meli_variation_id','=',posting_fields['meli_variation_id']),
+                                                        ('product_id','=',posting_fields["product_id"]) ],
+                                                        limit=1 )
+        posting_id = posting.id
+        if not posting_id:
+            posting = self.env['mercadolibre.posting'].create((posting_fields))
+            posting_id = posting.id
+            #if (posting):
+            #    posting.posting_query_questions()
+        else:
+            posting.write({'product_id':product.id })
+            #posting.posting_query_questions()
+
 
         return {}
 
@@ -1822,6 +1888,9 @@ class product_product(models.Model):
             bind.meli_title = force_meli_new_title or bind.meli_title or bind.name
             _logger.info("bind.meli_title: "+str(bind.meli_title))
 
+        if bind_tpl:
+            bind_tpl.meli_title = force_meli_new_title or bind_tpl.meli_title or bind_tpl.name
+            _logger.info("bind_tpl.meli_title: "+str(bind_tpl.meli_title))
 
         www_cats = False
         if 'product.public.category' in self.env:
@@ -1869,13 +1938,14 @@ class product_product(models.Model):
 
         #return {}
         #description_sale =  product_tmpl.description_sale
-        translation = self.env['ir.translation'].search([('res_id','=',product_tmpl.id),
-                                                        ('name','=','product.template,description_sale'),
-                                                        ('lang','=','es_AR')])
-        if translation:
+        #translation = self.env['ir.translation'].search([('res_id','=',product_tmpl.id),
+        #                                                ('name','=','product.template,description_sale'),
+        #                                                ('lang','=','es_AR')])
+        #if translation:
             #_logger.info("translation")
             #_logger.info(translation.value)
-            description_sale = translation.value
+        #    description_sale = translation.value
+        description_sale = product_tmpl.description_sale or ""
 
         productjson = False
 
@@ -2245,7 +2315,7 @@ class product_product(models.Model):
         config = config or company
         meli_id = meli_id or product.meli_id
         is_fulfillment = False
-        
+
         if "meli_update_stock_blocked" in product_tmpl._fields and product_tmpl.meli_update_stock_blocked:
             error = { "error": "Blocked by product template configuration." }
             product.meli_stock_error = str(error)

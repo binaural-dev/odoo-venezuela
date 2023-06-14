@@ -64,6 +64,8 @@
           <tree create="1" edit="1" delete="1" default_order='id desc'>
             <field name="name" />
             <field name="mode" />
+            <field name="connection_account" />
+            <field name="company_id" />
             <field name="mercadolibre_order_confirmation"/>
             <field name="mercadolibre_order_confirmation_full"/>
             <field name="mercadolibre_stock_virtual_available"/>
@@ -83,9 +85,12 @@
         <field name="arch" type="xml">
           <tree create="0" edit="1" delete="1" default_order='id desc'>
             <field name="company_id" />
+            <field name="official_store_id"/>
+            <field name="brand"/>
             <field name="name" />
             <field name="client_id" />
-            <!--field name="state"/-->
+            <field name="seller_id" />
+            <field name="status"/>
             <field name="type"/>
           </tree>
         </field>

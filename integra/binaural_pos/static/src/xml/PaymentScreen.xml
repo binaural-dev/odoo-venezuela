@@ -47,5 +47,11 @@
                     </t>
             </div>
         </xpath>
+
+        <xpath expr="//t[@t-esc='partner.name']" position="after">
+            <span t-if="partner.vat">
+            (<t t-esc="partner.prefix_vat" /><t t-esc="partner.vat" />)
+            </span>
+        </xpath>
     </t>
 </templates>
