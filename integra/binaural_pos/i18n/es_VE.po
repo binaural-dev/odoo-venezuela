@@ -374,3 +374,8 @@ msgstr "Orden denegada"
 #, python-format
 msgid " is out of stock."
 msgstr " no tiene suficiente stock"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_res_users__authorized_discount_pos
+msgid "authorized personnel to use discount in pos"
+msgstr "Persona autorizda para usar descuento en pos"
