@@ -11,7 +11,10 @@ odoo.define("binaural_pos.PaymentScreen", function(require) {
 
         if (!this.selectedPaymentLine.payment_method.is_foreign_currency) {
           let res = super._updateSelectedPaymentline()
-          this.selectedPaymentLine.set_foreign_amount(NumberBuffer.getFloat() * this.env.pos.config.foreign_rate)
+          if(!!this.selectedPaymentLine){
+            this.selectedPaymentLine
+              .set_foreign_amount(NumberBuffer.getFloat() * this.env.pos.config.foreign_rate)
+          }
           return res
         }
 

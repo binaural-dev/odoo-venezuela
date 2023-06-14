@@ -8,6 +8,11 @@ class PosSession(models.Model):
         res["prefix_vats"] = self.env["res.partner"]._fields["prefix_vat"].selection
         return res
 
+    def _loader_params_pos_payment(self):
+        res = super()._loader_params_pos_payment(self)
+        res["search_params"]["fields"].append("foreign_rate")
+        return res
+
     def _loader_params_pos_payment_method(self):
         res = super()._loader_params_pos_payment_method()
         res["search_params"]["fields"].append("is_foreign_currency")
