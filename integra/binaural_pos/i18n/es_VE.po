@@ -348,3 +348,8 @@ msgid ""
 msgstr ""
 "No puedes encender la configuracion de IGTF cuando la compañia sea Tipo "
 "contribuyente ordinario"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_res_users__authorized_discount_pos
+msgid "authorized personnel to use discount in pos"
+msgstr "Persona autorizda para usar descuento en pos"
