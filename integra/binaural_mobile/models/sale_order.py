@@ -32,11 +32,12 @@ class SaleOrder(models.Model):
         help="Journal used when a invoice is generated with or without taxes.",
     )
 
-    def _create_invoices(self, grouped=False, final=False, date=None, contingence=False):
-        res = super()._create_invoices(grouped, final, date, contingence)
+    def _create_invoices(self, grouped=False, final=False, date=None):
+        res = super()._create_invoices(grouped, final, date) #contingence?
         for invoice in res:
             if invoice.state == "draft":
                 invoice.journal_id = self.journal_id.id
+                invoice.invoice_user_id = self.user_id.id
 
         return res
 
@@ -48,8 +49,8 @@ class SaleOrder(models.Model):
                 domain.append(("fiscal", "=", True))
             else:
                 domain.append(("fiscal", "=", False))
+                
             journal = sale.env["account.journal"].search(domain, limit=1)
-
             if sale.invoice_ids:
                 for invoice in sale.invoice_ids:
                     if invoice.state == "draft":

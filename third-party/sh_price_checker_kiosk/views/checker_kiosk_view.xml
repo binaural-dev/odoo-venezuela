@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Action -->
+    <record id="checker_action_kiosk_mode" model="ir.actions.client">
+        <field name="name">Checker Kiosk</field>
+        <field name="tag">checker_kiosk_kiosk_mode</field>
+        <field name="target">fullscreen</field>
+    </record>
+    <menuitem id="price_checker_menu" name="Price Checker" parent="sh_price_checker_kiosk.price_checker_main_menu" sequence="2" />
+    <menuitem id="price_checker_sub_menu" name="Price Checker" sequence="1" action="checker_action_kiosk_mode" parent="price_checker_menu" />
+</odoo>

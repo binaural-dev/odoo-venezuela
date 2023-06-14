@@ -35,7 +35,9 @@ class ResPartnerBudget(http.Controller):
     
     @http.route(['/budget'], type='http', auth="user", website=True, csrf=False)
     def portal_budget(self, **kw):
-        return request.render("binaural_mobile.portal_budget_form", {})
+        if request.env.user.employee_id.is_seller:
+            return request.render("binaural_mobile.portal_budget_form", {})
+        return request.redirect("/my/home")
     
     @http.route(['/budget/client'], type='http', auth="public", methods=['GET'], website=True, sitemap=False)
     def get_clients(self, query="", **kw):

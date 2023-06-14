@@ -54,6 +54,24 @@
 	    />
         </record>
 
+	<record id="action_account_report_fs" model="ir.actions.client">
+            <field name="name">Financial situation statement</field>
+            <field name="tag">account_report</field>
+	    <field
+		name="context"
+		eval="{'report_id': ref('binaural_account_reports.financial_situation_statement')}"
+	    />
+        </record>
+
+	<record id="action_account_report_fs_usd" model="ir.actions.client">
+            <field name="name">Financial situation statement USD</field>
+            <field name="tag">account_report</field>
+	    <field
+		name="context"
+		eval="{'report_id': ref('binaural_account_reports.financial_situation_statement'), 'usd_report': True}"
+	    />
+        </record>
+
 	<record id="action_account_report_general_ledger_usd" model="ir.actions.client">
             <field name="name">General Ledger USD</field>
             <field name="tag">account_report</field>

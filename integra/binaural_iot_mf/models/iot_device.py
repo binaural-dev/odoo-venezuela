@@ -17,7 +17,8 @@ class IotDeviceInherit(models.Model):
     max_payment_amount_int = fields.Integer(compute="_compute_max_amounts")
     max_payment_amount_decimal = fields.Integer(compute="_compute_max_amounts")
     max_description = fields.Integer(default=127)
-    flag_21 = fields.Selection([("30", "30")], default="30")
+    traditional_line = fields.Boolean(default=True)
+    flag_21 = fields.Selection([("30", "30"),("00","00")], default="30")
     payment_methods = fields.Selection(
         [
             ("1", "1"),
