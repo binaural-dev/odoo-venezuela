@@ -1,6 +1,6 @@
 from odoo import models, fields, api
 
-class AccountPaymentRegisterIgtf(models.TransientModel):
+class AccountPaymentRegisterZmart(models.TransientModel):
     _inherit = "account.payment.register"
     
     proof_of_payment = fields.Many2many(
