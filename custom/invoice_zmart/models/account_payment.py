@@ -4,7 +4,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-class AccountPaymentZmart(models.Model):
+class AccountPayment(models.Model):
     _inherit = "account.payment"
     
     proof_of_payment = fields.Many2many(
