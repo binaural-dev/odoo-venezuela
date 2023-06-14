@@ -3,8 +3,18 @@ from odoo import models, fields, api
 class AccountPaymentRegisterIgtf(models.TransientModel):
     _inherit = "account.payment.register"
     
-    proof_of_payment = fields.Binary()
-    retention_receipt = fields.Binary()
+    proof_of_payment = fields.Many2many(
+        'ir.attachment',
+        'proof_of_payment_rel_1',
+        'proof_of_payment_id',
+        'attachment_id'
+    )
+    retention_receipt = fields.Many2many(
+        'ir.attachment',
+        'retention_receipt_rel_1',
+        'retention_receipt_id',
+        'attachment_id'
+    )
     taxpayer_type = fields.Selection(
         related='partner_id.taxpayer_type'
     )
@@ -18,6 +28,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             ], 
             order="create_date desc", 
             limit=1)
-        payment.proof_of_payment = self.proof_of_payment
-        payment.retention_receipt = self.retention_receipt
+        payment.write({
+            'proof_of_payment': [(6, 0, self.proof_of_payment.ids)],
+            'retention_receipt': [(6, 0, self.retention_receipt.ids)]
+        })
         return res
