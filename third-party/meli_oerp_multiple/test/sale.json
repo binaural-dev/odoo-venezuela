@@ -1,0 +1,234 @@
+{
+    "tags": ["EnWMS"],
+    "integrations": [{
+        "integrationId": 2164499338,
+        "app": 2
+    }],
+    "channel": "2",
+    "contact": {
+        "name": "OLIVERWALTER",
+        "contactPerson": "walter olivero",
+        "mail": "woliver.78d0f8+2-ogiytmnbuhe4tgnzw@mail.mercadolibre.com",
+        "phoneNumber": " -02944293039",
+        "taxId": "24827151",
+        "location": {
+            "streetName": "Independencia ote",
+            "streetNumber": "65",
+            "addressNotes": "Referencia: Fachada Rosita , es una paleteria la michoacana Entre: Libertad y Juan pablo",
+            "state": "Jalisco",
+            "city": "Quitupan",
+            "neighborhood": "Centro",
+            "zipCode": "49570"
+        },
+        "type": "Customer",
+        "profile": {
+            "app": 2,
+            "integrationId": 63807563
+        },
+        "billingInfo": {
+            "docType": "RFC",
+            "docNumber": "24827151",
+            "streetName": "Independencia ote",
+            "streetNumber": "65",
+            "zipCode": "49570",
+            "city": "Quitupan",
+            "state": "Jalisco",
+            "neighborhood": "Centro",
+            "businessName": "",
+            "stateRegistration": "",
+            "taxPayerType": "",
+            "firstName": "walter",
+            "lastName": "olivero"
+        },
+        "id": 13519376
+    },
+    "lines": [{
+        "price": 659,
+        "originalPrice": 989,
+        "product": {
+            "name": "Sueter Hombre Cuello V Manga Larga Suave Algodón Gap",
+            "code": "477896",
+            "brand": "Gap",
+            "id": 56251056
+        },
+        "variation": {
+            "pictures": [{
+                "url": "https://res.cloudinary.com/decdktzp7/image/upload/v1575298519/awxnmx9sxop5hrcv5d43.jpg",
+                "id": 871681691
+            }],
+            "stocks": [{
+                "warehouse": "Almex",
+                "quantity": 0,
+                "reserved": 0,
+                "available": 0
+            }, {
+                "warehouse": "MercadoEnvios Full",
+                "quantity": 3,
+                "reserved": 1,
+                "available": 2
+            }],
+            "integrationId": 0,
+            "maxAvailableStock": 2,
+            "minAvailableStock": 2,
+            "primaryColor": "Gris oscuro",
+            "size": "S",
+            "thumbnail": "https://mercadolibre.azureedge.net/4094/163768293-4851317ee78713b70619ae75ed6b2d9b.jpg",
+            "attributes": [{
+                "key": "Color",
+                "value": "Gris oscuro"
+            }, {
+                "key": "Talle",
+                "value": "S"
+            }],
+            "integrations": [],
+            "id": 163768293,
+            "sku": "1200040548657"
+        },
+        "quantity": 1,
+        "conversation": {
+            "questions": []
+        },
+        "reserved": 1
+    }, {
+        "price": 659,
+        "originalPrice": 989,
+        "product": {
+            "name": "Sueter Hombre Cuello V Manga Larga Suave Algodón Gap",
+            "code": "477896",
+            "brand": "Gap",
+            "id": 56251056
+        },
+        "variation": {
+            "pictures": [{
+                "url": "https://res.cloudinary.com/decdktzp7/image/upload/v1575298499/fc80yjyhmranjsu4o8tw.jpg",
+                "id": 871681701
+            }],
+            "stocks": [{
+                "warehouse": "Almex",
+                "quantity": 0,
+                "reserved": 0,
+                "available": 0
+            }, {
+                "warehouse": "MercadoEnvios Full",
+                "quantity": 3,
+                "reserved": 1,
+                "available": 2
+            }],
+            "integrationId": 0,
+            "maxAvailableStock": 2,
+            "minAvailableStock": 2,
+            "primaryColor": "Azul",
+            "size": "S",
+            "thumbnail": "https://mercadolibre.azureedge.net/4094/163768328-9e726f444b19b6462f27a4900819f13b.jpg",
+            "attributes": [{
+                "key": "Color",
+                "value": "Azul"
+            }, {
+                "key": "Talle",
+                "value": "S"
+            }],
+            "integrations": [],
+            "id": 163768328,
+            "sku": "1200040565609"
+        },
+        "quantity": 1,
+        "conversation": {
+            "questions": []
+        },
+        "reserved": 1
+    }],
+    "warehouse": "MercadoEnvios Full",
+    "warehouseIntegration": {
+        "app": 0,
+        "status": "Unlocked"
+    },
+    "payments": [{
+        "date": "2020-02-04T06:31:42",
+        "amount": 659,
+        "couponAmount": 0,
+        "status": "Approved",
+        "method": "MercadoPago",
+        "integration": {
+            "integrationId": 5871956570,
+            "app": 2
+        },
+        "transactionFee": 85.67,
+        "installments": 1,
+        "card": {
+            "paymentNetwork": "account_money",
+            "firstSixDigits": 0,
+            "lastFourDigits": 0
+        },
+        "hasCancelableStatus": false,
+        "id": 22185057
+    }, {
+        "date": "2020-02-04T06:31:41",
+        "amount": 659,
+        "couponAmount": 0,
+        "status": "Approved",
+        "method": "MercadoPago",
+        "integration": {
+            "integrationId": 5872816710,
+            "app": 2
+        },
+        "transactionFee": 85.67,
+        "installments": 1,
+        "card": {
+            "paymentNetwork": "account_money",
+            "firstSixDigits": 0,
+            "lastFourDigits": 0
+        },
+        "hasCancelableStatus": false,
+        "id": 22185058
+    }],
+    "shipments": [{
+        "date": "2020-02-04T06:31:24",
+        "products": [{
+            "product": 56251056,
+            "variation": 163768293,
+            "quantity": 1
+        }, {
+            "product": 56251056,
+            "variation": 163768328,
+            "quantity": 1
+        }],
+        "method": {
+            "trackingNumber": "6904997842",
+            "trackingUrl": "https://myaccount.mercadolibre.com.mx/purchases/2306105151/shipments/28240170278/detail",
+            "courier": "MercadoEnvios",
+            "mode": "Prioritario a domicilio",
+            "cost": 91.2,
+            "type": "Ship",
+            "eta": 0,
+            "status": "PickingPending"
+        },
+        "integration": {
+            "app": 2,
+            "integrationId": 28240170278,
+            "status": "NotAvailable",
+            "id": 16802455
+        },
+        "receiver": {
+            "fullName": "Hector Javier De La Garza Castillo",
+            "phoneNumber": "834 1315700"
+        },
+        "id": 19947990
+    }],
+    "amount": 1318,
+    "shippingCost": 0,
+    "financialCost": 0,
+    "paidApproved": 1318,
+    "paymentStatus": "Approved",
+    "deliveryStatus": "PickingPending",
+    "paymentFulfillmentStatus": "Done",
+    "deliveryFulfillmentStatus": "Pending",
+    "deliveryMethod": "Ship",
+    "paymentTerm": "Advance",
+    "currency": "Local",
+    "customId": "28240170278",
+    "isOpen": true,
+    "isCanceled": false,
+    "hasAnyShipments": true,
+    "date": "2020-02-04T06:31:42",
+    "id": 35410113
+}

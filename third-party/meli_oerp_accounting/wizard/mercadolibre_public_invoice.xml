@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <!--Todo: Category Import-->
+        <record id="view_mercadolibre_public_wizard" model="ir.ui.view">
+            <field name="name">mercadolibre.public.wizard</field>
+            <field name="model">mercadolibre.public.wizard</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <div class="row">
+                                <div class="col-12">
+                                    <h2>Nota:</h2>
+                                    <div class="alert alert-info" role="alert">
+                                        Se han seleccionado "
+                                        <b>
+                                            <field name="count" readonly="1"/>
+                                        </b>
+                                        " órdenes. Si desea continuar
+                                        con el proceso, click en <strong>Aceptar</strong>, de lo contrario click en <strong>
+                                        Cancelar
+                                    </strong> para no proceder.
+                                    </div>
+                                </div>
+                            </div>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="public_product" string="Aceptar" title="Al aceptar continará con el proceso."
+                                icon="fa-check-circle"
+                                type="object" class="oe_highlight"/>
+                        <button string="Cancelar" class="oe_link" special="cancel" icon="fa-times-circle-o"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_mercadolibre_public_wizard" model="ir.actions.act_window">
+            <field name="name">Ordenes MercadoLibre</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">mercadolibre.public.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <record id="window_mercadolibre_public_wizard" model="ir.actions.act_window">
+            <field name="name">Publicar órdenes mercadolibre (Facturas)</field>
+            <field name="res_model">mercadolibre.public.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="binding_model_id" ref="sale.model_sale_order"/>
+            <field name="binding_view_types">list,form</field>
+            <field name="view_id" ref="action_mercadolibre_public_wizard"/>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

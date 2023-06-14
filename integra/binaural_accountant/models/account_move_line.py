@@ -1,7 +1,5 @@
 from odoo import api, fields, models, _
-import logging
 
-_logger = logging.getLogger(__name__)
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
@@ -35,6 +33,14 @@ class AccountMoveLine(models.Model):
     foreign_balance = fields.Monetary(
         currency_field="foreign_currency_id", compute="_compute_foreign_balance", store=True
     )
+    foreign_debit_adjustment = fields.Monetary(
+        currency_field="foreign_currency_id",
+        help="When setted, this field will be used to fill the foreign debit field",
+    )
+    foreign_credit_adjustment = fields.Monetary(
+        currency_field="foreign_currency_id",
+        help="When setted, this field will be used to fill the foreign credit field",
+    )
 
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
@@ -44,7 +50,6 @@ class AccountMoveLine(models.Model):
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
     def _compute_foreign_subtotal(self):
         for line in self:
-           
             line_discount_price_unit = line.foreign_price * (1 - (line.discount / 100.0))
             foreign_subtotal = line_discount_price_unit * line.quantity
 
@@ -57,8 +62,8 @@ class AccountMoveLine(models.Model):
                     partner=line.partner_id,
                     is_refund=line.is_refund,
                 )
-                line.foreign_subtotal = taxes_res['total_excluded']
-                line.foreign_price_total = taxes_res['total_included']
+                line.foreign_subtotal = taxes_res["total_excluded"]
+                line.foreign_price_total = taxes_res["total_included"]
             else:
                 line.foreign_price_total = line.foreign_subtotal = foreign_subtotal
 

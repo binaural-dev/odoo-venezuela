@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+			<record model="ir.ui.view" id="view_company_page_ocapi">
+					<field name="name">res.company.form.ocapi</field>
+					<field name="model">res.company</field>
+					<field name="inherit_id" ref="base.view_company_form"/>
+					<field name="arch" type="xml">
+						<data>
+								<notebook>
+										<page string="Odoo Connectors" invisible="1">
+											<field name="ocapi_connections" invisible="1" groups="odoo_connector_api.group_ocapi_connectors_manager"
+                              domain="['|',('company_id','=',False),('company_id','=',id)]">
+                          <tree>
+                            <field name="company_id"/>
+                            <field name="name"/>
+                            <field name="client_id"/>
+                            <field name="state"/>
+                          </tree>
+                      </field>
+										</page>
+								</notebook>
+            </data>
+					</field>
+			</record>
+
+		</data>
+</odoo>

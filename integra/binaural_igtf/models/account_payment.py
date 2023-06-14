@@ -221,6 +221,7 @@ class AccountPaymentIgtf(models.Model):
             {
                 "name": "IGTF",
                 "currency_id": self.currency_id.id,
+                "payment_igtf_id": self.id,
                 "amount_currency": igtf_amount,
                 "account_id": igtf_account
                 if self.igtf_percentage == 3
@@ -285,5 +286,9 @@ class AccountPaymentIgtf(models.Model):
                         bill.bi_igtf = bill.bi_igtf - (payment.amount * self.foreign_rate)
                     else:
                         bill.bi_igtf = bill.bi_igtf - payment.amount
+        
+                move = self.env["account.move"].search([("payment_igtf_id", "=", payment.id)])
+                if move:
+                    move.button_draft()
 
         return super(AccountPaymentIgtf, self).action_draft()

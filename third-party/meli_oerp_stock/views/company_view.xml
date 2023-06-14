@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="view_company_page_mercadolibre_stock">
+            <field name="name">res.company.form.meli.stock</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="meli_oerp.view_company_page_mercadolibre"/>
+            <field name="arch" type="xml">
+              <xpath expr="//group[@name='autopost']" position="after">
+                  <group string="Configuración Stock" name="meli_oerp_stock"  col="2">
+                    <group>
+                      <field name="mercadolibre_stock_virtual_available" invisible="0"/>
+                      <field name="mercadolibre_stock_location_operation" invisible="0"/>
+                      
+                      <field name="mercadolibre_stock_warehouse" invisible="0"/>
+                      <field name="mercadolibre_stock_location_to_post" invisible="0"  domain = "[('mercadolibre_active','=',True),('company_id', '=', id)]"/>
+                      <!--field name="mercadolibre_stock_location_to_post_many" invisible="0" domain = "[('mercadolibre_active','=',True)]"/-->
+                    </group>
+                    <group>
+                      <field name="mercadolibre_stock_warehouse_full" invisible="0"/>
+                      <field name="mercadolibre_stock_location_to_post_full" invisible="0"  domain = "[('mercadolibre_logistic_type','=','fulfillment'),'|',('mercadolibre_active','=',True),('company_id', '=', id)]"/>
+                    </group>
+                    <group>
+                      <field name="mercadolibre_order_confirmation_delivery" invisible="0"/>
+                    </group>
+                    <group>
+                      <field name="mercadolibre_order_confirmation_delivery_full" invisible="0"/>
+                    </group>
+                    <group>
+                      <field name="mercadolibre_stock_sku_mapping" invisible="0">
+                        <tree>
+                          <field name="type"/>
+                          <field name="name"/>
+                          <field name="sku"/>
+                          <field name="security_virtual_stock_to_pause"/>
+                          <field name="security_quantity_stock_to_pause"/>
+                        </tree>
+                      </field>
+                    </group>
+                    <group>
+                      <field name="mercadolibre_cron_get_shipments" invisible="0"/>
+                      <button type="object" name="cron_meli_shipments"
+                              string="Cron Meli Shipments"
+                              title="Cron Meli Shipments"
+                              class="oe_stat_button"
+                              icon="fa-refresh"></button>
+                      <field name="mercadolibre_stock_filter_order_datetime" invisible="0"/>
+                      <field name="mercadolibre_stock_filter_order_datetime_to" invisible="0"/>
+                    </group>
+                  </group>
+               </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

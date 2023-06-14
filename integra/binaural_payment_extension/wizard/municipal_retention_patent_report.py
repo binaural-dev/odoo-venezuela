@@ -79,14 +79,14 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         for line in invoice_lines:
             if line.move_id.move_type == "out_refund":
                 if company_currency == usd_currency:
-                    nc_financial += line.foreign_price_unit
+                    nc_financial += line.foreign_subtotal
                 else:
-                    nc_financial += line.price_unit
+                    nc_financial += line.price_subtotal
             if line.move_id.move_type == "out_invoice":
                 if company_currency == usd_currency:
-                    nd_financial += line.foreign_price_unit
+                    nd_financial += line.foreign_subtotal
                 else:
-                    nd_financial += line.price_unit
+                    nd_financial += line.price_subtotal
 
         data = table.values.tolist()
         col3 = len(columns2) - 1
@@ -120,9 +120,9 @@ class MunicipalRetentionPatentReport(models.TransientModel):
             worksheet2.write_array_formula(f"G{line}", f"=G{str(col2+1)}*C{line}", money_format)
             worksheet2.write_array_formula(f"I{line}", f"=H{line}*0.9", money_format)
             worksheet2.write_array_formula(f"J{line}", f"=H{line}-I{line}", money_format)
-            worksheet2.write_array_formula(f"L{line}", f"=I{line}*K{line}/1000", money_format)
+            worksheet2.write_array_formula(f"L{line}", f"=I{line}*K{line}/100", money_format)
             worksheet2.write_array_formula(
-                f"N{line}", f"=IF(L{line}>M{line};L{line};M{line})", money_format
+                f"N{line}", f"=IF(L{line}>M{line},L{line},M{line})", money_format
             )
             worksheet2.write_array_formula(f"O{line}", f"=J{line}*K{line}/1000", money_format)
             worksheet2.write_formula(f"P{line}", f"=N{line}", money_format)
@@ -147,28 +147,28 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         company_currency = self.env.company.currency_id
 
         for line in invoice_lines:
-            price_unit = 0
+            price_subtotal = 0
 
             if company_currency == usd_currency:
-                price_unit = line.foreign_price_unit
+                price_subtotal = line.foreign_subtotal
             else:
-                price_unit = line.price_unit
+                price_subtotal = line.price_subtotal
             if not line.product_id.categ_id.name in groups.keys():
                 ciu = line.ciu_id
                 groups[line.product_id.categ_id.name] = {
                     "CIU": ciu.name,
-                    "sales_total": price_unit if line.move_id.move_type == "out_invoice" else 0,
-                    "refund_total": price_unit if line.move_id.move_type == "out_refund" else 0,
+                    "sales_total": price_subtotal if line.move_id.move_type == "out_invoice" else 0,
+                    "refund_total": price_subtotal if line.move_id.move_type == "out_refund" else 0,
                     "aliquot": ciu.aliquot,
                     "minimum_monthly": ciu.minimum_monthly,
                 }
                 continue
 
             groups[line.product_id.categ_id.name]["sales_total"] += (
-                price_unit if line.move_id.move_type == "out_invoice" else 0
+                price_subtotal if line.move_id.move_type == "out_invoice" else 0
             )
             groups[line.product_id.categ_id.name]["refund_total"] += (
-                price_unit if line.move_id.move_type == "out_refund" else 0
+                price_subtotal if line.move_id.move_type == "out_refund" else 0
             )
 
         data = []

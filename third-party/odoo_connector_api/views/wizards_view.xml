@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+      
+      <record id="view_product_template_remove_from_connector" model="ir.ui.view">
+            <field name="name">Remove Product From Connector / Unbind</field>
+            <field name="model">ocapi.binder.wiz</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+              <form string="Remove Product" version="7.0">
+                  <h2>Choose Connectors to unbind</h2>
+                  <field name="connectors" widget="many2many_tags"/>
+                  <footer>
+                      <button name="product_template_remove_from_connector" string="Remove From Connector / Unbind"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                  </footer>
+              </form>
+            </field>
+      </record>
+      
+      <record id="action_product_template_remove_from_connector" model="ir.actions.act_window">
+          <field name="name">Remove Product From Connector / Unbind</field>
+          <field name="type">ir.actions.act_window</field>
+          <field name="binding_model_id" ref="model_product_template" />
+          <field name="view_id" ref="view_product_template_remove_from_connector"/>
+          <field name="binding_type">action</field>
+          <field name="binding_view_types">list,form</field>
+          <field name="res_model">ocapi.binder.wiz</field>
+          <field name="view_mode">form</field>
+          <field name="target">new</field>
+      </record>
+
+          
+      
+      <record id="view_product_template_add_to_connector" model="ir.ui.view">
+            <field name="name">Add Product To Connector / Bind</field>
+            <field name="model">ocapi.binder.wiz</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+              <form string="Add Product" version="7.0">
+                  <h2>Choose Connectors to bind</h2>
+                  <field name="connectors" widget="many2many_tags"/>
+                  <footer>
+                      <button name="product_template_add_to_connector" string="Add To Connector / Bind"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                  </footer>
+              </form>
+            </field>
+      </record>
+      
+      <record id="action_product_template_add_to_connector" model="ir.actions.act_window">
+          <field name="name">Add Product To Connector / Bind</field>
+          <field name="type">ir.actions.act_window</field>          
+          <field name="binding_model_id" ref="model_product_template" />
+          <field name="view_id" ref="view_product_template_add_to_connector"/>
+          <field name="binding_type">action</field>
+          <field name="binding_view_types">list,form</field>
+          <field name="res_model">ocapi.binder.wiz</field>
+          <field name="view_mode">form</field>
+          <field name="target">new</field>
+      </record>
+    
+          
+      <!--act_window id="action_product_template_remove_from_connector"
+          name="Remove Product From Connector / Unbind"
+          binding_model="product.template"
+          res_model="ocapi.binder.wiz"
+          view_id="view_product_template_remove_from_connector"
+          binding_views="list,form"
+          target="new"/-->
+          
+      <!--act_window id="action_product_template_add_to_connector"
+    			name="Add Product To Connector / Bind"
+    			binding_model="product.template"
+    			res_model="ocapi.binder.wiz"
+          view_id="view_product_template_add_to_connector"
+          binding_views="list,form"          
+          target="new"/-->
+      
+            
+    </data>
+</odoo>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+      <!--record id="mercadolibre_channel_walmartdsv" model="mercadolibre.channel">
+          <field name="name">Walmart DSV</field>
+          <field name="code">WALD</field>
+          <field name="app_id">233</field>
+      </record-->
+
+      <!--Habilita en esos campos de ese modelo para ser publicados en los website forms -->
+      <!--
+        <function model="ir.model.fields" name="formbuilder_whitelist">
+            <value>res.partner</value>
+            <value eval="[
+                'name', 'phone', 'email',
+                'city', 'zip', 'street', 'state_id', 'country_id',
+                'vat', 'company_name', 'main_id_number', 'main_id_category_id'
+            ]"/>
+        </function>
+      -->
+    </data>
+</odoo>

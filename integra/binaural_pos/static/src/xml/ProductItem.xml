@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates id="template" xml:space="preserve">
+    <t t-name="ProductItem" t-inherit="point_of_sale.ProductItem" t-inherit-mode="extension" owl="1">
+        <xpath expr="//span[hasclass('price-tag')]" position="before">
+	    <span
+		id="free-qty"
+		t-if="show_free_qty"
+		class="price-tag"
+		t-attf-style="{{ free_qty &lt; 1 ? 'color: red': 'color: green' }}"
+	    >
+		Available: <t t-out="free_qty"/>
+	    </span>
+        </xpath>
+    </t>
+</templates>
