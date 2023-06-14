@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.0.0.0.6",
+    "version": "16.0.0.1.0",
     # any module necessary for this one to work correctly
     "depends": ["base", "point_of_sale", "binaural_rate", "binaural_contact", "binaural_stock"],
     # always loaded
@@ -14,6 +14,8 @@
         "views/pos_payment_method.xml",
         "views/pos_order.xml",
         "views/res_config_settings.xml",
+        "views/pos_config_views.xml",
+        "views/pos_payment_views.xml",
         "views/res_users_views.xml",
     ],
     "images": ["static/description/icon.png"],

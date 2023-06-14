@@ -252,9 +252,10 @@
       </div>
 
       <p style="page-break-before: always;"></p>
-
       <t t-set="items_by_page" t-value="products_by_page"/>
-      <t t-set="products_paginated" t-value="[product_dict_list[i:i+items_by_page] for i in range(0, len(product_dict_list), items_by_page)]"/>
+
+      <t t-set="product_records" t-value="product_dict_list if product_dict_list else final_product_list"/>
+      <t t-set="products_paginated" t-value="[product_records[i:i+items_by_page] for i in range(0, len(product_records), items_by_page)]"/>
 
       <t t-foreach="products_paginated" t-as="products_by_page">
         <div class="container-report">

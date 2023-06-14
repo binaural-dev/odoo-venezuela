@@ -350,6 +350,32 @@ msgstr ""
 "contribuyente ordinario"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_config__amount_to_zero
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__amount_to_zero
+#: model_terms:ir.ui.view,arch_db:binaural_pos.pos_config_form_view_validation
+msgid "Amount to zero"
+msgstr "Cantidad en 0"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.pos_config_form_view_validation
+msgid "Do not allow sales less than 0"
+msgstr "No permitir ventas si no hay disponibilidad suficiente"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
+#, python-format
+msgid "Deny Order"
+msgstr "Orden denegada"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
+#, python-format
+msgid " is out of stock."
+msgstr " no tiene suficiente stock"
+
+#. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_res_users__authorized_discount_pos
 msgid "authorized personnel to use discount in pos"
 msgstr "Persona autorizda para usar descuento en pos"

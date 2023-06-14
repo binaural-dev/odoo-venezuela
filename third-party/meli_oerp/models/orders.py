@@ -659,7 +659,6 @@ class mercadolibre_orders(models.Model):
     def prepare_orderjson( self, meli=None, config=None ):
         ptags = (self.pack_order and "pack_order") or ""
         order_items = []
-        sum_amount = 0
         for oitem in self.order_items:
             order_items.append({
                 "item": {
@@ -670,13 +669,13 @@ class mercadolibre_orders(models.Model):
                     'seller_sku': oitem.seller_sku,
                     'seller_custom_field': oitem.seller_custom_field,
                 },
-                "unit_price": oitem.full_unit_price,
+                "unit_price": oitem.unit_price,
                 #"currency_id": oitem.currency_id,
                 "currency_id": 'USD',
                 'quantity': oitem.quantity,
 
             })
-            sum_amount+= float(oitem.full_unit_price)*float(oitem.quantity)
+        sum_amount+= float(oitem.full_unit_price)*float(oitem.quantity)
         orderjson = {
             "id": self.order_id,
             "status": self.status,
@@ -699,8 +698,7 @@ class mercadolibre_orders(models.Model):
                 "last_name": "De MercadoLibre",
             },
             "tags": [ptags],
-            #"currency_id": self.currency_id,
-            "currency_id": 'USD',
+            "currency_id": self.currency_id,
             "shipping": {
                 "id": "SHP-"+str(self.pack_id or self.order_id),
                 "cost": self.shipping_cost,
@@ -775,8 +773,7 @@ class mercadolibre_orders(models.Model):
             'meli_paid_amount': ("paid_amount" in order_json and order_json["paid_amount"]),
             'meli_coupon_amount': ("coupon" in order_json and order_json["coupon"] and "amount" in order_json["coupon"] and order_json["coupon"]["amount"]) or 0.0,
             'meli_financing_fee_amount': financing_fee_amount,
-            #'meli_currency_id': ("currency_id" in order_json and order_json["currency_id"]),
-            'meli_currency_id': "USD",
+            'meli_currency_id': ("currency_id" in order_json and order_json["currency_id"]),
             'meli_date_created': ml_datetime(order_json["date_created"]),
             'meli_date_closed': ml_datetime(order_json["date_closed"]),
         }
@@ -1854,10 +1851,10 @@ class mercadolibre_orders(models.Model):
                     'order_item_variation_id': Item['item']['variation_id'],
                     'order_item_title': Item['item']['title'],
                     'order_item_category_id': Item['item']['category_id'],
+                    #'unit_price': Item['unit_price'],
                     'unit_price': Item['full_unit_price'],
                     'quantity': Item['quantity'],
-                    #'currency_id': Item['currency_id'],
-                    'currency_id': 'USD',
+                    'currency_id': Item['currency_id'],
                     'seller_sku': ('seller_sku' in Item['item'] and Item['item']['seller_sku']) or '',
                     'seller_custom_field': ('seller_custom_field' in Item['item'] and Item['item']['seller_custom_field']) or ''
                 }

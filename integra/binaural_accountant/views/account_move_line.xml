@@ -9,6 +9,8 @@
 		    <field name="foreign_rate" readonly="1"/>
 		    <field name="foreign_inverse_rate" readonly="1" groups="base.group_no_one"/>
 		    <field name="foreign_debit" readonly="1"/>
+		    <field name="foreign_debit_adjustment"/>
+		    <field name="foreign_credit_adjustment"/>
 		    <field name="foreign_credit" readonly="1"/>
 		    <field name="foreign_balance" readonly="1"/>
                 </group>
@@ -22,8 +24,10 @@
 	<field name="inherit_id" ref="account.view_move_line_tree"/>
 	<field name="arch" type="xml">
 	    <xpath expr="//field[@name='balance']" position="after">
-		<field name="foreign_debit" readonly="1" optional="hide"/>
-		<field name="foreign_credit" readonly="1" optional="hide"/>
+		<field name="foreign_debit" readonly="1" optional="show" sum="Total Foreign Debit"/>
+		<field name="foreign_debit_adjustment" optional="hide"/>
+		<field name="foreign_credit" readonly="1" optional="show" sum="Total Foreign Credit"/>
+		<field name="foreign_credit_adjustment" optional="hide" />
 		<field name="foreign_balance" readonly="1" optional="hide"/>
 	    </xpath>
         </field>
