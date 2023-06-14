@@ -16,31 +16,80 @@ odoo.define("binaural_pos.PartnerListScreen", function(require) {
       }
       async updatePartnerList(event) {
         await super.updatePartnerList(event)
-        if(event.code === "Enter" && this.partners.length === 0){
-          this.createPartner()
+        if (event.code === "Enter" && this.partners.length === 0) {
+          this.env.services.ui.block()
+          await this.searchPartner()
+          if (this.partners.length === 0) {
+            this.createPartner()
+          } else {
+            this.clickPartner(this.partners[0])
+          }
+          this.env.services.ui.unblock()
         }
-        if(event.code === "Enter" && this.partners.length === 1){
-          this.editPartner(this.partners[0])
+        if (event.code === "Enter" && this.partners.length === 1) {
+          this.clickPartner(this.partners[0])
         }
       }
 
       async createPartner() {
-        let data = await this.env.services.rpc({
-          model: 'res.partner',
-          method: 'get_default_name_by_vat_param',
-          args: [[], "V", this.state.query],
-        });
-        if (data === "Esta cédula de identidad no se encuentra inscrito en el Registro Electoral."){
-          data = "N/D"
+        this.env.services.ui.block()
+        try {
+          let data = await this.env.services.rpc({
+            model: 'res.partner',
+            method: 'get_default_name_by_vat_param',
+            args: [[], "V", this.state.query],
+          });
+          if (data === "Esta cédula de identidad no se encuentra inscrito en el Registro Electoral.") {
+            data = "N/D"
+          }
+          // initialize the edit screen with default details about country & state
+          this.state.editModeProps.partner = {
+            country_id: this.env.pos.company.country_id,
+            state_id: this.env.pos.company.state_id,
+            vat: this.state.query,
+            name: data,
+          }
+          this.activateEditMode();
+        } catch (e) {
+          return this.showPopup('ErrorPopup', {
+            title: _t('Failed connection'),
+          });
         }
-        // initialize the edit screen with default details about country & state
-        this.state.editModeProps.partner = {
-          country_id: this.env.pos.company.country_id,
-          state_id: this.env.pos.company.state_id,
-          vat: this.state.query,
-          name: data,
+        this.env.services.ui.unblock()
+      }
+
+      /*
+       *TODO: OVERWRITE BECAUSE DOMAIN IS NOT INHERIT
+       */
+
+      async getNewPartners() {
+        let domain = [];
+        const limit = 30;
+        if (this.state.query) {
+          domain = ['|', '|', ["name", "ilike", this.state.query + "%"],
+            ["vat", "ilike", this.state.query + "%"],
+            ["parent_name", "ilike", this.state.query + "%"]];
         }
-        this.activateEditMode();
+        const result = await this.env.services.rpc(
+          {
+            model: 'pos.session',
+            method: 'get_pos_ui_res_partner_by_params',
+            args: [
+              [odoo.pos_session_id],
+              {
+                domain,
+                limit: limit,
+                offset: this.state.currentOffset,
+              },
+            ],
+            context: this.env.session.user_context,
+          },
+          {
+            timeout: 3000,
+            shadow: true,
+          }
+        );
+        return result;
       }
     }
 
