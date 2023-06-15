@@ -1,7 +1,7 @@
 from odoo import api, fields, models
     
-class CompanyZmart(models.Model):
-    _name = "purchase.company"
+class AduanaZmart(models.Model):
+    _name = "purchase.aduana.agent"
     
     name = fields.Char(
         string="Name", 

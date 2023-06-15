@@ -78,3 +78,18 @@ msgstr "Orden en Tránsito"
 #: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__type_company
 msgid "Type Company"
 msgstr "Tipo"
+
+#. module: purchase_zmart
+#: model:ir.model.fields.selection,name:purchase_zmart.selection__purchase_order__type_company__sea
+msgid "Sea"
+msgstr "Marítimo"
+
+#. module: purchase_zmart
+#: model:ir.model.fields.selection,name:purchase_zmart.selection__purchase_order__type_company__land
+msgid "Land"
+msgstr "Terrestre"
+
+#. module: purchase_zmart
+#: model:ir.model.fields.selection,name:purchase_zmart.selection__purchase_order__type_company__air
+msgid "Air"
+msgstr "Aéreo"

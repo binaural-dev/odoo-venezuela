@@ -133,3 +133,23 @@ msgstr "Factor de embalaje"
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__printed
 msgid "Printed"
 msgstr "Impreso"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_method
+msgid "Shipping Method"
+msgstr "Metodos de envío"
+
+#. module: sale_zmart
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_method__prepaid
+msgid "Prepaid"
+msgstr "Prepagado"
+
+#. module: sale_zmart
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_method__collect_at_destination
+msgid "Collect at Destination"
+msgstr "Cobro en Destino"
+
+#. module: sale_zmart
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_method__free
+msgid "Free"
+msgstr "Gratuito"

@@ -1,2 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_purchase_company,purchase.company,model_purchase_company,,1,1,1,1
+access_purchase_aduana_agent,purchase.aduana.agent,model_purchase_aduana_agent,,1,1,1,1
