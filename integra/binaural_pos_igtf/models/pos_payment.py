@@ -120,7 +120,7 @@ class PosPayment(models.Model):
                 amounts["amount"],
                 amounts["amount_converted"],
             )
-            if add_credit_line_vals:
+            if add_credit_line_vals and amount_igtf != 0:
                 self.env["account.move.line"].with_context(check_move_validity=False).create(
                     [add_credit_line_vals]
                 )

@@ -4,7 +4,6 @@ import json
 from odoo import _, http
 from odoo.http import request
 from odoo.osv import expression
-# from .common_routes import brand
 from . import utils
 
 _logger = logging.getLogger(__name__)
