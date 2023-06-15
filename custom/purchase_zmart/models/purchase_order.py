@@ -6,11 +6,26 @@ class PurchaseOrderZmart(models.Model):
     name_company = fields.Many2one(
         'purchase.company'
     )
-    type_company = fields.Many2one(
-        'purchase.type.company'
+    type_company = fields.Selection(
+        [
+            ("sea", "Sea"),
+            ("air", "Air"),
+            ("land", "Land"),
+        ],
+        default="",
+        store=True,
+        required=True
     )
-    incoterm = fields.Many2one(
-        'purchase.icoterm'
+    incoterm = fields.Selection(
+        [
+            ("fob", "FOB"),
+            ("cif", "CIF"),
+            ("cfr", "CFR"),
+            ("na", "N/A"),
+        ],
+        default="",
+        store=True,
+        required=True
     )
     bl = fields.Char(
         string="B/L"
