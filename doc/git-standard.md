@@ -6,35 +6,40 @@ En esta seccion se muestran el flujo de trabajo para el manejo de git dentro de 
 ### Flujo de trabajo
 
 ```mermaid
-%%{init: { 'logLevel': 'debug', 'theme': 'dark', 'gitGraph': {'showBranches': true, 'showCommitLabel':false,'mainBranchName': 'master'}} }%%
+%%{init: { 'logLevel': 'debug', 'theme': 'base', 'gitGraph': {'showBranches': true, 'showCommitLabel':false,'mainBranchName': 'release-16'}} }%%
 gitGraph
-commit id:"feat: feat 1"
-commit id:"feat: feat 2"
-branch feat_dev_1
-checkout feat_dev_1
-commit
-commit
-commit
-branch feat_dev_2
-checkout feat_dev_2
-commit
-commit
-commit
-checkout master
-merge feat_dev_1
-branch fix_dev_2
-checkout fix_dev_2
-commit
-commit
-checkout master
-merge feat_dev_2
-merge fix_dev_2
-branch staging.15
-checkout staging.15
-commit
-branch release-15
-checkout release-15
-commit
+  commit
+  commit
+  branch master
+  commit
+  checkout release-16
+  commit
+  branch 0001-feat-docs
+  commit
+  commit
+  checkout master
+  merge 0001-feat-docs
+  checkout release-16
+  merge 0001-feat-docs
+  commit
+  branch 0002-feat-test
+  commit
+  commit
+  checkout master
+  merge 0002-feat-test
+  checkout release-16
+  merge 0002-feat-test
+  checkout 0001-feat-docs
+  branch 0001-fix-docs
+  commit
+  checkout master
+  merge 0001-fix-docs
+  checkout release-16
+  merge 0001-fix-docs
+  branch staging-fork
+  commit
+  branch release-fork
+  commit
 ```
 
 Aspectos a tomar en cuenta
@@ -47,7 +52,7 @@ Aspectos a tomar en cuenta
 
 Nombre para las ramas:
 ```
-odoo#{id tarea en odoo}-name
+{id tarea en odoo}-name
 ```
 
 ## Commits
