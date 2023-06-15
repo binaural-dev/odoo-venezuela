@@ -23,6 +23,13 @@ odoo.define("binaural_pos.OrderSummary", function(require) {
           return this.getTax()
         }
       }
+      getTax() {
+        let res = super.getTax(...arguments)
+        if(this.env.pos.get_order().to_receipt && this.env.pos.config.pos_tax_inside){
+          res["hasTax"] = false
+        }
+        return res 
+      }
     }
 
   Registries.Component.extend(OrderSummary, BinauralOrderSummary);

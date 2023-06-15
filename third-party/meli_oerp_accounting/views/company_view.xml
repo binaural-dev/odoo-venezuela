@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record model="ir.ui.view" id="view_company_page_mercadolibre_accounting">
+            <field name="name">res.company.form.meli.accounting</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="meli_oerp.view_company_page_mercadolibre"/>
+            <field name="arch" type="xml">
+              <xpath expr="//group[@name='autopost']" position="after">
+                  <group string="Configuración Contabilidad" name="meli_oerp_accounting"  col="2">
+                    <group string="Payments configuration" name="payments_config">
+                      <field name="mercadolibre_process_payments_res_partner" invisible="0"/>
+                      <field name="mercadolibre_process_payments_journal" invisible="0"/>
+                      <field name="mercadolibre_process_payments_res_partner_shp" invisible="0"/>
+                      <field name="mercadolibre_process_payments_journal_shp" invisible="0"/>
+                    </group>
+                    <group string="Automatic Record Payment" name="automatic_payment">
+                      <field name="mercadolibre_process_payments_customer" invisible="0"/>
+                      <field name="mercadolibre_process_payments_supplier_fea" invisible="0"/>
+                      <field name="mercadolibre_process_payments_supplier_shipment" invisible="0"/>
+                      <!--field name="mercadolibre_account_payment_receiptbook_id"/>
+                      <field name="mercadolibre_account_payment_supplier_receiptbook_id"/-->
+                      <!--
+                      <field name="mercadolibre_customer_payment_method_id"/>
+                      <field name="mercadolibre_provider_payment_method_id"/>
+                      -->
+                    </group>
+                    <group>
+                      <field name="mercadolibre_order_confirmation_invoice" invisible="0"/>
+                    </group>
+                    <group>
+                      <field name="mercadolibre_order_confirmation_invoice_full" invisible="0"/>
+                    </group>
+                  </group>
+                  <group>
+                    <group>
+                      <field name="mercadolibre_post_invoice" invisible="0"/>
+                      <field name="mercadolibre_post_invoice_dont_send" invisible="0"/>
+                    </group>
+                  </group>
+               </xpath>
+            </field>
+        </record>
+
+
+    </data>
+</odoo>

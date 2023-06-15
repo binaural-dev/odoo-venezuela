@@ -123,4 +123,16 @@
         </xpath>
     </template>
 
+
+    <template id="header_cart_link" name="" inherit_id="website_sale.header_cart_link">
+        <xpath expr="//t[2]" position="replace">
+            <t t-if="request.env.user.employee_id.is_seller">
+
+            </t>
+            <t t-else="">
+                <t t-set="show_cart" t-value="true"/>
+            </t>
+        </xpath>
+    </template>
+
 </odoo>
