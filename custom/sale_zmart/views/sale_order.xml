@@ -16,6 +16,7 @@
             <xpath expr="//field[@name='payment_term_id']" position="after">
                 <field name="printed" readonly="True"/>
                 <field name="priority"/>
+                <field name="shipping_method"/>
             </xpath>
         </field>
     </record>
