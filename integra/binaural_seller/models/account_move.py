@@ -12,6 +12,7 @@ class AccountMove(models.Model):
         "hr.employee",
         string="Seller",
         tracking=True,
+        store=True,
         related='partner_id.seller_id',
         help="Partner's seller reference."
     )
