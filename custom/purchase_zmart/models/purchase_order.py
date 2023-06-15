@@ -2,11 +2,29 @@ from odoo import api, fields, models
 
 class PurchaseOrderZmart(models.Model):
     _inherit = "purchase.order"
-    
-    transport_number = fields.Char(string="Transport Number")
-    name_company = fields.Many2one('purchase.company', string="Company")
-    vl_number = fields.Char(string="VL Number")
+
+    name_company = fields.Many2one(
+        'purchase.company'
+    )
+    type_company = fields.Many2one(
+        'purchase.type.company'
+    )
+    incoterm = fields.Many2one(
+        'purchase.icoterm'
+    )
+    bl = fields.Char(
+        string="B/L"
+    )
+    wl = fields.Char(
+        string="W/L"
+    )
     date_in_store = fields.Date()
+    order_in_transit = fields.Boolean()
+    exit_etd = fields.Date()
+    inlay_port = fields.Date()
+    aduana_agent = fields.Many2one(
+        'purchase.aduana.agent'
+    )
     
     def button_report_purchase_order(self):
         return self.env.ref('purchase.action_report_purchase_order').report_action(self)

@@ -8,7 +8,7 @@
                 <xpath expr="//field[@name='location_dest_id']" position="after">
                     <field name="transport_number" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/>
                     <field name="name_company" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/>
-                    <field name="vl_number" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/>
+                    <!-- <field name="vl_number" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/> -->
                 </xpath> 
             </field>
         </record>
