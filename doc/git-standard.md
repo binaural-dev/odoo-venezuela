@@ -42,6 +42,14 @@ Aspectos a tomar en cuenta
 - Las ramas staging-X y release-X seran ramas bloqueadas para push
 - La rama master sera la rama de desarrollo, una vez que se haga un release, la rama master empezara a recibir codigo del siguiente release
 
+
+## Dev-Branch 
+
+Nombre para las ramas:
+```
+odoo#{id tarea en odoo}-name
+```
+
 ## Commits
 
 ### Titulo
