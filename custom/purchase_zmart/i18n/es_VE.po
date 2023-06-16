@@ -93,3 +93,13 @@ msgstr "Terrestre"
 #: model:ir.model.fields.selection,name:purchase_zmart.selection__purchase_order__type_company__air
 msgid "Air"
 msgstr "Aéreo"
+
+#. module: purchase_zmart
+#: model:ir.model.fields.selection,name:purchase_zmart.selection__purchase_order__incoterm__fob
+msgid "FOB"
+msgstr "FOB"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__bl
+msgid "B/L"
+msgstr "B/L"
