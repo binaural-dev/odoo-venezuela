@@ -105,3 +105,9 @@ msgstr "Referencia Comercial"
 #: model:ir.model.fields,field_description:contact_zmart.field_res_users__legal_representante
 msgid "Legal Representante"
 msgstr "Identificación Representante Legal"
+
+#. module: contact_zmart
+#: model:ir.model.fields,field_description:contact_zmart.field_res_partner__other
+#: model:ir.model.fields,field_description:contact_zmart.field_res_users__other
+msgid "Other"
+msgstr "Otros"
