@@ -41,33 +41,7 @@ class SaleOrderZmart(models.Model):
     product_id = fields.Many2one('product.template', string='Product')
     unlock_date = fields.Date(string='Unlock Date')
 
-    def action_confirm(self):
-        for order in self:
-            # Set the unlock date to 7 days from the confirmation date
-            unlock_date = datetime.now() + timedelta(days=2)
-            order.unlock_date = unlock_date.date()
-
-            # Lock the inventory for the products in the order
-            for line in order.order_line:
-                line.product_id.virtual_available -= line.product_uom_qty
-                line.product_id.outgoing_qty += line.product_uom_qty
-
-            # Call the original confirm function to create the order
-            res = super().action_confirm()
-
-            # Schedule the inventory to be unlocked on the unlock date
-            order.env['stock.change.product.qty'].sudo().create({
-                'product_id': line.product_id.id,
-                'location_id': line.order_id.warehouse_id.lot_stock_id.id,
-                'new_quantity': line.product_uom_qty,
-                'product_uom_id': line.product_uom.id,
-                'company_id': order.company_id.id,
-                'description': 'Unlock inventory',
-                'date': order.unlock_date,
-                'action': 'down',
-            })
-
-        return res
+    
     def button_sale_order(self):
         return self.env.ref('sale.action_report_saleorder').report_action(self)
 
