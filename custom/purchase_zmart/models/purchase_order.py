@@ -13,8 +13,7 @@ class PurchaseOrderZmart(models.Model):
             ("land", "Land"),
         ],
         default="",
-        store=True,
-        required=True
+        store=True
     )
     incoterm = fields.Selection(
         [
@@ -24,8 +23,7 @@ class PurchaseOrderZmart(models.Model):
             ("na", "N/A"),
         ],
         default="",
-        store=True,
-        required=True
+        store=True
     )
     bl = fields.Char(
         string="B/L"

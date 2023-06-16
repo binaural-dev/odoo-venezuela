@@ -10,38 +10,22 @@
                     <button name="button_report_purchase_order" string="Imprimir Presupuesto/Pedido" type="object" class="oe_highlight"/>
                     <button name="button_report_purchase_quotation" string="Solicitud de Presupuesto" type="object" class="oe_highlight"/>
                 </button>
-                <field name="date_order" position="after">
-                    <field name="date_in_store"/>
-                </field>
                 <xpath expr="//notebook" position="inside">
                 <page name="information_vehicle" string="Información Transporte">
-                    <group>
-                    <label for="name_company"/>
-                    <div class="o_row" name="gross_weight_inner_box" >
+                    <group><group>
                         <field name="name_company"/>
-                        <label for="type_company"/>
                         <field name="type_company"/>
-                        <label for="incoterm"/>
                         <field name="incoterm"/>
-                        <label for="bl"/>
                         <field name="bl"/>
-                        <label for="wl"/>
                         <field name="wl"/>
-                    </div>
-                    <label for="order_in_transit"/>
-                    <div class="o_row" name="" >
+                    </group>
+                    <group>
                         <field name="order_in_transit"/>
-                        <label for="exit_etd"/>
                         <field name="exit_etd"/>
-                        <label for="inlay_port"/>
                         <field name="inlay_port"/>
-                        <label for="date_in_store"/>
                         <field name="date_in_store"/>
-                    </div>
-                    <label for="aduana_agent"/>
-                    <div class="o_row" name="" >
                         <field name="aduana_agent"/>
-                    </div>
+                    </group>
                     </group>
                 </page>
             </xpath>

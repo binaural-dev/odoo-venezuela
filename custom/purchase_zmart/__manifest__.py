@@ -10,6 +10,7 @@
     # any module necessary for this one to work correctly
     "depends": [
         "binaural_purchase",
+        "invoice_zmart",
     ],
     # always loaded
     "data": [
