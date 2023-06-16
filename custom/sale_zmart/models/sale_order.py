@@ -1,11 +1,17 @@
+from datetime import datetime,timedelta
 from odoo import api, fields, models
 
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
     
-    shipping_type = fields.Many2one(
-        'sale.shipping.type',
-        string="shipping type"
+    shipping_type = fields.Selection(
+        [
+            ("withdrawal", "withdrawal"),
+            ("shipment", "shipment"),
+        ],
+        default="withdrawal",
+        store=True,
+        required=True
     )
     name_company = fields.Many2one(
         'sale.company', 
@@ -33,7 +39,9 @@ class SaleOrderZmart(models.Model):
         required=True
     )
     product_id = fields.Many2one('product.template', string='Product')
+    unlock_date = fields.Date(string='Unlock Date')
 
+    
     def button_sale_order(self):
         return self.env.ref('sale.action_report_saleorder').report_action(self)
 

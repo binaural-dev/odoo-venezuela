@@ -9,14 +9,12 @@
             <button name="action_cancel" position="after">
                 <button name="button_sale_order" string="Imprimir Presupuesto/Pedido" type="object" class="oe_highlight"/>
             </button>
-            <xpath expr="//field[@name='partner_invoice_id']" position="before">
-                <field name="shipping_type"/>
-                <field name="name_company"/>
-            </xpath>
             <xpath expr="//field[@name='payment_term_id']" position="after">
                 <field name="printed" readonly="True"/>
                 <field name="priority"/>
-                <field name="shipping_method"/>
+                <field name="name_company"/>
+                <field name="shipping_type"/>
+                <field name="shipping_method" attrs="{'invisible': [('shipping_type', '==', 'withdrawal')]}"/>
             </xpath>
         </field>
     </record>
@@ -25,6 +23,9 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree" />
         <field name="arch" type="xml">
+        <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="unlock_date"/>
+                </xpath>
             <xpath expr="//field[@name='user_id']" position="before">
                 <field name="priority"/>
                 <field name="shipping_type"/>
