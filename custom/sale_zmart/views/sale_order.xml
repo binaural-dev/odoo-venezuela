@@ -12,8 +12,8 @@
             <xpath expr="//field[@name='payment_term_id']" position="after">
                 <field name="printed" readonly="True"/>
                 <field name="priority"/>
-                <field name="name_company"/>
                 <field name="shipping_type"/>
+                <field name="name_company"/>
                 <field name="shipping_method" attrs="{'invisible': [('shipping_type', '==', 'withdrawal')]}"/>
             </xpath>
         </field>
