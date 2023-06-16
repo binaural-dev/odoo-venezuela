@@ -34,13 +34,13 @@ class SaleOrderZmart(models.Model):
             ("free", "Free"),
             ("collect_at_destination", "Collect at Destination"),
         ],
-        default="",
-        store=True,
-        required=True
+        default="free",
+        store=True
     )
-    product_id = fields.Many2one('product.template', string='Product')
-    unlock_date = fields.Date(string='Unlock Date')
-
+    product_id = fields.Many2one(
+        'product.template', 
+        string='Product'
+    )
     
     def button_sale_order(self):
         return self.env.ref('sale.action_report_saleorder').report_action(self)

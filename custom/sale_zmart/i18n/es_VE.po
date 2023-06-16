@@ -134,12 +134,12 @@ msgstr ""
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_method
 msgid "Shipping Method"
-msgstr "Tipo de Envió"
+msgstr "Tipo de Entrega"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_type
 msgid "Shipping Type"
-msgstr "Metodo de Envió"
+msgstr "Metodo de Entrega"
 
 #. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_stock_picking
