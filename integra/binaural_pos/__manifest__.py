@@ -16,6 +16,7 @@
         "views/res_config_settings.xml",
         "views/pos_config_views.xml",
         "views/pos_payment_views.xml",
+        "views/res_users_views.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
