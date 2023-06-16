@@ -16,6 +16,7 @@
                         <field name="commercial_register" widget="many2many_binary"/>
                         <field name="commercial_reference" widget="many2many_binary"/>
                         <field name="bank_reference" widget="many2many_binary"/>
+                        <field name="other" widget="many2many_binary"/>
                     </group>
                 </page>
             </xpath>

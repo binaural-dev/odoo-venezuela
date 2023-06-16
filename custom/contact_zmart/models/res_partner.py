@@ -34,3 +34,9 @@ class ResPartner(models.Model):
         'bank_reference_id',
         'attachment_id'
     )
+    other = fields.Many2many(
+        'ir.attachment',
+        'other_rel',
+        'other_id',
+        'attachment_id'
+    )
