@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230508\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-16 15:20+0000\n"
-"PO-Revision-Date: 2023-06-16 15:20+0000\n"
+"POT-Creation-Date: 2023-06-18 12:50+0000\n"
+"PO-Revision-Date: 2023-06-18 12:50+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,20 +16,15 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: sale_zmart
-#: model_terms:ir.ui.view,arch_db:sale_zmart.view_sale_order_form_zmart
-msgid "Bloquear Inventario"
-msgstr ""
-
-#. module: sale_zmart
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_method__collect_at_destination
 msgid "Collect at Destination"
 msgstr "Cobro en Destino"
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__name_company
-#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__name_company
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_name_company
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_name_company
 msgid "Company"
-msgstr "Empresa de Tranporte"
+msgstr "Empresa de Transporte"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_company__create_uid
@@ -94,7 +89,7 @@ msgstr "Media"
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_company__name
 msgid "Name"
-msgstr ""
+msgstr "Nombre"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__packing_factor
@@ -133,6 +128,7 @@ msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_method
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_method
 msgid "Shipping Method"
 msgstr "Tipo de Entrega"
 
@@ -142,14 +138,14 @@ msgid "Shipping Type"
 msgstr "Metodo de Entrega"
 
 #. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_type
+msgid "Shipping type"
+msgstr "Metodo de Entrega"
+
+#. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_stock_picking
 msgid "Transfer"
 msgstr "Transferir"
-
-#. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__unlock_date
-msgid "Unlock Date"
-msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_sale_company

@@ -12,20 +12,21 @@
                 </button>
                 <xpath expr="//notebook" position="inside">
                 <page name="information_vehicle" string="Información Transporte">
-                    <group><group>
-                        <field name="name_company"/>
-                        <field name="type_company"/>
-                        <field name="incoterm"/>
-                        <field name="bl"/>
-                        <field name="wl"/>
-                    </group>
                     <group>
-                        <field name="order_in_transit"/>
-                        <field name="exit_etd"/>
-                        <field name="inlay_port"/>
-                        <field name="date_in_store"/>
-                        <field name="aduana_agent"/>
-                    </group>
+                        <group>
+                            <field name="name_company"/>
+                            <field name="type_company"/>
+                            <field name="incoterm"/>
+                            <field name="bl"/>
+                            <field name="wl"/>
+                        </group>
+                        <group>
+                            <field name="order_in_transit"/>
+                            <field name="exit_etd"/>
+                            <field name="inlay_port"/>
+                            <field name="date_in_store"/>
+                            <field name="aduana_agent"/>
+                        </group>
                     </group>
                 </page>
             </xpath>
