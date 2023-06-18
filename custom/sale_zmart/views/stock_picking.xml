@@ -5,6 +5,12 @@
             <field name="model">stock.picking</field>
             <field name="inherit_id" ref="stock.view_picking_form"/>
             <field name="arch" type="xml">
+                <field name="origin" position="after">
+                    <field name="guide"/>
+                </field>
+                <xpath expr="//button[@name='action_open_label_type']" position="replace">
+                    <button string="Imprimir etiqueta" type="object" name="print_label"/>
+                </xpath>
                 <xpath expr="//field[@name='location_dest_id']" position="after">
                     <field name="shipping_type" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
                     <field name="shipping_name_company" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>

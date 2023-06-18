@@ -26,3 +26,9 @@ class StockPicking(models.Model):
     sequence_code = fields.Char(
         related = 'picking_type_id.sequence_code'
     )
+    guide = fields.Char(
+        readonly = False
+    )
+    
+    def print_label(self):
+        return self.env.ref('sale_zmart.action_print_label').report_action(self)

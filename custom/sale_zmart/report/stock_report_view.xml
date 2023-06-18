@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_print_label" model="ir.actions.report">
+            <field name="name">Print Label</field>
+            <field name="model">stock.picking</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">sale_zmart.report_print_label</field>
+            <field name="report_file">sale_zmart.report_print_label</field>
+            <field name="print_report_name">'Picking Operations - %s - %s' % (object.partner_id.name or '', object.name)</field>
+            <field name="paperformat_id" ref="sale_zmart.paperformat_custom"/>
+            <field name="binding_model_id" ref="model_stock_picking"/>
+            <field name="binding_type">report</field>
+        </record>
+
+        <template id="report_print_label">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="web.external_layout">
+                    <style>
+                        section {
+                            border: 1px solid black;
+                            margin: 10px;
+                            padding: 10px;
+                        }
+                    </style>
+                    <section id="segmento_1">
+                            <div>
+                                <img t-if="o.company_id.logo"
+                                            t-att-src="image_data_uri(o.company_id.logo)"
+                                            height="40"
+                                            weight="60"
+                                            class="mr-3"/>
+                                <div style="display: inline-block;" >
+                                    <div class="col-8">
+                                        <span><strong>Emisor:</strong></span>
+                                        <div t-field="o.company_id"/>
+                                        <div> R.I.F: 
+                                            <span t-field="o.company_id.vat"/>
+                                        </div>
+                                        <div> TLF: 
+                                            <span  t-field="o.company_id.phone"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <section id="segmento_2">
+                            <div>
+                                <div style="display: inline-block;" >
+                                    <div class="col-8">
+                                        <span><strong>Destinatario:</strong></span>
+                                        <div>  
+                                            <span><strong>Nombre/Razón Social:</strong></span>
+                                            <span t-field="o.partner_id.name"/>
+                                        </div>
+                                        <div>
+                                            <span><strong>Cédula/RIF:</strong></span>
+                                            <span t-field="o.partner_id.vat"/>
+                                        </div>
+                                        <div>
+                                            <span><strong>Contacto:</strong></span>
+                                            <!-- <span t-field="o.partner_id.phone"/> -->
+                                        </div>
+                                        <div>
+                                            <span><strong>TLF:</strong></span>
+                                            <span t-field="o.partner_id.phone"/>
+                                        </div>
+                                        <div>
+                                            <span><strong>Ciudad:</strong></span>
+                                            <span t-field="o.partner_id.city_id"/>
+                                        </div>
+                                        <div>
+                                            <span><strong>Estado:</strong></span>
+                                            <span t-field="o.partner_id.state_id"/>
+                                        </div>
+                                        <div>
+                                            <span><strong>Dirección:</strong></span>
+                                            <span t-field="o.partner_id.contact_address_complete"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <section id="segmento_3">
+                            <table>
+                                <tr>
+                                    <th>
+                                        <strong>N° GUÍA:</strong>
+                                    </th>
+                                    <td>
+                                        <strong><span t-field="o.guide"/></strong>
+                                    </td>
+                                    <th>
+                                        <strong>PESO: </strong>
+                                    </th>
+                                    <td> 
+                                        <strong><span t-out="o.partner_id.vat"/></strong>
+                                    </td>
+                                </tr>
+                            </table>
+                        </section>
+                        <section id="segmento_4">
+                            <div>
+                                <div>
+                                    <span><strong>DOC DE VENTA:</strong></span>
+                                    <span t-field="o.origin"/>
+                                </div>
+                                <div>
+                                    <span><strong>CLIENTE:  </strong></span>
+                                    <span t-out="o.partner_id.name" />
+                                </div>
+                                <div>
+                                    <span><strong>ESTADO:  </strong></span>
+                                    <span t-field="o.partner_id.city_id.name" />
+                                </div>
+                            </div>
+                        </section>
+                        <section id="segmento_5">
+                            <table>
+                                <tr>
+                                    <th>Fecha:</th>
+                                    <td t-out="o.date"/>
+                                    <th>Pick:</th>
+                                    <td><span></span></td>
+                                </tr>
+                                <tr>
+                                    <th>Vent:</th>
+                                    <td><span></span></td>
+                                    <th>Pack:</th>
+                                    <td><span></span></td>
+                                    
+                                </tr>
+                                <tr>
+                                    <th></th>
+                                    <td><span></span></td>
+                                    <th>Verificado:</th>
+                                    <td><span></span></td>
+                                </tr>
+                            </table>
+                        </section>
+                    </t>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>
