@@ -143,6 +143,7 @@
                             </t>
                             <t t-if="sh_display_landscape=='right'">
                                 <div class="row" id="screen_div">
+                                
                                     <div class="o_price_kiosk_mode">
                                         <div style="margin-bottom: 4rem;align-items: center;">
                                         	<div class="col-12" id="message_col">
@@ -177,6 +178,7 @@
                                         />
                                         <button class="o_mrp_kiosk_button_done btn btn-primary btn-lg">Go</button>
                                     </div>
+                                    <div class="alert alert-danger" id="fail" style="display: none;"></div>
                                 </div>
                                 <div class="row o_hidden" id="specification_div" style="width: 50vw;">
                                     <div id="main_div" class="o_hidden">
@@ -439,7 +441,7 @@
                                     />
                                     <button class="o_mrp_kiosk_button_done btn btn-primary btn-lg">Go</button>
                                     <div class="alert alert-success" id="success" style="display: none;"></div>
-                                <div class="alert alert-danger" id="fail" style="display: none;"></div>
+                                    <div class="alert alert-danger" id="fail" style="display: none;"></div>
                                     <div id="main_div" class="o_hidden">
                                         <h2>Product Information</h2>
                                         <div class="row">
