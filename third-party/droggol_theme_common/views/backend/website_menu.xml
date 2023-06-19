@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="website_menus_form_view_inherit_droggol_theme_common" model="ir.ui.view">
+        <field name="name">website.menu.view.form.inherit</field>
+        <field name="model">website.menu</field>
+        <field name="inherit_id" ref="website.website_menus_form_view"/>
+        <field name="arch" type="xml">
+            <field name="is_mega_menu" position="after">
+                <field name="dr_menu_label_id"/>
+                <field name="dr_highlight_menu"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="menu_tree_inherit_droggol_theme_common" model="ir.ui.view">
+        <field name="name">website.menu.tree.inherit.droggol.theme.common</field>
+        <field name="model">website.menu</field>
+        <field name="inherit_id" ref="website.menu_tree"/>
+        <field name="arch" type="xml">
+            <field name="url" position="after">
+                <field name="dr_menu_label_id"/>
+                <field name="dr_highlight_menu"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

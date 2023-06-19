@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <!-- Filter style - 1 -->
+    <t t-name="tp-droggol-dynamic-snippet-tab-1">
+        <div class="tp-droggol-dynamic-snippet-tab-1 p-3 text-center" style="overflow:auto;white-space: nowrap;">
+            <t t-foreach="categories" t-as="category">
+                <span class="mx-3 d_lable_wrapper position-relative d-inline-block">
+                    <h6 t-att-data-category-id="category.id" t-attf-class="d-block d_category_lable pb-1 tp-cursor-pointer #{category_index === 0 ? 'd_active': ''}" t-esc="category.name"/>
+                </span>
+            </t>
+        </div>
+    </t>
+
+    <!-- Filter style - 2 -->
+    <t t-name="tp-droggol-dynamic-snippet-tab-2">
+        <div class="tp-droggol-dynamic-snippet-tab-2 p-3 text-center" style="overflow:auto;white-space: nowrap;">
+            <t t-foreach="categories" t-as="category">
+                <button t-esc="category.name" t-att-data-category-id="category.id" t-attf-class="mx-2 px-3 border text-muted py-2 d_category_lable tp-cursor-pointer btn mb-1 rounded-circle #{category_index === 0 ? 'd_active': ''}"/>
+            </t>
+        </div>
+    </t>
+
+    <!-- Filter style - 3 -->
+    <t t-name="tp-droggol-dynamic-snippet-tab-3">
+        <div class="tp-droggol-dynamic-snippet-tab-3 p-3 text-end" style="overflow:auto;white-space: nowrap;">
+            <t t-foreach="categories" t-as="category">
+                <span t-esc="category.name" t-att-data-category-id="category.id" t-attf-class="mx-2 d_category_lable tp-cursor-pointer pb-1 #{category_index === 0 ? 'd_active': ''}"/>
+            </t>
+        </div>
+    </t>
+
+    <!-- Filter style - 4 -->
+    <t t-name="tp-droggol-dynamic-snippet-tab-4">
+        <div class="tp-droggol-dynamic-snippet-tab-4 d-flex justify-content-between text-center" style="overflow:auto;white-space: nowrap;">
+            <t t-foreach="categories" t-as="category">
+                <span t-esc="category.name" t-att-data-category-id="category.id" t-attf-class="py-3 px-2 w-100 fw-bold bg-white d_category_lable tp-cursor-pointer #{category_index === 0 ? 'd_active': ''}"/>
+            </t>
+        </div>
+    </t>
+
+
+    <!-- Filter style - 5 -->
+    <t t-name="tp-droggol-dynamic-snippet-tab-5">
+        <div class="tp-droggol-dynamic-snippet-tab-5 p-3 text-center" style="overflow:auto;white-space: nowrap;">
+            <t t-foreach="categories" t-as="category">
+                <button t-esc="category.name" t-att-data-category-id="category.id" t-attf-class="mx-2 px-3 py-1 bg-white text-muted border fw-light text-nowrap d_category_lable tp-cursor-pointer btn mb-1 #{category_index === 0 ? 'd_active': ''}"/>
+            </t>
+        </div>
+    </t>
+
+    <!-- Filter style - 6 -->
+    <t t-name="tp-droggol-dynamic-snippet-tab-6">
+        <div class="tp-droggol-dynamic-snippet-tab-6 p-3 text-center" style="overflow:auto;white-space: nowrap;">
+            <t t-foreach="categories" t-as="category">
+                <span t-esc="category.name" t-att-data-category-id="category.id" t-attf-class="fw-bold d_category_lable tp-cursor-pointer pb-1 #{category_index === 0 ? 'd_active': ''}"/>
+            </t>
+        </div>
+    </t>
+</templates>

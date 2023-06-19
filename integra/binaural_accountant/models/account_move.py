@@ -2,6 +2,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from odoo.tools import index_exists, drop_index
 from lxml import etree
+from collections import defaultdict
 
 
 class AccountMove(models.Model):
@@ -161,7 +162,6 @@ class AccountMove(models.Model):
             The view of the account move form with the foreign currency symbol added to the page
             title.
         """
-        foreign_currency_symbol = ""
         foreign_currency_id = self.env.company.currency_foreign_id.id
 
         res = super().get_view(view_id, view_type, **options)
@@ -170,7 +170,7 @@ class AccountMove(models.Model):
             foreign_currency_record = self.env["res.currency"].search(
                 [("id", "=", int(foreign_currency_id))]
             )
-            foreign_currency_symbol = foreign_currency_record.symbol
+            foreign_currency_symbol = foreign_currency_record.symbol or ""
             if view_type == "form":
                 view_id = self.env.ref(
                     "binaural_accountant.view_account_move_form_binaural_invoice"
@@ -210,43 +210,110 @@ class AccountMove(models.Model):
         This method is used to compute the foreign debit and foreign credit of the line_ids field
         (journal entries) based on certain parameters.
 
-        If the move is an invoice or a receipt, the foreign debit and foreign credit will be
-        the sum of the foreign_subtotal of the invoice lines when the line has the payable or
-        receivable account of the partner and the sum of the price_subtotal of the invoice lines
-        matches with either the debit or the credit of the line.
+        As each product line of the invoice lines has an equivalent in the journal entries, the
+        foreign debit and foreign credit of the journal entries that corresponds to each invoice
+        line will be the foreign subtotal of its equivalent product line.
 
-        Else, if the move is not an invoice or the line does not have the payable or receivable
-        account of the partner, the foreign debit and foreign credit will be the debit and credit
-        of the line multiplied by the inverse rate.
+        The tax lines of the journal entries does not have an equivalent on the invoice lines, so
+        the foreign debit and foreign credit of the journal entries that corresponds to each tax
+        will be the sum of the foreign subtotal of the lines from which the tax line is computed
+        multiplied by the tax rate.
+
+        When the entry has a payable or receivable account, the foreign debit and foreign credit
+        will be the sum of the foreign credit or the foreign credit of all the other entries
+        (line_ids) of the move (if the line has debit it will be the sum of the foreign credits,
+        if it has credit it will be the sum of the foreign debits).
+
+        Ohterwise, if the move is not an invoice the foreign debit and foreign credit will be the
+        debit and credit of the line multiplied by the inverse rate.
+
+        In any case, if the foreign debit or foreign credit adjustments are set, the foreign debit
+        and foreign credit will be the foreign debit or foreign credit adjustments.
         """
         self.ensure_one()
-        subtotals = self.get_invoice_line_ids_subtotals_sum()
+        subtotals_by_name = self.get_invoice_line_ids_subtotals_by_name()
+        is_invoice = self.is_invoice(include_receipts=True)
+        receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
         for line in self.line_ids:
-            line_account_is_not_the_partner_receivable_or_payable = (
-                line.account_id != self.partner_id.property_account_receivable_id
-                and line.account_id != self.partner_id.property_account_payable_id
+            # If the line is an adjustment line, the foreign debit and foreign credit will be the
+            # foreign debit and foreign credit adjustment fields.
+            if (line.foreign_debit_adjustment + line.foreign_credit_adjustment) != 0:
+                line.foreign_debit = line.foreign_debit_adjustment
+                line.foreign_credit = line.foreign_credit_adjustment
+                continue
+            line_name = line.name or False
+            subtotal_found = False
+            if is_invoice and line_name in subtotals_by_name:
+                for subtotals in subtotals_by_name[line_name]:
+                    if line.debit == subtotals[0]:
+                        line.foreign_debit = subtotals[1]
+                        subtotal_found = True
+                    if line.credit == subtotals[0]:
+                        line.foreign_credit = subtotals[1]
+                        subtotal_found = True
+                    if subtotal_found:
+                        subtotals_by_name[line_name].remove(subtotals)
+                        break
+                continue
+
+            lines_with_same_tax = self.line_ids.filtered(
+                lambda l: l.tax_ids.description == line_name
             )
-            debit_or_credit_are_distinct_from_price_subtotal = (
-                abs(line.debit) != subtotals[0] and abs(line.credit) != subtotals[0]
-            )
-            if (
-                not self.is_invoice(include_receipts=True)
-                or line_account_is_not_the_partner_receivable_or_payable
-                or debit_or_credit_are_distinct_from_price_subtotal
-            ):
+            if not (lines_with_same_tax and line_name):
                 line.foreign_debit = line.debit * self.foreign_inverse_rate
                 line.foreign_credit = line.credit * self.foreign_inverse_rate
                 continue
+            line.foreign_debit = (
+                sum(lines_with_same_tax.mapped("foreign_debit"))
+                * lines_with_same_tax[0].tax_ids[0].amount
+                / 100
+            )
+            line.foreign_credit = (
+                sum(lines_with_same_tax.mapped("foreign_credit"))
+                * lines_with_same_tax[0].tax_ids[0].amount
+                / 100
+            )
 
-            if abs(line.debit) > 0:
-                line.foreign_debit = subtotals[1]
-            if abs(line.credit) > 0:
-                line.foreign_credit = subtotals[1]
-        return
+        account_payable_or_receivable_line = self.line_ids.filtered(
+            lambda l: l.account_id.account_type in receivable_and_payable_account_types
+        )
 
-    def get_invoice_line_ids_subtotals_sum(self):
+        if len(account_payable_or_receivable_line) > 0:
+            return
+
+        if account_payable_or_receivable_line.debit > 0:
+            account_payable_or_receivable_line.foreign_debit = sum(
+                self.line_ids.mapped("foreign_credit")
+            )
+        if account_payable_or_receivable_line.credit > 0:
+            account_payable_or_receivable_line.foreign_credit = sum(
+                self.line_ids.mapped("foreign_debit")
+            )
+
+    def _reverse_moves(self, default_values_list=None, cancel=False):
         """
-        This method is used to get the subtotal and foreign_subtotal of the invoice lines.
+        Ensure that the foreign debit and foreign credit of the line_ids fields (journal entries)
+        are set to 0 when the move is reversed.
+
+        This is done to avoid that the foreign debit and foreign credit of the journal entries of
+        the reversed move are computed based on the foreign debit and foreign credit of the journal
+        entries of the original move.
+        """
+        reverse_moves = super()._reverse_moves(default_values_list, cancel)
+        reverse_moves.line_ids.write(
+            {
+                "foreign_debit": 0,
+                "foreign_credit": 0,
+                "foreign_debit_adjustment": 0,
+                "foreign_credit_adjustment": 0,
+            }
+        )
+        return reverse_moves
+
+    def get_invoice_line_ids_subtotals_by_name(self):
+        """
+        This method is used to get the subtotal and foreign_subtotal of the invoice lines grouped
+        by the lines names.
 
         Returns
         -------
@@ -254,10 +321,10 @@ class AccountMove(models.Model):
             The subtotal and foreign subtotal of the invoice lines
         """
         self.ensure_one()
-        return (
-            sum(line.price_subtotal for line in self.invoice_line_ids),
-            sum(line.foreign_subtotal for line in self.invoice_line_ids),
-        )
+        subtotals_by_name = defaultdict(list)
+        for line in self.invoice_line_ids:
+            subtotals_by_name[line.name].append((line.price_subtotal, line.foreign_subtotal))
+        return subtotals_by_name
 
     @api.depends("partner_id")
     def _compute_vat(self):
@@ -300,8 +367,11 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.foreign_total_billed = 0
-            if move.invoice_line_ids and move.is_invoice(include_receipts=True):
-                move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
+            if not (
+                move.invoice_line_ids and move.is_invoice(include_receipts=True) and move.tax_totals
+            ):
+                continue
+            move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
 
     @api.depends(
         "invoice_line_ids.currency_rate",

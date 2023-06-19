@@ -1,0 +1,17 @@
+.s_testimonial_5 {
+    blockquote {
+        background-color: o-color('white');
+        &:after {
+            content: '';
+            @include o-position-absolute($bottom: -30px, $left: 50px);
+            border-style: solid;
+            border-width: 30px 30px 0 0;
+            border-color: o-color('white') transparent transparent transparent;
+            filter: drop-shadow($box-shadow-sm);
+        }
+    }
+    .tp-author-image {
+        height: 55px;
+        width: 55px;
+    }
+}

@@ -1,0 +1,513 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_mega_menu_prime_1" name="Prime - 1" groups="base.group_user">
+        <section class="s_mega_menu_prime_1 bg-white p-3 p-lg-4">
+            <div class="container">
+                <div class="row g-0 s_nb_column_fixed">
+                    <div class="col-12 col-lg-6">
+                        <div class="row g-0 s_col_no_bgcolor s_nb_column_fixed">
+                            <div class="col-12 col-lg-6">
+                                <h6>
+                                    Career
+                                </h6>
+                                <nav class="nav flex-column mb-4">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Listing</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Opening</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Overview</a>
+                                </nav>
+                                <h6>
+                                    Company
+                                </h6>
+                                <nav class="nav flex-column mb-4 mb-lg-0">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">About</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Pricing</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Terms</a>
+                                </nav>
+                            </div>
+                            <div class="col-12 col-lg-6">
+                                <h6>
+                                    Help center
+                                </h6>
+                                <nav class="nav flex-column mb-4">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Overview</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Article</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Search</a>
+                                </nav>
+                                <h6>
+                                    Contact
+                                </h6>
+                                <nav class="nav flex-column mb-4 mb-lg-0">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Basic</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Cover</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Search</a>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="row g-0">
+                            <div class="col-12 col-lg-6">
+                                <h6>
+                                    Blog
+                                </h6>
+                                <nav class="nav flex-column mb-4 mb-lg-0">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Rich View</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Article</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Showcase</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Search</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Rich</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Article</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Showcase</a>
+                                </nav>
+                            </div>
+                            <div class="col-12 col-lg-6">
+                                <h6>
+                                    Portfolio
+                                </h6>
+                                <nav class="nav flex-column">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Masonry</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Grid Rows</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Parallax</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Case Study</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Sidebar</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Sidebar: Fluid</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Basic Grid</a>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_mega_menu_prime_2" name="Prime - 2" groups="base.group_user">
+        <section class="s_mega_menu_prime_2 bg-white">
+            <div class="container">
+                <div class="row s_nb_column_fixed p-3 p-lg-4">
+                    <div class="col-lg-3 py-3">
+                        <h6 class="mb-1">
+                            Clothing
+                        </h6>
+                        <div class="s_hr pt8 pb8" data-name="Separator">
+                            <hr class="w-25 me-auto border-primary"/>
+                        </div>
+                        <nav class="nav flex-column">
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Dapibus</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Duis</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Quisque</a>
+                        </nav>
+                    </div>
+                    <div class="col-lg-3 py-3">
+                        <h6 class="mb-1">
+                            Shoes
+                        </h6>
+                        <div class="s_hr pt8 pb8" data-name="Separator">
+                            <hr class="w-25 me-auto border-primary"/>
+                        </div>
+                        <nav class="nav flex-column">
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin lobortis</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Vivamus</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Donec ultrices</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Etiam</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam sed</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Donec non</a>
+                        </nav>
+                    </div>
+                    <div class="col-lg-3 py-3">
+                        <h6 class="mb-1">
+                            Bags
+                        </h6>
+                        <div class="s_hr pt8 pb8" data-name="Separator">
+                            <hr class="w-25 me-auto border-primary"/>
+                        </div>
+                        <nav class="nav flex-column">
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nulla vehicula</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin eu</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Quisque</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin lobortis</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Duis</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Quisque</a>
+                        </nav>
+                    </div>
+                    <div class="col-lg-3 py-3">
+                        <h6 class="mb-1">
+                            Accessories
+                        </h6>
+                        <div class="s_hr pt8 pb8" data-name="Separator">
+                            <hr class="w-25 me-auto border-primary"/>
+                        </div>
+                        <nav class="nav flex-column">
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam mattis</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Duis</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nulla vehicula</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin eu</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Quisque</a>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            <section class="s_parallax parallax s_parallax_is_fixed pt32 pb32 oe_img_bg o_bg_img_center" data-scroll-background-ratio="0" data-snippet="s_parallax" data-name="Parallax" style="background-image: url('/web/image/theme_prime.s_mega_menu_prime_2_1'); background-position: 50% 0;">
+                <div class="oe_structure oe_empty">
+                    <section class="s_heading_3 pt32 pb32">
+                        <div class="container pt32 pb32">
+                            <div class="row justify-content-center s_nb_column_fixed">
+                                <div class="col-12 col-lg-8 text-center">
+                                    <h2 class="mt-3">Want to explore our products?</h2>
+                                    <p class="lead">
+                                        See all the products at once.
+                                    </p>
+                                    <a href="#" class="btn btn-primary mt-4">View all products</a>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+        </section>
+    </template>
+
+    <template id="s_mega_menu_prime_3" name="Prime - 3" groups="base.group_user">
+        <section class="s_mega_menu_prime_3 bg-white">
+            <div class="container">
+                <div class="row s_nb_column_fixed">
+                    <div class="col-12 col-lg-3 py-3">
+                        <h6 class="mb-1">
+                            Clothing
+                        </h6>
+                        <div class="s_hr pt8 pb8" data-name="Separator">
+                            <hr class="w-25 me-auto border-primary"/>
+                        </div>
+                        <nav class="nav flex-column">
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Dapibus</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin <span class="s_badge badge text-bg-primary"><i class="fa fa-tag"></i>New</span></a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Duis</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean <span class="s_badge badge text-bg-warning"><i class="fa fa-star"></i>Sale</span></a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Vivamus</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Duis</a>
+                        </nav>
+                    </div>
+                    <div class="col-12 col-lg-3 py-3">
+                        <h6 class="mb-1">
+                            Shoes
+                        </h6>
+                        <div class="s_hr pt8 pb8" data-name="Separator">
+                            <hr class="w-25 me-auto border-primary"/>
+                        </div>
+                        <nav class="nav flex-column">
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam mattis</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam <span class="s_badge badge text-bg-warning"><i class="fa fa-magic"></i>Popular</span></a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Duis</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nulla vehicula</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin eu</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Quisque</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin <span class="s_badge badge text-bg-primary"><i class="fa fa-star"></i>New</span></a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam</a>
+                        </nav>
+                    </div>
+                    <div class="col-12 col-lg-3 py-3">
+                        <h6 class="mb-1">
+                            Accessories
+                        </h6>
+                        <div class="s_hr pt8 pb8" data-name="Separator">
+                            <hr class="w-25 me-auto border-primary"/>
+                        </div>
+                        <nav class="nav flex-column">
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin lobortis</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean <span class="s_badge badge text-bg-primary"><i class="fa fa-star"></i>Sale</span></a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Vivamus</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Donec ultrices</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Etiam</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam sed</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Donec non</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam mattis <span class="s_badge badge text-bg-success"><i class="fa fa-magic"></i>Exclusive</span></a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean</a>
+                            <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Vivamus</a>
+                        </nav>
+                    </div>
+                    <div class="col-12 col-lg-3 py-3">
+                        <div class="s_shop_offer_4">
+                            <div class="position-relative">
+                                <img src="/web/image/theme_prime.s_mega_menu_prime_3_1" class="img img-fluid" alt="Shop Offer Image 01"/>
+                                <div class="tp-banner-text text-center w-100">
+                                    <h3>Newly Launched</h3>
+                                    <h5>Limited Collection</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="s_clients_3 container pt8 pb8 tp-editor-bg-color-n-shadow" data-name="Clients">
+                <div class="row s_nb_column_fixed">
+                    <div t-foreach="list(range(1, 7))" t-as="number" class="col-12 col-md-4 col-lg-2 tp-client-box">
+                        <t t-set="number" t-value="'%02d' % number"/>
+                        <div class="p-4 text-center">
+                            <img class="img img-fluid tp-client-image" t-attf-src="/web/image/theme_prime.s_client_#{number}" t-attf-alt="Client Image #{number}"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_mega_menu_prime_4" name="Prime - 4" groups="base.group_user">
+        <section class="s_mega_menu_prime_4 bg-white">
+            <div class="container px-0">
+                <div class="row s_nb_column_fixed">
+                    <div class="col-12 col-lg-6">
+                        <section class="s_parallax parallax s_parallax_is_fixed pt64 pb64 oe_img_bg o_bg_img_center" data-scroll-background-ratio="0" data-snippet="s_parallax" data-name="Parallax" style="background-image: url('/web/image/theme_prime.s_mega_menu_prime_4_1'); background-position: 50% 0;">
+                            <div class="oe_structure oe_empty">
+                                <section class="s_heading_3 pt32 pb32">
+                                    <div class="container pt32 pb32">
+                                        <div class="row justify-content-center s_nb_column_fixed">
+                                            <div class="col-12 col-lg-8 text-center">
+                                                <h2 class="mt-3">Want to explore our products?</h2>
+                                                <p class="lead">
+                                                    See all the products at once.
+                                                </p>
+                                                <a href="#" class="btn btn-primary mt-4">View all products</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        </section>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="row g-0 p-4">
+                            <div class="col-12 col-lg-4 py-2">
+                                <h6 class="mb-1">
+                                    Clothing
+                                </h6>
+                                <div class="s_hr pt8 pb8" data-name="Separator">
+                                    <hr class="w-25 me-auto border-primary"/>
+                                </div>
+                                <nav class="nav flex-column">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Dapibus</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Duis</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Vivamus</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Duis</a>
+                                </nav>
+                            </div>
+                            <div class="col-12 col-lg-4 py-2">
+                                <h6 class="mb-1">
+                                    Shoes
+                                </h6>
+                                <div class="s_hr pt8 pb8" data-name="Separator">
+                                    <hr class="w-25 me-auto border-primary"/>
+                                </div>
+                                <nav class="nav flex-column">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam mattis</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Duis</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nulla vehicula</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin eu</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Quisque</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Morbi vel</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam</a>
+                                </nav>
+                            </div>
+                            <div class="col-12 col-lg-4 py-2">
+                                <h6 class="mb-1">
+                                    Accessories
+                                </h6>
+                                <div class="s_hr pt8 pb8" data-name="Separator">
+                                    <hr class="w-25 me-auto border-primary"/>
+                                </div>
+                                <nav class="nav flex-column">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Proin lobortis</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Vivamus</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Donec ultrices</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Etiam</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam sed</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Donec non</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Nullam mattis</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Vivamus</a>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_mega_menu_prime_5" name="Prime - 5" groups="base.group_user">
+        <section class="s_mega_menu_prime_5 bg-white">
+            <div class="container">
+                <div class="row">
+                    <t t-set="titles" t-value="['Watches', 'Tablets', 'Gaming', 'Laptops']"/>
+                    <div class="col-12 col-md-6 col-lg-3 pt24 pb24" t-foreach="titles" t-as="title">
+                        <div class="card border-0">
+                            <a class="d-block tp-animation-scale" href="#">
+                                <img class="img img-fluid rounded" t-attf-src="/web/image/theme_prime.s_mega_menu_prime_5_#{title_index + 1}" t-attf-alt="Mega Menu Image 0#{title}"/>
+                            </a>
+                            <div class="card-body">
+                                <h5 t-out="title"/>
+                                <nav class="nav flex-column tp-list-arrow">
+                                    <a href="#" class="nav-link py-1" data-name="Menu Item">Proin lobortis</a>
+                                    <a href="#" class="nav-link py-1" data-name="Menu Item">Aenean</a>
+                                    <a href="#" class="nav-link py-1" data-name="Menu Item">Vivamus</a>
+                                    <a href="#" class="nav-link py-1" data-name="Menu Item">Donec ultrices</a>
+                                    <a href="#" class="nav-link py-1" data-name="Menu Item">Etiam</a>
+                                    <a href="#" class="nav-link py-1" data-name="Menu Item">Nullam sed</a>
+                                    <a href="#" class="nav-link py-1" data-name="Menu Item">Donec non</a>
+                                    <a href="#" class="nav-link py-1" data-name="Menu Item">Nullam mattis</a>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <t t-call="theme_prime.s_icon_block_12"/>
+    </template>
+
+    <template id="s_mega_menu_prime_6" name="Prime - 6" groups="base.group_user">
+        <section class="s_mega_menu_prime_6 bg-white">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 pt24 pb24 col-lg-3">
+                        <div class="position-relative tp-banner-block oe_img_bg tp-editor-bg-image" style="background-image: url('/web/image/theme_prime.s_mega_menu_prime_6_1');">
+                            <div class="tp-banner-text text-center tp-editor-bg-color-n-shadow bg-white-85">
+                                <h6><span style="font-weight: bolder;">Starting at $30</span></h6>
+                                <a href="/shop" class="btn btn-primary btn-sm">Shop Now</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 pt24 pb24 col-lg-6">
+                        <div class="row">
+                            <div class="col-12 col-lg-4 mb-4">
+                                <h6 class="mb-1">Clothing</h6>
+                                <div class="s_hr pt8 pb8" data-name="Separator">
+                                    <hr class="w-25 me-auto border-primary"/>
+                                </div>
+                                <nav class="nav flex-column">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">New in</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Coats &amp; Jackets</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Jeans</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Dresses</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Shorts</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Skirts</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Donec non</a>
+                                </nav>
+                            </div>
+                            <div class="col-12 col-lg-4 mb-4">
+                                <h6 class="mb-1">Shoes</h6>
+                                <div class="s_hr pt8 pb8" data-name="Separator">
+                                    <hr class="w-25 me-auto border-primary"/>
+                                </div>
+                                <nav class="nav flex-column">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Boots</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Flats</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Heels</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Donec ultrices</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Sandals</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Slippers</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Socks</a>
+                                </nav>
+                            </div>
+                            <div class="col-12 col-lg-4 mb-4">
+                                <h6 class="mb-1">Accessories</h6>
+                                <div class="s_hr pt8 pb8" data-name="Separator">
+                                    <hr class="w-25 me-auto border-primary"/>
+                                </div>
+                                <nav class="nav flex-column">
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Bags &amp; Purses</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Aenean</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Vivamus</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Scarves &amp; Hats</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Etiam</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Jewelry</a>
+                                    <a href="#" class="nav-link px-0 py-1" data-name="Menu Item">Donec non</a>
+                                </nav>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <img class="img img-fluid" src="/web/image/theme_prime.s_mega_menu_prime_6_2" alt="Mega Menu Image 01"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 pt24 pb24 col-lg-3">
+                        <div class="position-relative tp-banner-block oe_img_bg tp-editor-bg-image" style="background-image: url('/web/image/theme_prime.s_mega_menu_prime_6_3');">
+                            <div class="tp-banner-text text-center tp-editor-bg-color-n-shadow bg-white-85">
+                                <h6><span style="font-weight: bolder;">Starting at $40</span></h6>
+                                <a href="/shop" class="btn btn-primary btn-sm">Shop Now</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Mega Menu -->
+    <template id="s_tp_mega_menu_category_snippet" name="Categories Listing" groups="base.group_user">
+        <section contenteditable="false" class="s_tp_mega_menu_category_snippet tp-mega-menu-snippet tp-droggol-dynamic-snippet bg-white pt32 pb32" data-tp-snippet-id="s_tp_mega_menu_category_snippet">
+            <div class="container s_tp_mega_menu_category_snippet_wrapper">
+                <div class="alert alert-primary w-50 mx-auto text-center" role="alert">
+                    <span class="tp-config-link fw-bold tp-cursor-pointer">Click Here!</span> to configure snippet.
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_category_mega_menu_snippet" name="Categories Grids" groups="base.group_user">
+        <section contenteditable="false" class="tp-droggol-dynamic-snippet tp-mega-menu-snippet bg-white s_category_snippet_wrapper pt64 pb64 " data-tp-snippet-id="s_category_snippet">
+            <div class="container s_category_snippet dr_not_editable">
+                <div class="alert alert-primary w-50 mx-auto text-center" role="alert">
+                    <span class="tp-config-link fw-bold tp-cursor-pointer">Click Here!</span> to configure snippet.
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_mega_menu_category_tabs_snippet" name="Categories Tabs" groups="base.group_user">
+        <section contenteditable="false" class="tp-droggol-dynamic-snippet bg-white tp-mega-menu-snippet s_category_tabs_snippet_wrapper" data-tp-snippet-id="s_mega_menu_category_tabs_snippet">
+            <div class="container-fluid p-0 s_category_tabs_snippet">
+                <div class="alert alert-primary w-50 mx-auto text-center" role="alert">
+                    <span class="tp-config-link fw-bold tp-cursor-pointer">Click Here!</span> to configure snippet.
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Assets -->
+    <record id="droggol_theme_common.s_mega_menu_prime_3_000_scss" model="ir.asset">
+        <field name="name">Mega Menu Prime 3 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">droggol_theme_common/static/src/snippets/s_mega_menu_prime_3/000.scss</field>
+    </record>
+
+    <record id="droggol_theme_common.s_mega_menu_prime_6_000_scss" model="ir.asset">
+        <field name="name">Mega Menu Prime 6 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">droggol_theme_common/static/src/snippets/s_mega_menu_prime_6/000.scss</field>
+    </record>
+
+</odoo>

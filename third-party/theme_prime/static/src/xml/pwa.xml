@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+
+    <t t-name="theme_prime.pwa_ios_popup">
+        <div class="tp-pwa-ios-popup p-2 shadow">
+            <div class="d-flex align-items-center">
+                <img t-attf-src="/web/image/website/#{widget.websiteID}/dr_pwa_icon_192/192x192" class="me-2 logo flex-shrink-0"/>
+                <div class="flex-grow-1">
+                    To install this web app on your iOS device: tap <img class="icon" src="/theme_prime/static/src/img/pwa_ios_share.png"/> then Add to Home Screen.
+                </div>
+            </div>
+        </div>
+    </t>
+
+</template>

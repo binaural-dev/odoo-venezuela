@@ -334,7 +334,7 @@ class AccountRetention(models.Model):
                 raise UserError(
                     _("The company must have a customer ISLR retention journal configured.")
                 )
-            # Municipale
+            # Municipal
             if (retention.type_retention, retention.type) == (
                 "municipal",
                 "in_invoice",

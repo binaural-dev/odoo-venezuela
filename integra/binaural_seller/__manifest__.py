@@ -5,10 +5,12 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.2",
+    "version": "16.3",
     "category": "Hr/Invoicing/Account",
     "depends": [
+        "account",
         "contacts",
+        "sale",
         "account_accountant",
         "hr"
     ],

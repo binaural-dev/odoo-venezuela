@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<templates>
+    <t t-name="s_d_products_grid_tmpl">
+        <t t-if="data.length">
+            <t t-set="userParams" t-value="widget.uiConfigInfo"/>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="row">
+                        <t t-foreach="data" t-as="item">
+                            <div t-if="item_index &lt;= 3" class="col-6 mt-3">
+                                <t t-call="s_card_style_3">
+                                    <t t-set="isForGridSnippet" t-value="true"></t>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <t t-foreach="data" t-as="item">
+                        <div class="h-100 pt-3" t-if="item_index === 4">
+                            <t t-call="s_card_style_3">
+                                <t t-set="isForGridSnippet" t-value="true"></t>
+                                <t t-set="hasTimer" t-value="true"></t>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+                <div class="col-md-4">
+                    <div class="row">
+                        <t t-foreach="data" t-as="item">
+                            <div t-if="item_index &gt; 4" class="col-6 mt-3">
+                                <t t-call="s_card_style_3">
+                                    <t t-set="isForGridSnippet" t-value="true"></t>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+        <t t-elif="widget.noDataTemplate">
+            <t t-call="#{widget.noDataTemplate}"></t>
+        </t>
+    </t>
+</templates>

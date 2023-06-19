@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('paymentlines-empty')]" position="inside">
+            <div class="bcv">
+                Tasa BCV: <t t-out="rate_bcv"/>
+            </div>
+        </xpath>
         <xpath expr="//div[hasclass('total')]" position="inside">
             <div>
                 <t t-esc="foreignTotalDueText" />

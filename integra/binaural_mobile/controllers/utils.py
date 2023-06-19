@@ -48,7 +48,6 @@ def update_record(model_name: str, idx: int, vals: list, is_sudo=True):
     is_sudo, optional
         If the model update will be in sudo or not, by default True
     """
-
     record = browse_model_data(model_name, idx)
     record.write(vals)
     return record
@@ -70,14 +69,12 @@ def browse_model_data(model_name: str, ids=None, is_sudo=True):
     -------
         A recordset with the model data.
     """
-
     if not ids:
         ids = ()
     elif ids.__class__ in IdType:
         ids = (ids,)
     else:
         ids = tuple(ids)
-
     model = request.env[model_name]
     if is_sudo:
         model = request.env[model_name].sudo()
@@ -241,7 +238,6 @@ def product_duplicate(sale_order: list):
     order_lines = sale_order.get("order_line", False)
     product_list = [line.get("product_id") for line in order_lines if line.get("product_id", False)]
     product_set = set(product_list)
-
     return len(product_list) > len(product_set)
 
 
@@ -276,7 +272,7 @@ def get_order_line(sale_order: list, fields: list):
 def set_order_line(sale_order: list, tax_included: bool):
     order_lines = sale_order.get("order_line", [])
     lines = []
-    company_id = int(get_config("company_app"))
+    company_id = request.env.user.company_id.id
     domain = [
         ("active", "=", True),
         ("company_id", "=", company_id),
