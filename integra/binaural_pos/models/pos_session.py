@@ -1,6 +1,5 @@
 from odoo import models, fields, api
 
-
 class PosSession(models.Model):
     _inherit = "pos.session"
 
@@ -9,9 +8,19 @@ class PosSession(models.Model):
         res["prefix_vats"] = self.env["res.partner"]._fields["prefix_vat"].selection
         return res
 
+    def _loader_params_pos_payment(self):
+        res = super()._loader_params_pos_payment(self)
+        res["search_params"]["fields"].append("foreign_rate")
+        return res
+
     def _loader_params_pos_payment_method(self):
         res = super()._loader_params_pos_payment_method()
         res["search_params"]["fields"].append("is_foreign_currency")
+        return res
+
+    def _loader_params_account_tax(self):
+        res = super()._loader_params_account_tax()
+        res["search_params"]["fields"].append("type_tax_use")
         return res
 
     def _loader_params_res_partner(self):
@@ -30,6 +39,12 @@ class PosSession(models.Model):
         res["search_params"]["fields"].append("inverse_rate")
         return res
 
+    def _loader_params_product_product(self):
+        params = super()._loader_params_product_product()
+        params["search_params"]["fields"].append("free_qty")
+        params["search_params"]["fields"].append("qty_available")
+        return params
+
     def _get_pos_ui_res_currency(self, params):
         """
         This method is used to get the res.currency for the pos
@@ -44,3 +59,7 @@ class PosSession(models.Model):
         if res[0]["id"] != self.config_id.currency_id.id:
             return [res[1], res[0]]
         return res
+
+
+    def is_user_authorized(self):
+        return self.env.user.authorized_discount_pos

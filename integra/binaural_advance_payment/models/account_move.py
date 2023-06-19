@@ -245,7 +245,6 @@ class AccountMove(models.Model):
         self.ensure_one()
         lines = self.env["account.move.line"].browse(line_id)
         payment = self.env["account.payment"].search([("move_id", "=", lines.move_id.id)], limit=1)
-        _logger.warning("epaleeeeeeeeee")
 
         if payment.is_advance_payment:
             return self._create_advance_payment_moves(line_id)
@@ -262,7 +261,7 @@ class AccountMove(models.Model):
             credit = False
             name_1 = "CUENTA POR PAGAR PROVEEDOR"
             name_2 = "ANTICIPO/PROVEEDOR"
-            account_2 = payment.destination_account_id.id if payment else self.env.company.advance_customer_account_id.id
+            account_2 = payment.destination_account_id.id if payment else self.env.company.advance_supplier_account_id.id
 
         return [
             Command.create(

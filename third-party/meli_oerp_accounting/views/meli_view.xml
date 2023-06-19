@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+	<record model="ir.ui.view" id="meli_oerp_acct_payment_tree">
+		<field name="name">mercadolibre.payments.view.tree</field>
+		<field name="model">mercadolibre.payments</field>
+		<field name="inherit_id" ref="meli_oerp.view_meli_payments_tree"></field>
+		<field name="arch" type="xml">
+			<field name="date_last_modified" position="after">
+				<field name="account_payment_id" />
+				<!--field name="account_payment_group_id" /-->
+
+				<field name="account_supplier_payment_id" />
+				<!--field name="account_supplier_group_payment_id" /-->
+
+				<field name="account_supplier_payment_shipment_id" />
+				<!--field name="account_supplier_group_payment_shipment_id" /-->
+
+				<button name="create_payment" type="object" string="Crear Pago" attrs="{'invisible': [('account_payment_id','!=',False)]}"/>
+				<button name="create_supplier_payment" type="object" string="Crear Pago Proveedor" attrs="{'invisible': [('account_supplier_payment_id','!=',False)]}"/>
+				<button name="create_supplier_payment_shipment" type="object" string="Crear Pago Envio Proveedor" attrs="{'invisible': [('account_supplier_payment_shipment_id','!=',False)]}"/>
+				<!--button name="create_supplier_shipment" type="object" string="Crear Pago Envio Proveedor" attrs="{'invisible': [('account_supplier_payment_id','!=',False)]}"/-->
+			</field>
+		</field>
+	</record>
+
+	<record model="ir.ui.view" id="meli_oerp_acct_orders_invoices_form">
+		<field name="name">mercadolibre.orders.invoices.form</field>
+		<field name="model">mercadolibre.orders</field>
+		<field name="inherit_id" ref="meli_oerp.view_meli_orders_form"></field>
+		<field name="arch" type="xml">
+				<xpath expr="//notebook" position="inside">
+					<page string="Invoices">
+						<group name="Posted">
+							<group>
+								<button name='orders_create_invoice' type="object"
+									string="Crear Facturas"
+									attrs="{'invisible':[('invoice_created','=',True)]}"
+									class="oe_stat_button"
+									icon="fa-globe"/>
+									<button name='orders_get_invoice' type="object"
+										string="Verificar Facturas"
+										attrs="{'invisible':[('invoice_posted','=',True)]}"
+										class="oe_stat_button"
+										icon="fa-globe"/>
+								<button name='orders_post_invoice' type="object"
+									string="Publicar Facturas"
+									attrs="{'invisible':[('invoice_posted','=',True)]}"
+									class="oe_stat_button"
+									icon="fa-globe"/>
+								<field name="invoice_posted" invisible="0"/>
+								<field name="invoice_created" invisible="0"/>
+								<!--div class="oe_button_box" name="button_box_mel_post" style="width: auto;">
+
+							</div-->
+							</group>
+							<group>
+								<field name="invoice_fiscal_documents" invisible="0"/>
+								<field name="invoice_type" invisible="0"/>
+								<field name="invoice_pdf" filename="invoice_pdf_filename" />
+								<field name="invoice_pdf_filename" invisible="0" />
+								<field name="invoice_xml"  filename="invoice_xml_filename"/>
+								<field name="invoice_xml_filename" invisible="0" />
+							</group>
+						</group>
+					</page>
+				</xpath>
+		</field>
+	</record>
+
+
+	<!--record id="view_search_meli_invoice_posted" model="ir.ui.view">
+			<field name="name">sale.order.search.meli_invoice_posted</field>
+			<field name="model">sale.order</field>
+			<field name="inherit_id" ref="sale.sale_order_view_search_inherit_quotation"/>
+			<field name="arch" type="xml">
+					<xpath expr="//filter[@name='my_quotation']" position="after">
+						<separator/>
+						<filter string='MercadoLibre Invoice Posted' filter_domain="[('invoice_posted','=',True)]"/>
+						<filter string='MercadoLibre Invoice NOT Posted' filter_domain="[('invoice_posted','=',False)]"/>
+					</xpath>
+			</field>
+	</record-->
+	<!--record model="ir.ui.view" id="view_invoice_form_meli">
+			<field name="name">account.invoice.form.meli</field>
+			<field name="model">account.invoice</field>
+			<field name="inherit_id" ref="account.view_invoice_form"/>
+			<field name="arch" type="xml">
+					<data>
+							<notebook>
+									<page string="MercadoLibre" attrs="{'invisible':[('meli_order_id', '=', False)]}">
+									</page>
+							</notebook>
+					</data>
+			</field>
+	</record-->
+
+</odoo>

@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_banner_1" name="Banner - 1">
+        <section class="s_banner_1 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-md-6 col-xl-4 py-3">
+                        <div class="tp-block-container tp-editor-bg-image position-relative" style="background-image: url('/web/image/theme_prime.s_banner_1_1')">
+                            <div class="tp-block-content h-100 w-100">
+                                <h2 class="tp-title text-center w-100">New Arrival</h2>
+                                <div class="tp-subtitle px-3 text-center w-100">
+                                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et.</p>
+                                    <a href="/shop" class="btn btn-primary">Shop Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-4 py-3">
+                        <div class="tp-block-container tp-editor-bg-image position-relative" style="background-image: url('/web/image/theme_prime.s_banner_1_2')">
+                            <div class="tp-block-content h-100 w-100">
+                                <h2 class="tp-title text-center w-100">Trending Products</h2>
+                                <div class="tp-subtitle px-3 text-center w-100">
+                                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et.</p>
+                                    <a href="/shop" class="btn btn-primary">Shop Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-4 py-3">
+                        <div class="tp-block-container tp-editor-bg-image position-relative" style="background-image: url('/web/image/theme_prime.s_banner_1_3')">
+                            <div class="tp-block-content h-100 w-100">
+                                <h2 class="tp-title text-center w-100">New Collection</h2>
+                                <div class="tp-subtitle px-3 text-center w-100">
+                                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et.</p>
+                                    <a href="/shop" class="btn btn-primary">Shop Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_2" name="Banner - 2">
+        <section class="s_banner_2 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-md-6 col-xl-4 py-3">
+                        <div class="tp-block-wrapper">
+                            <div class="tp-block-container tp-editor-bg-image" style="background-image: url('/web/image/theme_prime.s_banner_1_1')">
+                                <div class="tp-block-content h-100 w-100">
+                                    <h2 class="tp-title text-center w-100">New Arrival</h2>
+                                    <div class="tp-subtitle text-center w-100">
+                                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et.</p>
+                                        <a href="/shop" class="btn btn-primary">Shop Now</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-4 py-3">
+                        <div class="tp-block-wrapper">
+                            <div class="tp-block-container tp-editor-bg-image" style="background-image: url('/web/image/theme_prime.s_banner_1_2')">
+                                <div class="tp-block-content h-100 w-100">
+                                    <h2 class="tp-title text-center w-100">Trending Products</h2>
+                                    <div class="tp-subtitle text-center w-100">
+                                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et.</p>
+                                        <a href="/shop" class="btn btn-primary">Shop Now</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-4 py-3">
+                        <div class="tp-block-wrapper">
+                            <div class="tp-block-container tp-editor-bg-image" style="background-image: url('/web/image/theme_prime.s_banner_1_3')">
+                                <div class="tp-block-content h-100 w-100">
+                                    <h2 class="tp-title text-center w-100">New Collection</h2>
+                                    <div class="tp-subtitle text-center w-100">
+                                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et.</p>
+                                        <a href="/shop" class="btn btn-primary">Shop Now</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_3" name="Banner - 3">
+        <section class="s_banner_3 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor">
+                    <div class="col-12 col-lg-4 position-relative py-3">
+                        <div class="tp-animation-layla">
+                            <a href="#"><img src="/web/image/theme_prime.s_banner_3_1" class="w-100" alt="Banner Image 01"/></a>
+                            <div class="tp-banner-content tp-editor-bg-color-n-shadow o_cc o_cc1 rounded">
+                                <h5 class="text-center mb-0">Mens</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 position-relative py-3">
+                        <div class="tp-animation-layla">
+                            <a href="#"><img src="/web/image/theme_prime.s_banner_3_2" class="w-100" alt="Banner Image 02"/></a>
+                            <div class="tp-banner-content tp-editor-bg-color-n-shadow o_cc o_cc1 rounded">
+                                <h5 class="text-center mb-0">Womens</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 position-relative py-3">
+                        <div class="tp-animation-layla">
+                            <a href="#"><img src="/web/image/theme_prime.s_banner_3_3" class="w-100" alt="Banner Image 03"/></a>
+                            <div class="tp-banner-content tp-editor-bg-color-n-shadow o_cc o_cc1 rounded">
+                                <h5 class="text-center mb-0">Kids</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_4" name="Banner - 4">
+        <section class="s_banner_4 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor">
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="tp-animation-layla position-relative">
+                            <a href="#"><img src="/web/image/theme_prime.s_banner_4_1" class="w-100" alt="Banner Image 01"/></a>
+                            <div class="tp-banner-content">
+                                <h6>Collections</h6>
+                                <h2>Women</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="tp-animation-layla position-relative">
+                            <a href="#"><img src="/web/image/theme_prime.s_banner_4_2" class="w-100" alt="Banner Image 02"/></a>
+                            <div class="tp-banner-content">
+                                <h6>Collections</h6>
+                                <h2>Children</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4 py-3">
+                        <div class="tp-animation-layla position-relative">
+                            <a href="#"><img src="/web/image/theme_prime.s_banner_4_3" class="w-100" alt="Banner Image 03"/></a>
+                            <div class="tp-banner-content">
+                                <h6>Collections</h6>
+                                <h2>Men</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_5" name="Banner - 5">
+        <section class="s_banner_5 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-lg-6 py-3">
+                        <div class="row g-0 s_col_no_bgcolor s_nb_column_fixed">
+                            <div class="col-12 col-sm-6 o_cc o_cc2 pt80 pb80 tp-editor-bg-color-n-shadow">
+                                <div class="px-4 text-center">
+                                    <h4>Featured</h4>
+                                    <h4 class="text-o-color-1">Products</h4>
+                                    <p class="mt16">Just some random content to break this paragraph into two line.</p>
+                                    <a href="/shop" class="btn btn-primary mt16">Discover Now</a>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 oe_img_bg oe_custom_bg tp-editor-bg-image" style="background-image: url('/web/image/theme_prime.s_banner_5_1')"/>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 py-3">
+                        <div class="row g-0 s_col_no_bgcolor s_nb_column_fixed">
+                            <div class="col-12 col-sm-6 o_cc o_cc2 pt80 pb80 tp-editor-bg-color-n-shadow">
+                                <div class="px-4 text-center">
+                                    <h4>Fresh Arrival</h4>
+                                    <h4 class="text-o-color-1">Products</h4>
+                                    <p class="mt16">Just some random content to break this paragraph into two line.</p>
+                                    <a href="/shop" class="btn btn-primary mt16">Discover Now</a>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6 oe_img_bg oe_custom_bg tp-editor-bg-image" style="background-image: url('/web/image/theme_prime.s_banner_5_2')"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_6" name="Banner - 6">
+        <section class="s_banner_6 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <img src="/web/image/theme_prime.s_banner_6_1" class="img img-fluid" alt="Banner Image 01"/>
+                        <div class="tp-banner-content tp-editor-bg-color-n-shadow shadow p-3 o_cc o_cc1 position-relative text-center">
+                            <img src="/web/image/theme_prime.s_brand_1" class="img img-fluid" style="width: 25%;" alt="Banner Brand Image 01"/>
+                            <h4 class="mt-2">New Collection</h4>
+                            <p class="lead mb-1">Starting at $150.</p>
+                            <a href="#" class="btn btn-link">+ Explore Now</a>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <img src="/web/image/theme_prime.s_banner_6_2" class="img img-fluid" alt="Banner Image 02"/>
+                        <div class="tp-banner-content tp-editor-bg-color-n-shadow shadow p-3 o_cc o_cc1 position-relative text-center">
+                            <img src="/web/image/theme_prime.s_brand_2" class="img img-fluid" style="width: 25%;" alt="Banner Brand Image 02"/>
+                            <h4 class="mt-2">Winter Collection</h4>
+                            <p class="lead mb-1">Starting at $99.</p>
+                            <a href="#" class="btn btn-link">+ Explore Now</a>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <img src="/web/image/theme_prime.s_banner_6_3" class="img img-fluid" alt="Banner Image 03"/>
+                        <div class="tp-banner-content tp-editor-bg-color-n-shadow shadow p-3 o_cc o_cc1 position-relative text-center">
+                            <img src="/web/image/theme_prime.s_brand_3" class="img img-fluid" style="width: 25%;" alt="Banner Brand Image 03"/>
+                            <h4 class="mt-2">Trending Collection</h4>
+                            <p class="lead mb-1">Starting at $200.</p>
+                            <a href="#" class="btn btn-link">+ Explore Now</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_7" name="Banner - 7">
+        <section class="s_banner_7 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card">
+                            <img src="/web/image/theme_prime.s_brand_1" class="img img-fluid mx-auto" style="width: 25% !important; padding: 6px !important;" alt="Banner Brand Image 01"/>
+                            <img src="/web/image/theme_prime.s_banner_7_1" class="img img-fluid" alt="Banner Image 01"/>
+                            <div class="card-body">
+                                <h4 style="text-align: center;">Flat 50% Off</h4>
+                                <div style="text-align: center;"><a href="#" class="btn btn-link">+ Shop Now</a></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card">
+                            <img src="/web/image/theme_prime.s_brand_2" class="img img-fluid mx-auto" style="width: 25% !important; padding: 6px !important;" alt="Banner Brand Image 02"/>
+                            <img src="/web/image/theme_prime.s_banner_7_2" class="img img-fluid" alt="Banner Image 02"/>
+                            <div class="card-body">
+                                <h4 style="text-align: center;">Up To 60% Off</h4>
+                                <div style="text-align: center;"><a href="#" class="btn btn-link">+ Shop Now</a></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card">
+                            <img src="/web/image/theme_prime.s_brand_3" class="img img-fluid mx-auto" style="width: 25% !important; padding: 6px !important;" alt="Banner Brand Image 03"/>
+                            <img src="/web/image/theme_prime.s_banner_7_3" class="img img-fluid" alt="Banner Image 03"/>
+                            <div class="card-body">
+                                <h4 style="text-align: center;">Complimentary Gift</h4>
+                                <div style="text-align: center;"><a href="#" class="btn btn-link">+ Shop Now</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_8" name="Banner - 8">
+        <section class="s_banner_8 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card border-0 tp-bg-gradient-50-black tp-animation-scale">
+                            <img src="/web/image/theme_prime.s_banner_8_1" class="img img-fluid card-img-top" alt="Banner Image 01"/>
+                            <div class="tp-content p-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h3 class="text-white">
+                                        Up To 25% Off
+                                    </h3>
+                                    <h6 class="mb-0 text-white">
+                                        On order above $60
+                                    </h6>
+                                </div>
+                                <a href="#" class="btn btn-link"><i class="fa fa-chevron-right fa-2x text-white"/></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card border-0 tp-bg-gradient-50-black tp-animation-scale">
+                            <img src="/web/image/theme_prime.s_banner_8_2" class="img img-fluid card-img-top" alt="Banner Image 02"/>
+                            <div class="tp-content p-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h3 class="text-white">
+                                        Up To 40% Off
+                                    </h3>
+                                    <h6 class="mb-0 text-white">
+                                        On order above $80
+                                    </h6>
+                                </div>
+                                <a href="#" class="btn btn-link"><i class="fa fa-chevron-right fa-2x text-white"/></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card border-0 tp-bg-gradient-50-black tp-animation-scale">
+                            <img src="/web/image/theme_prime.s_banner_8_3" class="img img-fluid card-img-top" alt="Banner Image 03"/>
+                            <div class="tp-content p-3 d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h3 class="text-white">
+                                        Up To 50% Off
+                                    </h3>
+                                    <h6 class="mb-0 text-white">
+                                        On order above $100
+                                    </h6>
+                                </div>
+                                <a href="#" class="btn btn-link"><i class="fa fa-chevron-right fa-2x text-white"/></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_9" name="Banner - 9">
+        <section class="s_banner_9 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card border-0 tp-bg-gradient-50-black tp-animation-scale">
+                            <img src="/web/image/theme_prime.s_banner_9_1" class="img img-fluid card-img-top" alt="Banner Image 01"/>
+                            <div class="tp-content p-3">
+                                <h3 class="text-white" style="text-align: center;">Personal Care</h3>
+                                <h6 class="text-white" style="text-align: center;">Amazing beauty products</h6>
+                                <div class="mt-4" style="text-align: center;"><a href="#"><font class="text-white">+ Explore More</font></a></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card border-0 tp-bg-gradient-50-black tp-animation-scale">
+                            <img src="/web/image/theme_prime.s_banner_9_2" class="img img-fluid card-img-top" alt="Banner Image 02"/>
+                            <div class="tp-content p-3">
+                                <h3 class="text-white" style="text-align: center;">Printed T-Shirts</h3>
+                                <h6 class="text-white" style="text-align: center;">International style</h6>
+                                <div class="mt-4" style="text-align: center;"><a href="#"><font class="text-white">+ Explore More</font></a></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4 py-3">
+                        <div class="card border-0 tp-bg-gradient-50-black tp-animation-scale">
+                            <img src="/web/image/theme_prime.s_banner_9_3" class="img img-fluid card-img-top" alt="Banner Image 03"/>
+                            <div class="tp-content p-3">
+                                <h3 class="text-white" style="text-align: center;">Winter Wear Fest</h3>
+                                <h6 class="text-white" style="text-align: center;">Shirts, Jeans &amp; Waistcoats</h6>
+                                <div class="mt-4" style="text-align: center;"><a href="#"><font class="text-white">+ Explore More</font></a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_10" name="Banner - 10">
+        <section class="s_banner_10 parallax s_parallax_is_fixed pt56 pb56 s_parallax_no_overflow_hidden oe_img_bg o_bg_img_center" data-scroll-background-ratio="0" data-snippet="s_banner_10" data-name="Banner - 10" style="background-image: url('/web/image/theme_prime.s_banner_10_1'); background-position: 50% 0;">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12">
+                        <h4 style="text-align: center;">Hurry up!</h4>
+                        <h2 style="text-align: center;" class="display-3 fw-bold">HUGE SALE!</h2>
+                        <h4 style="text-align: center;">Up to 20% off on all products.</h4>
+                        <div style="text-align: center;"><a href="/shop" class="btn btn-primary mt32">Shop Now</a></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_11" name="Banner - 11">
+        <section class="s_banner_11 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-lg-6 py-3">
+                        <div class="d-flex border align-items-center tp-editor-bg-color-n-shadow">
+                            <img src="/web/image/theme_prime.s_brand_1" class="flex-shrink-0 me-2 img img-fluid border-end" alt="Banner Image 01" style="width: 20% !important; padding: 10px !important;"/>
+                            <div class="flex-grow-1 p-2">
+                                <h5>Up To 10% Off</h5>
+                                <p class="lead mb-0">Get discount on shoes on order above $150.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 py-3">
+                        <div class="d-flex border align-items-center tp-editor-bg-color-n-shadow">
+                            <img src="/web/image/theme_prime.s_brand_2" class="flex-shrink-0 me-2 img img-fluid border-end" alt="Banner Image 02" style="width: 20% !important; padding: 10px !important;"/>
+                            <div class="flex-grow-1 p-2">
+                                <h5>Up To 20% Off</h5>
+                                <p class="lead mb-0">Order above $250 and get free gift voucher.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_12" name="Banner - 12">
+        <section class="s_banner_12 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-lg-6 py-3">
+                        <div class="position-relative">
+                            <img class="img img-fluid img-thumbnail" src="/web/image/theme_prime.s_banner_12_1" alt="Banner Image 01"/>
+                            <div class="tp-banner-content">
+                                <h5>Get 10% Off</h5>
+                                <h3>Get Best Burger</h3>
+                                <div class="pt16">
+                                    <a href="/shop" class="btn btn-primary rounded-circle">Shop Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 py-3">
+                        <div class="position-relative">
+                            <img class="img img-fluid img-thumbnail" src="/web/image/theme_prime.s_banner_12_2" alt="Banner Image 02"/>
+                            <div class="tp-banner-content">
+                                <h5>Get 15% Off</h5>
+                                <h3>Get Big Pizzas</h3>
+                                <div class="pt16">
+                                    <a href="/shop" class="btn btn-primary rounded-circle">Shop Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_13" name="Banner - 13">
+        <section class="s_banner_13 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor g-0 s_nb_column_fixed">
+                    <div class="col-12 col-lg-6 p-1">
+                        <div class="position-relative tp-animation-scale">
+                            <img src="/web/image/theme_prime.s_banner_13_1" class="w-100" alt="Banner Image 01"/>
+                            <div class="tp-banner-content tp-editor-bg-color-n-shadow text-center rounded o_cc o_cc1 w-50">
+                                <h5>Women Tops</h5>
+                                <div>Up to 70% off on selected item</div>
+                                <a href="#" class="mt-3 btn btn-primary">Discover Now</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="row s_col_no_bgcolor g-0 s_nb_column_fixed">
+                            <div class="col-lg-12 p-1">
+                                <div class="position-relative tp-animation-scale">
+                                    <img src="/web/image/theme_prime.s_banner_13_2" class="w-100" alt="Banner Image 02"/>
+                                    <div class="tp-banner-content tp-editor-bg-color-n-shadow text-center rounded o_cc o_cc1 w-50">
+                                        <h5>Accessories</h5>
+                                        <div>Add finishing touch to your outfit</div>
+                                        <a href="#" class="mt-3 btn btn-primary">Shop Now</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                <div class="row s_col_no_bgcolor g-0 s_nb_column_fixed">
+                                    <div class="col-lg-6 p-1">
+                                        <div class="position-relative tp-animation-scale">
+                                            <img src="/web/image/theme_prime.s_banner_13_3" class="w-100" alt="Banner Image 03"/>
+                                            <div class="tp-banner-content tp-editor-bg-color-n-shadow text-center rounded o_cc o_cc1 w-50 w-lg-75">
+                                                <h5>Denim Jeans</h5>
+                                                <div>Find your perfect outfit</div>
+                                                <a href="#" class="mt-3 btn btn-primary">Shop Now</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 p-1">
+                                        <div class="position-relative tp-animation-scale">
+                                            <img src="/web/image/theme_prime.s_banner_13_4" class="w-100" alt="Banner Image 04"/>
+                                            <div class="tp-banner-content tp-editor-bg-color-n-shadow text-center rounded o_cc o_cc1 w-50 w-lg-75">
+                                                <h5>Hot Collection</h5>
+                                                <div>From world's top designer</div>
+                                                <a href="#" class="mt-3 btn btn-primary">Shop Now</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_14" name="Banner - 14">
+        <section class="s_banner_14 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12 col-lg-8">
+                        <div class="parallax s_parallax_is_fixed s_parallax_no_overflow_hidden pb64 pt64 px-4 oe_img_bg o_bg_img_center" data-scroll-background-ratio="0" style="background-image: url('/web/image/theme_prime.s_banner_14_1'); background-position: 50% 0;">
+                            <h5>Hurry up! Limited time offer</h5>
+                            <h3 class="mb-4">Brand New Shoes On Sale</h3>
+                            <a class="btn btn-primary" href="#">Shop now</a>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <div class="d-flex flex-column h-100 justify-content-center oe_img_bg o_bg_img_center oe_custom_bg tp-editor-bg-both" style="background-image:url('/web/image/theme_prime.s_banner_14_2')">
+                            <div class="my-2 p-4 text-center">
+                                <h4>Your Add Text Here</h4>
+                                <p>Hurry up to reserve your spot now</p>
+                                <a class="btn btn-primary" href="#">Learn more</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_banner_15" name="Banner - 15">
+        <section class="s_banner_15 pt16 pb16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-12">
+                        <img src="/web/image/theme_prime.s_banner_15_1" class="img img-fluid shadow-sm" alt="Banner Image 01"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_banner_1_000_scss" model="ir.asset">
+        <field name="name">Banner 1 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_banner_1/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_banner_2_000_scss" model="ir.asset">
+        <field name="name">Banner 2 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_banner_2/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_banner_3_000_scss" model="ir.asset">
+        <field name="name">Banner 3 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_banner_3/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_banner_4_000_scss" model="ir.asset">
+        <field name="name">Banner 4 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_banner_4/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_banner_6_000_scss" model="ir.asset">
+        <field name="name">Banner 6 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_banner_6/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_banner_8_000_scss" model="ir.asset">
+        <field name="name">Banner 8 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_banner_8/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_banner_9_000_scss" model="ir.asset">
+        <field name="name">Banner 9 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_banner_9/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_banner_12_000_scss" model="ir.asset">
+        <field name="name">Banner 12 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_banner_12/000.scss</field>
+    </record>
+
+    <record id="theme_prime.s_banner_13_000_scss" model="ir.asset">
+        <field name="name">Banner 13 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_banner_13/000.scss</field>
+    </record>
+
+</odoo>

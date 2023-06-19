@@ -1,0 +1,456 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* sh_product_catalog_generator
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 14.1alpha1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-09-29 06:07+0000\n"
+"PO-Revision-Date: 2020-09-29 06:07+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: sh_product_catalog_generator
+#: model:ir.actions.report,print_report_name:sh_product_catalog_generator.product_catalog_report_action
+msgid "'Generate Product Catalog'"
+msgstr "'生成产品目录'"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style_box__2
+msgid "2 box per row"
+msgstr "每行2盒"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style_box__3
+msgid "3 box per row"
+msgstr "每行3盒"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style_box__4
+msgid "4 box per row"
+msgstr "每行4盒"
+
+#. module: sh_product_catalog_generator
+#: model:mail.template,body_html:sh_product_catalog_generator.email_template_edi_product_catalog
+msgid ""
+"<div style=\"margin: 0px; padding: 0px;\">\n"
+"\t\t\t\t    <p style=\"margin: 0px; padding: 0px; font-size: 13px;\">\n"
+"\t\t\t\t        We Have Attached Product Catalog.\n"
+"\t\t\t       \t</p>\n"
+"\t\t\t\t</div>\n"
+"            "
+msgstr ""
+"<div style=\"margin: 0px; padding: 0px;\">\n"
+"\t\t\t\t    <p style=\"margin: 0px; padding: 0px; font-size: 13px;\">\n"
+"\t\t\t\t        我们已附上产品目录。\n"
+"\t\t\t       \t</p>\n"
+"\t\t\t\t</div>\n"
+"            "
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "<span>Category :</span>"
+msgstr "<span>分类：</span>"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_needaction
+msgid "Action Needed"
+msgstr "需要采取的行动"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_attachment_count
+msgid "Attachment Count"
+msgstr "附件数"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__break_page
+msgid "Break Page"
+msgstr "断页"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__break_page_after_products
+msgid "Break page after products"
+msgstr "产品后分页"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.generate_product_catalog_wizard_view
+msgid "Cancel"
+msgstr "取消"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__catalog_type
+msgid "Catalog Type"
+msgstr "目录类型"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__categories
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__category_ids
+msgid "Categories"
+msgstr "分类目录"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__catalog_type__category
+msgid "Category"
+msgstr "类别"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Category Name"
+msgstr "分类名称"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__create_uid
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__create_uid
+msgid "Created by"
+msgstr "由...制作"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__create_date
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__create_date
+msgid "Created on"
+msgstr "创建于"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__currency_id
+msgid "Currency"
+msgstr "货币"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__description
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Description"
+msgstr "描述"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__display_name
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__display_name
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_report_sh_product_catalog_generator_product_catalog_doc__display_name
+msgid "Display Name"
+msgstr "显示名称"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_tree_view
+msgid "Download File"
+msgstr "下载文件"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__datas
+msgid "File Content"
+msgstr "文件内容"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_follower_ids
+msgid "Followers"
+msgstr "追随者"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_channel_ids
+msgid "Followers (Channels)"
+msgstr "追随者（渠道）"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "关注者（合作伙伴）"
+
+#. module: sh_product_catalog_generator
+#: model:ir.actions.act_window,name:sh_product_catalog_generator.generate_product_catalog_wizard_action
+#: model:ir.actions.report,name:sh_product_catalog_generator.product_catalog_report_action
+#: model:ir.ui.menu,name:sh_product_catalog_generator.menu_generate_product_catalog
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.generate_product_catalog_wizard_view
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Generate Product Catalog"
+msgstr "生成产品目录"
+
+#. module: sh_product_catalog_generator
+#: model:ir.actions.act_window,name:sh_product_catalog_generator.product_catalog_action
+#: model:ir.ui.menu,name:sh_product_catalog_generator.product_catalog_generated_menu
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_form_view
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_tree_view
+msgid "Generated Product Catalog"
+msgstr "生成的产品目录"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__id
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__id
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_report_sh_product_catalog_generator_product_catalog_doc__id
+msgid "ID"
+msgstr "ID"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_needaction
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_unread
+msgid "If checked, new messages require your attention."
+msgstr "如果选中，则需要您注意新消息。"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_has_error
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr "如果选中，则某些邮件有传递错误。"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__image
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Image"
+msgstr "图片"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__image_size
+msgid "Image Size"
+msgstr "图片尺寸"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__int_ref
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Internal Reference"
+msgstr "内部参考"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_is_follower
+msgid "Is Follower"
+msgstr "是追随者"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__image_size__large
+msgid "Large"
+msgstr "大"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog____last_update
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard____last_update
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_report_sh_product_catalog_generator_product_catalog_doc____last_update
+msgid "Last Modified on"
+msgstr "最后修改时间"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__write_uid
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__write_uid
+msgid "Last Updated by"
+msgstr "最后更新者"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__write_date
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__write_date
+msgid "Last Updated on"
+msgstr "最后更新时间："
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_main_attachment_id
+msgid "Main Attachment"
+msgstr "主要附件"
+
+#. module: sh_product_catalog_generator
+#: model:res.groups,name:sh_product_catalog_generator.sh_catalog_manager
+msgid "Manager"
+msgstr "经理"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__image_size__medium
+msgid "Medium"
+msgstr "中"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_has_error
+msgid "Message Delivery error"
+msgstr "邮件传递错误"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_ids
+msgid "Messages"
+msgstr "留言内容"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__name
+msgid "N名称"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_needaction_counter
+msgid "Number of Actions"
+msgstr "动作数"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_has_error_counter
+msgid "Number of errors"
+msgstr "错误数"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_needaction_counter
+msgid "Number of messages which requires an action"
+msgstr "需要采取措施的消息数"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr "传递错误的邮件数"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_unread_counter
+msgid "Number of unread messages"
+msgstr "未读邮件数"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__price
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Price"
+msgstr "价钱"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__pricelist_id
+msgid "Pricelist"
+msgstr "价格表"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.generate_product_catalog_wizard_view
+msgid "Print"
+msgstr "打印"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__style_box
+msgid "Print Box Per Row"
+msgstr "每行打印盒"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__catalog_type__product
+msgid "Product"
+msgstr "产品"
+
+#. module: sh_product_catalog_generator
+#: model:ir.module.category,description:sh_product_catalog_generator.module_product_catalog_category
+#: model:ir.module.category,name:sh_product_catalog_generator.module_product_catalog_category
+#: model:ir.ui.menu,name:sh_product_catalog_generator.product_catalog_main_menu
+#: model:ir.ui.menu,name:sh_product_catalog_generator.product_catalog_sub_menu
+#: model:mail.template,subject:sh_product_catalog_generator.email_template_edi_product_catalog
+msgid "Product Catalog"
+msgstr "产品目录"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model,name:sh_product_catalog_generator.model_product_catalog
+msgid "Product Catalog Generated"
+msgstr "产品目录生成"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model,name:sh_product_catalog_generator.model_product_catalog_wizard
+msgid "Product Catalog Wizard"
+msgstr "产品目录向导"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Product Image"
+msgstr "产品图片"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__product_link
+msgid "Product Link"
+msgstr "产品链接"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Product Name"
+msgstr "产品名称"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__product_ids
+msgid "Products"
+msgstr "产品展示"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Read More"
+msgstr "阅读更多"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr "短信发送错误"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_form_view
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_tree_view
+msgid "Send By Email"
+msgstr "通过电子邮件发送"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__image_size__small
+msgid "Small"
+msgstr "小"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Sr. No."
+msgstr "序号"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__store_fname
+msgid "Stored Filename"
+msgstr "存储的文件名"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__style
+msgid "Style"
+msgstr "风格"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style__style_1
+msgid "Style 1"
+msgstr "样式1"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style__style_2
+msgid "Style 2"
+msgstr "风格2"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style__style_3
+msgid "Style 3"
+msgstr "风格3"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style__style_4
+msgid "Style 4"
+msgstr "风格4"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style__style_5
+msgid "Style 5"
+msgstr "风格5"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_unread
+msgid "Unread Messages"
+msgstr "未读邮件"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_unread_counter
+msgid "Unread Messages Counter"
+msgstr "未读邮件计数器"
+
+#. module: sh_product_catalog_generator
+#: model:res.groups,name:sh_product_catalog_generator.sh_catalog_user
+msgid "User"
+msgstr "用户"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__website_message_ids
+msgid "Website Messages"
+msgstr "网站讯息"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__website_message_ids
+msgid "Website communication history"
+msgstr "网站交流历史"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.generate_product_catalog_wizard_view
+msgid "or"
+msgstr "要么"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model,name:sh_product_catalog_generator.model_report_sh_product_catalog_generator_product_catalog_doc
+msgid "product catalog report abstract model"
+msgstr "产品目录报告摘要模型"

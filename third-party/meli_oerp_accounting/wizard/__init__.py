@@ -1,0 +1,1 @@
+from . import mercadolibre_public_invoice

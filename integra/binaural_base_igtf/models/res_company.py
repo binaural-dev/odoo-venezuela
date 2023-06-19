@@ -5,9 +5,16 @@ class ResCompany(models.Model):
     _inherit = "res.company"
 
     is_igtf = fields.Boolean(related="module_binaural_igtf")
-    customer_account_igtf_id = fields.Many2one("account.account", domain=[("account_type", "=", "liability_current")])
-    supplier_account_igtf_id = fields.Many2one("account.account", domain=[("account_type", "=", "expense")])
+    customer_account_igtf_id = fields.Many2one(
+        "account.account", domain=[("account_type", "=", "liability_current")]
+    )
+    supplier_account_igtf_id = fields.Many2one(
+        "account.account", domain=[("account_type", "=", "expense")]
+    )
     igtf_two_percentage_account = fields.Many2one("account.account")
+    igtf_account_expense = fields.Many2one(
+        "account.account", domain=[("account_type", "=", "expense")]
+    )
     igtf_percentage = fields.Float(string="IGTF Percentage", default=3.00)
     taxpayer_type = fields.Selection(
         [
@@ -18,3 +25,4 @@ class ResCompany(models.Model):
         default="ordinary",
         store=True,
     )
+    journal_igtf_expense = fields.Many2one("account.journal", string="Journal IGTF Expense")

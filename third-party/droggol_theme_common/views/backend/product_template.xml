@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="product_template_form_view_inherit_droggol_theme_common" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.droggol.theme.common</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="website_sale.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <page name="sales" position="after">
+                <page name="theme_prime" string="Theme Prime">
+                    <group>
+                        <group name="default">
+                            <field name="dr_label_id"/>
+                            <field name="dr_product_tab_ids" widget="many2many_tags" context="{'default_content_type': 'tab'}" domain="[('content_type', '=', 'tab')]"/>
+                            <field name="dr_product_offer_ids" widget="many2many_tags" context="{'default_content_type': 'offer_popup'}" domain="[('content_type', '=', 'offer_popup')]"/>
+                            <field name="dr_document_ids" widget="many2many_binary"/>
+                        </group>
+                    </group>
+                </page>
+            </page>
+        </field>
+    </record>
+
+    <record id="product_template_only_form_view" model="ir.ui.view">
+        <field name="name">product.template.only.form.inherit.droggol.theme.common</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='attribute_line_ids']/tree/field[@name='value_ids']" position="after">
+                <field name="dr_attribute_popup_id" context="{'default_content_type': 'attribute_popup'}" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_template_view_tree_inherit_droggol_theme_common" model="ir.ui.view">
+        <field name="name">product.template.view.tree.inherit.droggol.theme.common</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="website_sale.product_template_view_tree"/>
+        <field name="arch" type="xml">
+            <field name="website_id" position="after">
+                <field name="dr_label_id" options="{'no_create': True, 'no_open': True}" optional="hide"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

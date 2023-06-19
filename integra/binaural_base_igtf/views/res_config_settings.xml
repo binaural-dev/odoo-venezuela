@@ -10,10 +10,12 @@
                     <br/>
                     <field name="module_binaural_igtf" invisible="1"/>
                     <group colspan="2" col="1" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                        <field name="igtf_percentage" />
                         <field name="customer_account_igtf_id"/>
                         <field name="supplier_account_igtf_id"/>
+                        <field name="journal_igtf_expense" />
+                        <field name="igtf_account_expense" />
                         <field name="igtf_two_percentage_account" /> 
-                        <field name="igtf_percentage" />
                     </group>
                 </xpath>
             </field>

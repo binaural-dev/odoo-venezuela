@@ -1,0 +1,623 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="snippets" inherit_id="website.snippets">
+        <div id="snippet_structure" position="before">
+            <div id="tp_snippet_dynamic" class="o_panel">
+                <div class="o_panel_header">Dynamic Snippet</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_d_single_product_count_down" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_product_countdown.png">
+                        <keywords>count down, products, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_d_products_snippet" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_prooduct_cards.png">
+                        <keywords>cards, products, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_two_column_cards" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_two_column_cards.png">
+                        <keywords>cards, products, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_product_listing_cards" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_product_listing_cards.png">
+                        <keywords>cards, product, listing</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_image_product_listing_cards" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_image_product_listing_cards.png">
+                        <keywords>cards, product, listing, image</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_product_listing_tabs" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_image_product_listing_cards.png">
+                        <keywords>cards, product, listing, tabs</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_d_products_grid" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_d_products_grid.png">
+                        <keywords>products, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_d_single_product_snippet" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_product_full.png">
+                        <keywords>full product, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_d_single_product_cover_snippet" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_product_countdown.png">
+                        <keywords>full product, cover, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_d_2_column_snippet" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_product_2_columns.png">
+                        <keywords>2 column deals, dynamic, countdown</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_d_image_products_block" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_product_img.png">
+                        <keywords>image, dynamic, products</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_d_category_snippet" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_product_category_tab.png">
+                        <keywords>cards, categories, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_d_single_category_snippet" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_product_single_category.png">
+                        <keywords>featured, categories, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_d_top_categories" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_product_top_category.png">
+                        <keywords>categories, top, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_category_snippet" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_product_single_category.png">
+                        <keywords>categories, dynamic</keywords>
+                    </t>
+                    <t t-snippet="droggol_theme_common.s_category_mega_menu_snippet" t-thumbnail="/theme_prime/static/src/img/options/s_mega_menu_prime_6.png">
+                        <keywords>categories, dynamic</keywords>
+                    </t>
+                    <t t-snippet="droggol_theme_common.s_tp_mega_menu_category_snippet" t-thumbnail="/theme_prime/static/src/img/options/s_mega_menu_prime_6.png">
+                        <keywords>categories, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_d_brand_snippet" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_products_brands.png">
+                        <keywords>brands, dynamic</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_products_by_brands_tabs" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_products_brands.png">
+                        <keywords>brands, dynamic, tabs</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_tp_countdown" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_countdown_1.png">
+                        <keywords>countdown, timer</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_tp_documents_snippet" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_products_brands.png">
+                        <keywords>documents, attachments</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_cover" class="o_panel">
+                <div class="o_panel_header">Cover</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_cover_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_cover_1.png">
+                        <keywords>covers, carousel</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_cover_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_cover_2.png">
+                        <keywords>covers, carousel</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_cover_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_cover_3.png">
+                        <keywords>covers, carousel</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_cover_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_cover_4.png">
+                        <keywords>covers, carousel</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_cover_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_cover_4.png">
+                        <keywords>covers</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_heading" class="o_panel">
+                <div class="o_panel_header">Heading</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_heading_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_heading_1.png">
+                        <keywords>heading, title</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_heading_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_heading_2.png">
+                        <keywords>heading, title</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_heading_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_heading_3.png">
+                        <keywords>heading, title</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_heading_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_heading_4.png">
+                        <keywords>heading, title</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_heading_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_heading_5.png">
+                        <keywords>heading, title</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_heading_6" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_heading_6.png">
+                        <keywords>heading, title</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_banner" class="o_panel">
+                <div class="o_panel_header">Banner</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_banner_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_1.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_2.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_3.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_4.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_5.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_6" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_6.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_7" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_7.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_8" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_8.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_9" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_9.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_10" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_10.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_11" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_11.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_12" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_12.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_13" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_13.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_14" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_14.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_banner_15" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_banner_15.png">
+                        <keywords>banner, hero</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_info_block" class="o_panel">
+                <div class="o_panel_header">Info Block</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_info_block_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_info_block_1.png">
+                        <keywords>information, content</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_info_block_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_info_block_2.png">
+                        <keywords>information, content</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_info_block_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_info_block_3.png">
+                        <keywords>information, content</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_info_block_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_info_block_4.png">
+                        <keywords>information, content</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_info_block_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_info_block_5.png">
+                        <keywords>information, content</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_info_block_6" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_info_block_6.png">
+                        <keywords>information, content</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_info_block_7" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_info_block_7.png">
+                        <keywords>information, content</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_info_block_8" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_info_block_8.png">
+                        <keywords>information, content</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_shop_offer" class="o_panel">
+                <div class="o_panel_header">Shop Offer</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_shop_offer_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_shop_offer_1.png">
+                        <keywords>offer</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_shop_offer_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_shop_offer_2.png">
+                        <keywords>offer</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_shop_offer_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_shop_offer_3.png">
+                        <keywords>offer</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_shop_offer_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_shop_offer_4.png">
+                        <keywords>offer</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_shop_offer_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_shop_offer_5.png">
+                        <keywords>offer</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_pricing" class="o_panel">
+                <div class="o_panel_header">Pricing</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_pricing_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_pricing_1.png">
+                        <keywords>pricing, comparison, table</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_pricing_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_pricing_2.png">
+                        <keywords>pricing, comparison, table</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_pricing_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_pricing_3.png">
+                        <keywords>pricing, comparison, table</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_pricing_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_pricing_4.png">
+                        <keywords>pricing, comparison, table</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_pricing_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_pricing_5.png">
+                        <keywords>pricing, comparison, table</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_icon_block" class="o_panel">
+                <div class="o_panel_header">Icon Block</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_icon_block_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_1.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_2.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_3.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_4.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_5.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_6" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_6.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_7" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_7.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_8" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_8.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_9" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_9.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_10" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_10.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_11" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_11.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_icon_block_12" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_icon_block_12.png">
+                        <keywords>icon, features</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_stats" class="o_panel">
+                <div class="o_panel_header">Stats</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_stats_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_stats_1.png">
+                        <keywords>stats, counter, number</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_stats_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_stats_2.png">
+                        <keywords>stats, counter, number</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_stats_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_stats_3.png">
+                        <keywords>stats, counter, number</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_stats_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_stats_4.png">
+                        <keywords>stats, counter, number</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_stats_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_stats_5.png">
+                        <keywords>stats, counter, number</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_clients" class="o_panel">
+                <div class="o_panel_header">Clients</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_clients_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_clients_1.png">
+                        <keywords>clients, logo, reference</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_clients_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_clients_2.png">
+                        <keywords>clients, logo, reference</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_clients_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_clients_3.png">
+                        <keywords>clients, logo, reference</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_clients_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_clients_4.png">
+                        <keywords>clients, logo, reference</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_gallery" class="o_panel">
+                <div class="o_panel_header">Gallery</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_gallery_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_gallery_1.png">
+                        <keywords>gallery, album, portfolio</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_gallery_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_gallery_2.png">
+                        <keywords>gallery, album, portfolio</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_gallery_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_gallery_3.png">
+                        <keywords>gallery, album, portfolio</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_gallery_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_gallery_4.png">
+                        <keywords>gallery, album, portfolio</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_gallery_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_gallery_5.png">
+                        <keywords>gallery, album, portfolio</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_testimonial" class="o_panel">
+                <div class="o_panel_header">Testimonial</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_testimonial_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_testimonial_1.png">
+                        <keywords>testimonials, quotes</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_testimonial_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_testimonial_2.png">
+                        <keywords>testimonials, quotes</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_testimonial_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_testimonial_3.png">
+                        <keywords>testimonials, quotes</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_testimonial_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_testimonial_4.png">
+                        <keywords>testimonials, quotes</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_testimonial_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_testimonial_5.png">
+                        <keywords>testimonials, quotes</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_team" class="o_panel">
+                <div class="o_panel_header">Team</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_team_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_team_1.png">
+                        <keywords>team, avatar, profile, organisation, structure</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_team_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_team_2.png">
+                        <keywords>team, avatar, profile, organisation, structure</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_team_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_team_3.png">
+                        <keywords>team, avatar, profile, organisation, structure</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_team_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_team_4.png">
+                        <keywords>team, avatar, profile, organisation, structure</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_team_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_team_5.png">
+                        <keywords>team, avatar, profile, organisation, structure</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_call_to_action" class="o_panel">
+                <div class="o_panel_header">Call To Action</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_call_to_action_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_call_to_action_1.png">
+                        <keywords>call to action, cta</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_call_to_action_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_call_to_action_2.png">
+                        <keywords>call to action, cta</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_call_to_action_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_call_to_action_3.png">
+                        <keywords>call to action, cta</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_call_to_action_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_call_to_action_4.png">
+                        <keywords>call to action, cta</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_call_to_action_5" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_call_to_action_5.png">
+                        <keywords>call to action, cta</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_subscribe" class="o_panel">
+                <div class="o_panel_header">Subscribe</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_subscribe_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_subscribe_1.png">
+                        <keywords>newsletter, subscribe, mail, email, marketing, mass mailing</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_subscribe_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_subscribe_2.png">
+                        <keywords>newsletter, subscribe, mail, email, marketing, mass mailing</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_subscribe_3" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_subscribe_3.png">
+                        <keywords>newsletter, subscribe, mail, email, marketing, mass mailing</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_subscribe_4" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_subscribe_4.png">
+                        <keywords>newsletter, subscribe, mail, email, marketing, mass mailing</keywords>
+                    </t>
+                </div>
+            </div>
+            <div id="tp_snippet_coming_soon" class="o_panel">
+                <div class="o_panel_header">Coming Soon</div>
+                <div class="o_panel_body">
+                    <t t-snippet="theme_prime.s_coming_soon_1" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_coming_soon_1.png">
+                        <keywords>coming soon, countdown, timer</keywords>
+                    </t>
+                    <t t-snippet="theme_prime.s_coming_soon_2" t-thumbnail="/theme_prime/static/src/img/snippets_thumbs/s_coming_soon_2.png">
+                        <keywords>coming soon, countdown, timer</keywords>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="snippet_options" inherit_id="website.snippet_options">
+        <xpath expr="." position="inside">
+            <!-- Background image, color and shadow -->
+            <t t-call="web_editor.snippet_options_background_options">
+                <t t-set="selector" t-value="'.tp-editor-bg-both'"/>
+                <t t-set="with_colors" t-value="True"/>
+                <t t-set="with_images" t-value="True"/>
+                <t t-set="with_color_combinations" t-value="True"/>
+                <t t-set="with_gradients" t-value="True"/>
+            </t>
+            <!-- Background image only -->
+            <t t-call="web_editor.snippet_options_background_options">
+                <t t-set="selector" t-value="'.tp-editor-bg-image'"/>
+                <t t-set="with_colors" t-value="False"/>
+                <t t-set="with_images" t-value="True"/>
+                <t t-set="with_color_combinations" t-value="False"/>
+                <t t-set="with_gradients" t-value="False"/>
+            </t>
+            <!-- Background(without image) and shadow -->
+            <t t-call="web_editor.snippet_options_background_options">
+                <t t-set="selector" t-value="'.tp-editor-bg-color-n-shadow:not(.card)'"/>
+                <t t-set="with_colors" t-value="True"/>
+                <t t-set="with_images" t-value="False"/>
+                <t t-set="with_color_combinations" t-value="True"/>
+                <t t-set="with_gradients" t-value="True"/>
+            </t>
+            <t t-call="web_editor.snippet_options_background_options">
+                <t t-set="selector" t-value="'.tp-editor-bg-color-n-shadow.card'"/>
+                <t t-set="with_colors" t-value="True"/>
+                <t t-set="with_images" t-value="False"/>
+                <t t-set="with_color_combinations" t-value="False"/>
+                <t t-set="with_gradients" t-value="True"/>
+            </t>
+            <div data-js="Box" data-selector=".tp-editor-bg-color-n-shadow">
+                <t t-call="website.snippet_options_border_widgets"/>
+                <t t-call="website.snippet_options_shadow_widgets"/>
+            </div>
+            <!-- Duplicate and movable block -->
+            <div data-selector=".tp-editor-copy-n-move" data-drop-near=".tp-editor-copy-n-move"/>
+        </xpath>
+        <t t-set="both_bg_color_image_exclude" position="after">
+            <t t-set="both_bg_color_image_exclude" t-value="both_bg_color_image_exclude + ', .s_cover_1, .s_cover_2, .s_testimonial_3, .s_testimonial_4'"/>
+        </t>
+        <!-- Duplicate and movable block -->
+        <xpath expr="//div[@data-js='SnippetMove']" position="attributes">
+            <attribute name="data-selector" add=".tp-editor-copy-n-move" separator=","/>
+        </xpath>
+        <!-- Vertical alignment -->
+        <xpath expr="//div[@data-option-name='vAlignment']" position="attributes">
+            <attribute name="data-selector" add=".tp-editor-snippet-valign" separator=", "/>
+        </xpath>
+        <!-- Use as a inner content -->
+        <xpath expr="//*[@t-set='so_content_addition_selector']" position="inside">, .tp-editor-inner-snippet</xpath>
+        <!-- Mega Menu -->
+        <xpath expr="//div[@data-js='MegaMenuLayout']/we-select/we-button[last()]" position="after">
+            <t t-set="_label">Menus</t>
+            <we-button t-att-data-select-label="_label" data-select-template="droggol_theme_common.s_mega_menu_prime_1" data-img="/theme_prime/static/src/img/options/s_mega_menu_prime_1.png" t-out="_label"/>
+            <t t-set="_label">Menus - Content</t>
+            <we-button t-att-data-select-label="_label" data-select-template="droggol_theme_common.s_mega_menu_prime_2" data-img="/theme_prime/static/src/img/options/s_mega_menu_prime_2.png" t-out="_label"/>
+            <t t-set="_label">Menus - Image - Logos</t>
+            <we-button t-att-data-select-label="_label" data-select-template="droggol_theme_common.s_mega_menu_prime_3" data-img="/theme_prime/static/src/img/options/s_mega_menu_prime_3.png" t-out="_label"/>
+            <t t-set="_label">Content - Menus</t>
+            <we-button t-att-data-select-label="_label" data-select-template="droggol_theme_common.s_mega_menu_prime_4" data-img="/theme_prime/static/src/img/options/s_mega_menu_prime_4.png" t-out="_label"/>
+            <t t-set="_label">Categories - Info</t>
+            <we-button t-att-data-select-label="_label" data-select-template="droggol_theme_common.s_mega_menu_prime_5" data-img="/theme_prime/static/src/img/options/s_mega_menu_prime_5.png" t-out="_label"/>
+            <t t-set="_label">Menus - Images</t>
+            <we-button t-att-data-select-label="_label" data-select-template="droggol_theme_common.s_mega_menu_prime_6" data-img="/theme_prime/static/src/img/options/s_mega_menu_prime_6.png" t-out="_label"/>
+            <t t-set="_label">Categories Listing</t>
+            <we-button t-att-data-select-label="_label" data-select-template="droggol_theme_common.s_tp_mega_menu_category_snippet" data-img="/theme_prime/static/src/img/options/s_mega_menu_prime_6.png" t-out="_label"/>
+            <t t-set="_label">Categories Grid</t>
+            <we-button t-att-data-select-label="_label" data-select-template="droggol_theme_common.s_category_mega_menu_snippet" data-img="/theme_prime/static/src/img/options/s_mega_menu_prime_6.png" t-out="_label"/>
+            <t t-set="_label">Categories Tabs</t>
+            <we-button t-att-data-select-label="_label" data-select-template="droggol_theme_common.s_mega_menu_category_tabs_snippet" data-img="/theme_prime/static/src/img/options/s_mega_menu_prime_6.png" t-out="_label"/>
+        </xpath>
+        <!-- Add color for header box -->
+        <xpath expr="//div[@data-selector='#wrapwrap > header']//we-colorpicker[@data-dependencies='header_boxed_opt']" position="after">
+            <we-colorpicker data-dependencies="tp_header_style_2_opt, tp_header_style_3_opt, tp_header_style_4_opt, tp_header_style_8_opt"
+                            data-customize-website-color="" data-color="tp-header-box-color"
+                            data-customize-website-layer2-color="" data-layer-color="tp-header-box-color-custom" data-layer-gradient="tp-header-box-color-gradient"
+                            data-no-bundle-reload="true"
+                            data-null-value="'NULL'"
+                            data-with-combinations="customizeWebsiteColor"
+                            data-with-gradients="true"/>
+        </xpath>
+        <!-- Header -->
+        <xpath expr="//we-select[@data-variable='header-template']/we-button[last()]" position="after">
+            <we-button title="Prime Header Style - 1" data-name="tp_header_style_1_opt" data-customize-website-views="theme_prime.template_header_style_1" data-customize-website-variable="'prime_style_1'" data-img="/theme_prime/static/src/img/options/header_1.svg"/>
+            <we-button title="Prime Header Style - 2" data-name="tp_header_style_2_opt" data-customize-website-views="theme_prime.template_header_style_2" data-customize-website-variable="'prime_style_2'" data-img="/theme_prime/static/src/img/options/header_2.svg"/>
+            <we-button title="Prime Header Style - 3" data-name="tp_header_style_3_opt" data-customize-website-views="theme_prime.template_header_style_3" data-customize-website-variable="'prime_style_3'" data-img="/theme_prime/static/src/img/options/header_3.svg"/>
+            <we-button title="Prime Header Style - 4" data-name="tp_header_style_4_opt" data-customize-website-views="theme_prime.template_header_style_4" data-customize-website-variable="'prime_style_4'" data-img="/theme_prime/static/src/img/options/header_4.svg"/>
+            <we-button title="Prime Header Style - 5" data-name="tp_header_style_5_opt" data-customize-website-views="theme_prime.template_header_style_5" data-customize-website-variable="'prime_style_5'" data-img="/theme_prime/static/src/img/options/header_5.svg"/>
+            <we-button title="Prime Header Style - 6" data-name="tp_header_style_6_opt" data-customize-website-views="theme_prime.template_header_style_6" data-customize-website-variable="'prime_style_6'" data-img="/theme_prime/static/src/img/options/header_6.svg"/>
+            <we-button title="Prime Header Style - 7" data-name="tp_header_style_7_opt" data-customize-website-views="theme_prime.template_header_style_7" data-customize-website-variable="'prime_style_7'" data-img="/theme_prime/static/src/img/options/header_7.svg"/>
+            <we-button title="Prime Header Style - 8" data-name="tp_header_style_8_opt" data-customize-website-views="theme_prime.template_header_style_8" data-customize-website-variable="'prime_style_8'" data-img="/theme_prime/static/src/img/options/header_8.svg"/>
+        </xpath>
+        <xpath expr="//div[@data-selector='#wrapwrap > header']/we-row" position="after">
+            <we-select string="Preheader" data-dependencies="tp_preheader_opt" data-variable="tp-preheader-template" data-reload="/">
+                <we-button title="None" data-name="tp_preheader_style_none_opt" data-customize-website-views="" data-customize-website-variable="'none'" string="None"/>
+                <we-button title="Prime Preheader Style - 1" data-name="tp_preheader_style_1_opt" data-customize-website-views="theme_prime.template_preheader_style_1" data-customize-website-variable="'prime_style_1'" data-img="/theme_prime/static/src/img/options/preheader_1.svg"/>
+                <we-button title="Prime Preheader Style - 2" data-name="tp_preheader_style_2_opt" data-customize-website-views="theme_prime.template_preheader_style_2" data-customize-website-variable="'prime_style_2'" data-img="/theme_prime/static/src/img/options/preheader_2.svg"/>
+                <we-button title="Prime Preheader Style - 3" data-name="tp_preheader_style_3_opt" data-customize-website-views="theme_prime.template_preheader_style_3" data-customize-website-variable="'prime_style_3'" data-img="/theme_prime/static/src/img/options/preheader_3.svg"/>
+                <we-button title="Prime Preheader Style - 4" data-name="tp_preheader_style_4_opt" data-customize-website-views="theme_prime.template_preheader_style_4" data-customize-website-variable="'prime_style_4'" data-img="/theme_prime/static/src/img/options/preheader_4.svg"/>
+                <we-button title="Prime Preheader Style - 5" data-name="tp_preheader_style_5_opt" data-customize-website-views="theme_prime.template_preheader_style_5" data-customize-website-variable="'prime_style_5'" data-img="/theme_prime/static/src/img/options/preheader_5.svg"/>
+                <we-button title="Prime Preheader Style - 6" data-name="tp_preheader_style_6_opt" data-customize-website-views="theme_prime.template_preheader_style_6" data-customize-website-variable="'prime_style_6'" data-img="/theme_prime/static/src/img/options/preheader_6.svg"/>
+            </we-select>
+            <we-colorpicker string="⌙ Colors" data-dependencies="!tp_preheader_style_none_opt" data-customize-website-color="" data-color="preheader" data-customize-website-layer2-color="" data-layer-color="preheader-custom" data-layer-gradient="preheader-gradient" data-no-bundle-reload="true" data-null-value="'NULL'" data-with-combinations="customizeWebsiteColor" data-with-gradients="true"/>
+        </xpath>
+        <!-- Footer -->
+        <xpath expr="//we-select[@data-variable='footer-template']/we-button[last()]" position="after">
+            <we-button title="Prime Footer Style - 1" data-name="tp_footer_style_1_opt" data-customize-website-views="theme_prime.template_footer_style_1" data-customize-website-variable="'prime_style_1'" data-img="/theme_prime/static/src/img/options/footer_1.svg"/>
+            <we-button title="Prime Footer Style - 2" data-name="tp_footer_style_2_opt" data-customize-website-views="theme_prime.template_footer_style_2" data-customize-website-variable="'prime_style_2'" data-img="/theme_prime/static/src/img/options/footer_2.svg"/>
+            <we-button title="Prime Footer Style - 3" data-name="tp_footer_style_3_opt" data-customize-website-views="theme_prime.template_footer_style_3" data-customize-website-variable="'prime_style_3'" data-img="/theme_prime/static/src/img/options/footer_3.svg"/>
+            <we-button title="Prime Footer Style - 4" data-name="tp_footer_style_4_opt" data-customize-website-views="theme_prime.template_footer_style_4" data-customize-website-variable="'prime_style_4'" data-img="/theme_prime/static/src/img/options/footer_4.svg"/>
+            <we-button title="Prime Footer Style - 5" data-name="tp_footer_style_5_opt" data-customize-website-views="theme_prime.template_footer_style_5" data-customize-website-variable="'prime_style_5'" data-img="/theme_prime/static/src/img/options/footer_5.svg"/>
+            <we-button title="Prime Footer Style - 6" data-name="tp_footer_style_6_opt" data-customize-website-views="theme_prime.template_footer_style_6" data-customize-website-variable="'prime_style_6'" data-img="/theme_prime/static/src/img/options/footer_6.svg"/>
+            <we-button title="Prime Footer Style - 7" data-name="tp_footer_style_7_opt" data-customize-website-views="theme_prime.template_footer_style_7" data-customize-website-variable="'prime_style_7'" data-img="/theme_prime/static/src/img/options/footer_7.svg"/>
+            <we-button title="Prime Footer Style - 8" data-name="tp_footer_style_8_opt" data-customize-website-views="theme_prime.template_footer_style_8" data-customize-website-variable="'prime_style_8'" data-img="/theme_prime/static/src/img/options/footer_8.svg"/>
+            <we-button title="Prime Footer Style - 9" data-name="tp_footer_style_9_opt" data-customize-website-views="theme_prime.template_footer_style_9" data-customize-website-variable="'prime_style_9'" data-img="/theme_prime/static/src/img/options/footer_9.svg"/>
+            <we-button title="Prime Footer Style - 10" data-name="tp_footer_style_10_opt" data-customize-website-views="theme_prime.template_footer_style_10" data-customize-website-variable="'prime_style_10'" data-img="/theme_prime/static/src/img/options/footer_10.svg"/>
+        </xpath>
+        <xpath expr="//div[@data-selector='.o_footer_copyright']" position="attributes">
+            <attribute name="data-selector" remove=".o_footer_copyright" add=".o_footer_copyright:not(.tp-custom-copyright)" separator=", "/>
+        </xpath>
+        <xpath expr="." position="inside">
+            <div data-js="WebsiteLevelColor" data-selector=".tp-custom-copyright" data-no-check="true" groups="website.group_website_designer">
+                <we-colorpicker string="Colors" data-customize-website-color="" data-color="copyright" data-customize-website-layer2-color="" data-layer-color="copyright-custom" data-layer-gradient="copyright-gradient" data-no-bundle-reload="true" data-null-value="'NULL'" data-with-combinations="customizeWebsiteColor" data-with-gradients="true"/>
+            </div>
+        </xpath>
+        <!-- Theme Prime Options -->
+        <xpath expr="//div[@data-selector='website-settings']" position="before">
+            <div data-js="OptionsTab" data-selector="theme-prime-options" data-no-check="true">
+                <we-checkbox string="Square UI" title="Override all components border radius to 0" data-name="tp_square_ui_opt" data-customize-website-variable="false|true" data-variable="tp-square-ui"/>
+                <we-checkbox string="Back to top button" data-name="tp_scroll_back_to_top_opt" data-customize-website-views="theme_prime.option_back_to_top" data-customize-website-variable="false|true" data-variable="tp-back-to-top"/>
+                <we-select string="Icon Pack" data-variable="tp-icon-pack" data-reload="/">
+                    <we-button data-customize-website-variable="1" data-name="tp_icon_pack_style_1_opt" data-customize-website-views="theme_prime.option_icon_pack_1" data-img="/theme_prime/static/src/img/options/pack_1.svg"/>
+                    <we-button data-customize-website-variable="2" data-name="tp_icon_pack_style_2_opt" data-customize-website-views="theme_prime.option_icon_pack_2" data-img="/theme_prime/static/src/img/options/pack_2.svg"/>
+                    <we-button data-customize-website-variable="3" data-name="tp_icon_pack_style_3_opt" data-customize-website-views="theme_prime.option_icon_pack_3" data-img="/theme_prime/static/src/img/options/pack_3.svg"/>
+                    <we-button data-customize-website-variable="4" data-name="tp_icon_pack_style_4_opt" data-customize-website-views="theme_prime.option_icon_pack_4" data-img="/theme_prime/static/src/img/options/pack_4.svg"/>
+                    <we-button data-customize-website-variable="5" data-name="tp_icon_pack_style_5_opt" data-customize-website-views="theme_prime.option_icon_pack_5" data-img="/theme_prime/static/src/img/options/pack_5.svg"/>
+                    <we-button data-customize-website-variable="6" data-name="tp_icon_pack_style_6_opt" data-customize-website-views="theme_prime.option_icon_pack_6" data-img="/theme_prime/static/src/img/options/pack_6.svg"/>
+                    <we-button data-customize-website-variable="7" data-name="tp_icon_pack_style_7_opt" data-customize-website-views="theme_prime.option_icon_pack_7" data-img="/theme_prime/static/src/img/options/pack_7.svg"/>
+                    <we-button data-customize-website-variable="8" data-name="tp_icon_pack_style_8_opt" data-customize-website-views="theme_prime.option_icon_pack_8" data-img="/theme_prime/static/src/img/options/pack_8.svg"/>
+                </we-select>
+            </div>
+        </xpath>
+        <xpath expr="." position="inside">
+            <!-- Shop Page -->
+            <div data-js="WebsiteSaleGridLayout" data-target=".oe_website_sale" data-page-options="true" data-selector="main:has(.tp-shop-page)" data-no-check="true" string="Products Page">
+                <we-row string="Products on page">
+                    <we-input data-set-ppg="" data-no-preview="true" data-reload="/"/>
+                    <span class="mx-2 o_wsale_ppr_by">by</span>
+                    <we-select class="o_wsale_ppr_submenu" data-no-preview="true" data-reload="/">
+                        <we-button data-set-ppr="2">2</we-button>
+                        <we-button data-set-ppr="3">3</we-button>
+                        <we-button data-set-ppr="4">4</we-button>
+                        <we-button data-set-ppr="5">5</we-button>
+                        <we-button data-set-ppr="6">6</we-button>
+                    </we-select>
+                </we-row>
+                <we-row string="Left Panel" class="o_we_full_row">
+                    <we-button string="Categories"
+                            data-name="categories_opt"
+                            data-customize-website-views="website_sale.products_categories"
+                            data-no-preview="true"
+                            data-reload="/"/>
+                    <we-button string="Attributes"
+                            data-name="attributes_opt"
+                            data-customize-website-views="website_sale.products_attributes"
+                            data-no-preview="true"
+                            data-reload="/"/>
+                </we-row>
+                <we-checkbox string="Collapse Category Recursive"
+                            class="o_we_sublevel_1"
+                            data-customize-website-views="website_sale.option_collapse_products_categories"
+                            data-dependencies="categories_opt"
+                            data-no-preview="true"
+                            data-reload="/"/>
+                <we-checkbox string="Price Filter"
+                            class="o_we_sublevel_1"
+                            data-customize-website-views="website_sale.filter_products_price"
+                            data-dependencies="categories_opt, attributes_opt"
+                            data-no-preview="true"
+                            data-reload="/"/>
+                <we-row string="Top Bar" class="o_we_full_row">
+                    <we-button string="Sort by"
+                            data-customize-website-views="website_sale.sort"
+                            data-no-preview="true"
+                            data-reload="/"/>
+                </we-row>
+                <we-select string="Default Sort" class="o_wsale_sort_submenu" data-no-preview="true" data-reload="/">
+                    <t t-foreach="request.env['website']._get_product_sort_mapping()" t-as="query_and_label">
+                        <we-button t-att-data-set-default-sort="query_and_label[0]"><t t-esc="query_and_label[1]"/></we-button>
+                    </t>
+                </we-select>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>

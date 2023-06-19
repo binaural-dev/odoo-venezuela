@@ -21,6 +21,9 @@
                 <field 
                     name="flag_21"
                     attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                <field 
+                    name="traditional_line"
+                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
                 <div colspan="2" groups="base.group_no_one">
                     <label for="payment_methods"/>
                     <div class="col-2 col-lg-9" id="igtf_setting">
