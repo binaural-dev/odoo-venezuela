@@ -104,7 +104,7 @@ class PrinterController(http.Controller):
             None,
         )
         if fiscal_printer:
-            iot_devices[fiscal_printer].logger(str(cmd))
+            iot_devices[fiscal_printer].logger({"data": cmd})
             return "DEBUG"
         return "ERROR"
 
@@ -399,7 +399,6 @@ class SerialFiscalDriver(SerialDriver):
             cmd.append(str("199"))
 
             for command in cmd:
-                _logger.warning(f"{command}")
                 self.SendCmd(command)
 
             # time.sleep(3)
@@ -524,7 +523,6 @@ class SerialFiscalDriver(SerialDriver):
             cmd.append(str("199"))
 
             for command in cmd:
-                _logger.warning(command)
                 self.SendCmd(command)
 
             # time.sleep(5)
@@ -796,7 +794,13 @@ class SerialFiscalDriver(SerialDriver):
                 if self._HandleCTSRTS():
                     msj = self._AssembleQueryToSend(cmd)
                     self._write(msj)
-                    rt = self._read(1)
+                    tries = 0
+                    rt = ""
+                    while rt == "" and tries < 6:
+                        rt = self._read(1)
+                        if tries > 0:
+                            _logger.info("RETRY: %s", tries)
+                        tries += 1
                     if rt == chr(0x06):
                         self.envio = "Status: 00  Error: 00"
                         rt = True
@@ -930,14 +934,13 @@ class SerialFiscalDriver(SerialDriver):
 
     def _write(self, msj):
         connection = self._connection
+        _logger.info("WRITE: %s",msj.encode("latin-1"))
         connection.write(msj.encode("latin-1"))
 
     def _read(self, bytes):
         connection = self._connection
-        msj = b""
-        while msj == b"":
-            msj = connection.read(bytes)
-            _logger.info(msj)
+        msj = connection.read(bytes)
+        _logger.info("READ: %s",msj)
         return msj.decode()
 
     def _AssembleQueryToSend(self, linea):

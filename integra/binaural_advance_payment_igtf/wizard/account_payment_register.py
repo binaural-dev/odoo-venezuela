@@ -27,8 +27,13 @@ class AccountPaymentRegister(models.TransientModel):
                 lambda line: line.account_id.id == partner_account_id
             ).balance
 
+            amount = payment.amount
+
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * payment.foreign_rate
+
             if (
-                payment.amount > -payment_invoice_amount
+                amount > -payment_invoice_amount
                 and payment.journal_id.fiscal
                 and payment.journal_id.is_igtf
                 and payment.is_igtf_on_foreign_exchange
