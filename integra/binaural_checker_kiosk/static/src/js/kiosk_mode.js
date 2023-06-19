@@ -51,7 +51,7 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 								$("#sh_company_logo_img").append(
 									'<img class="img img-responsive img-fluid" style="width: 500px; heigth: 500px" t-attf-src="data:image/jpeg;base64,' + result.company_logo + '" alt="Company Logo" />'
 								)
-							$("#foreign_sale_price_with_iva").html(result.foreign_sale_price_with_iva);
+								$("#foreign_sale_price_with_iva").html(result.foreign_sale_price_with_iva);
 
 								let count = 1
 								result.sh_product_stock.forEach(object => {
@@ -115,13 +115,7 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 								$("#main_div").addClass("o_hidden");
 								$("#success").css("display", "none");
 								$("#fail").css("display", "block");
-								$("#fail").html(result.msg);
-								$("#code").val("").replace('.', ',')
-								$("#price_with_iva").val("");
-								$("#sh_product_sale_price").val("");
-								$("#iva").val("");
-								$("#tax_base").val("");
-								$("#foreign_sale_price_with_iva").val("");
+								$("#fail").html("no existe ningun producto asociado a este codigo de barras");
 
 
 								setTimeout(function () {
@@ -135,6 +129,7 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 									}
 									$("#main_div").addClass("o_hidden");
 									$("#success").css("display", "none");
+									$("#fail").css("display", "none");
 								}, 3000);
 							}
 
@@ -196,7 +191,7 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 								$("#sh_company_logo_img").append(
 									'<img class="img img-responsive img-fluid" style="width: 500px; heigth: 500px" t-attf-src="data:image/jpeg;base64,' + result.company_logo + '" alt="Company Logo" />'
 								)
-							$("#foreign_sale_price_with_iva").html(result.foreign_sale_price_with_iva);
+								$("#foreign_sale_price_with_iva").html(result.foreign_sale_price_with_iva);
 
 								let count = 1
 								result.sh_product_stock.forEach(object => {
@@ -260,13 +255,7 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 								$("#main_div").addClass("o_hidden");
 								$("#success").css("display", "none");
 								$("#fail").css("display", "block");
-								$("#fail").html(result.msg);
-								$("#code").val("").replace('.', ',')
-								$("#price_with_iva").val("");
-								$("#sh_product_sale_price").val("");
-								$("#iva").val("");
-								$("#tax_base").val("");
-								$("#foreign_sale_price_with_iva").val("");
+								$("#fail").html("no existe ningun producto asociado a este codigo de barras");
 
 
 								setTimeout(function () {
@@ -280,6 +269,7 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 									}
 									$("#main_div").addClass("o_hidden");
 									$("#success").css("display", "none");
+									$("#fail").css("display", "none");
 								}, 3000);
 							}
 
