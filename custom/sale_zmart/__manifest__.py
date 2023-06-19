@@ -15,6 +15,8 @@
     # always loaded
     "data": [
         "security/ir.model.access.csv",
+        "data/paperformat.xml",
+        "report/stock_report_view.xml",
         "views/sale_order.xml",
         "views/stock_picking.xml",
     ],
