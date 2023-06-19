@@ -1,10 +1,48 @@
 from odoo import models, fields
-import logging
-_logger = logging.getLogger(__name__)
-class StockPickingBinauralInventario(models.Model):
+
+class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
-    shipping_type = fields.Selection(related='sale_id.shipping_type', string="Shipping type")
-    name_company = fields.Many2one(related='sale_id.name_company', string="Company")
-    packing_factor = fields.Char(store="True")
-    sequence_code = fields.Char(related='picking_type_id.sequence_code')
+    shipping_type = fields.Selection(
+        related = 'sale_id.shipping_type', 
+        string = "Shipping type"
+    )
+    shipping_name_company = fields.Many2one(
+        related = 'sale_id.shipping_name_company'
+    )
+    shipping_method = fields.Selection(
+        [
+            ("prepaid", "Prepaid"),
+            ("free", "Free"),
+            ("collect_at_destination", "Collect at Destination"),
+        ],
+        related = "sale_id.shipping_method",
+        default = "free",
+        store = True
+    )
+    packing_factor = fields.Char(
+        store = "True"
+    )
+    sequence_code = fields.Char(
+        related = 'picking_type_id.sequence_code'
+    )
+    guide = fields.Char(
+        readonly = False
+    )
+    user_vend_id = fields.Many2one(
+        related = "sale_id.user_id"
+    )
+    user_pick_id = fields.Many2one(
+        'res.users', 
+        default = lambda self: self.env.user
+    )
+    user_pack_id = fields.Many2one(
+        'res.users', 
+        default = lambda self: self.env.user
+    )
+    user_out_id = fields.Many2one(
+        'res.users', 
+        default = lambda self: self.env.user
+    )
+    def print_label(self):
+        return self.env.ref('sale_zmart.action_print_label').report_action(self)

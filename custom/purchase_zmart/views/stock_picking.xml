@@ -7,9 +7,28 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='location_dest_id']" position="after">
                     <field name="transport_number" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/>
-                    <field name="name_company" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/>
-                    <!-- <field name="vl_number" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/> -->
                 </xpath> 
+                <xpath expr="//notebook" position="inside">
+                    <page name="information_vehicle" string="Información Transporte" attrs="{'invisible': [('sequence_code', '!=', 'IN')]}">
+                        <group>
+                            <group>
+                                <field name="name_company"/>
+                                <field name="type_company"/>
+                                <field name="incoterm"/>
+                                <field name="bl"/>
+                                <field name="wl"/>
+                                <field name="sequence_code" invisible="1"/>
+                            </group>
+                            <group>
+                                <field name="order_in_transit"/>
+                                <field name="exit_etd"/>
+                                <field name="inlay_port"/>
+                                <field name="date_in_store"/>
+                                <field name="aduana_agent"/>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
             </field>
         </record>
     </data>

@@ -9,13 +9,13 @@ class SaleOrderZmart(models.Model):
             ("withdrawal", "withdrawal"),
             ("shipment", "shipment"),
         ],
-        default="withdrawal",
-        store=True,
-        required=True
+        default = "withdrawal",
+        store = True,
+        required = True
     )
-    name_company = fields.Many2one(
+    shipping_name_company = fields.Many2one(
         'sale.company', 
-        string="Company"
+        string = "Company"
     )
     priority = fields.Selection(
         [
@@ -23,23 +23,25 @@ class SaleOrderZmart(models.Model):
             ("medium", "Medium"),
             ("low", "Low"),
         ],
-        default="low",
-        store=True,
-        required=True
+        default = "low",
+        store = True,
+        required = True
     )
-    printed = fields.Boolean(related='invoice_ids.printed')
+    printed = fields.Boolean(
+        related = 'invoice_ids.printed'
+    )
     shipping_method = fields.Selection(
         [
             ("prepaid", "Prepaid"),
             ("free", "Free"),
             ("collect_at_destination", "Collect at Destination"),
         ],
-        default="free",
-        store=True
+        default = "free",
+        store = True
     )
     product_id = fields.Many2one(
         'product.template', 
-        string='Product'
+        string = 'Product'
     )
     
     def button_sale_order(self):

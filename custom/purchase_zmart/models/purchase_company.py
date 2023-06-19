@@ -4,6 +4,6 @@ class CompanyZmart(models.Model):
     _name = "purchase.company"
     
     name = fields.Char(
-        string="Name", 
-        required=True
+        string = "Name", 
+        required = True
     )

@@ -4,6 +4,6 @@ class AduanaZmart(models.Model):
     _name = "purchase.aduana.agent"
     
     name = fields.Char(
-        string="Name", 
-        required=True
+        string = "Name", 
+        required = True
     )

@@ -12,8 +12,8 @@ class PurchaseOrderZmart(models.Model):
             ("air", "Air"),
             ("land", "Land"),
         ],
-        default="",
-        store=True
+        default = "",
+        store = True
     )
     incoterm = fields.Selection(
         [
@@ -22,14 +22,14 @@ class PurchaseOrderZmart(models.Model):
             ("cfr", "CFR"),
             ("na", "N/A"),
         ],
-        default="",
-        store=True
+        default = "",
+        store = True
     )
     bl = fields.Char(
-        string="B/L"
+        string = "B/L"
     )
     wl = fields.Char(
-        string="W/L"
+        string = "W/L"
     )
     date_in_store = fields.Date()
     order_in_transit = fields.Boolean()

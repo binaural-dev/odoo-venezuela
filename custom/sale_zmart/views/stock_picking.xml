@@ -5,12 +5,23 @@
             <field name="model">stock.picking</field>
             <field name="inherit_id" ref="stock.view_picking_form"/>
             <field name="arch" type="xml">
+                <field name="origin" position="after">
+                    <field name="guide"/>
+                </field>
+                <field name="user_id" position="replace">
+                    <field name="user_pick_id" attrs="{'invisible': [('sequence_code', '!=', 'PICK')]}"/>
+                    <field name="user_pack_id" attrs="{'invisible': [('sequence_code', '!=', 'PACK')]}"/>
+                    <field name="user_out_id" attrs="{'invisible': [('sequence_code', '!=', 'OUT')]}"/>
+                </field>
+                <xpath expr="//button[@name='action_open_label_type']" position="replace">
+                    <button string="Imprimir etiqueta" type="object" name="print_label"/>
+                </xpath>
                 <xpath expr="//field[@name='location_dest_id']" position="after">
-                    <field name="shipping_type" attrs="{'invisible': [('picking_type_code', '==', 'incoming')]}"/>
-                    <field name="name_company" attrs="{'invisible': [('picking_type_code', '==', 'incoming')]}"/>
-                    <field name="sequence_code" invisible="1"/>
-                    <field name="packing_factor" attrs="{'invisible': [('sequence_code', '==', 'PICK')]}"/>
-                </xpath> 
+                    <field name="shipping_type" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
+                    <field name="shipping_name_company" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
+                    <field name="shipping_method" attrs="{'invisible': [('shipping_type', '!=', 'shipment')]}"/>
+                    <field name="user_id" attrs="{'invisible': ['|', '|', ('sequence_code', '=', 'PICK'), ('sequence_code', '=', 'PACK'), ('sequence_code', '=', 'OUT')]}"/>
+                </xpath>
             </field>
         </record>
     </data>
