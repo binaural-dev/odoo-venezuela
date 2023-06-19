@@ -122,23 +122,27 @@
                                     <th>Fecha:</th>
                                     <td t-out="o.date"/>
                                     <th>Pick:</th>
-                                    <td><span></span></td>
+                                    <td t-out="o.user_pick_id.name"></td>
                                 </tr>
                                 <tr>
                                     <th>Vent:</th>
-                                    <td><span></span></td>
+                                    <td t-out="o.user_vend_id.name"></td>
                                     <th>Pack:</th>
-                                    <td><span></span></td>
-                                    
+                                    <td t-out="o.user_pack_id.name"></td>
                                 </tr>
                                 <tr>
                                     <th></th>
-                                    <td><span></span></td>
+                                    <td></td>
                                     <th>Verificado:</th>
-                                    <td><span></span></td>
+                                    <td t-out="o.user_out_id.name"></td>
                                 </tr>
                             </table>
+                            <div>
+                                <span><strong>Observaciones: </strong></span>
+                                <span t-out="o.note" />
+                            </div>
                         </section>
+
                     </t>
                 </t>
             </t>

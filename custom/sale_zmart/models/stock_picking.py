@@ -29,6 +29,20 @@ class StockPicking(models.Model):
     guide = fields.Char(
         readonly = False
     )
-    
+    user_vend_id = fields.Many2one(
+        related = "sale_id.user_id"
+    )
+    user_pick_id = fields.Many2one(
+        'res.users', 
+        default = lambda self: self.env.user
+    )
+    user_pack_id = fields.Many2one(
+        'res.users', 
+        default = lambda self: self.env.user
+    )
+    user_out_id = fields.Many2one(
+        'res.users', 
+        default = lambda self: self.env.user
+    )
     def print_label(self):
         return self.env.ref('sale_zmart.action_print_label').report_action(self)
