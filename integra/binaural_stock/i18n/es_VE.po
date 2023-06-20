@@ -90,11 +90,6 @@ msgid "Define a main sell's warehouse."
 msgstr "Define un almacén de ventas principal."
 
 #. module: binaural_stock
-#: model:res.groups,name:binaural_stock.group_edit_list_price
-msgid "Edit list price on the product form view"
-msgstr ""
-
-#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__group_product_available_quantity_on_sale
 msgid "Group Product Available Quantity On Sale"
 msgstr "Grupo de Cantidad Disponible para Vender"
