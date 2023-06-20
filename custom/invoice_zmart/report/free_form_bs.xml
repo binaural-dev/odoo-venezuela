@@ -4,45 +4,31 @@
                 inherit_id="binaural_invoice.report_freeform_document">
                
             <xpath expr="//div[@id='informations']" position="replace">
-            
-                <section id="segmento_1" style="display: flex; flex-direction: row;">
-                    <div style="display: inline-block;">
-                        <img t-if="o.company_id.logo"
-                            t-att-src="image_data_uri(o.company_id.logo)"
-                            height="120"
-                            weight="160"
-                            class="mr-3"/>
-                        <div class="col-8" style="font-weight: bold; font-size: 26px;margin-left: 65px;">
-                            <div t-field="o.company_id"/>
-                        </div>
+                <section id="segmento_1" style="display: flex; flex-direction: row; justify-content: flex-end; align-items: center;">
+                    <div style="margin-left: 700px;">
                         <div>
-                            <div t-field="o.company_id.street"/><span>,Caracas (Chacao) Miranda, Zona postal 1070 - Teléfonos WhatsApp</span>
-                            <div> Distribuidores:<span t-field="o.company_id.phone"/></div>
-                            <div> WhatsApp Cliente Final:<span t-field="o.company_id.phone"/>- Email:<span t-field="o.company_id.email"/></div>
-                        </div>
-                    </div>
-                    <div style="display: inline-block;">
-                        <div>
-                            <div> Numero de Control:<span t-field="o.company_id.phone"/></div>
-                            <div>R.I.F.:<span t-field="o.company_id.email"/></div>
-                            <div>Factura:<span t-field="o.company_id.phone"/></div>
-                            <div>Fecha de Emision:<span t-field="o.company_id.email"/></div>
+                            <div>Factura:<span t-field="o.correlative"/></div>
+                            <div>Fecha de Emision:<span t-field="o.invoice_date"/></div>
                             <div>Cond. Pago:<span t-field="o.company_id.email"/></div>
                         </div>
                     </div>
                 </section>
-                <hr></hr>
+                <hr style="border: none; visibility: hidden;" />
+                <hr style="border: none; visibility: hidden;" />
                 <section id="segmento_1" style="display: flex; flex-direction: row;">
-                    <div style="display: inline-block;">
-                            <div>Cliente:<span t-field="o.partner_id.name"/></div>
-                            <div>R.I.F.:<span t-field="o.partner_id.vat"/></div>
-                            <div>Dirección:<span t-field="o.partner_id.contact_address_complete"/></div>
-                            <div>Teléfonos:<span t-field="o.invoice_user_id.phone"/></div>
-                            <div>Vendedor:<span t-field="o.invoice_user_id"/></div>
-                            <div>Transporte:<span t-field="o.company_id.email"/></div>
-                        </div>
+
+                <hr style="border: none; visibility: hidden;" />
+                <hr style="border: none; visibility: hidden;" />
+                    <div style="margin-bottom: 5px;">Cliente: <span t-field="o.partner_id.name"/></div>
+                    <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.vat"/></div>
+                    <div style="margin-bottom: 5px;">Correo del Comprador: <span t-field="o.partner_id.email"/></div>
+                    <div style="margin-bottom: 5px;">Dirección: <span t-field="o.partner_id.contact_address_complete"/></div>
+                    <div style="margin-bottom: 5px;">Teléfonos: <span t-field="o.partner_id.phone"/></div>
+                    <div style="margin-bottom: 5px;">Vendedor: <span t-field="o.invoice_user_id"/></div>
+                    <div style="margin-bottom: 5px;">Transporte:<span t-field="o.company_id.email"/></div>
                 </section>
-                <hr></hr>
+               
+    <hr style="border-style: dashed; margin: 10px 0;"/>
                 
             </xpath>
             <xpath expr="//div[@class='mt-5']/div[2]/span" position="replace">
@@ -87,6 +73,18 @@
                 </div>
                 </div>
         
+            </xpath>
+            <xpath expr="//div/div/table/thead/tr/th[@name='th_quantity']" position="after">
+                <th name="th_quantity" class="text-end"><span>Unid</span></th>
+            </xpath>
+            
+            <xpath expr="//div/div/table/tbody/t/tr/t/td/span[2]" position="replace">
+                
+            </xpath>
+            <xpath expr="//div/div/table/tbody/t/tr/t/td[3]" position="after">
+                <td class="text-end">              
+                    <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
+                </td> 
             </xpath>
             <xpath expr="//div/div/table/tbody/t/t[2]" position="replace">
             <t t-if="">

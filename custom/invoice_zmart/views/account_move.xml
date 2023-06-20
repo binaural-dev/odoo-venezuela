@@ -7,6 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//tree[1]/field[@name='activity_ids']" position="after">
                 <field name="printed"/>
+                <!-- <field name="sale_order_shipping_name_company"/> -->
             </xpath>
         </field>
     </record>
