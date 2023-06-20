@@ -16,7 +16,8 @@ class AccountMove(models.Model):
         "Reception Date", help="Indicates when the invoice was received by the client/company"
     )
     last_payment_date = fields.Date(
-        compute="_compute_last_payment_date"
+        compute="_compute_last_payment_date",
+        store=True
     )
     
     @api.depends("amount_residual")
