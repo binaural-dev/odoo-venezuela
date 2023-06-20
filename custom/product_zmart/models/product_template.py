@@ -104,6 +104,9 @@ class ProductTemplateZmart(models.Model):
 	sales_unit_gross_weight = fields.Float(
     	store = True
     )
+	model_product = fields.Char(
+		store = True
+	)
 
 	@api.depends('oem', 'oem.code')
 	def _compute_code(self):
