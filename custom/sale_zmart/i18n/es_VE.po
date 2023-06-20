@@ -161,3 +161,18 @@ msgstr "Envío"
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_type__withdrawal
 msgid "withdrawal"
 msgstr "Retiro"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__guide
+msgid "Guide"
+msgstr "Nro de Guia"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__package_qty
+msgid "Package Quantity"
+msgstr "Nro de Paquetes"
+
+#. module: sale_zmart
+#: model:ir.model.fields,help:sale_zmart.field_stock_picking__package_qty
+msgid "Quantity of packages used in the picking"
+msgstr "Nro de Paquetes"
