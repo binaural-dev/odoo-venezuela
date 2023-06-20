@@ -1,0 +1,105 @@
+<odoo>
+    <data>
+        <template id="free_form_bs" 
+                inherit_id="binaural_invoice.report_freeform_document">
+               
+            <xpath expr="//div[@id='informations']" position="replace">
+            
+                <section id="segmento_1" style="display: flex; flex-direction: row;">
+                    <div style="display: inline-block;">
+                        <img t-if="o.company_id.logo"
+                            t-att-src="image_data_uri(o.company_id.logo)"
+                            height="120"
+                            weight="160"
+                            class="mr-3"/>
+                        <div class="col-8" style="font-weight: bold; font-size: 26px;margin-left: 65px;">
+                            <div t-field="o.company_id"/>
+                        </div>
+                        <div>
+                            <div t-field="o.company_id.street"/><span>,Caracas (Chacao) Miranda, Zona postal 1070 - Teléfonos WhatsApp</span>
+                            <div> Distribuidores:<span t-field="o.company_id.phone"/></div>
+                            <div> WhatsApp Cliente Final:<span t-field="o.company_id.phone"/>- Email:<span t-field="o.company_id.email"/></div>
+                        </div>
+                    </div>
+                    <div style="display: inline-block;">
+                        <div>
+                            <div> Numero de Control:<span t-field="o.company_id.phone"/></div>
+                            <div>R.I.F.:<span t-field="o.company_id.email"/></div>
+                            <div>Factura:<span t-field="o.company_id.phone"/></div>
+                            <div>Fecha de Emision:<span t-field="o.company_id.email"/></div>
+                            <div>Cond. Pago:<span t-field="o.company_id.email"/></div>
+                        </div>
+                    </div>
+                </section>
+                <hr></hr>
+                <section id="segmento_1" style="display: flex; flex-direction: row;">
+                    <div style="display: inline-block;">
+                            <div>Cliente:<span t-field="o.partner_id.name"/></div>
+                            <div>R.I.F.:<span t-field="o.partner_id.vat"/></div>
+                            <div>Dirección:<span t-field="o.partner_id.contact_address_complete"/></div>
+                            <div>Teléfonos:<span t-field="o.invoice_user_id.phone"/></div>
+                            <div>Vendedor:<span t-field="o.invoice_user_id"/></div>
+                            <div>Transporte:<span t-field="o.company_id.email"/></div>
+                        </div>
+                </section>
+                <hr></hr>
+                
+            </xpath>
+            <xpath expr="//div[@class='mt-5']/div[2]/span" position="replace">
+            </xpath>
+            <xpath expr="//div[@class='mt-5']/div[3]" position="replace">
+            </xpath>
+            <xpath expr="//div[@class='mt-5']" position="after">
+                <style> 
+                
+                    #contenedor {
+                    text-align: left;
+                    width: 100%;
+                    margin: auto;
+                    }
+
+                    #lateral {
+                    width: 40%;  /* Este será el ancho que tendrá tu columna */
+                    float:right; /* Aquí determinas de lado quieres quede esta "columna" */
+                    }
+
+                    #principal {
+                    width: 50%;
+                    float: left;
+                    }
+                    /* Para limpiar los floats */
+                    .clearfix:after {
+                    content: "";
+                    display: table;
+                    clear: both;
+                    }
+                </style>
+                <div id="contenedor" class="clearfix">
+                <div id="principal">
+                    <p>TRANSFERIR A LAS CUENTAS CORRIENTES BANESCO
+                                        0134-0335-00-3351-0608-52/ MERCANTIL 0105-0699-92-1699-1732-30 / PROVINCIAL
+                                        0108-0027-79-0100-8966-61
+                                        *LA GARANTÍA DE LOS PRODUCTOS COMPATIBLES SERÁ PRESTADA
+                                        DIRECTAMENTE POR ZMART PLUS CORP, C.A.</p>
+                </div>
+                <div id="lateral">
+                    <p>Dolares tasa bcv</p>
+                </div>
+                </div>
+        
+            </xpath>
+            <xpath expr="//div/div/table/tbody/t/t[2]" position="replace">
+            <t t-if="">
+                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
+                                </t>
+            </xpath>
+        </template> 
+        
+        <template id="document_tax_totals_inherit"
+            inherit_id="binaural_invoice.document_tax_totals">
+            <xpath expr="//tr[2]" position="replace">
+            </xpath>
+        </template> 
+    </data>
+</odoo>
