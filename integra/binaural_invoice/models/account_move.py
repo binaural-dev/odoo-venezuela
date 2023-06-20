@@ -15,6 +15,63 @@ class AccountMove(models.Model):
     invoice_reception_date = fields.Date(
         "Reception Date", help="Indicates when the invoice was received by the client/company"
     )
+    last_payment_date = fields.Date(
+        compute="_compute_last_payment_date"
+    )
+    
+    @api.depends("amount_residual")
+    def _compute_last_payment_date(self):
+        for move in self:
+            is_client_invoice = move.move_type == "out_invoice"
+            not_amount_residual = move.currency_id.is_zero(move.amount_residual)
+            is_invoice_payment_widget = move.invoice_payments_widget
+            
+            is_valid_invoice = is_client_invoice and not_amount_residual
+            is_valid_invoice_payment = is_valid_invoice and is_invoice_payment_widget
+            
+            reconcilieds = move._get_reconciled_invoices_partials()
+            settlement_date = None
+            
+            if is_valid_invoice_payment:
+                settlement_date = self.get_max_payment_date(
+                    move.invoice_payments_widget
+                )
+                
+                settlement_date = fields.Date.from_string(settlement_date)
+                
+                if not settlement_date:
+                    if reconcilieds:
+                        settlement_date = max(invoice[2].date for invoice in reconcilieds)
+            else:
+                if reconcilieds:
+                    value = [invoice[0][2].date for invoice in reconcilieds if invoice]
+                    if value: 
+                        max_value = max(value)
+                        settlement_date = max_value
+
+            move.last_payment_date = settlement_date
+            
+    @staticmethod
+    def get_max_payment_date(payments):
+        dates = list()
+        
+        have_payments = payments.get("content")
+        is_valid_process = have_payments and payments
+        
+        settlement_date = False
+        
+        if is_valid_process:
+            for payment in have_payments:
+                account_payment_id = payment.get("account_payment_id", False)
+                if account_payment_id:
+                    dates.append(payment.get("date", False))
+                    
+        is_exist_dates = len(dates) > 0            
+        if is_exist_dates:
+            settlement_date = max(dates)
+
+        return settlement_date
+
 
     @api.onchange("invoice_line_ids")
     def _onchange_invoice_line_ids(self):
