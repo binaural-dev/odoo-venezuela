@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230524\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230605\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-30 14:24+0000\n"
-"PO-Revision-Date: 2023-05-30 14:24+0000\n"
+"POT-Creation-Date: 2023-06-20 15:58+0000\n"
+"PO-Revision-Date: 2023-06-20 15:58+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -90,6 +90,11 @@ msgid "Define a main sell's warehouse."
 msgstr "Define un almacén de ventas principal."
 
 #. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_edit_list_price
+msgid "Edit list price on the product form view"
+msgstr ""
+
+#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__group_product_available_quantity_on_sale
 msgid "Group Product Available Quantity On Sale"
 msgstr "Grupo de Cantidad Disponible para Vender"
@@ -130,6 +135,11 @@ msgstr "Cantidad"
 #: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__group_product_available_quantity_on_sale
 msgid "Show Available Quantity From All Warehouses"
 msgstr "Mostrar la Cantidad Disponible en Todos los Almacenes."
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_show_standard_price
+msgid "Show standard price on the product form view"
+msgstr "Mostrar costo en la vista del producto"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
