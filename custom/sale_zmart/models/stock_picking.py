@@ -10,8 +10,8 @@ class StockPicking(models.Model):
         related = 'sale_id.shipping_type', 
         string = "Shipping type"
     )
-    shipping_name_company = fields.Many2one(
-        related = 'sale_id.shipping_name_company'
+    shipping_mean = fields.Selection(
+        related = 'sale_id.shipping_mean'
     )
     shipping_method = fields.Selection(
         [
