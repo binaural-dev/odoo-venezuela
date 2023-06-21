@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data noupdate="1">
+        <record id="action_invoice_sale_note_bs" model="ir.actions.report">
+            <field name="name">Delivery Note</field>
+            <field name="model">account.move</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">invoice_zmart.template_invoice_delivery_note_bs</field>
+            <field name="report_file">invoice_zmart.template_invoice_delivery_note_bs</field>
+            <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
+            <field name="paperformat_id" ref="binaural_invoice.invoice_sale_note_paperformat_binaural_invoice"/>
+            <field name="binding_model_id" eval="False"/>
+            <field name="binding_type">report</field>
+            <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
+        </record>
+
+        <template id="template_invoice_delivery_note_bs">
+            <t t-call="web.html_container">
+                <xpath expr="//t[@t-call='web.report_layout']" position="replace">
+                    <t t-foreach="docs" t-as="invoice">
+                        <div class="article" style="" t-att-data-oe-model="invoice and invoice._name" t-att-data-oe-id="invoice and invoice.id" t-att-data-oe-lang="invoice and invoice.env.context.get('lang')">
+                            <link rel="stylesheet" type="text/css" href="/web/static/lib/bootstrap/dist/css/bootstrap.css"/>
+                            <div class="page">
+                                <style>
+                                    thead > tr{
+                                        margin-bottom: 3px;
+                                    }
+                                    th{
+                                        vertical-align: middle;
+                                    }
+                                    th{
+                                        font-size:12px;
+                                    }
+                                    td{
+                                        font-size:12px;
+                                        width: 25%;
+                                        padding:0px 5px;
+                                    }
+                                    .col-xs-7,
+                                    .col-xs-4{
+                                        padding:0px !important;
+                                    }
+
+                                    .col-xs-4 span
+                                    ,.col-xs-8 span {
+                                        font-size:14px;
+                                    }
+                                    .td_right{
+                                        padding:0px 10px;
+                                    }
+                                    .class_number td{
+                                        font-size:11px;
+                                        width: 15%;
+                                        padding:0px 0px;
+                                    }
+                                    .row_1 > tr > td > span{
+                                        font-size:11px;
+                                    }
+                                    .align-right {
+                                        float: right;
+                                    }
+                                </style>
+                                <section id="segmento_1" style="padding: 10px;height: 100px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+                                    <div style="display: flex; align-items: center;width:60%;height:100px;border: 1px solid black; border-radius: 10px;padding-top:10px;padding-top:10px">
+                                        <img t-if="invoice.company_id.logo"
+                                            t-att-src="image_data_uri(invoice.company_id.logo)"
+                                            height="50"
+                                            width="70"
+                                            class="mr-3 mt-1" style="display: inline-block; vertical-align: middle;"/>
+                                        <div style="display: inline-block;vertical-align: middle;width:50%;margin-left:10px;">
+                                            <div class="col-8">
+                                                <div t-field="invoice.company_id"/>
+                                                <div>R.I.F: 
+                                                    <span t-field="invoice.company_id.vat"/>
+                                                </div>
+                                                <div>N.I.T: 
+                                                    <span/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center;margin-top:-100px">
+                                        <div style="display: inline-block;" class="align-right">
+                                            <div>
+                                                <span> Nota de Entrega:
+                                                    <span t-field="invoice.correlative"/>
+                                                </span>
+                                                <div> Página: 
+                                                    <span />
+                                                </div>
+                                                <div> Fecha Emisión: 
+                                                    <span t-field="invoice.invoice_date"/>
+                                                </div>
+                                                <div> Fecha Entrega:
+                                                    <span t-field="invoice.invoice_reception_date"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                                <hr style="border: none; visibility: hidden;" />
+                                <section id="segmento_2" style="border: 1px solid black; padding: 10px; border-radius: 10px;font-size:10px">
+                                    <div style="display: flex; align-items: center;width:60%;height:100px;padding-top:10px;padding-top:10px">
+                                    </div>
+                                    <div style="display: flex; align-items: center;margin-top:-100px">
+                                        <div style="display: inline-block;" class="align-right">
+                                            <div>
+                                                <div> Condic. Pago:
+                                                    <span t-field="invoice.invoice_date"/>
+                                                </div>
+                                                <div> Vendedor: 
+                                                    <span t-field="invoice.invoice_reception_date"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="display: inline-block;width: 70%" >
+                                            <div class="col-8">
+                                                <span> Cliente:
+                                                    <span t-field="invoice.partner_id"/>
+                                                </span>
+                                                <div> R.I.F.:
+                                                    <span t-field="invoice.partner_id.vat"/>
+                                                    N.I.T.:
+                                                    <span t-field="invoice.partner_id.vat"/>
+                                                </div>
+                                                <span> Dirección: 
+                                                    <span t-out="invoice.partner_id.contact_address_complete"/>
+                                                </span>
+                                                <div> Teléfonos: 
+                                                    <span t-out="invoice.partner_id.phone"/>
+                                                </div>
+                                                <div> Transporte: 
+                                                    <!-- <span t-out="partner_id.contact_address_complete"/> -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                                <hr style="border: none; visibility: hidden;" />
+                                <section id="segmento_3" style="font-size:10px !important;">
+                                    <table name="table_product">
+                                        <tr style="border-bottom: 1px solid black;">
+                                            <th style="width:120px;text-align:center;border: 0px solid black;">Código</th>
+                                            <th style="width:120px;text-align:center;border: 0px solid black;">Modelo</th>
+                                            <th style="width:380px;text-align:left;border: 0px solid black;padding-left: 10px;">Descripción</th>
+                                            <th style="width:60px;text-align:center;border: 0px solid black;">Cant.</th>
+                                            <th style="width:40px;text-align:center;border: 0px solid black;">Unidad</th>
+                                            <th style="width:90px;text-align:center;border: 0px solid black;">Precio Unitario</th>
+                                            <th style="width:90px;text-align:center;border: 0px solid black;">% Desc.</th>
+                                            <th style="width:90px;text-align:center;border: 0px solid black;">Neto</th>
+                                        </tr>
+                                        <tbody>
+                                            <t t-set="base_sin_descuento" t-value="0.00"/>
+                                            <t t-set="base_16" t-value="0.00"/>
+                                            <t t-set="iva_16" t-value="0.00"/>
+                                            <t t-set="base_8" t-value="0.00"/>
+                                            <t t-set="iva_8" t-value="0.00"/>
+                                            <t t-foreach="invoice.invoice_line_ids" t-as="line">
+                                                <tr>
+                                                    <t t-set="base_sin_descuento"
+                                                        t-value="base_sin_descuento + (line.quantity * line.foreign_price)"/>
+                                                    <t t-if="len(line.tax_ids) > 0">
+                                                        <t t-if="line.tax_ids[0].amount == 8">
+                                                            <t t-set="base_8" t-value="base_8 + (line.foreign_subtotal)"/>
+                                                            <t t-set="iva_8"
+                                                                t-value="iva_8 + (line.tax_ids[0].amount/100) * (line.foreign_subtotal)"/>
+                                                        </t>
+                                                        <t t-if="line.tax_ids[0].amount == 16"> 
+                                                            <t t-set="base_16"
+                                                                t-value="base_16 + (line.foreign_subtotal)"/>
+                                                            <t t-set="iva_16"
+                                                                t-value="iva_16 +(line.tax_ids[0].amount/100) * (line.foreign_subtotal)"/>
+                                                        </t>
+                                                    </t>
+                                                    <t t-if="invoice.move_type in ['out_debit', 'in_debit']">
+                                                        <td></td>
+                                                        <td style="width:390px;text-align:left;">
+                                                            <span t-field="line.name"/>
+                                                        </td>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <td style="width:130px;text-align:center;">
+                                                            <span t-field="line.product_id.default_code"/>
+                                                        </td>
+                                                        <td style="width:130px;text-align:center;">
+                                                            <span t-field="line.product_id.model_product"/>
+                                                        </td>
+                                                        <t t-if="line.product_id.name">
+                                                            <t t-set="product_name" t-value="line.product_id.name[0:35]"/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <t t-set="product_name" t-value=""/>
+                                                        </t>
+                                                        <td style="width:350px;text-align:left;">
+                                                            <span t-esc="line.name"/>
+                                                        </td>
+                                                    </t>
+                                                    <td style="width:50px;text-align:center;">
+                                                        <span t-esc="line.quantity" t-options='{"widget": "float", "precision": 2}'/>
+                                                    </td>
+                                                    <td style="width:40px;text-align:center;">
+                                                        <span t-field="line.product_uom_id"/>
+                                                    </td>
+                                                    <td style="width:80px;text-align:right;">
+                                                        <span t-esc="'{0:,.3f}'.format(float(line.foreign_price)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                    </td>
+                                                    <td style="width:50px;text-align:right;">
+                                                        <span t-esc="line.discount"/>
+                                                    </td>
+                                                    <t t-set="price_total" t-value="line.foreign_subtotal"/>
+                                                    <td class="td_right" style="width:90px;text-align:right">
+                                                        <span t-esc="'{0:,.2f}'.format(float(price_total)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </section>
+                                <div style="width:100%;margin-top:20px"></div>
+                                <section id="segmento_4">
+                                    <table name="table_total">
+                                        <tr>
+                                            <td colspan="4">
+                                                <span >Observacion:&amp;nbsp;</span>
+                                                <span t-field="invoice.narration"></span>
+                                            </td>
+                                            <td>
+                                                <table>
+                                                    <tr>
+                                                        <td style="text-align: left">
+                                                            <t t-if="invoice.move_type != 'out_invoice' or invoice.move_type != 'in_invoice' or invoice.move_type != 'out_contingence'  or invoice.move_type != 'in_contingence'">
+                                                                <t t-if="invoice.invoice_origin">
+                                                                    <t t-foreach="request.env['account.move'].search([('name','=', invoice.invoice_origin)])"
+                                                                       t-as="inv">
+                                                                        Nro de Factura:
+                                                                        <t t-esc="inv.name"/>
+                                                                        <br/>
+                                                                        <t t-if="inv.move_type != 'out_contingence'  or invoice.move_type != 'in_contingence'">
+                                                                            Nro de control:
+                                                                            <t t-esc="inv.correlative"/>
+                                                                            <br/>
+                                                                        </t>
+                                                                        <t t-else="">
+                                                                            Nro de control:
+                                                                            <t t-esc="inv.correlative_contingence"/>
+                                                                            <br/>
+                                                                        </t>
+                                                                        Fecha de Factura:
+                                                                        <span t-field="inv.invoice_date"
+                                                                              t-field-options="{'format': 'dd/MM/YYYY'}"/>
+                                                                        <br/>
+                                                                        Total Facturado:
+                                                                        <t t-esc="'{0:,.2f}'.format(float(inv.foreign_total_billed)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                                        <br/>
+                                                                        Motivo:
+                                                                        <t t-esc="invoice.name"/>
+                                                                        <br/>
+                                                                    </t>
+                                                                </t>
+                                                            </t>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                            <td>
+                                                <table>
+                                                    <t t-set="descuento" t-value="base_sin_descuento - invoice.amount_untaxed"/>
+                                                    <tr>
+                                                        <td style="text-align: right" colspan="3">Sub-Total VEB:</td>
+                                                        <td class="td_right" style="text-align: right">
+                                                            <span t-esc="'{0:,.2f}'.format(float(invoice.foreign_total_billed)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <t t-if="invoice.move_type == 'out_refund'">
+                                            <tr>
+                                                <td colspan="6">
+                                                    <span>Doc afectado: Nro Factura: <span t-field="invoice.reversed_entry_id.name"/></span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="6">
+                                                    <span>Nro de control: <span t-field="invoice.reversed_entry_id.correlative"/></span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="6">
+                                                    <span>Fecha de Factura: <span t-field="invoice.reversed_entry_id.invoice_date"/></span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="7">
+                                                    <span>Total Facturado: <span t-field="invoice.reversed_entry_id.foreign_total_billed"/></span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="7">
+                                                    <span>Motivo: <span t-field="invoice.ref"/></span>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </table>
+                                </section>
+                            </div>
+                        </div>
+                    </t>
+                </xpath>
+            </t>
+        </template>
+    </data>
+</odoo>
