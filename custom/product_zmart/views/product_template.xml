@@ -5,6 +5,9 @@
             <field name="model">product.template</field>
             <field name="inherit_id" ref="product.product_template_form_view"/>
             <field name="arch" type="xml">
+                <field name="categ_id" position="after">
+                    <field name="model_product"/>
+                </field>
                 <xpath expr="//sheet/notebook/page[@name='inventory']/group/group[@name='group_lots_and_weight']" position="inside">
                     <field name="packaging_type"/>
                     <field name="sales_units_pieces"/>

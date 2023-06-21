@@ -12,137 +12,130 @@
             <field name="binding_model_id" ref="model_stock_picking"/>
             <field name="binding_type">report</field>
         </record>
-
+        
         <template id="report_print_label">
             <t t-call="web.html_container">
                 <t t-foreach="docs" t-as="o">
-                    <t t-call="web.external_layout">
-                    <style>
-                        section {
-                            border: 1px solid black;
-                            margin: 10px;
-                            padding: 10px;
-                        }
-                    </style>
-                    <section id="segmento_1">
-                            <div>
-                                <img t-if="o.company_id.logo"
-                                            t-att-src="image_data_uri(o.company_id.logo)"
-                                            height="40"
-                                            weight="60"
-                                            class="mr-3"/>
-                                <div style="display: inline-block;" >
-                                    <div class="col-8">
-                                        <span><strong>Emisor:</strong></span>
-                                        <div t-field="o.company_id"/>
-                                        <div> R.I.F: 
-                                            <span t-field="o.company_id.vat"/>
-                                        </div>
-                                        <div> TLF: 
-                                            <span  t-field="o.company_id.phone"/>
+                    <t t-foreach="range(int(o.package_qty))" t-as="i">
+                        <t t-call="web.basic_layout">
+                            <style>
+                                section {
+                                    border: 1px solid black;
+                                    margin-top: 0px;
+                                    padding: 10px;
+                                }
+                            </style>
+                            <section id="segmento_1" style="font-size: 0.3em; line-height: 0.8em; width: 4cm;">
+                                <div style="display: flex; align-items: center;">
+                                    <img t-if="o.company_id.logo"
+                                        t-att-src="image_data_uri(o.company_id.logo)"
+                                        height="20"
+                                        width="30"
+                                        class="mr-3 mt-1" style="display: inline-block; vertical-align: middle;"/>
+                                    <div style="display: inline-block;vertical-align: middle;width:50%;margin-left:10px;">
+                                        <div class="col-8">
+                                            <span><strong>EMISOR:</strong></span>
+                                            <div t-field="o.company_id"/>
+                                            <div>R.I.F: 
+                                                <span t-field="o.company_id.vat"/>
+                                            </div>
+                                            <div>TLF: 
+                                                <span t-field="o.company_id.phone"/>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </section>
-                        <section id="segmento_2">
-                            <div>
-                                <div style="display: inline-block;" >
-                                    <div class="col-8">
-                                        <span><strong>Destinatario:</strong></span>
+                                <hr style="width: 100%; margin-top: 0.2em; margin-bottom: 0.2em;"/>
+                                <div style="display: flex; flex-wrap: wrap;">
+                                    <div style="flex: 1 1 100%; margin-bottom: 0.5em;">
+                                        <span><strong>DESTINATARIO:</strong></span>
                                         <div>  
                                             <span><strong>Nombre/Razón Social:</strong></span>
-                                            <span t-field="o.partner_id.name"/>
+                                            <span t-out="o.partner_id.name"/>
                                         </div>
                                         <div>
                                             <span><strong>Cédula/RIF:</strong></span>
-                                            <span t-field="o.partner_id.vat"/>
+                                            <span t-out="o.partner_id.vat"/>
                                         </div>
                                         <div>
                                             <span><strong>Contacto:</strong></span>
-                                            <!-- <span t-field="o.partner_id.phone"/> -->
+                                            <span t-out="o.partner_id.child_ids.name"/>
                                         </div>
                                         <div>
                                             <span><strong>TLF:</strong></span>
-                                            <span t-field="o.partner_id.phone"/>
+                                            <span t-out="o.partner_id.phone"/>
                                         </div>
                                         <div>
                                             <span><strong>Ciudad:</strong></span>
-                                            <span t-field="o.partner_id.city_id"/>
+                                            <span t-out="o.partner_id.city_id.name"/>
                                         </div>
                                         <div>
                                             <span><strong>Estado:</strong></span>
-                                            <span t-field="o.partner_id.state_id"/>
+                                            <span t-out="o.partner_id.state_id.name"/>
                                         </div>
                                         <div>
                                             <span><strong>Dirección:</strong></span>
-                                            <span t-field="o.partner_id.contact_address_complete"/>
+                                            <span t-out="o.partner_id.contact_address_complete"/>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </section>
-                        <section id="segmento_3">
-                            <table>
-                                <tr>
-                                    <th>
+                                <hr style="width: 100%; margin-top: 0.2em; margin-bottom: 0.2em;"/>
+                                <div style="display: inline-block; vertical-align: middle;">
+                                    <div style="display: inline-block; vertical-align: middle;">
                                         <strong>N° GUÍA:</strong>
-                                    </th>
-                                    <td>
                                         <strong><span t-field="o.guide"/></strong>
-                                    </td>
-                                    <th>
+                                    </div>
+                                    <div style="display: inline-block;vertical-align: middle;width:50%;margin-left:10px;">
                                         <strong>PESO: </strong>
-                                    </th>
-                                    <td> 
-                                        <strong><span t-out="o.partner_id.vat"/></strong>
-                                    </td>
-                                </tr>
-                            </table>
-                        </section>
-                        <section id="segmento_4">
-                            <div>
-                                <div>
-                                    <span><strong>DOC DE VENTA:</strong></span>
-                                    <span t-field="o.origin"/>
+                                        <strong><span t-out="o.weight"/></strong>
+                                    </div>
+                                    <div>
+                                        <span><strong>DOC DE VENTA:</strong></span>
+                                        <span t-field="o.origin"/>
+                                    </div>
+                                    <div>
+                                        <span><strong>CLIENTE:  </strong></span>
+                                        <span t-out="o.partner_id.name" />
+                                    </div>
+                                    <div>
+                                        <span><strong>ESTADO:  </strong></span>
+                                        <span t-field="o.partner_id.state_id.name" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <span><strong>CLIENTE:  </strong></span>
-                                    <span t-out="o.partner_id.name" />
+                                <hr style="width: 100%; margin-top: 0.2em; margin-bottom: 0.2em;"/>
+                                <div style="display: flex; flex-wrap: wrap; margin-top: 0.5em;">
+                                    <div style="display: flex; align-items: center;margin-left:10px">
+                                        <div style="flex: 1 1 100%; display: flex; justify-content: center;">
+                                            <span>BULTOS: <t t-out="i+1"/> de <t t-out="o.package_qty"/></span>
+                                            <img t-if="o.qr_code" t-att-src="'data:image/png;base64,' + o.qr_code.decode('utf-8')" style="max-width: 50px; max-height: 50px;"/>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span><strong>ESTADO:  </strong></span>
-                                    <span t-field="o.partner_id.city_id.name" />
-                                </div>
-                            </div>
-                        </section>
-                        <section id="segmento_5">
-                            <table>
-                                <tr>
-                                    <th>Fecha:</th>
-                                    <td t-out="o.date"/>
-                                    <th>Pick:</th>
-                                    <td t-out="o.user_pick_id.name"></td>
-                                </tr>
-                                <tr>
-                                    <th>Vent:</th>
-                                    <td t-out="o.user_vend_id.name"></td>
-                                    <th>Pack:</th>
-                                    <td t-out="o.user_pack_id.name"></td>
-                                </tr>
-                                <tr>
-                                    <th></th>
-                                    <td></td>
-                                    <th>Verificado:</th>
-                                    <td t-out="o.user_out_id.name"></td>
-                                </tr>
-                            </table>
-                            <div>
-                                <span><strong>Observaciones: </strong></span>
-                                <span t-out="o.note" />
-                            </div>
-                        </section>
-
+                                <hr style="width: 100%; margin-top: 0.2em; margin-bottom: 0.2em;"/>
+                                <table style="display: inline-block; vertical-align: middle;">
+                                    <tr>
+                                        <th>Fecha:</th>
+                                        <td t-out="o.date"/>
+                                        <th>Pick:</th>
+                                        <td t-out="o.user_pick_id.name"></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Vent:</th>
+                                        <td t-out="o.user_vend_id.name"></td>
+                                        <th>Pack:</th>
+                                        <td t-out="o.user_pack_id.name"></td>
+                                    </tr>
+                                    <tr>
+                                        <th></th>
+                                        <td></td>
+                                        <th>Verificado:</th>
+                                        <td t-out="o.user_out_id.name"></td>
+                                    </tr>
+                                </table>
+                                <span style="flex: 1 1 100%;"><strong>Observaciones: </strong></span>
+                                    <span style="flex: 1 1 100%;" t-out="o.note"/>
+                            </section>
+                        </t>
                     </t>
                 </t>
             </t>

@@ -6,14 +6,100 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230508\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-18 12:50+0000\n"
-"PO-Revision-Date: 2023-06-18 12:50+0000\n"
+"POT-Creation-Date: 2023-06-21 12:56+0000\n"
+"PO-Revision-Date: 2023-06-21 12:56+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: sale_zmart
+#: model:ir.actions.report,print_report_name:sale_zmart.action_print_label
+msgid ""
+"'Picking Operations - %s - %s' % (object.partner_id.name or '', object.name)"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span style=\"flex: 1 1 100%;\"><strong>Observaciones: </strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>CLIENTE:  </strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>Ciudad:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>Contacto:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>Cédula/RIF:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>DESTINATARIO:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>DOC DE VENTA:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>Dirección:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>EMISOR:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>ESTADO:  </strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>Estado:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>Nombre/Razón Social:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span><strong>TLF:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<strong>N° GUÍA:</strong>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<strong>PESO: </strong>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "BULTOS:"
+msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_method__collect_at_destination
@@ -37,14 +123,34 @@ msgid "Created on"
 msgstr ""
 
 #. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__qr_code
+msgid "Código QR"
+msgstr ""
+
+#. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_company__display_name
 msgid "Display Name"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model,name:sale_zmart.model_mail_template
+msgid "Email Templates"
+msgstr "Plantillas de correo electrónico"
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "Fecha:"
 msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_method__free
 msgid "Free"
 msgstr "Gratuito"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__guide
+msgid "Guide"
+msgstr "Nro de Guia"
 
 #. module: sale_zmart
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__priority__high
@@ -59,6 +165,11 @@ msgstr ""
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.view_sale_order_form_zmart
 msgid "Imprimir Presupuesto/Pedido"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.view_picking_form_inherited_zmart
+msgid "Imprimir etiqueta"
 msgstr ""
 
 #. module: sale_zmart
@@ -92,14 +203,34 @@ msgid "Name"
 msgstr "Nombre"
 
 #. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "Pack:"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__package_qty
+msgid "Package Quantity"
+msgstr "Nro de Paquetes"
+
+#. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__packing_factor
 msgid "Packing Factor"
 msgstr "Factor de embalaje"
 
 #. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "Pick:"
+msgstr ""
+
+#. module: sale_zmart
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_method__prepaid
 msgid "Prepaid"
 msgstr "Prepagado"
+
+#. module: sale_zmart
+#: model:ir.actions.report,name:sale_zmart.action_print_label
+msgid "Print Label"
+msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__printed
@@ -117,9 +248,24 @@ msgid "Product"
 msgstr ""
 
 #. module: sale_zmart
+#: model:ir.model.fields,help:sale_zmart.field_stock_picking__package_qty
+msgid "Quantity of packages used in the picking"
+msgstr "Nro de Paquetes"
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "R.I.F:"
+msgstr ""
+
+#. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_sale_order
 msgid "Sales Order"
 msgstr "Pedido de venta"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_vend_id
+msgid "Salesperson"
+msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__sequence_code
@@ -130,22 +276,62 @@ msgstr ""
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_method
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_method
 msgid "Shipping Method"
-msgstr "Tipo de Entrega"
+msgstr "Métodos de Envío"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_type
 msgid "Shipping Type"
-msgstr "Metodo de Entrega"
+msgstr "Tipo de entrega"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_type
 msgid "Shipping type"
-msgstr "Metodo de Entrega"
+msgstr "Tipo de entrega"
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "TLF:"
+msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_stock_picking
 msgid "Transfer"
 msgstr "Transferir"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__unlock_date
+msgid "Unlock Date"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_out_id
+msgid "User Out"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_pack_id
+msgid "User Pack"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_pick_id
+msgid "User Pick"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "Vent:"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "Verificado:"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "de"
+msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_sale_company
@@ -161,3 +347,9 @@ msgstr "Envío"
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_type__withdrawal
 msgid "withdrawal"
 msgstr "Retiro"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_mean
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_mean
+msgid "Shipping Mean"
+msgstr "Medio de Envío:"

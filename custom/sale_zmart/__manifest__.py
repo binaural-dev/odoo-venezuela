@@ -10,11 +10,10 @@
     # any module necessary for this one to work correctly
     "depends": [
         "binaural_sale",
-        "invoice_zmart",
     ],
     # always loaded
     "data": [
-        "security/ir.model.access.csv",
+        # "security/ir.model.access.csv",
         "data/paperformat.xml",
         "report/stock_report_view.xml",
         "views/sale_order.xml",
