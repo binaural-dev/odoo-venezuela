@@ -35,7 +35,7 @@
                                     <div style="display: inline-block;vertical-align: middle;width:50%;margin-left:10px;">
                                         <div class="col-8">
                                             <span><strong>EMISOR:</strong></span>
-                                            <div t-field="o.company_id"/>
+                                            <div style="width:120%" t-field="o.company_id"/>
                                             <div>R.I.F: 
                                                 <span t-field="o.company_id.vat"/>
                                             </div>
@@ -120,6 +120,7 @@
                                         <td t-out="o.user_pick_id.name"></td>
                                     </tr>
                                     <tr>
+                                        <div style="color:white">-</div>
                                         <th>Vent:</th>
                                         <td t-out="o.user_vend_id.name"></td>
                                         <th>Pack:</th>
