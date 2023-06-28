@@ -2,8 +2,6 @@ import base64
 import qrcode
 import io
 from odoo import models, fields,api
-import logging
-_logger = logging.getLogger(__name__)
 
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
