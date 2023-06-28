@@ -150,7 +150,7 @@ msgstr "Gratuito"
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__guide
 msgid "Guide"
-msgstr "Nro de Guia"
+msgstr "N° de Guia"
 
 #. module: sale_zmart
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__priority__high
@@ -210,7 +210,7 @@ msgstr ""
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__package_qty
 msgid "Package Quantity"
-msgstr "Nro de Paquetes"
+msgstr "N° de Cajas"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__packing_factor
@@ -250,7 +250,7 @@ msgstr ""
 #. module: sale_zmart
 #: model:ir.model.fields,help:sale_zmart.field_stock_picking__package_qty
 msgid "Quantity of packages used in the picking"
-msgstr "Nro de Paquetes"
+msgstr "N° de Cajas"
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
@@ -306,17 +306,17 @@ msgstr ""
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_out_id
 msgid "User Out"
-msgstr ""
+msgstr "Verificador"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_pack_id
 msgid "User Pack"
-msgstr ""
+msgstr "Pack"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_pick_id
 msgid "User Pick"
-msgstr ""
+msgstr "Pick"
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
@@ -353,3 +353,8 @@ msgstr "Retiro"
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_mean
 msgid "Shipping Mean"
 msgstr "Medio de Envío:"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_id
+msgid "Responsible"
+msgstr "Vendedor"
