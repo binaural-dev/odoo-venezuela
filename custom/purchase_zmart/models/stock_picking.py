@@ -1,4 +1,4 @@
-from odoo import models, fields
+from odoo import models, fields,api
 
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
@@ -61,3 +61,12 @@ class StockPicking(models.Model):
     sequence_code = fields.Char(
         related = 'picking_type_id.sequence_code'
     )
+    packing_factor = fields.Integer(
+    )
+
+    weight_factor = fields.Float(string='Total Weight', compute='_compute_weight_factor')
+
+    @api.depends('weight', 'packing_factor')
+    def _compute_weight_factor(self):
+        for record in self:
+            record.weight_factor = (record.weight * record.packing_factor)/100 + record.weight

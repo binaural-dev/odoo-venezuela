@@ -32,9 +32,4 @@ class AccountPaymentRegister(models.TransientModel):
             'proof_of_payment': [(6, 0, self.proof_of_payment.ids)],
             'retention_receipt': [(6, 0, self.retention_receipt.ids)]
         })
-        if 'communication' in vals and vals['communication']:
-            memo = self.search([('communication', '=', vals['communication'])])
-            if any(memo):
-                raise ValidationError(
-                    'El memo del pago debe ser unico')
         return res

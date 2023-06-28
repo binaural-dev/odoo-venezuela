@@ -15,7 +15,7 @@ class PriceRule(models.Model):
 
     def write(self, vals):
         if "foreign_list_base_price" in vals.keys():
-            return super.write(vals)
+            return super().write(vals)
 
         if "is_foreign_currency" in vals.keys() and not vals.get("is_foreign_currency"):
             vals.update({"foreign_list_base_price": 1.0})
