@@ -20,6 +20,7 @@
                 </xpath>
                 <xpath expr="//field[@name='location_dest_id']" position="after">
                     <field name="user_sale" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
+                    <field name="priority_sale" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
                     <field name="shipping_type" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
                     <field name="shipping_mean" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
                     <field name="shipping_method" attrs="{'invisible': [('shipping_type', '!=', 'shipment')]}"/>

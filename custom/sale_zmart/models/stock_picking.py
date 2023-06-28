@@ -55,6 +55,15 @@ class StockPicking(models.Model):
         string = 'Código QR', 
         compute = '_compute_qr_code'
     )
+    priority_sale = fields.Selection(
+        [
+            ("high", "High"),
+            ("medium", "Medium"),
+            ("low", "Low"),
+        ],
+        related = "sale_id.priority_sale",
+        store = True
+    )
     
     def button_validate(self):
         super().button_validate()

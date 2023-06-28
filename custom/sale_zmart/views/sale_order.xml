@@ -11,7 +11,7 @@
             </button>
             <xpath expr="//field[@name='payment_term_id']" position="after">
                 <field name="printed" readonly="True"/>
-                <field name="priority"/>
+                <field name="priority_sale"/>
                 <field name="shipping_type"/>
                 <field name="shipping_mean"/>
                 <field name="shipping_method" attrs="{'invisible': [('shipping_type', '==', 'withdrawal')]}"/>
@@ -25,7 +25,7 @@
         <field name="inherit_id" ref="sale.view_quotation_tree" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='user_id']" position="before">
-                <field name="priority"/>
+                <field name="priority_sale"/>
                 <field name="shipping_type"/>
                 <field name="printed"/>
             </xpath>
@@ -37,7 +37,7 @@
         <field name="inherit_id" ref="sale.view_order_tree" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='user_id']" position="before">
-                <field name="priority"/>
+                <field name="priority_sale"/>
             </xpath>
         </field>
     </record>
