@@ -2,6 +2,8 @@ import base64
 import qrcode
 import io
 from odoo import models, fields,api
+import logging
+_logger = logging.getLogger(__name__)
 
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
@@ -36,17 +38,16 @@ class StockPicking(models.Model):
         related = "sale_id.user_id"
     )
     user_pick_id = fields.Many2one(
-        'res.users', 
-        default = lambda self: self.env.user
+        'res.users'
     )
     user_pack_id = fields.Many2one(
-        'res.users', 
-        default = lambda self: self.env.user
+        'res.users'
     )
-    user_sale = fields.Many2one(related="sale_id.user_id")
+    user_sale = fields.Many2one(
+        related = "sale_id.user_id"
+    )
     user_out_id = fields.Many2one(
-        'res.users', 
-        default = lambda self: self.env.user
+        'res.users'
     )
     package_qty = fields.Integer(
         "Package Quantity", 
@@ -56,6 +57,19 @@ class StockPicking(models.Model):
         string = 'Código QR', 
         compute = '_compute_qr_code'
     )
+    
+    def button_validate(self):
+        super().button_validate()
+        if self.sequence_code == 'PICK':
+            current_user = self.env.user
+            self.user_pick_id = current_user
+        if self.sequence_code == 'PACK':
+            current_user = self.env.user
+            self.user_pack_id = current_user
+        if self.sequence_code == 'OUT':
+            current_user = self.env.user
+            self.user_out_id = current_user
+    
     
     @api.onchange('guide','package_qty')
     def onchange_guide(self):
