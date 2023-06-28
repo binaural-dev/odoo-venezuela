@@ -153,7 +153,7 @@ msgid "Guide"
 msgstr "N° de Guia"
 
 #. module: sale_zmart
-#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__priority__high
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__priority_sale__high
 msgid "High"
 msgstr "Alta"
 
@@ -188,12 +188,12 @@ msgid "Last Updated on"
 msgstr ""
 
 #. module: sale_zmart
-#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__priority__low
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__priority_sale__low
 msgid "Low"
 msgstr "Baja"
 
 #. module: sale_zmart
-#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__priority__medium
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__priority_sale__medium
 msgid "Medium"
 msgstr "Media"
 
@@ -238,8 +238,9 @@ msgid "Printed"
 msgstr "Impreso"
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__priority
-msgid "Priority"
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__priority_sale
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__priority_sale
+msgid "Priority Sale"
 msgstr "Prioridad"
 
 #. module: sale_zmart
