@@ -7,12 +7,12 @@
             <field name="arch" type="xml">
                 <field name="origin" position="after">
                     <field name="guide" attrs="{'invisible': [('sequence_code', '!=', 'PACK'), ('sequence_code', '!=', 'OUT')], 'readonly': [('sequence_code', '!=', 'PACK')]}"/>
-                    <field name="package_qty"/>
+                    <field name="package_qty" attrs="{'invisible': [('sequence_code', '!=', 'PACK'), ('sequence_code', '!=', 'OUT')], 'readonly': [('sequence_code', '!=', 'PACK')]}"/>
                 </field>
                 <field name="user_id" position="replace">
-                    <field name="user_pick_id" attrs="{'invisible': [('sequence_code', '!=', 'PICK')]}"/>
-                    <field name="user_pack_id" attrs="{'invisible': [('sequence_code', '!=', 'PACK')]}"/>
-                    <field name="user_out_id" attrs="{'invisible': [('sequence_code', '!=', 'OUT')]}"/>
+                    <field name="user_pick_id" attrs="{'invisible': [('sequence_code', '!=', 'PICK')], 'readonly': True}"/>
+                    <field name="user_pack_id" attrs="{'invisible': [('sequence_code', '!=', 'PACK')], 'readonly': True}"/>
+                    <field name="user_out_id" attrs="{'invisible': [('sequence_code', '!=', 'OUT')], 'readonly': True}"/>
                     <field name="sequence_code" invisible="1"/>
                 </field>
                 <xpath expr="//button[@name='action_open_label_type']" position="replace">
