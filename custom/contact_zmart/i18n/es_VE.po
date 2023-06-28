@@ -111,3 +111,10 @@ msgstr "Identificación Representante Legal"
 #: model:ir.model.fields,field_description:contact_zmart.field_res_users__other
 msgid "Other"
 msgstr "Otros"
+
+#. module: contact_zmart
+#: model:ir.model.fields,field_description:contact_zmart.field_res_company__nit
+#: model:ir.model.fields,field_description:contact_zmart.field_res_partner__nit
+#: model:ir.model.fields,field_description:contact_zmart.field_res_users__nit
+msgid "Nit"
+msgstr "NIT"

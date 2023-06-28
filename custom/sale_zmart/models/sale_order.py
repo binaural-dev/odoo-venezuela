@@ -28,7 +28,7 @@ class SaleOrderZmart(models.Model):
         default = "",
         store = True
     )
-    priority = fields.Selection(
+    priority_sale = fields.Selection(
         [
             ("high", "High"),
             ("medium", "Medium"),
