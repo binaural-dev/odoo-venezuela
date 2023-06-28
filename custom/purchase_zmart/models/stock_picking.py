@@ -60,6 +60,9 @@ class StockPicking(models.Model):
     responsible_purchase = fields.Many2one(
         related = "purchase_id.user_id"
     )
+    user_responsible = fields.Many2one(
+        'res.users',
+    )
     weight_factor = fields.Float(string='Total Weight', compute='_compute_weight_factor')
 
     @api.depends('weight', 'packing_factor')

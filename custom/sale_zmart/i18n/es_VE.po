@@ -358,3 +358,8 @@ msgstr "Medio de Envío:"
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_id
 msgid "Responsible"
 msgstr "Vendedor"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_sale
+msgid "Salesperson"
+msgstr "Vendedor"

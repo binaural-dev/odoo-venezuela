@@ -205,4 +205,9 @@ msgstr "Empresa de Transporte"
 #. module: purchase_zmart
 #: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__responsible_purchase
 msgid "Buyer"
+msgstr "Responsable de compra"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__user_responsible
+msgid "User Responsible"
 msgstr "Responsable"
