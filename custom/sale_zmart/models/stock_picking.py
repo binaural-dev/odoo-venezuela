@@ -23,7 +23,7 @@ class StockPicking(models.Model):
         default = "free",
         store = True
     )
-    packing_factor = fields.Char(
+    packing_factor = fields.Integer(
         store = "True"
     )
     sequence_code = fields.Char(
@@ -43,6 +43,7 @@ class StockPicking(models.Model):
         'res.users', 
         default = lambda self: self.env.user
     )
+    user_sale = fields.Many2one(related="sale_id.user_id")
     user_out_id = fields.Many2one(
         'res.users', 
         default = lambda self: self.env.user
@@ -55,6 +56,14 @@ class StockPicking(models.Model):
         string = 'Código QR', 
         compute = '_compute_qr_code'
     )
+    
+    @api.onchange('guide','package_qty')
+    def onchange_guide(self):
+        if self.sequence_code == 'PACK':
+            picking_outs = self.env['stock.picking'].search([('origin', '=', self.origin), ('sequence_code', '=', 'OUT')])
+            if picking_outs:
+                picking_outs.write({'guide': self.guide})
+                picking_outs.write({'package_qty': self.package_qty})
     
     @api.depends('name')
     def _compute_qr_code(self):
@@ -72,6 +81,10 @@ class StockPicking(models.Model):
 
             # Actualizar el campo binario con el código QR
             record.qr_code = qr_image
+    
     def print_label(self):
         return self.env.ref('sale_zmart.action_print_label').report_action(self)
+    
+    def _get_report_lang(self):
+        return self.move_ids and self.move_ids[0].partner_id.lang or self.partner_id.lang or self.env.lang
     

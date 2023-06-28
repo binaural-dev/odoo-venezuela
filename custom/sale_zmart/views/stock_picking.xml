@@ -6,7 +6,7 @@
             <field name="inherit_id" ref="stock.view_picking_form"/>
             <field name="arch" type="xml">
                 <field name="origin" position="after">
-                    <field name="guide"/>
+                    <field name="guide" attrs="{'invisible': [('sequence_code', '!=', 'PACK'), ('sequence_code', '!=', 'OUT')], 'readonly': [('sequence_code', '!=', 'PACK')]}"/>
                     <field name="package_qty"/>
                 </field>
                 <field name="user_id" position="replace">
@@ -19,10 +19,10 @@
                     <button string="Imprimir etiqueta" type="object" name="print_label"/>
                 </xpath>
                 <xpath expr="//field[@name='location_dest_id']" position="after">
+                    <field name="user_sale" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
                     <field name="shipping_type" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
                     <field name="shipping_mean" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
                     <field name="shipping_method" attrs="{'invisible': [('shipping_type', '!=', 'shipment')]}"/>
-                    <field name="user_id" attrs="{'invisible': ['|', '|', ('sequence_code', '=', 'PICK'), ('sequence_code', '=', 'PACK'), ('sequence_code', '=', 'OUT')]}"/>
                 </xpath>
             </field>
         </record>
