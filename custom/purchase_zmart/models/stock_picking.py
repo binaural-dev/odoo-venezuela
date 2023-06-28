@@ -22,20 +22,14 @@ class StockPicking(models.Model):
         related = "purchase_id.type_company",
         store = True
     )
-    incoterm = fields.Selection(
-        [
-            ("fob", "FOB"),
-            ("cif", "CIF"),
-            ("cfr", "CFR"),
-            ("na", "N/A"),
-        ],
-        default = "",
-        related = "purchase_id.incoterm",
+    incoterm_id = fields.Many2one(
+        related = "purchase_id.incoterm_id",
         store = True
     )
     bl = fields.Char(
         string = "B/L",
         related = "purchase_id.bl",
+        translate = False
     )
     wl = fields.Char(
         string = "W/L",
@@ -63,7 +57,9 @@ class StockPicking(models.Model):
     )
     packing_factor = fields.Integer(
     )
-
+    responsible_purchase = fields.Many2one(
+        related = "purchase_id.user_id"
+    )
     weight_factor = fields.Float(string='Total Weight', compute='_compute_weight_factor')
 
     @api.depends('weight', 'packing_factor')

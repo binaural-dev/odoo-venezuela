@@ -16,7 +16,7 @@
                         <group>
                             <field name="name_company"/>
                             <field name="type_company"/>
-                            <field name="incoterm"/>
+                            <field name="incoterm_id"/>
                             <field name="bl"/>
                             <field name="wl"/>
                         </group>

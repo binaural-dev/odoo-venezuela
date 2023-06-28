@@ -15,18 +15,9 @@ class PurchaseOrderZmart(models.Model):
         default = "",
         store = True
     )
-    incoterm = fields.Selection(
-        [
-            ("fob", "FOB"),
-            ("cif", "CIF"),
-            ("cfr", "CFR"),
-            ("na", "N/A"),
-        ],
-        default = "",
-        store = True
-    )
     bl = fields.Char(
-        string = "B/L"
+        string = "B/L",
+        translate = False
     )
     wl = fields.Char(
         string = "W/L"
