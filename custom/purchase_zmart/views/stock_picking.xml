@@ -6,7 +6,7 @@
             <field name="inherit_id" ref="stock.view_picking_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='location_dest_id']" position="after">
-                    <field name="transport_number" attrs="{'invisible': [('picking_type_code', '!=', 'incoming')]}"/>
+                    <field name="responsible_purchase"/>
                 </xpath> 
                 <xpath expr="//notebook" position="inside">
                     <page name="information_vehicle" string="Información Transporte" attrs="{'invisible': [('sequence_code', '!=', 'IN')]}">
@@ -14,7 +14,7 @@
                             <group>
                                 <field name="name_company"/>
                                 <field name="type_company"/>
-                                <field name="incoterm"/>
+                                <field name="incoterm_id"/>
                                 <field name="bl"/>
                                 <field name="wl"/>
                                 <field name="sequence_code" invisible="1"/>
