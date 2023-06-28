@@ -32,5 +32,15 @@
             </xpath>
             </field>
         </record>
+        <record id="view_purchase_order_form_inherited_zmart_incoterm" model="ir.ui.view">
+            <field name="name">Ocultar incoterm en pestana otra informacion</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase_stock.purchase_order_view_form_inherit"/>
+            <field name="arch" type="xml">
+                <field name="incoterm_id" position="replace">
+                    <field name="incoterm_id" invisible="True"/>
+                </field>
+            </field>
+        </record>
     </data>
 </odoo>
