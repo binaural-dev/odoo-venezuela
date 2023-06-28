@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 class ResPartner(models.Model):
     _inherit = "res.partner"
 
+    nit = fields.Char()
     sales_area = fields.Many2one('res.partner.sale')
     commercial_register = fields.Many2many(
         'ir.attachment',
