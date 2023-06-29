@@ -113,27 +113,28 @@
                                 </div>
                                 <hr style="width: 100%; margin-top: 0.2em; margin-bottom: 0.2em;"/>
                                 <table style="display: inline-block; vertical-align: middle;">
-                                    <tr>
+                                    <tr style="text-align:left">
                                         <th>Fecha:</th>
-                                        <td t-out="o.date"/>
+                                        <td t-out="o.date.strftime('%d/%m/%Y')"/>
                                         <th>Pick:</th>
                                         <td t-out="o.user_pick_id.name"></td>
                                     </tr>
-                                    <tr>
+                                    <tr style="text-align:left">
                                         <div style="color:white">-</div>
-                                        <th>Vent:</th>
-                                        <td t-out="o.user_vend_id.name"></td>
+                                        <th>Hora:</th>
+                                        <td t-out="o.date.strftime('%H:%M:%S')"/>
                                         <th>Pack:</th>
                                         <td t-out="o.user_pack_id.name"></td>
                                     </tr>
-                                    <tr>
-                                        <th></th>
-                                        <td></td>
+                                    <tr style="text-align:left">
+                                        <div style="color:white">-</div>
+                                        <th >Vent:</th>
+                                        <td t-out="o.user_vend_id.name" style="padding-right:10px"></td>
                                         <th>Verificado:</th>
                                         <td t-out="o.user_out_id.name"></td>
                                     </tr>
                                 </table>
-                                <span style="flex: 1 1 100%;"><strong>Observaciones: </strong></span>
+                                <div style="flex: 1 1 100%;"><strong>Observaciones: </strong></div>
                                     <span style="flex: 1 1 100%;" t-out="o.note"/>
                             </section>
                         </t>
