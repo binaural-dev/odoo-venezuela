@@ -24,6 +24,9 @@
                                     margin-top: 0px;
                                     padding: 10px;
                                 }
+                                table td, table th {
+                                    line-height: 1.1;
+                                }
                             </style>
                             <section id="segmento_1" style="font-size: 0.3em; line-height: 0.8em; width: 4cm;">
                                 <div style="display: flex; align-items: center;">
@@ -120,14 +123,12 @@
                                         <td t-out="o.user_pick_id.name"></td>
                                     </tr>
                                     <tr style="text-align:left">
-                                        <div style="color:white">-</div>
                                         <th>Hora:</th>
                                         <td t-out="o.date.strftime('%H:%M:%S')"/>
                                         <th>Pack:</th>
                                         <td t-out="o.user_pack_id.name"></td>
                                     </tr>
                                     <tr style="text-align:left">
-                                        <div style="color:white">-</div>
                                         <th >Vent:</th>
                                         <td t-out="o.user_vend_id.name" style="padding-right:10px"></td>
                                         <th>Verificado:</th>
