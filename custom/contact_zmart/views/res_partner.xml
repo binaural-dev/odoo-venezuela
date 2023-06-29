@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_partner_binaural_form_contacts" model="ir.ui.view">
+        <field name="name">res_partner_binaural_form_contacts</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vat']" position="after">
+                <field name="nit"/>
+            </xpath>
+            <xpath expr="//field[@name='company_registry']" position="after">
+                <field name="sales_area"/>
+            </xpath>
+            <xpath expr="//sheet/notebook/page[@name='internal_notes']" position="before">
+                <page name="Documentación Legal" >
+                    <group>
+                        <field name="rif" widget="many2many_binary"/>
+                        <field name="legal_representante" widget="many2many_binary"/>
+                        <field name="commercial_register" widget="many2many_binary"/>
+                        <field name="commercial_reference" widget="many2many_binary"/>
+                        <field name="bank_reference" widget="many2many_binary"/>
+                        <field name="other" widget="many2many_binary"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
