@@ -14,6 +14,7 @@
         'data/res_group.xml',
         'security/ir.model.access.csv',
         'report/delivery_note_bs.xml',
+        'report/delivery_note_rma.xml',
         'report/delivery_note_usd.xml',
         'views/account_move.xml',
         'views/account_payment.xml',

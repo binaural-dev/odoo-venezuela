@@ -20,6 +20,7 @@
                 <button name="button_free_form" string="Imprimir Factura" type="object" class="oe_highlight"/>
                 <button name="button_invoice_sale_note" string="Imprimir Nota de Entrega $" type="object" class="oe_highlight" groups="invoice_zmart.group_sale_note"/>
                 <button name="button_invoice_sale_note_bs" string="Imprimir Nota de Entrega Bs" type="object" class="oe_highlight"/>
+                <button name="button_invoice_sale_note_rma" string="Imprimir Nota de Entrega RMA" type="object" class="oe_highlight" groups="invoice_zmart.group_sale_note_rma"/>
             </button>
             <xpath expr="//field[@name='payment_reference']" position="after">
                 <field name="printed" readonly="true"/>
