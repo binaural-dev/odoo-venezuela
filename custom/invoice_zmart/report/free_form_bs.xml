@@ -1,8 +1,6 @@
 <odoo>
     <data>
-        <template id="free_form_bs" 
-                inherit_id="binaural_invoice.report_freeform_document">
-               
+        <template id="free_form_bs" inherit_id="binaural_invoice.report_freeform_document">
             <xpath expr="//div[@id='informations']" position="replace">
                 <section id="segmento_1" style="display: flex; flex-direction: row; justify-content: flex-end; align-items: center;">
                     <div style="margin-left: 700px;">
@@ -16,20 +14,17 @@
                 <hr style="border: none; visibility: hidden;" />
                 <hr style="border: none; visibility: hidden;" />
                 <section id="segmento_1" style="display: flex; flex-direction: row;">
-
-                <hr style="border: none; visibility: hidden;" />
-                <hr style="border: none; visibility: hidden;" />
-                    <div style="margin-bottom: 5px;">Cliente: <span t-field="o.partner_id.name"/></div>
-                    <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.vat"/></div>
-                    <div style="margin-bottom: 5px;">Correo del Comprador: <span t-field="o.partner_id.email"/></div>
-                    <div style="margin-bottom: 5px;">Dirección: <span t-field="o.partner_id.contact_address_complete"/></div>
-                    <div style="margin-bottom: 5px;">Teléfonos: <span t-field="o.partner_id.phone"/></div>
-                    <div style="margin-bottom: 5px;">Vendedor: <span t-field="o.invoice_user_id"/></div>
-                    <div style="margin-bottom: 5px;">Transporte:<span t-field="o.company_id.email"/></div>
+                    <hr style="border: none; visibility: hidden;"/>
+                    <hr style="border: none; visibility: hidden;"/>
+                        <div style="margin-bottom: 5px;">Cliente: <span t-field="o.partner_id.name"/></div>
+                        <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.vat"/></div>
+                        <div style="margin-bottom: 5px;">Correo del Comprador: <span t-field="o.partner_id.email"/></div>
+                        <div style="margin-bottom: 5px;">Dirección: <span t-field="o.partner_id.contact_address_complete"/></div>
+                        <div style="margin-bottom: 5px;">Teléfonos: <span t-field="o.partner_id.phone"/></div>
+                        <div style="margin-bottom: 5px;">Vendedor: <span t-field="o.invoice_user_id"/></div>
+                        <div style="margin-bottom: 5px;">Transporte:<span t-field="o.company_id.email"/></div>
                 </section>
-               
-    <hr style="border-style: dashed; margin: 10px 0;"/>
-                
+                <hr style="border-style: dashed; margin: 10px 0;"/>
             </xpath>
             <xpath expr="//div[@class='mt-5']/div[2]/span" position="replace">
             </xpath>
@@ -37,23 +32,19 @@
             </xpath>
             <xpath expr="//div[@class='mt-5']" position="after">
                 <style> 
-                
                     #contenedor {
                     text-align: left;
                     width: 100%;
                     margin: auto;
                     }
-
                     #lateral {
-                    width: 40%;  /* Este será el ancho que tendrá tu columna */
-                    float:right; /* Aquí determinas de lado quieres quede esta "columna" */
+                    width: 40%;
+                    float:right;
                     }
-
                     #principal {
                     width: 50%;
                     float: left;
                     }
-                    /* Para limpiar los floats */
                     .clearfix:after {
                     content: "";
                     display: table;
@@ -61,43 +52,55 @@
                     }
                 </style>
                 <div id="contenedor" class="clearfix">
-                <div id="principal">
-                    <p>TRANSFERIR A LAS CUENTAS CORRIENTES BANESCO
-                                        0134-0335-00-3351-0608-52/ MERCANTIL 0105-0699-92-1699-1732-30 / PROVINCIAL
-                                        0108-0027-79-0100-8966-61
-                                        *LA GARANTÍA DE LOS PRODUCTOS COMPATIBLES SERÁ PRESTADA
-                                        DIRECTAMENTE POR ZMART PLUS CORP, C.A.</p>
+                    <div id="principal" style='width:40%;margin-top:-170px'>
+                        <p>TRANSFERIR A LAS CUENTAS CORRIENTES BANESCO
+                                            0134-0335-00-3351-0608-52/ MERCANTIL 0105-0699-92-1699-1732-30 / PROVINCIAL
+                                            0108-0027-79-0100-8966-61
+                                            *LA GARANTÍA DE LOS PRODUCTOS COMPATIBLES SERÁ PRESTADA
+                                            DIRECTAMENTE POR ZMART PLUS CORP, C.A.</p>
+                    </div>
                 </div>
-                <div id="lateral">
-                    <p>Dolares tasa bcv</p>
-                </div>
-                </div>
-        
             </xpath>
             <xpath expr="//div/div/table/thead/tr/th[@name='th_quantity']" position="after">
                 <th name="th_quantity" class="text-end"><span>Unid</span></th>
             </xpath>
-            
             <xpath expr="//div/div/table/tbody/t/tr/t/td/span[2]" position="replace">
-                
             </xpath>
             <xpath expr="//div/div/table/tbody/t/tr/t/td[3]" position="after">
-                <td class="text-end">              
-                    <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
+                <td class="text-end">
+                <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
                 </td> 
             </xpath>
             <xpath expr="//div/div/table/tbody/t/t[2]" position="replace">
-            <t t-if="">
-                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
-                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
-                                </t>
+                <t t-if="">
+                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
+                </t>
             </xpath>
         </template> 
-        
-        <template id="document_tax_totals_inherit"
-            inherit_id="binaural_invoice.document_tax_totals">
-            <xpath expr="//tr[2]" position="replace">
+        <template id="document_tax_totals_inherit" inherit_id="binaural_invoice.document_tax_totals">
+            <xpath expr="//t[3]" position="after">
+                <t t-if="o.default_is_igtf">
+                    <tr>
+                        <th colspan="2"><strong>IGTF Percibido</strong></th>
+                    </tr>
+                    <tr>
+                        <td><strong>Dolares tasa bcv ():</strong></td>
+                        <td><strong>Base $</strong></td>
+                        <td><span t-out="o.foreign_rate"/></td>
+                        <td><span t-out="o.bi_igtf"/></td>
+                        </tr>
+                    <tr>
+                        <td><strong>IGTF Percibido </strong></td>
+                        <td><strong>Base $ </strong></td>
+                        <td><span t-out="o.foreign_rate"/></td>
+                        <td><span t-out="o.foreign_rate"/></td>
+                        </tr>
+                </t>
             </xpath>
-        </template> 
+            <xpath expr="//tr[2]/t[2]" position="replace">
+            
+            </xpath>
+        </template>
     </data>
 </odoo>

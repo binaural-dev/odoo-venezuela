@@ -16,7 +16,7 @@
                     <field name="sequence_code" invisible="1"/>
                 </field>
                 <xpath expr="//button[@name='action_open_label_type']" position="replace">
-                    <button string="Imprimir etiqueta" type="object" name="print_label"/>
+                    <button string="Imprimir etiqueta" type="object" name="print_label" attrs="{'invisible': [('sequence_code', '!=', 'PACK'), ('sequence_code', '!=', 'OUT')], 'readonly': [('sequence_code', '!=', 'PACK')]}"/>
                 </xpath>
                 <xpath expr="//field[@name='location_dest_id']" position="after">
                     <field name="user_sale" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>

@@ -85,7 +85,7 @@ msgstr ""
 
 #. module: purchase_zmart
 #: model_terms:ir.ui.view,arch_db:purchase_zmart.view_purchase_order_form_inherited_zmart
-msgid "Imprimir Presupuesto/Pedido"
+msgid "Pedido de Compra"
 msgstr ""
 
 #. module: purchase_zmart
