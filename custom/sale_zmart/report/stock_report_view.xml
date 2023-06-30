@@ -25,6 +25,7 @@
                                     padding: 10px;
                                 }
                                 table td, table th {
+                                    border: 1px solid white;
                                     line-height: 1.1;
                                 }
                             </style>
@@ -53,31 +54,31 @@
                                     <div style="flex: 1 1 100%; margin-bottom: 0.5em;">
                                         <span><strong>DESTINATARIO:</strong></span>
                                         <div>  
-                                            <span><strong>Nombre/Razón Social:</strong></span>
+                                            <span style="margin-right: 1px;"><strong>Nombre/Razón Social:</strong></span>
                                             <span t-out="o.partner_id.name"/>
                                         </div>
                                         <div>
-                                            <span><strong>Cédula/RIF:</strong></span>
+                                            <span style="margin-right: 1px;"><strong>Cédula/RIF:</strong></span>
                                             <span t-out="o.partner_id.vat"/>
                                         </div>
                                         <div>
-                                            <span><strong>Contacto:</strong></span>
+                                            <span style="margin-right: 1px;"><strong>Contacto:</strong></span>
                                             <span t-out="o.partner_id.child_ids.name"/>
                                         </div>
                                         <div>
-                                            <span><strong>TLF:</strong></span>
+                                            <span style="margin-right: 1px;"><strong>TLF:</strong></span>
                                             <span t-out="o.partner_id.phone"/>
                                         </div>
                                         <div>
-                                            <span><strong>Ciudad:</strong></span>
+                                            <span style="margin-right: 1px;"><strong>Ciudad:</strong></span>
                                             <span t-out="o.partner_id.city_id.name"/>
                                         </div>
                                         <div>
-                                            <span><strong>Estado:</strong></span>
+                                            <span style="margin-right: 1px;"><strong>Estado:</strong></span>
                                             <span t-out="o.partner_id.state_id.name"/>
                                         </div>
                                         <div>
-                                            <span><strong>Dirección:</strong></span>
+                                            <span style="margin-right: 1px;"><strong>Dirección:</strong></span>
                                             <span t-out="o.partner_id.contact_address_complete"/>
                                         </div>
                                     </div>
@@ -86,9 +87,7 @@
                                 <div style="display: inline-block; vertical-align: middle;">
                                     <div style="display: inline-block; vertical-align: middle;">
                                         <strong>N° GUÍA:</strong>
-                                        <strong><span t-field="o.guide"/></strong>
-                                    </div>
-                                    <div style="display: inline-block;vertical-align: middle;width:50%;margin-left:10px;">
+                                        <strong><span style="margin-right: 5px;" t-field="o.guide"/></strong>
                                         <strong>PESO: </strong>
                                         <strong><span t-out="o.weight"/></strong>
                                     </div>
