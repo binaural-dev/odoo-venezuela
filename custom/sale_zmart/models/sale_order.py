@@ -1,7 +1,5 @@
 from datetime import datetime,timedelta
 from odoo import api, fields, models,_
-import logging
-_logger = logging.getLogger(__name__)
 
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
@@ -24,7 +22,7 @@ class SaleOrderZmart(models.Model):
             ("tealca", "Tealca"),
             ("zoom", "Zoom"),
             ("domesa", "Domesa"),
-            ("pedidos", "Pedidos"),
+            ("pedidos", "Pedidos Ya"),
             ("yummy", "Yummy"),
         ],
         default = "",
@@ -90,10 +88,10 @@ class SaleOrderZmart(models.Model):
             'tealca': (_('Tealca'), self.env['delivery.carrier'].search([('name', '=', 'Tealca')], limit=1)),
             'zoom': (_('Zoom'), self.env['delivery.carrier'].search([('name', '=', 'Zoom')], limit=1)),
             'domesa': (_('Domesa'), self.env['delivery.carrier'].search([('name', '=', 'Domesa')], limit=1)),
-            'pedidos': (_('Pedidos'), self.env['delivery.carrier'].search([('name', '=', 'Pedidos')], limit=1)),
+            'pedidos': (_('Pedidos Ya'), self.env['delivery.carrier'].search([('name', '=', 'Pedidos Ya')], limit=1)),
             'yummy': (_('Yummy'), self.env['delivery.carrier'].search([('name', '=', 'Yummy')], limit=1))
         }
-        if self.shipping_mean in carrier_mapping:
+        if self.shipping_mean in carrier_mapping and self.shipping_method == 'prepaid':
             name, carrier = carrier_mapping[self.shipping_mean]
             carrier_id = carrier.id
         else:
