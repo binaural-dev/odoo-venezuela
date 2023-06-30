@@ -32,6 +32,11 @@ class AccountPaymentRegister(models.TransientModel):
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                 amount = amount * payment.foreign_rate
 
+            amount = payment.amount
+
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * payment.foreign_rate
+
             if (
                 amount > payment_invoice_amount
                 and payment.journal_id.fiscal
