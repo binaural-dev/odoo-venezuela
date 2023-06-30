@@ -53,3 +53,18 @@ msgstr "Acción de informe"
 #: model:ir.model.fields,field_description:invoice_zmart.field_account_payment_register__retention_receipt
 msgid "Retention Receipt"
 msgstr "Comprobante de retencion"
+
+#. module: invoice_zmart
+#: model:res.groups,name:invoice_zmart.group_sale_note
+msgid "Sale Note $"
+msgstr "Nota de entrega en $"
+
+#. module: invoice_zmart
+#: model:res.groups,name:invoice_zmart.group_sale_note_rma
+msgid "Sale Note RMA"
+msgstr "Nota de entrega RMA"
+
+#. module: invoice_zmart
+#: model:res.groups,name:invoice_zmart.group_invoice
+msgid "Invoice $"
+msgstr "Factura $"

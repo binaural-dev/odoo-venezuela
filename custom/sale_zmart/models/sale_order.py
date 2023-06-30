@@ -1,5 +1,5 @@
 from datetime import datetime,timedelta
-from odoo import api, fields, models
+from odoo import api, fields, models,_
 
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
@@ -22,7 +22,7 @@ class SaleOrderZmart(models.Model):
             ("tealca", "Tealca"),
             ("zoom", "Zoom"),
             ("domesa", "Domesa"),
-            ("pedidos", "Pedidos"),
+            ("pedidos", "Pedidos Ya"),
             ("yummy", "Yummy"),
         ],
         default = "",
@@ -77,34 +77,42 @@ class SaleOrderZmart(models.Model):
     def button_sale_order(self):
         return self.env.ref('sale.action_report_saleorder').report_action(self)
     
-    
-    @api.onchange('shipping_method', 'shipping_mean')
-    def add_product_to_lines(self):
-        if self.shipping_method == 'prepaid':
-            shipping_lines = {
-                'zmart_express': {'default_code': 'EXP',},
-                'zmart_programado': {'default_code': 'PRG',},
-                'liberty_express': {'default_code': 'LIB',},
-                'mrw': {'default_code': 'MRW',},
-                'tealca': {'default_code': 'TEA',},
-                'zoom': {'default_code': 'ZOO',},
-                'domesa': { 'default_code': 'DOM',},
-                'pedidos': {'default_code': 'PYA',},
-                'yummy': {'default_code': 'YUM',},
+    def action_open_delivery_wizard(self):
+        super().action_open_delivery_wizard()
+        view_id = self.env.ref('delivery.choose_delivery_carrier_view_form').id
+        carrier_mapping = {
+            'zmart_express': (_('Zmart Express'), self.env['delivery.carrier'].search([('name', '=', 'Zmart Express')], limit=1)),
+            'zmart_programado': (_('Zmart Programado'), self.env['delivery.carrier'].search([('name', '=', 'Zmart Programado')], limit=1)),
+            'liberty_express': (_('Liberty Express'), self.env['delivery.carrier'].search([('name', '=', 'Liberty Express')], limit=1)),
+            'mrw': (_('MRW'), self.env['delivery.carrier'].search([('name', '=', 'MRW')], limit=1)),
+            'tealca': (_('Tealca'), self.env['delivery.carrier'].search([('name', '=', 'Tealca')], limit=1)),
+            'zoom': (_('Zoom'), self.env['delivery.carrier'].search([('name', '=', 'Zoom')], limit=1)),
+            'domesa': (_('Domesa'), self.env['delivery.carrier'].search([('name', '=', 'Domesa')], limit=1)),
+            'pedidos': (_('Pedidos Ya'), self.env['delivery.carrier'].search([('name', '=', 'Pedidos Ya')], limit=1)),
+            'yummy': (_('Yummy'), self.env['delivery.carrier'].search([('name', '=', 'Yummy')], limit=1))
+        }
+        if self.shipping_mean in carrier_mapping and self.shipping_method == 'prepaid':
+            name, carrier = carrier_mapping[self.shipping_mean]
+            carrier_id = carrier.id
+        else:
+            name = _('Add a shipping method')
+            partner_shipping = self.with_company(self.company_id).partner_shipping_id
+            carrier = (partner_shipping.property_delivery_carrier_id or partner_shipping.commercial_partner_id.property_delivery_carrier_id)
+            carrier_id = carrier.id
+
+        return {
+            'name': name,
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'res_model': 'choose.delivery.carrier',
+            'view_id': view_id,
+            'views': [(view_id, 'form')],
+            'target': 'new',
+            'context': {
+                'default_order_id': self.id,
+                'default_carrier_id': carrier_id,
             }
-            line_data = shipping_lines.get(self.shipping_mean)
-            if line_data:
-                product = self.env['product.template'].search([('default_code', '=', line_data['default_code'])], limit=1)
-                if product:
-                    self.write({
-                        'order_line': [(0, 0, {
-                            'product_template_id': product.name,
-                            'name': product.name,
-                            'product_uom_qty': 1,
-                            'price_unit': product.list_price,
-                        })]
-                    })
-                
+        }
     class MailTemplate(models.Model):
         _inherit = 'mail.template'
 
@@ -114,3 +122,5 @@ class SaleOrderZmart(models.Model):
         if order.user_id and order.partner_id.email:
             template = self.env.ref('sale_zmart.email_template_cancel_warning')
             template.with_context(order=order).send_mail(order.user_id.id, force_send=True)
+            
+    

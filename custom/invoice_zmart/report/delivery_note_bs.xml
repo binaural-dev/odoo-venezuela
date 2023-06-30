@@ -107,7 +107,7 @@
                                         <div style="display: inline-block;" class="align-right">
                                             <div>
                                                 <div> Condic. Pago:
-                                                    <span t-field="invoice.invoice_date"/>
+                                                    <span t-field="invoice.invoice_payment_term_id"/>
                                                 </div>
                                                 <div> Vendedor: 
                                                     <span t-field="invoice.invoice_reception_date"/>

@@ -14,7 +14,7 @@ class ResConfigSettings(models.TransientModel):
     module_binaural_pos_mf = fields.Boolean(
         related="company_id.module_binaural_pos_mf", readonly=False
     )
-    
+
     module_binaural_pos_advance_payment = fields.Boolean(
         related="company_id.module_binaural_pos_advance_payment", readonly=False
     )
@@ -25,6 +25,9 @@ class ResConfigSettings(models.TransientModel):
     always_invoice = fields.Boolean(related="pos_config_id.always_invoice", readonly=False)
     pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty", readonly=False)
     amount_to_zero = fields.Boolean(related="pos_config_id.amount_to_zero", readonly=False)
+    pos_show_just_products_with_available_qty = fields.Boolean(
+        related="company_id.pos_show_just_products_with_available_qty", readonly=False
+    )
 
     # @api.onchange("module_binaural_pos_igtf")
     # def _onchange_module_binaural_pos_igtf(self):
