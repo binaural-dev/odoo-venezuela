@@ -6,9 +6,11 @@ class AccountInvoice(models.Model):
     printed = fields.Boolean(default=False)
     
     def button_free_form(self):
+        self.write({'printed': True})
         return self.env.ref('binaural_invoice.action_invoice_free_form_binaural_invoice').report_action(self)
     
     def button_free_form_usd(self):
+        self.write({'printed': True})
         return self.env.ref('binaural_invoice.action_invoice_free_form_binaural_invoice').report_action(self)
     
     def button_invoice_sale_note(self):

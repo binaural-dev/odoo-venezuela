@@ -65,6 +65,6 @@ msgid "Sale Note RMA"
 msgstr "Nota de entrega RMA"
 
 #. module: invoice_zmart
-#: model:res.groups,name:invoice_zmart.group_invoice_$
+#: model:res.groups,name:invoice_zmart.group_invoice
 msgid "Invoice $"
 msgstr "Factura $"
