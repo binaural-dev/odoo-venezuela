@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+
+    <t t-name="DroggolNotification">
+        <div class="row g-0 small align-items-center">
+            <div class="col-3">
+                <div t-attf-class="tp-circle-progress-bar tp-bg-soft-#{color} position-relative rounded-circle o_animate">
+                    <div t-attf-class="text-center w-100 text-#{color} tp-icon position-absolute #{iconClass ? iconClass : 'dri-cart dri'}"></div>
+                    <div class="tp-left-half h-100 w-50 float-start"></div>
+                    <div class="tp-right-half h-100 w-50 float-start"></div>
+                    <span t-attf-class="fa fa-check-circle text-#{color} bg-white tp-success-icon"/>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="fw-bold text-truncate text-black mb-1" t-esc="productName"/> <p class="mb-0 text-500" t-esc="message"/>
+            </div>
+        </div>
+    </t>
+
+</template>

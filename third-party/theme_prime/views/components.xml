@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+    ============================================================================
+    Discount Percentage
+    ============================================================================
+    -->
+    <template id="discount_percentage" name="Discount Percentage">
+        <t t-if="combination_info['has_discounted_price']">
+            <t t-set="discount_percentage" t-value="round((combination_info['list_price'] - combination_info['price']) / combination_info['list_price'] * 100)"/>
+            <small class="tp-discount-percentage d-none d-md-inline-block ms-1">
+                (<t t-out="discount_percentage"/>% OFF)
+            </small>
+        </t>
+    </template>
+
+    <!--
+    ============================================================================
+    Product Label
+    ============================================================================
+    -->
+    <template id="product_label" name="Product Label">
+        <t t-if="label">
+            <t t-set="style" t-value="style or label.style"/>
+            <t t-set="_text" t-value="label.name"/>
+            <t t-set="_bg_color" t-value="label.background_color_rgb"/>
+            <t t-set="_text_color" t-value="label.text_color"/>
+        </t>
+        <t t-elif="stock and product.dr_show_out_of_stock">
+            <t t-set="style" t-value="style or 5"/>
+            <t t-set="_classes" t-valuef="tp-product-stock-label"/>
+            <t t-if="product.dr_show_out_of_stock == 'OUT_OF_STOCK'">
+                <t t-set="_text" t-valuef="OUT OF STOCK"/>
+                <t t-set="_bg_color" t-valuef="212, 18, 18"/>
+            </t>
+            <t t-else="">
+                <t t-set="_text" t-value="'%s UNITS LEFT' % product.dr_show_out_of_stock"/>
+                <t t-set="_bg_color" t-valuef="255, 193, 7"/>
+            </t>
+            <t t-set="_text_color" t-valuef="#FFFFFF"/>
+        </t>
+        <span t-if="label or (stock and product.dr_show_out_of_stock)" t-attf-class="tp-product-label tp-product-label-style-#{style} #{_classes}" t-attf-style="background-color: rgba(#{_bg_color}, .8); color: #{_text_color};">
+            <span t-out="_text"/>
+            <div t-if="style == '1'" class="after" t-attf-style="border-color: rgba(#{_bg_color},.5) transparent rgba(#{_bg_color},.5) rgba(#{_bg_color},.8);"/>
+        </span>
+    </template>
+
+    <!--
+    ============================================================================
+    Product Preview Swatches
+    ============================================================================
+    -->
+    <template id="product_preview_swatches" name="Theme Prime: Product Preview Swatches">
+        <t t-set="preview_swatches" t-value="product._get_product_preview_swatches(limit=_limit or 3)"/>
+        <div t-if="len(preview_swatches['swatches']) > 1" t-attf-class="tp-product-preview-swatches #{_classes}" t-attf-data-default-img-src="/web/image/product.template/#{product.id}/#{img_size or 'image_512'}" t-att-data-parent-selector="parent_selector" t-att-data-img-selector="img_selector">
+            <div class="d-flex align-items-center">
+                <div t-foreach="preview_swatches['swatches']" t-as="swatch" data-bs-toggle="tooltip" t-att-title="swatch['name']" data-bs-placement="top" class="rounded-circle cursor-pointer tp-swatch position-relative" t-att-data-preview-img-src="'%s/%s' % (swatch['preview_image'], img_size or 'image_512')">
+                    <div t-if="swatch['type'] == 'color'" class="h-100 w-100 rounded-circle" t-attf-style="background-color: #{swatch['value']}"/>
+                    <div t-elif="swatch['type'] == 'image'" class="h-100 w-100 rounded-circle" t-attf-style="background-image: url(#{swatch['value']})"/>
+                </div>
+                <div t-if="preview_swatches['more'] > 0" class="tp-swatch position-relative more border-0">
+                    <a class="link-dark d-flex align-items-center h-100 w-100" t-att-href="product.website_url">+<t t-out="preview_swatches['more']"/></a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!--
+    ============================================================================
+    B2B Price Label
+    ============================================================================
+    -->
+    <template id="tp_b2b_price_label" name="B2B Price Label">
+        <span t-att-class="_classes">
+            <a href="/web/login" class="link-primary">Login</a><t t-if="request.website._get_dr_theme_config()['has_sign_up']"> | <a href="/web/signup" class="link-primary">Register</a></t> <span class="text-muted"> to see price</span>
+        </span>
+    </template>
+
+    <!--
+    ============================================================================
+    Rating
+    ============================================================================
+    -->
+    <template id="product_rating" inherit_id="portal_rating.rating_widget_stars_static" primary="True" name="Theme Prime: Rating">
+        <xpath expr="//div[hasclass('o_website_rating_static')]/t[@t-else='']/small" position="replace"/>
+        <xpath expr="//div[hasclass('o_website_rating_static')]" position="attributes">
+            <attribute name="class"></attribute>
+            <attribute name="t-attf-class">o_website_rating_static #{_classes}</attribute>
+        </xpath>
+    </template>
+
+    <template id="component_navbar_mobile_account_info" name="Component: Navbar Mobile Account Info">
+        <t t-nocache="The number of products is dynamic, this rendering cannot be cached.">
+            <t t-set="website_sale_cart_quantity" t-value="request.session['website_sale_cart_quantity'] if 'website_sale_cart_quantity' in request.session else website.sale_get_order().cart_quantity or 0"/>
+            <div t-attf-class="tp-account-info o_not_editable o_wsale_my_cart tp-cart-sidebar-action d-lg-none">
+                <a href="/shop/cart">
+                    <i class="dri dri-cart"/>
+                    <sup class="my_cart_quantity badge text-bg-primary" t-out="website_sale_cart_quantity" t-att-data-order-id="request.session.get('sale_order_id', '')"/>
+                </a>
+            </div>
+        </t>
+    </template>
+
+    <template id="component_navbar_toggler" name="Component: Navbar Toggler">
+        <a href="#" class="tp-menu-sidebar-action d-lg-none" groups="!website.group_website_restricted_editor">
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+            </svg>
+        </a>
+        <t t-call="website.navbar_toggler" groups="website.group_website_restricted_editor"/>
+    </template>
+
+    <template id="tp_bottom_action_btn_component">
+        <t t-set="website_sale_order" t-value="website.sale_get_order()" />
+        <li t-if="component != 'tp_lang_selector'" t-attf-class="list-inline-item o_not_editable position-relative tp-bottom-action-btn text-center #{button.get('action_class', '')} #{'tp-active-btn' if website_path == button.get('url') else ''}">
+            <a t-att-aria-label="button.get('name')" t-attf-class="#{'o_wsale_my_wish tp-force-d-block' if component == 'tp_wishlist' else ''} #{'o_wsale_my_cart tp-cart-sidebar-action tp-force-d-block' if component == 'tp_cart' else ''}" t-att-href="button.get('url', '#')">
+                <i t-attf-class="tp-action-btn-icon #{button.get('icon')}"/>
+                <sup t-if="component == 'tp_wishlist'" t-out="wishcount" class="my_wish_quantity o_animate_blink badge text-bg-primary"/>
+                <sup t-if="component == 'tp_cart'" class="my_cart_quantity badge text-bg-primary mb-0 fw-bold" t-out="website_sale_order and website_sale_order.cart_quantity or '0'" t-att-data-order-id="website_sale_order and website_sale_order.id or ''"/>
+            </a>
+            <div class="tp-action-btn-label"><t t-out="button.get('name')"></t></div>
+        </li>
+        <li t-else="" t-attf-class="list-inline-item o_not_editable position-relative tp-bottom-action-btn text-center #{button.get('action_class', '')}">
+            <ul style="padding: 2px 8px;">
+                <t t-call="theme_prime.component_language_pricelist_selector">
+                    <t t-set="_is_bottombar" t-value="True"/>
+                    <t t-set="_dropdown_classes" t-value="'flex-column'"/>
+                </t>
+            </ul>
+        </li>
+    </template>
+
+    <template id="tp_mobile_bottombar_component" name="Bottombar Component">
+        <t t-set="wishcount" t-value="len(request.env['product.wishlist'].current())"/>
+        <t t-set="website_path" t-value="request.httprequest.path"/>
+        <t t-set="is_user_sign_in" t-value="request.website.viewref('portal.user_sign_in').active"/>
+        <t t-set="components" t-value="request.website._get_dr_theme_config('json_bottom_bar')['actions']"></t>
+        <t t-set="show_on_scroll" t-value="request.website._get_dr_theme_config('json_bottom_bar')['show_bottom_bar_on_scroll']"></t>
+        <t t-set="total_component" t-value="len(components)"></t>
+        <t t-set="components_vals" t-value="request.website.get_theme_prime_bottom_bar_action_buttons()"></t>
+        <t t-set="need_two_drower" t-value="total_component &gt; 4"></t>
+        <t t-set="need_mobile_filters" t-value="request.website._get_dr_theme_config('json_bottom_bar')['filters']"></t>
+        <div t-attf-class="tp-bottombar-component o_not_editable w-100 tp-bottombar-component-style-1 p-0 #{'tp-has-drower-element' if need_two_drower else ''}  #{'tp-bottombar-not-visible' if show_on_scroll else ''}">
+            <div t-if="main_object and main_object._name == 'product.template'" class="d-flex justify-content-center align-items-center border-bottom tp-bottom-bar-add-to-cart">
+                <a class="mx-3" href="#">
+                    <img t-attf-src="/web/image/product.template/#{product.id}/image_128" class="o_image_40_cover tp-rounded-border border product-img" t-att-alt="product.name"/>
+                </a>
+                <span t-if="request.website._dr_has_b2b_access()" class="mx-3">
+                    <p class="mb-0 small fw-bold">Price:</p>
+                    <p class="mb-0 small text-primary"><span class="product-price" t-out="combination_info['price']" t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/></p>
+                </span>
+                <button class="product-add-to-cart btn btn-primary-soft m-2 tp-rounded-border btn-block">
+                    <i class="dri dri-cart"/> Add to Cart
+                </button>
+            </div>
+            <div t-if="bins != None and need_mobile_filters and _config_shop_layout.get('layout') == 'prime'" class="d-flex justify-content-around border-bottom">
+                <t t-set="tp_is_filters_activated" t-value="is_view_active('website_sale.products_attributes') or is_view_active('website_sale.products_categories')"/>
+                <div t-if="tp_is_filters_activated" class="py-2 w-50 text-center d-flex justify-content-center align-items-center">
+                    <div class="">
+                        <h6 class="d-inline me-1 tp-filter-bottom-sidebar-toggle">
+                            <i class="fa fa-filter text-primary"></i> <span class="text-body"> Filters </span>
+                        </h6>
+                    </div>
+                </div>
+                <div t-if="is_view_active('website_sale.sort')" t-attf-class="py-2 w-50 #{'border-start' if tp_is_filters_activated else ''} text-center d-flex justify-content-center align-items-center">
+                    <div class="dropdown dropdown_sorty_by">
+                        <h6 class="d-inline me-1">
+                            <i class="fa fa-sort-amount-desc text-primary"></i>
+                        </h6>
+                        <a role="button" class="text-body py-2 h6" data-bs-toggle="offcanvas" href="#tp-shop-sort-sidebar" aria-controls="tp-shop-sort-sidebar">
+                            <t t-if="isSortingBy" t-out="isSortingBy[0][1]"/>
+                            <span t-else='' t-field="website.shop_default_sort"/>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <ul class="list-inline my-2 px-5 d-flex tp-bottombar-main-element justify-content-between">
+                <t t-foreach="components" t-as="component">
+                    <t t-set="button" t-value="components_vals[component]"></t>
+                    <!-- at 3rd position if more then 4 elements given then we need second drawer -->
+                    <t t-if="component_index == 2 and need_two_drower">
+                        <li class="list-inline-item text-center tp-bottom-action-btn tp-drawer-action-btn align-items-center d-flex justify-content-center rounded-circle">
+                            <a href="#" aria-label="Open menu"><i class="tp-drawer-icon fa fa-th"></i></a>
+                        </li>
+                    </t>
+                    <t t-if="not need_two_drower or (component_index &lt;= 2 and need_two_drower) or total_component == 4">
+                        <t t-call="theme_prime.tp_bottom_action_btn_component"></t>
+                    </t>
+                </t>
+                <li t-if="request.website.viewref('portal.user_sign_in').active" class="list-inline-item o_not_editable tp-bottom-action-btn">
+                    <a href="#" class="tp-account-info-sidebar-action tp-action-btn-icon" aria-label="Account Info">
+                        <i class="dri dri-user"/>
+                    </a>
+                    <div class="tp-action-btn-label">Account</div>
+                </li>
+            </ul>
+            <hr t-if="need_two_drower" class="mx-4"/>
+            <ul t-if="need_two_drower" class="list-inline d-flex my-2 px-5 tp-bottombar-secondary-element justify-content-between">
+                <t t-foreach="components" t-as="component">
+                    <t t-set="button" t-value="components_vals[component]"></t>
+                    <t t-if="component_index &gt;= 3">
+                        <t t-call="theme_prime.tp_bottom_action_btn_component"></t>
+                    </t>
+                </t>
+            </ul>
+        </div>
+    </template>
+
+    <template id="component_account_info" name="Component Account Info">
+        <li t-if="not _hide_search" t-attf-class="list-inline-item o_not_editable #{_item_class}">
+            <a href="#" class="tp-search-sidebar-action" t-att-data-search="search" aria-label="Search">
+                <i class="dri dri-search"/>
+            </a>
+            <div t-if="_show_title" class="mt-1 small">Search</div>
+        </li>
+
+        <t t-nocache="The number of products is dynamic, this rendering cannot be cached."
+           t-nocache-_item_class="_item_class"
+           t-nocache-_show_title="_show_title">
+            <t t-set="website_sale_cart_quantity" t-value="request.session['website_sale_cart_quantity'] if 'website_sale_cart_quantity' in request.session else website.sale_get_order().cart_quantity or 0"/>
+            <t t-set="show_cart" t-value="true"/>
+            <t t-if="is_view_active('website_sale.header_hide_empty_cart_link')">
+                <t t-set="show_cart" t-value="website_sale_cart_quantity" />
+            </t>
+            <li t-attf-class="list-inline-item o_not_editable o_wsale_my_cart tp-cart-sidebar-action #{not show_cart and 'd-none'} #{_item_class}">
+                <a href="/shop/cart">
+                    <i class="dri dri-cart"/>
+                    <sup class="my_cart_quantity badge text-bg-primary" t-out="website_sale_cart_quantity" t-att-data-order-id="request.session.get('sale_order_id', '')"/>
+                </a>
+                <div t-if="_show_title" class="mt-1 small">My Cart</div>
+            </li>
+        </t>
+
+        <t t-nocache="The wishlist may vary and depends on the user."
+           t-nocache-_item_class="_item_class"
+           t-nocache-_show_title="_show_title">
+            <t t-set="wishcount" t-value="len(request.env['product.wishlist'].current())"/>
+            <t t-set="show_wishes" t-value="True"/>
+            <t t-if="is_view_active('website_sale_wishlist.header_hide_empty_wishlist_link')">
+                <t t-set="show_wishes" t-value="show_wishes and wishcount > 0"/>
+                <t t-set="_wishlist_hide_classes" t-value="'o_wsale_my_wish_hide_empty'" />
+            </t>
+            <li t-attf-class="list-inline-item o_not_editable o_wsale_my_wish #{not show_wishes and 'd-none'} #{_wishlist_hide_classes} #{_item_class}">
+                <a href="/shop/wishlist">
+                    <i class="dri dri-wishlist"/>
+                    <sup t-out="wishcount" t-attf-class="my_wish_quantity o_animate_blink badge text-bg-primary"/>
+                </a>
+                <div t-if="_show_title" class="mt-1 small">Wishlist</div>
+            </li>
+        </t>
+
+        <li t-if="request.website.viewref('portal.user_sign_in').active" t-attf-class="list-inline-item o_not_editable #{_item_class}">
+            <a href="#" class="tp-account-info-sidebar-action" aria-label="Account Info">
+                <i class="dri dri-user"/>
+            </a>
+            <div t-if="_show_title" class="mt-1 small">Account</div>
+        </li>
+    </template>
+
+    <template id="component_language_pricelist_selector" name="Component Language + Pricelist Selector">
+        <t t-nocache="The query strings can change for the same page and the same rendering."
+           t-nocache-_classes="_classes"
+           t-nocache-_dropdown_classes="_dropdown_classes"
+           t-nocache-_is_bottombar="_is_bottombar">
+            <t t-set="website_sale_pricelists" t-value="website.get_pricelist_available(show_visible=True)" />
+            <t t-set="pricelist_selector_visible" t-value="website_sale_pricelists and len(website_sale_pricelists)&gt;1"/>
+            <t t-set="language_selector_visible" t-value="len(languages) &gt; 1 or (website and (editable or translatable))"/>
+            <t t-set="curr_pl" t-value="website.pricelist_id" />
+            <t t-set="active_lang" t-value="list(filter(lambda lg : lg[0] == lang, languages))[0]"/>
+            <t t-set="hide_country_flag" t-value="request.website._get_dr_theme_config('json_general_language_pricelist_selector')['hide_country_flag']"/>
+
+            <div t-if="language_selector_visible or pricelist_selector_visible" t-attf-class="#{language_selector_visible and 'js_language_selector' or None} #{_classes} dropdown o_not_editable">
+                <a t-attf-class="dropdown-toggle d-flex align-items-center #{_dropdown_classes}" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                    <t t-if="not _is_bottombar">
+                        <t t-if="language_selector_visible and active_lang">
+                            <t t-if="hide_country_flag">
+                                <t t-out="active_lang[2].split('/').pop()"/>
+                                <t t-if="pricelist_selector_visible"> • </t>
+                            </t>
+                            <t t-else="">
+                                <t t-call="website.lang_flag">
+                                    <t t-set="flag_image_src" t-value="active_lang[4]"/>
+                                </t>
+                            </t>
+                        </t>
+                        <t t-if="pricelist_selector_visible and curr_pl">
+                            <span class="ms-1" t-out="curr_pl.name"/>
+                        </t>
+                    </t>
+                    <t t-else="">
+                        <!-- TODO: Improve code for bottombar -->
+                        <t t-if="not hide_country_flag" t-call="website.lang_flag">
+                            <t t-set="flag_image_src" t-value="active_lang[4]"/>
+                        </t>
+                        <t t-else="">
+                            <i class="tp-action-btn-icon fa fa-language"></i>
+                        </t>
+                        <t t-if="pricelist_selector_visible and curr_pl">
+                            <div class="tp-action-btn-label" style="margin-top: 0.2rem;">
+                                <t t-out="curr_pl.name"/>
+                            </div>
+                        </t>
+                    </t>
+                </a>
+                <div class="dropdown-menu" role="menu">
+                    <t t-if="pricelist_selector_visible">
+                        <li class="dropdown-item">
+                            <select class="custom-select form-control tp-select-pricelist">
+                                <t t-foreach="website_sale_pricelists" t-as="pl">
+                                    <option t-att-selected="pl.id == curr_pl.id and 'selected' or None" t-att-value="'/shop/change_pricelist/%s' % pl.id">
+                                        <t t-out="pl.currency_id.symbol"/> <t t-out="pl.name"/>
+                                    </option>
+                                </t>
+                            </select>
+                        </li>
+                    </t>
+                    <t t-if="language_selector_visible">
+                        <t t-foreach="languages" t-as="lg">
+                            <a t-att-href="url_for(request.httprequest.path + '?' + keep_query(), lang_code=lg[0])" class="dropdown-item my-1 js_change_lang" t-att-data-url_code="lg[1]">
+                                <t t-if="not hide_country_flag">
+                                    <t t-call="website.lang_flag">
+                                        <t t-set="flag_image_src" t-value="lg[4]"/>
+                                    </t>
+                                </t>
+                                <span t-out="lg[2].split('/').pop()"/>
+                            </a>
+                        </t>
+                    </t>
+                    <t t-call="website.language_selector_add_language">
+                        <t t-set="dropdown" t-value="True"/>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- To avoid migration issues -->
+    <template id="component_language_pricelist" name="Component Language + Pricelist Selector">
+        <t t-call="theme_prime.component_language_pricelist_selector"/>
+    </template>
+
+    <!-- rating template -->
+    <template id="d_rating_widget_stars_static" name="Rating: static star widget">
+        <t t-set="rating_avg" t-value="round(rating_avg * 100) / 100"/>
+        <t t-set="val_decimal" t-value="round(rating_avg % 1, 1)"/>
+        <t t-set="val_integer" t-value="int(rating_avg)"/>
+        <t t-set="empty_star" t-value="5 - (val_integer+1) if val_decimal else 5 - val_integer"/>
+
+        <div t-if="rating_avg" class="o_website_rating_static" t-att-style="inline_mode and 'display:inline'" t-att-title="rating_avg">
+            <t t-foreach="range(0, val_integer)" t-as="num">
+                <i class="fa fa-star" role="img"></i>
+            </t>
+            <t t-if="val_decimal">
+                <i class="fa fa-star-half-o" role="img"></i>
+            </t>
+            <t t-foreach="range(0, empty_star)" t-as="num">
+                <i class="fa fa-star text-black-25" role="img"></i>
+            </t>
+            <span class="ms-1 text-body" t-if="rating_count">
+                <t t-out="rating_avg"/>
+                <span class="ms-1">(<t t-out="rating_count"/> Reviews)</span>
+            </span>
+        </div>
+        <t t-else="">
+            <br/>
+        </t>
+    </template>
+
+</odoo>

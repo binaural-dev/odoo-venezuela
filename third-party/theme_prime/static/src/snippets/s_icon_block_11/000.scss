@@ -1,0 +1,13 @@
+.s_icon_block_11 {
+    @include media-breakpoint-down(lg) {
+        .tp-icon-block {
+            border-right-width: 0px;
+        }
+    }
+    @include media-breakpoint-up(lg) {
+        .tp-icon-block:not(:last-child) {
+            border-right: 1px solid;
+            border-color: $border-color;
+        }
+    }
+}

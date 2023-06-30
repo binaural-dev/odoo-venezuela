@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="dr_category_label_view_tree" model="ir.ui.view">
+        <field name="name">dr.product.public.category.label.view.tree</field>
+        <field name="model">dr.product.public.category.label</field>
+        <field name="arch" type="xml">
+            <tree string="Labels" editable="bottom">
+                <field name="name"/>
+                <field name="background_color" widget="color"/>
+                <field name="text_color" widget="color"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="dr_category_label_action" model="ir.actions.act_window">
+        <field name="name">Category Labels</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">dr.product.public.category.label</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_dr_category_label" action="dr_category_label_action" parent="website_sale.menu_catalog" sequence="5"/>
+
+</odoo>

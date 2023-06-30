@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Product snippet -->
+    <template id="s_d_products_snippet" name="Products Cards">
+        <section contenteditable="false" class="tp-droggol-dynamic-snippet dr_not_editable s_d_products_snippet_wrapper text-center" data-tp-snippet-id="s_d_products_snippet">
+            <div class="s_d_products_snippet container o_not_editable"/>
+        </section>
+    </template>
+
+    <!-- Product Countdown Slider -->
+    <template id="s_d_single_product_count_down" name="Product Countdown Slider">
+        <section contenteditable="false" class="s_d_single_product_count_down_wrapper dr_not_editable tp-droggol-dynamic-snippet pt32 pb32" data-tp-snippet-id="s_d_single_product_count_down">
+            <div class="s_d_single_product_count_down container-fluid o_not_editable"/>
+        </section>
+    </template>
+
+    <!-- Product Category Tabs -->
+    <template id="s_d_category_snippet" name="Product Category Tabs">
+        <section contenteditable="false" class="tp-droggol-dynamic-snippet s_d_category_snippet_wrapper text-center" data-tp-snippet-id="s_d_category_snippet">
+            <div class="s_d_category_snippet container o_not_editable"/>
+        </section>
+    </template>
+
+    <!-- Single Category Snippet -->
+    <template id="s_d_single_category_snippet" name="Featured Category">
+        <section class="tp-droggol-dynamic-snippet s_d_single_category_snippet_wrapper" data-tp-snippet-id="s_d_single_category_snippet">
+            <div class="container">
+                <div class="row s_col_no_resize">
+                    <div class="d-none d-lg-block col-lg-4 position-relative">
+                        <div class="tp-editor-bg-image shadow d_category_image_block p-3" style="background-image:url('/web/image/theme_prime.s_gallery_01');">
+                            <div class="banner-text text-center p-3">
+                                <h4 class="fw-bold">For Women</h4>
+                                <p class="mb-0 text-muted">Starting at $24</p>
+                                <div class="mt-2">
+                                    <a href="/shop" class="btn btn-primary">Shop Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div contenteditable="false" class="col-12 col-lg-8 s_d_single_category_snippet dr_not_editable o_not_editable"/>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Single Product Snippet -->
+    <template id="s_d_single_product_snippet" name="Full Products">
+        <section contenteditable="false" class="s_d_single_product_snippet_wrapper tp-droggol-dynamic-snippet pt32 pb32" data-tp-snippet-id="s_d_single_product_snippet">
+            <div class="d_single_product_continer dr_not_editable o_not_editable mb-4"/>
+        </section>
+    </template>
+
+    <!-- Single Product Cover Snippet -->
+    <template id="s_d_single_product_cover_snippet" name="Full Products + Cover">
+        <section class="s_d_single_product_cover_snippet_wrapper tp-show-variant-image tp-droggol-dynamic-snippet pb64 pt64" data-tp-snippet-id="s_d_single_product_cover_snippet">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="order-lg-2 mb-4 mb-lg-0 col-lg-7 offset-lg-1">
+                        <img class="img img-fluid mx-auto tp-variant-image" src="/droggol_theme_common/static/src/img/s_d_single_product_cover_snippet.png" alt="Cover Image 01"></img>
+                    </div>
+                    <div class="order-lg-1 col-lg-4">
+                        <div contenteditable="false" class="s_d_single_product_cover_snippet border dr_not_editable shadow-sm tp-rounded-border p-3 p-md-5 bg-white"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Top Categories -->
+    <template id="s_d_top_categories" name="Top Categories">
+        <section contenteditable="false" class="s_d_top_categories dr_not_editable tp-droggol-dynamic-snippet pt32 pb32" data-tp-snippet-id="s_d_top_categories">
+            <div class="container dr_not_editable s_d_top_categories_container"/>
+        </section>
+    </template>
+
+    <!-- 2 col deal -->
+    <template id="s_d_2_column_snippet" name="2 Column Deals">
+        <section class="s_d_2_column_snippet pt32 pb32">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="mt-4">
+                            <h3 class="s_d_full_title">
+                                <span class="s_d_title_text"><p class="mb-0 d-inline-block"> Super Deal</p></span>
+                            </h3>
+                        </div>
+                        <div contenteditable="false" class="s_d_product_count_down dr_not_editable tp-droggol-dynamic-snippet" data-tp-snippet-id="s_d_product_count_down"/>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="mt-4">
+                            <h3 class="s_d_full_title">
+                                <span class="s_d_title_text"><p class="mb-0 d-inline-block"> Featured Products</p></span>
+                            </h3>
+                        </div>
+                        <div contenteditable="false" class="s_d_product_small_block tp-droggol-dynamic-snippet dr_not_editable" data-tp-snippet-id="s_d_product_small_block"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Image + Products Cards -->
+    <template id="s_d_image_products_block" name="Image + Products Cards">
+        <section class="tp-droggol-dynamic-snippet s_banner_2 s_d_image_products_block_wrapper pt64 pb64" data-tp-snippet-id="s_d_image_products_block">
+            <div class="container">
+                <div class="row s_animation_block_2">
+                    <div class="col-12 col-md-3 py-3 tp-block-container">
+                        <div class="tp-block-wrapper h-100">
+                            <div class="tp-block-container h-100 tp-editor-bg-image oe_img_bg o_bg_img_center" style="background-image: url('/web/image/theme_prime.s_gallery_01');">
+                                <div class="tp-block-content h-100 w-100">
+                                    <h2 class="tp-title text-center w-100">Trending Products</h2>
+                                    <div class="tp-subtitle text-center w-100">
+                                        <p class="o_default_snippet_text">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et.</p>
+                                        <a href="/shop" class="btn btn-primary o_default_snippet_text">Shop Now</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <h3 class="s_d_full_title mt-2">
+                            <span class="s_d_title_text px-2">
+                                <p class="mb-0 d-inline-block o_default_snippet_text"> Super Deal</p>
+                            </span>
+                        </h3>
+                        <div contenteditable="false" class="s_d_image_products_block dr_not_editable"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Category Snippet -->
+    <template id="s_category_snippet" name="Categories Grids">
+        <section contenteditable="false" class="tp-droggol-dynamic-snippet s_category_snippet_wrapper pt64 pb64 " data-tp-snippet-id="s_category_snippet">
+            <div class="container s_category_snippet dr_not_editable"/>
+        </section>
+    </template>
+
+    <!-- Mega Menu -->
+    <template id="s_tp_hierarchical_category_snippet" name="Categories">
+        <section contenteditable="false" class="s_tp_hierarchical_category_snippet tp-droggol-dynamic-snippet pt32 pb32" data-tp-snippet-id="s_tp_hierarchical_category_snippet">
+            <div class="container s_tp_hierarchical_category_wrapper"/>
+        </section>
+    </template>
+
+    <template id="s_d_brand_snippet" name="Brands">
+        <section class="s_d_brand_snippet_wrapper pt32 pb32" data-mode="slider" data-brand-count="8">
+            <div class="container position-relative">
+                <h3 class="tp-underline-title pb-3">Shop by brand</h3>
+                <div class="s_d_brand_snippet mt-4"/>
+                <a class="btn btn-outline-primary d_all_brands_btn" href="/shop/all-brands">View All Brands</a>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_d_products_grid" name="Product hero Grid">
+        <section contenteditable="false" data-ui-config-info='{"activeActions":["rating","quick_view","add_to_cart","comparison","wishlist","category_info","label","show_similar"],"style":"s_card_style_3","mode":"slider","ppr":3}' class="s_d_products_grid_wrapper tp-droggol-dynamic-snippet pt32 pb32" data-tp-snippet-id="s_d_products_grid">
+            <div class="container s_d_products_grids dr_not_editable"/>
+        </section>
+    </template>
+
+    <template id="s_tp_documents_snippet" name="Documents">
+        <section class="s_tp_documents_snippet pt40 pb40">
+            <div class="container s_tp_documents_snippet_container">
+                <div class="row s_tp_documents_snippet_row">
+                    <div class="alert alert-info w-100 css_non_editable_mode_hidden text-center o_colored_level" role="status">
+                        <span class="tp_add_documents fw-bold" style="cursor: pointer;"><i class="fa fa-plus-circle"></i> Add Documents</span>
+                        <div class="small pt-1"><i class="fa fa-warning"></i> External Documents will not work</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_two_column_cards" name="Two Column Cards">
+        <section contenteditable="false" class="s_two_column_card_wrapper tp-droggol-dynamic-snippet pt32 pb32" data-tp-snippet-id="s_two_column_cards">
+            <div class="container s_two_column_cards dr_not_editable"/>
+        </section>
+    </template>
+
+    <template id="s_product_listing_cards" name="Product Listing">
+        <section contenteditable="false" class="s_product_listing_cards_wrapper tp-droggol-dynamic-snippet pt32 pb32" data-tp-snippet-id="s_product_listing_cards">
+            <div class="container s_product_listing_cards dr_not_editable"/>
+        </section>
+    </template>
+
+    <template id="s_product_listing_tabs" name="Product Listing Tabs">
+        <section contenteditable="false" class="s_product_listing_tabs_wrapper tp-droggol-dynamic-snippet pt32 pb32" data-ui-config-info='{"style":"s_card_style_1","mode":"slider","tabStyle":"tp-droggol-dynamic-snippet-tab-1", "bestseller":true,"newArrived":true,"discount":true,"activeActions":["rating", "quick_view", "add_to_cart", "comparison", "wishlist", "category_info", "label"],"model":"product.template", "ppr":4, "limit":6, "mobileConfig": { "style": "default", "mode": "default" }}' data-tp-snippet-id="s_product_listing_tabs">
+            <div class="container s_product_listing_tabs dr_not_editable"/>
+        </section>
+    </template>
+
+    <template id="s_products_by_brands_tabs" name="Products By Brands Tabs">
+        <section contenteditable="false" class="s_products_by_brands_tabs_wrapper tp-droggol-dynamic-snippet pt32 pb32" data-tp-snippet-id="s_products_by_brands_tabs">
+            <div class="container s_products_by_brands_tabs dr_not_editable"/>
+        </section>
+    </template>
+
+    <template id="s_image_product_listing_cards" name="Image + Product Listing">
+        <section class="s_image_product_listing_cards_wrapper pt64 pb64 bg-100">
+            <div class="container">
+                <div class="row">
+                    <div class="d-none d-lg-block col-lg-4 text-center">
+                        <div class="tp-editor-bg-image oe_img_bg oe_custom_bg pt40 mb-3" style="height:100%;background-image: url('/web/image/theme_prime.s_banner_9_1');">
+                            <h5 class="fw-light mb-2">Hurry up! Limited time offer</h5>
+                            <h6 class="mb-3 fw-bold">New Hoodie Collection</h6>
+                            <a class="btn btn-primary" href="#">Shop now</a>
+                        </div>
+                    </div>
+                    <div class="s_product_listing_cards_wrapper col-12 col-lg-8 pt16 pb32 tp-droggol-dynamic-snippet pt32 pb32" data-ui-config-info='{"style":"tp_product_list_cards_1","bestseller":true,"newArrived":true,"discount":true,"activeActions":[],"model":"product.template", "header":"tp_product_list_header_1", "limit": 5}' data-tp-snippet-id="s_product_listing_cards">
+                        <div contenteditable="false" class="container s_product_listing_cards dr_not_editable"/>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Generic Options -->
+    <template id="tp_snippet_options_background_options" inherit_id="web_editor.snippet_options_background_options">
+        <xpath expr="//we-row[@t-if='with_colors or with_images']" position="after">
+            <we-checkbox string="Gradient Animation" data-select-class="tp-gradient-animation" data-no-preview="true"/>
+        </xpath>
+    </template>
+    <template id="tp_options" inherit_id="website.snippet_options">
+        <xpath expr="." position="inside">
+            <div data-js="s_tp_documents_snippet" data-selector=".s_tp_documents_snippet">
+                <we-button data-manage-documents="true" data-no-preview="true">
+                    <i class="fa fa-cogs fa-fw"/> Manage Documents
+                </we-button>
+            </div>
+            <div data-js="tp_dynamic_snippet" data-selector=".tp-droggol-dynamic-snippet">
+                <we-button data-set-grid="true" data-no-preview="true">
+                    <i class="fa fa-shopping-cart fa-fw"/> Manage Snippet
+                </we-button>
+                <we-checkbox string="Enable Lazy Loading" data-select-class="tp-snippet-shiftless-enable" data-no-preview="true"/>
+            </div>
+            <div data-option-name="showVariantImage" data-selector=".s_d_single_product_cover_snippet_wrapper">
+                <we-checkbox string="Show variant image" data-select-class="tp-show-variant-image" data-no-preview="true"/>
+            </div>
+            <div data-option-name="tpBrandOption" data-selector=".s_d_brand_snippet_wrapper">
+                <we-select data-no-preview="true" string="Mode" data-attribute-name="mode">
+                    <we-button data-select-data-attribute="grid">Grid</we-button>
+                    <we-button data-select-data-attribute="slider">Slider</we-button>
+                </we-select>
+                <we-select data-no-preview="true" string="Number of brands" data-attribute-name="brandCount">
+                    <we-button data-select-data-attribute="4">4</we-button>
+                    <we-button data-select-data-attribute="8">8</we-button>
+                    <we-button data-select-data-attribute="12">12</we-button>
+                    <we-button data-select-data-attribute="16">16</we-button>
+                </we-select>
+                <we-select data-no-preview="true" string="Style" data-attribute-name="cardStyle">
+                    <we-button data-select-data-attribute="tp_brand_card_style_1">Style - 1</we-button>
+                    <we-button data-select-data-attribute="tp_brand_card_style_2">Style - 2</we-button>
+                    <we-button data-select-data-attribute="tp_brand_card_style_3">Style - 3</we-button>
+                    <we-button data-select-data-attribute="tp_brand_card_style_4">Style - 4</we-button>
+                </we-select>
+                <we-checkbox string="Enable Lazy Loading" data-select-class="tp-snippet-shiftless-enable" data-no-preview="true"/>
+            </div>
+            <div data-js="TpImageHotspot" data-selector="img">
+                <we-row>
+                    <we-checkbox string="Enable hotspot" data-toggle-img-hotspot="true" data-no-preview="true"/>
+                    <we-button data-name="add_hotspot" data-add-hotspot="true" class="fa fa-plus" data-no-preview="true">
+                        <i class="fa fa-fw fa-eye pe-1"/> ADD HOTSPOT
+                    </we-button>
+                </we-row>
+            </div>
+            <div data-js="TpImageHotspotConfig" data-selector=".tp_hotspot">
+                <we-row>
+                    <we-select data-no-preview="true" string="Type" data-attribute-name="hotspotType">
+                        <we-button data-set-hotspot-type="static" data-name="static_hotspot" data-select-data-attribute="static">Static</we-button>
+                        <we-button data-set-hotspot-type="dynamic" data-name="dynamic_hotspot" data-select-data-attribute="dynamic">Dynamic</we-button>
+                    </we-select>
+                    <we-button title="Preview" data-name="hotspot_priview" data-dependencies="static_hotspot" data-render-hotspot-preview="true" data-no-preview="true">
+                        <!-- HACK pe-1 -->
+                        <i class="fa fa-fw fa-eye pe-1"/>
+                    </we-button>
+                </we-row>
+                <we-row>
+                    <we-select data-no-preview="true" data-attribute-name="onHotspotClick" data-dependencies="dynamic_hotspot" class="o_we_large_input" string="On Click">
+                        <we-button data-select-data-attribute="popover">Popover</we-button>
+                        <we-button data-select-data-attribute="modal">Modal</we-button>
+                    </we-select>
+                    <we-button data-set-product="" data-no-preview="true" data-dependencies="dynamic_hotspot"><i class="dri dri-cart pe-1"/> Set Product</we-button>
+                </we-row>
+                <we-select string="Theme">
+                    <we-button data-select-class="tp-hotspot-primary">Primary</we-button>
+                    <we-button data-select-class="tp-hotspot-light">Light</we-button>
+                    <we-button data-select-class="tp-hotspot-dark">Dark</we-button>
+                </we-select>
+                <we-select string="Style">
+                    <we-button data-select-class="tp_hotspot_style_1">Style - 1</we-button>
+                    <we-button data-select-class="tp_hotspot_style_2">Style - 2</we-button>
+                    <we-button data-select-class="tp_hotspot_style_3">Style - 3</we-button>
+                    <we-button data-select-class="tp_hotspot_style_4">Style - 4</we-button>
+                </we-select>
+                <we-input string="Title" data-dependencies="static_hotspot" class="o_we_large_input" placeholder="Title" data-set-title-text=""/>
+                <we-input string="Subtitle" data-dependencies="static_hotspot" class="o_we_large_input" placeholder="Subtitle" data-set-subtitle-text=""/>
+                <we-input string="Button Text" data-dependencies="static_hotspot" class="o_we_large_input" placeholder="Button" data-set-button-text=""/>
+                <we-row>
+                    <we-input string="Button" data-dependencies="static_hotspot" class="o_we_large_input" placeholder="Link" data-set-button-link=""/>
+                    <we-button data-dependencies="static_hotspot" class="o_we_large_input" data-no-preview="true" data-set-static-image="">
+                        <i class="fa fa-image"/>
+                    </we-button>
+                </we-row>
+                <we-range string="Top" data-max="100" data-set-top=" " data-step="1"/>
+                <we-range string="Left" data-max="100" data-set-left=" " data-step="1"/>
+            </div>
+        </xpath>
+        <xpath expr="//div[@data-js='layout_column']" position="attributes">
+            <attribute name="data-exclude" add=", .tp-droggol-dynamic-snippet" separator=","/>
+        </xpath>
+    </template>
+</odoo>

@@ -21,6 +21,12 @@ class PosOrder(models.Model):
         res["to_receipt"] = ui_order["to_receipt"]
         return res
 
+    def _payment_fields(self, order, ui_paymentline):
+        res = super()._payment_fields(order,ui_paymentline)
+        res["foreign_amount"] = ui_paymentline["foreign_amount"]
+        res["foreign_rate"] = ui_paymentline["foreign_rate"]
+        return res
+
     def _prepare_invoice_vals(self):
         self.ensure_one()
         res = super()._prepare_invoice_vals()

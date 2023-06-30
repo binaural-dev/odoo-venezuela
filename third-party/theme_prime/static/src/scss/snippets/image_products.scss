@@ -1,0 +1,27 @@
+.s_d_image_products_block_wrapper {
+    .tp-block-wrapper {
+        border-radius: 7px;
+        .tp-img-container {
+            min-height: 330px !important;
+        }
+    }
+    .s_d_full_title {
+        margin: 0px 0 20px;
+    }
+    .owl-nav {
+        margin-top: -50px;
+    }
+    .s_d_image_products_block {
+        .droggol_product_slider_top {
+            .d_product_img {
+                max-height: 150px;
+                object-fit: contain;
+            }
+        }
+    }
+}
+
+.d_all_brands_btn {
+    @include o-position-absolute($top: 0px, $right: 14px);
+}
+

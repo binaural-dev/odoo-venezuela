@@ -13,6 +13,14 @@ class AccountMoveIgtf(models.Model):
 
     default_is_igtf_config = fields.Boolean(default=default_is_igtf)
 
+    payment_igtf_id = fields.Many2one(
+        "account.payment",
+        string="Payment IGTF",
+        help="Payment IGTF",
+        readonly=True,
+        copy=False,
+    )
+
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
 
@@ -40,7 +48,11 @@ class AccountMoveIgtf(models.Model):
             and move_credit.bi_igtf > 0
         ):
             amount = partial.credit_move_id.payment_id.amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * move_credit.foreign_rate
             result = move_credit.bi_igtf - amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                result = move_credit.bi_igtf - (amount * self.foreign_rate)
             if result < 0:
                 result = 0
             move_credit.write({"bi_igtf": result})
@@ -52,7 +64,11 @@ class AccountMoveIgtf(models.Model):
             and move_debit.bi_igtf > 0
         ):
             amount = partial.debit_move_id.payment_id.amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * move_debit.foreign_rate
             result = move_debit.bi_igtf - amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                result = move_debit.bi_igtf - (amount * self.foreign_rate)
             if result < 0:
                 result = 0
             move_debit.write({"bi_igtf": result})
@@ -64,7 +80,11 @@ class AccountMoveIgtf(models.Model):
             and reverse_move_credit.bi_igtf > 0
         ):
             amount = partial.credit_move_id.payment_id.amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * reverse_move_credit.foreign_rate
             result = reverse_move_credit.bi_igtf - amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                result = reverse_move_credit.bi_igtf - (amount * self.foreign_rate)
             if result < 0:
                 result = 0
             reverse_move_credit.write({"bi_igtf": result})
@@ -76,7 +96,11 @@ class AccountMoveIgtf(models.Model):
             and reverse_move_debit.bi_igtf > 0
         ):
             amount = partial.debit_move_id.payment_id.amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * reverse_move_debit.foreign_rate
             result = reverse_move_debit.bi_igtf - amount
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                result = reverse_move_debit.bi_igtf - (amount * self.foreign_rate)
             if result < 0:
                 result = 0
             reverse_move_debit.write({"bi_igtf": result})

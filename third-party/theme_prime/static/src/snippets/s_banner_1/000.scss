@@ -1,0 +1,69 @@
+@mixin tp-s-banner-1-effect() {
+    .tp-block-content {
+        &:before {
+            opacity: 1;
+            transform: translate3d(0,0,0);
+        }
+        .tp-title {
+            transform: translate3d(0,-50%,0) translate3d(0,-45px,0);
+        }
+        .tp-subtitle {
+            color: white;
+            opacity: 1;
+            transform: translate3d(0,0,0)
+        }
+    }
+}
+
+.s_banner_1 .tp-block-container {
+    min-height: 250px;
+    background-position: center;
+    background-size: cover;
+    overflow: hidden;
+    .tp-block-content {
+        @include o-position-absolute($top: 0, $left: 0);
+        padding: 2rem;
+        backface-visibility:hidden;
+        .tp-title {
+            @include o-position-absolute($top: 50%, $left: 0);
+            color: white;
+            -webkit-transition: -webkit-transform 0.35s, color 0.35s;
+            transition: transform 0.35s, color 0.35s;
+            -webkit-transform: translate3d(0,-50%,0);
+            transform: translate3d(0,-50%,0);
+            background: rgba(232, 227, 227, 0.21);
+            text-shadow: 1px 1px 1px rgba(17, 17, 17, 0.32);
+            padding: 10px;
+        }
+        .tp-subtitle {
+            @include o-position-absolute($bottom: 0, $left: 0);
+            padding: 1.7rem;
+            opacity: 0;
+            -webkit-transform: translate3d(0,10px,0);
+            transform: translate3d(0,10px,0);
+            -webkit-transition: opacity 0.35s, -webkit-transform 0.35s;
+            transition: opacity 0.35s, transform 0.35s;
+        }
+        &:before {
+            @include o-position-absolute($top: 0, $left: 0);
+            width: 100%;
+            height: 100%;
+            background: -webkit-linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0.52) 58%);
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0.52) 58%);
+            content: '';
+            opacity: 0;
+            -webkit-transform: translate3d(0,50%,0);
+            transform: translate3d(0,50%,0);
+        }
+    }
+    @include media-breakpoint-down(lg) {
+        @include tp-s-banner-1-effect();
+    }
+    &:hover {
+        @include tp-s-banner-1-effect();
+    }
+}
+
+body.editor_enable .s_banner_1 .tp-block-container {
+    @include tp-s-banner-1-effect();
+}

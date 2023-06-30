@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <t t-name="s_tp_hierarchical_category_wrapper">
+        <div class="row" style="margin:auto;">
+            <t t-call="#{widget.uiConfigInfo.style}"/>
+        </div>
+        <section t-if="widget._isActionEnabled('brand')" t-att-data-categories="JSON.stringify(widget.recordsIDs)" class="s_d_brand_snippet_wrapper mt-3 bg-100" data-mode="slider" data-brand-count="4" data-snippet="s_d_brand_snippet" data-name="Brands" data-card-style="tp_brand_card_style_4">
+            <div class="s_d_brand_snippet container w-100"/>
+        </section>
+    </t>
+
+    <t t-name="tp_category_mega_menu_item">
+        <a class="text-600" t-att-href="child.website_url">
+            <i t-if="iconClass" t-attf-class="#{iconClass}"/> <t t-esc="child.name"/>
+            <small t-if="widget._isActionEnabled('count') and child.count" class="text-muted d-none d-sm-inline-block">(<t t-esc="child.count"/>)</small>
+            <small t-if="child.category_label_info and widget._isActionEnabled('label')" class="ms-2 d-none d-sm-inline-block" t-attf-style="padding: 4px 4px 2px;border-radius:3px; background-color: #{child.category_label_info.background_color}; color: #{child.category_label_info.text_color};" t-esc="child.category_label_info.name"></small>
+        </a>
+    </t>
+
+    <t t-name="tp_category_list_template_1">
+        <ul t-attf-class="list-group #{ui_class}">
+            <li t-if="!noParent" class="list-group-item bg-transparent px-2 mb-1 py-1 fw-bold text-dark border-0">
+                <span t-att-title="category_data.category.name" t-attf-class="mb-1 text-uppercase d-block tp-hover-color-primary #{titleClass}">
+                    <a t-att-href="category_data.category.website_url">
+                        <t t-esc="category_data.category.name"/>
+                    </a>
+                </span>
+            </li>
+            <t t-foreach="category_data.child" t-as="child">
+                <t t-call="tp_category_child_list_template_1"/>
+            </t>
+        </ul>
+    </t>
+
+    <t t-name="tp_category_child_list_template_1">
+        <li class="list-group-item px-2 bg-transparent py-1 border-0">
+            <span class="tp-hover-color-primary text-truncate d-block" t-att-title="child.name">
+                <small t-if="hasArrow" class="dri dri-chevron-right-l me-2"/>
+                <t t-call="tp_category_mega_menu_item"/>
+            </span>
+        </li>
+    </t>
+
+    <t t-name="s_tp_hierarchical_category_style_1">
+        <div t-foreach="data" t-as="category_data" t-attf-class="col-6 py-3 col-lg-3 s_tp_hierarchical_category_style_1 #{category_data.child and category_data.child.length == 0 and 'text-center' or ''}">
+            <div class="tp-animation-scale">
+                <a t-att-href="category_data.category.website_url">
+                    <img loading="lazy" t-att-alt="category_data.category.name" class="img my-2 tp_image_120_contain img-fluid" t-att-src="category_data.category.image_url" />
+                </a>
+            </div>
+            <t t-call="tp_category_list_template_1">
+                <t t-set="ui_class" t-value="'mt-2'"/>
+                <t t-set="hasArrow" t-value="true"/>
+                <t t-set="titleClass" t-value="'text-truncate'"/>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="s_tp_hierarchical_category_style_2">
+        <div t-foreach="data" t-as="category_data" class="col-6 py-3 col-lg-3 s_tp_hierarchical_category_style_2">
+            <t t-call="tp_category_list_template_1">
+                <t t-set="titleClass" t-value="'tp-underline-title'"/>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="s_tp_hierarchical_category_style_3">
+        <div t-foreach="data" t-as="category_data" class="col-6 py-3 col-lg-3 s_tp_hierarchical_category_style_3">
+            <div class="tp-cate-3-img position-relative mb-3">
+                <a t-att-href="category_data.category.website_url">
+                    <img loading="lazy" class="img w-100 tp-category-cover-image img-fluid" t-att-src="category_data.category.cover_image"/>
+                    <p class="tp-category-name text-white d-flex h-100 w-100 fw-bold text-truncate mb-0 align-items-end justify-content-center" t-esc="category_data.category.name"></p>
+                </a>
+            </div>
+            <t t-call="tp_category_list_template_1">
+                <t t-set="noParent" t-value="true"/>
+                <t t-set="hasArrow" t-value="true"/>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="s_tp_hierarchical_category_style_4">
+        <div t-foreach="data" t-as="category_data" class="col-lg-4 col-md-6">
+            <div class="s_tp_hierarchical_category_style_4 bg-white border p-3 mt-3" style="border-radius:4px;">
+                <div class="row">
+                    <div class="col-4">
+                        <div class="tp-animation-scale justify-content-center d-flex h-100 align-items-center">
+                            <a t-att-href="category_data.category.website_url">
+                                <img loading="lazy" t-att-alt="category_data.category.name" class="img p-1 img-fluid mx-auto" t-att-src="category_data.category.image_url" />
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-8">
+                        <span t-att-title="category_data.category.name" class="mb-1 px-2 h6 text-uppercase text-truncate d-block tp-hover-color-primary">
+                            <a t-att-href="category_data.category.website_url">
+                                <t t-esc="category_data.category.name"/>
+                            </a>
+                        </span>
+                        <ul class="list-unstyled py-1 mb-1">
+                            <t t-foreach="category_data.child" t-as="child">
+                                <t t-call="tp_category_child_list_template_1"/>
+                            </t>
+                        </ul>
+                        <a class="text-primary p-1 px-2 fw-light" t-att-href="category_data.category.website_url">All <t t-esc="category_data.category.name"/> <i class="dri dri-arrow-right-l ps-2"/></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+<t t-name="s_tp_hierarchical_category_style_5">
+    <div class="col-lg-8">
+        <div class="row">
+            <div t-foreach="data" t-as="category_data" class="col-lg-4 col-md-6 col-6 py-3">
+                <a t-att-href="category_data.category.website_url" class="mb-0 text-center text-truncate btn btn-primary-soft fw-bold d-block py-3 tp-rounded-border text-uppercase">
+                    <t t-esc="category_data.category.name"/>
+                </a>
+                <ul class="list-group mt-0 text-center mt-2">
+                    <t t-foreach="category_data.child" t-as="child">
+                        <li class="list-group-item px-2 bg-transparent py-1 border-0">
+                            <h6 class="tp-hover-color-primary fw-light text-truncate d-block" t-att-title="child.name"><t t-call="tp_category_mega_menu_item"/></h6>
+                        </li>
+                    </t>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 px-2">
+        <section class="s_product_listing_cards_wrapper tp-droggol-dynamic-snippet py-2 o_colored_level" t-att-data-ui-config-info="widget._getUIConfigData()" data-tp-snippet-id="s_product_listing_cards" data-snippet="s_product_listing_cards" data-name="Product Listing" style="background-image: none;" t-att-data-selection-info="widget._getProductSelectionData()">
+            <div class="container s_product_listing_cards dr_not_editable"/>
+        </section>
+    </div>
+</t>
+
+<t t-name="s_tp_hierarchical_category_style_6">
+    <div t-foreach="data" t-as="category_data" class="col-lg-4 col-md-6 py-3">
+        <div class="border bg-white tp-rounded-border">
+            <span class="h6 p-3 text-center border-bottom d-block tp-hover-color-primary mb-0 text-uppercase">
+                <a t-att-href="category_data.category.website_url">
+                    <t t-esc="category_data.category.name"/>
+                </a>
+            </span>
+            <div class="container p-3">
+                <div class="row">
+                    <t t-foreach="category_data.child" t-as="child">
+                        <div class="col-6">
+                            <h6 class="tp-hover-color-primary small fw-light text-truncate d-block" t-att-title="child.name"><t t-call="tp_category_mega_menu_item"/></h6>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </div>
+</t>
+
+<t t-name="s_tp_hierarchical_category_style_7">
+    <div t-foreach="data" t-as="category_data" class="col-lg-4 col-md-6 px-0 tp-outline">
+        <div class="container p-3">
+            <div class="row">
+                <div class="col-3">
+                    <a t-att-href="category_data.category.website_url">
+                        <img loading="lazy" t-att-alt="category_data.category.name" class="img tp-rounded-border o_image_64_contain img-fluid" t-att-src="category_data.category.image_url" />
+                    </a>
+                </div>
+                <div class="col-9 d-flex align-items-center">
+                    <span class="h6 d-block tp-hover-color-primary mb-0">
+                        <a t-att-href="category_data.category.website_url"><t t-esc="category_data.category.name"/></a>
+                        <small class="d-block mt-1 text-muted"><t t-esc="category_data.category.count"/> products</small>
+                    </span>
+                </div>
+            </div>
+            <div t-if="category_data.child.length" class="row mt-3">
+                <t t-foreach="category_data.child" t-as="child">
+                    <div class="col-6">
+                        <h6 class="tp-hover-color-primary small fw-light text-truncate d-block" t-att-title="child.name">
+                            <t t-call="tp_category_mega_menu_item">
+                                <t t-set="iconClass" t-value="'text-primary fa fa-check-circle'"/>
+                            </t>
+                        </h6>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </div>
+</t>
+
+<t t-name="s_tp_hierarchical_category_style_8">
+    <div t-foreach="data" t-as="category_data" class="col-md-6 col-6 py-3 col-lg-4 s_tp_hierarchical_category_style_8">
+        <div class="tp-animation-scale position-relative">
+            <a t-att-href="category_data.category.website_url">
+                <img loading="lazy" class="img w-100 tp-category-cover-image img-fluid tp-rounded-border" t-att-src="category_data.category.cover_image"/>
+            </a>
+            <div class="tp-category-info p-2 w-50 d-none d-sm-inline-block">
+                <p class="tp-category-name text-uppercase h6 fw-light text-truncate mb-0" t-esc="category_data.category.name"></p>
+                <small class="fw-light"><t t-esc="category_data.category.count"/> products</small>
+            </div>
+        </div>
+        <ul class="list-unstyled pt-2">
+            <t t-foreach="category_data.child" t-as="child">
+                <li class="list-group-item px-2 py-1 border-0">
+                    <span class="tp-hover-color-primary" t-att-title="child.name">
+                        <small class="dri dri-chevron-right-l me-2"/>
+                        <t t-call="tp_category_mega_menu_item"/>
+                    </span>
+                </li>
+            </t>
+        </ul>
+    </div>
+</t>
+
+<t t-name="s_tp_hierarchical_category_style_9">
+    <div t-foreach="data" t-as="category_data" class="col-6 py-3 col-lg-4 s_tp_hierarchical_category_style_9">
+        <div class="tp-animation-scale position-relative">
+            <a t-att-href="category_data.category.website_url">
+                <img loading="lazy" class="img w-100 tp-category-cover-image img-fluid tp-rounded-border" t-att-src="category_data.category.cover_image"/>
+            </a>
+            <div class="tp-category-info tp-rounded-border text-center p-2 w-50 d-none d-sm-inline-block">
+                <p class="tp-category-name text-uppercase h6 fw-light text-truncate mb-0" t-esc="category_data.category.name"></p>
+                <small class="fw-light d-block mt-2"><t t-esc="category_data.category.count"/> products</small>
+                <a t-att-href="category_data.category.website_url" class="btn px-2 py-1 btn-sm mt-2 btn-primary rounded-circle">Shop Now</a>
+            </div>
+        </div>
+        <ul class="list-unstyled pt-2">
+            <t t-foreach="category_data.child" t-as="child">
+                <li class="list-group-item px-2 py-1 border-0">
+                    <span class="tp-hover-color-primary" t-att-title="child.name">
+                        <small class="dri dri-chevron-right-l me-2"/>
+                        <t t-call="tp_category_mega_menu_item"/>
+                    </span>
+                </li>
+            </t>
+        </ul>
+    </div>
+</t>
+
+<t t-name="tp_shared_category_tmpl">
+    <div t-foreach="data" t-as="category_data" t-attf-class="col-12 py-3 col-lg-4 #{parentClass}">
+        <div t-attf-class="bg-white #{category_data.child.length ? 'border tp-rounded-border' : ' '}">
+            <div class="pb-3 position-relative">
+                <a t-att-href="category_data.category.website_url">
+                    <img loading="lazy" class="img w-100 tp-category-cover-image img-fluid tp-rounded-border" t-att-src="category_data.category.cover_image"/>
+                </a>
+                <div t-if="hasImg" class="tp-category-img tp-rounded-border">
+                    <a t-att-href="category_data.category.website_url">
+                        <img loading="lazy" style="padding: 2px;" t-att-alt="category_data.category.name" class="img img-fluid shadow bg-white rounded-circle" t-att-src="category_data.category.image_url" />
+                    </a>
+                </div>
+                <div class="tp-category-info border tp-rounded-border bg-white text-center p-2 w-50">
+                    <h5 class="tp-hover-color-primary text-uppercase small m-0 text-truncate"><a t-att-href="category_data.category.website_url"><t t-esc="category_data.category.name"/></a></h5>
+                    <small class="fw-light d-block text-muted"><t t-esc="category_data.category.count"/> products</small>
+                </div>
+            </div>
+            <div t-if="category_data.child and category_data.child.length" t-attf-class="container p-3 #{extraClass}">
+                <div class="row">
+                    <t t-foreach="category_data.child" t-as="child">
+                        <div class="col-6">
+                            <h6 class="tp-hover-color-primary small fw-light text-truncate d-block" t-att-title="child.name"><small class="dri dri-chevron-right-l me-2 d-none d-sm-inline-block"/><t t-call="tp_category_mega_menu_item"/></h6>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </div>
+</t>
+
+<t t-name="s_tp_hierarchical_category_style_10">
+    <t t-call="tp_shared_category_tmpl">
+        <t t-set="parentClass" t-value="'s_tp_hierarchical_category_style_10'"/>
+    </t>
+</t>
+
+<t t-name="s_tp_hierarchical_category_style_11">
+    <t t-call="tp_shared_category_tmpl">
+        <t t-set="parentClass" t-value="'s_tp_hierarchical_category_style_11'"/>
+        <t t-set="hasImg" t-value="true"/>
+        <t t-set="extraClass" t-value="'mt-5'"/>
+    </t>
+</t>
+
+<t t-name="s_category_tabs_snippet_wrapper">
+    <t t-if="widget.isMobileDevice">
+        <t t-call="tp_category_tabs_snippet_mobile_body"/>
+    </t>
+    <t t-else="">
+        <t t-call="tp_category_tabs_snippet_desktop_body"/>
+    </t>
+</t>
+
+<t t-name="tp_category_tabs_snippet_desktop_body">
+    <div class="row g-0 dr_not_editable">
+        <div class="col-lg-3 border-end tp-tab-container">
+            <t t-foreach="data" t-as="category_info">
+                <t t-call="#{widget.uiConfigInfo.style}"/>
+            </t>
+        </div>
+        <div class="col-lg-9 tp-submenu-container">
+            <t t-foreach="data" t-as="category_info">
+                <t t-call="tp_category_tabs_submenu_container"/>
+            </t>
+        </div>
+    </div>
+</t>
+
+<t t-name="tp_category_tabs_snippet_mobile_body">
+    <div class="row g-0">
+        <t t-foreach="data" t-as="category_info">
+            <div class="col-12">
+                <t t-call="#{widget.uiConfigInfo.style}"/>
+            </div>
+            <div class="col-12 dr_not_editable">
+                <t t-call="tp_category_tabs_submenu_container"/>
+            </div>
+        </t>
+    </div>
+</t>
+
+<t t-name="tp_category_tabs_submenu_container">
+    <t t-set="configData" t-value="widget._getUIConfigData(category_info.category.id)"/>
+    <div t-attf-class="tp-category-submenu h-100 #{category_info_index === 0 ?  ' ' : 'd-none'}" t-att-data-submenu-id="category_info.category.id">
+        <section t-att-style="configData.background ? 'background-image: url(' + configData.background + '); background-position: center;background-size: cover;' : None" class="s_tp_mega_menu_category_snippet tp-mega-menu-snippet tp-droggol-dynamic-snippet h-100" t-att-data-selection-info="widget._getSelectionData(category_info.child)" t-att-data-ui-config-info="JSON.stringify(configData)">
+            <div class="container px-0 s_tp_mega_menu_category_snippet_wrapper"/>
+        </section>
+    </div>
+</t>
+
+<t t-name="tp_mega_menu_tab_style_1">
+    <div t-att-tp-menu-id="category_info.category.id" t-attf-class="p-3 border-bottom tp-menu-category-tab tp-cursor-pointer tp_mega_menu_tab_style_1 #{category_info_index !== 0 ?  ' ' : 'tp-active-category'}">
+        <img loading="lazy" t-att-alt="category_info.category.name" class="img o_image_24_cover img-fluid" t-att-src="category_info.category.dr_category_icon" />
+        <h6 class="mb-0 d-inline-block text-uppercase ps-2" t-esc="category_info.category.name"/>
+        <small t-if="widget._isLabelActive()" class="ml-2 d-none d-sm-inline-block" t-attf-style="padding: 4px 4px 2px;border-radius:3px; background-color: #{category_info.category.category_label_info.background_color}; color: #{category_info.category.category_label_info.text_color};" t-esc="category_info.category.category_label_info.name"></small>
+    </div>
+</t>
+
+<t t-name="tp_mega_menu_tab_style_2">
+    <div t-att-tp-menu-id="category_info.category.id" t-attf-class="d-flex justify-content-between align-items-center p-3  border-bottom tp-menu-category-tab tp-cursor-pointer tp_mega_menu_tab_style_2 #{category_info_index !== 0 ?  ' ' : 'tp-active-category'}">
+        <span>
+            <img loading="lazy" t-att-alt="category_info.category.name" class="img o_image_24_cover img-fluid" t-att-src="category_info.category.dr_category_icon" />
+            <h6 class="mb-0 d-inline-block ps-2" t-esc="category_info.category.name"/>
+            <small t-if="widget._isLabelActive()" class="ml-2 d-none d-sm-inline-block" t-attf-style="padding: 4px 4px 2px;border-radius:3px; background-color: #{category_info.category.category_label_info.background_color}; color: #{category_info.category.category_label_info.text_color};" t-esc="category_info.category.category_label_info.name"></small>
+        </span>
+        <i class="dri dri-chevron-right-l small float-end d-none d-sm-inline-block"/>
+    </div>
+</t>
+</template>

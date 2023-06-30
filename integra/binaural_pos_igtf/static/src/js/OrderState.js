@@ -32,6 +32,9 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         return json;
       }
       update_igtf() {
+        if (this.to_receipt){
+          return
+        }
         var rounding = this.pos.currency.rounding;
         const paymentlines = this.get_paymentlines();
 
@@ -53,7 +56,9 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
             return;
           }
           bi_igtf += round_pr(payment.amount, rounding);
-          foreign_bi_igtf += round_pr(payment.foreign_amount, rounding);
+          foreign_bi_igtf += round_pr(payment.get_foreign_amount(), rounding);
+          console.log(payment.get_foreign_amount())
+          console.log(payment.foreign_amount)
           repeat_payments.push(payment.payment_method.id)
         })
         if (bi_igtf !== 0) {
@@ -64,10 +69,6 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
           this.foreign_bi_igtf = foreign_bi_igtf;
         }
 
-        if (this.igtf_amount > igtf_limit) {
-          this.igtf_amount = igtf_limit;
-          this.foreign_igtf_amount = foreign_igtf_limit;
-        }
         return this.igtf_amount;
       }
       get_igtf_amount() {
@@ -90,12 +91,12 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         const res = super.get_total_without_tax(...arguments);
         return res
       }
-      get_total_without_tax() {
-        const res = super.get_total_without_tax(...arguments);
+      get_total_with_tax() {
+        const res = super.get_total_with_tax(...arguments);
         return res + this.igtf_amount;
       }
-      get_foreign_total_without_tax() {
-        return super.get_foreign_total_without_tax(...arguments) + this.foreign_igtf_amount
+      get_foreign_total_with_tax() {
+        return super.get_foreign_total_with_tax(...arguments) + this.foreign_igtf_amount
       }
     };
   Registries.Model.extend(Order, BinauralOrderState);

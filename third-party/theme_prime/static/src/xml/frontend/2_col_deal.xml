@@ -1,0 +1,116 @@
+<?xml version="1.0" ?>
+<templates>
+    <t t-name="s_d_product_count_down_template">
+        <div class="owl-carousel container droggol_product_slider_top">
+            <t t-if="data.length">
+                <t t-foreach="data" t-as="product">
+                    <div class="card position-relative mb-1">
+                        <div class="d_add_to_cart_block">
+                            <button  t-att-data-product-product-id="product.product_variant_id" data-bs-toggle="tooltip" data-placement="bottom" class="btn btn-light text-center border rounded-circle d_action_btn d_add_to_cart_btn" title="Add to Cart">
+                                <i class="d_action_btn_icon dri dri-cart"></i>
+                            </button>
+                        </div>
+                        <div class="row px-3">
+                            <div class="col-lg-5 d-flex justify-content-center align-items-center p-0">
+                                <img loading="lazy" class="img img-responsive w-100 h-100 o_object_fit_cover d_product_img" t-att-src="product.img_medium"/>
+                            </div>
+                            <div class="col-lg-7 p-3">
+                                <t t-if="product.category_info">
+                                    <a class="text-decoration-none" t-att-href="product.category_info.website_url">
+                                        <small class="dr_category_lable text-uppercase" t-esc="product.category_info.name"/>
+                                    </a>
+                                </t>
+                                <t t-else="">
+                                    <br/>
+                                </t>
+                                <h5 class="text-truncate d-product-name mt-2 mb-0">
+                                    <a t-att-href="product.website_url">
+                                        <t t-esc="product.name"/>
+                                    </a>
+                                </h5>
+                                <div class="mt-1 mb-2" t-if="widget.shopParams.is_rating_active">
+                                    <t t-raw="product.rating"></t>
+                                </div>
+                                <div class="d-product-price my-2">
+                                    <h5 class="d-inline-block mb-0 fw-bold text-primary" t-raw="product.price"/>
+                                    <p t-if="product.has_discounted_price" class="text-muted d-inline-block mb-0" style="text-decoration: line-through; white-space: nowrap;" t-raw="product.list_price"/>
+                                </div>
+                                <div class="d_product_description mb-2" t-if="product.description_sale">
+                                    <p class="mb-1 card-text" t-esc="product.short_description"/>
+                                </div>
+                                <div t-if="product.offer_data" class="d_offer_block mt-2">
+                                    <div class="mb-2 h6 fw-bold" t-esc="product.offer_data.offer_msg"/>
+                                    <div t-if="product.offer_data" class="row style-4 tp-countdown py-2 g-0" data-countdown-style="s_countdown_4" t-att-data-due-date="product.offer_data.date_end">
+                                        <div class="col-12 mt-3 end_msg_container css_non_editable_mode_hidden">
+                                            <h6 class="mb-0" t-esc="product.offer_data.offer_finish_msg"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div t-else="" style="height:95px;"/>
+                                <div style="height:22px;" t-if="!widget.shopParams.is_rating_active">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+            <t t-elif="widget.noDataTemplate">
+                <div class="row">
+                    <div class="col-12">
+                        <t t-call="#{widget.noDataTemplate}"></t>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+    <t t-name="s_d_product_small_block_template">
+        <div t-if="data.length" class="owl-carousel container droggol_product_slider_top">
+            <t t-foreach="data" t-as="product">
+                <div class="card text-center mb-1">
+                    <div class="d_img_block">
+                        <img loading="lazy" t-att-src="product.img_medium" class="img img-fluid h-100 d-product-img o_object_fit_cover"/>
+                        <!-- LABEL -->
+                        <span t-if="product.label" t-attf-class="badge dr-product-label dr_category_lable dr-product-label-color-#{product.label_color}">
+                            <div class="corner"/>
+                            <t t-esc="product.label"/>
+                        </span>
+                    </div>
+                    <div class="d_product_info pt-1 pb-2 px-2">
+                        <div class="d_product_info_lev_2">
+                            <t t-if="product.category_info">
+                                <a class="text-decoration-none" t-att-href="product.category_info.website_url">
+                                    <small class="dr_category_lable text-uppercase" t-esc="product.category_info.name"/>
+                                </a>
+                            </t>
+                            <t t-else="">
+                                <br/>
+                            </t>
+                            <h6 class="text-truncate d-product-name mt-1 mb-0">
+                                <a t-att-href="product.website_url">
+                                    <t t-esc="product.name"/>
+                                </a>
+                            </h6>
+                            <div class="d-product-price my-1">
+                                <p class="d-inline-block mb-0 fw-bold text-primary" t-raw="product.price"/>
+                                <small t-if="product.has_discounted_price" class="text-muted d-inline-block mb-0" style="text-decoration: line-through; white-space: nowrap;" t-raw="product.list_price"/>
+                            </div>
+                            <button t-att-data-product-product-id="product.product_variant_id" data-bs-toggle="tooltip" data-placement="bottom" class="btn btn-primary w-100 d_action_btn d_add_to_cart_btn btn-sm py-1" title="Add to Cart">
+                                <i class="d_action_btn_icon dri dri-cart"></i> ADD TO CART
+                            </button>
+                        </div>
+                    </div>
+                    <div class="d-add_to_cart_block">
+                    </div>
+                </div>
+            </t>
+        </div>
+        <t t-elif="widget.noDataTemplate">
+            <div class="row">
+                <div class="col-12">
+                    <t t-call="#{widget.noDataTemplate}"></t>
+                </div>
+            </div>
+        </t>
+    </t>
+</templates>

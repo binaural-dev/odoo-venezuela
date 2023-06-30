@@ -1,0 +1,80 @@
+.s_d_product_count_down {
+    .d_product_description {
+        clear: both;
+        height: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        display: -webkit-box;
+    }
+    .d_product_img {
+        max-height: 340px;
+    }
+    .d_add_to_cart_block {
+        z-index: 1;
+        .d_add_to_cart_btn {
+            padding: 0;
+            height: 40px;
+            width: 40px;
+            line-height: 40px;
+        }
+        @include o-position-absolute($right: 15px, $top: 15px);
+    }
+}
+
+// snippets right block
+.s_d_product_small_block {
+    .owl-stage {
+        display: flex;
+        .owl-item .card{
+            height: 100%;
+            display: flex;
+            .d_img_block {
+                flex-grow: 1;
+                .d-product-img {
+                    max-height: 215px;
+                    @include media-breakpoint-down(lg) {
+                        max-height: 365px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.droggol_product_slider_top {
+    .owl-nav {
+        display: inline-flex;
+        position: absolute;
+        right: 0;
+        top: 0;
+        margin-top: -55px;
+    }
+}
+
+// TITLE
+.s_d_full_title {
+    position: relative;
+    font-size: 1.71rem;
+    text-transform: capitalize;
+    margin: 0 0 28px;
+    font-weight: 300;
+    letter-spacing: -1px;
+    .s_d_title_text {
+        position: relative;
+        z-index: 1;
+        background: $body-bg;
+        padding-right: 18px;
+    }
+    &:after {
+        content: "";
+        @include o-position-absolute($top: 50%, $right: 30px);
+        height: 1px;
+        background: #e4e7f0;
+        position: absolute;
+        left: 0;
+        right: 72px;
+        top: 50%;
+    }
+}
