@@ -7,7 +7,7 @@
         <record model="res.groups" id="group_sale_note_rma">
             <field name="name">Sale Note RMA</field>
         </record>
-        <record model="res.groups" id="group_invoice_$">
+        <record model="res.groups" id="group_invoice">
             <field name="name">Invoice $</field>
         </record>
     </data>
