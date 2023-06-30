@@ -8,7 +8,7 @@ TODO: add missing modules description.
 
 Modulos
 ----------------
-Modulo | Descripción
+Modulo | Descripción 
 --- | ---
 [Binaural Compras](integra/binaural_purchase) | Permite visualizar los pedidos de compra en dólares y bolívares.
 [Binaural Informes contables](integra/binaural_account_reports) | Permite visualizar los reportes contables en dólares y bolívares.
