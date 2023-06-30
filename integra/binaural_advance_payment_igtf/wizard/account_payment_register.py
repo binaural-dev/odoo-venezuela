@@ -23,9 +23,14 @@ class AccountPaymentRegister(models.TransientModel):
                 else payment.partner_id.property_account_payable_id.id
             )
 
-            payment_invoice_amount = payment.line_ids.filtered(
-                lambda line: line.account_id.id == partner_account_id
-            ).balance
+            payment_invoice_amount = payment.reconciled_invoice_ids.line_ids.filtered(
+                lambda line: line.account_id.account_type == "asset_receivable" or line.account_id.account_type == "liability_payable"
+            ).amount_currency
+
+            amount = payment.amount
+
+            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                amount = amount * payment.foreign_rate
 
             amount = payment.amount
 
@@ -33,7 +38,7 @@ class AccountPaymentRegister(models.TransientModel):
                 amount = amount * payment.foreign_rate
 
             if (
-                amount > -payment_invoice_amount
+                amount > payment_invoice_amount
                 and payment.journal_id.fiscal
                 and payment.journal_id.is_igtf
                 and payment.is_igtf_on_foreign_exchange
@@ -78,6 +83,10 @@ class AccountPaymentRegister(models.TransientModel):
         asset_amout = payment.line_ids.filtered(
             lambda line: line.account_id.account_type == "asset_receivable"
         ).amount_currency
+        
+
+        if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+            asset_amout = asset_amout * payment.foreign_rate
 
         amount_currency = asset_amout + invoice_amount
 

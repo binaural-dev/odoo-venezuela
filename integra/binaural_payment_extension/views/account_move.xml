@@ -109,7 +109,7 @@
 			<field
 			    name="retention_islr_line_ids"
 			    nolabel="1"
-			    attrs="{'readonly': [('move_type', 'not in', ('in_invoice', 'in_refund'))]}"
+			    attrs="{'readonly': ['|', ('move_type', 'not in', ('in_invoice', 'in_refund')), ('state', '!=', 'draft')]}"
 			>
                             <tree editable='bottom'>
 				<!-- Invisible Fields -->
@@ -204,7 +204,7 @@
 			<field
 			    name="retention_municipal_line_ids"
 			    nolabel="1"
-			    attrs="{'readonly': [('move_type', 'not in', ('in_invoice', 'in_refund'))]}"
+			    attrs="{'readonly': ['|', ('move_type', 'not in', ('in_invoice', 'in_refund')), ('state', '!=', 'draft')]}"
 			>
                             <tree editable='bottom'>
                                 <field name="name" force_save="1" readonly="1"/>
@@ -273,6 +273,4 @@
             </field>
         </record>
     </data>
-    
-
 </odoo>
