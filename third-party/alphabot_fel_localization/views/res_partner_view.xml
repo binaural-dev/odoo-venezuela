@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_partner_form" model="ir.ui.view">
+        <field name="name">res.partner.city</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='zip']" position="replace">
+				<field name="zip" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='state_id']" position="replace">
+            </xpath>
+            <xpath expr="//field[@name='country_id']" position="after">
+				<field name="state_id" placeholder="Provincia..."  domain="[('country_id.code','=','PA')]"  options="{'no_open': True, 'no_create': True}"/>
+				<field name="district_id" placeholder="Distrito..."  domain="[('state_id','=',state_id)]" options="{'no_open': True, 'no_create': True}"/>
+                <field name="municipality_id" placeholder="Corregimiento..."   domain="[('district_id','=',district_id)]" options="{'no_open': True, 'no_create': True}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="view_digifact_branch_window">
+            <field name="name">Sucursal factura electrónica</field>
+            <field name="model">alphabot.fel.branch</field>
+            <field name="arch" type="xml">
+                <form string="Sucursal">
+                    <sheet>
+                        <group col="4">
+                            <field name="name"/>
+                            <field name="codigo"/>
+                            <field name="country_id"/>
+	                        <field name="state_id" placeholder="Provincia..."  domain="[('country_id.code','=','PA')]"  options="{'no_open': True, 'no_create': True}"/>
+				            <field name="district_id" placeholder="Distrito..."  domain="[('state_id','=',state_id)]" options="{'no_open': True, 'no_create': True}"/>
+                            <field name="municipality_id" placeholder="Corregimiento..."   domain="[('district_id','=',district_id)]" options="{'no_open': True, 'no_create': True}"/>
+                            <field name="direccion"/>
+                            <field name="phone" widget="phone"/>
+                            <field name="coordenas"/>
+                        </group>
+                        <group>
+                            <field name="branch_pos" string="Puntos"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!--        <record id="digifact_branch_window" model="ir.ui.view">-->
+        <!--            <field name="name">form.alphabot.fel.branch</field>-->
+        <!--            <field name="model">alphabot.fel.branch</field>-->
+        <!--            <field name="type">form</field>-->
+        <!--            <field name="arch" type="xml">-->
+        <!--                <form>-->
+        <!--                    <sheet>-->
+        <!--                        <group>-->
+        <!--                            <group>-->
+        <!--                                <div>-->
+        <!--                                    <field name="name"/>-->
+        <!--                                    <field name="codigo"/>-->
+        <!--                                    <field name="direccion"/>-->
+        <!--                                    <field name="phone" widget="phone"/>-->
+        <!--                                    <field name="branch_pos"/>-->
+        <!--                                </div>-->
+        <!--                            </group>-->
+        <!--                        </group>-->
+        <!--                        <notebook>-->
+        <!--                            -->
+        <!--                        </notebook>-->
+        <!--                    </sheet>-->
+        <!--                </form>-->
+        <!--            </field>-->
+        <!--        </record>-->
+
+<!--        <record id="digifact_branch_act_window" model="ir.actions.act_window">-->
+<!--            <field name="name">Sucursal de factura electrónica</field>-->
+<!--            <field name="res_model">alphabot.fel.branch</field>-->
+<!--            <field name="view_mode">form</field>-->
+<!--        </record>-->
+
+    </data>
+</odoo>
