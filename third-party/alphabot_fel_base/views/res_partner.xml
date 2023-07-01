@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_partner_form_fel" model="ir.ui.view">
+            <field name="name">ResPartnerFEL</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                 <xpath expr="//field[@name='title']" position="after">
+                    <field
+                        name="alphabot_fel_company_type"
+                        options='{"no_open": True}'
+                    />
+                 </xpath>
+                 <xpath expr="//field[@name='vat']" position="after">
+                    <field name='alphabot_fel_dv'/>
+                 </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
