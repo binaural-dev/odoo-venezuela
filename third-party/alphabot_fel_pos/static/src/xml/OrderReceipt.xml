@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="point_of_sale.template" xml:space="preserve">
+    <t t-name="OrderReceipt" t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension" owl="1">
+        <xpath expr="//t[@t-if='receipt.company.logo']" position="before">
+            <div class="pos-receipt-center-align">
+            <t t-if="receipt.alphabot_FEL_Doc">
+                <t t-if="!receipt.alphabot_FEL_Doc.Error">
+                    <t t-if="receipt.alphabot_FEL_Doc.Tipo">
+                        <t t-if="receipt.alphabot_FEL_Doc.CUFE">
+                                <h4>DGI</h4>
+                        </t>
+                    </t>
+                </t>
+            </t>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('pos-receipt-contact')]" position="replace">
+            <div class="pos-receipt-center-align">
+                <t t-esc="receipt.company.name"/>
+            </div>
+            <div class="pos-receipt-contact">
+                <t t-if="receipt.company.vat">
+                    RUC: <t t-esc="receipt.company.vat"/>
+                </t>
+                <t t-if="receipt.company.street">
+                     <div><t t-esc="receipt.company.street" /></div>
+                </t>
+                <!--                <t t-if="receipt.company.phone">-->
+                <!--                    <div>Tel:<t t-esc="receipt.company.phone" /></div>-->
+                <!--                </t>-->
+                <t t-if="receipt.company.email">
+                    <div><t t-esc="receipt.company.email" /></div>
+                </t>
+                <t t-if="receipt.company.website">
+                    <div><t t-esc="receipt.company.website" /></div>
+                </t>
+                <t t-if="receipt.header_html">
+                    <t t-raw="receipt.header_html"/>
+                </t>
+                <t t-if="!receipt.header_html and receipt.header">
+                    <div><t t-esc="receipt.header" /></div>
+                </t>
+            </div>
+            <div class="pos-receipt-contact">
+                <t t-if="receipt.alphabot_FEL_Doc">
+                    <t t-if="receipt.alphabot_FEL_Doc.Customer">
+                         <div><t t-esc="receipt.alphabot_FEL_Doc.Customer" /></div>
+                    </t>
+                    <t t-if="receipt.alphabot_FEL_Doc.Customer_vat">
+                         <div>RUC: <t t-esc="receipt.alphabot_FEL_Doc.Customer_vat"/></div>
+                    </t>
+                    <t t-if="receipt.alphabot_FEL_Doc.Customer_address">
+                         <div><t t-esc="receipt.alphabot_FEL_Doc.Customer_address" /></div>
+                    </t>
+                    <div>--------------------------------</div>
+                </t>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('pos-receipt-contact')]" position="after">
+            <t t-if="receipt.alphabot_FEL_Doc">
+                <t t-if="!receipt.alphabot_FEL_Doc.Error">
+                    <t t-if="receipt.alphabot_FEL_Doc.Tipo">
+                        <t t-if="receipt.alphabot_FEL_Doc.CUFE">
+                              <div class="pos-receipt-center-align" style="font-size: 75%;">
+                                Comprobante Auxiliar de Factura Electrónica
+                            </div>
+                        </t>
+                        <t t-if="receipt.alphabot_FEL_Doc.Tipo=='FEL-FAC'">
+                            <div class="pos-receipt-center-align" style="font-size: 75%;">
+                                FACTURA ELECTRÓNICA
+                            </div>
+                        </t>
+                        <t t-if="receipt.alphabot_FEL_Doc.Tipo=='FEL-DEV'">
+                            <div class="pos-receipt-center-align" style="font-size: 75%;">
+                                Nota de crédito
+                            </div>
+                        </t>
+                        <t t-if="receipt.alphabot_FEL_Doc.Tipo=='FIS-FAC'">
+                            <div class="pos-receipt-center-align" style="font-size: 75%;">
+                                COPIA FACTURA FISCAL
+                            </div>
+                            <div class="pos-receipt-center-align" style="font-size: 75%;">
+                                <t t-esc="receipt.alphabot_FEL_Doc.Estado"/>
+                            </div>
+                        </t>
+                        <t t-if="receipt.alphabot_FEL_Doc.Tipo=='FIS-DEV'">
+                            <div class="pos-receipt-center-align" style="font-size: 75%;">
+                                COPIA NOTA DE CRÉDITO FISCAL
+                            </div>
+                            <div class="pos-receipt-center-align" style="font-size: 75%;">
+                                <t t-esc="receipt.alphabot_FEL_Doc.Estado"/>
+                            </div>
+                        </t>
+                        <div class="pos-receipt-left-align" style="font-size: 75%;">
+                            ID: <t t-esc="receipt.alphabot_FEL_Doc.Invoice"/>
+                            <span class="pos-receipt-right-align">
+                                Fecha: <t t-esc="receipt.alphabot_FEL_Doc.Invoice_date"/>
+                            </span>
+                        </div>
+                    </t>
+                    <t t-if="!receipt.alphabot_FEL_Doc.Tipo">
+                        <div class="pos-receipt-order-data">
+                            <div><t t-esc="receipt.name" /></div>
+                            <t t-if="receipt.date.localestring">
+                                <div><t t-esc="receipt.date.localestring" /></div>
+                            </t>
+                            <t t-else="">
+                                <div><t t-esc="receipt.date.validation_date" /></div>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+                <t t-if="receipt.alphabot_FEL_Doc.Tipo">
+                    <t t-if="receipt.alphabot_FEL_Doc.Error">
+                        <div class="pos-receipt-center-align" style="font-size: 75%; border:2px solid red;">
+                            FACTURA EN PROCESO
+                        </div>
+                    </t>
+                </t>
+            </t>
+            <div class="pos-receipt-center-align">--------------------------------</div>
+        </xpath>
+        <xpath expr="//div[hasclass('receipt-change')]" position="replace">
+            <t t-if="receipt.change">
+                <div class="pos-receipt-amount receipt-change">
+                    CAMBIO
+                    <span t-esc="env.pos.format_currency(receipt.change)" class="pos-receipt-right-align"/>
+                </div>
+            </t>
+        </xpath>
+
+        <xpath expr="//div[hasclass('before-footer')]" position="after">
+            <!--Factura electronica-->
+            <t t-if="receipt.alphabot_FEL_Doc">
+                <t t-if="!receipt.alphabot_FEL_Doc.Error">
+                     <t t-if="receipt.alphabot_FEL_Doc.CUFE">
+                         <div class="pos-receipt-center-align" style="font-size: 75%;">
+                            <br/>
+                            Consulte por la clave de acceso en
+                            <br/>
+                            https://dgi-fep.mef.gob.pa/Consultas/FacturasPorCUFE:
+                            <br/>
+                            <t t-esc="receipt.alphabot_FEL_Doc.CUFE"/>
+                            <br/>
+                                <img id="qrious2"/>
+                                <script type="text/javascript">
+                                    new QRious({
+                                        element: document.getElementById("qrious2"),
+                                        background: '#ffffff',
+                                        backgroundAlpha: 1,
+                                        foreground: '#000000',
+                                        foregroundAlpha: 1,
+                                        level: 'L',
+                                        size: 180,
+                                        value: "<t t-esc='receipt.alphabot_FEL_Doc.QR'/>"
+                                    });
+                                </script>
+                            <t t-if="receipt.alphabot_FEL_Doc.Invoice_auth">
+                                <br/>
+                                Protocolo de autorización:
+                                <br/>
+                                <t t-esc="receipt.alphabot_FEL_Doc.Invoice_auth"/>
+                                <br/>
+                                de:
+                                <t t-esc="receipt.alphabot_FEL_Doc.Invoice_date"/>
+                            </t>
+                            <t t-if="receipt.company.alphabot_fel_pac_msg">
+                                  <br/>
+                                <t t-esc="receipt.company.alphabot_fel_pac_msg"/>
+                            </t>
+                        </div>
+                     </t>
+                </t>
+                <t t-if="receipt.alphabot_FEL_Doc.Tipo">
+                    <t t-if="receipt.alphabot_FEL_Doc.Error">
+                        <div class="pos-receipt-center-align" style="font-size: 75%; border:2px solid red;">
+                            FACTURA EN PROCESO
+                        </div>
+                    </t>
+                </t>
+            </t>
+            <t t-if="receipt.cashier">
+                <div class="cashier">
+                    <div class="pos-receipt-center-align" style="font-size: 75%; border:2px">
+                        <br/>
+                        <div>--------------------------------</div>
+                        <div>Atendido por <t t-esc="receipt.cashier"/></div>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+  </t>
+</templates>

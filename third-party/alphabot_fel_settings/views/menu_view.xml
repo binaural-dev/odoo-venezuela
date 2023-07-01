@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>  
+		<record id="fel_panama_values_action" model="ir.actions.act_window">
+			<field name="name">Parámetros generales</field>
+			<field name="res_model">alphabot.fel.values</field>
+			<field name="view_mode">tree,form</field>
+			<field name="help" type="html">
+				<p class="oe_view_nocontent_create">Parámetros utilizados en FEL</p>
+			</field>
+		</record>
+
+		<record id="view_fel_panama_values_tree" model="ir.ui.view">
+            <field name="name">alphabot.fel.values.tree</field>
+            <field name="model">alphabot.fel.values</field>
+            <field name="arch" type="xml">
+                <tree string="Parámetros FEL">
+                    <field name="code" string="Código"/>
+                    <field name="nick"/>
+                    <field name="name"/>
+                   <field name="comment"/>
+                </tree>
+            </field>
+        </record>
+
+		<record id="fel_panama_doc_type_action" model="ir.actions.act_window">
+			<field name="name">Tipos de documentos</field>
+			<field name="res_model">alphabot.fel.doctype</field>
+			<field name="view_mode">tree,form</field>
+			<field name="help" type="html">
+				<p class="oe_view_nocontent_create">Tipos de documentos utilizados en FEL</p>
+			</field>
+		</record>
+
+		<record id="view_fel_panama_doc_type_tree" model="ir.ui.view">
+            <field name="name">alphabot.fel.doctype.tree</field>
+            <field name="model">alphabot.fel.doctype</field>
+            <field name="arch" type="xml">
+                <tree string="Account Type">
+                    <field name="code" string="Código"/>
+                    <field name="name"/>
+                </tree>
+            </field>
+        </record>
+
+		<record id="fel_panama_segment_cpbs_action" model="ir.actions.act_window">
+			<field name="name">Segmento CPSB</field>
+			<field name="res_model">alphabot.fel.segmentcpbs</field>
+			<field name="view_mode">tree,form</field>
+			<field name="help" type="html">
+				<p class="oe_view_nocontent_create">Segmento CPSB</p>
+			</field>
+		</record>
+
+		<record id="view_fel_panama_segment_cpbs_tree" model="ir.ui.view">
+            <field name="name">alphabot.fel.segmentcpbs.tree</field>
+            <field name="model">alphabot.fel.segmentcpbs</field>
+            <field name="arch" type="xml">
+                <tree string="Account Type">
+                    <field name="code" string="Código"/>
+                    <field name="name"/>
+                </tree>
+            </field>
+        </record>
+
+		<record id="fel_panama_family_cpbs_action" model="ir.actions.act_window">
+			<field name="name">Familia CPSB</field>
+			<field name="res_model">alphabot.fel.familycpbs</field>
+			<field name="view_mode">tree,form</field>
+			<field name="help" type="html">
+				<p class="oe_view_nocontent_create">Familia CPSB</p>
+			</field>
+		</record>
+
+		<record id="view_fel_panama_family_cpbs_tree" model="ir.ui.view">
+            <field name="name">alphabot.fel.familycpbs.tree</field>
+            <field name="model">alphabot.fel.familycpbs</field>
+            <field name="arch" type="xml">
+                <tree string="Account Type">
+                    <field name="code" string="Código"/>
+                    <field name="name"/>
+                </tree>
+            </field>
+        </record>
+
+		<record id="fel_panama_taxrate" model="ir.actions.act_window">
+			<field name="name">Tasas de ITBMS</field>
+			<field name="res_model">alphabot.fel.taxes</field>
+			<field name="view_mode">tree,form</field>
+			<field name="help" type="html">
+				<p class="oe_view_nocontent_create">Tasas ITBMS</p>
+			</field>
+		</record>
+
+		<record id="view_fel_panama_taxrate_tree" model="ir.ui.view">
+            <field name="name">alphabot.fel.taxes.tree</field>
+            <field name="model">alphabot.fel.taxes</field>
+            <field name="arch" type="xml">
+                <tree string="Account Type">
+                    <field name="code" string="Código"/>
+                    <field name="name"/>
+                    <field name="taxrate"/>
+                </tree>
+            </field>
+        </record>
+
+		<menuitem id="menu_fel_panama_settings"
+                  name="Factura Electrónica"
+                  sequence="27"
+                  groups="account.group_account_manager"
+                  parent="base.menu_custom">				  
+            <menuitem id="menu_fel_panama_values"
+                      name="Parámetros"
+                      action="fel_panama_values_action"
+                      sequence="100"
+                      groups="account.group_account_manager"/>		
+            <menuitem id="menu_fel_panama_doc_type"
+                      name="Tipos de documentos"
+                      action="fel_panama_doc_type_action"
+                      sequence="101"
+                      groups="account.group_account_manager"/>
+			<menuitem id="menu_fel_panama_segment_cpbs"
+                      name="Segmento CPSB"
+                      action="fel_panama_segment_cpbs_action"
+                      sequence="110"
+                      groups="account.group_account_manager"/>						  
+			<menuitem id="menu_fel_panama_family_cpbs"
+                      name="Familia CPSB"
+                      action="fel_panama_family_cpbs_action"
+                      sequence="111"
+                      groups="account.group_account_manager"/>
+			<menuitem id="menu_fel_panama_taxrate"
+                      name="Tasas de ITBMS"
+                      action="fel_panama_taxrate"
+                      sequence="112"
+                      groups="account.group_account_manager"/>
+        </menuitem>
+		
+    </data>		
+</odoo>

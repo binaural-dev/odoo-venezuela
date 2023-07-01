@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo noupdate="1">
+	  <record id="state_08" model="res.country.state">
+		<field name="name">Panamá</field>
+		<field name="code">8</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_01" model="res.country.state">
+		<field name="name">Bocas del Toro</field>
+		<field name="code">1</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_02" model="res.country.state">
+		<field name="name">Coclé</field>
+		<field name="code">2</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_03" model="res.country.state">
+		<field name="name">Colón</field>
+		<field name="code">3</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_04" model="res.country.state">
+		<field name="name">Chiriquí</field>
+		<field name="code">4</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_05" model="res.country.state">
+		<field name="name">Darién</field>
+		<field name="code">5</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_06" model="res.country.state">
+		<field name="name">Herrera</field>
+		<field name="code">6</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_07" model="res.country.state">
+		<field name="name">Los Santos</field>
+		<field name="code">7</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_09" model="res.country.state">
+		<field name="name">Veraguas</field>
+		<field name="code">9</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_10" model="res.country.state">
+		<field name="name">Comarca Kuna Yala</field>
+		<field name="code">10</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_11" model="res.country.state">
+		<field name="name">Comarca Embera-Wounaan</field>
+		<field name="code">11</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_12" model="res.country.state">
+		<field name="name">Comarca Ngäbe-Buglé</field>
+		<field name="code">12</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+	  <record id="state_13" model="res.country.state">
+		<field name="name">Panamá Oeste</field>
+		<field name="code">13</field>
+		<field name="country_id" search="[('code','=','PA')]"/>
+	  </record>
+</odoo>
