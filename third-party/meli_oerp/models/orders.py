@@ -2611,8 +2611,8 @@ class mercadolibre_orders_update_invoice(models.TransientModel):
 class sale_order_cancel_wiz_meli(models.TransientModel):
     _name = "sale.order.cancel.wiz.meli"
     _description = "Cancel Order"
-
-	cancel_blocked = fields.Boolean(string="Desbloquear y Cancelar", default=True)
+    
+    cancel_blocked = fields.Boolean(string="Desbloquear y Cancelar", default=True)
 	
     def cancel_order(self, context=None):
         context = context or self.env.context
