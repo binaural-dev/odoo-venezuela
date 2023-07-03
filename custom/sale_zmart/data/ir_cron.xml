@@ -1,22 +1,27 @@
-<record id="ir_cron_action_cancel_if_no_invoice" model="ir.cron">
-            <field name="name">Cancel Sale Order if No Invoice</field>
-            <field name="model_id" ref="model_sale_order"/>
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <data noupdate="1">
+        <record model="ir.cron" id="cancel_sale">
+            <field name="name">Cancel sale order</field>
             <field name="interval_number">1</field>
-            <field name="interval_type">days</field>
+            <field name="interval_type">hours</field>
             <field name="numbercall">-1</field>
-            <field name="code">model.action_cancel_if_no_invoice()</field>
-            <field name="nextcall" eval="(DateTime.now() + relativedelta(days=+2)).strftime('%Y-%m-%d %H:%M:%S')"/>
-            <field name="active" eval="True"/>
+            <field name="model_id" ref="model_sale_order"/>
+            <field name="state">code</field>
+            <field name="code">model.check_pending_orders()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="priority">1</field>
         </record>
-        <record id="ir_cron_send_cancel_warning_email" model="ir.cron">
-            <field name="name">Send Cancel Warning Email</field>
-            <field name="model_id" ref="model_sale_order"/>
+        <record model="ir.cron" id="send_email">
+            <field name="name">Send Cancel Warning Emails</field>
             <field name="interval_number">1</field>
-            <field name="interval_type">days</field>
+            <field name="interval_type">hours</field>
             <field name="numbercall">-1</field>
+            <field name="model_id" ref="model_sale_order"/>
+            <field name="state">code</field>
             <field name="code">model.send_cancel_warning_email()</field>
-            <field name="nextcall" eval="(DateTime.now() + relativedelta(days=+2, hours=-8)).strftime('%Y-%m-%d %H:%M:%S')"/>
-            <field name="active" eval="True"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="priority">1</field>
         </record>
     </data>
 </odoo>

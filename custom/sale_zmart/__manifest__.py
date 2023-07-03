@@ -15,6 +15,8 @@
     "data": [
         # "security/ir.model.access.csv",
         "data/paperformat.xml",
+        "data/mail_templates.xml",
+        "data/ir_cron.xml",
         "report/report_sale.xml",
         "report/stock_report_view.xml",
         "report/report_deliveryslip.xml",
