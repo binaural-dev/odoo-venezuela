@@ -14,6 +14,25 @@
 					<field name="city_id" placeholder="Ciudad" />
 					<field name="city" invisible="1" />
 				</xpath>
+				<xpath expr="//sheet/group/group/div/field[@name='street2']" position="after">
+					<field name="municipality" 
+					class="o_address_state" placeholder="Municipio"
+					domain="[('state_id', '=', state_id)]"
+				/>
+				</xpath>
+				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='street2']" position="after">
+					<field name="municipality" 
+					class="o_address_state" placeholder="Municipio"
+					domain="[('state_id', '=', state_id)]"
+				/>
+				</xpath>
+		
+
+				<!-- <xpath expr="//field[@name='vat']" position="before">
+                <field name="municipality" 
+				domain="[('state_id', '=', state_id)]"
+				/>
+            	</xpath> -->
 			</field>
 			
 		</record>
