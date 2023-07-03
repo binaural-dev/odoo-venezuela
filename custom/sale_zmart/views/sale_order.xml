@@ -9,6 +9,10 @@
             <button name="action_cancel" position="after">
                 <button name="button_sale_order" string="Imprimir Presupuesto/Pedido" type="object" class="oe_highlight"/>
             </button>
+            <field name="partner_shipping_id" position="after">
+                <field name="discount_4"/>
+                <field name="confirmation_date"/>
+            </field>
             <xpath expr="//field[@name='payment_term_id']" position="after">
                 <field name="printed" readonly="True"/>
                 <field name="priority_sale"/>

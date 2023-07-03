@@ -1,5 +1,6 @@
 from datetime import datetime,timedelta
 from odoo import api, fields, models,_
+from odoo.exceptions import UserError
 
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
@@ -51,28 +52,11 @@ class SaleOrderZmart(models.Model):
         store = True
     )
     product_id = fields.Many2one(
-        'product.template', 
+        'product.template',
         string = 'Product'
     )
     unlock_date = fields.Date(string='Unlock Date', readonly=True)
-    def action_confirm(self):
-        res = super().action_confirm()
-        for order in self:
-            order.unlock_date = (datetime.today() + timedelta(days=2)).date()
-        return res
-
-    def action_cancel_if_no_invoice(self):
-        orders = self.search([('state', '=', 'sale'),('invoice_status','=','invoiced'), ('unlock_date', '<=', fields.Date.today())])
-        for order in orders:
-            if not order.invoice_ids:
-                order.action_cancel()
-
-
-    def send_cancel_warning_email(self):
-        for order in self:
-            if order.user_id and order.partner_id.email:
-                template = self.env.ref('sale_zmart.email_template_cancel_warning')
-                template.with_context(order=order).send_mail(order.user_id.id, force_send=True)
+    discount_4 = fields.Boolean()
     
     def button_sale_order(self):
         return self.env.ref('sale.action_report_saleorder').report_action(self)
@@ -113,14 +97,9 @@ class SaleOrderZmart(models.Model):
                 'default_carrier_id': carrier_id,
             }
         }
-    class MailTemplate(models.Model):
-        _inherit = 'mail.template'
 
-    @api.model
-    def send_cancel_warning_email(self, order_id):
-        order = self.env['sale.order'].browse(order_id)
-        if order.user_id and order.partner_id.email:
-            template = self.env.ref('sale_zmart.email_template_cancel_warning')
-            template.with_context(order=order).send_mail(order.user_id.id, force_send=True)
-            
-    
+    @api.onchange('discount_4')
+    def onchange_discount_4(self):
+        if self.discount_4:
+            for line in self.order_line:
+                line.discount = 4
