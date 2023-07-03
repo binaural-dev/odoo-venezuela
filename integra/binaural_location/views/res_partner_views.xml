@@ -26,13 +26,7 @@
 					domain="[('state_id', '=', state_id)]"
 				/>
 				</xpath>
-		
 
-				<!-- <xpath expr="//field[@name='vat']" position="before">
-                <field name="municipality" 
-				domain="[('state_id', '=', state_id)]"
-				/>
-            	</xpath> -->
 			</field>
 			
 		</record>
