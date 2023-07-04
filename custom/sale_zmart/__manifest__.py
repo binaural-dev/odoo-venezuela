@@ -1,12 +1,12 @@
 {
     "name": "Zmart Ventas",
     "summary": """
-       Modulo para  personalizar campo en ventas para smart""",
+       Modulo para  personalizar campo en ventas para zmart""",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sale/Sale",
-    "version": "16.0",
+    "version": "16.1",
     # any module necessary for this one to work correctly
     "depends": [
         "binaural_sale",
