@@ -14,22 +14,22 @@
                             <hr style="border: 1px solid;padding-top:-10px" />
                             <table style="display: inline-block; vertical-align: middle;">
                                     <tr style="text-align:left;width:10%">
-                                        <th>Zmart Plus Corp C.A.</th>
+                                        <th style="font-weight: normal">Zmart Plus Corp C.A.</th>
                                         <th>Nº Orden:</th>
                                         <td t-out="o.origin"></td>
                                     </tr>
                                     <tr style="text-align:left;width:10%">
-                                        <th style="text-align:left;width:70%">CALLE PANTIN MANZANA 4 LOCAL GALPON 25 URB</th>
+                                        <th style="text-align:left;width:70%;font-weight: normal">CALLE PANTIN MANZANA 4 LOCAL GALPON 25 URB</th>
                                         <th>T/Entrega:</th>
-                                        <td t-out="o.shipping_type"></td>
+                                        <td><div t-field="o.shipping_type"/></td>
                                     </tr>
                                     <tr style="text-align:left">
-                                        <th>CHACAO:</th>
+                                        <th style="font-weight: normal">CHACAO:</th>
                                         <th>Prioridad: </th>
-                                        <td t-out="o.priority_sale"></td>
+                                        <td><div t-field="o.priority_sale"/></td>
                                     </tr>
                                     <tr style="text-align:left">
-                                        <th >Miranda DC 1070 Venezuela</th>
+                                        <th style="font-weight: normal">Miranda DC 1070 Venezuela</th>
                                         <th>Cliente:</th>
                                         <td t-out="o.partner_id.name"></td>
                                     </tr>
@@ -63,7 +63,6 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- In case you come across duplicated lines, ask NIM or LAP -->
                                     <t t-foreach="o.move_line_ids_without_package" t-as="ml">
                                         <tr>
                                             <td style="text-align:center">
