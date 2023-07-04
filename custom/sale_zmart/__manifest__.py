@@ -20,6 +20,7 @@
         "report/report_sale.xml",
         "report/stock_report_view.xml",
         "report/report_deliveryslip.xml",
+        "report/report_albaran.xml",
         "views/sale_order.xml",
         "views/stock_picking.xml",
     ],
