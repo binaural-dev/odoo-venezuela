@@ -7,3 +7,5 @@ class ResCountryParishBinauralLocalizacion(models.Model):
     city_id = fields.Many2one("res.country.city", string="City")
 
     city = fields.Char(string="City", related="city_id.name", store=True)
+
+    municipality = fields.Many2one("res.country.municipality", "Municipality")

@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Igtf",
-    "version": "16.0.0.0.1",
+    "version": "1.2",
     # any module necessary for this one to work correctly
     "depends": ["base", "binaural_accountant", "binaural_tax", "binaural_rate", "binaural_fiscal"],
     # always loaded
