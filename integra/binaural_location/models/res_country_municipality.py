@@ -7,7 +7,7 @@ class ResCountryMunicipalityBinauralLocalizacion(models.Model):
     _rec_name = "name"
     _description = "Municipality"
 
-    code = fields.Char(string="Code", required=True)
+    code = fields.Char(required=True)
 
     country_id = fields.Many2one("res.country", string="Country", required=True)
 
