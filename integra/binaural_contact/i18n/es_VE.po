@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230123\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230629\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-01-23 21:19+0000\n"
-"PO-Revision-Date: 2023-01-23 21:19+0000\n"
+"POT-Creation-Date: 2023-07-03 15:12+0000\n"
+"PO-Revision-Date: 2023-07-03 15:12+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,14 +16,9 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_contact
-#: model_terms:ir.ui.view,arch_db:binaural_contact.res_partner_binaural_form_contacts
-msgid "<span>Search</span>"
-msgstr "Buscar"
-
-#. module: binaural_contact
 #: model:ir.model,name:binaural_contact.model_res_partner
 msgid "Contact"
-msgstr "Contacto"
+msgstr ""
 
 #. module: binaural_contact
 #. odoo-python
@@ -48,3 +43,10 @@ msgstr "Tipo de documento"
 #: model:ir.model.fields,help:binaural_contact.field_res_users__prefix_vat
 msgid "Prefix of the VAT number"
 msgstr "Tipo de documento"
+
+#. module: binaural_contact
+#. odoo-python
+#: code:addons/binaural_contact/models/res_partner.py:0
+#, python-format
+msgid "The vat field only accepts numbers"
+msgstr "El campo Identificación fiscal solo admite números"

@@ -9,14 +9,6 @@
             <xpath expr="//field[@name='vat']" position="before">
                 <field name="prefix_vat"/>
             </xpath>
-            <xpath expr="//field[@name='vat']" position="after">                
-                <button name="get_default_name_by_vat"
-                        type="object"
-                        icon = "fa-search"
-                >
-                <span>Search</span>
-                </button>
-            </xpath>
         </field>
     </record>
 
