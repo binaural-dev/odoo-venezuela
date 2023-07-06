@@ -32,20 +32,5 @@
                 </xpath>
             </field>
         </record>
-        <record id="view_picking_form_inherited_zmart_factor" model="ir.ui.view">
-            <field name="name">stock.picking.form.zmart.factor</field>
-            <field name="model">stock.picking</field>
-            <field name="inherit_id" ref="delivery.view_picking_withcarrier_out_form"/>
-            <field name="arch" type="xml">
-                <xpath expr="//group[@name='carrier_data']/div[3]" position="after">
-                                <label for="packing_factor" string="packing_factor"/>
-                        <div>
-                            <field name="packing_factor" class="oe_inline"/>
-                            <label for="packing_factor" string="%" class="oe_inline"/>
-                        </div>
-                        <field name="weight_factor"/>
-                </xpath>
-            </field>
-        </record>
     </data>
 </odoo>
