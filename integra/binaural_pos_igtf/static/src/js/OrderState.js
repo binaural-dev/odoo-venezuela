@@ -1,7 +1,7 @@
 odoo.define("binaural_pos_igtf.OrderState", function(require) {
   "use strict";
 
-  const { Order } = require("point_of_sale.models");
+  const { Order, Payment } = require("point_of_sale.models");
   const Registries = require("point_of_sale.Registries");
   const utils = require("web.utils");
 
@@ -38,7 +38,13 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         var rounding = this.pos.currency.rounding;
         const paymentlines = this.get_paymentlines();
 
-        let last_igtf_amount = this.igtf_amount
+        let last_igtf_amount = 0
+
+        if (paymentlines.length > 0) {
+          last_igtf_amount = this.igtf_amount
+        }
+
+        let is_return = this.get_total_without_igtf() < 0
 
         this.igtf_amount = 0;
         this.foreign_igtf_amount = 0;
@@ -53,11 +59,15 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         let has_change = false
 
         paymentlines.forEach((payment) => {
-          if (payment.is_change) {
-            has_change = true
+          let is_change = false
+          if(!is_return){
+            is_change = payment.amount < 0
+          }else{
+            is_change = payment.amount > 0
           }
+
           if (!payment.payment_method.apply_igtf
-            || repeat_same_method.includes(payment.payment_method.id) || payment.is_change) {
+            || repeat_same_method.includes(payment.payment_method.id) || is_change) {
             return;
           }
 
@@ -71,7 +81,16 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
           bi_payments.push(payment.cid)
         })
 
-        if (bi_igtf > this.get_total_without_igtf()) {
+        if (
+          bi_igtf !== 0 &&
+          (
+            bi_igtf > this.get_total_without_igtf()
+            || (
+              bi_igtf < this.get_total_without_igtf()
+              && !has_change
+            )
+          )
+        ) {
           bi_igtf = this.get_total_without_igtf()
           foreign_bi_igtf = this.get_foreign_total_without_igtf()
         }
@@ -85,15 +104,29 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
 
 
         paymentlines.forEach((el) => {
+          let is_change = false
+          if(!is_return){
+            is_change = el.amount < 0
+          }else{
+            is_change = el.amount > 0
+          }
+
           el.set_include_igtf(false)
-          if (this.igtf_amount <= el.amount && !el.is_change && !bi_payments.includes(el.cid)) {
-            el.set_include_igtf(true)
+
+          if (!is_return) {
+            if (this.igtf_amount <= el.amount && !is_change && !bi_payments.includes(el.cid)) {
+              el.set_include_igtf(true)
+            }
+          } else {
+            if (this.igtf_amount >= el.amount && !is_change && !bi_payments.includes(el.cid)) {
+              el.set_include_igtf(true)
+            }
           }
         })
 
         if (
           bi_payments.length == 1
-          && paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount > this.get_total_with_tax()
+          && paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount > this.get_total_with_tax() && !is_return
         ) {
           paymentlines.filter((el) => bi_payments[0] == el.cid)[0].set_include_igtf(true)
         }
@@ -111,9 +144,37 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         return this.foreign_igtf_amount;
       }
       add_paymentline(payment_method) {
-        const res = super.add_paymentline(...arguments);
+        if (!payment_method.apply_igtf || this.get_due() == this.get_igtf_amount()) {
+          let res = super.add_paymentline(...arguments);
+          this.update_igtf()
+          return res;
+        }
+        let res_igtf = this.add_paymentline_without_igtf(...arguments)
         this.update_igtf()
-        return res;
+        return res_igtf
+      }
+      add_paymentline_without_igtf(payment_method) {
+        this.assert_editable();
+        if (this.electronic_payment_in_progress()) {
+          return false;
+        } else {
+          var newPaymentline = Payment.create({}, { order: this, payment_method: payment_method, pos: this.pos });
+          this.paymentlines.add(newPaymentline);
+          this.select_paymentline(newPaymentline);
+          if (this.pos.config.cash_rounding) {
+            this.selected_paymentline.set_amount(0);
+          }
+
+          newPaymentline.set_foreign_amount(this.get_foreign_due() - this.get_foreign_igtf_amount())
+          newPaymentline.set_amount(
+            this.get_due() - this.get_igtf_amount()
+          );
+
+          if (payment_method.payment_terminal) {
+            newPaymentline.set_payment_status('pending');
+          }
+          return newPaymentline;
+        }
       }
       remove_paymentline(line) {
         const res = super.remove_paymentline(...arguments);
