@@ -264,8 +264,8 @@ class AccountMove(models.Model):
                 lambda l: l.tax_ids.description == line_name
             )
             if line.currency_id == self.env.company.currency_foreign_id:
-                line.foreign_debit = line.amount_currency if line.debit > 0 else 0
-                line.foreign_credit = line.amount_currency if line.credit > 0 else 0
+                line.foreign_debit = line.amount_currency if line.amount_currency > 0 else 0
+                line.foreign_credit = line.amount_currency if line.amount_currency < 0 else 0
                 continue
             if not (lines_with_same_tax and line_name):
                 line.foreign_debit = line.debit * self.foreign_inverse_rate
