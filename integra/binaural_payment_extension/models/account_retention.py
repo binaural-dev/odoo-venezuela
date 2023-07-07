@@ -806,6 +806,6 @@ class AccountRetention(models.Model):
             limit=1,
         )
         if config and config.signature:
-            return config.signature
+            return config.signature.decode()
         else:
             return False
