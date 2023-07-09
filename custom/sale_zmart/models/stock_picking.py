@@ -81,7 +81,6 @@ class StockPicking(models.Model):
             current_user = self.env.user
             self.user_out_id = current_user
     
-    
     @api.onchange('guide','package_qty','user_pack_id')
     def onchange_guide(self):
         if self.sequence_code == 'PACK':
@@ -124,4 +123,3 @@ class StockPicking(models.Model):
     
     def _get_report_lang(self):
         return self.move_ids and self.move_ids[0].partner_id.lang or self.partner_id.lang or self.env.lang
-    
