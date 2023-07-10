@@ -89,7 +89,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               price_unit: Math.abs(amount),
               quantity: Math.abs(el.quantity),
               name: el.product.display_name,
-              code: false,
+              code: el.product.default_code,
               tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
             }
           })
