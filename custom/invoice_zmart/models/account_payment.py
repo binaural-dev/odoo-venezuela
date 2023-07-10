@@ -1,8 +1,5 @@
 from odoo import api, models, fields, _, Command
 from odoo.exceptions import UserError, ValidationError
-import logging
-
-_logger = logging.getLogger(__name__)
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"

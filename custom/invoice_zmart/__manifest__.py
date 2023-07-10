@@ -15,9 +15,11 @@
         'security/ir.model.access.csv',
         'report/delivery_note_bs.xml',
         'report/delivery_note_usd.xml',
+        'report/free_form_bs.xml',
+        'report/free_form_usd.xml',
         'views/account_move.xml',
         'views/account_payment.xml',
-        'report/free_form_bs.xml',
+        
     ],
     'images': ['static/description/icon.png'],
     'application':True,
