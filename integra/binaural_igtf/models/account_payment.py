@@ -221,7 +221,6 @@ class AccountPaymentIgtf(models.Model):
             {
                 "name": "IGTF",
                 "currency_id": self.currency_id.id,
-                "payment_igtf_id": self.id,
                 "amount_currency": igtf_amount,
                 "account_id": igtf_account
                 if self.igtf_percentage == 3
