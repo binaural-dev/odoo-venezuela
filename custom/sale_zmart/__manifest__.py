@@ -11,9 +11,11 @@
         "binaural_sale",
     ],
     "data": [
+        'data/res_group.xml',
         "data/paperformat.xml",
         "data/mail_templates.xml",
         "data/ir_cron.xml",
+        "report/delivery_note_rma.xml",
         "report/report_sale.xml",
         "report/stock_report_view.xml",
         "views/sale_order.xml",

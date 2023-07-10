@@ -364,3 +364,8 @@ msgstr "Vendedor"
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__discount_4
 msgid "Discount 4"
 msgstr "Descuento 4%"
+
+#. module: sale_zmart
+#: model:res.groups,name:sale_zmart.group_sale_note_rma
+msgid "Sale Note RMA"
+msgstr "Nota de entrega RMA"
