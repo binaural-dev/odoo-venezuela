@@ -27,7 +27,7 @@ msgstr ""
 msgid ""
 "<span groups=\"account.group_show_line_subtotals_tax_excluded\">Amount</span>\n"
 "                                            <span groups=\"account.group_show_line_subtotals_tax_included\">Total Price</span>"
-msgstr ""
+msgstr "Importe"
 
 #. module: seguridad_sale
 #: model_terms:ir.ui.view,arch_db:seguridad_sale.report_saleorder_2
@@ -57,7 +57,7 @@ msgstr ""
 #. module: seguridad_sale
 #: model_terms:ir.ui.view,arch_db:seguridad_sale.report_saleorder_2
 msgid "<strong>Salesperson:</strong>"
-msgstr "Comercial"
+msgstr "Comercial:"
 
 #. module: seguridad_sale
 #: model_terms:ir.ui.view,arch_db:seguridad_sale.report_saleorder_2
