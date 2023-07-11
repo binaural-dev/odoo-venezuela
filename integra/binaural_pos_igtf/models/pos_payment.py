@@ -64,6 +64,7 @@ class PosPayment(models.Model):
                 and not payment.payment_method_id.apply_igtf
                 or is_full_amount
                 and all_payments_in_usd
+                and amount_igtf != 0
             ):
                 credit_line_vals = pos_session._credit_amounts(
                     {
@@ -75,7 +76,7 @@ class PosPayment(models.Model):
                     amounts["amount_converted"],
                 )
             elif not payment.payment_method_id.apply_igtf or (
-                only_one_payment and all_payments_in_usd
+                only_one_payment and all_payments_in_usd and amount_igtf != 0
             ):
                 credit_line_vals = pos_session._credit_amounts(
                     {
@@ -119,7 +120,7 @@ class PosPayment(models.Model):
                 amounts["amount"],
                 amounts["amount_converted"],
             )
-            if add_credit_line_vals:
+            if add_credit_line_vals and amount_igtf != 0:
                 self.env["account.move.line"].with_context(check_move_validity=False).create(
                     [add_credit_line_vals]
                 )

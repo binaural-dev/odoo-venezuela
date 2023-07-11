@@ -1,0 +1,457 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* sh_product_catalog_generator
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 14.1alpha1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-09-29 06:07+0000\n"
+"PO-Revision-Date: 2020-09-29 06:07+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: sh_product_catalog_generator
+#: model:ir.actions.report,print_report_name:sh_product_catalog_generator.product_catalog_report_action
+msgid "'Generate Product Catalog'"
+msgstr "'Generar Catálogo de Productos'"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style_box__2
+msgid "2 box per row"
+msgstr "2 cuadro por fila"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style_box__3
+msgid "3 box per row"
+msgstr "3 caja por fila"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style_box__4
+msgid "4 box per row"
+msgstr "4 cuadro por fila"
+
+#. module: sh_product_catalog_generator
+#: model:mail.template,body_html:sh_product_catalog_generator.email_template_edi_product_catalog
+msgid ""
+"<div style=\"margin: 0px; padding: 0px;\">\n"
+"\t\t\t\t    <p style=\"margin: 0px; padding: 0px; font-size: 13px;\">\n"
+"\t\t\t\t        We Have Attached Product Catalog.\n"
+"\t\t\t       \t</p>\n"
+"\t\t\t\t</div>\n"
+"            "
+msgstr ""
+"<div style=\"margin: 0px; padding: 0px;\">\n"
+"\t\t\t\t    <p style=\"margin: 0px; padding: 0px; font-size: 13px;\">\n"
+"\t\t\t\t        Hemos adjuntado Catálogo de Productos.\n"
+"\t\t\t       \t</p>\n"
+"\t\t\t\t</div>\n"
+"            "
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "<span>Category :</span>"
+msgstr "<span>Categoría:</span>"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_needaction
+msgid "Action Needed"
+msgstr "Accion necesaria"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_attachment_count
+msgid "Attachment Count"
+msgstr "cuenta de enlaces"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__break_page
+msgid "Break Page"
+msgstr "Salto de página"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__break_page_after_products
+msgid "Break page after products"
+msgstr "salto de página después de los productos"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.generate_product_catalog_wizard_view
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__catalog_type
+msgid "Catalog Type"
+msgstr "Tipo catálogo"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__categories
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__category_ids
+msgid "Categories"
+msgstr "categorías"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__catalovg_type__category
+msgid "Category"
+msgstr "Categoría"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Category Name"
+msgstr "nombre de la categoría"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__create_uid
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__create_date
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__create_date
+msgid "Created on"
+msgstr "Creado en"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__currency_id
+msgid "Currency"
+msgstr "Moneda"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__description
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Description"
+msgstr "Descripción"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__display_name
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__display_name
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_report_sh_product_catalog_generator_product_catalog_doc__display_name
+msgid "Display Name"
+msgstr "Nombre para mostrar"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_tree_view
+msgid "Download File"
+msgstr "Descargar archivo"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__datas
+msgid "File Content"
+msgstr "El contenido del archivo"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_follower_ids
+msgid "Followers"
+msgstr "seguidores"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_channel_ids
+msgid "Followers (Channels)"
+msgstr "Seguidores (Canales)"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "Seguidores (Partners)"
+
+#. module: sh_product_catalog_generator
+#: model:ir.actions.act_window,name:sh_product_catalog_generator.generate_product_catalog_wizard_action
+#: model:ir.actions.report,name:sh_product_catalog_generator.product_catalog_report_action
+#: model:ir.ui.menu,name:sh_product_catalog_generator.menu_generate_product_catalog
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.generate_product_catalog_wizard_view
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Generate Product Catalog"
+msgstr "Generar Catálogo de Productos"
+
+#. module: sh_product_catalog_generator
+#: model:ir.actions.act_window,name:sh_product_catalog_generator.product_catalog_action
+#: model:ir.ui.menu,name:sh_product_catalog_generator.product_catalog_generated_menu
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_form_view
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_tree_view
+msgid "Generated Product Catalog"
+msgstr "Catálogo de productos generados"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__id
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__id
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_report_sh_product_catalog_generator_product_catalog_doc__id
+msgid "ID"
+msgstr "CARNÉ DE IDENTIDAD"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_needaction
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_unread
+msgid "If checked, new messages require your attention."
+msgstr "Si se selecciona, los mensajes nuevos requieren su atención."
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_has_error
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr "Si está marcada, algunos mensajes tienen un error de entrega."
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__image
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Image"
+msgstr "Imagen"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__image_size
+msgid "Image Size"
+msgstr "Tamaño de la imagen"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__int_ref
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Internal Reference"
+msgstr "Referencia interna"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_is_follower
+msgid "Is Follower"
+msgstr "es decir Seguidor"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__image_size__large
+msgid "Large"
+msgstr "Grande"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog____last_update
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard____last_update
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_report_sh_product_catalog_generator_product_catalog_doc____last_update
+msgid "Last Modified on"
+msgstr "Modificada por última vez"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__write_uid
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización realizada por"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__write_date
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__write_date
+msgid "Last Updated on"
+msgstr "Ultima actualización en"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_main_attachment_id
+msgid "Main Attachment"
+msgstr "Adjunto principal"
+
+#. module: sh_product_catalog_generator
+#: model:res.groups,name:sh_product_catalog_generator.sh_catalog_manager
+msgid "Manager"
+msgstr "Gerente"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__image_size__medium
+msgid "Medium"
+msgstr "Medio"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_has_error
+msgid "Message Delivery error"
+msgstr "Entrega de mensajes de error"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_ids
+msgid "Messages"
+msgstr "mensajes"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__name
+msgid "Name"
+msgstr "Nombre"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_needaction_counter
+msgid "Number of Actions"
+msgstr "Número de acciones"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_has_error_counter
+msgid "Number of errors"
+msgstr "Número de errores"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_needaction_counter
+msgid "Number of messages which requires an action"
+msgstr "Número de mensajes que requiere una acción"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr "Número de mensajes con error de entrega"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__message_unread_counter
+msgid "Number of unread messages"
+msgstr "Número de mensajes no leídos"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__price
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Price"
+msgstr "Precio"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__pricelist_id
+msgid "Pricelist"
+msgstr "Lista de precios"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.generate_product_catalog_wizard_view
+msgid "Print"
+msgstr "Impresión"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__style_box
+msgid "Print Box Per Row"
+msgstr "Imprimir Box por fila"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__catalog_type__product
+msgid "Product"
+msgstr "Producto"
+
+#. module: sh_product_catalog_generator
+#: model:ir.module.category,description:sh_product_catalog_generator.module_product_catalog_category
+#: model:ir.module.category,name:sh_product_catalog_generator.module_product_catalog_category
+#: model:ir.ui.menu,name:sh_product_catalog_generator.product_catalog_main_menu
+#: model:ir.ui.menu,name:sh_product_catalog_generator.product_catalog_sub_menu
+#: model:mail.template,subject:sh_product_catalog_generator.email_template_edi_product_catalog
+msgid "Product Catalog"
+msgstr "Catalogo de producto"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model,name:sh_product_catalog_generator.model_product_catalog
+msgid "Product Catalog Generated"
+msgstr "Catálogo de productos generado"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model,name:sh_product_catalog_generator.model_product_catalog_wizard
+msgid "Product Catalog Wizard"
+msgstr "Catálogo de Productos Asistente"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Product Image"
+msgstr "Imagen del producto"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__product_link
+msgid "Product Link"
+msgstr "Enlace del producto"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Product Name"
+msgstr "nombre del producto"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__product_ids
+msgid "Products"
+msgstr "productos"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Read More"
+msgstr "Lee mas"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr "error de entrega de SMS"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_form_view
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_tree_view
+msgid "Send By Email"
+msgstr "Enviar por correo electrónico"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__image_size__small
+msgid "Small"
+msgstr "Pequeño"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.product_catalog_doc
+msgid "Sr. No."
+msgstr "No Señor."
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__store_fname
+msgid "Stored Filename"
+msgstr "Nombre del archivo almacenado"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog_wizard__style
+msgid "Style"
+msgstr "Estilo"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style__style_1
+msgid "Style 1"
+msgstr "Estilo 1"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style__style_2
+msgid "Style 2"
+msgstr "estilo 2"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style__style_3
+msgid "Style 3"
+msgstr "estilo 3"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style__style_4
+msgid "Style 4"
+msgstr "estilo 4"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields.selection,name:sh_product_catalog_generator.selection__product_catalog_wizard__style__style_5
+msgid "Style 5"
+msgstr "estilo 5"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_unread
+msgid "Unread Messages"
+msgstr "Los mensajes no leídos"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__message_unread_counter
+msgid "Unread Messages Counter"
+msgstr "Los mensajes no leídos Contador"
+
+#. module: sh_product_catalog_generator
+#: model:res.groups,name:sh_product_catalog_generator.sh_catalog_user
+msgid "User"
+msgstr "Usuario"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,field_description:sh_product_catalog_generator.field_product_catalog__website_message_ids
+msgid "Website Messages"
+msgstr "Mensajes Sitio Web"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model.fields,help:sh_product_catalog_generator.field_product_catalog__website_message_ids
+msgid "Website communication history"
+msgstr "historia de la comunicación Sitio Web"
+
+#. module: sh_product_catalog_generator
+#: model_terms:ir.ui.view,arch_db:sh_product_catalog_generator.generate_product_catalog_wizard_view
+msgid "or"
+msgstr "o"
+
+#. module: sh_product_catalog_generator
+#: model:ir.model,name:sh_product_catalog_generator.model_report_sh_product_catalog_generator_product_catalog_doc
+msgid "product catalog report abstract model"
+msgstr "catálogo de productos reporte modelo abstracto"

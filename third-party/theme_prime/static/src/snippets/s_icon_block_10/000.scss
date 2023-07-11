@@ -1,0 +1,16 @@
+.s_icon_block_10 {
+    @include media-breakpoint-down(xl) {
+        .tp-icon-block .tp-icon-block-icon {
+            border-right-width: 0px;
+        }
+        > .container > .row {
+            border-width: 0px !important;
+        }
+    }
+    @include media-breakpoint-up(xl) {
+        .tp-icon-block:not(:last-child) .tp-icon-block-icon {
+            border-right: 1px solid;
+            border-color: $border-color;
+        }
+    }
+}

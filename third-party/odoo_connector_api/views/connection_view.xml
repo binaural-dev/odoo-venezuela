@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+
+
+  		<!--record model="ir.ui.view" id="view_ocapi_connection_form">
+  			<field name="name">ocapi.connection.form</field>
+  			<field name="model">ocapi.connection.account</field>
+  			<field name="arch" type="xml">
+  				<form create="0" edit="0" delete="0">
+  					<header>
+  						<field name="state" widget="statusbar" />
+  					</header>
+  					<sheet>
+  						<div class="oe_title">
+  							<h1><field name="notification_id"/></h1>
+  							<field name='user_id'/>
+  							<field name='application_id'/>
+  						</div>
+  						<div class="oe_button_box" name="button_box_mel" style="width: auto;">
+  							<button name='process_notification' type="object"
+  								string="Procesar"
+  								title="Procesar notificación"
+  								confirm="¿Está seguro que necesita procesar esta notificación?"
+  								class="oe_stat_button"
+  								icon="fa-refresh"/>
+  						</div>
+  						<group>
+  							<group>
+  								<field name="topic" />
+  								<field name="resource" />
+  								<field name="sent" />
+  								<field name="received" />
+  							</group>
+  							<group>
+  								<field name='attempts'/>
+  								<field name="processing_started" />
+  								<field name="processing_ended" />
+  								<field name="processing_errors" />
+  							</group>
+  						</group>
+  					</sheet>
+  				</form>
+  			</field>
+  		</record-->
+
+      <record id="ocapi_connection_account_search_view" model="ir.ui.view">
+  			<field name="name">Ocapi Connection Accounts - Search</field>
+  			<field name="model">ocapi.connection.account</field>
+  			<field name="arch" type="xml">
+  				<search  string="Search Ocapi Connection Account">
+  					<field name="name" />
+  				</search>
+  			</field>
+  		</record>
+
+      <record model="ir.ui.view" id="view_ocapi_connection_account_tree">
+        <field name="name">ocapi.connection.account.tree</field>
+        <field name="model">ocapi.connection.account</field>
+        <field name="arch" type="xml">
+          <tree create="0" edit="1" delete="1" default_order='id desc'>
+            <field name="company_id" />
+            <field name="name" />
+            <field name="client_id" />
+            <field name="state" />
+          </tree>
+        </field>
+      </record>
+
+      <record model="ir.actions.act_window" id="action_ocapi_connections_tree">
+  			<field name="name">Connection Accounts</field>
+  			<field name="type">ir.actions.act_window</field>
+  			<field name="res_model">ocapi.connection.account</field>
+  			<!--field name="view_type">form</field-->
+  			<field name="view_mode">tree,form</field>
+  			<field name="search_view_id" ref="ocapi_connection_account_search_view" />
+  		</record>
+
+
+      <menuitem id="menu_ocapi_connectors" name="Connectors" parent="sale.sale_menu_root" sequence="5"
+          groups="odoo_connector_api.group_ocapi_connectors_manager" active="False"/>
+
+
+          <menuitem id="menu_ocapi_connections"
+            action="action_ocapi_connections_tree"
+            parent="menu_ocapi_connectors"
+            name="Connection Accounts" sequence="1"/>
+
+		</data>
+</odoo>

@@ -8,9 +8,11 @@
             <xpath expr="//field[@name='partner_id']" position="replace">
                 <field name="partner_id" nolabel="1" context="{'res_partner_search_mode': (context.get('default_move_type', 'entry') in ('out_invoice', 'out_refund', 'out_receipt') and 'customer') or (context.get('default_move_type', 'entry') in ('in_invoice', 'in_refund', 'in_receipt') and 'supplier') or False, 'show_address': 1, 'default_is_company': True}" domain="[('type', '!=', 'private'), ('company_id', 'in', (False, company_id))]" options="{&quot;always_reload&quot;: True, &quot;no_quick_create&quot;: True}" attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'))]}"/>
             </xpath>
+
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="vat"/>
             </xpath>
+
             <xpath expr="//notebook" position="inside">
                 <page string="Foreign currency" name="foreign_currency">
                     <group>
@@ -32,9 +34,11 @@
                     </group>
                 </page>
             </xpath>
+
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_unit']" position="after">
                 <field name="foreign_price"/>
             </xpath>
+
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_subtotal']" position="after">
 		<field name="foreign_currency_id" invisible='1'/>
                 <field name="foreign_subtotal"/>
@@ -47,10 +51,25 @@
 		    readonly="1"
 		/>
             </xpath>
+
             <xpath expr="//page/field[@name='line_ids']/tree/field[@name='balance']" position="after">
 		<field name="foreign_currency_id" invisible='1'/>
-                <field name="foreign_debit" optional="hide" groups="base.group_no_one"/>
-                <field name="foreign_credit" optional="hide" groups="base.group_no_one"/>
+		<field
+		    name="foreign_debit"
+		    optional="show"
+		    groups="base.group_no_one"
+		    sum="Total Foreign Debit"
+		    readonly="1"
+		/>
+		<field
+		    name="foreign_credit"
+		    optional="show"
+		    groups="base.group_no_one"
+		    sum="Total Foreign Credit"
+		    readonly="1"
+		/>
+		<field name="foreign_credit_adjustment" optional="hide" groups="base.group_no_one"/>
+		<field name="foreign_debit_adjustment" optional="hide" groups="base.group_no_one"/>
                 <field name="foreign_balance" optional="hide" groups="base.group_no_one"/>
 
                 <field name="foreign_rate" optional="hide" groups="base.group_no_one"/>
@@ -61,6 +80,10 @@
 		    readonly="1"
 		/>
             </xpath>
+
+	    <field name="payment_reference" position="after">
+                <field name="financial_document" attrs="{'invisible':[('move_type','not in',['out_refund','out_invoice'])]}" />
+            </field>
         </field>
     </record>
 </odoo>

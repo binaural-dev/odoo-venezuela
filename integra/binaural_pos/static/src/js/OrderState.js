@@ -12,13 +12,53 @@ odoo.define("binaural_pos.OrderState", function(require) {
       constructor() {
         super(...arguments);
         this.to_invoice = true;
+        let always_invoice = !this.pos.config.always_invoice;
+        this.to_receipt = always_invoice;
+        this.toggle_receipt_invoice(always_invoice)
+      }
+      init_from_JSON(json) {
+        super.init_from_JSON(...arguments)
+        this.to_receipt = json["to_receipt"]
+      }
+      add_orderline(line) {
+        super.add_orderline(...arguments)
+        this.toggle_receipt_invoice(this.to_receipt)
       }
       export_as_JSON() {
         let json = super.export_as_JSON();
-        json["foreign_amount_total"] = this.get_foreign_total_with_tax()
+        json["foreign_amount_total"] = this.get_foreign_total_with_tax();
+        json["foreign_currency_rate"] = this.pos.config.foreign_rate;
+        json["to_receipt"] = this.is_to_receipt();
         return json;
       }
+      onchage_receipt(to_receipt) {
+        if (this.pos.config.pos_tax_inside) return
 
+        if (to_receipt == undefined) {
+          return
+        }
+        if (to_receipt) {
+          const taxes = Object.values(this.pos.taxes_by_id)
+          const exempt = taxes.find(el => el.amount == 0 && el.type_tax_use == "sale")
+          this.orderlines.forEach((el) => {
+            el.product.taxes_id = [exempt.id]
+            el.tax_ids = el.product.taxes_id
+          })
+        } else {
+          this.orderlines.forEach((el) => {
+            el.product.taxes_id = el.product.originalTaxes
+            el.tax_ids = el.product.taxes_id
+          })
+        }
+      }
+      toggle_receipt_invoice(to_receipt) {
+        this.assert_editable();
+        this.to_receipt = to_receipt;
+        this.onchage_receipt(to_receipt)
+      }
+      is_to_receipt() {
+        return this.to_receipt;
+      }
       add_paymentline(payment_method) {
         this.assert_editable();
         if (this.electronic_payment_in_progress()) {
@@ -83,7 +123,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
         return this.get_foreign_total_without_tax() + this.get_foreign_total_tax();
       }
       get_foreign_total_paid() {
-        return round_pr(this.paymentlines.reduce((function(sum, paymentLine) {
+        return round_pr(this.paymentlines.reduce(((sum, paymentLine) => {
           if (paymentLine.is_done()) {
             sum += paymentLine.get_foreign_amount();
           }
@@ -106,27 +146,20 @@ odoo.define("binaural_pos.OrderState", function(require) {
         return round_pr(Math.max(0, change), this.pos.currency.rounding);
       }
       get_foreign_due(paymentline) {
-        try {
-
-          if (!paymentline) {
-            var due = this.get_foreign_total_with_tax() - this.get_foreign_total_paid() + this.get_foreign_rounding_applied();
-          } else {
-            var due = this.get_foreign_total_with_tax();
-            var lines = this.paymentlines;
-            for (var i = 0; i < lines.length; i++) {
-              if (lines[i] === paymentline) {
-                break;
-              } else {
-                due -= lines[i].get_foreign_amount();
-              }
+        if (!paymentline) {
+          var due = this.get_foreign_total_with_tax() - this.get_foreign_total_paid() + this.get_foreign_rounding_applied();
+        } else {
+          var due = this.get_foreign_total_with_tax();
+          var lines = this.paymentlines;
+          for (var i = 0; i < lines.length; i++) {
+            if (lines[i] === paymentline) {
+              break;
+            } else {
+              due -= lines[i].get_foreign_amount();
             }
           }
-          return round_pr(due, this.pos.foreign_currency.rounding);
-        } catch (err) {
-          console.log(err);
-
-          return round_pr(4, this.pos.foreign_currency.rounding);
         }
+        return round_pr(due, this.pos.foreign_currency.rounding);
       }
       get_foreign_rounding_applied() {
         if (this.pos.config.cash_rounding) {

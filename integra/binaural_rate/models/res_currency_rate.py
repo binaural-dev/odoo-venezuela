@@ -37,7 +37,7 @@ class ResCurrencyRate(models.Model):
         dict
             A dictionary with the rate and inverse rate for the given currency and date.
         """
-        rates = self.env["res.currency.rate"].search([("currency_id", "=", foreign_currency_id)])
+        rates = self.env["res.currency.rate"].search([("currency_id", "=", foreign_currency_id), ("company_id", "=", self.env.company.id)])
         if not rates:
             return {}
 

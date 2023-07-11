@@ -1,0 +1,13 @@
+.s_clients_1 .tp-client-list {
+    overflow: hidden;
+    .tp-client-box {
+        margin-left: -1px;
+        margin-bottom: -1px;
+        border-left: 1px solid;
+        border-bottom: 1px solid;
+        border-color: $border-color;
+        img {
+            width: 120px;
+        }
+    }
+}

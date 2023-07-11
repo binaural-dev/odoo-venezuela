@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230410\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230529\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-10 13:56+0000\n"
-"PO-Revision-Date: 2023-04-10 13:56+0000\n"
+"POT-Creation-Date: 2023-06-01 19:47+0000\n"
+"PO-Revision-Date: 2023-06-01 19:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,11 +16,36 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "+ New Shop"
+msgstr "+ Nuevo terminal"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid ""
+"<i class=\"fa fa-info-circle me-1\" title=\"This setting is common to all "
+"PoS.\" pos-data-toggle=\"tooltip\"/>"
+msgstr ""
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/PartnerDetailsEdit.js:0
 #, python-format
 msgid "A Customer VAT Is Required"
 msgstr "El documento de identidad es requerido"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_config__always_invoice
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__always_invoice
+msgid "Always Invoice"
+msgstr "Facturar siempre"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/ProductItem.xml:0
+#, python-format
+msgid "Available:"
+msgstr "Disponible:"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -55,6 +80,12 @@ msgid "Currency Foreign for the company"
 msgstr "Moneda alterna para la compañía"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "Default journal to receipt account moves"
+msgstr ""
+"Diario contable por defecto para generar recibos como asientos contables"
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/xml/PartnerDetailsEdit.xml:0
 #: code:addons/binaural_pos/static/src/xml/PartnerListScreen.xml:0
@@ -85,6 +116,11 @@ msgstr "Maquina Fiscal"
 #, python-format
 msgid "Foreign Change"
 msgstr "Cambio alterno"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_order__foreign_currency_rate
+msgid "Foreign Currency Rate"
+msgstr "Tasa alterna"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_config__foreign_inverse_rate
@@ -130,6 +166,14 @@ msgid "IGTF in POS"
 msgstr "IGTF en TPV"
 
 #. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/ChangeFiscalButton.xml:0
+#: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "Invoice"
+msgstr "Factura"
+
+#. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_method__is_foreign_currency
 msgid "Is Foreign Currency"
 msgstr "Es moneda alterna"
@@ -143,8 +187,41 @@ msgstr "Nombre"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "No Point of Sale selected"
+msgstr "No se ha seleccionado un punto de venta"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "POS Configuration"
 msgstr "Configuración de POS"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
+#: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "Pay"
+msgstr "Pagar"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "Payment method"
+msgstr "Metodo de pago"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid ""
+"Please create/select a Point of Sale above to show the configuration "
+"options."
+msgstr ""
+"Por favor, selecciona o crea un punto de venta para ver su configuracion"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "Point of Sale"
+msgstr ""
 
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_pos_config
@@ -165,6 +242,20 @@ msgstr "Métodos de pago en el punto de venta "
 #: model:ir.model,name:binaural_pos.model_pos_session
 msgid "Point of Sale Session"
 msgstr "Sesión TPV"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_config__pos_show_free_qty
+#: model:ir.model.fields,field_description:binaural_pos.field_res_company__pos_show_free_qty
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_show_free_qty
+msgid "Pos Show Free Qty"
+msgstr "Mostrar Cantidad Disponible"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_config__pos_tax_inside
+#: model:ir.model.fields,field_description:binaural_pos.field_res_company__pos_tax_inside
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_tax_inside
+msgid "Pos Tax Inside"
+msgstr "Impuestos incluidos"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -189,12 +280,97 @@ msgstr ""
 
 #. module: binaural_pos
 #. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/ChangeFiscalButton.xml:0
+#: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "Receipt"
+msgstr "Recibo"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_config__receipt_journal_id
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__receipt_journal_id
+msgid "Receipt Journal"
+msgstr "Diario de recibo"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "Set default invoice or receipt with account moves"
+msgstr ""
+"Seleccionar por defecto facturas o recibos para generar asientos contables"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "Settings on this page will apply to this point of sale."
+msgstr "Las configuraciones en esta pagina se aplicaran a este punto de venta"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "Show free quantity on POS"
+msgstr "Mostrar la cantidad disponible en el punto de venta"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PaymentScreenStatus.xml:0
+#, python-format
+msgid "Tasa BCV:"
+msgstr ""
+
+#. module: binaural_pos
+#. odoo-javascript
 #: code:addons/binaural_pos/static/src/xml/OrderSummary.xml:0
 #, python-format
 msgid "Taxes:"
 msgstr "Impuestos:"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_order__to_receipt
+msgid "To Receipt"
+msgstr "Para recibo"
+
+#. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_order__foreign_amount_total
 msgid "Total"
 msgstr ""
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "Validate"
+msgstr "Validar"
+
+#. module: binaural_pos
+#. odoo-python
+#: code:addons/binaural_pos/models/res_config_settings.py:0
+#, python-format
+msgid ""
+"You cannot turn on the igtf in pos if the company is an ordinary taxpayer"
+msgstr ""
+"No puedes encender la configuracion de IGTF cuando la compañia sea Tipo "
+"contribuyente ordinario"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_config__amount_to_zero
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__amount_to_zero
+#: model_terms:ir.ui.view,arch_db:binaural_pos.pos_config_form_view_validation
+msgid "Amount to zero"
+msgstr "Cantidad en 0"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.pos_config_form_view_validation
+msgid "Do not allow sales less than 0"
+msgstr "No permitir ventas si no hay disponibilidad suficiente"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
+#, python-format
+msgid "Deny Order"
+msgstr "Orden denegada"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
+#, python-format
+msgid " is out of stock."
+msgstr " no tiene suficiente stock"

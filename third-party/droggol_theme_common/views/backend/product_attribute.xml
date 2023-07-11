@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="product_attribute_view_form_inherit_droggol_theme_common" model="ir.ui.view">
+        <field name="name">product.attribute.view.form.inherit</field>
+        <field name="model">product.attribute</field>
+        <field name="inherit_id" ref="website_sale.product_attribute_view_form"/>
+        <field name="arch" type="xml">
+            <field name="visibility" position="replace"/>
+            <page name="attribute_values" position="after">
+                <page name="ecommerce" string="eCommerce">
+                    <group class="o_label_nowrap">
+                        <group>
+                            <field name="visibility" string="eCommerce Filter Visibility" widget="radio"/>
+                            <field name="dr_is_brand"/>
+                            <field name="dr_is_show_shop_search"/>
+                            <field name="dr_attribute_popup_id" context="{'default_content_type': 'attribute_popup'}"/>
+                            <field name="dr_search_suggestion"/>
+                        </group>
+                        <group>
+                            <field name="dr_radio_image_style" widget="radio" attrs="{'invisible': [('display_type', '!=', 'radio_image')]}"/>
+                        </group>
+                    </group>
+                </page>
+            </page>
+            <xpath expr="//field[@name='value_ids']/tree/field[last()]" position="after">
+                <field name="dr_brand_description" attrs="{'column_invisible': [('parent.dr_is_brand', '=', False)]}"/>
+                <field name="dr_image" attrs="{'column_invisible': [('parent.display_type', '!=', 'radio_image')]}" widget="image" class="oe_avatar"/>
+            </xpath>
+            <xpath expr="//field[@name='value_ids']/tree/field[@name='is_custom']" position="attributes">
+                <attribute name="attrs">{'column_invisible': [('parent.dr_is_brand', '=', True)]}</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_template_attribute_value_inherit_droggol_theme_common" model="ir.ui.view">
+        <field name="name">product.template.attribute.value.view.form.inherit</field>
+        <field name="model">product.template.attribute.value</field>
+        <field name="inherit_id" ref="product.product_template_attribute_value_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='html_color']" position="after">
+                <field name="dr_thumb_image" widget="image" nolabele="1" attrs="{'invisible': [('display_type', '!=', 'color')]}" class="oe_avatar float-start"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

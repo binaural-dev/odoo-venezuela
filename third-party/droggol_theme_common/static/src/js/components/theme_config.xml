@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+<t t-name="droggol_theme_common.ThemeConfigDialog" owl="1">
+    <WebsiteDialog title="title" size="size" header="true" primaryTitle="primaryTitle" primaryClick="() => this.saveConfig()" close="props.close" contentClass="'tp_config_dialog'">
+        <t t-portal="'.tp_config_dialog header'">
+            <div class="row g-0">
+                <div class="col-3">
+                    <img src="/droggol_theme_common/static/src/images/settings.png" class="img-fluid"/>
+                </div>
+                <div class="col-9">
+                    <ul class="nav nav-pills mb-3 float-end mt-3" id="tp-settings-pills-tab" role="tablist">
+                        <t t-foreach="_tabInfo" t-as="tabData" t-key="tabData.name">
+                            <li class="nav-item" role="presentation">
+                                <button t-attf-class="nav-link tp-setting-tab #{tabData_index == 0 ? 'active': ''}" id="pills-home-tab" data-bs-toggle="pill" t-attf-data-bs-target="#pills-#{tabData.name}" type="button" role="tab">
+                                    <i t-att-class="tabData.icon" /> <t t-esc="tabData.label"/>
+                                </button>
+                            </li>
+                        </t>
+                    </ul>
+                </div>
+            </div>
+        </t>
+        <t t-portal="'.tp_config_dialog footer'">
+            <a class="btn btn-link position-absolute end-0 me-2" href="https://prime-docs-v16-25092021.droggol.com/" target="_blank">
+                <i class="fa fa-book me-1"/> User Guide
+            </a>
+        </t>
+        <div class="row">
+            <div class="col-12">
+                <div class="tab-content" id="tp-settings-pills-tabContent">
+                    <t t-foreach="_tabInfo" t-as="tabData" t-key="tabData.name">
+                        <div t-attf-class="tab-pane #{tabData_index == 0 ? 'fade show active': ''} p-2" t-attf-id="pills-#{tabData.name}" role="tabpanel">
+                            <t t-foreach="tabData.components" t-as="component_data" t-key="component_data_index">
+                                <t t-component="component_data.componentRef" t-props="prepareProps(component_data.props)"/>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+            </div>
+            <!-- <div class="col-6">
+                <div class="p-2 h-100 tp-setting-bg">
+                    asd
+                </div>
+            </div> -->
+        </div>
+
+    </WebsiteDialog>
+</t>
+
+<t t-name="theme_config.ThemeOptionTitle" owl="1">
+    <t t-if="props.visibility">
+        <h5 t-attf-class="mb-0 text-primary tp-config-title #{props._classes or 'mt-5'}">
+            <t t-esc="props.title"/>
+        </h5>
+        <p t-if="props.subtitle" class="text-muted mt-1 mb-2">
+            <t t-esc="props.subtitle"/>
+        </p>
+    </t>
+</t>
+
+<t t-name="theme_config.ThemeOptionRadio" owl="1">
+    <div t-att-invisible="!props.visibility">
+        <div class="form-check">
+            <input class="form-check-input" name="key" type="radio" id="default" value="default" t-model="props.source[key]"/>
+            <label class="form-check-label" t-attf-for="default">
+                Default
+            </label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" name="key" type="radio" id="notification" value="notification" t-model="props.source[key]"/>
+            <label class="form-check-label" t-attf-for="notification">
+                Notification
+            </label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" name="key" type="radio" id="dialog" value="dialog" t-model="props.source[key]"/>
+            <label class="form-check-label" t-attf-for="dialog">
+                Dialog
+            </label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" name="key" type="radio" id="side_cart" value="side_cart" t-model="props.source[key]"/>
+            <label class="form-check-label" t-attf-for="side_cart">
+                Open Cart Sidebar
+            </label>
+        </div>
+    </div>
+    <!-- <t t-foreach="props.selection" t-as="opt" t-key="opt[0]">
+        <t t-esc="props.source[key]" />
+        <div class="form-check">
+            <input class="form-check-input" t-att-name="key" type="radio" t-att-id="opt[0]"  t-att-value="opt[0]" t-model="props.source[key]"/>
+            <label class="form-check-label" t-attf-for="opt[0]">
+                <t t-esc="opt[1]"/>
+            </label>
+        </div>
+    </t> -->
+</t>
+
+<t t-name="theme_config.Selection" owl="1">
+    <div t-attf-class="row mb-2 #{props._classes or ''}" t-att-expr="props.visibilityExpr" t-if="props.visibility">
+        <div class="col-6 col-lg-5">
+            <strong t-esc="props.label"/>
+            <i t-if="props.tooltip" class="fa fa-info-circle ms-2" t-att-title="props.tooltip"/>
+        </div>
+        <div class="col-6 col-lg-7">
+            <label class="mb-0 d-inline-block" t-att-for="key">
+                <select t-model="props.source[key]" class="form-select form-select-sm">
+                    <t t-foreach="props.selection" t-as="item" t-key="item_index">
+                        <option t-att-value="item[0]">
+                            <t t-esc="item[1]"/>
+                        </option>
+                    </t>
+                </select>
+            </label>
+            <small t-if="note" class="d-block"><t t-esc="props.note"/></small>
+        </div>
+    </div>
+</t>
+
+<t t-name="theme_config.Checkbox" t-inherit="theme_config.Selection" t-inherit-mode="primary" owl="1">
+    <xpath expr="//label" position="replace">
+        <label class="o_switch mb-0 o_switch_danger_success w-25">
+            <input type="checkbox" t-model="props.source[key]"/>
+            <span> </span>
+        </label>
+    </xpath>
+</t>
+
+<t t-name="theme_config.Number" t-inherit="theme_config.Selection" t-inherit-mode="primary" owl="1">
+    <xpath expr="//div[hasclass('col-lg-7')]" position="replace">
+        <div class="col-6 col-lg-3">
+            <input type="number" class="form-control form-control-sm" t-att-id="props.key" t-model.number="props.source[key]"/>
+            <small t-if="props.note" class="d-block"> <t t-esc="props.note"/> </small>
+        </div>
+    </xpath>
+</t>
+
+<t t-name="theme_config.Char" t-inherit="theme_config.Selection" t-inherit-mode="primary" owl="1">
+    <xpath expr="//div[hasclass('col-lg-7')]" position="replace">
+        <div class="col-6 col-lg-3">
+            <input type="text" class="form-control form-control-sm" t-att-id="props.key" t-model="props.source[key]"/>
+            <small t-if="props.note" class="d-block"> <t t-esc="props.note"/></small>
+        </div>
+    </xpath>
+</t>
+
+<t t-name="theme_config.JSON" owl="1">
+    <t t-if="props.visibility">
+        <t t-foreach="props.components" t-as="sub_component_data" t-key="sub_component_data_index">
+            <t t-component="sub_component_data.componentRef" t-props="prepareProps(props, sub_component_data.props)"/>
+        </t>
+    </t>
+</t>
+
+<t t-name="theme_config.BottomBar" t-inherit="theme_config.Selection" t-inherit-mode="primary" owl="1">
+    <xpath expr="//label" position="replace">
+        <div class="border border-1 p-2 pb-0 rounded">
+            <t t-foreach="state.actions" t-as="action" t-key="action">
+                <span class="badge bg-tpc-primary d-inline-block p-2 pe-24 mx-1 position-relative overflow-hidden">
+                    <t t-out="allButtons[action].name"/>
+                    <i class="fa fa-times position-absolute top-0 end-0 bg-tpc-primary-dark h-100 px-2 py-2 tp-cp" t-on-click="() => this.removeAction(action)"/>
+                </span>
+            </t>
+        </div>
+        <div>
+            <t t-foreach="allButtons" t-as="button" t-key="button">
+                <span t-if="!state.actions.includes(button)" class="badge bg-300 d-inline-block p-2 px-3 mx-1 mt-1 tp-cp position-relative" t-on-click="() => this.addAction(button)">
+                    <i class="fa fa-plus" /> <t t-out="allButtons[button].name"/>
+                </span>
+            </t>
+        </div>
+    </xpath>
+</t>
+
+<t t-name="theme_config.BtnCheckbox" owl="1">
+    <input type="checkbox" class="btn-check" t-att-id="key" autocomplete="off" t-model="props.source[key]"/>
+    <label class="btn btn-outline-primary me-2" t-att-for="key" t-att-title="props.tooltip || props.label"><i t-att-class="props.icon or 'fa fa-users'"/> </label>
+</t>
+
+</templates>

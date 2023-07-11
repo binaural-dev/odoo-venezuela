@@ -5,6 +5,7 @@ class PosConfig(models.Model):
     _inherit = "pos.config"
 
     foreign_currency_id = fields.Many2one("res.currency", related="company_id.currency_foreign_id")
+    pos_tax_inside = fields.Boolean(related="company_id.pos_tax_inside")
 
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for moves.",
@@ -13,6 +14,8 @@ class PosConfig(models.Model):
         default=0.0,
         readonly=False,
     )
+    receipt_journal_id = fields.Many2one("account.journal")
+    always_invoice = fields.Boolean(default=True)
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
@@ -20,6 +23,8 @@ class PosConfig(models.Model):
         default=0.0,
         readonly=False,
     )
+    pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty")
+    amount_to_zero = fields.Boolean("Amount to zero")
 
     @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")
     def _compute_rate(self):

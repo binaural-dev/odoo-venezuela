@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="s_testimonial_1" name="Testimonial - 1">
+        <section class="s_testimonial_1 pb16 pt16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor s_nb_column_fixed">
+                    <div class="col-md-6 col-lg-4 py-3">
+                        <div class="tp-editor-bg-color-n-shadow h-100 p-4 text-center">
+                            <blockquote class="lead fw-light font-italic mb-5 tp-editor-bg-color-n-shadow">
+                                "Proin a nisi id turpis pharetra fermentum ac eu sem. Morbi ullamcorper mi quis porttitor interdum. Maecenas luctus varius interdum. Duis commodo tincidunt velit non bibendum. Phasellus placerat sodales nunc."
+                            </blockquote>
+                            <img src="/web/image/theme_prime.s_testimonial_author_01" class="img-thumbnail rounded-circle o_image_64_contain" alt="Author Image 01"/>
+                            <h5 class="mt-4 mb-1">John Doe</h5>
+                            <span>Droggol</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 py-3">
+                        <div class="tp-editor-bg-color-n-shadow h-100 p-4 text-center">
+                            <blockquote class="lead fw-light font-italic mb-5 tp-editor-bg-color-n-shadow">
+                                "Fusce sagittis ac orci sed tristique. Suspendisse a lobortis augue. Maecenas scelerisque varius mattis. Sed auctor fermentum libero, sed ullamcorper elit laoreet venenatis. Cras ac ex enim. Suspendisse sodales."
+                            </blockquote>
+                            <img src="/web/image/theme_prime.s_testimonial_author_02" class="img-thumbnail rounded-circle o_image_64_contain" alt="Author Image 02"/>
+                            <h5 class="mt-4 mb-1">Vivamus Tem</h5>
+                            <span>Google Inc.</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 py-3">
+                        <div class="tp-editor-bg-color-n-shadow h-100 p-4 text-center">
+                            <blockquote class="lead fw-light font-italic mb-5 tp-editor-bg-color-n-shadow">
+                                "Etiam semper molestie sapien a egestas. In consequat venenatis ex, sit amet ultrices ante pretium et. Suspendisse nec hendrerit nulla, vitae convallis risus. Morbi quis tincidunt magna. Sed nec libero."
+                            </blockquote>
+                            <img src="/web/image/theme_prime.s_testimonial_author_03" class="img-thumbnail rounded-circle o_image_64_contain" alt="Author Image 03"/>
+                            <h5 class="mt-4 mb-1">Donec Int</h5>
+                            <span>Apple Ltd.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_testimonial_2" name="Testimonial - 2">
+        <section class="s_testimonial_2 pb32 pt32">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <img src="/web/image/theme_prime.s_testimonial_author_01" class="img-thumbnail rounded-circle o_image_128_max" alt="Author Image 01"/>
+                        <h5 class="mt-4 mb-1">John Doe</h5>
+                        <em class="text-primary">Designer</em>
+                        <blockquote class="lead fw-light font-italic mt-4 border-white tp-editor-bg-color-n-shadow">
+                            "Proin a nisi id turpis pharetra fermentum ac eu sem. Morbi ullamcorper mi quis porttitor interdum. Maecenas luctus varius interdum. Duis commodo tincidunt velit non bibendum. Phasellus placerat sodales nunc. Proin a nisi id turpis pharetra fermentum ac eu sem. Morbi ullamcorper mi quis porttitor interdum."
+                        </blockquote>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_testimonial_3" name="Testimonial - 3">
+        <section class="s_testimonial_3">
+            <t t-set="uniq" t-value="datetime.datetime.now().microsecond"/>
+            <div t-attf-id="myCarousel{{uniq}}" class="s_carousel tp-custom-carousel s_carousel_rounded carousel slide" data-bs-interval="10000">
+                <!-- Indicators -->
+                <ol class="carousel-indicators">
+                    <li t-attf-data-bs-target="#myCarousel{{uniq}}" data-bs-slide-to="0" class="active"/>
+                    <li t-attf-data-bs-target="#myCarousel{{uniq}}" data-bs-slide-to="1"/>
+                    <li t-attf-data-bs-target="#myCarousel{{uniq}}" data-bs-slide-to="2"/>
+                </ol>
+                <!-- Content -->
+                <div class="carousel-inner">
+                    <!-- #01 -->
+                    <div class="carousel-item pt48 pb48 active" data-name="Slide">
+                        <div class="container">
+                            <div class="row content justify-content-center text-center s_col_no_bgcolor s_nb_column_fixed">
+                                <div class="carousel-content col-12 col-md-10">
+                                    <img class="img img-fluid o_image_128_max rounded-circle shadow" src="/web/image/theme_prime.s_testimonial_author_01" alt="Author Image 01"></img>
+                                    <blockquote class="lead fw-light font-italic mt-3 border-white">
+                                        "Proin a nisi id turpis pharetra fermentum ac eu sem. Morbi ullamcorper mi quis porttitor interdum. Maecenas luctus varius interdum. Duis commodo tincidunt velit non bibendum. Phasellus placerat sodales nunc."
+                                    </blockquote>
+                                    <h5>John Doe</h5>
+                                    <span>Droggol</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- #02 -->
+                    <div class="carousel-item pt48 pb48" data-name="Slide">
+                        <div class="container">
+                            <div class="row content justify-content-center text-center s_col_no_bgcolor s_nb_column_fixed">
+                                <div class="carousel-content col-12 col-md-10">
+                                    <img class="img img-fluid o_image_128_max rounded-circle shadow" src="/web/image/theme_prime.s_testimonial_author_02" alt="Author Image 02"></img>
+                                    <blockquote class="lead fw-light font-italic mt-3 border-white">
+                                        "Fusce sagittis ac orci sed tristique. Suspendisse a lobortis augue. Maecenas scelerisque varius mattis. Sed auctor fermentum libero, sed ullamcorper elit laoreet venenatis. Cras ac ex enim. Suspendisse sodales volutpat."
+                                    </blockquote>
+                                    <h5>Vivamus Tem</h5>
+                                    <span>Google Inc.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- #03 -->
+                    <div class="carousel-item pt48 pb48" data-name="Slide">
+                        <div class="container">
+                            <div class="row content justify-content-center text-center s_col_no_bgcolor s_nb_column_fixed">
+                                <div class="carousel-content col-12 col-md-10">
+                                    <img class="img img-fluid o_image_128_max rounded-circle shadow" src="/web/image/theme_prime.s_testimonial_author_03" alt="Author Image 03"></img>
+                                    <blockquote class="lead fw-light font-italic mt-3  border-white">
+                                        "Etiam semper molestie sapien a egestas. In consequat venenatis ex, sit amet ultrices ante pretium et. Suspendisse nec hendrerit nulla, vitae convallis risus. Morbi quis tincidunt magna. Sed nec libero."
+                                    </blockquote>
+                                    <h5>Donec Int</h5>
+                                    <span>Apple Ltd.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Controls -->
+                <a class="carousel-control-prev o_not_editable" contenteditable="false" t-attf-href="#myCarousel{{uniq}}" data-bs-slide="prev" role="img" aria-label="Previous" title="Previous">
+                    <span class="fa fa-chevron-left"></span>
+                    <span class="visually-hidden">Previous</span>
+                </a>
+                <a class="carousel-control-next o_not_editable" contenteditable="false" t-attf-href="#myCarousel{{uniq}}" data-bs-slide="next" role="img" aria-label="Next" title="Next">
+                    <span class="fa fa-chevron-right"></span>
+                    <span class="visually-hidden">Next</span>
+                </a>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_testimonial_4" name="Testimonial - 4">
+        <section class="s_testimonial_4">
+            <t t-set="uniq" t-value="datetime.datetime.now().microsecond"/>
+            <div t-attf-id="myCarousel{{uniq}}" class="s_carousel tp-custom-carousel s_carousel_bordered carousel slide" data-bs-interval="10000">
+                <!-- Indicators -->
+                <ol class="carousel-indicators">
+                    <li t-attf-data-bs-target="#myCarousel{{uniq}}" data-bs-slide-to="0" class="active"/>
+                    <li t-attf-data-bs-target="#myCarousel{{uniq}}" data-bs-slide-to="1"/>
+                    <li t-attf-data-bs-target="#myCarousel{{uniq}}" data-bs-slide-to="2"/>
+                </ol>
+                <!-- Content -->
+                <div class="carousel-inner">
+                    <!-- #01 -->
+                    <div class="carousel-item pt80 pb80 active" data-name="Slide">
+                        <div class="container">
+                            <div class="row content justify-content-center s_col_no_bgcolor s_nb_column_fixed">
+                                <div class="carousel-content col-12 col-lg-7">
+                                    <blockquote class="lead font-italic border-white">
+                                        "Proin a nisi id turpis pharetra fermentum ac eu sem. Morbi ullamcorper mi quis porttitor interdum. Maecenas luctus varius interdum. Duis commodo tincidunt velit non bibendum. Phasellus placerat sodales nunc."
+                                    </blockquote>
+                                    <div class="d-flex align-items-center">
+                                        <img class="flex-shrink-0 img img-fluid img-thumbnail o_image_64_contain me-3 rounded-circle" src="/web/image/theme_prime.s_testimonial_author_01" alt="Author Image 01"></img>
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-1">John Doe</h5>
+                                            <span>Designer</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- #02 -->
+                    <div class="carousel-item pt80 pb80" data-name="Slide">
+                        <div class="container">
+                            <div class="row content justify-content-center s_col_no_bgcolor s_nb_column_fixed">
+                                <div class="carousel-content col-12 col-lg-7">
+                                    <blockquote class="lead font-italic border-white">
+                                        "Fusce sagittis ac orci sed tristique. Suspendisse a lobortis augue. Maecenas scelerisque varius mattis. Sed auctor fermentum libero, sed ullamcorper elit laoreet venenatis. Cras ac ex enim. Suspendisse sodales volutpat."
+                                    </blockquote>
+                                    <div class="d-flex align-items-center">
+                                        <img class="flex-shrink-0 img img-fluid img-thumbnail o_image_64_contain me-3 rounded-circle" src="/web/image/theme_prime.s_testimonial_author_02" alt="Author Image 02"></img>
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-1">Vivamus Tem</h5>
+                                            <span>Developer</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- #03 -->
+                    <div class="carousel-item pt80 pb80" data-name="Slide">
+                        <div class="container">
+                            <div class="row content justify-content-center s_col_no_bgcolor s_nb_column_fixed">
+                                <div class="carousel-content col-12 col-lg-7">
+                                    <blockquote class="lead font-italic">
+                                        "Etiam semper molestie sapien a egestas. In consequat venenatis ex, sit amet ultrices ante pretium et. Suspendisse nec hendrerit nulla, vitae convallis risus. Morbi quis tincidunt magna. Sed nec libero."
+                                    </blockquote>
+                                    <div class="d-flex align-items-center">
+                                        <img class="flex-shrink-0 img img-fluid img-thumbnail o_image_64_contain me-3 rounded-circle" src="/web/image/theme_prime.s_testimonial_author_03" alt="Author Image 03"></img>
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-1">Donec Int</h5>
+                                            <span>Tester</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Controls -->
+                <a class="carousel-control-prev o_not_editable" contenteditable="false" t-attf-href="#myCarousel{{uniq}}" data-bs-slide="prev" role="img" aria-label="Previous" title="Previous">
+                    <span class="fa fa-chevron-left"></span>
+                    <span class="visually-hidden">Previous</span>
+                </a>
+                <a class="carousel-control-next o_not_editable" contenteditable="false" t-attf-href="#myCarousel{{uniq}}" data-bs-slide="next" role="img" aria-label="Next" title="Next">
+                    <span class="fa fa-chevron-right"></span>
+                    <span class="visually-hidden">Next</span>
+                </a>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_testimonial_5" name="Testimonial - 5">
+        <section class="s_testimonial_5 pb16 pt16">
+            <div class="container">
+                <div class="row s_col_no_bgcolor">
+                    <div class="col-lg-6 py-3">
+                        <blockquote class="lead fw-light p-4 position-relative shadow border-primary">
+                            "Proin a nisi id turpis pharetra fermentum ac eu sem. Morbi ullamcorper mi quis porttitor interdum. Maecenas luctus varius interdum. Duis commodo tincidunt velit non bibendum. Phasellus placerat sodales nunc."
+                        </blockquote>
+                        <div class="d-flex align-items-center mt-5">
+                            <img class="flex-shrink-0 img img-fluid tp-author-image me-3 rounded-circle img-thumbnail" src="/web/image/theme_prime.s_testimonial_author_01" alt="Author Image 01"></img>
+                            <div class="flex-grow-1">
+                                <h5 class="mb-1">John Doe</h5>
+                                <span>Designer</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 py-3">
+                        <blockquote class="lead fw-light p-4 position-relative shadow border-primary">
+                            "Fusce sagittis ac orci sed tristique. Suspendisse a lobortis augue. Maecenas scelerisque varius mattis. Sed auctor fermentum libero, sed ullamcorper elit laoreet venenatis. Cras ac ex enim. Suspendisse sodales volutpat."
+                        </blockquote>
+                        <div class="d-flex align-items-center mt-5">
+                            <img class="flex-shrink-0 img img-fluid tp-author-image me-3 rounded-circle img-thumbnail" src="/web/image/theme_prime.s_testimonial_author_02" alt="Author Image 02"></img>
+                            <div class="flex-grow-1">
+                                <h5 class="mb-1">Vivamus Tem</h5>
+                                <span>Developer</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <!-- Assets -->
+    <record id="theme_prime.s_testimonial_5_000_scss" model="ir.asset">
+        <field name="name">Testimonial 5 000 SCSS</field>
+        <field name="bundle">web.assets_frontend</field>
+        <field name="path">theme_prime/static/src/snippets/s_testimonial_5/000.scss</field>
+    </record>
+
+</odoo>

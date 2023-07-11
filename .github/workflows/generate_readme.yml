@@ -1,0 +1,39 @@
+name: Generate Readme
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches:
+    - "master"
+
+jobs:
+  generate_module_readme:
+    runs-on: ubuntu-latest
+    env:
+      CI_COMMIT_AUTHOR: "GitHub Actions - Readme Integration"
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      - name: Configuring git...
+        run: |
+          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
+          git config --global user.email "actions@github.com"
+      - name: Installing required dependencies...
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ./scripts/requirements.txt
+      - name: Executing README creation/updating.
+        run: |
+          python3 $(pwd)/scripts/gen_addon_readme.py --commit --repo-name=integra --branch=${{ github.head_ref }} --addons-dir=integra/
+      - name: Pushing README.rst and index.html to current branch.
+        run: |
+          git push origin ${{ github.head_ref }}

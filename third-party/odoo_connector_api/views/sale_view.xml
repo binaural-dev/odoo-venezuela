@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <record id="sale_order_view_search_inherit_ocapi" model="ir.ui.view">
+            <field name="name">sale.order.search.inherit.ocapi</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.sale_order_view_search_inherit_sale"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                  <field name="ocapi_bindings" string="Ocapi Bindings"/>
+                  <separator/>
+                  <filter string="Ocapi Orders" name="sale_orders_ocapi" domain="[('ocapi_bindings','!=',False)]" />
+                </xpath>
+            </field>
+        </record>
+
+        <record id="sale_order_view_search_inherit_quotation_ocapi" model="ir.ui.view">
+            <field name="name">sale.order.search.inherit.quotation.ocapi</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.sale_order_view_search_inherit_quotation"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[@name='my_quotation']" position="after">
+                  <field name="ocapi_bindings" string="Ocapi Bindings"/>
+                  <separator/>
+                  <filter string="Ocapi Quotations" name="sale_quotations_ocapi" domain="[('ocapi_bindings','!=',False)]" />
+                </xpath>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="view_ocapi_orders_tree">
+            <field name="name">ocapi.binding.sale_order.tree</field>
+            <field name="model">ocapi.binding.sale_order</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Orders" default_order="date_created desc">
+                    <field name="conn_id"/>
+                    <field name="name"/>
+                    <field name="date_created"/>
+                    <!--field name="order_id"/>
+                    <field name="shipping_id" invisible="0"/>
+                    <field name="status"/>
+                    <field name="buyer"/>
+                    <field name="total_amount"/>
+                    <field name="paid_amount"/>
+                    <field name="date_created"/>
+                    <field name="date_closed"/>
+                    <field name="tags" invisible="1"/>
+                    <field name="pack_order" string="Es Carrito"/>
+                    <field name="catalog_order" string="Es de Catalogo"/-->
+                </tree>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="view_sale_order_form_ocapi">
+            <field name="name">sale.order.form.ocapi</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <data>
+                    <notebook>
+                        <page string="Ocapi" invisible="1" >
+                        <!--page string="Ocapi" attrs="{'invisible':[('ocapi_bindings', '=', False)]}" -->
+                            <field name="ocapi_bindings" invisible="0"/>
+                            <!--group>
+                              <field name="ocapi_order_id" invisible="0"/>
+                              <field name="ocapi_status" invisible="0"/>
+                              <field name="ocapi_shipment" invisible="0"/>
+                              <field name="ocapi_shipment_logistic_type" invisible="0"/>
+                              <field name="ocapi_status_detail" invisible="0"/>
+                              <field name="ocapi_total_amount" invisible="0"/>
+                              <field name="ocapi_shipping_cost" invisible="0"/>
+                              <field name="ocapi_shipping_list_cost" invisible="0"/>
+                              <field name="ocapi_fee_amount" invisible="0"/>
+                              <field name="ocapi_paid_amount" invisible="0"/>
+                              <field name="ocapi_currency_id" invisible="0"/>
+                              <field name="ocapi_date_created" invisible="0"/>
+                              <field name="ocapi_date_closed" invisible="0"/>
+                            </group-->
+                        </page>
+                    </notebook>
+                </data>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="view_res_partner_form_ocapi">
+            <field name="name">res.partner.form.ocapi</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <data>
+                    <notebook>
+                        <page string="Ocapi" invisible="1">
+                        <!--page string="Ocapi" attrs="{'invisible':[('ocapi_bindings', '=', False)]}"-->
+                          <group>
+                            <field name="ocapi_bindings" invisible="0"/>
+                            <!--field name="ocapi_buyer" invisible="0"/-->
+                          </group>
+                        </page>
+                    </notebook>
+                </data>
+            </field>
+        </record>
+
+
+        <record model="ir.ui.view" id="view_ocapi_clients_tree">
+            <field name="name">ocapi.binding.client.tree</field>
+            <field name="model">ocapi.binding.client</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Clientes" >
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <!--field name="buyer_id"/>
+                    <field name="nickname"/>
+                    <field name="email"/-->
+                </tree>
+            </field>
+        </record>
+
+        <!--record model="ir.ui.view" id="view_ocapi_orders_form">
+            <field name="name">ocapi.orders.form</field>
+            <field name="model">ocapi.orders</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+              <form string="Orden de ML">
+                <header>
+                  <field name="status" widget="statusbar"/>
+                </header>
+                <sheet>
+                  <div class="oe_title">
+                    <h1><field name="name"/></h1>
+                    <field name="status_detail"/>
+                    <field name="tags"/>
+                    <field name="order_id"/>
+                  </div>
+                  <div class="oe_button_box" name="button_box_mel" style="width: auto;">
+                    <button name='orders_update_order' type="object"
+                      string="Actualizar"
+                      attrs="{'invisible':[('order_id','=',False)]}"
+                      class="oe_stat_button"
+                      icon="fa-refresh"/>
+                  </div>
+                  <group>
+                    <group>
+                        <field name="sale_order"/>
+                        <field name="date_created"/>
+                        <field name="date_closed"/>
+                        <field name="buyer"/>
+                        <field name="seller"/>
+                        <field name="pack_order"/>
+                        <field name="catalog_order"/>
+                    </group>
+                    <group>
+                        <field name="total_amount" widget="monetary"/>
+                        <field name="shipping_cost"  widget="monetary"/>
+                        <field name="shipping_list_cost"  widget="monetary"/>
+                        <field name="fee_amount"  widget="monetary"/>
+                        <field name="paid_amount"  widget="monetary"/>
+                        <field name="currency_id"/>
+                    </group>
+                  </group>
+                  <notebook>
+                    <page string="Order Items">
+                      <field name="order_items" />
+                    </page>
+                    <page string="Payments">
+                      <field name="payments"/>
+                    </page>
+                    <page string="Shipments">
+                      <group>
+                        <group>
+                            <field name="shipping"/>
+                            <field name="shipping_id"/>
+                          </group>
+                          <group>
+                            <field name="shipment"/>
+                          </group>
+                      </group>
+                    </page>
+                  </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+              </form>
+            </field>
+        </record-->
+
+        <!--record model="ir.ui.view" id="view_ocapi_order_items_tree">
+            <field name="name">ocapi.order_items.tree</field>
+            <field name="model">ocapi.order_items</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Lineas de la Orden" >
+                    <field name="posting_id"/>
+                    <field name="product_id"/>
+                    <field name="order_id"/>
+                    <field name="order_item_id"/>
+                    <field name="unit_price"/>
+                    <field name="quantity"/>
+                </tree>
+            </field>
+        </record-->
+
+        <!--record model="ir.ui.view" id="view_ocapi_payments_tree">
+            <field name="name">ocapi.payments.tree</field>
+            <field name="model">ocapi.payments</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Pagos" >
+                    <field name="payment_id"/>
+                    <field name="transaction_amount"/>
+                    <field name="total_paid_amount"/>
+                    <field name="shipping_amount"/>
+                    <field name="fee_amount"/>
+                    <field name="taxes_amount"/>
+                    <field name="currency_id"/>
+                    <field name="status"/>
+                    <field name="date_created"/>
+                    <field name="date_last_modified"/>
+                </tree>
+            </field>
+        </record-->
+
+        <record id="ocapi_orders_search_view" model="ir.ui.view">
+            <field name="name">ocapi.binding.sale_order.search</field>
+            <field name="model">ocapi.binding.sale_order</field>
+            <field name="arch" type="xml">
+    	         <search string="Search Ocapi Orders Information">
+                 <field name="name" string="Name"/>
+                 <field name="conn_id" string="Connector Id"/>
+                 <!--field name="status" string="Status"/-->
+                 <!--field name="buyer" string="Comprador"/-->
+                 <!--field name="seller" string="Vendedor"/-->
+    	         </search>
+            </field>
+        </record>
+
+        <!--record id="ocapi_clients_search_view" model="ir.ui.view">
+            <field name="name">mercadolibre.clients.search</field>
+            <field name="model">mercadolibre.clients</field>
+            <field name="arch" type="xml">
+        	    <search string="Search MercadoLibre Buyers Information">
+                  <field name="nickname" string="Usuario ML"/>
+                  <field name="first_name" string="Nombre ML"/>
+                  <field name="last_name" string="Apellido ML"/>
+                  <field name="email" string="Email ML"/>
+                  <field name="phone" string="Phone ML"/>
+                  <field name="alternative_phone" string="Alternative Phone ML"/>
+                  <field name="billing_info" string="Documento Id ML"/>
+        	    </search>
+            </field>
+        </record-->
+
+        <!--record id="view_orders_update" model="ir.ui.view">
+              <field name="name">Actualizar Orden de ML</field>
+              <field name="model">mercadolibre.orders.update</field>
+              <field name="type">form</field>
+              <field name="arch" type="xml">
+                <form string="Update Order" version="7.0">
+                    <footer>
+                        <button name="order_update" string="Update Order"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                    </footer>
+                </form>
+              </field>
+        </record-->
+
+        <record model="ir.actions.act_window" id="action_ocapi_orders_tree">
+            <field name="name">Ordenes</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">ocapi.binding.sale_order</field>
+            <!--field name="view_type">form</field-->
+            <field name="view_mode">tree,form</field>
+            <!--<field name="search_view_id" ref="ocapi_orders_search_view"/>-->
+        </record>
+
+        <record model="ir.actions.act_window" id="action_ocapi_clients_tree">
+            <field name="name">Clientes</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">ocapi.binding.client</field>
+            <!--field name="view_type">form</field-->
+            <field name="view_mode">tree,form</field>
+            <!--<field name="search_view_id" ref="ocapi_clients_search_view"/>-->
+        </record>
+
+        <!--record id="action_update_ocapi_orders" model="ir.actions.act_window">
+            <field name="name">Actualizar Ordenes de ML</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="src_model">mercadolibre.orders</field>
+            <field name="res_model">mercadolibre.orders.update</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record-->
+
+        <!--
+        <record model="ir.values" id="update_ocapi_orders">
+            <field name="name">Actualizar Ordenes</field>
+            <field name="key2">client_action_multi</field>
+            <field name="value" eval="'ir.actions.act_window,' +str(ref('action_update_ocapi_orders'))" />
+            <field name="key">action</field>
+            <field name="model">mercadolibre.orders</field>
+        </record>
+        -->
+
+        <menuitem id="menu_ocapi_connectors" name="Ocapi" parent="sale.sale_menu_root" sequence="5"
+            groups="odoo_connector_api.group_ocapi_connectors_manager"  active="False"/>
+
+          <menuitem id="menu_ocapi_orders"
+              action="action_ocapi_orders_tree"
+              parent="menu_ocapi_connectors"
+              name="Ordenes" />
+
+          <menuitem id="menu_ocapi_clients"
+              action="action_ocapi_clients_tree"
+              parent="menu_ocapi_connectors"
+              name="Compradores" />
+
+        <!--act_window id="action_update_ocapi_orders"
+            name="Update ML Orders"
+            src_model="mercadolibre.orders"
+            res_model="mercadolibre.orders.update"
+            view_type="form" view_mode="form"
+            key2="client_action_multi" target="new"/-->
+
+
+
+
+    </data>
+</odoo>
