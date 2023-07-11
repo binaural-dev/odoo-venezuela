@@ -1,0 +1,15 @@
+.letter {
+    /* font-size: 5%; */
+    text-transform: uppercase;
+    justify-content: start;
+}
+
+.container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.border {
+    border-bottom: 3px;
+    color: black;
+}
