@@ -933,24 +933,7 @@ class product_product(models.Model):
         if (1==2 and rjson['available_quantity']==0):
             product_template.website_published = False
 
-        posting_fields = {
-            'posting_date': str(datetime.now()),
-            'meli_id':rjson['id'],
-            'product_id':product.id,
-            'name': 'Post ('+str(product.meli_id)+'): ' + product.meli_title
-        }
-
-        posting = self.env['mercadolibre.posting'].search([('meli_id','=',rjson['id'])])
-        posting_id = posting.id
-
-        if not posting_id:
-            posting = self.env['mercadolibre.posting'].create((posting_fields))
-            posting_id = posting.id
-            #if (posting):
-            #    posting.posting_query_questions()
-        else:
-            posting.write({'product_id':product.id })
-            #posting.posting_query_questions()
+        #posting.posting_query_questions()
 
         b_search_nonfree_ship = False
         if ('shipping' in rjson):
@@ -2549,10 +2532,29 @@ class product_product(models.Model):
                 if (meli_id_variation):
                     _logger.info("Posting using product.meli_id_variation")
                     #check if variation id exists in target
-                    response = meli.get("/items/%s/variation/%s" % (meli_id,meli_id_variation), {'access_token':meli.access_token})
+                    res = "/items/%s/variations/%s" % (meli_id,meli_id_variation)
+                    _logger.info("res:"+str(res)+" meli.access_token:"+str(meli.access_token))
+
+                    response = meli.get( res, {'access_token':meli.access_token})
+                    is_not_meli_id_variation = True
                     if (response):
                         pjson = response.json()
                         if pjson and "error" in pjson:
+                            #res = "/items/%s/variations" % (meli_id)
+                            #response = meli.get( res, {'access_token':meli.access_token})
+                            productjson = self.env["mercadolibre.account"].fetch_meli_product( meli_id=meli_id, meli=meli )
+                            if (productjson):
+                                variations = productjson and "variations" in productjson and productjson["variations"]
+                                _logger.info("second:" )
+                                for var in variations:
+                                    if "id" in var and str(var["id"])==str(meli_id_variation):
+                                        is_not_meli_id_variation = False
+                        else:
+                            is_not_meli_id_variation = False
+
+                        if (is_not_meli_id_variation):
+                            _logger.error("Error getting variation id")
+                            #_logger.error(pjson)
                             fix_meli_id_variation = self.x_match_variation_id(meli=meli, meli_id=meli_id, meli_id_variation=meli_id_variation, product_sku=product.default_code )
                             if not fix_meli_id_variation:
                                 verror = { "error": "Variation id not found for sku %s in (%s,%s) " % (str(product.default_code), meli_id, meli_id_variation ) }
@@ -2801,6 +2803,12 @@ class product_product(models.Model):
 
             return meli_shipping_logistic_type
         return ""
+
+    def process_meli_stock_moves_update( self ):
+        for var in self:
+            var._meli_stock_moves_update()
+            pv_bind = self.env["mercadolibre.product"].search([ ("product_id","=",var.id)])
+            pv_bind.process_meli_stock_moves_update()
 
 
 
