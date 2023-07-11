@@ -794,8 +794,8 @@ class AccountRetention(models.Model):
                 line_data["foreign_retention_amount"] = 0.0
             else:
                 line_data["retention_amount"] = retention_amount
-                line_data["foreign_retention_amount"] = (
-                    retention_amount * invoice_id.foreign_inverse_rate
+                line_data["foreign_retention_amount"] = line_data["foreign_iva_amount"] * (
+                    withholding_amount / 100
                 )
             lines_data.append(line_data)
         return lines_data
@@ -806,6 +806,6 @@ class AccountRetention(models.Model):
             limit=1,
         )
         if config and config.signature:
-            return config.signature
+            return config.signature.decode()
         else:
             return False

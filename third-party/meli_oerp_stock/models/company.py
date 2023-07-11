@@ -59,7 +59,8 @@ class ResCompany(models.Model):
                                                             selection=[
                                                                         ("virtual","Planificado (virtual_available)"),
                                                                         ("theoretical","En mano (quantity)"),
-                                                                        ("qty_reserved","Cantidad menos reservado (quantity - reserved)")
+                                                                        ("qty_reserved","Cantidad menos reservado (quantity - reserved)"),
+                                                                        ("virtual_absoluto","Planificado (no suma negativos)"),
                                                             ],
                                                             default='virtual')
 
