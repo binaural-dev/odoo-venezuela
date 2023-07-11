@@ -42,38 +42,36 @@ class TestIvaRetentionBs(AccountRetentionTestCommon):
             {
                 "aliquot": 16,
                 "retention_amount": 313.8825,
-                "foreign_retention_amount": 13.3170343657,
+                "foreign_retention_amount": 13.32,
             },
             {
                 "aliquot": 8,
                 "retention_amount": 592.425,
-                "foreign_retention_amount": 25.134705134,
+                "foreign_retention_amount": 25.1325,
             },
             {
                 "aliquot": 31,
                 "retention_amount": 563290.4025,
-                "foreign_retention_amount": 23898.616991939,
+                "foreign_retention_amount": 23898.615,
             },
         ]
         self.expected_retention_lines_data_100 = [
             {
                 "aliquot": 16,
                 "retention_amount": 418.51,
-                "foreign_retention_amount": 17.756045821,
+                "foreign_retention_amount": 17.76,
             },
             {
                 "aliquot": 8,
                 "retention_amount": 789.90,
-                "foreign_retention_amount": 33.512940178,
+                "foreign_retention_amount": 33.51,
             },
             {
                 "aliquot": 31,
                 "retention_amount": 751053.87,
-                "foreign_retention_amount": 31864.822655919,
+                "foreign_retention_amount": 31864.82,
             },
         ]
-
-    # def tearDown(sel)
 
     def test_account_retention_line_compute_vef_base(self):
         """

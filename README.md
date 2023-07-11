@@ -19,9 +19,13 @@ Modulo | Descripción
 
 ## ¿Cómo comenzar?
 
-- Para la carpeta enterprise descargar aparte dicha carpeta dentro del directorio raiz de este proyecto.
-- Para verificar que el contenedor este corriendo satisfactoriamente ejecutar ./test_deploy_local.sh.
-- Enlace con Tutorial para correr pruebas unitarias: https://reedrehg.medium.com/writing-tests-in-odoo-4355f33e4a36.
+ - [Instalacion y configuracion](doc/getting-started.md)
+ - *[Herramientas y recomendaciones](doc/readme.md)*
+ - *[Tutorial de módulos con Python](doc/readme.md)*
+ - *[Tutorial de módulos con Javascript](doc/readme.md)*
+ - [Estándares de codigo](doc/code-standard.md)
+ - [Estándares de Git](doc/git-standard.md)
+ - *[Testing](doc/readme.md)*
 
 [//]: # (end getting-started)
 
