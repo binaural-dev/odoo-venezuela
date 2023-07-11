@@ -158,7 +158,9 @@ class MercadoLibreConnectionConfiguration(models.Model):
                                                 string='Acción al recibir un pedido',
                                                 help='Acción al confirmar una orden o pedido de venta',
                                                 required=True)
-    mercadolibre_order_confirmation_full = fields.Selection([ ("manual", "Manual"),
+    mercadolibre_order_confirmation_full = fields.Selection([
+                                                ("manual", "Manual"),
+                                                ("do_not_process", "No procesar"),
                                                 ("paid_confirm", "Pagado>Confirmado"),
                                                 ("paid_delivered", "Pagado>Entregado"),
                                                 ("paid_confirm_with_invoice", "Pagado>Facturado"),
@@ -242,7 +244,8 @@ class MercadoLibreConnectionConfiguration(models.Model):
 
     mercadolibre_stock_sku_mapping = fields.Many2many("meli_oerp.sku.rule",string="Sku Rules")
 
-
+    #TODO: 3 publicaciones, minimo 3 productos, si solo hay 1 unidad y 2 publicaciones, se pausea uno de las dos...
+    #mercadolibre_stock_pause_rule = fields.Selection(selection=[('leave_max_price','Max price active'),('leave_max_seller','Max seller')], default='leave_max_price' )
 
 
     ## ACCOUNT configuration

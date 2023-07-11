@@ -7,6 +7,7 @@
             <field name="arch" type="xml">
                 <tree editable="bottom" string="Municipalities">
                     <field name="active" invisible="1"/>
+		    <field name="code"/>
                     <field name="country_id" />
                     <field name="state_id" widget="many2many_tags" domain="[('country_id.code','ilike','ve')]" />
                     <field name="name" />
@@ -23,6 +24,7 @@
                     <sheet string="Municipality">
                         <group>
                             <field name="active" invisible="1"/>
+			    <field name="code"/>
                             <field name="country_id" />
                             <field name="state_id" widget="many2many_tags" domain="[('country_id.code','ilike','ve')]" />
                             <field name="name" />
