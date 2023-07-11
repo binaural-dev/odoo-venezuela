@@ -17,7 +17,7 @@
     # Check https://github.com/odoo/odoo/blob/16.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Accounting/Payment Providers',
-    'version': '0.1',
+    'version': '16.0.0.1',
 
     # any module necessary for this one to work correctly
     'depends': ['payment_stripe'],
@@ -28,7 +28,7 @@
     ],
     'assets': {
         'web.assets_frontend': [
-            'binaural_stripe/static/src/js/stripe_options.js',            
+            'binaural_stripe/static/src/js/express_checkout_form.js',            
         ],
     },
     # only loaded in demonstration mode
