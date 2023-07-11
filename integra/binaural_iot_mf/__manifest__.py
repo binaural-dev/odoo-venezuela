@@ -1,6 +1,6 @@
 {
     "name": "Binaural IoT - The Factory KHA",
-    "version": "2.0",
+    "version": "2.1",
     "category": "Accounting",
     "summary": "The Factory KHA (SDK) en IoT",
     "license": "LGPL-3",
