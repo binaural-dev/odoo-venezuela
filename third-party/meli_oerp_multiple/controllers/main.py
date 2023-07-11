@@ -203,7 +203,7 @@ class MercadoLibreLoginMultiple(MercadoLibreLogin):
         _logger.info("User Name: "+str(request.env.user.name))
         _logger.info("User Company Ids: "+str(request.env.user.company_ids))
 
-        meli_account = request.env['mercadolibre.account'].search([('meli_login_id','=',meli_login_id)])
+        meli_account = request.env['mercadolibre.account'].sudo().search([('meli_login_id','=',meli_login_id)])
         _logger.info("Search meli_account: " + str(meli_account) )
         if not meli_account:
             return "Account not founded."
