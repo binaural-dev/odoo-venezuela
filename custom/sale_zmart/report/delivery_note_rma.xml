@@ -4,13 +4,13 @@
     <data noupdate="1">
         <record id="action_invoice_sale_note_rma" model="ir.actions.report">
             <field name="name">Delivery Note</field>
-            <field name="model">account.move</field>
+            <field name="model">sale.order</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">invoice_zmart.template_invoice_delivery_note_rma</field>
-            <field name="report_file">invoice_zmart.template_invoice_delivery_note_rma</field>
+            <field name="report_name">sale_zmart.template_invoice_delivery_note_rma</field>
+            <field name="report_file">sale_zmart.template_invoice_delivery_note_rma</field>
             <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
             <field name="paperformat_id" ref="binaural_invoice.invoice_sale_note_paperformat_binaural_invoice"/>
-            <field name="binding_model_id" eval="False"/>
+            <field name="binding_model_id" ref="model_sale_order"/>
             <field name="binding_type">report</field>
             <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
         </record>
@@ -87,10 +87,10 @@
                                     <div style="display: flex; align-items: center;margin-top:-100px">
                                         <div style="display: inline-block;font-size:14px" class="align-right">
                                             <div>
-                                                <table style="width:100%; text-align:right;">
+                                                <table style="width:30%; text-align:left;margin-left:500px;border: 1px solid white">
                                                     <tr>
                                                     <th style="width:55%;font-weight:normal;font-size:14px">Nota de Entrega:</th>
-                                                    <th style="width:30%;font-weight:normal;font-size:14px"><span t-field="invoice.correlative"/></th>
+                                                    <th style="width:30%;font-weight:normal;font-size:14px"><span t-field="invoice.name"/></th>
                                                     </tr>
                                                     <tr>
                                                     <th style="width:55%;font-weight:normal;font-size:14px">Página:</th>
@@ -98,11 +98,11 @@
                                                     </tr>
                                                     <tr>
                                                     <th style="width:55%;font-weight:normal;font-size:14px">Fecha Emisión:</th>
-                                                    <th style="width:30%;font-weight:normal;font-size:14px"><span t-field="invoice.invoice_date"/></th>
+                                                    <th style="width:30%;font-weight:normal;font-size:14px"><span t-field="invoice.create_date" t-field-options="{'format': 'dd/MM/YYYY'}"/></th>
                                                     </tr>
                                                     <tr>
                                                     <th style="width:55%;font-weight:normal;font-size:14px">Fecha Entrega:</th>
-                                                    <th style="width:30%;font-weight:normal;font-size:14px"><span t-field="invoice.invoice_reception_date"/></th>
+                                                    <th style="width:30%;font-weight:normal;font-size:14px"><span t-field="invoice.date_order" t-field-options="{'format': 'dd/MM/YYYY'}"/></th>
                                                     </tr>
                                                 </table>
                                             </div>
@@ -120,13 +120,13 @@
                                                     <span style="font-size:14px" />
                                                 </div>
                                                 <div ><span style="font-size:14px;margin-right:18px"> Vendedor: </span>
-                                                    <span style="font-size:14px" t-field="invoice.invoice_user_id"/>
+                                                    <span style="font-size:14px" t-field="invoice.user_id"/>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div>
-                                        <table style="width:70%; text-align:left">
+                                        <table style="width:70%; text-align:left;border: 1px solid white;">
                                             <tr>
                                                 <th style="width:10%;font-weight:normal;font-size:14px">Cliente</th>
                                                 <th style="width:100%;font-weight:normal;font-size:14px;"><span t-field="invoice.partner_id"/></th>
@@ -165,36 +165,32 @@
                                             <th style="width:60px;text-align:center;border: 0px solid black;">Cant.</th>
                                             <th style="width:40px;text-align:center;border: 0px solid black;">Unidad</th>
                                         </tr>
-                                        <tbody>
+                                        <tbody style="border: 1px solid white;">
                                             <t t-set="base_sin_descuento" t-value="0.00"/>
                                             <t t-set="base_16" t-value="0.00"/>
                                             <t t-set="iva_16" t-value="0.00"/>
                                             <t t-set="base_8" t-value="0.00"/>
                                             <t t-set="iva_8" t-value="0.00"/>
-                                            <t t-foreach="invoice.invoice_line_ids" t-as="line">
+                                            <t t-foreach="invoice.order_line" t-as="line">
                                                 <tr>
                                                     <t t-set="base_sin_descuento"
-                                                        t-value="base_sin_descuento + (line.quantity * line.foreign_price)"/>
-                                                    <t t-if="len(line.tax_ids) > 0">
-                                                        <t t-if="line.tax_ids[0].amount == 8">
+                                                        t-value="base_sin_descuento + (line.product_uom_qty * line.foreign_price)"/>
+                                                    <t t-if="len(line.tax_id) > 0">
+                                                        <t t-if="line.tax_id[0].amount == 8">
                                                             <t t-set="base_8" t-value="base_8 + (line.foreign_subtotal)"/>
                                                             <t t-set="iva_8"
-                                                                t-value="iva_8 + (line.tax_ids[0].amount/100) * (line.foreign_subtotal)"/>
+                                                                t-value="iva_8 + (line.tax_id[0].amount/100) * (line.foreign_subtotal)"/>
                                                         </t>
-                                                        <t t-if="line.tax_ids[0].amount == 16"> 
+                                                        <t t-if="line.tax_id[0].amount == 16"> 
                                                             <t t-set="base_16"
                                                                 t-value="base_16 + (line.foreign_subtotal)"/>
                                                             <t t-set="iva_16"
-                                                                t-value="iva_16 +(line.tax_ids[0].amount/100) * (line.foreign_subtotal)"/>
+                                                                t-value="iva_16 +(line.tax_id[0].amount/100) * (line.foreign_subtotal)"/>
                                                         </t>
                                                     </t>
-                                                    <t t-if="invoice.move_type in ['out_debit', 'in_debit']">
-                                                        <td></td>
-                                                        <td style="width:390px;text-align:left;">
-                                                            <span t-field="line.name"/>
-                                                        </td>
-                                                    </t>
-                                                    <t t-else="">
+                                                   
+                                                    
+                                                    <t>
                                                         <td style="width:130px;text-align:center;">
                                                             <span t-field="line.product_id.default_code"/>
                                                         </td>
@@ -211,14 +207,14 @@
                                                             <span t-esc="line.name"/>
                                                         </td>
                                                     </t>
-                                                    <td style="width:80px;text-align:right;">
-                                                        <span t-esc="location_id"/>
+                                                    <td style="width:80px;text-align:center;">
+                                                        <span t-esc="invoice.picking_ids.location_id.location_id.name"/>
                                                     </td>
                                                     <td style="width:50px;text-align:center;">
-                                                        <span t-esc="line.quantity" t-options='{"widget": "float", "precision": 2}'/>
+                                                        <span t-esc="line.product_uom_qty" t-options='{"widget": "float", "precision": 2}'/>
                                                     </td>
                                                     <td style="width:40px;text-align:center;">
-                                                        <span t-field="line.product_uom_id"/>
+                                                        <span t-field="line.product_uom"/>
                                                     </td>
                                                 </tr>
                                             </t>
@@ -228,10 +224,10 @@
                                 <div style="width:100%;margin-top:20px"></div>
                                 <section id="segmento_4">
                                     <table name="table_total">
-                                        <tr>
+                                        <tr style="border: 1px solid white;">
                                             <td colspan="4">
                                                 <span >Descripcion:&amp;nbsp;</span>
-                                                <span t-field="invoice.narration"></span>
+                                                <span t-field="invoice.note"></span>
                                             </td>
                                         </tr>
                                     </table>

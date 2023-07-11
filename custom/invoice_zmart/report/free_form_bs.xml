@@ -71,7 +71,7 @@
                 <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
                 </td> 
             </xpath>
-            <xpath expr="//div/div/table/tbody/t/t[2]" position="replace">
+            <xpath expr="//div/div/table/tbody/t/t" position="replace">
                 <t t-if="">
                     <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
                     <t t-set="current_subtotal" t-value="current_subtotal + line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
@@ -79,27 +79,102 @@
             </xpath>
         </template> 
         <template id="document_tax_totals_inherit" inherit_id="binaural_invoice.document_tax_totals">
-            <xpath expr="//t[3]" position="after">
+            <xpath expr="//t[3]" position="replace">
+                <t t-foreach="tax_totals[str_tax]" t-as="subtotal">
+                <tr class="border-black o_subtotal">
+                    <td><strong t-esc="subtotal['name']"/></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td class="text-end">
+                        <span
+                            t-att-class="oe_subtotal_footer_separator"
+                            t-esc="subtotal['formatted_amount']"
+                        />
+                    </td>
+                </tr>
+
+                <t t-set="subtotal_to_show" t-value="subtotal['name']"/>
+                <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
+                    <t t-set="str_tax" t-value="'groups_by_subtotal' if base_vef else 'groups_by_foreign_subtotal'"/>
+                    <t t-foreach="tax_totals[str_tax][subtotal_to_show]" t-as="amount_by_group">
+                        <tr>
+                            <t t-if="tax_totals['display_tax_base']">
+                                
+                                <td>
+                                    <span t-esc="amount_by_group['tax_group_name']"/>
+                                    <span class="text-nowrap"> on
+                                        <t t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
+                                    </span>
+                                </td>
+                                <td class="text-end o_price_total">
+                                    <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_amount']"/>
+                                </td>
+                            </t>
+                            <t t-else="">
+                                <td><span class="text-nowrap" t-esc="amount_by_group['tax_group_name']"/></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td class="text-end o_price_total">
+                                    <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_amount']" />
+                                </td>
+                            </t>
+                        </tr>
+                    </t>
+                    </t>
                 <t t-if="o.default_is_igtf">
                     <tr>
                         <th colspan="2"><strong>IGTF Percibido</strong></th>
                     </tr>
                     <tr>
-                        <td><strong>Dolares tasa bcv ():</strong></td>
+                        <td><strong>Dolares tasa bcv (<span t-out="o.foreign_rate"/>):</strong></td>
                         <td><strong>Base $</strong></td>
-                        <td><span t-out="o.foreign_rate"/></td>
                         <td><span t-out="o.bi_igtf"/></td>
-                        </tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td style="text-align: right"><span t-out="o.bi_igtf * o.foreign_rate"/></td>
+                        <td></td>
+                    </tr>
                     <tr>
-                        <td><strong>IGTF Percibido </strong></td>
+                        <t t-if="o.move_type == 'out_invoice'">
+                        <td><strong>IGTF Percibido (3%)</strong></td>
+                        </t>
+                        <t t-else="">
+                        <td><strong>IGTF Percibido (2%)</strong></td>
+                        </t>
                         <td><strong>Base $ </strong></td>
-                        <td><span t-out="o.foreign_rate"/></td>
-                        <td><span t-out="o.foreign_rate"/></td>
+                        <td><span t-out="o.amount_to_pay_igtf"/></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td style="text-align: right"><span t-out="o.amount_to_pay_igtf * o.foreign_rate"/></td>
                         </tr>
                 </t>
             </xpath>
             <xpath expr="//tr[2]/t[2]" position="replace">
+                <td style="border-top: 1px solid black;"></td>
+                <td style="border-top: 1px solid black;"></td>
+                <td style="border-top: 1px solid black;"></td>
+                <td style="border-top: 1px solid black;"></td>
+                <td style="border-top: 1px solid black;"></td>
+                <td style="border-top: 1px solid black;"></td>
+            </xpath>
             
+            <xpath expr="tr/t" position="before">
+                <td style="border-bottom: 1px solid black;"></td>
+                <td style="border-bottom: 1px solid black;"></td>
+                <td style="border-bottom: 1px solid black;"></td>
+                <td style="border-bottom: 1px solid black;"></td>
+                <td style="border-bottom: 1px solid black;"></td>
+            </xpath>
+            <xpath expr="//tr[2]/td/t[2]" position="replace">
+                
             </xpath>
         </template>
     </data>

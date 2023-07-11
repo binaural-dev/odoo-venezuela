@@ -9,7 +9,7 @@
             <field name="report_file">sale_zmart.report_print_label</field>
             <field name="print_report_name">'Picking Operations - %s - %s' % (object.partner_id.name or '', object.name)</field>
             <field name="paperformat_id" ref="sale_zmart.paperformat_custom"/>
-            <field name="binding_model_id" ref="model_stock_picking"/>
+            <field name="binding_model_id" eval="False"/>
             <field name="binding_type">report</field>
         </record>
         
@@ -21,6 +21,7 @@
                             <style>
                                 section {
                                     border: 1px solid black;
+                                    border-radius: 5px;
                                     margin-top: 0px;
                                     padding: 10px;
                                 }
@@ -30,26 +31,32 @@
                                 }
                             </style>
                             <section id="segmento_1" style="font-size: 0.3em; line-height: 0.8em; width: 4cm;">
-                                <div style="display: flex; align-items: center;">
+                                <div style="display: inline-block; text-align: center; width: 100%;margin-top:-10px">
                                     <img t-if="o.company_id.logo"
                                         t-att-src="image_data_uri(o.company_id.logo)"
-                                        height="20"
-                                        width="30"
+                                        height="30"
+                                        width="40"
                                         class="mr-3 mt-1" style="display: inline-block; vertical-align: middle;"/>
-                                    <div style="display: inline-block;vertical-align: middle;width:50%;margin-left:10px;">
+                                    <div style="display: inline-block; vertical-align: middle; width: 50%; margin-left: 10px; border-left: 1px solid gray;">
                                         <div class="col-8">
-                                            <span><strong>EMISOR:</strong></span>
-                                            <div style="width:120%" t-field="o.company_id"/>
-                                            <div>R.I.F: 
-                                                <span t-field="o.company_id.vat"/>
-                                            </div>
-                                            <div>TLF: 
-                                                <span t-field="o.company_id.phone"/>
-                                            </div>
+                                            <table style="display: inline-block; vertical-align: middle;width:150%">
+                                                <tr style="text-align:left;padding-left:5px">
+                                                    <th style="text-align:left;padding-left:5px;font-weight: normal">EMISOR:</th>
+                                                </tr>
+                                                <tr style="text-align:left;">
+                                                    <th style="text-align:left;padding-left:5px;font-weight: normal"><div t-field="o.company_id"/></th>
+                                                </tr>
+                                                <tr style="text-align:left">
+                                                    <th style="width:80%;padding-left:5px;font-weight: normal">R.I.F.:<span t-field="o.company_id.vat"/></th>
+                                                </tr>
+                                                <tr style="text-align:left">
+                                                    <th style="width:80%;padding-left:5px;font-weight: normal">TLF:<span t-field="o.company_id.phone"/></th>
+                                                </tr>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
-                                <hr style="width: 100%; margin-top: 0.2em; margin-bottom: 0.2em;"/>
+                                <hr style="width: 100%; margin-top: 0.2em; margin-bottom: 0.2em; border: none; border-top: 1px solid black;"/>
                                 <div style="display: flex; flex-wrap: wrap;">
                                     <div style="flex: 1 1 100%; margin-bottom: 0.5em;">
                                         <span><strong>DESTINATARIO:</strong></span>
@@ -85,22 +92,23 @@
                                 </div>
                                 <hr style="width: 100%; margin-top: 0.2em; margin-bottom: 0.2em;"/>
                                 <div style="display: inline-block; vertical-align: middle;">
-                                    <div style="display: inline-block; vertical-align: middle;">
+                                    <div style="display: inline-block; text-align: center; width: 100%;">
                                         <strong>N° GUÍA:</strong>
                                         <strong><span style="margin-right: 5px;" t-field="o.guide"/></strong>
-                                        <strong>PESO: </strong>
+                                        <strong>PESO:</strong>
                                         <strong><span t-out="o.weight"/></strong>
                                     </div>
+                                    <hr style="width: 130%; margin-top: 0.2em; margin-bottom: 0.2em;"/>
                                     <div>
-                                        <span><strong>DOC DE VENTA:</strong></span>
+                                        <span style="margin-right: 1px;"><strong>DOC DE VENTA:</strong></span>
                                         <span t-field="o.origin"/>
                                     </div>
                                     <div>
-                                        <span><strong>CLIENTE:  </strong></span>
+                                        <span style="margin-right: 1px;"><strong>CLIENTE:  </strong></span>
                                         <span t-out="o.partner_id.name" />
                                     </div>
                                     <div>
-                                        <span><strong>ESTADO:  </strong></span>
+                                        <span style="margin-right: 1px;"><strong>ESTADO:  </strong></span>
                                         <span t-field="o.partner_id.state_id.name" />
                                     </div>
                                 </div>

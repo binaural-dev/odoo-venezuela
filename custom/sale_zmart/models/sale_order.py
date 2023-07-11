@@ -1,7 +1,8 @@
 from datetime import datetime,timedelta
 from odoo import api, fields, models,_
 from odoo.exceptions import UserError
-
+import logging
+_logger = logging.getLogger(__name__)
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
     
@@ -61,13 +62,13 @@ class SaleOrderZmart(models.Model):
         string='Confirmation Date', 
         readonly=True
     )
-    notification_email_sent = fields.Boolean(default=False)
+    notification_email_sent = fields.Boolean(
+        default=False
+    )
     
-    def action_confirm(self):
-        res = super().action_confirm()
-        self.confirmation_date = fields.Datetime.now()
-        return res
-
+    def button_invoice_sale_note_rma(self):
+        return self.env.ref('sale_zmart.action_invoice_sale_note_rma').report_action(self)
+    
     def send_cancel_warning_email(self):
         current_time = datetime.now()
         orders_to_notify = self.search([
