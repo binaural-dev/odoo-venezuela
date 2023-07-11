@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230503\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-17 13:51+0000\n"
-"PO-Revision-Date: 2023-05-17 13:51+0000\n"
+"POT-Creation-Date: 2023-07-07 22:13+0000\n"
+"PO-Revision-Date: 2023-07-07 22:13+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -64,6 +64,11 @@ msgid "Igtf Amount"
 msgstr "Monto de IGTF"
 
 #. module: binaural_pos_igtf
+#: model:ir.model.fields,field_description:binaural_pos_igtf.field_pos_payment__include_igtf
+msgid "Include Igtf"
+msgstr "Incluye IGTF"
+
+#. module: binaural_pos_igtf
 #. odoo-python
 #: code:addons/binaural_pos_igtf/models/pos_payment.py:0
 #, python-format
@@ -96,6 +101,13 @@ msgid "Point of Sale Session"
 msgstr "Sesión TPV"
 
 #. module: binaural_pos_igtf
+#. odoo-javascript
+#: code:addons/binaural_pos_igtf/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "Validation Error"
+msgstr "Error de Validacion"
+
+#. module: binaural_pos_igtf
 #. odoo-python
 #: code:addons/binaural_pos_igtf/models/pos_session.py:0
 #, python-format
@@ -103,5 +115,14 @@ msgid ""
 "You have the IGTF configuration turned on, first configure the account and "
 "the percentage"
 msgstr ""
-"Tienes la configuracion de IGTF encendida, configura primero la cuenta contable y "
-"el porcentaje"
+"Tienes la configuracion de IGTF encendida, configura primero la cuenta "
+"contable y el porcentaje"
+
+#. module: binaural_pos_igtf
+#. odoo-javascript
+#: code:addons/binaural_pos_igtf/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid ""
+"You must specify between the payment methods, the tax base and the igtf "
+"payment."
+msgstr "Debes especificar entre los metodos de pago, la base imponible y el pago del igtf."
