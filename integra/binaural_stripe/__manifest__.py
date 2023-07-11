@@ -26,5 +26,10 @@
     'data': [
         # 'security/ir.model.access.csv',        
     ],
+    'assets': {
+        'web.assets_frontend': [
+            'binaural_stripe/static/src/js/stripe_options.js',            
+        ],
+    },
     # only loaded in demonstration mode
 }
