@@ -415,7 +415,7 @@
                     <!--Firma digital-->
                     <div style="height:100px">
                         <img style="max-height:120px;width:200px" t-if="retention.get_signature()"
-                             t-att-src="'data:image/png;base64,%s' % to_text(retention.get_signature())"/>
+                             t-att-src="'data:image/png;base64,%s' % retention.get_signature()"/>
                     </div>
                     <!--Firma digital fin-->
                     <h6 style="text-align: center; margin: 30px 0;border-top: 1px solid #000;width:80%; padding-top:10px;">
@@ -737,7 +737,7 @@
                     <!--Firma digital-->
                     <div style="height:100px">
                         <img style="max-height:120px;width:200px" t-if="retention.get_signature()"
-                             t-att-src="'data:image/png;base64,%s' % to_text(retention.get_signature())"/>
+                             t-att-src="'data:image/png;base64,%s' % retention.get_signature()"/>
                     </div>
                     <!--Firma digital fin-->
                     <h6 style="text-align: center; margin: 30px 0;border-top: 1px solid #000;width:80%; padding-top:10px;">

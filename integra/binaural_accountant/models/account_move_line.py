@@ -13,6 +13,7 @@ class AccountMoveLine(models.Model):
         compute="_compute_foreign_price",
         digits="Tasa",
         store=True,
+        readonly=False,
     )
     foreign_subtotal = fields.Monetary(
         help="Foreign Subtotal of the line",
