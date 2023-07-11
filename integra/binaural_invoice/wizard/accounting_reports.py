@@ -1,10 +1,11 @@
-from dateutil.relativedelta import relativedelta
+import logging
 from datetime import datetime
 from io import BytesIO
-from odoo import models, fields
+
 import xlsxwriter
+from dateutil.relativedelta import relativedelta
+from odoo import fields, models
 from xlsxwriter import utility
-import logging
 
 _logger = logging.getLogger(__name__)
 INIT_LINES = 8
@@ -493,8 +494,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain = []
         is_purchase = self.report == "purchase"
 
-        field_date = "date" if is_purchase else "invoice_date"
-
         if current_company_id:
             search_domain += [("company_id", "=", current_company_id)]
 
@@ -504,8 +503,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             else ["in_invoice", "in_refund", "in_debit"]
         )
 
-        search_domain += [(field_date, ">=", self.date_from)]
-        search_domain += [(field_date, "<=", self.date_to)]
+        search_domain += [("invoice_date", ">=", self.date_from)]
+        search_domain += [("invoice_date", "<=", self.date_to)]
         search_domain += [
             ("state", "not in", ["draft"]),
             ("journal_id.fiscal", "=", True),
