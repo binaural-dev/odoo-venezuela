@@ -402,7 +402,14 @@ class SerialFiscalDriver(SerialDriver):
                     )
             cmd.append(str("3"))  # sub total en factura
 
+            def filter_unique_type_method(payment):
+                return payment["payment_method"] == "20"
+
             if len(invoice["payment_lines"]) == 1 or invoice["payment_lines"][0]["amount"] == 0:
+                cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
+            elif len(invoice["payment_lines"]) > 1 and len(
+                list(filter(filter_unique_type_method, invoice["payment_lines"]))
+            ) == len(invoice["payment_lines"]):
                 cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
             else:
                 for item in invoice["payment_lines"]:
@@ -418,6 +425,7 @@ class SerialFiscalDriver(SerialDriver):
                             + amount_d
                         )
                     )
+
 
             cmd.append(str("101"))
             cmd.append(str("199"))

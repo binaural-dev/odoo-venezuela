@@ -53,34 +53,34 @@ class TestIvaRetentionUsd(AccountRetentionTestCommon):
             {
                 "aliquot": 16,
                 "retention_amount": 13.32,
-                "foreign_retention_amount": 313.9524,
+                "foreign_retention_amount": 313.8975,
             },
             {
                 "aliquot": 8,
                 "retention_amount": 25.1325,
-                "foreign_retention_amount": 592.373025,
+                "foreign_retention_amount": 592.425,
             },
             {
                 "aliquot": 31,
                 "retention_amount": 23898.6075,
-                "foreign_retention_amount": 563290.178775,
+                "foreign_retention_amount": 563290.2375,
             },
         ]
         self.expected_retention_lines_data_100 = [
             {
                 "aliquot": 16,
                 "retention_amount": 17.76,
-                "foreign_retention_amount": 418.6032,
+                "foreign_retention_amount": 418.53,
             },
             {
                 "aliquot": 8,
                 "retention_amount": 33.51,
-                "foreign_retention_amount": 789.8307,
+                "foreign_retention_amount": 789.9,
             },
             {
                 "aliquot": 31,
                 "retention_amount": 31864.81,
-                "foreign_retention_amount": 751053.5717,
+                "foreign_retention_amount": 751053.65,
             },
         ]
 

@@ -193,6 +193,36 @@
               </form>
             </field>
       </record>
+      
+      <record id="view_mercadolibre_product_maestro_update" model="ir.ui.view">
+            <field name="name">Actualizar Datos Producto Maestro</field>
+            <field name="model">mercadolibre.product.maestro.update</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Update Product Maestro" version="7.0">
+                    <h2>Choose MercadoLibre Account</h2>
+                  <field name="connection_account"/>
+                  <br/>
+                  <footer>
+                      <button name="maestro_update" string="Actualizar"  type="object" class="oe_highlight"  />
+                        <button string="Cancel" class="oe_link" special="cancel" />
+                  </footer>
+                </form>
+            </field>
+      </record>
+      <!-- Action wizard - Update product maestro: MercadoLibre-->
+      <record id="action_mercadolibre_product_maestro_update" model="ir.actions.act_window">
+          <field name="name">Actualizar Maestro</field>
+          <field name="type">ir.actions.act_window</field>
+          <field name="binding_model_id" ref="model_mercadolibre_product_maestro" />
+          <field name="view_id" ref="view_mercadolibre_product_maestro_update"/>
+          <field name="binding_type">action</field>
+          <field name="binding_view_types">list,form</field>
+          <field name="res_model">mercadolibre.product.maestro.update</field>
+          <field name="view_mode">form</field>
+          <field name="target">new</field>
+      </record>
+      
       <!-- Action wizard - Add to Connector: MercadoLibre-->
       <record id="action_product_template_add_to_mercadolibre" model="ir.actions.act_window">
           <field name="name">Add Product To MercadoLibre / Bind</field>
