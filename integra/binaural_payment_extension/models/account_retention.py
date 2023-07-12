@@ -1,4 +1,5 @@
 from odoo import api, models, fields, Command, _
+from odoo.tests import Form
 from datetime import datetime
 from odoo.exceptions import UserError
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
@@ -562,6 +563,14 @@ class AccountRetention(models.Model):
 
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
+
+    def action_print_municipal_retention_xlsx(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_url",
+            "url": f"/web/get_xlsx_municipal_retention?&retention_id={self.id}",
+            "target": "self",
+        }
 
     def _set_sequence(self):
         for retention in self:

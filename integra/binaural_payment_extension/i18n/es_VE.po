@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230515\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230712\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-17 22:02+0000\n"
-"PO-Revision-Date: 2023-05-17 22:02+0000\n"
+"POT-Creation-Date: 2023-07-12 20:31+0000\n"
+"PO-Revision-Date: 2023-07-12 20:31+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -474,6 +474,7 @@ msgstr "Razón Social"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_move_line__ciu_id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_product_category__ciu_id
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_product_product__ciu_id
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_product_template__ciu_id
 msgid "CIU"
 msgstr ""
 
@@ -500,6 +501,13 @@ msgstr "Anular"
 #: model:ir.model.fields.selection,name:binaural_payment_extension.selection__account_retention__state__cancel
 msgid "Cancelled"
 msgstr "Anulado"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "Cancelled Municipal Ret"
+msgstr "Ret Municipal Cancelada"
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_template_arcv
@@ -585,7 +593,6 @@ msgstr "Convertir a borrador"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__correlative
-#: model:ir.model.fields,field_description:binaural_payment_extension.field_arcv_report__correlative
 msgid "Correlative"
 msgstr "Correlativo"
 
@@ -751,6 +758,13 @@ msgstr "Descargar excel de impuesto fiscal"
 #: model:ir.model.fields.selection,name:binaural_payment_extension.selection__account_retention__state__draft
 msgid "Draft"
 msgstr "Borrador"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "Draft Municipal Ret %s"
+msgstr "Ret Municipal en Borrador %s"
 
 #. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_economic_activity
@@ -1351,7 +1365,6 @@ msgstr "Ultima modificación"
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_accumulated_fees__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_arcv_report__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__write_uid
-
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_branch__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention__write_uid
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_municipal_retention_patent_report__write_uid
@@ -1443,6 +1456,13 @@ msgstr "Reporte de Patente Municipal desde {date_start} hasta {date_end}"
 
 #. module: binaural_payment_extension
 #. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "Municipal Ret {retention_name} {retention_date}"
+msgstr "Ret Municipal {retention_name} {retention_date}"
+
+#. module: binaural_payment_extension
+#. odoo-python
 #: code:addons/binaural_payment_extension/models/account_retention_line.py:0
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_municipal_client
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_retention_municipal_supplier
@@ -1508,6 +1528,13 @@ msgid "Municipal supplier retention report"
 msgstr "Reporte de retenciones municipales de proveedor"
 
 #. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/report/retention_voucher_report.py:0
+#, python-format
+msgid "Municipal retentions do not have PDF voucher. Please print the xslx"
+msgstr "Las retenciones municipales no tienen recibo PDF. Por favor imprima el excel"
+
+#. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_economic_activity__municipality_id
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_master_configuration_municipality
 msgid "Municipality"
@@ -1548,11 +1575,6 @@ msgstr "Noviembre"
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_islr_customer
 msgid "Nro de Control"
-msgstr ""
-
-#. module: binaural_payment_extension
-#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_template_arcv
-msgid "Nro. Comprobante:"
 msgstr ""
 
 #. module: binaural_payment_extension
@@ -1702,14 +1724,19 @@ msgid "Print Excel"
 msgstr "Imprimir Excel"
 
 #. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_retention_municipal_form_binaural_payment_extension
+msgid "Print municipal retention XLSX"
+msgstr "Imprimir excel de retención municipal"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:binaural_payment_extension.model_product_template
+msgid "Product"
+msgstr "Producto"
+
+#. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_product_category
 msgid "Product Category"
 msgstr "Categoría de producto"
-
-#. module: binaural_payment_extension
-#: model:ir.model,name:binaural_payment_extension.model_product_product
-msgid "Product Variant"
-msgstr "Variantes de producto"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_fees_retention__subtract_money
@@ -2130,6 +2157,13 @@ msgstr ""
 #, python-format
 msgid "The amount of the retention must be greater than zero."
 msgstr "La base imponible de la retención debe ser mayor que cero"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/municipal_retention_xlsx_report.py:0
+#, python-format
+msgid "The company has no tax authorities name"
+msgstr "La compañía no tiene nombre de hacienda"
 
 #. module: binaural_payment_extension
 #. odoo-python
