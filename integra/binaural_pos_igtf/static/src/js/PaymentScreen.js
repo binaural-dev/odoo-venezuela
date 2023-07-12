@@ -15,7 +15,7 @@ odoo.define("binaural_pos_igtf.PaymentScreen", function(require) {
 
       async validateOrder(isForceValidate) {
         let order = this.env.pos.get_order()
-        if (order.igtf_amount >= 0) {
+        if (order.igtf_amount > 0) {
           let payment_lines = order.get_paymentlines()
           let include = payment_lines.filter(el => el.include_igtf)
           if (include.length == 0) {
