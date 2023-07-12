@@ -108,8 +108,8 @@ class WizardAccountingReports(models.TransientModel):
     def parse_sale_book_data(self):
         data = super().parse_sale_book_data()
         for move in data:
-            move_date = datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()
-            if self._check_future_retention_dates(move_date):
+            date = move.get("accounting_date",False)
+            if not date or self._check_future_retention_dates(datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()):
                 move.update({
                     "total_sales_iva": 0,
                     "total_sales_not_iva": 0,
@@ -162,7 +162,7 @@ class WizardAccountingReports(models.TransientModel):
             return {
                 "date_retention": "" if is_purchase else self._format_date(ret_lines.mapped("retention_id").date),
                 "number_retention": "" if is_purchase else move.iva_voucher_number,
-                "iva_retained": "",
+                "iva_retained": "" if is_purchase else self._sum_retention_total(ret_lines) * multiplier,
             }
 
         ret_vals["date_retention"] = self._format_date(ret_lines.mapped("retention_id").date)
@@ -175,7 +175,7 @@ class WizardAccountingReports(models.TransientModel):
         is_check_currency_system = self.currency_system
         retention = lines.mapped("retention_id")
 
-        if self._check_future_retention_dates(retention.date):
+        if self.report == "purchase" and self._check_future_retention_dates(retention.date):
             return 0.0
         if not is_check_currency_system:
             return sum(lines.mapped("foreign_retention_amount"))
