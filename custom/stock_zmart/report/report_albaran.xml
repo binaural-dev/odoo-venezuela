@@ -10,7 +10,7 @@
             <field name="report_type">qweb-pdf</field>
             <field name="report_name">stock_zmart.report_albaran_zmart_2</field>
             <field name="report_file">stock_zmart.report_albaran_zmart_2</field>
-            <field name="print_report_name">'Albaran de entrega - %s - %s' % (object.partner_id.name or '', object.name)</field>
+            <field name="print_report_name">'Guia Despacho - %s - %s' % (object.partner_id.name or '', object.name)</field>
             <field name="paperformat_id" ref="stock_zmart.report_picking_op_albaran"/>
             <field name="binding_model_id" eval="False"/>
             <field name="binding_type">report</field>
@@ -180,7 +180,7 @@
                                                 <td style="text-align:center">
                                                     <span t-field="move.product_id.default_code"/>
                                                 </td>
-                                                <td style="text-align:center">
+                                                <td style="text-align:left">
                                                     <span t-field="move.product_id.name"/>
                                                 </td>
                                                 <td style="text-align:center">
