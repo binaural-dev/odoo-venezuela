@@ -175,7 +175,10 @@ msgid "Sales Order"
 msgstr "Pedido de venta"
 
 #. module: seguridad_sale
+#: model:ir.actions.act_window,name:seguridad_sale.shipping_method_action
 #: model:ir.model.fields,field_description:seguridad_sale.field_sale_order__shipping_method
+#: model_terms:ir.ui.view,arch_db:seguridad_sale.shipping_method_search_form_view
+#: model_terms:ir.ui.view,arch_db:seguridad_sale.shipping_method_tree_view
 msgid "Shipping Method"
 msgstr "Metodo de entrega"
 
@@ -193,3 +196,8 @@ msgstr "Precio unidad"
 #: model:ir.model,name:seguridad_sale.model_sale_shipping_method
 msgid "sale.shipping.method"
 msgstr ""
+
+#. module: seguridad_sale
+#: model_terms:ir.actions.act_window,help:seguridad_sale.shipping_method_action
+msgid "Create a new shipping method!"
+msgstr "Crea un nuevo metodo de entrega!"
