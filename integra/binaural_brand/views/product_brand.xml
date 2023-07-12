@@ -38,6 +38,7 @@
                 <tree string="Product brands" editable="bottom">
                     <field name="name"/>
                     <field name="active" widget="boolean_toggle"/>
+                    <field name="company_id" />
                 </tree>
             </field>
         </record>
