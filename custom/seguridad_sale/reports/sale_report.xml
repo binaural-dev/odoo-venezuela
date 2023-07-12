@@ -27,7 +27,7 @@
                             </div>
                         </div>
                         <hr style="border: none; visibility: hidden;"/>
-                        <div  style="border-bottom: 1px solid black;height: 12px;">
+                        <div  style="border-bottom: 1px solid black;height: 1px;">
                         </div>
                         <div style="margin-top:15px;margin-left:3px" t-field="doc.company_id.vat"/>
                         <div style="margin-left:3px" t-field="doc.company_id.partner_id" t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
@@ -89,7 +89,7 @@
                                 </div>
                                 <div t-if="doc.user_id.name" class="col-auto col-3 mw-100 mb-2">
                                     <strong>Metodo de entrega:</strong>
-                                    <p class="m-0" t-field="doc.carrier_id"/>
+                                    <p class="m-0" t-field="doc.shipping_method"/>
                                 </div>
                             </div>
 

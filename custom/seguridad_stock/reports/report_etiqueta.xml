@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_etiqueta" model="ir.actions.report">
+            <field name="name">Etiqueta</field>
+            <field name="model">stock.picking</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">seguridad_stock.report_print_label</field>
+            <field name="report_file">seguridad_stock.report_print_label</field>
+            <field name="print_report_name">'Etiqueta - %s - %s' % (object.partner_id.name or '', object.name)</field>
+            <field name="paperformat_id" ref="seguridad_stock.paperformat_custom"/>
+            <field name="binding_model_id" ref="stock.model_stock_picking"/>
+            <field name="binding_type">report</field>
+        </record>
+        
+        <template id="report_print_label">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-foreach="range(int(o.package_qty))" t-as="i">
+                        <t t-call="web.basic_layout">
+                            <style>
+                                section {
+                                    border: 1px solid black;
+                                    border-radius: 5px;
+                                    margin-top: 0px;
+                                    padding: 10px;
+                                }
+                                 th {
+                                    border-right: 1px solid white;
+                                    border-left: 1px solid white;
+                                    border-top: 1px solid black;
+                                    line-height: 1.1;
+                                }
+                            </style>
+                            <section id="segmento_1" style="font-size: 0.3em; line-height: 0.8em; width: 4cm;">
+                                <div style="text-align: center;">
+                                    <div>
+                                        <span style="font-size:14px;font-weight:bold;" t-out="o.partner_id.name"/>
+                                    </div>
+                                </div>
+                                <div class="col-8">
+                                    <table style="display: inline-block; vertical-align: middle;width:150%">
+                                        <tr style="text-align:left">
+                                            <th style="padding-left:5px;font-weight: normal">TELEFONOS:</th>
+                                            <th style="width:200%;padding-left:5px;font-weight: normal"><span t-field="o.company_id.phone"/></th>
+                                        </tr>
+                                        <tr style="text-align:left;">
+                                            <th style="text-align:left;padding-left:5px;padding-right:5px;font-weight: normal">TRANSPORTE:</th>
+                                            <th style="width:200%;padding-left:5px;font-weight: normal"><span t-field="o.shipping_method"/></th>
+                                        </tr>
+                                        <tr style="text-align:left">
+                                            <th style="padding-left:5px;font-weight: normal">DESTINO:</th>
+                                            <th style="width:200%;padding-left:5px;font-weight: normal"><span t-field="o.destiny"/></th>
+                                        </tr>
+                                        <tr style="text-align:left">
+                                            <th style="padding-left:5px;font-weight: normal">CONTACTO:</th>
+                                            <th style="width:200%;padding-left:5px;font-weight: normal"><span t-field="o.partner_id.name"/></th>
+                                        </tr>
+                                        <tr style="text-align:left">
+                                            <th style="padding-left:5px;font-weight: normal">DE:</th>
+                                            <th style="width:200%;padding-left:5px;font-weight: normal"><img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="max-height: 10px;" alt="Logo"/></th>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div style="text-align: center;margin-top:3px">
+                                    <div>
+                                        <div><span t-field="o.company_id.street"/></div>
+                                        <div><span t-field="o.company_id.street2"/></div>
+                                        <div><span t-field="o.company_id.city"/>-<span t-field="o.company_id.country_id"/></div>
+                                        <div><span>TELEFONOS:</span><span t-field="o.company_id.phone"/></div>
+                                        <div><span>CELULAR:</span><span  t-field="o.company_id.mobile"/></div>
+                                        <span style="font-size:12px;font-weight:bold;"><t t-out="i+1"/>/<t t-out="o.package_qty"/></span>
+                                    </div>
+                                </div>
+                            </section>
+                        </t>
+                    </t>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>
