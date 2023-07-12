@@ -138,7 +138,7 @@ class sale_order(models.Model):
     meli_shipping_id =  fields.Char('Meli Shipping Id')
     meli_shipment = fields.Many2one('mercadolibre.shipment',string='Meli Shipment Obj')
     meli_shipment_logistic_type = fields.Char(string="Logistic Type",index=True)
-    meli_update_forbidden = fields.Boolean(string="Bloqueado para actualizar desde ML",default=False, index=True)
+    meli_update_forbidden = fields.Boolean(string="Bloqueado para actualizar desde ML",default=True, index=True)
 
     def action_confirm(self):
         #_logger.info("meli order action_confirm: " + str(self.mapped("name")) )
@@ -642,7 +642,7 @@ class mercadolibre_orders(models.Model):
     def _set_product_unit_price( self, product_related_obj, Item, config=None ):
         order = self
         #unit price after applied taxes
-        unit_price = float(Item['unit_price'])- float(float(order.coupon_amount)/float(Item['quantity']))
+        unit_price = float(Item['full_unit_price'])- float(float(order.coupon_amount)/float(Item['quantity']))
         upd_line = {
             "price_unit": ml_product_price_conversion( self, product_related_obj=product_related_obj, price=unit_price, config=config )
         }
