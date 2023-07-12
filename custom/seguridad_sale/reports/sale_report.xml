@@ -89,7 +89,7 @@
                                 </div>
                                 <div t-if="doc.user_id.name" class="col-auto col-3 mw-100 mb-2">
                                     <strong>Metodo de entrega:</strong>
-                                    <p class="m-0" t-field="doc.shipping_method"/>
+                                    <p class="m-0" t-field="doc.carrier_id"/>
                                 </div>
                             </div>
 

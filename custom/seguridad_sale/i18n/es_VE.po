@@ -191,13 +191,3 @@ msgstr "Impuestos"
 #: model_terms:ir.ui.view,arch_db:seguridad_sale.report_saleorder_2
 msgid "Unit Price"
 msgstr "Precio unidad"
-
-#. module: seguridad_sale
-#: model:ir.model,name:seguridad_sale.model_sale_shipping_method
-msgid "sale.shipping.method"
-msgstr ""
-
-#. module: seguridad_sale
-#: model_terms:ir.actions.act_window,help:seguridad_sale.shipping_method_action
-msgid "Create a new shipping method!"
-msgstr "Crea un nuevo metodo de entrega!"
