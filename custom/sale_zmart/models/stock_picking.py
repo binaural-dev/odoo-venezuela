@@ -2,7 +2,6 @@ import base64
 import qrcode
 import io
 from odoo import models, fields,api
-
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
@@ -36,13 +35,15 @@ class StockPicking(models.Model):
         related = "sale_id.user_id"
     )
     user_pick_id = fields.Many2one(
-        'res.users'
+        'res.users',
+        domain=lambda self: self.get_user_domain(),
     )
+
     user_pack_id = fields.Many2one(
         'res.users'
     )
     user_sale = fields.Many2one(
-        related = "sale_id.user_id"
+        related = "sale_id.user_id",
     )
     user_out_id = fields.Many2one(
         'res.users'
@@ -65,11 +66,14 @@ class StockPicking(models.Model):
         store = True
     )
     
+    def get_user_domain(self):
+        return [('id', '=', self.env.user.id)]
+    
     def button_validate(self):
         super().button_validate()
         if self.sequence_code == 'PICK':
             current_user = self.env.user
-            self.user_pick_id = current_user
+            self.user_pick_id = current_user.id
         if self.sequence_code == 'PACK':
             current_user = self.env.user
             self.user_pack_id = current_user
@@ -77,14 +81,25 @@ class StockPicking(models.Model):
             current_user = self.env.user
             self.user_out_id = current_user
     
-    
-    @api.onchange('guide','package_qty')
+    @api.onchange('guide','package_qty','user_pack_id')
     def onchange_guide(self):
         if self.sequence_code == 'PACK':
+            self.write({'user_pack_id':self.env.user.id})
             picking_outs = self.env['stock.picking'].search([('origin', '=', self.origin), ('sequence_code', '=', 'OUT')])
             if picking_outs:
                 picking_outs.write({'guide': self.guide})
                 picking_outs.write({'package_qty': self.package_qty})
+                picking_outs.write({'user_pack_id': self.env.user.id})
+    
+    @api.onchange('user_pick_id')
+    def onchange_user_pick(self):
+        if self.sequence_code == 'PICK':
+            picking_pack = self.env['stock.picking'].search([('origin', '=', self.origin),('sequence_code','=','PACK')])
+            if picking_pack:
+                picking_pack.write({'user_pick_id': self.user_pick_id})
+            picking_out = self.env['stock.picking'].search([('origin', '=', self.origin),('sequence_code','=','OUT')])
+            if picking_out:
+                picking_out.write({'user_pick_id': self.user_pick_id})
     
     @api.depends('name')
     def _compute_qr_code(self):
@@ -108,4 +123,3 @@ class StockPicking(models.Model):
     
     def _get_report_lang(self):
         return self.move_ids and self.move_ids[0].partner_id.lang or self.partner_id.lang or self.env.lang
-    

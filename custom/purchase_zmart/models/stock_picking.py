@@ -63,9 +63,3 @@ class StockPicking(models.Model):
     user_responsible = fields.Many2one(
         'res.users',
     )
-    weight_factor = fields.Float(string='Total Weight', compute='_compute_weight_factor')
-
-    @api.depends('weight', 'packing_factor')
-    def _compute_weight_factor(self):
-        for record in self:
-            record.weight_factor = (record.weight * record.packing_factor)/100 + record.weight

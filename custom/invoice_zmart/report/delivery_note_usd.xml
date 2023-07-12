@@ -46,7 +46,7 @@
                     <div style="display: flex; align-items: center;margin-top:-100px">
                         <div style="display: inline-block;font-size:14px" class="align-right">
                             <div>
-                                <table style="width:100%; text-align:right;">
+                                <table style="width:100%; text-align:right;border: 1px solid white">
                                     <tr>
                                     <th style="width:55%;font-weight:normal;font-size:14px">Nota de Entrega:</th>
                                     <th style="width:30%;font-weight:normal;font-size:14px"><span t-field="invoice.correlative"/></th>
@@ -85,7 +85,7 @@
                     </div>
                 </div>
                 <div>
-                    <table style="width:70%; text-align:left">
+                    <table style="width:70%; text-align:left;border: 1px solid white">
                         <tr>
                             <th style="width:10%;font-weight:normal;font-size:14px">Cliente</th>
                             <th style="width:100%;font-weight:normal;font-size:14px;"><span t-field="invoice.partner_id"/></th>
@@ -130,7 +130,7 @@
                 </thead>
             </xpath>
             <xpath expr="//section[@id='segmento_3']/table/tbody" position="replace">
-                <tbody>
+                <tbody style="border: 1px solid white">
                     <t t-set="base_sin_descuento" t-value="0.00"/>
                     <t t-set="base_16" t-value="0.00"/>
                     <t t-set="iva_16" t-value="0.00"/>
@@ -200,13 +200,27 @@
             </xpath>
             <xpath expr="//t/div/div/section[@id='segmento_4']/table/tr/td[1]" position="replace">
             <hr style="border: 1px solid black;" />
-                <td colspan="4">
+                <td style="border: 1px solid white" colspan="4">
                     <span >Descripción:&amp;nbsp;</span>
                     <span t-field="invoice.narration"></span>
                 </td>
             </xpath>
-            <xpath expr="//t/div/div/section[@id='segmento_4']/table/tr/td[3]/table/tr/td[1]" position="replace">
-                <td style="text-align: right" colspan="3">Sub-Total USD</td>
+            <xpath expr="//t/div/div/section[@id='segmento_4']/table" position="replace">
+                 <table name="table_total" width="100%" style="border: 1px solid white">
+                    <tr>
+                        <td colspan="4">
+                            <span >Observacion:&amp;nbsp;</span>
+                            <span t-field="invoice.narration"></span>
+                            
+                            <t t-set="descuento" t-value="base_sin_descuento - invoice.amount_untaxed"/>
+                        
+                            <td style="text-align: right;width:50%" colspan="3">Sub-Total USD</td>
+                            <td class="td_right" style="text-align: right">
+                                <span t-esc="'$ {0:,.2f}'.format(float(invoice.amount_total)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                            </td>
+                        </td>
+                    </tr>
+                </table>
             </xpath>
         </template>
     </data>
