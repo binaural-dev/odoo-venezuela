@@ -56,6 +56,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
+            "accounting_date": self._format_date(move.date),
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
             "document_number": move.name,
@@ -78,6 +79,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
+            "accounting_date": self._format_date(move.date),
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
             "document_number": move.name,
@@ -503,10 +505,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             else ["in_invoice", "in_refund", "in_debit"]
         )
 
-        search_domain += [("invoice_date", ">=", self.date_from)]
-        search_domain += [("invoice_date", "<=", self.date_to)]
+        search_domain += [("date", ">=", self.date_from)]
+        search_domain += [("date", "<=", self.date_to)]
         search_domain += [
-            ("state", "not in", ["draft"]),
+            ("state", "=", "posted"),
             ("journal_id.fiscal", "=", True),
             ("move_type", "in", move_type),
         ]

@@ -1,6 +1,6 @@
 from datetime import datetime
-import xlsxwriter
 
+import xlsxwriter
 from odoo import _, api, models
 from odoo.osv import expression
 
@@ -108,7 +108,7 @@ class WizardAccountingReports(models.TransientModel):
     def parse_sale_book_data(self):
         data = super().parse_sale_book_data()
         for move in data:
-            move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
+            move_date = datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()
             if self._check_future_retention_dates(move_date):
                 move.update({
                     "total_sales_iva": 0,
@@ -126,7 +126,7 @@ class WizardAccountingReports(models.TransientModel):
     def parse_purchase_book_data(self):
         data = super().parse_purchase_book_data()
         for move in data:
-            move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
+            move_date = datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()
             if self._check_future_retention_dates(move_date):
                 move.update({
                     "total_purchases_iva": 0,
@@ -145,15 +145,23 @@ class WizardAccountingReports(models.TransientModel):
 
     def get_retention_iva_values(self, move_id):
         move = self.env["account.move"].browse(move_id)
+        is_purchase = self.report == "purchase"
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
         ret_lines = move.retention_iva_line_ids
         retention = ret_lines.mapped("retention_id")
         ret_vals = dict()
 
         if not ret_lines or self._check_future_retention_dates(retention.date):
+            if not ret_lines:
+                return {
+                    "date_retention": "",
+                    "number_retention": "",
+                    "iva_retained": "",
+                }
+            
             return {
-                "date_retention": "",
-                "number_retention": "",
+                "date_retention": "" if is_purchase else self._format_date(ret_lines.mapped("retention_id").date),
+                "number_retention": "" if is_purchase else move.iva_voucher_number,
                 "iva_retained": "",
             }
 
