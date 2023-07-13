@@ -42,6 +42,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         res["document_number"] = move.mf_invoice_number
         res["mf_reportz"] = move.mf_reportz
         res["mf_serial"] = move.mf_serial
+        res["number_invoice_affected"] = move.reversed_entry_id.mf_invoice_number or "" 
         return res
 
     def update_amounts(self, cumulative, amounts):
