@@ -108,8 +108,13 @@ class WizardAccountingReports(models.TransientModel):
     def parse_sale_book_data(self):
         data = super().parse_sale_book_data()
         for move in data:
-            date = move.get("accounting_date",False)
-            if not date or self._check_future_retention_dates(datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()):
+            date = move.get("accounting_date", False)
+            if move.get("vat", "") != "RESUMEN" and (
+                not date
+                or self._check_future_retention_dates(
+                    datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()
+                )
+            ):
                 move.update({
                     "total_sales_iva": 0,
                     "total_sales_not_iva": 0,
