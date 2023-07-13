@@ -950,11 +950,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 total_line = idx_line + 2
                 worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
 
-            column_range = f"C{row_resume + 1}:{utility.xl_col_to_name(total_line)}{row_resume + 1}"
+            column_bi_range = f"C{row_resume + 1}:{utility.xl_col_to_name(total_line - 1)}{row_resume + 1}"
+            column_df_range = f"D{row_resume + 1}:{utility.xl_col_to_name(total_line)}{row_resume + 1}"
             imposed_formula = (
-                f"=SUMPRODUCT(--({column_range}), --(MOD(COLUMN({column_range}), 2)=1))"
+                f"=SUMPRODUCT(--({column_bi_range}), --(MOD(COLUMN({column_bi_range}), 2)=1))"
             )
-            debit_formula = f"=SUMPRODUCT(--({column_range}), --(MOD(COLUMN({column_range}), 2)=0))"
+            debit_formula = f"=SUMPRODUCT(--({column_df_range}), --(MOD(COLUMN({column_df_range}), 2)=0))"
 
             worksheet.write_formula(
                 row_resume, total_line + 1, imposed_formula, cell_formats.get("number")

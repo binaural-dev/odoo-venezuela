@@ -15,9 +15,9 @@ class WizardAccountingReports(models.TransientModel):
         retention_moves -= credit_notes
 
         retention_resume_lines.append(0.0)
-        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids) for move in retention_moves]))
+        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted")) for move in retention_moves]))
         retention_resume_lines.append(0.0)
-        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids) * -1 for move in credit_notes]))
+        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted")) * -1 for move in credit_notes]))
 
         return retention_resume_lines
 
