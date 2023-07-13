@@ -89,3 +89,69 @@ msgstr ""
 #: model:ir.model,name:seguridad_stock.model_stock_picking
 msgid "Transfer"
 msgstr "Transferir"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<span><strong>Delivery Address:</strong></span>"
+msgstr "Direccion de envio:"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Code</strong>"
+msgstr "Codigo"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Description</strong>"
+msgstr "Descripción"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>From</strong>"
+msgstr "Desde"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Lot/Serial Number</strong>"
+msgstr "Numero Lote/Serie"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Order:</strong>"
+msgstr "Orden:"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Product Barcode</strong>"
+msgstr "Cod Barra"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Quantity</strong>"
+msgstr "Cantidad"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Scheduled Date:</strong>"
+msgstr "Cita agendada:"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Status:</strong>"
+msgstr "Estado:"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Warranty</strong>"
+msgstr "Garantia"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "From"
+msgstr "Desde"
+
+#. module: seguridad_stock
+#: model:ir.model.fields,field_description:seguridad_stock.field_product_product__warranty
+#: model:ir.model.fields,field_description:seguridad_stock.field_product_template__warranty
+msgid "Warranty"
+msgstr "Garantia"
