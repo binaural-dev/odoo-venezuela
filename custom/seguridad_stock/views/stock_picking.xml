@@ -1,0 +1,16 @@
+<odoo>
+    <data>
+        <record id="view_picking_form_inherited_seguridad" model="ir.ui.view">
+            <field name="name">stock.picking.form.seguridad</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <field name="location_id" position="after">
+                    <field name="package_qty"/>
+                    <field name="destiny"/>
+                    <field name="shipping_method"/>
+                </field>
+            </field>
+        </record>
+    </data>
+</odoo>

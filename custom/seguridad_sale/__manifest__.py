@@ -9,7 +9,7 @@
     "version": "16.0",
     # any module necessary for this one to work correctly
     "depends": [
-        "binaural_sale",
+        "sale",
     ],
     # always loaded
     "data": [
@@ -17,6 +17,7 @@
         'data/paperformat.xml',
         'reports/sale_report.xml',
         'views/sale_order.xml',
+        'views/shipping_method.xml',
     ],
     "images": ["static/description/icon.png"],
     "application": True,
