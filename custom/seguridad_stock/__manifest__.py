@@ -13,7 +13,9 @@
     "data": [
         'data/paperformat.xml',
         'reports/report_etiqueta.xml',
+        'reports/stock_report_views.xml',
         'views/stock_picking.xml',
+        'views/product_template.xml',
     ],
     "images": ["static/description/icon.png"],
     "application": True,

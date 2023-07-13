@@ -32,14 +32,14 @@
                                     line-height: 1.1;
                                 }
                             </style>
-                            <section id="segmento_1" style="font-size: 0.3em; line-height: 0.8em; width: 4cm;">
+                            <section id="segmento_1" style="font-size: 0.3em; line-height: 0.8em; width: 11cm;height:8cm">
                                 <div style="text-align: center;">
                                     <div>
-                                        <span style="font-size:14px;font-weight:bold;" t-out="o.partner_id.name"/>
+                                        <span style="font-size:20px;font-weight:bold;" t-out="o.partner_id.name"/>
                                     </div>
                                 </div>
                                 <div class="col-8">
-                                    <table style="display: inline-block; vertical-align: middle;width:150%">
+                                    <table style="display: inline-block; vertical-align: middle;width:150%;font-size:15px">
                                         <tr style="text-align:left">
                                             <th style="padding-left:5px;font-weight: normal">TELEFONOS:</th>
                                             <th style="width:200%;padding-left:5px;font-weight: normal"><span t-field="o.company_id.phone"/></th>
@@ -58,18 +58,18 @@
                                         </tr>
                                         <tr style="text-align:left">
                                             <th style="padding-left:5px;font-weight: normal">DE:</th>
-                                            <th style="width:200%;padding-left:5px;font-weight: normal"><img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="max-height: 10px;" alt="Logo"/></th>
+                                            <th style="width:200%;padding-left:5px;font-weight: normal"><img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="max-height: 30px;" alt="Logo"/></th>
                                         </tr>
                                     </table>
                                 </div>
                                 <div style="text-align: center;margin-top:3px">
-                                    <div>
+                                    <div style="font-size:14px">
                                         <div><span t-field="o.company_id.street"/></div>
                                         <div><span t-field="o.company_id.street2"/></div>
                                         <div><span t-field="o.company_id.city"/>-<span t-field="o.company_id.country_id"/></div>
                                         <div><span>TELEFONOS:</span><span t-field="o.company_id.phone"/></div>
                                         <div><span>CELULAR:</span><span  t-field="o.company_id.mobile"/></div>
-                                        <span style="font-size:12px;font-weight:bold;"><t t-out="i+1"/>/<t t-out="o.package_qty"/></span>
+                                        <span style="font-size:17px;font-weight:bold;"><t t-out="i+1"/>/<t t-out="o.package_qty"/></span>
                                     </div>
                                 </div>
                             </section>
