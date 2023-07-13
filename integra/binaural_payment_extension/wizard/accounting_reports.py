@@ -147,7 +147,7 @@ class WizardAccountingReports(models.TransientModel):
         move = self.env["account.move"].browse(move_id)
         is_purchase = self.report == "purchase"
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
-        ret_lines = move.retention_iva_line_ids
+        ret_lines = move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted")
         retention = ret_lines.mapped("retention_id")
         ret_vals = dict()
 
