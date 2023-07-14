@@ -10,6 +10,9 @@
                     <field name="destiny"/>
                     <field name="shipping_method"/>
                 </field>
+                <xpath expr="//button[@name='button_scrap']" position="before">
+                    <button string="Nota de Despacho" type="object" name="action_report_picking_2" />
+                </xpath>
             </field>
         </record>
     </data>

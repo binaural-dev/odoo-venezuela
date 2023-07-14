@@ -62,14 +62,22 @@
                                         </tr>
                                     </table>
                                 </div>
-                                <div style="text-align: center;margin-top:3px">
-                                    <div style="font-size:14px">
+                                <div style="float:left;width: 40%;">
+                                    <div style="font-size:11px">Nº de Pedido:<span style="font-size:10px" t-field="o.origin"/></div>
+                                    <div t-if="o.sale_id.invoice_ids" style="font-size:11px">Factura asociada:<span style="font-size:10px" t-field="o.sale_id.invoice_ids"/></div>
+                                    <div>-</div>
+                                    <div >
+                                        <div style="margin-left:-9px" t-field="o.name" t-options="{'widget': 'barcode', 'width': 300, 'height': 50, 'img_style': 'width:150px;height:25px;'}"/>
+                                    </div>
+                                </div>
+                                <div style="float:right;width: 60%;">
+                                    <div style="font-size:11px">
                                         <div><span t-field="o.company_id.street"/></div>
                                         <div><span t-field="o.company_id.street2"/></div>
                                         <div><span t-field="o.company_id.city"/>-<span t-field="o.company_id.country_id"/></div>
                                         <div><span>TELEFONOS:</span><span t-field="o.company_id.phone"/></div>
                                         <div><span>CELULAR:</span><span  t-field="o.company_id.mobile"/></div>
-                                        <span style="font-size:17px;font-weight:bold;"><t t-out="i+1"/>/<t t-out="o.package_qty"/></span>
+                                        <span style="font-size:15px;font-weight:bold;"><t t-out="i+1"/>/<t t-out="o.package_qty"/></span>
                                     </div>
                                 </div>
                             </section>

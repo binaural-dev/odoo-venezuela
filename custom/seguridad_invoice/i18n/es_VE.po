@@ -67,12 +67,12 @@ msgstr ""
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
 msgid "<strong>Amount Due</strong>"
-msgstr ""
+msgstr "Importe adeudado"
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
 msgid "<strong>Credit Note Date:</strong>"
-msgstr ""
+msgstr "Fecha Nota de Crédito"
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
@@ -112,7 +112,7 @@ msgstr "Referencia"
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
 msgid "<strong>Shipping Address:</strong>"
-msgstr ""
+msgstr "Direccion de Envio"
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
@@ -122,12 +122,12 @@ msgstr ""
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
 msgid "Amount Due"
-msgstr ""
+msgstr "Importe Adeudado"
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
 msgid "Cancelled Invoice"
-msgstr ""
+msgstr "Factura cancelada"
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
@@ -142,7 +142,7 @@ msgstr "Descuento"
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
 msgid "Draft Invoice"
-msgstr ""
+msgstr "Borrador de Factura"
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
@@ -162,7 +162,7 @@ msgstr "Facturas"
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
 msgid "Paid on"
-msgstr ""
+msgstr "Pagado en"
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
