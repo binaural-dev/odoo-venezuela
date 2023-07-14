@@ -9,7 +9,6 @@
                     <field name="package_qty"/>
                     <field name="destiny"/>
                     <field name="shipping_method"/>
-                    <field name="action_report_picking_2_datetime"/>
                 </field>
                 <xpath expr="//button[@name='button_scrap']" position="before">
                     <button string="Nota de Despacho" type="object" name="action_report_picking_2" />

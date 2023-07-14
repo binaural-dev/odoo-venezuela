@@ -127,10 +127,10 @@
                                 <t t-else=""><strong>Date:</strong></t>
                                 <p class="m-0" t-field="o.invoice_date"/>
                             </div>
-                            <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_date_due and o.move_type == 'out_invoice' and o.state == 'posted'" name="due_date">
+                            <!-- <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_date_due and o.move_type == 'out_invoice' and o.state == 'posted'" name="due_date">
                                 <strong>Due Date:</strong>
                                 <p class="m-0" t-field="o.invoice_date_due"/>
-                            </div>
+                            </div> -->
                             <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_origin" name="origin">
                                 <strong>Nº de Pedido:</strong>
                                 <p class="m-0" t-field="o.invoice_origin"/>

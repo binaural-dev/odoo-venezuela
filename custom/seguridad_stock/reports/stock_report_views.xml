@@ -31,8 +31,8 @@
                                     <div t-if="o.should_print_delivery_address()">
                                         <div><strong>Fecha:</strong> <span t-out="o.date.strftime('%d/%m/%Y')"/></div>
                                         <div><strong>Factura:</strong><span t-field="o.sale_id.invoice_ids"/></div>
-                                        <div><strong>Vendido a:</strong><span style="margin-left:3px" t-field="o.partner_id.name"/></div>
-                                        <div><strong>Vendedor:</strong><span style="margin-left:3px" t-field="o.comercial"/></div>
+                                        <div><strong style="font-weight:bold;">Vendido a:</strong><span style="margin-left:3px" t-field="o.partner_id.name"/></div>
+                                        <div><strong style="font-weight:bold;">Vendedor:</strong><span style="margin-left:3px" t-field="o.comercial"/></div>
                                             <div><strong>Enviar por:</strong> <span t-field="o.shipping_method"/></div>
                                             <div><strong>Destino:</strong><span style="display: inline-block;" t-field="o.destiny"/></div>
                                             <div><span style="display: inline-block;"><strong>Impresion: </strong></span> <span style="display: inline-block;" t-field="o.action_report_picking_2_datetime"/></div>
@@ -198,6 +198,11 @@
                                 </p>
                                 <p t-field="o.note"/>
                             </div>
+                            <div style="width: 600px; text-align: center;margin-top:40px;margin-left:100px">
+                                <span>ACEPTADO CONFORME ____________________________________ CEDULA __________________</span>
+                            </div>
+                            <div style="width: 800px; text-align: center;margin-top:40px;margin-left:60px">
+                                <span>ENTREGADO POR ____________________________________ CHEQUEADO POR ____________________________________ </span></div>
                             <div class="footer">
                                 <div class="row">
                                     <div class="col-12">
@@ -205,7 +210,7 @@
                                             <div style="text-align: center;">
                                                 <div>He recibido la mercancia en perfecto estado y conforme a lo acordado</div>
                                             </div>
-                                            <div><span style="margin-left:100px">Entregado por:</span><span style="margin-left:300px">Chequeado por:</span></div>
+                                            
                                             <div  style="border-bottom: 1px solid black;height:4px;"/>
                                             <div style="text-align: center;">
                                                 <div>

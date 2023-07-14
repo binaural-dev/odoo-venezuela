@@ -31,11 +31,14 @@
                         </div>
                         <div style="margin-top:15px;margin-left:3px" t-field="doc.company_id.vat"/>
                         <div style="margin-left:3px" t-field="doc.company_id.partner_id" t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
-                        <div style="margin-left:3px" t-field="doc.company_id.phone"/>
-                        <div style="margin-left:3px" t-field="doc.company_id.mobile"/>
-                        <div style="margin-top:10px"><span>Cliente:</span><span style="margin-left:2px" t-field="doc.partner_id.name"/></div>
-                        <div><span>Direccion:</span><span style="margin-left:2px" t-field="doc.partner_id.contact_address"/></div>
-                        <div><span>Telefono:</span><span style="margin-left:2px" t-field="doc.partner_id.phone"/></div>
+                        <div style="margin-left:3px"><span t-field="doc.company_id.phone"/></div>
+                        <div style="margin-left:3px"><span t-field="doc.company_id.mobile"/></div>
+                        <div style="margin-left:500px;margin-top:-195px">
+                            <div style="margin-top:10px"><span>Cliente:</span><span style="margin-left:2px" t-field="doc.partner_id.name"/></div>
+                            <div style="margin-top:10px"><span style="margin-left:2px" t-field="doc.partner_id.vat"/></div>
+                            <div><span>Direccion:</span><span style="margin-left:2px" t-field="doc.partner_id.contact_address"/></div>
+                            <div style="margin-bottom:120px"><span>Telefono:</span><span style="margin-left:2px" t-field="doc.partner_id.phone"/></div>
+                        </div>
                         <t t-if="doc.partner_shipping_id == doc.partner_invoice_id
                                             and doc.partner_invoice_id != doc.partner_id
                                             or doc.partner_shipping_id != doc.partner_invoice_id">
@@ -100,15 +103,16 @@
                             <table class="table table-sm o_main_table table-borderless mt-4">
                                 <!-- In case we want to repeat the header, remove "display: table-row-group" -->
                                 <thead style="display: table-row-group">
-                                    <tr>
-                                        <th name="th_description" class="text-start">Description</th>
-                                        <th name="th_quantity" class="text-end">Quantity</th>
-                                        <th name="th_priceunit" class="text-end">Unit Price</th>
-                                        <th name="th_discount" t-if="display_discount" class="text-end" groups="product.group_discount_per_so_line">
+                                    <tr style="border-top: 1px solid black;">
+                                        <th style="border-right: 1px solid black;border-left: 1px solid black" name="th_code" class="text-start">Description</th>
+                                        <th style="border-right: 1px solid black" name="th_description" class="text-start">Description</th>
+                                        <th style="border-right: 1px solid black" name="th_quantity" class="text-end">Quantity</th>
+                                        <th style="border-right: 1px solid black" name="th_priceunit" class="text-end">Unit Price</th>
+                                        <th style="border-right: 1px solid black" name="th_discount" t-if="display_discount" class="text-end" groups="product.group_discount_per_so_line">
                                             <span>Disc.%</span>
                                         </th>
-                                        <th name="th_taxes" class="text-end">Taxes</th>
-                                        <th name="th_subtotal" class="text-end">
+                                        <th style="border-right: 1px solid black" name="th_taxes" class="text-end">Taxes</th>
+                                        <th style="border-right: 1px solid black" name="th_subtotal" class="text-end">
                                             <span groups="account.group_show_line_subtotals_tax_excluded">Importe</span>
                                             <span groups="account.group_show_line_subtotals_tax_included">Total Price</span>
                                         </th>
@@ -125,7 +129,8 @@
 
                                         <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
                                             <t t-if="not line.display_type">
-                                                <td name="td_name"><span t-field="line.name"/></td>
+                                                <td name="td_code"><span t-field="line.product_id.default_code"/></td>
+                                                <td name="td_name"><span t-field="line.product_id.name"/></td>
                                                 <td name="td_quantity" class="text-end">
                                                     <span t-field="line.product_uom_qty"/>
                                                     <span t-field="line.product_uom"/>
@@ -157,8 +162,9 @@
                                                 </td>
                                             </t>
                                         </tr>
-
+                                    
                                         <t t-if="current_section and (line_last or doc.order_line[line_index+1].display_type == 'line_section') and not line.is_downpayment">
+                                            <br/>
                                             <tr class="is-subtotal text-end">
                                                 <td name="td_section_subtotal" colspan="99">
                                                     <strong class="mr16">Subtotal</strong>
@@ -209,6 +215,29 @@
                                 </p>
                             </div>
                         </div>
+                        <div class="footer">
+                        <div class="row">
+                            <div class="col-12">
+                                <td style="width: 350px">
+                                    <div  style="border-bottom: 1px solid black;height:4px;"/>
+                                    <div style="text-align: center;">
+                                        <div>
+                                            <span t-field="doc.company_id.phone" />
+                                            <span t-field="doc.company_id.email" />
+                                            <span t-field="doc.company_id.website" />
+                                        </div>
+                                    </div>
+                                    <div t-if="report_type == 'pdf'" class="text-muted" style="text-align: center;">
+                                        Pagina:
+                                        <span class="page"/>
+                                        de
+                                        <span class="topage"/>
+                                    </div>
+                                </td>
+                                <br/>
+                            </div>
+                        </div>
+                </div>
                     </t>
 
                     </t>

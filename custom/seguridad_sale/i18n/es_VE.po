@@ -87,7 +87,7 @@ msgstr ""
 #. module: seguridad_sale
 #: model_terms:ir.ui.view,arch_db:seguridad_sale.report_saleorder_2
 msgid "Description"
-msgstr "Descripcion"
+msgstr "Descripción"
 
 #. module: seguridad_sale
 #: model:ir.model.fields,field_description:seguridad_sale.field_sale_shipping_method__display_name

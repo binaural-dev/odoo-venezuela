@@ -8,6 +8,7 @@
         <field name="arch" type="xml">
             <field name="partner_shipping_id" position="after">
                 <field name="shipping_method"/>
+                
             </field>
         </field>
     </record>
