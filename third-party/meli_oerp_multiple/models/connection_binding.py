@@ -1095,6 +1095,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 if ( bind.stock_error and 'fulfillment' in bind.stock_error ):
 
                     bind.meli_stock_status = 'revision_fulfillment'
+
             else:
                 if (bind.meli_stock_moves_update):
                     if (bind.stock_update):
@@ -1110,7 +1111,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
     meli_stock_status = fields.Selection(selection=[('update','Actualizar'),('updated','Actualizado'),('revision','Revisar'),('revision_unmoved','Revisar sin movimientos'),('revision_error','Revisar con error'),('revision_fulfillment','Fulfillment')],string="Status de stock",compute=_meli_stock_status,store=True,index=True)
 
     def get_stock_str(self,meli=None):
-
         stocks = []
         stocks_str = ""
         stocks_on_hand = 0.0
@@ -1819,6 +1819,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 _logger.info("mercadolibre.product product_post_price: bindv.price:"+str(bindv.price)+" meli_price: "+str(bindv.meli_price))
                 res = product.x_product_post_price( context=context, meli_price=bindv.meli_price, meli_currency=meli_currency, meli=meli, config=config, meli_id=meli_id, meli_id_variation=meli_id_variation )
                 if res and 'error' in res:
+                    bindv.price_update = ml_datetime( str( datetime.now() ) )
                     return res
                 bindv.price_update = ml_datetime( str( datetime.now() ) )
                 #more than one

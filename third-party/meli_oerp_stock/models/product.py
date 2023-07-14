@@ -156,17 +156,23 @@ class product_product(models.Model):
             #Cantidad disponible en esta ubicacion
             if ( not qty_method or qty_method=='virtual' ):
                 qty_available_op = quant_obj._get_available_quantity( product_id, loc, allow_negative=True )
-                #_logger.info("qty_available_op virtual: "+str(loc.name)+" "+str(qty_available_op))
+                #_logger.info("qty_available_op virtual: "+str(product_id.id)+" "+str(product_id.display_name)+ " loc:"+str(loc.display_name)+" "+str(qty_available_op))
             elif ( qty_method=='virtual_absoluto' ):
                 #qty_available_op = quant_obj._get_available_quantity( product_id, loc )
                 qty_available_op = quant_obj._get_available_quantity( product_id, loc, allow_negative=False )
+                #_logger.info("qty_available_op virtual_absoluto: "+str(product_id.id)+" "+str(product_id.display_name)+ " loc:"+str(loc.display_name)+" "+str(qty_available_op))
             else:
                 if (qty_method=='theoretical'):
-                    qty_available_op = product_id.get_theoretical_quantity( product_id.id, loc.id, allow_negative=True )
+                    #qty_available_op = product_id.get_theoretical_quantity( product_id.id, loc.id )
+                    quants = self.env['stock.quant']._gather( product_id, location_id=loc )
+                    qty_available_op = (quants and max([(quant.quantity) for quant in quants])) or 0
+                    #qty_available = product_id.qty_available
                     #_logger.info("qty_available_op theoretical: "+str(loc.name)+" "+str(qty_available_op))
 
                 if (qty_method=='qty_reserved'):
-                    qty_available_op = product_id.get_theoretical_quantity( product_id.id, loc.id, allow_negative=True )
+                    quants = self.env['stock.quant']._gather( product_id, location_id=loc )
+                    qty_available_op = (quants and max([(quant.reserved_quantity) for quant in quants])) or 0
+                    #qty_available_op = product_id.get_theoretical_quantity( product_id.id, loc.id )
                     #_logger.info("qty_available_op qty_reserved: "+str(loc.name)+" "+str(qty_available_op))
 
             #Operacion entre ubicaciones

@@ -226,6 +226,7 @@ class MercadoLibreMaestro(models.Model):
 
     is_sku_valid = fields.Boolean(string="Sku valido",help="El sku coincide con alguna publicacion",index=True)
     is_barcode_valid = fields.Boolean(string="Barcode valido",help="El barcode coincide con alguna publicacion",index=True)
+
     is_sku_odoo = fields.Boolean(string="Is Sku Odoo",index=True)
     is_barcode_odoo = fields.Boolean(string="Is Barcode Odoo",index=True)
     is_meli_odoo = fields.Boolean(string="Is Meli Id in Odoo",index=True)
