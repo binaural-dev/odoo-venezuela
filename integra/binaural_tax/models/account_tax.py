@@ -66,16 +66,17 @@ class AccountTax(models.Model):
                 tax_line["tax_amount"] = 0.0
                 for tax in taxes:
                     if tax_line["tax_repartition_line"].tax_id.id == tax["tax"].id:
-                        tax_line["tax_amount"] += float_round(
-                            tax_line["tax_repartition_line"].tax_id._compute_amount(
-                                float_round(
-                                    tax["base"], precision_rounding=foreign_currency.rounding
-                                ),
-                                tax["price"],
-                            ),
-                            precision_rounding=foreign_currency.rounding,
+                        tax_amount = tax_line["tax_repartition_line"].tax_id._compute_amount(
+                            float_round(tax["base"], precision_rounding=foreign_currency.rounding),
+                            tax["price"],
                         )
-                        
+                        if self.env.company.tax_calculation_rounding_method == "round_globally":
+                            tax_line["tax_amount"] += tax_amount
+                        else:
+                            tax_line["tax_amount"] += float_round(
+                                tax_amount, precision_rounding=foreign_currency.rounding
+                            )
+
                 tax_line["tax_amount"] = float_round(
                     tax_line["tax_amount"], precision_rounding=foreign_currency.rounding
                 )
