@@ -39,6 +39,8 @@ class AccountPayment(models.Model):
         store=True,
     )
 
+    retention_foreign_amount = fields.Float(compute="_compute_retention_foreign_amount", store=True)
+
     def _synchronize_to_moves(self, changed_fields):
         """
         Override the original method to change the name of the move based on the retention type
@@ -81,3 +83,8 @@ class AccountPayment(models.Model):
         """
         for payment in self:
             payment.amount = sum(payment.retention_line_ids.mapped("retention_amount"))
+
+    @api.depends("retention_id")
+    def _compute_retention_foreign_amount(self):
+        for payment in self:
+            payment.retention_foreign_amount = payment.retention_id.foreign_total_retention_amount

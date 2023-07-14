@@ -238,55 +238,75 @@ class AccountMove(models.Model):
         subtotals_by_name = self.get_invoice_line_ids_subtotals_by_name()
         is_invoice = self.is_invoice(include_receipts=True)
         receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
-        for line in self.line_ids:
-            # If the line is an adjustment line, the foreign debit and foreign credit will be the
-            # foreign debit and foreign credit adjustment fields.
-            if (line.foreign_debit_adjustment + line.foreign_credit_adjustment) != 0:
-                line.foreign_debit = line.foreign_debit_adjustment
-                line.foreign_credit = line.foreign_credit_adjustment
-                continue
-            line_name = line.name or False
-            subtotal_found = False
-            if is_invoice and line_name in subtotals_by_name:
-                for subtotals in subtotals_by_name[line_name]:
-                    if line.debit == subtotals[0]:
-                        line.foreign_debit = subtotals[1]
-                        subtotal_found = True
-                    if line.credit == subtotals[0]:
-                        line.foreign_credit = subtotals[1]
-                        subtotal_found = True
-                    if subtotal_found:
-                        subtotals_by_name[line_name].remove(subtotals)
-                        break
-                continue
+        self.line_ids.update({"foreign_debit": 0, "foreign_credit": 0})
+        payment = self.payment_id
 
-            lines_with_same_tax = self.line_ids.filtered(
-                lambda l: l.tax_ids.description == line_name
-            )
-            if line.currency_id == self.env.company.currency_foreign_id:
-                line.foreign_debit = abs(line.amount_currency) if line.amount_currency > 0 else 0
-                line.foreign_credit = abs(line.amount_currency) if line.amount_currency < 0 else 0
-                continue
-            if not (lines_with_same_tax and line_name):
-                line.foreign_debit = line.debit * self.foreign_inverse_rate
-                line.foreign_credit = line.credit * self.foreign_inverse_rate
-                continue
-            line.foreign_debit = (
-                sum(lines_with_same_tax.mapped("foreign_debit"))
-                * lines_with_same_tax[0].tax_ids[0].amount
-                / 100
-            )
-            line.foreign_credit = (
-                sum(lines_with_same_tax.mapped("foreign_credit"))
-                * lines_with_same_tax[0].tax_ids[0].amount
-                / 100
-            )
+        # If the move is a retention payment we need to use the retention_foreign_amount of the
+        # payment to compute the foreign debit/credit.
+        if payment and "retention_foreign_amount" in self.env["account.payment"]._fields:
+            for line in self.line_ids:
+                if line.debit != 0:
+                    line.foreign_debit = payment.retention_foreign_amount
+                if line.credit != 0:
+                    line.foreign_credit = payment.retention_foreign_amount
+        else:
+            for line in self.line_ids:
+                # If the line is an adjustment line, the foreign debit and foreign credit will be
+                # the foreign debit and foreign credit adjustment fields.
+                if (line.foreign_debit_adjustment + line.foreign_credit_adjustment) != 0:
+                    line.foreign_debit = line.foreign_debit_adjustment
+                    line.foreign_credit = line.foreign_credit_adjustment
+                    continue
+                line_name = line.name or False
+                subtotal_found = False
+                if is_invoice and line_name in subtotals_by_name:
+                    for subtotals in subtotals_by_name[line_name]:
+                        if line.debit == subtotals["price_subtotal"]:
+                            line.foreign_debit = subtotals["foreign_subtotal"]
+                            subtotal_found = True
+                        if line.credit == subtotals["price_subtotal"]:
+                            line.foreign_credit = subtotals["foreign_subtotal"]
+                            subtotal_found = True
+                        if subtotal_found:
+                            subtotals_by_name[line_name].remove(subtotals)
+                            break
+                    continue
+
+                if line.currency_id == self.env.company.currency_foreign_id:
+                    line.foreign_debit = (
+                        abs(line.amount_currency) if line.amount_currency > 0 else 0
+                    )
+                    line.foreign_credit = (
+                        abs(line.amount_currency) if line.amount_currency < 0 else 0
+                    )
+                    continue
+
+                lines_with_same_tax = self.line_ids.filtered(
+                    lambda l: l.tax_ids and l.tax_ids.description == line_name
+                )
+                if not (lines_with_same_tax and line_name):
+                    line.foreign_debit = line.debit * self.foreign_inverse_rate
+                    line.foreign_credit = line.credit * self.foreign_inverse_rate
+                    continue
+                line.foreign_debit = (
+                    sum(lines_with_same_tax.mapped("foreign_debit"))
+                    * lines_with_same_tax[0].tax_ids[0].amount
+                    / 100
+                )
+                line.foreign_credit = (
+                    sum(lines_with_same_tax.mapped("foreign_credit"))
+                    * lines_with_same_tax[0].tax_ids[0].amount
+                    / 100
+                )
 
         account_payable_or_receivable_line = self.line_ids.filtered(
             lambda l: l.account_id.account_type in receivable_and_payable_account_types
         )
 
-        if len(account_payable_or_receivable_line) > 0:
+        # We need to do this because the POS moves can have more than 1 journal entries with a
+        # payable or receivable account, and in those cases is necessary that the foreign
+        # debit/credit of that entry is computed using the rate.
+        if len(account_payable_or_receivable_line) > 1:
             return
 
         if account_payable_or_receivable_line.debit > 0:
@@ -323,15 +343,25 @@ class AccountMove(models.Model):
         This method is used to get the subtotal and foreign_subtotal of the invoice lines grouped
         by the lines names.
 
+        It is meant to be used on the compute_line_ids_foreign_debit_and_credit method of this same
+        model, and as there we use it to set the amounts of the foreign debit and foreign credit
+        of the move lines and that values shoudn't be negative, we pass the absolute value of the
+        subtotals.
+
         Returns
         -------
-        type = tuple(float, float))
-            The subtotal and foreign subtotal of the invoice lines
+        type = defaultdict(list(dict))
+            The subtotal and foreign subtotal of the invoice lines grouped by the lines names.
         """
         self.ensure_one()
         subtotals_by_name = defaultdict(list)
         for line in self.invoice_line_ids:
-            subtotals_by_name[line.name].append((line.price_subtotal, line.foreign_subtotal))
+            subtotals_by_name[line.name].append(
+                {
+                    "price_subtotal": abs(line.price_subtotal),
+                    "foreign_subtotal": abs(line.foreign_subtotal),
+                }
+            )
         return subtotals_by_name
 
     @api.depends("partner_id")
