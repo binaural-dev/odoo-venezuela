@@ -109,6 +109,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         for report in agrouped_by_report_z.items():
             range_start = 0
+            range_last = 0
             data = {}
             cumulative = init_cumulative.copy()
             for index, move in enumerate(report[1]):
@@ -130,18 +131,19 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
                     if (
                         move.partner_id.prefix_vat == "J"
-                        or move.partner_id.taxpayer_type == "special"
+                        or move.partner_id.taxpayer_type != "ordinary"
                         or move.move_type != "out_invoice"
                     ):
                         if cumulative["amount_taxed"] != amounts["amount_taxed"]:
                             data = {
                                 "move_type": move.move_type,
                                 "range_start": range_start,
-                                "range_end": move.mf_invoice_number,
+                                "range_end": range_last if range_last != 0 else move.mf_invoice_number,
                                 "date": move.invoice_date,
                                 "mf_reportz": move.mf_reportz,
                                 "mf_serial": move.mf_serial,
                             }
+                            range_last = 0
                             sale_book_lines.append(self._fields_sale_book_group_line(data, cumulative))
                         sale_book_lines.append(self._fields_sale_book_line(move, amounts))
                         cumulative = init_cumulative.copy()
@@ -155,7 +157,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                                 != self._format_date(next_move.invoice_date)
                             )
                             or next_move.partner_id.prefix_vat == "J"
-                            or next_move.partner_id.taxpayer_type == "special"
+                            or next_move.partner_id.taxpayer_type != "ordinary"
                             or next_move.move_type != "out_invoice"
                         )
                         or is_last_move
@@ -175,5 +177,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         continue
 
                     if not is_last_move and move.partner_id.taxpayer_type == "ordinary":
+                        range_last = move.mf_invoice_number
                         continue
+                    range_last = move.mf_invoice_number
         return sale_book_lines
