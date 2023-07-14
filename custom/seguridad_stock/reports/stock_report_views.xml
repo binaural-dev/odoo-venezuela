@@ -11,7 +11,7 @@
             <field name="report_name">seguridad_stock.report_picking_2</field>
             <field name="report_file">seguridad_stock.report_picking_2</field>
             <field name="print_report_name">'Picking Operations - %s - %s' % (object.partner_id.name or '', object.name)</field>
-            <field name="binding_model_id" ref="stock.model_stock_picking"/>
+            <field name="binding_model_id" eval="False"/>
             <field name="binding_type">report</field>
         </record>
         <template id="report_picking_2">
@@ -29,10 +29,15 @@
                             <div style="float:right;width: 50%;">
                                 <div class="col-6" name="div_outgoing_address">
                                     <div t-if="o.should_print_delivery_address()">
-                                        <span><strong>Delivery Address:</strong></span>
-                                        <div t-field="o.move_ids[0].partner_id"
-                                            t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True, "phone_icons": True}'/>
+                                        <div><strong>Fecha:</strong> <span t-out="o.date.strftime('%d/%m/%Y')"/></div>
+                                        <div><strong>Factura:</strong><span t-field="o.sale_id.invoice_ids"/></div>
+                                        <div><strong>Vendido a:</strong><span style="margin-left:3px" t-field="o.partner_id.name"/></div>
+                                        <div><strong>Vendedor:</strong><span style="margin-left:3px" t-field="o.comercial"/></div>
+                                            <div><strong>Enviar por:</strong> <span t-field="o.shipping_method"/></div>
+                                            <div><strong>Destino:</strong><span style="display: inline-block;" t-field="o.destiny"/></div>
+                                            <div><span style="display: inline-block;"><strong>Impresion: </strong></span> <span style="display: inline-block;" t-field="o.action_report_picking_2_datetime"/></div>
                                         </div>
+                                        
                                         <div t-elif="o.picking_type_id.code != 'internal' and o.picking_type_id.warehouse_id.partner_id">
                                             <span><strong>Warehouse Address:</strong></span>
                                             <div t-field="o.picking_type_id.warehouse_id.partner_id"
@@ -63,6 +68,8 @@
                                             </div>
                                         </div>
                                 </div>
+                                <br/>
+                                <br/>
                                 <br/>
                                 <h3 style="margin-top:50px">Despacho:</h3>
                                 <h1 t-field="o.name" class="mt0"/>
