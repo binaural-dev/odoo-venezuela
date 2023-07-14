@@ -15,9 +15,9 @@ class WizardAccountingReports(models.TransientModel):
         retention_moves -= credit_notes
 
         retention_resume_lines.append(0.0)
-        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted")) for move in retention_moves]))
+        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted" and not self._check_future_retention_dates(x.retention_id.date_accounting))) for move in retention_moves]))
         retention_resume_lines.append(0.0)
-        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted")) * -1 for move in credit_notes]))
+        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted" and not self._check_future_retention_dates(x.retention_id.date_accounting))) * -1 for move in credit_notes]))
 
         return retention_resume_lines
 
@@ -157,17 +157,17 @@ class WizardAccountingReports(models.TransientModel):
         ret_vals = dict()
 
         if not ret_lines or self._check_future_retention_dates(retention.date):
-            if not ret_lines:
-                return {
-                    "date_retention": "",
-                    "number_retention": "",
-                    "iva_retained": "",
-                }
-            
             return {
-                "date_retention": "" if is_purchase else self._format_date(ret_lines.mapped("retention_id").date),
-                "number_retention": "" if is_purchase else move.iva_voucher_number,
-                "iva_retained": "" if is_purchase else self._sum_retention_total(ret_lines) * multiplier,
+                "date_retention": "",
+                "number_retention": "",
+                "iva_retained": "",
+            }
+
+        if ret_lines and not is_purchase and self._check_future_retention_dates(retention.date_accounting):
+            return {
+                "date_retention": "",
+                "number_retention": "",
+                "iva_retained": "",
             }
 
         ret_vals["date_retention"] = self._format_date(ret_lines.mapped("retention_id").date)
