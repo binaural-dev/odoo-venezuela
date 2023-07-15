@@ -32,14 +32,15 @@
                                     line-height: 1.1;
                                 }
                             </style>
-                            <section id="segmento_1" style="font-size: 0.3em; line-height: 0.8em; width: 11cm;height:8cm">
-                                <div style="text-align: center;">
-                                    <div>
-                                        <span style="font-size:20px;font-weight:bold;" t-out="o.partner_id.name"/>
-                                    </div>
-                                </div>
+                            <section id="segmento_1" style="font-size: 0.3em; line-height: 0.8em; width: 11cm;height:8.4cm">
+                                
                                 <div class="col-8">
                                     <table style="display: inline-block; vertical-align: middle;width:150%;font-size:15px">
+                                        <div style="text-align: center;width:150%;hight:100%">
+                                    <div>
+                                        <span style="font-size:18px;font-weight:bold;" t-out="o.partner_id.name"/>
+                                    </div>
+                                </div>
                                         <tr style="text-align:left">
                                             <th style="padding-left:5px;font-weight: normal">TELEFONOS:</th>
                                             <th style="width:200%;padding-left:5px;font-weight: normal"><span t-field="o.company_id.phone"/></th>
