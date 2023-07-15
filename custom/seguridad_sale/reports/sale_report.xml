@@ -33,7 +33,7 @@
                         <div style="margin-left:3px" t-field="doc.company_id.partner_id" t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
                         <div style="margin-left:3px"><span t-field="doc.company_id.phone"/></div>
                         <div style="margin-left:3px"><span t-field="doc.company_id.mobile"/></div>
-                        <div style="margin-left:500px;margin-top:-195px">
+                        <div style="margin-left:500px;margin-top:-155px">
                             <div style="margin-top:10px"><span>Cliente:</span><span style="margin-left:2px" t-field="doc.partner_id.name"/></div>
                             <div style="margin-top:10px"><span style="margin-left:2px" t-field="doc.partner_id.vat"/></div>
                             <div><span>Direccion:</span><span style="margin-left:2px" t-field="doc.partner_id.contact_address"/></div>
@@ -87,7 +87,7 @@
                                     <p class="m-0" t-field="doc.validity_date"/>
                                 </div>
                                 <div t-if="doc.user_id.name" class="col-auto col-3 mw-100 mb-2">
-                                    <strong>Salesperson:</strong>
+                                    <strong style="font-weight:bold;">Vendedor:</strong>
                                     <p class="m-0" t-field="doc.user_id"/>
                                 </div>
                                 <div t-if="doc.user_id.name" class="col-auto col-3 mw-100 mb-2">

@@ -29,13 +29,13 @@
                             <div style="float:right;width: 50%;">
                                 <div class="col-6" name="div_outgoing_address">
                                     <div t-if="o.should_print_delivery_address()">
-                                        <div><strong>Fecha:</strong> <span t-out="o.date.strftime('%d/%m/%Y')"/></div>
-                                        <div><strong>Factura:</strong><span t-field="o.sale_id.invoice_ids"/></div>
-                                        <div><strong style="font-weight:bold;">Vendido a:</strong><span style="margin-left:3px" t-field="o.partner_id.name"/></div>
-                                        <div><strong style="font-weight:bold;">Vendedor:</strong><span style="margin-left:3px" t-field="o.comercial"/></div>
-                                            <div><strong>Enviar por:</strong> <span t-field="o.shipping_method"/></div>
-                                            <div><strong>Destino:</strong><span style="display: inline-block;" t-field="o.destiny"/></div>
-                                            <div><span style="display: inline-block;"><strong>Impresion: </strong></span> <span style="display: inline-block;" t-field="o.action_report_picking_2_datetime"/></div>
+                                        <div><strong>Fecha:</strong> <span style="margin-left:33px" t-out="o.date.strftime('%d/%m/%Y')"/></div>
+                                        <div><strong>Factura:</strong><span style="margin-left:24px" t-field="o.sale_id.invoice_ids"/></div>
+                                        <div style="width:200%"><span style="font-weight:bold;">Vendido a:</span><span style="margin-left:8px" t-field="o.partner_id.name"/></div>
+                                        <div><span style="font-weight:bold;">Vendedor:</span><span style="margin-left:8px" t-field="o.comercial"/></div>
+                                            <div style="width:200%"><strong>Enviar por:</strong> <span style="margin-left:5px" t-field="o.shipping_method"/></div>
+                                            <div style="width:200%"><span style="display: inline-block;"><strong>Destino:</strong></span><span style="margin-left:25px" t-field="o.destiny"/></div>
+                                            <div style="width:200%"><span style="display: inline-block;"><strong>Impresion: </strong></span> <span style="display: inline-block;margin-left:8px" t-field="o.action_report_picking_2_datetime"/></div>
                                         </div>
                                         
                                         <div t-elif="o.picking_type_id.code != 'internal' and o.picking_type_id.warehouse_id.partner_id">
@@ -71,6 +71,8 @@
                                 <br/>
                                 <br/>
                                 <br/>
+                                <br/>
+                                <br/>
                                 <h3 style="margin-top:50px">Despacho:</h3>
                                 <h1 t-field="o.name" class="mt0"/>
                                 <div class="row mt48 mb32">
@@ -83,7 +85,7 @@
                                         <p t-field="o.state"/>
                                     </div>
                                     <div class="col-auto" name="div_sched_date">
-                                        <strong>Scheduled Date:</strong>
+                                        <strong>Fecha:</strong>
                                         <p t-field="o.scheduled_date"/>
                                     </div>
                                 </div>
@@ -120,50 +122,48 @@
                                     </thead>
                                     <tbody>
                                         <!-- In case you come across duplicated lines, ask NIM or LAP -->
-                                        <t t-foreach="o.move_line_ids_without_package" t-as="ml">
+                                        <t>
                                             <tr>
                                                 <td>
-                                                    <span t-field="ml.product_id.default_code"/><br/>
+                                                    <span t-field="o.move_line_ids_without_package.product_id.default_code"/><br/>
                                                 </td>
                                                 <td>
-                                                    <span t-field="ml.product_id.name"/>
+                                                    <span t-field="o.move_line_ids_without_package.product_id.name"/>
                                                 </td>
                                                 <td>
-                                                    <span t-if="o.state != 'done'" t-field="ml.reserved_uom_qty"/>
-                                                    <span t-if="o.state == 'done'" t-field="ml.qty_done"/>
-                                                    <span t-field="ml.product_uom_id" groups="uom.group_uom"/>
+                                                    <span t-if="o.state != 'done'" t-field="o.move_ids.product_uom_qty"/>
+                                                    <span t-if="o.state == 'done'" t-field="o.move_ids.quantity_done"/>
+                                                    <span t-field="o.move_line_ids_without_package.product_uom_id" groups="uom.group_uom"/>
                                                 </td>
-                                                <td t-if="o.picking_type_id.code != 'incoming'" groups="stock.group_stock_multi_locations">
-                                                    <span t-esc="ml.location_id.display_name"/>
-                                                        <t t-if="ml.package_id">
-                                                            <span t-field="ml.package_id"/>
+                                               <td t-if="o.picking_type_id.code != 'incoming'" groups="stock.group_stock_multi_locations">
+                                                    <span t-esc="o.move_line_ids_without_package.location_id.display_name"/>
+                                                        <t t-if="o.move_line_ids_without_package.package_id">
+                                                            <span t-field="o.move_line_ids_without_package.package_id"/>
                                                         </t>
                                                 </td>
-                                                <td t-if="o.picking_type_id.code != 'outgoing'" groups="stock.group_stock_multi_locations">
+                                                 <td t-if="o.picking_type_id.code != 'outgoing'" groups="stock.group_stock_multi_locations">
                                                     <div>
-                                                        <span t-field="ml.location_dest_id"/>
-                                                        <t t-if="ml.result_package_id">
-                                                            <span t-field="ml.result_package_id"/>
+                                                        <span t-field="o.move_line_ids_without_package.location_dest_id"/>
+                                                        <t t-if="o.move_line_ids_without_package.result_package_id">
+                                                            <span t-field="o.move_line_ids_without_package.result_package_id"/>
                                                         </t>
                                                     </div>
                                                 </td>
                                                 <td class=" text-center h6" t-if="has_serial_number">
-                                                    <div t-if="has_serial_number and (ml.lot_id or ml.lot_name)" t-esc="ml.lot_id.name or ml.lot_name"/>
-                                                </td>
-                                                <td class="text-center" t-if="has_barcode">
-                                                    <t t-if="product_barcode != ml.product_id.barcode">
-                                                        <span t-if="ml.product_id and ml.product_id.barcode">
-                                                            <div t-field="ml.product_id.barcode"/>
-                                                        </span>
-                                                        <t t-set="product_barcode" t-value="ml.product_id.barcode"/>
+                                                    <t t-foreach="o.move_line_ids_without_package.filtered(lambda ml2: ml2.product_id == o.move_line_ids_without_package.product_id and ml2.lot_id)" t-as="ml2">
+                                                        <div t-if="ml2.lot_name or ml2.lot_id.name" t-esc="ml2.lot_name or ml2.lot_id.name"/>
                                                     </t>
                                                 </td>
-                                                <td class="text-center" t-if="ml.product_id.warranty">
-                                                    
-                                                        
-                                                            <div t-field="ml.product_id.warranty"/>
-                                                        
-                                                    
+                                                <td class="text-center" t-if="has_barcode">
+                                                    <t t-if="product_barcode != o.move_line_ids_without_package.product_id.barcode">
+                                                        <span t-if="o.move_line_ids_without_package.product_id and o.move_line_ids_without_package.product_id.barcode">
+                                                            <div t-field="o.move_line_ids_without_package.product_id.barcode"/>
+                                                        </span>
+                                                        <t t-set="product_barcode" t-value="o.move_line_ids_without_package.product_id.barcode"/>
+                                                    </t>
+                                                </td>
+                                                <td class="text-center" t-if="o.move_line_ids_without_package.product_id.warranty">
+                                                    <div t-field="o.move_line_ids_without_package.product_id.warranty"/>
                                                 </td>
                                             </tr>
                                         </t>
@@ -198,10 +198,10 @@
                                 </p>
                                 <p t-field="o.note"/>
                             </div>
-                            <div style="width: 600px; text-align: center;margin-top:40px;margin-left:100px">
-                                <span>ACEPTADO CONFORME ____________________________________ CEDULA __________________</span>
+                            <div style="width: 100%; text-align: center;margin-top:40px;">
+                                <span>ACEPTADO CONFORME ____________________________________ CEDULA ____________________________________</span>
                             </div>
-                            <div style="width: 800px; text-align: center;margin-top:40px;margin-left:60px">
+                            <div style="width: 800px; text-align: center;margin-top:40px;margin-left:40px">
                                 <span>ENTREGADO POR ____________________________________ CHEQUEADO POR ____________________________________ </span></div>
                             <div class="footer">
                                 <div class="row">

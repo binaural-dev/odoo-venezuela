@@ -57,7 +57,7 @@ msgstr ""
 #. module: seguridad_sale
 #: model_terms:ir.ui.view,arch_db:seguridad_sale.report_saleorder_2
 msgid "<strong>Salesperson:</strong>"
-msgstr "Comercial:"
+msgstr "Vendedor:"
 
 #. module: seguridad_sale
 #: model_terms:ir.ui.view,arch_db:seguridad_sale.report_saleorder_2
