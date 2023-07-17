@@ -116,6 +116,18 @@
                       </group>
                     </group>
                   </page>
+                  <page string="Product Maestro">
+                     <field name="maestro_products">
+                         <tree>
+                           <field name="is_master"/>
+                           <field name="is_combo"/>
+                           <field name="name"/>
+                           <field name="sku"/>
+                           <field name="barcode"/>
+                           <field name="meli_id"/>
+                         </tree>
+                     </field>
+                 </page>
                   <page string="Product Bindings">
                      <field name="mercadolibre_product_template_bindings">
                          <tree>

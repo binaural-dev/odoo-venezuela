@@ -29,6 +29,7 @@ import requests
 import re
 
 from .product_sku_rule import *
+from odoo.addons.meli_oerp.models.versions import *
 
 class SaleOrder(models.Model):
 
@@ -67,29 +68,26 @@ class SaleOrder(models.Model):
                 _logger.info(spick)
                 #if self.warehouse_id and spick.location_id:
 
-                    #if self.warehouse_id.lot_stock_id.id != spick.location_id.id:
-                        #_logger.info("Fixing location!")
-                        #spick.location_id = self.warehouse_id.lot_stock_id
+                #    if self.warehouse_id.lot_stock_id.id != spick.location_id.id:
+                #        _logger.info("Fixing location!")
+                #        spick.location_id = self.warehouse_id.lot_stock_id
 
-                    #if self.warehouse_id.lot_stock_id.id != spick.location_id.id:
-                    #    _logger.info("Fixing location NOT POSSIBLE! Aborting delivery.")
-                    #    return { "error": "Fixing location NOT POSSIBLE! Aborting delivery." }
+                #    if self.warehouse_id.lot_stock_id.id != spick.location_id.id:
+                #        _logger.info("Fixing location NOT POSSIBLE! Aborting delivery.")
+                #        return { "error": "Fixing location NOT POSSIBLE! Aborting delivery." }
 
 
                 if (spick.move_line_ids):
                     _logger.info(spick.move_line_ids)
                     if (len(spick.move_line_ids)>=1):
-                        for pop in spick.move_line_ids:
-                            _logger.info(pop)
-                            if (pop.qty_done==0.0 and "reserved_uom_quantity" in pop._fields and pop.reserved_uom_quantity>=0.0):
-                                pop.qty_done = pop.reserved_uom_quantity
+                        stock_picking_set_quantitites(picking=spick)
                         #_logger.info("validating")
                         try:
                             spick.button_validate()
                             spick.action_done()
                             continue;
                         except Exception as e:
-                            _logger.error("stock pick button_validate/action_done error"+str(e))
+                            _logger.error("stock pick button_validate/action_done error > "+str(e))
                             res = { 'error': str(e) }
                             pass;
 
@@ -99,7 +97,7 @@ class SaleOrder(models.Model):
                             spick.action_done()
                             continue;
                         except Exception as e:
-                            _logger.error("stock pick action_assign/button_validate/action_done error"+str(e))
+                            _logger.error("stock pick action_assign/button_validate/action_done error > "+str(e))
                             res = { 'error': str(e) }
                             pass;
 

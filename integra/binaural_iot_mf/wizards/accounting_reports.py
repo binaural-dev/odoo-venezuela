@@ -32,6 +32,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         if not self.with_fiscal_machine:
             return res
         res.insert(4, {"name": "Reporte Z", "field": "mf_reportz"})
+        res.insert(4, {"name": "Serial de Maquina", "field": "mf_serial"})
         return res
 
     def _fields_sale_book_line(self, move, taxes):
@@ -40,6 +41,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return res
         res["document_number"] = move.mf_invoice_number
         res["mf_reportz"] = move.mf_reportz
+        res["mf_serial"] = move.mf_serial
         return res
 
     def update_amounts(self, cumulative, amounts):
@@ -64,6 +66,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "partner_name": "Resumen Diario de Ventas",
             "document_number": f"Desde {data.get('range_start')} Hasta {data.get('range_end')}",
             "mf_reportz": data.get("mf_reportz"),
+            "mf_serial": data.get("mf_serial"),
             "move_type": self._determinate_type(data.get("move_type")),
             "transaction_type": "01-REG",
             "number_invoice_affected": "",
@@ -121,7 +124,19 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 if range_start == 0:
                     range_start = move.mf_invoice_number
 
-                if move.move_type == "out_invoice":
+
+                if move.move_type in ["out_invoice", "out_refund"]:
+
+                    if (
+                        move.partner_id.prefix_vat == "J"
+                        or move.partner_id.taxpayer_type == "special"
+                        or move.move_type != "out_invoice"
+                    ):
+                        sale_book_lines.append(self._fields_sale_book_line(move, amounts))
+                        cumulative = init_cumulative.copy()
+                        range_start = 0
+                        continue
+
                     if (
                         (
                             (
@@ -134,23 +149,16 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         )
                         or is_last_move
                     ) and move.partner_id.taxpayer_type == "ordinary":
+
                         data = {
                             "move_type": move.move_type,
                             "range_start": range_start,
                             "range_end": move.mf_invoice_number,
                             "date": move.invoice_date,
                             "mf_reportz": move.mf_reportz,
+                            "mf_serial": move.mf_serial,
                         }
                         sale_book_lines.append(self._fields_sale_book_group_line(data, cumulative))
-                        cumulative = init_cumulative.copy()
-                        range_start = 0
-                        continue
-
-                    if (
-                        move.partner_id.prefix_vat == "J"
-                        or move.partner_id.taxpayer_type == "special"
-                    ):
-                        sale_book_lines.append(self._fields_sale_book_line(move, amounts))
                         cumulative = init_cumulative.copy()
                         range_start = 0
                         continue

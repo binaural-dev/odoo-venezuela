@@ -224,6 +224,10 @@ class AccountMove(models.Model):
         (line_ids) of the move (if the line has debit it will be the sum of the foreign credits,
         if it has credit it will be the sum of the foreign debits).
 
+        If none of this is true and the currency of the journal entry is the same as the foreign
+        currency of the company, the currency amount will be the one used to set the foreign debit
+        or foreign credit on the corresponding line.
+
         Ohterwise, if the move is not an invoice the foreign debit and foreign credit will be the
         debit and credit of the line multiplied by the inverse rate.
 
@@ -259,6 +263,10 @@ class AccountMove(models.Model):
             lines_with_same_tax = self.line_ids.filtered(
                 lambda l: l.tax_ids.description == line_name
             )
+            if line.currency_id == self.env.company.currency_foreign_id:
+                line.foreign_debit = abs(line.amount_currency) if line.amount_currency > 0 else 0
+                line.foreign_credit = abs(line.amount_currency) if line.amount_currency < 0 else 0
+                continue
             if not (lines_with_same_tax and line_name):
                 line.foreign_debit = line.debit * self.foreign_inverse_rate
                 line.foreign_credit = line.credit * self.foreign_inverse_rate
