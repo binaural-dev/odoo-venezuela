@@ -2,7 +2,7 @@
     <data>
         <template id="free_form_bs" inherit_id="binaural_invoice.report_freeform_document">
             <xpath expr="//div[@id='informations']" position="replace">
-                <section id="segmento_1" style="display: flex; flex-direction: row; justify-content: flex-end; align-items: center;">
+                <section id="segmento_1" style="display: flex; flex-direction: row; justify-content: flex-end; align-items: center;font-size:17px">
                     <div style="margin-left: 700px;">
                         <div>
                             <div>Factura:<span t-field="o.correlative"/></div>
@@ -13,7 +13,7 @@
                 </section>
                 <hr style="border: none; visibility: hidden;" />
                 <hr style="border: none; visibility: hidden;" />
-                <section id="segmento_1" style="display: flex; flex-direction: row;">
+                <section id="segmento_1" style="display: flex; flex-direction: row;font-size:17px">
                     <hr style="border: none; visibility: hidden;"/>
                     <hr style="border: none; visibility: hidden;"/>
                         <div style="margin-bottom: 5px;">Cliente: <span t-field="o.partner_id.name"/></div>
@@ -36,6 +36,7 @@
                     text-align: left;
                     width: 100%;
                     margin: auto;
+                    font-size:17px;
                     }
                     #lateral {
                     width: 40%;
@@ -52,7 +53,7 @@
                     }
                 </style>
                 <div id="contenedor" class="clearfix">
-                    <div id="principal" style='width:40%;margin-top:-170px'>
+                    <div id="principal" style='width:40%;margin-top:-190px'>
                         <p>TRANSFERIR A LAS CUENTAS CORRIENTES BANESCO
                                             0134-0335-00-3351-0608-52/ MERCANTIL 0105-0699-92-1699-1732-30 / PROVINCIAL
                                             0108-0027-79-0100-8966-61
@@ -61,21 +62,105 @@
                     </div>
                 </div>
             </xpath>
-            <xpath expr="//div/div/table/thead/tr/th[@name='th_quantity']" position="after">
-                <th name="th_quantity" class="text-end"><span>Unid</span></th>
-            </xpath>
-            <xpath expr="//div/div/table/tbody/t/tr/t/td/span[2]" position="replace">
-            </xpath>
-            <xpath expr="//div/div/table/tbody/t/tr/t/td[3]" position="after">
-                <td class="text-end">
-                <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
-                </td> 
-            </xpath>
-            <xpath expr="//div/div/table/tbody/t/t" position="replace">
-                <t t-if="">
-                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
-                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
-                </t>
+            <xpath expr="//div/div/table" position="replace">
+                <table class="table table-sm o_main_table table-borderless" name="invoice_line_table" style="width:990px">
+                        <thead>
+                            <tr class="border-bottom border-dark">
+                                <th name="th_description" class="text-start"><span>Código</span></th>
+                                <th style="width:450px" name="th_description" class="text-start"><span>Descripción</span></th>
+                                <th name="th_quantity" class="text-end"><span>Cantidad</span></th>
+                                <th name="th_quantity" class="text-end"><span>Unid</span></th>
+                                <th name="th_priceunit" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>Precio U</span></th>
+                                <th name="th_price_unit" t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
+                                    <span>Desc.%</span>
+                                </th>
+                                <th name="th_taxes" t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>IVA</span></th>
+                                <th name="th_subtotal" class="text-end">
+                                    <span groups="account.group_show_line_subtotals_tax_excluded">Monto</span>
+                                    <span groups="account.group_show_line_subtotals_tax_included">Precio Total</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="invoice_tbody">
+                            <t t-set="current_subtotal" t-value="0"/>
+                            <t t-set="lines" t-value="o.invoice_line_ids.sorted(key=lambda l: (-l.sequence, l.date, l.move_name, -l.id), reverse=True)"/>
+
+                            <t t-foreach="lines" t-as="line">
+
+                                <t t-if="base_vef">
+                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
+                                </t>
+                                <t t-else="">
+                                    <t t-set="current_subtotal" t-value="current_subtotal + line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
+                                </t>
+
+                                <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
+                                    <t t-if="line.display_type == 'product'" name="account_invoice_line_accountable">
+                                        <td>
+                                            <span t-field="line.product_id.default_code"/>
+                                        </td>
+                                        <td name="account_invoice_line_name"><span t-field="line.name" t-options="{'widget': 'text'}"/></td>
+                                        <td class="text-end">
+                                            <span t-field="line.quantity"/>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
+                                        </td>  
+                                        <td t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
+                                            <t t-if="base_vef">
+                                                <span class="text-nowrap" t-field="line.price_unit"/>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="text-nowrap" t-field="line.foreign_price"/>
+                                            </t>
+                                        </td>
+                                        <td t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
+                                            <span class="text-nowrap" t-field="line.discount"/>
+                                        </td>
+                                        <td t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
+                                            <span t-esc="', '.join(map(lambda x: ( str(x.amount) + '%' if x.amount > 0 else ''), line.tax_ids))" id="line_tax_ids"/>
+                                        </td>
+                                        <td class="text-end o_price_total">
+                                            <t t-if="base_vef">
+                                                <span class="text-nowrap" t-field="line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                                <span class="text-nowrap" t-field="line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="text-nowrap" t-field="line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                                <span class="text-nowrap" t-field="line.price_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
+                                            </t>
+                                        </td>
+                                    </t>
+                                    <t t-if="line.display_type == 'line_section'">
+                                        <td colspan="99">
+                                            <span t-field="line.name" t-options="{'widget': 'text'}"/>
+                                        </td>
+                                        <t t-set="current_section" t-value="line"/>
+                                        <t t-set="current_subtotal" t-value="0"/>
+                                    </t>
+                                    <t t-if="line.display_type == 'line_note'">
+                                        <td colspan="99">
+                                            <span t-field="line.name" t-options="{'widget': 'text'}"/>
+                                        </td>
+                                    </t>
+                                </tr>
+
+                                <t t-if="current_section and (line_last or lines[line_index+1].display_type == 'line_section')">
+                                    <tr class="is-subtotal text-end">
+                                        <td colspan="99">
+                                            <strong class="mr16">Subtotal</strong>
+                                            <span
+                                                t-esc="current_subtotal"
+                                                t-options='{"widget": "monetary", "display_currency": %(base.VEF)s}'
+                                            />
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                        </tbody>
+                    </table>
             </xpath>
         </template> 
         <template id="document_tax_totals_inherit" inherit_id="binaural_invoice.document_tax_totals">

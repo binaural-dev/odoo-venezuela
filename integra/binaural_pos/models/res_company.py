@@ -10,3 +10,4 @@ class ResCompany(models.Model):
     module_binaural_pos_advance_payment = fields.Boolean("Advance Payment")
     pos_tax_inside = fields.Boolean()
     pos_show_free_qty = fields.Boolean()
+    pos_show_just_products_with_available_qty = fields.Boolean()

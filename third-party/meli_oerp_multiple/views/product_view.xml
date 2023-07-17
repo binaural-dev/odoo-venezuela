@@ -189,21 +189,27 @@
                 <h1><field name="name"/></h1>
               </div>
               <group string="Account binding" name="account">
-                <field name="connection_account"/>
-                <field name="product_id" string="Odoo Product Variant"/>
-                <field name="active"/>
-                <field name="sku"/>
-                <field name="barcode"/>
-                <field name="conn_id"/>
-                <field name="conn_variation_id"/>
-                <field name="price" />
-                <field name="meli_price"   attrs="{'readonly':[('meli_price_fixed', '=', False)]}"/>
-                <field name="meli_pricelist" />
-                <field name="meli_price_fixed" />
-                <field name="stock" />
-                <field name="stock_update" />
-                <field name="stock_error" />
-                <field name="meli_shipping_logistic_type"/>
+                <group>
+                  <field name="connection_account"/>
+                  <field name="product_id" string="Odoo Product Variant"/>
+                  <field name="active"/>
+                  <field name="sku"/>
+                  <field name="barcode"/>
+                  <field name="conn_id"/>
+                  <field name="conn_variation_id"/>
+                  <field name="meli_shipping_logistic_type"/>
+                </group>
+                <group>
+                  <field name="price"/>
+                  <field name="meli_price" attrs="{'readonly':[('meli_price_fixed', '=', False)]}"/>
+                  <field name="meli_pricelist"/>
+                  <field name="meli_price_fixed"/>
+                  <field name="stock"/>
+                  <field name="meli_stock_status"/>
+                  <field name="meli_stock_moves_update"/>
+                  <field name="stock_update"/>
+                  <field name="stock_error"/>
+                </group>
               </group>
               <br/>
               <!--label for="sale_ok" position="after">
@@ -533,6 +539,9 @@
             <filter string="Product Template desasignado"
         						domain="[('product_tmpl_id', '=', False)]"
         						name="binding_product_template_unassigned" />
+            <filter string="Product Template desactivado"
+        						domain="[('active', '=', False)]"
+        						name="binding_product_template_unactive" />
             <filter string="Skus Sin Asignacion"
         						domain="[('sku', 'like', '%False%')]"
         						name="binding_product_template_skus_unassigned" />
@@ -553,12 +562,13 @@
             <field name="barcode"/>
             <!--field name="active" /-->
             <field name="product_id" />
-            <!--filter string="MercadoLibre Active"
-        						domain="[('active', '!=', False)]"
-        						name="binding_active" /-->
+
             <filter string="Product desasignado"
         						domain="[('product_id', '=', False)]"
         						name="binding_product_unassigned" />
+            <filter string="Product desactivado"
+        						domain="[('active', '=', False)]"
+        						name="binding_product_unactive" />
             <filter string="Skus Sin Asignacion"
         						domain="[('sku', 'like', '%False%')]"
         						name="binding_product_skus_unassigned" />
@@ -580,6 +590,137 @@
       		</tree>
       	</field>
       </record>
+
+
+      <!--Search view - Product Maestro only -->
+      <record id="mercadolibre_product_maestro_search_view" model="ir.ui.view">
+        <field name="name">Product Maestro - Search</field>
+        <field name="model">mercadolibre.product.maestro</field>
+        <field name="arch" type="xml">
+          <search  string="Search Product Maestro">
+            <field name="name" string="Product" filter_domain="['|', '|', '|', '|','|', '|', '|', '|', '|', '|','|', ('name', 'ilike', self), ('sku', 'ilike', self), ('barcode', 'ilike', self), ('barcode0', 'ilike', self), ('barcode1', 'ilike', self), ('barcode2', 'ilike', self), ('barcode3', 'ilike', self), ('barcode4', 'ilike', self), ('barcode5', 'ilike', self), ('barcode6', 'ilike', self), ('barcodes', 'ilike', self), ('meli_id', 'ilike', self)]"/>
+            <field name="sku"  string="SKU - Referencia interna"/>
+            <field name="barcode" string="Codigo de barra - EAN - GTIN"/>
+            <field name="barcode0"/>
+            <field name="barcode1"/>
+            <field name="barcodes" string="Codigos de barra" readonly="1"/>
+            <field name="meli_id" string="Meli ID (MLXYYYYYY)"/>
+
+
+            <!-- SKU definido -->
+            <filter string="SKU definido"
+              domain="[('sku', '!=', False)]"
+              name="mercadolibre_sku_defined_filter" />
+              <filter string="SKU indefinido"
+                domain="[('sku', '=', False)]"
+                name="mercadolibre_sku_undefined_filter" />
+
+              <!-- BARCODE definido -->
+              <filter string="BARCODE definido"
+                domain="[('barcode', '!=', False)]"
+                name="mercadolibre_barcode_defined_filter" />
+                <filter string="BARCODE indefinido"
+                  domain="[('barcode', '=', False)]"
+                  name="mercadolibre_barcode_undefined_filter" />
+
+                  <!-- BARCODES ML indefinidos -->
+                  <filter string="BARCODE DE ML definido"
+                    domain="[('barcodes', '!=', False),('barcodes', '!=', ''),('barcodes', '!=', '[]')]"
+                    name="mercadolibre_barcodes_defined_filter" />
+                    <filter string="BARCODE DE ML indefinido"
+                      domain="['|','|',('barcodes', '=', False),('barcodes', '=', ''),('barcodes', '=', '[]')]"
+                      name="mercadolibre_barcode_undefined_filter" />
+
+            <!-- es combo-->
+            <filter string="Es Combo o Kit"
+              domain="[('is_combo', '!=', False)]"
+              name="mercadolibre_combo_no_filter" />
+              <filter string="No es Combo ni Kit"
+                domain="[('is_combo', '=', False)]"
+                name="mercadolibre_combo_yes_filter" />
+
+            <!-- es combo sin ldm-->
+            <filter string="Es Combo Sin LDM"
+              domain="[ ('is_combo', '!=', False),'|',('barcode0','=',False),('barcode0','!=', None ),('quantity0','=',0)]"
+              name="mercadolibre_combo_bom_undefined_filter" />
+
+            <!-- es publicacion de ml-->
+            <filter string="Publicacion de ML"
+  						domain="[('meli_id', '!=', False)]"
+  						name="mercadolibre_no_filter" />
+              <filter string="No es Publicacion de ML"
+    						domain="[('meli_id', '=', False)]"
+    						name="mercadolibre_yes_filter" />
+
+            <!-- es master-->
+            <filter string="Es Maestro"
+              domain="[('is_master', '!=', False)]"
+              name="mercadolibre_es_master_no_filter" />
+              <filter string="No Es Maestro"
+                domain="[('is_master', '=', False)]"
+                name="mercadolibre_es_master_yes_filter" />
+
+                <!-- es valido-->
+                <filter string="Es Valido"
+                  domain="[('is_valid', '!=', False)]"
+                  name="mercadolibre_is_valid_no_filter" />
+                  <filter string="No es Valido"
+                    domain="[('is_valid', '=', False)]"
+                    name="mercadolibre_is_valid_yes_filter" />
+
+                      <filter string="Es Sku InValido"
+                        domain="[('is_sku_valid', '=', False)]"
+                        name="mercadolibre_is_sku_invalid_no_filter" />
+                        <filter string="Es Barcode InValido"
+                          domain="[('is_barcode_valid', '=', False)]"
+                          name="mercadolibre_is_barcode_invalid_no_filter" />
+
+                          <filter string="Es Valido, Barcode Invalido"
+                            domain="[('is_valid', '!=', False),('is_barcode_valid','=',False)]"
+                            name="mercadolibre_is_valid_invalid_barcode_no_filter" />
+
+                    <!-- es sku in odoo-->
+                    <filter string="Es Sku in odoo"
+                      domain="[('is_sku_odoo', '!=', False)]"
+                      name="mercadolibre_is_sku_odoo_yes_filter" />
+                      <filter string="No es Sku in odoo"
+                        domain="[('is_sku_odoo', '=', False)]"
+                        name="mercadolibre_is_sku_odoo_no_filter" />
+
+                        <!-- es barcode in odoo-->
+                        <filter string="Es Barcode in odoo"
+                          domain="[('is_barcode_odoo', '!=', False)]"
+                          name="mercadolibre_is_barcode_odoo_yes_filter" />
+                          <filter string="No es Barcode in odoo"
+                            domain="[('is_barcode_odoo', '=', False)]"
+                            name="mercadolibre_is_barcode_odoo_no_filter" />
+
+            <filter string='Agrupar por SKU' domain="[]"
+                  context="{'group_by' : 'sku'}" name="meli_group_by_sku_filter"/>
+            <filter string='Agrupar por Barcode' domain="[]"
+                  context="{'group_by' : 'barcode'}" name="meli_group_by_barcode_filter"/>
+            <filter string='Agrupar por Meli Id' domain="[]"
+                  context="{'group_by' : 'meli_id'}" name="meli_group_by_meli_id_filter"/>
+            <filter string='Agrupar por Combo' domain="[]"
+                  context="{'group_by' : 'is_combo'}" name="meli_group_by_is_combo_filter"/>
+            <filter string='Agrupar por Master' domain="[]"
+                  context="{'group_by' : 'is_master'}" name="meli_group_by_is_master_filter"/>
+
+              <filter string='Agrupar por Sku Valido' domain="[]"
+                    context="{'group_by' : 'is_sku_valid'}" name="meli_group_by_is_sku_valid_filter"/>
+              <filter string='Agrupar por Barcode Valido' domain="[]"
+                    context="{'group_by' : 'is_barcode_valid'}" name="meli_group_by_is_barcode_valid_filter"/>
+
+              <filter string='Agrupar por Valid' domain="[]"
+                    context="{'group_by' : 'is_valid'}" name="meli_group_by_is_valid_filter"/>
+            <filter string='Agrupar por Sku in Odoo' domain="[]"
+                  context="{'group_by' : 'is_sku_odoo'}" name="meli_group_by_is_sku_odoo_filter"/>
+            <filter string='Agrupar por Barcode in Odoo' domain="[]"
+                  context="{'group_by' : 'is_barcode_odoo'}" name="meli_group_by_is_barcode_odoo_filter"/>
+          </search>
+        </field>
+      </record>
+
 
       <!--Tree view - Product -->
       <record id="view_mercadolibre_product_tree" model="ir.ui.view">
@@ -630,20 +771,153 @@
             <field name="conn_id" string="MercadoLibre Id"/>
             <field name="conn_variation_id"  string="Variant Id"/>
             <field name="stock" />
+            <field name="meli_stock_status" optional="show"/>
             <!--field name="meli_status"/>
             <field name="meli_sub_status"/-->
-            <field name="meli_permalink" widget="url"/>
-            <field name="meli_permalink_edit" widget="url"/>
+            <!--field name="meli_permalink" widget="url"/-->
+            <!--field name="meli_permalink_edit" widget="url"/-->
             <field name="product_id"/>
             <!--field name="active"  optional="hide"/-->
             <field name="full_update" optional="hide"/>
             <field name="image_update" optional="hide"/>
             <field name="price_update" optional="hide"/>
             <field name="stock_update" optional="hide"/>
-            <field name="meli_stock_moves_update" optional="hide"/>
+            <!--field name="meli_stock_moves_update" optional="hide"/-->
       		</tree>
       	</field>
       </record>
+
+      <!--Tree view - Product Maestro Binding -->
+      <!--
+      1. decoration-bf: shows the record in Bold
+      2. decoration-it: shows the record in Italics
+      3. decoration-danger: shows the record in Light Red
+      4. decoration-info: shows the record in Light Blue
+      5. decoration-muted: shows the record in Light Gray
+      6. decoration-primary: shows the record in Light Purple
+      7. decoration-success: shows the record in Light Green
+      8. decoration-warning: shows the record in Light Brown
+    -->
+      <record id="view_mercadolibre_product_maestro_tree" model="ir.ui.view">
+        <field name="name">mercadolibre.product.maestro.tree</field>
+        <field name="model">mercadolibre.product.maestro</field>
+        <field name="arch" type="xml">
+          <tree create="1" edit="1" delete="1" class="mercadolibre_product_maestro" default_order='name asc, connection_account asc'
+            decoration-success="is_valid == True"
+            decoration-danger="is_valid == False"
+            decoration-warning="is_valid == True and ( not barcode or not barcodes or (barcode and barcodes and barcode not in barcodes) )"
+            decoration-bf = "is_master == True"
+            decoration-info =" is_valid == True and is_combo == True " >
+            <field name="connection_account" />
+<!-- STATES -->
+            <field name="is_valid"/>
+            <field name="is_master"/>
+            <field name="is_combo"/>
+            <field name="is_sku_odoo" optional="hide"/>
+            <field name="is_barcode_odoo" optional="hide"/>
+<!-- DESCRIPTION -->
+            <field name="name" />
+            <field name="description" optional="hide" />
+            <field name="attributes" string="Atributos"/>
+            <field name="sku"/>
+            <field name="skus" optional="hide"/>
+            <field name="barcode"/>
+            <field name="barcodes" optional="hide"/>
+<!-- MELI PUB -->
+            <field name="meli_id" string="MercadoLibre Id"/>
+            <field name="meli_id_variations" string="Variations" optional="show"/>
+            <field name="meli_id_variations_number" string="Number" optional="show"/>
+            <field name="skus" optional="hide"/>
+            <field name="barcodes" optional="hide"/>
+            <field name="stock" />
+<!-- LDM -->
+            <field name="barcode0" optional="hide"/>
+            <field name="quantity0" optional="show"/>
+            <field name="barcode1" optional="hide"/>
+            <field name="quantity1" optional="hide"/>
+            <field name="barcode2" optional="hide"/>
+            <field name="quantity2" optional="hide"/>
+            <field name="barcode3" optional="hide"/>
+            <field name="quantity3" optional="hide"/>
+            <field name="barcode4" optional="hide"/>
+            <field name="quantity4" optional="hide"/>
+            <field name="barcode5" optional="hide"/>
+            <field name="quantity5" optional="hide"/>
+            <field name="barcode6" optional="hide"/>
+            <field name="quantity6" optional="hide"/>
+            <field name="barcode7" optional="hide"/>
+            <field name="quantity7" optional="hide"/>
+            <field name="barcode8" optional="hide"/>
+            <field name="quantity8" optional="hide"/>
+            <field name="barcode9" optional="hide"/>
+            <field name="quantity9" optional="hide"/>
+            <field name="barcode10" optional="hide"/>
+            <field name="quantity10" optional="hide"/>
+          </tree>
+        </field>
+      </record>
+
+      <record model="ir.ui.view" id="mercadolibre_product_maestro_form_view">
+        <field name="name">mercadolibre.product.maestro.form</field>
+        <field name="model">mercadolibre.product.maestro</field>
+        <field name="arch" type="xml">
+          <form string="MercadoLibre Product Maestro Form">
+            <header>
+              <field name="status" widget="statusbar"/>
+            </header>
+            <sheet>
+              <div class="oe_title">
+                <h1><field name="name"/></h1>
+              </div>
+              <group>
+                <group>
+                  <field name="connection_account" />
+                  <field name="is_valid"/>
+                  <field name="is_master"/>
+                  <field name="is_combo"/>
+                  <field name="is_sku_odoo"/>
+                  <field name="is_barcode_odoo"/>
+                </group>
+                <group>
+                  <field name="description"/>
+                  <field name="meli_id" string="MercadoLibre Id"/>
+                  <field name="meli_id_variations" string="Variations"/>
+                  <field name="meli_id_variations_number" string="Number"/>
+                  <field name="attributes" string="Atributos"/>
+                  <field name="stock" />
+                </group>
+              </group>
+              <group>
+                <group>
+                  <field name="sku"/>
+                  <field name="barcode"/>
+
+                  <field name="barcode0"/>
+                  <field name="quantity0" />
+                  <field name="barcode1"/>
+                  <field name="quantity1"/>
+                  <field name="barcode2"/>
+                  <field name="quantity2"/>
+                  <field name="barcode3"/>
+                  <field name="quantity3"/>
+                  <field name="barcode4"/>
+                  <field name="quantity4"/>
+                  <field name="barcode5"/>
+                  <field name="quantity5"/>
+                  <field name="barcode6"/>
+                  <field name="quantity6"/>
+                </group>
+                <group>
+                  <field name="skus"/>
+                  <field name="barcodes"/>
+                </group>
+              </group>
+            </sheet>
+          </form>
+        </field>
+      </record>
+
+
 
       <!-- IMAGES -->
       <record id="view_mercadolibre_product_image_form" model="ir.ui.view">
@@ -767,6 +1041,18 @@
       </record>
 
 
+      <!--Actions Product Maestro only-->
+      <record  id="action_mercadolibre_product_maestro_tree" model="ir.actions.act_window">
+      	<field name="name">Product Maestro</field>
+      	<field name="type">ir.actions.act_window</field>
+      	<field name="res_model">mercadolibre.product.maestro</field>
+      	<!--field name="view_type">form</field-->
+      	<field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_mercadolibre_product_maestro_tree"/>
+      	<field name="search_view_id" ref="mercadolibre_product_maestro_search_view" />
+      </record>
+
+
       <!--Menu Items - MercadoLibre -->
 
       <menuitem id="menu_mercadolibre_connectors" name="MercadoLibre Multiple" parent="meli_oerp.menu_meli" sequence="1"
@@ -796,6 +1082,13 @@
                           action="action_mercadolibre_bindings_products_tree"
                           parent="menu_mercadolibre_connectors"
                           name="Product Variant Bindings"  sequence="5"/>
+
+          <!--Menu Items - Product Maestro Bindings -->
+          <menuitem id="menu_mercadolibre_product_maestro"
+                          action="action_mercadolibre_product_maestro_tree"
+                          parent="menu_mercadolibre_connectors"
+                          name="Product Maestro"  sequence="6"/>
+
 
 
 		</data>

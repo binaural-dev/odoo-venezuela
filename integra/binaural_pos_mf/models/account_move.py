@@ -27,3 +27,14 @@ class AccountMoveInh(models.Model):
                 record.sales_book_type = "03-ANU"
             else:
                 record.sales_book_type = "01-REG"
+
+    def report_z(self, serial, response):
+        res = super().report_z(serial, response)
+        pos_order_ids = self.env["pos.order"].search(
+            ["&", ("fiscal_machine", "=", serial), ("mf_reportz", "=", False)]
+        )
+
+        for order in pos_order_ids:
+            order.write({"mf_reportz": int(response["data"]["_numberOfLastZReport"]) + 1})
+
+        return res

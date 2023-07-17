@@ -9,6 +9,10 @@ const BinauralProductItem = (ProductItem) => {
 			return this.props.product.free_qty;
 		}
 
+		get show_just_products_with_available_qty() {
+			return this.env.pos.config.pos_show_just_products_with_available_qty;
+		}
+
 		get show_free_qty() {
 			return this.env.pos.config.pos_show_free_qty;
 		}

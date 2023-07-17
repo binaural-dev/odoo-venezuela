@@ -155,15 +155,18 @@ class product_product(models.Model):
 
             #Cantidad disponible en esta ubicacion
             if ( not qty_method or qty_method=='virtual' ):
-                qty_available_op = quant_obj._get_available_quantity( product_id, loc )
+                qty_available_op = quant_obj._get_available_quantity( product_id, loc, allow_negative=True )
                 #_logger.info("qty_available_op virtual: "+str(loc.name)+" "+str(qty_available_op))
+            elif ( qty_method=='virtual_absoluto' ):
+                #qty_available_op = quant_obj._get_available_quantity( product_id, loc )
+                qty_available_op = quant_obj._get_available_quantity( product_id, loc, allow_negative=False )
             else:
                 if (qty_method=='theoretical'):
-                    qty_available_op = product_id.get_theoretical_quantity( product_id.id, loc.id )
+                    qty_available_op = product_id.get_theoretical_quantity( product_id.id, loc.id, allow_negative=True )
                     #_logger.info("qty_available_op theoretical: "+str(loc.name)+" "+str(qty_available_op))
 
                 if (qty_method=='qty_reserved'):
-                    qty_available_op = product_id.get_theoretical_quantity( product_id.id, loc.id )
+                    qty_available_op = product_id.get_theoretical_quantity( product_id.id, loc.id, allow_negative=True )
                     #_logger.info("qty_available_op qty_reserved: "+str(loc.name)+" "+str(qty_available_op))
 
             #Operacion entre ubicaciones
