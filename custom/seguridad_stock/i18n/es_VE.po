@@ -98,7 +98,7 @@ msgstr "Direccion de envio:"
 #. module: seguridad_stock
 #: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
 msgid "<strong>Code</strong>"
-msgstr "Codigo"
+msgstr "Código"
 
 #. module: seguridad_stock
 #: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2

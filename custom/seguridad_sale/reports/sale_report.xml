@@ -19,25 +19,21 @@
                 <t t-foreach="docs" t-as="doc">
                     <t>
                         <t t-call="web.basic_layout">
-                        <div t-attf-class="header o_company_#{doc.company_id.id}_layout" t-att-style="report_header_style">
-                            <div class="row">
-                                <div class="col-3 mb4">
-                                    <img t-if="doc.company_id.logo" t-att-src="image_data_uri(doc.company_id.logo)" style="max-height: 45px;" alt="Logo"/>
-                                </div>
-                            </div>
+                        <div class="col-3 mb4">
+                            <img t-if="doc.company_id.logo" t-att-src="image_data_uri(doc.company_id.logo)" style="max-height: 45px;" alt="Logo"/>
                         </div>
-                        <hr style="border: none; visibility: hidden;"/>
-                        <div  style="border-bottom: 1px solid black;height: 14px;">
+                        <div style="border-top: 1px solid black;height: 14px;">
                         </div>
                         <div style="margin-top:15px;margin-left:3px" t-field="doc.company_id.vat"/>
                         <div style="margin-left:3px" t-field="doc.company_id.partner_id" t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
                         <div style="margin-left:3px"><span t-field="doc.company_id.phone"/></div>
                         <div style="margin-left:3px"><span t-field="doc.company_id.mobile"/></div>
-                        <div style="margin-left:500px;margin-top:-195px">
-                            <div style="margin-top:10px"><span>Cliente:</span><span style="margin-left:2px" t-field="doc.partner_id.name"/></div>
-                            <div style="margin-top:10px"><span style="margin-left:2px" t-field="doc.partner_id.vat"/></div>
-                            <div><span>Direccion:</span><span style="margin-left:2px" t-field="doc.partner_id.contact_address"/></div>
-                            <div style="margin-bottom:120px"><span>Telefono:</span><span style="margin-left:2px" t-field="doc.partner_id.phone"/></div>
+                        <div style="margin-left:500px;margin-top:-155px">
+                            <div style="margin-top:10px"><span style="font-weight:bold;">Cliente:</span><span style="margin-left:2px" t-field="doc.partner_id.name"/></div>
+                            <div t-if="doc.tax_country_id.code == 'VE'"><span style="font-weight:bold;">RIF/C.I.:</span><span style="margin-left:2px" t-field="doc.partner_id.vat"/></div>
+                            <div t-if="doc.tax_country_id.code == 'PA'"><span style="font-weight:bold;">RUC/CIP:</span><span style="margin-left:2px" t-field="doc.partner_id.vat"/></div>
+                            <div><span style="font-weight:bold;">Dir:</span><span style="margin-left:2px" t-field="doc.partner_id.contact_address"/></div>
+                            <div style="margin-bottom:120px"><span style="font-weight:bold;">Tlf:</span><span style="margin-left:2px" t-field="doc.partner_id.phone"/></div>
                         </div>
                         <t t-if="doc.partner_shipping_id == doc.partner_invoice_id
                                             and doc.partner_invoice_id != doc.partner_id
@@ -61,8 +57,6 @@
                             </t>
                         </t>
                         <div class="page">
-                            <div class="oe_structure"/>
-
                             <h2 class="mt-4">
                                 <span t-if="env.context.get('proforma', False) or is_pro_forma">Pro-Forma Invoice # </span>
                                 <span t-elif="doc.state in ['draft','sent']">Quotation # </span>
@@ -87,7 +81,7 @@
                                     <p class="m-0" t-field="doc.validity_date"/>
                                 </div>
                                 <div t-if="doc.user_id.name" class="col-auto col-3 mw-100 mb-2">
-                                    <strong>Salesperson:</strong>
+                                    <strong style="font-weight:bold;">Vendedor:</strong>
                                     <p class="m-0" t-field="doc.user_id"/>
                                 </div>
                                 <div t-if="doc.user_id.name" class="col-auto col-3 mw-100 mb-2">
@@ -99,12 +93,12 @@
                             <!-- Is there a discount on at least one line? -->
                             <t t-set="lines_to_report" t-value="doc._get_order_lines_to_report()"/>
                             <t t-set="display_discount" t-value="any(l.discount for l in lines_to_report)"/>
-
+                            
                             <table class="table table-sm o_main_table table-borderless mt-4">
                                 <!-- In case we want to repeat the header, remove "display: table-row-group" -->
                                 <thead style="display: table-row-group">
                                     <tr style="border-top: 1px solid black;">
-                                        <th style="border-right: 1px solid black;border-left: 1px solid black" name="th_code" class="text-start">Description</th>
+                                        <th style="border-right: 1px solid black;border-left: 1px solid black" name="th_code" class="text-start">Code</th>
                                         <th style="border-right: 1px solid black" name="th_description" class="text-start">Description</th>
                                         <th style="border-right: 1px solid black" name="th_quantity" class="text-end">Quantity</th>
                                         <th style="border-right: 1px solid black" name="th_priceunit" class="text-end">Unit Price</th>

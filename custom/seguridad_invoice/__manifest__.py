@@ -13,6 +13,7 @@
     "data": [
         'data/paperformat.xml',
         'reports/account_report.xml',
+        # 'reports/account_report_ven.xml',
        
     ],
     "images": ["static/description/icon.png"],

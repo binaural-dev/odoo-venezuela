@@ -16,7 +16,9 @@ class StockPicking(models.Model):
     comercial = fields.Many2one(
         related = "sale_id.user_id"
     )
-    
+    sequence_code = fields.Char(
+        related = 'picking_type_id.sequence_code'
+    )
     action_report_picking_2_datetime = fields.Datetime(string='Fecha y Hora de Ejecución')
 
     def action_report_picking_2(self):
