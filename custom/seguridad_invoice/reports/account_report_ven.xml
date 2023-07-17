@@ -29,9 +29,8 @@
         </template>
         <template id="report_invoice_document_2">
             <t t-call="web.basic_layout">
-                <div t-attf-class="header o_company_#{o.company_id.id}_layout" t-att-style="report_header_style">
+                <div>
                     <div>
-                        <div>
                             <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="max-height: 40px;" alt="Logo"/>
                             <div style="border-bottom: 1px solid black"/>
                         </div>
@@ -51,13 +50,12 @@
                             <div><span style="font-weight:bold;">Tlf:</span><span style="margin-left:2px" t-field="o.partner_id.phone"/></div>
                             <div t-if="o.tax_country_id.code == 'PA' and o.invoice_origin=='True'"><span style="font-weight:bold;">Pedido:</span><span style="margin-left:2px" t-field="o.invoice_origin"/></div>
                         </div>
-                    </div>
                 </div>
-                <div style="margin-top:20px">
+                <div>
                 <t t-set="o" t-value="o.with_context(lang=lang)" />
                 <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/>
                     <t t-if="o.partner_shipping_id and (o.partner_shipping_id != o.partner_id)">
-                        <div class="col-6" style="margin-top:200px">
+                        <div class="col-6">
                             <t t-set="information_block">
                                 <div groups="account.group_delivery_invoice_address" name="shipping_address_block">
                                     <strong>Shipping Address:</strong>
@@ -103,16 +101,6 @@
                     <div style="color:white">
                         <div>-</div>
                         <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
                     </div>
                         <hr style="border: none; visibility: hidden;"/>
                         <h2>
@@ -129,8 +117,8 @@
                             <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_date" name="invoice_date">
                                 <t t-if="o.move_type == 'out_invoice'" style="font-weight:bold;">Invoice Date:</t>
                                 <t t-elif="o.move_type == 'out_refund'" style="font-weight:bold;">Credit Note Date:</t>
-                                <t t-elif="o.move_type == 'out_receipt'">Receipt Date:</t>
-                                <t t-else="">Date:</t>
+                                <t t-elif="o.move_type == 'out_receipt'" style="font-weight:bold;">Receipt Date:</t>
+                                <t t-else="" style="font-weight:bold;">Date:</t>
                                 <p class="m-0" t-field="o.invoice_date"/>
                             </div>
                             <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_date_due and o.move_type == 'out_invoice' and o.state == 'posted'" name="due_date">
@@ -183,20 +171,20 @@
                                             <td name="account_invoice_default_code"><span t-field="line.product_id.default_code"/></td>
                                             <td name="account_invoice_line_name"><span t-field="line.product_id.name"/></td>
 
-                                            <td style="text-align: center;">
+                                            <td style="text-align:center">
                                                 <span t-field="line.quantity"/>
                                                 <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
                                             </td>
-                                            <td t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
+                                            <td style="text-align:center" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                                 <span class="text-nowrap" t-field="line.price_unit"/>
                                             </td>
-                                            <td t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
+                                            <td style="text-align:center" t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                                 <span class="text-nowrap" t-field="line.discount"/>
                                             </td>
-                                            <td t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
+                                            <td style="text-align:center" t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                                 <span t-esc="', '.join(map(lambda x: (x.description or x.name), line.tax_ids))" id="line_tax_ids"/>
                                             </td>
-                                            <td class="text-end o_price_total">
+                                            <td style="text-align:center" class="text-end o_price_total">
                                                 <span class="text-nowrap" t-field="line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
                                                 <span class="text-nowrap" t-field="line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
                                             </td>

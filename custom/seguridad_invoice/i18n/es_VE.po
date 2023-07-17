@@ -86,7 +86,7 @@ msgstr "Fecha:"
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
-msgid "<strong>Due Date:</strong>"
+msgid "Due Date:"
 msgstr "Fecha de Vencimiento:"
 
 #. module: seguridad_invoice
@@ -96,17 +96,17 @@ msgstr ""
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
-msgid "<strong>Invoice Date:</strong>"
+msgid "Invoice Date:"
 msgstr "Fecha de Factura"
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
-msgid "<strong>Receipt Date:</strong>"
+msgid "Receipt Date:"
 msgstr "Fecha de Recepción"
 
 #. module: seguridad_invoice
 #: model_terms:ir.ui.view,arch_db:seguridad_invoice.report_invoice_document_2
-msgid "<strong>Reference:</strong>"
+msgid "Reference:"
 msgstr "Referencia"
 
 #. module: seguridad_invoice
