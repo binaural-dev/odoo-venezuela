@@ -144,7 +144,6 @@
                                             <tr>
                                                 <th style="width:10%;font-weight:normal;font-size:14px">Teléfonos:</th>
                                                 <th style="width:100%;font-weight:normal;font-size:14px"><span t-out="invoice.partner_id.phone"/></th>
-                                                <th style="width:30%;font-weight:normal;font-size:14px">Fax:</th>
                                             </tr>
                                             <tr>
                                                 <th style="width:10%;font-weight:normal;font-size:14px">Transporte:</th>

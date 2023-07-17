@@ -103,7 +103,6 @@
                         <tr>
                             <th style="width:10%;font-weight:normal;font-size:14px">Teléfonos:</th>
                             <th style="width:100%;font-weight:normal;font-size:14px"><span t-out="invoice.partner_id.phone"/></th>
-                            <th style="width:30%;font-weight:normal;font-size:14px">Fax:</th>
                         </tr>
                         <tr>
                             <th style="width:10%;font-weight:normal;font-size:14px">Transporte:</th>
@@ -117,15 +116,15 @@
             </xpath>"
             <xpath expr="//section[@id='segmento_3']/table/thead" position="replace">
                 <thead>
-                    <tr style="border-bottom: 1px solid black">
-                        <th style="width:120px;text-align:center;border: 0px solid black;text-align:center">Código</th>
-                        <th style="width:120px;text-align:center;border: 0px solid black;text-align:center">Modelo</th>
-                        <th style="width:380 px;text-align:left;border: 0px solid black;padding-left: 10px;text-align:center">Descripción</th>
-                        <th style="width:60px;text-align:center;border: 0px solid black;text-align:center">Cant.</th><th style="width:40;text-align:center;border: 0px solid black;">Unidad</th>
-                        <th style="width:90px;text-align:center;border: 0px solid black;">Precio Unitario</th>
-                        <th style="width:90px;text-align:center;border: 0px solid black;text-align:center">% Desc.</th>
-                        <!-- <th style="width:90px;text-align:center;border: 0px solid black;">Precio Uni. Con Desc.</th> -->
-                        <th style="width:90px;text-align:center;border: 0px solid black;text-align:center">Neto</th>
+                    <tr style="border-bottom: 1px solid black;text-align:center">
+                        <th style="width:120px;border: 0px solid black">Código</th>
+                        <th style="width:120px;border: 0px solid black">Modelo</th>
+                        <th style="width:380 px;border: 0px solid black;padding-left: 10px">Descripción</th>
+                        <th style="width:60px;border: 0px solid black;">Cant.</th>
+                        <th style="width:40;border: 0px solid black;">Unidad</th>
+                        <th style="width:90px;border: 0px solid black;">Precio Unitario</th>
+                        <th style="width:90px;border: 0px solid black">% Desc.</th>
+                        <th style="width:90px;border: 0px solid black">Neto</th>
                     </tr>
                 </thead>
             </xpath>
@@ -167,12 +166,12 @@
                                     <span style="text-align:center" t-field="line.product_id.model_product"/>
                                 </td>
                                 <t t-if="line.product_id.name">
-                                    <t style="text-align:center" t-set="product_name" t-value="line.product_id.name[0:35]"/>
+                                    <t style="text-align:left" t-set="product_name" t-value="line.product_id.name[0:35]"/>
                                 </t>
                                 <t t-else="">
-                                    <t t-set="product_name" t-value=""/>
+                                    <t style="text-align:left" t-set="product_name" t-value=""/>
                                 </t>
-                                <td style="width:350px;text-align:center;">
+                                <td style="width:350px;text-align:left;">
                                     <span t-esc="line.name"/>
                                 </td>
                             </t>
@@ -183,7 +182,8 @@
                                 <span t-field="line.product_uom_id"/>
                             </td>
                             <td style="width:80px;text-align:center;">
-                                <span t-esc="'{0:,.2f}'.format(float(line.price_unit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>$
+                                $<span t-esc="'{0:,.2f}'.format(float(line.price_unit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+
                             </td>
                             <td style="width:50px;text-align:center;">
                                 <span t-esc="line.discount"/>
@@ -191,7 +191,7 @@
                             <t t-set="price_total" t-value="line.price_subtotal"/>
                             <td class="td_right"
                                 style="width:90px;text-align:center">
-                                <span t-esc="'{0:,.2f}'.format(float(price_total)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>$
+                                $<span t-esc="'{0:,.2f}'.format(float(price_total)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
                             </td>
                         </tr>
                     </t>
