@@ -36,14 +36,20 @@
                             <div style="border-bottom: 1px solid black"/>
                         </div>
                         <div style="float:left;width: 50%;">
-                            <div style="margin-top:15px;margin-left:3px" t-field="o.company_id.vat"/>
+                            <div style="margin-top:15px;margin-left:3px"><span t-field="o.company_id.vat"/></div>
                             <div style="margin-left:3px" t-field="o.company_id.partner_id" t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
-                            <div style="margin-left:3px" t-field="o.company_id.vat"/>
+                            <div style="margin-left:3px">Tlf:<span style="margin-left:2px" t-field="o.company_id.phone"/></div>
                         </div>
                         <div style="float:right;width: 50%;">
-                            <div style="margin-top:10px"><span>Cliente:</span><span style="margin-left:2px" t-field="o.partner_id.name"/></div>
-                            <div><span>Direccion:</span><span style="margin-left:2px" t-field="o.partner_id.contact_address"/></div>
-                            <div><span>Telefono:</span><span style="margin-left:2px" t-field="o.partner_id.phone"/></div>
+                            <div t-if="o.tax_country_id.code == 'VE'" style="margin-top:10px"><span style="font-weight:bold;">RIF/C.I.:</span><span style="margin-left:2px" t-field="o.partner_id.vat"/></div>
+                            <div t-if="o.tax_country_id.code == 'PA'" style="margin-top:10px"><span style="font-weight:bold;">RUC/CIP:</span><span style="margin-left:2px" t-field="o.partner_id.vat"/></div>
+                             <!-- <field name="partner_name" attrs="{'invisible': if(context.get('base_country_id') in [env.ref('base.pa').id, env.ref('base.ve').id], 0, 1)}"/><span style="font-weight:bold;">Razón Social:</span><span style="margin-left:2px" t-field="o.partner_id.name"/></div> -->
+                            <div t-if="o.tax_country_id.code == 'VE'"><span style="font-weight:bold;">Razón Social:</span><span style="margin-left:2px" t-field="o.partner_id.name"/></div>
+                            <div t-if="o.tax_country_id.code == 'PA'"><span style="font-weight:bold;"></span><span style="margin-left:2px" t-field="o.partner_id.name"/></div>
+                            <div t-if="o.tax_country_id.code == 'PA'"><span style="font-weight:bold;">Terminos de Pago:</span><span t-field="o.invoice_payment_term_id"/></div>
+                            <div><span style="font-weight:bold;">Dir:</span><span style="margin-left:2px" t-field="o.partner_id.contact_address"/></div>
+                            <div><span style="font-weight:bold;">Tlf:</span><span style="margin-left:2px" t-field="o.partner_id.phone"/></div>
+                            <div t-if="o.tax_country_id.code == 'PA' and o.invoice_origin=='True'"><span style="font-weight:bold;">Pedido:</span><span style="margin-left:2px" t-field="o.invoice_origin"/></div>
                         </div>
                     </div>
                 </div>
@@ -127,10 +133,10 @@
                                 <t t-else=""><strong>Date:</strong></t>
                                 <p class="m-0" t-field="o.invoice_date"/>
                             </div>
-                            <!-- <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_date_due and o.move_type == 'out_invoice' and o.state == 'posted'" name="due_date">
-                                <strong>Due Date:</strong>
+                            <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_date_due and o.move_type == 'out_invoice' and o.state == 'posted'" name="due_date">
+                                <strong>Hora:</strong>
                                 <p class="m-0" t-field="o.invoice_date_due"/>
-                            </div> -->
+                            </div>
                             <div class="col-auto col-3 mw-100 mb-2" t-if="o.invoice_origin" name="origin">
                                 <strong>Nº de Pedido:</strong>
                                 <p class="m-0" t-field="o.invoice_origin"/>
