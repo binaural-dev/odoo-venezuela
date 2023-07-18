@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-        <record id="binaural_invoice.invoice_sale_note_paperformat_binaural_invoice" model="report.paperformat">
+    <data>
+        <record id="paperformat_invoice" model="report.paperformat">
             <field name="name">Free Form Paperformat</field>
             <field name="default" eval="True"/>
             <field name="format">A4</field>
             <!--<field name="page_height">154</field>
             <field name="page_width">210</field>-->
             <field name="orientation">Portrait</field>
-            <field name="margin_top">40</field>
-            <field name="margin_bottom">30</field>
+            <field name="margin_top">25</field>
+            <field name="margin_bottom">21</field>
             <field name="margin_left">8</field>
-            <field name="margin_right">8</field>
+            <field name="margin_right">9</field>
             <field name="header_line" eval="False"/>
             <field name="header_spacing">3</field>
             <field name="dpi">110</field>
