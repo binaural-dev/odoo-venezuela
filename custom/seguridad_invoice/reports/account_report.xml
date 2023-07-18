@@ -29,12 +29,12 @@
         </template>
         <template id="report_invoice_document_2">
             <t t-call="web.basic_layout">
-                <div t-attf-class="header o_company_#{o.company_id.id}_layout" t-att-style="report_header_style">
+                <div>
+                    <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="height: 80px;" alt="Logo"/>
+                    <div style="border-bottom: 1px solid black"/>
+                </div>
+                <div>
                     <div>
-                        <div>
-                            <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="max-height: 40px;" alt="Logo"/>
-                            <div style="border-bottom: 1px solid black"/>
-                        </div>
                         <div style="float:left;width: 50%;">
                             <div style="margin-top:15px;margin-left:3px"><span t-field="o.company_id.vat"/></div>
                             <div style="margin-left:3px" t-field="o.company_id.partner_id" t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
@@ -43,7 +43,6 @@
                         <div style="float:right;width: 50%;">
                             <div t-if="o.tax_country_id.code == 'VE'" style="margin-top:10px"><span style="font-weight:bold;">RIF/C.I.:</span><span style="margin-left:2px" t-field="o.partner_id.vat"/></div>
                             <div t-if="o.tax_country_id.code == 'PA'" style="margin-top:10px"><span style="font-weight:bold;">RUC/CIP:</span><span style="margin-left:2px" t-field="o.partner_id.vat"/></div>
-                             <!-- <field name="partner_name" attrs="{'invisible': if(context.get('base_country_id') in [env.ref('base.pa').id, env.ref('base.ve').id], 0, 1)}"/><span style="font-weight:bold;">Razón Social:</span><span style="margin-left:2px" t-field="o.partner_id.name"/></div> -->
                             <div t-if="o.tax_country_id.code == 'VE'"><span style="font-weight:bold;">Razón Social:</span><span style="margin-left:2px" t-field="o.partner_id.name"/></div>
                             <div t-if="o.tax_country_id.code == 'PA'"><span style="font-weight:bold;"></span><span style="margin-left:2px" t-field="o.partner_id.name"/></div>
                             <div t-if="o.tax_country_id.code == 'PA'"><span style="font-weight:bold;">Terminos de Pago:</span><span t-field="o.invoice_payment_term_id"/></div>
@@ -53,8 +52,8 @@
                         </div>
                     </div>
                 </div>
-                <div style="margin-top:20px">
-                <t t-set="o" t-value="o.with_context(lang=lang)" />
+                <div>
+                <t t-set="o" t-value="o.with_context(lang=lang)"/>
                 <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/>
                     <t t-if="o.partner_shipping_id and (o.partner_shipping_id != o.partner_id)">
                         <div class="col-6" style="margin-top:200px">
@@ -104,15 +103,6 @@
                         <div>-</div>
                         <div>-</div>
                         <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
-                        <div>-</div>
                     </div>
                         <hr style="border: none; visibility: hidden;"/>
                         <h2>
@@ -150,15 +140,13 @@
                                 <p class="m-0" t-field="o.ref"/>
                             </div>
                         </div>
-
                         <t t-set="display_discount" t-value="any(l.discount for l in o.invoice_line_ids)"/>
-
                         <table border="1" class="table table-sm o_main_table table-borderless" name="invoice_line_table">
                             <thead>
                                 <tr style="border-top: 1px solid black;">
+                                    <th style="border-left: 1px solid black;border-right: 1px solid black" name="th_quantity" class="text-end"><span>Quantity</span></th>
                                     <th style="width:100px;border-left: 1px solid black" name="th_code" class="text-start"><span>Código</span></th>
                                     <th style="border-left: 1px solid black;border-right: 1px solid black" name="th_description" class="text-start"><span>Description</span></th>
-                                    <th style="border-left: 1px solid black;border-right: 1px solid black" name="th_quantity" class="text-end"><span>Quantity</span></th>
                                     <th style="width:150px;border-left: 1px solid black;border-right: 1px solid black" name="th_priceunit" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>Unit Price</span></th>
                                     <th style="border-left: 1px solid black;border-right: 1px solid black" name="th_price_unit" t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                         <span>Disc.%</span>
@@ -180,13 +168,12 @@
 
                                     <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
                                         <t t-if="line.display_type == 'product'" name="account_invoice_line_accountable">
-                                            <td name="account_invoice_default_code"><span t-field="line.product_id.default_code"/></td>
-                                            <td name="account_invoice_line_name"><span t-field="line.product_id.name"/></td>
-
                                             <td style="text-align: center;">
                                                 <span t-field="line.quantity"/>
                                                 <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
                                             </td>
+                                            <td name="account_invoice_default_code"><span t-field="line.product_id.default_code"/></td>
+                                            <td name="account_invoice_line_name"><span t-field="line.product_id.name"/></td>
                                             <td t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                                 <span class="text-nowrap" t-field="line.price_unit"/>
                                             </td>
@@ -214,7 +201,6 @@
                                             </td>
                                         </t>
                                     </tr>
-
                                     <t t-if="current_section and (line_last or lines[line_index+1].display_type == 'line_section')">
                                         <tr class="is-subtotal text-end">
                                             <td colspan="99">

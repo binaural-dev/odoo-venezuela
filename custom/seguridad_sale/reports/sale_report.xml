@@ -19,21 +19,22 @@
                 <t t-foreach="docs" t-as="doc">
                     <t>
                         <t t-call="web.basic_layout">
-                        <div class="col-3 mb4">
-                            <img t-if="doc.company_id.logo" t-att-src="image_data_uri(doc.company_id.logo)" style="max-height: 45px;" alt="Logo"/>
+                        <div>
+                            <img t-if="doc.company_id.logo" t-att-src="image_data_uri(doc.company_id.logo)" style="height: 80px;" alt="Logo"/>
                         </div>
-                        <div style="border-top: 1px solid black;height: 14px;">
-                        </div>
-                        <div style="margin-top:15px;margin-left:3px" t-field="doc.company_id.vat"/>
-                        <div style="margin-left:3px" t-field="doc.company_id.partner_id" t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
-                        <div style="margin-left:3px"><span t-field="doc.company_id.phone"/></div>
-                        <div style="margin-left:3px"><span t-field="doc.company_id.mobile"/></div>
-                        <div style="margin-left:500px;margin-top:-155px">
-                            <div style="margin-top:10px"><span style="font-weight:bold;">Cliente:</span><span style="margin-left:2px" t-field="doc.partner_id.name"/></div>
-                            <div t-if="doc.tax_country_id.code == 'VE'"><span style="font-weight:bold;">RIF/C.I.:</span><span style="margin-left:2px" t-field="doc.partner_id.vat"/></div>
-                            <div t-if="doc.tax_country_id.code == 'PA'"><span style="font-weight:bold;">RUC/CIP:</span><span style="margin-left:2px" t-field="doc.partner_id.vat"/></div>
-                            <div><span style="font-weight:bold;">Dir:</span><span style="margin-left:2px" t-field="doc.partner_id.contact_address"/></div>
-                            <div style="margin-bottom:120px"><span style="font-weight:bold;">Tlf:</span><span style="margin-left:2px" t-field="doc.partner_id.phone"/></div>
+                        <div style="border-top: 1px solid black;height: 14px;"></div>
+                        <div>
+                            <div style="margin-top:15px;margin-left:3px" t-field="doc.company_id.vat"/>
+                            <div style="margin-left:3px" t-field="doc.company_id.partner_id" t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": true}'/>
+                            <div style="margin-left:3px"><span t-field="doc.company_id.phone"/></div>
+                            <div style="margin-left:3px"><span t-field="doc.company_id.mobile"/></div>
+                            <div style="margin-left:500px;margin-top:-155px">
+                                <div style="margin-top:10px"><span style="font-weight:bold;">Cliente:</span><span style="margin-left:2px" t-field="doc.partner_id.name"/></div>
+                                <div t-if="doc.tax_country_id.code == 'VE'"><span style="font-weight:bold;">RIF/C.I.:</span><span style="margin-left:2px" t-field="doc.partner_id.vat"/></div>
+                                <div t-if="doc.tax_country_id.code == 'PA'"><span style="font-weight:bold;">RUC/CIP:</span><span style="margin-left:2px" t-field="doc.partner_id.vat"/></div>
+                                <div><span style="font-weight:bold;">Dir:</span><span style="margin-left:2px" t-field="doc.partner_id.contact_address"/></div>
+                                <div style="margin-bottom:50px"><span style="font-weight:bold;">Tlf:</span><span style="margin-left:2px" t-field="doc.partner_id.phone"/></div>
+                            </div>
                         </div>
                         <t t-if="doc.partner_shipping_id == doc.partner_invoice_id
                                             and doc.partner_invoice_id != doc.partner_id
@@ -98,9 +99,9 @@
                                 <!-- In case we want to repeat the header, remove "display: table-row-group" -->
                                 <thead style="display: table-row-group">
                                     <tr style="border-top: 1px solid black;">
-                                        <th style="border-right: 1px solid black;border-left: 1px solid black" name="th_code" class="text-start">Code</th>
+                                        <th style="border-left: 1px solid black;border-right: 1px solid black" name="th_quantity" class="text-end">Quantity</th>
+                                        <th style="border-right: 1px solid black" name="th_code" class="text-start">Code</th>
                                         <th style="border-right: 1px solid black" name="th_description" class="text-start">Description</th>
-                                        <th style="border-right: 1px solid black" name="th_quantity" class="text-end">Quantity</th>
                                         <th style="border-right: 1px solid black" name="th_priceunit" class="text-end">Unit Price</th>
                                         <th style="border-right: 1px solid black" name="th_discount" t-if="display_discount" class="text-end" groups="product.group_discount_per_so_line">
                                             <span>Disc.%</span>
@@ -123,19 +124,18 @@
 
                                         <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
                                             <t t-if="not line.display_type">
+                                                <td name="td_quantity" class="text-center">
+                                                    <span t-field="line.product_uom_qty"/>
+                                                </td>
                                                 <td name="td_code"><span t-field="line.product_id.default_code"/></td>
                                                 <td name="td_name"><span t-field="line.product_id.name"/></td>
-                                                <td name="td_quantity" class="text-end">
-                                                    <span t-field="line.product_uom_qty"/>
-                                                    <span t-field="line.product_uom"/>
-                                                </td>
                                                 <td name="td_priceunit" class="text-end">
                                                     <span t-field="line.price_unit"/>
                                                 </td>
                                                 <td t-if="display_discount" class="text-end" groups="product.group_discount_per_so_line">
                                                     <span t-field="line.discount"/>
                                                 </td>
-                                                <td name="td_taxes" class="text-end">
+                                                <td name="td_taxes" class="text-center">
                                                     <span t-out="', '.join(map(lambda x: (x.description or x.name), line.tax_id))"/>
                                                 </td>
                                                 <td t-if="not line.is_downpayment" name="td_subtotal" class="text-end o_price_total">

@@ -1,0 +1,179 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* seguridad_purchase
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20230508\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-07-18 18:18+0000\n"
+"PO-Revision-Date: 2023-07-18 18:18+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: seguridad_purchase
+#: model:ir.actions.report,print_report_name:seguridad_purchase.action_report_purchaseorder_2
+msgid ""
+"(object.state in ('draft') and 'Solicitud de Presupuesto - %s' % "
+"(object.name))"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid ""
+"<span groups=\"account.group_show_line_subtotals_tax_excluded\">Importe</span>\n"
+"                                            <span groups=\"account.group_show_line_subtotals_tax_included\">Total Price</span>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<span style=\"font-weight:bold;\">Cliente:</span>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<span style=\"font-weight:bold;\">Dir:</span>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<span style=\"font-weight:bold;\">RIF/C.I.:</span>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<span style=\"font-weight:bold;\">RUC/CIP:</span>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<span style=\"font-weight:bold;\">Tlf:</span>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<span>Disc.%</span>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<strong class=\"mr16\">Subtotal</strong>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<strong style=\"font-weight:bold;\">Vendedor:</strong>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<strong>Expiration:</strong>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<strong>Fiscal Position Remark:</strong>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<strong>Metodo de entrega:</strong>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<strong>Shipping Address:</strong>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<strong>Signature</strong>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "<strong>Your Reference:</strong>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Code"
+msgstr "Código"
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Description"
+msgstr "Descripción"
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Invoicing Address:"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Invoicing and Shipping Address:"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Logo"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Order #"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Order Date:"
+msgstr "Fecha de orden"
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid ""
+"Pagina:\n"
+"                                        <span class=\"page\"/>\n"
+"                                        de\n"
+"                                        <span class=\"topage\"/>"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model:ir.actions.report,name:seguridad_purchase.action_report_purchaseorder_2
+msgid "Pedido de Compra"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Pro-Forma Invoice #"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Quantity"
+msgstr "Cantidad"
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Quotation #"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Quotation Date:"
+msgstr ""
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Taxes"
+msgstr "Impuestos"
+
+#. module: seguridad_purchase
+#: model_terms:ir.ui.view,arch_db:seguridad_purchase.report_purchaseorder_2
+msgid "Unit Price"
+msgstr "Precio unid."
