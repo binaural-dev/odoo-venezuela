@@ -196,121 +196,120 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                <div style="margin-top:200px; width: 100%;">
-                                    <hr style="border: 2px dashed white;"/>
-                                    <table style="display: inline-block; vertical-align: middle;">
-                                        <tr style="text-align:left;">
-                                            <th style="width:30%">ENVÍO</th>
-                                            <th style="width:40%;">GUÍA DE DESPACHO</th>
-                                            <th><span style="font-weight: bold; width: 130px; display: inline-block;">Fecha de emision</span></th>
-                                            <td t-out="o.scheduled_date.strftime('%d/%m/%Y')"/>
-                                        </tr>
-                                        <tr style="text-align:left;">
-                                            <th></th>
-                                            <th></th>
-                                            <th>Nota de Entrega:</th>
-                                            <td t-out="o.origin"></td>
-                                        </tr>
-                                    </table>
-                                    <table style="display: inline-block; vertical-align: middle;">
-                                        <hr style="border: none; visibility: hidden"/>
-                                        <tr style="text-align:left;">
-                                            <th style="width:55%">ENVÍA:</th>
-                                            <th style="width:30%;">RECIBE:</th>
-                                        </tr>
-                                        <tr style="text-align:left;">
-                                            <th style="font-weight: normal;" t-field="o.company_id.name"></th>
-                                            <th style="font-weight: normal;" t-field="o.partner_id"></th>
-                                        </tr>
-                                        <tr style="text-align:left;">
-                                            <th>
-                                                <span style="margin-right:3px">RIF:</span><span style="font-weight: normal;" t-field="o.company_id.vat"/>
-                                            </th>
-                                            <th>
-                                                <span style="margin-right:3px">RIF ó CI:</span>
-                                                <span style="font-weight: normal;" t-field="o.partner_id.prefix_vat"/>-
-                                                <span style="font-weight: normal;" t-field="o.partner_id.vat"/>
-                                            </th>
-                                        </tr>
-                                        <tr style="text-align:left;">
-                                            <th>
-                                                <span style="margin-right:3px">TLF:</span>
-                                                <span style="font-weight: normal;" t-field="o.company_id.phone"/>
-                                            </th>
-                                            <th>
-                                                <span style="margin-right:3px">CONTACTO:
-                                                </span><span style="font-weight: normal;" t-field="o.partner_id.child_ids.name"/></th>
-                                        </tr>
-                                        <tr style="text-align:left;">
-                                            <th></th>
-                                            <th>
-                                                <span style="margin-right:3px">TLF:</span>
-                                                <span style="font-weight: normal;" t-field="o.partner_id.phone"/>
-                                            </th>
-                                        </tr>
-                                        <tr style="text-align:left;">
-                                            <th></th>
-                                            <th>
-                                                <span style="margin-right:3px">DIRECCIÓN DE ENVÍO:</span>
-                                                <span style="font-weight: normal;" t-field="o.partner_id.child_ids.street"/>
-                                            </th>
-                                        </tr>
-                                    </table>
-                                    <table style="display: inline-block; vertical-align: middle;">
-                                        <hr style="border: none; visibility: hidden" />
-                                        <tr style="text-align:left;">
-                                            <th style="width:75%">DATOS DE ENCOMIENDA</th>
-                                            <th style="width:30%;">OBSERVACIONES:</th>
-                                        </tr>
-                                        <tr style="text-align:left;">
-                                            <th>
-                                                <span style="font-weight: normal;margin-right:3px">EMPRESA DE ENCOMIENDA:</span>
-                                                <span style="font-weight: normal;" t-field="o.shipping_mean"/>
-                                            </th>
-                                            <th>
-                                                <span style="font-weight: normal;margin-right:3px"></span>
-                                                <span style="font-weight: normal;" t-field="o.note"/>
-                                            </th>
-                                        </tr>
-                                        <tr style="text-align:left;">
-                                            <th>
-                                                <span style="font-weight: normal;margin-right:3px">VALOR:</span>
-                                            </th>
-                                            <th></th>
-                                        </tr>
-                                        <tr style="text-align:left;">
-                                            <th>
-                                                <span style="font-weight: normal;font-weight: normal;margin-right:3px">TIPO DE ENVÍO:</span>
-                                            </th>
-                                            <th></th>
-                                        </tr>
-                                    </table>
-                                    <table style="display: inline-block; vertical-align: middle;">
-                                        <tr style="text-align:left;">
-                                            <th style="font-weight: normal;">N° de BULTOS:</th>
-                                            <th style="padding-right:70px;">
-                                                <div>___________________</div>
-                                            </th>
-                                            <th style="font-weight: normal;">Desp.:</th>
-                                            <th style="padding-right:70px;">
-                                                <div>___________________</div>
-                                            </th>
-                                            <th style="font-weight: normal;">Rev.:</th>
-                                            <th style="margin-right:10px;">
-                                                <div>___________________</div>
-                                            </th>
-                                        </tr>
-                                        <tr style="text-align:left;">
-                                            <th>
-                                                <span style="font-weight: normal;margin-right:3px">N° de FACTURAS:</span>
-                                                <span t-field="o.shipping_mean"/>
-                                            </th>
-                                            <th style="">
-                                                <div>___________________</div>
-                                            </th>
-                                        </tr>
-                                    </table>
                                 <div>
+                                    <div style="margin-top:150px; width: 100%;">
+                                        <hr style="border: 2px dashed white;"/>
+                                        <table style="display: inline-block; vertical-align: middle;">
+                                            <tr style="text-align:left;">
+                                                <th style="width:30%">ENVÍO</th>
+                                                <th style="width:40%;">GUÍA DE DESPACHO</th>
+                                                <th><span style="font-weight: bold; width: 130px; display: inline-block;">Fecha de emision</span></th>
+                                                <td t-out="o.scheduled_date.strftime('%d/%m/%Y')"/>
+                                            </tr>
+                                            <tr style="text-align:left;">
+                                                <th></th>
+                                                <th></th>
+                                                <th>Nota de Entrega:</th>
+                                                <td t-out="o.origin"></td>
+                                            </tr>
+                                        </table>
+                                        <table style="display: inline-block; vertical-align: middle;font-size:13px">
+                                            <hr style="border: none; visibility: hidden"/>
+                                            <tr style="text-align:left;">
+                                                <th style="width:50%;padding-bottom:3px">ENVÍA:</th>
+                                                <th style="width:50%;padding-left:80px;padding-bottom:3px">RECIBE:</th>
+                                            </tr>
+                                            <tr style="text-align:left;">
+                                                <th style="font-weight: normal;padding-bottom:3px" t-field="o.company_id.name"></th>
+                                                <th style="font-weight: normal;padding-left:80px;padding-bottom:3px" t-field="o.partner_id"></th>
+                                            </tr>
+                                            <tr style="text-align:left;">
+                                                <th>
+                                                    <span style="margin-right:3px;padding-bottom:3px">RIF:</span><span style="font-weight: normal;" t-field="o.company_id.vat"/>
+                                                </th>
+                                                <th>
+                                                    <span style="margin-right:3px;padding-left:80px;padding-bottom:3px">RIF ó CI:</span>
+                                                    <span style="font-weight: normal;padding-bottom:3px" t-field="o.partner_id.prefix_vat"/>-
+                                                    <span style="font-weight: normal;padding-bottom:3px" t-field="o.partner_id.vat"/>
+                                                </th>
+                                            </tr>
+                                            <tr style="text-align:left;">
+                                                <th>
+                                                    <span style="margin-right:3px;padding-bottom:3px">TLF:</span>
+                                                    <span style="font-weight: normal;padding-bottom:3px" t-field="o.company_id.phone"/>
+                                                </th>
+                                                <th>
+                                                    <span style="margin-right:3px;padding-left:80px;padding-bottom:3px">CONTACTO:
+                                                    </span><span style="font-weight: normal;padding-bottom:3px" t-field="o.partner_id.name"/></th>
+                                            </tr>
+                                            <tr style="text-align:left;">
+                                                <th></th>
+                                                <th>
+                                                    <span style="margin-right:3px;padding-left:80px">TLF:</span>
+                                                    <span style="font-weight: normal;" t-field="o.partner_id.phone"/>
+                                                </th>
+                                            </tr>
+                                            <tr style="text-align:left;">
+                                                <th></th>
+                                                <th>
+                                                    <span style="margin-right:3px;padding-left:80px">DIRECCIÓN DE ENVÍO:</span>
+                                                    <span style="font-weight: normal;" t-field="o.sale_id.partner_id"/>
+                                                </th>
+                                            </tr>
+                                        </table>
+                                        <table style="display: inline-block; vertical-align: middle;font-size:13px;padding-bottom:3px">
+                                            <hr style="border: none; visibility: hidden" />
+                                            <tr style="text-align:left;">
+                                                <th style="width:75%;padding-bottom:20px">DATOS DE ENCOMIENDA</th>
+                                                <th style="width:30%;">OBSERVACIONES:<span style="display: inline-block;font-weight: normal;" t-field="o.note"/></th>
+                                            </tr>
+                                            <tr style="text-align:left;">
+                                                <th>
+                                                    <span style="font-weight: normal;margin-right:3px">EMPRESA DE ENCOMIENDA:</span>
+                                                    <span style="font-weight: normal;" t-field="o.shipping_mean"/>
+                                                </th>
+                                                <th>
+                                                    <span style="font-weight: normal;margin-right:3px"></span> 
+                                                </th>
+                                            </tr>
+                                            <tr style="text-align:left;">
+                                                <th>
+                                                    <span style="font-weight: normal;margin-right:3px;padding-bottom:20px">VALOR:</span>
+                                                </th>
+                                                <th></th>
+                                            </tr>
+                                        </table>
+                                        <table style="display: inline-block; vertical-align: middle;font-size:13px;">
+                                            <tr style="text-align:left;">
+                                                <th>
+                                                    <span style="font-weight: normal;font-weight: normal;margin-right:3px;padding-top:20px">TIPO DE ENVÍO:<span t-field="o.shipping_type"/></span>
+                                                </th>
+                                            </tr>
+                                            <tr style="text-align:left;">
+                                                <th style="font-weight: normal;padding-bottom:20px;padding-top:20px">N° de BULTOS:</th>
+                                                <th style="padding-right:70px;">
+                                                    <div><span t-field="o.package_qty"/></div>
+                                                </th>
+                                                <th style="font-weight: normal;">Desp.:</th>
+                                                <th style="padding-right:70px;">
+                                                    <div>___________________</div>
+                                                </th>
+                                                <th style="font-weight: normal;">Rev.:</th>
+                                                <th style="margin-right:10px;">
+                                                    <div>___________________</div>
+                                                </th>
+                                            </tr>
+                                            <tr style="text-align:left;">
+                                                <th>
+                                                    <div style="font-weight: normal;margin-right:3px">N° de FACTURAS:</div>
+                                                </th>
+                                                <th style="">
+                                                    <div><span t-field="o.sale_id.invoice_ids"/></div>
+                                                </th>
+                                            </tr>
+                                        </table>
+                                    <div>
+                                </div>
                             </div>
                         </div>
                     </t>
