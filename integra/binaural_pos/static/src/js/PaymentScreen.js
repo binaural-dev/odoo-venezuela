@@ -39,7 +39,6 @@ odoo.define("binaural_pos.PaymentScreen", function (require) {
         this.render(true);
       }
       get isChangeZero() {
-				console.log(this.currentOrder.get_change());
         return this.currentOrder.get_change() === 0;
       }
     };
