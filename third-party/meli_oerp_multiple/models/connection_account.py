@@ -60,6 +60,194 @@ class MercadoLibreBrand(models.Model):
     permalink = fields.Char(string="Permalink",required=True,index=True)
 
 
+class MercadoLibreMaestro(models.Model):
+
+    _name = 'mercadolibre.product.maestro'
+    _description = 'MercadoLibre Product Maestro'
+
+    connection_account = fields.Many2one("mercadolibre.account",string="Account")
+    company_id = fields.Many2one("res.company",related="connection_account.company_id",string="Company")
+
+    name = fields.Char(string="Name",index=True)
+    description = fields.Char(string="Description",index=True)
+
+    brand = fields.Char(string="Brand", index=True)
+    model = fields.Char(string="Model", index=True)
+
+    length = fields.Char(string="Length", index=True)
+    height = fields.Char(string="Height", index=True)
+    width = fields.Char(string="Width", index=True)
+    weight = fields.Char(string="Weight", index=True)
+
+    attributes = fields.Char(string="Atributos",index=True)
+
+    sku = fields.Char(string="Sku",help="Referencia interna / Seller SKU",index=True)
+    barcode = fields.Char(string="Barcode", help="Codigo de barras", index=True)
+
+    barcode0 = fields.Char(string="Barcode0",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity0 = fields.Float(string="Quantity0")
+
+    barcode1 = fields.Char(string="Barcode1",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity1 = fields.Float(string="Quantity1")
+
+    barcode2 = fields.Char(string="Barcode2",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity2 = fields.Float(string="Quantity2")
+
+    barcode3 = fields.Char(string="Barcode3",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity3 = fields.Float(string="Quantity3")
+
+    barcode4 = fields.Char(string="Barcode4",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity4 = fields.Float(string="Quantity4")
+
+    barcode5 = fields.Char(string="Barcode5",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity5 = fields.Float(string="Quantity5")
+
+    barcode6 = fields.Char(string="Barcode6",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity6 = fields.Float(string="Quantity6")
+
+    barcode7 = fields.Char(string="Barcode7",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity7 = fields.Float(string="Quantity7")
+
+    barcode8 = fields.Char(string="Barcode8",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity8 = fields.Float(string="Quantity8")
+
+    barcode9 = fields.Char(string="Barcode9",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity9 = fields.Float(string="Quantity9")
+
+    barcode10 = fields.Char(string="Barcode10",help="LDM/Combo Barcode[0-10]",index=True)
+    quantity10 = fields.Float(string="Quantity10")
+
+
+
+    barcodes = fields.Char(string="Barcodes (ML)",help="Barcodes de la publicacione en ML",index=True)
+    skus = fields.Char(string="Skus",index=True)
+    stock = fields.Float(string="Stock",index=True)
+    meli_id = fields.Char(string="Meli Id", index=True)
+
+    is_valid = fields.Boolean(string="Validez",default=False,index=True)
+
+    def calculate_variations( self, meli=None ):
+        account = None
+        meli = meli
+        for p in self:
+            p.meli_id_variations = None
+            p.meli_id_variations_number = 0
+            meli_id = p.meli_id
+            if ( not ( account == p.connection_account )):
+                account = p.connection_account
+                meli = None
+                if not meli:
+                    company = account.company_id or account.env.user.company_id
+                    ac_official_store_id = account.official_store_id
+                    seller_id = account.seller_id
+                    meli = self.env['meli.util'].get_new_instance( company, account )
+
+            rjson = account.fetch_meli_product( meli_id = meli_id, meli=meli )
+            p.meli_id_variations = (rjson and "variation_ids" in rjson and rjson["variation_ids"]) or '[]'
+            p.meli_id_variations_number = (rjson and "variations" in rjson and len(rjson["variations"])) or 0.0
+            p.barcodes = (rjson and "barcodes" in rjson and rjson["barcodes"]!='[]' and rjson["barcodes"]) or (rjson and "barcode" in rjson and rjson["barcode"])
+            p.skus = (rjson and "seller_skus" in rjson and rjson["seller_skus"])or (rjson and "seller_sku" in rjson and rjson["seller_sku"])
+            #p.is_valid = (p.barcode and p.barcodes and p.barcode in p.barcodes)
+            p.is_valid = True
+            p.is_valid = p.is_valid and (p.sku and p.skus and p.sku in p.skus)
+            p.status = ( (p.is_valid == False and 'invalid') or
+                         (p.is_valid and p.is_master and not p.is_combo and 'master_base') or
+                         (p.is_valid and p.is_master and p.is_combo and 'master_combo') or
+                         (p.is_valid and not p.is_master and not p.is_combo and 'clone_base') or
+                         (p.is_valid and not p.is_master and p.is_combo and 'clone_combo') )
+            p.is_sku_odoo = p.sku and self.env["product.product"].search([('default_code','=ilike',p.sku)],limit=1)
+            p.is_barcode_odoo = p.barcode and self.env["product.product"].search([('barcode','=ilike',p.barcode)],limit=1)
+
+
+        for p in self:
+            p.is_it_master()
+
+    status = fields.Selection( [('invalid','Invalido'),
+                                    ('master_base','Maestro Base'),
+                                    ('master_combo','Maestro Combo'),
+                                    ('clone_base','Clone Base'),
+                                    ('clone_combo','Clone Combo')],
+                                    string="Status",
+                                    default='invalid',
+                                    compute=calculate_variations,
+                                    )
+
+    def is_it_master( self ):
+        for p in self:
+            p.is_master = False;
+            pobj = self.env["mercadolibre.product.maestro"]
+            if p.barcode:
+                #first: no combos
+                pbases = pobj.search([('barcode','=',p.barcode),('is_combo','=',False)])
+                if pbases:
+                    max = 0
+                    pbmax = None
+                    for pb in pbases:
+                        pbmax = (not pbmax and pb) or pbmax
+                        #selecciona como master la publicacion con mas combinaciones de variantes en ML
+                        if (pb.meli_id_variations_number>max):
+                            max = pb.meli_id_variations_number
+                            pbmax = pb
+                        pb.is_master = False
+
+                    #siempre que tenga SKUS y BARCODES para cada variante:
+                    pbmax.is_master = True
+
+                #second: combos
+                pbasecombs = pobj.search([('barcode','like',p.barcode),('is_combo','=',True)])
+                if pbasecombs:
+                    max = 0
+                    pbmax = None
+                    for pb in pbasecombs:
+                        pbmax = (not pbmax and pb) or pbmax
+                        #selecciona como master la publicacion con mas combinaciones de variantes en ML
+                        if (pb.meli_id_variations_number>max):
+                            max = pb.meli_id_variations_number
+                            pbmax = pb
+                        pb.is_master = False
+
+                    #siempre que tenga SKUS y BARCODES para cada variante:
+                    pbmax.is_master = True
+
+            p._is_sku_valid()
+
+    meli_id_variations = fields.Char(string="Variations", compute=calculate_variations, store=True, index=True)
+    meli_id_variations_number = fields.Float(string="Number", compute=calculate_variations, store=True, default=0)
+
+    is_combo = fields.Boolean(string="Combo/Kit",index=True)
+    is_master = fields.Boolean(string="Master",index=True)
+
+    def _is_sku_valid(self):
+        for pm in self:
+            pm.is_sku_valid = False
+            pm.is_barcode_valid = False
+            pm.is_sku_valid = pm.sku and pm.skus and pm.sku in pm.skus
+            pm.is_barcode_valid = pm.barcode and pm.barcodes and pm.barcode in pm.barcodes
+
+    is_sku_valid = fields.Boolean(string="Sku valido",help="El sku coincide con alguna publicacion",index=True)
+    is_barcode_valid = fields.Boolean(string="Barcode valido",help="El barcode coincide con alguna publicacion",index=True)
+
+    is_sku_odoo = fields.Boolean(string="Is Sku Odoo",index=True)
+    is_barcode_odoo = fields.Boolean(string="Is Barcode Odoo",index=True)
+    is_meli_odoo = fields.Boolean(string="Is Meli Id in Odoo",index=True)
+
+
+    #@api.model
+    #def write(self, vals):
+    #    Maestro = self
+    #    ret = None
+    #    if (Maestro):
+    #        ret = Maestro.write(vals)
+    #        Maestro.calculate_variations()
+    #    return ret
+
+    @api.model
+    def create(self, vals):
+        Maestro = super(MercadoLibreMaestro, self).create(vals)
+        if (Maestro):
+            Maestro.calculate_variations()
+        return Maestro
+
 class MercadoLibreConnectionAccount(models.Model):
 
     _name = "mercadolibre.account"
@@ -83,6 +271,7 @@ class MercadoLibreConnectionAccount(models.Model):
     code = fields.Char( string="Code", index=True)
     official_store_id = fields.Char(string="Official Store Id",related="configuration.mercadolibre_official_store_id")
 
+    maestro_products = fields.One2many("mercadolibre.product.maestro","connection_account",string="Productos maestros")
 
     def _mercadolibre_brands( self ):
         brands = []
@@ -357,7 +546,7 @@ class MercadoLibreConnectionAccount(models.Model):
         rjson = response.json()
 
         #single item SKU
-        if not seller_sku and "attributes" in rjson:
+        if rjson and "attributes" in rjson:
             for att in rjson['attributes']:
                 if ("id" in att and att["id"] == "SELLER_SKU"):
                     seller_sku = att["value_name"]
@@ -428,6 +617,7 @@ class MercadoLibreConnectionAccount(models.Model):
             rjson['seller_skus']+= ']'
             rjson['barcodes']+= ']'
             rjson['variation_ids']+= ']'
+
         #_logger.info("Fetch Meli Product, rjson: " +str(rjson))
 
         return rjson
@@ -900,6 +1090,48 @@ class MercadoLibreConnectionAccount(models.Model):
         return results
 
 
+    def fetch_list_meli_ids_maestro( self, params = None ):
+
+        account = self
+        maestros = self.env["mercadolibre.product.maestro"]
+        meli_ids_maestros = []
+
+        if not account:
+            return []
+
+        domain_account = [('connection_account','=',account.id)]
+        domain_is_master = [('is_master','=',True)]
+        domain_is_not_master = [('is_master','=',False)]
+        domain_is_combo = [('is_combo','=',True)]
+        domain_is_not_combo = [('is_combo','=',False)]
+
+        domain_master_nocombos = domain_account + domain_is_master + domain_is_not_combo
+        domain_master_combos = domain_account + domain_is_master + domain_is_combo
+        domain_no_master_nocombos = domain_account + domain_is_not_master + domain_is_not_combo
+        domain_no_master_combos = domain_account + domain_is_not_master + domain_is_combo
+
+        melis_nocombos = maestros.search(domain_master_nocombos)
+        melis_combos = maestros.search(domain_master_combos)
+        melis_no_master_nocombos = maestros.search(domain_no_master_nocombos)
+        melis_no_master_combos = maestros.search(domain_no_master_combos)
+
+        if (melis_nocombos):
+            meli_ids_maestros+= melis_nocombos.mapped('meli_id')
+
+        if (melis_combos):
+            meli_ids_maestros+= melis_combos.mapped('meli_id')
+
+        if (melis_no_master_nocombos):
+            meli_ids_maestros+= melis_no_master_nocombos.mapped('meli_id')
+
+        if (melis_no_master_combos):
+            meli_ids_maestros+= melis_no_master_combos.mapped('meli_id')
+
+        _logger.info(" fetch_list_meli_ids_maestro > " + str(meli_ids_maestros))
+
+        return meli_ids_maestros
+
+
     #list all meli ids in odoo from this account, that are not in parameter filter_ids...
     def list_meli_ids( self, filter_ids=None ):
         meli_ids = []
@@ -940,12 +1172,15 @@ class MercadoLibreConnectionAccount(models.Model):
         batch_processing_unit_offset = context and context.get("batch_processing_unit_offset")
         batch_actives_to_sync = context and context.get("batch_actives_to_sync")
         batch_paused_to_sync = context and context.get("batch_paused_to_sync")
+        batch_left_to_sync = context and context.get("batch_left_to_sync")
         search_limit = batch_processing_unit or 100
         search_offset = batch_processing_unit_offset or 0
 
         actives_to_sync = []
         odoo_meli_ids = []
-        if (batch_actives_to_sync or batch_paused_to_sync):
+
+        #Lets list all the already imported meli publications
+        if (batch_actives_to_sync or batch_paused_to_sync or batch_left_to_sync):
             odoo_meli_ids = odoo_meli_ids or account.list_meli_ids()
 
         _logger.info("batch_processing_unit:"+str(batch_processing_unit)+" search_offset:"+str(search_offset)+" search_limit:"+str(search_limit))
@@ -973,7 +1208,25 @@ class MercadoLibreConnectionAccount(models.Model):
 
         #_logger.info(meli.access_token)
         meli_ids = self.fetch_list_meli_ids( params=post_state_filter )
-        _logger.info("meli_ids: "+str(meli_ids))
+        _logger.info("meli_ids "+str(meli_ids and len(meli_ids) or 0)+" > "+str(meli_ids))
+        meli_ids_maestros = self.fetch_list_meli_ids_maestro( params=post_state_filter )
+        _logger.info("meli_ids_maestros "+str(meli_ids_maestros and len(meli_ids_maestros) or 0)+" > "+str(meli_ids_maestros))
+
+        #check
+        meli_ids_maestros_checked = []
+        if (meli_ids_maestros and len(meli_ids_maestros)):
+            #nos aseguramos procesar en orden las publicaciones de los maestros:
+            for mid in meli_ids_maestros:
+                if mid in meli_ids:
+                    if mid not in meli_ids_maestros_checked:
+                        meli_ids_maestros_checked.append(mid)
+            #agregamos los rezagados
+            for mid in meli_ids:
+                if mid not in meli_ids_maestros_checked:
+                    meli_ids_maestros_checked.append(mid)
+
+            meli_ids = meli_ids_maestros_checked
+        _logger.info("meli_ids_maestros_checked "+str(meli_ids_maestros_checked and len(meli_ids_maestros_checked) or 0)+" > "+str(meli_ids_maestros_checked))
 
         #download?
         totalmax = len(meli_ids)
@@ -981,8 +1234,8 @@ class MercadoLibreConnectionAccount(models.Model):
 
         _logger.info( "totalmax: "+str(totalmax)+" offset:"+str(offset) )
 
-        if (totalmax>1000 or totalmax>1):
-            #USE SCAN METHOD....
+        if (totalmax>1):
+            #USE SCAN METHOD.... ALWAYS
             condition_last_off = True
             ioff = 0
             cof = 0
@@ -999,34 +1252,6 @@ class MercadoLibreConnectionAccount(models.Model):
                     break;
 
 
-        if (1==2 and totalmax<=1000 and len(results)<totalmax and ('paging' in rjson and totalmax>rjson['paging']['limit']) ):
-            pages = rjson['paging']['total'] / rjson['paging']['limit']
-            ioff = offset+rjson['paging']['limit']
-            condition_last_off = False
-            while (condition_last_off!=True):
-                _logger.info( "Prefetch products ("+str(ioff)+"/"+str(rjson['paging']['total'])+")" )
-                response = meli.get("/users/"+str(account.seller_id)+"/items/search", {
-                    'access_token':meli.access_token,
-                    'offset': ioff,
-                    'limit': str(search_limit) }) #?"+urlencode({'offset': ioff })
-                rjson2 = response.json()
-                if 'error' in rjson2:
-                    if rjson2['message']=='invalid_token' or rjson2['message']=='expired_token':
-                        ACCESS_TOKEN = ''
-                        REFRESH_TOKEN = ''
-                        account.write({'access_token': ACCESS_TOKEN, 'refresh_token': REFRESH_TOKEN, 'code': '' } )
-                        return {
-                            "type": "ir.actions.act_url",
-                            "url": url_login_meli,
-                            "target": "new",}
-                    condition_last_off = True
-                else:
-                    results += rjson2['results']
-                    ioff+= rjson['paging']['limit']
-                    condition_last_off = ( ioff>=totalmax)
-                    if (batch_processing_unit and results and len(results)>=batch_processing_unit):
-                        break;
-
         #search for meli_ids not imported yet
         binding_meli_ids  = account.list_meli_ids(filter_ids=results)
 
@@ -1039,6 +1264,7 @@ class MercadoLibreConnectionAccount(models.Model):
         if binding_meli_ids and (not batch_processing_unit or batch_processing_unit==0):
             #assigning missing meli ids, shapes, and colors
             results = binding_meli_ids
+
         totalmax = len(results)
         iitem = 0
         icommit = 0
@@ -1101,8 +1327,7 @@ class MercadoLibreConnectionAccount(models.Model):
 
                         if product_id and len(product_id)==1:
 
-                            if product_id and product_id.detailed_type!='product':
-                                product_id.detailed_type = 'product'
+                            UpdateProductType( product_id )
 
                             _logger.info( "Item(s) already in database: " + str(product_id.mapped('display_name')) + str(" #")+str(len(product_id)) )
 
@@ -1236,7 +1461,19 @@ class MercadoLibreConnectionAccount(models.Model):
             auto_commit = not getattr(threading.currentThread(), 'testing', False)
             topcommits = 40
 
-            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update  FROM   mercadolibre_product as melip WHERE melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.stock_update IS NULL""" % (account.id)
+            product_bind_ids_status_to_update_ids = []
+            if (1==2):
+                product_bind_ids_status_to_update = self.env['mercadolibre.product'].search([
+                    ('meli_id','!=',False),
+                    ('meli_id','!=',''),
+                    ('connection_account', '=', account.id ),
+                    ('meli_stock_status','=','update')
+                    ], order='stock_update asc',limit=topcommits)
+
+                product_bind_ids_status_to_update_ids = product_bind_ids_status_to_update.mapped("id")
+
+            #query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.stock_update IS NULL""" % (account.id)
+            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.meli_stock_status = 'update'""" % (account.id)
             cr = self._cr
             respquery = cr.execute(query)
             results = cr.fetchall()
@@ -1244,7 +1481,8 @@ class MercadoLibreConnectionAccount(models.Model):
 
             _logger.info("query: "+str(query)+" results update null:"+str(results))
 
-            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update  FROM   mercadolibre_product as melip WHERE  melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.stock_update IS NOT NULL""" % (account.id)
+            #query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.stock_update IS NOT NULL""" % (account.id)
+            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.meli_stock_status != 'update' AND melip.meli_stock_status != 'updated'""" % (account.id)
             cr = self._cr
             respquery = cr.execute(query)
             results = cr.fetchall()
@@ -1311,7 +1549,7 @@ class MercadoLibreConnectionAccount(models.Model):
                                 errors+= str(obj.sku)+" "+str(obj.meli_id)+" >> "+str(resjson)+"\n"
                             #obj.stock_update = ml_datetime( str( datetime.now() ) )
 
-                            if ((icommit==40 or (icount==maxcommits) or (icount==topcommits)) and 1==1):
+                            if ((icommit==10 or (icount==maxcommits) or (icount==topcommits)) and 1==1):
                                 noti.processing_errors = errors
                                 noti.processing_logs = logs
                                 noti.resource = "meli_update_remote_stock #"+str(icount) +'/'+str(maxcommits)

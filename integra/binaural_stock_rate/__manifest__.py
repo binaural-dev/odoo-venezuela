@@ -8,8 +8,8 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock / Inventory",
-    "version": "16.0.0.0.1",
-    "depends": ["stock", "sale_stock", "binaural_sale", "binaural_purchase"],
+    "version": "16.3",
+    "depends": ["stock", "sale_stock", "purchase_stock", "binaural_sale", "binaural_purchase"],
     "data": [
         # 'security/ir.model.access.csv',
         "views/stock_picking.xml",
