@@ -28,6 +28,7 @@
         "views/account_move.xml",
         "views/account_journal_views.xml",
         "views/res_config_settings.xml",
+        "views/menu.xml",
         "wizard/accounting_reports_views.xml",
     ],
     "images": ["static/description/icon.png"],
