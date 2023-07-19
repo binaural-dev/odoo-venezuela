@@ -166,7 +166,7 @@ class PurchaseOrder(models.Model):
         """
         self._compute_rate()
 
-    @api.depends("date_order", "date_approve")
+    @api.depends("date_order")
     def _compute_rate(self):
         """
         Compute the rate of the purchase order using the compute_rate method of the

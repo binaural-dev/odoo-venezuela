@@ -13,7 +13,7 @@ class PurchaseOrderLine(models.Model):
         compute="_compute_foreign_price",
         digits="Tasa",
         store=True,
-        states={"draft": [("readonly", False)]},
+        readonly=False,
     )
     foreign_subtotal = fields.Monetary(
         help="Foreign Subtotal of the line",
