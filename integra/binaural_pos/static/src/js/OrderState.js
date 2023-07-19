@@ -19,7 +19,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
       init_from_JSON(json) {
         super.init_from_JSON(...arguments)
         this.to_receipt = json["to_receipt"]
-        this.foreign_currency_rate = json.foreign_currency_rate
+        this.foreign_currency_rate = json.foreign_currency_rate || this.pos.config.foreign_rate
       }
 
       set_orderline_options(orderline, options) {
@@ -36,7 +36,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
       export_as_JSON() {
         let json = super.export_as_JSON();
         json["foreign_amount_total"] = this.get_foreign_total_with_tax();
-        json["foreign_currency_rate"] = this.foreign_currency_rate;
+        json["foreign_currency_rate"] = this.foreign_currency_rate || this.pos.config.foreign_rate;
         json["to_receipt"] = this.is_to_receipt();
         return json;
       }
