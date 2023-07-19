@@ -43,38 +43,12 @@
     </template>
 
     <template id="report_simple_label3x18">
-        <t t-set="barcode_size" t-value="'width:33mm;height:4mm'"/>
-        <t t-set="table_style" t-value="'width:43mm;height:19mm;' + table_style"/>
-        <td t-att-style="make_invisible and 'visibility:hidden;'" >
-            <div class="o_label_full o_label_small_text" t-att-style="table_style">
-                <div class="o_label_name">
-                    <strong t-field="product.display_name"/>
-                </div>
-                <t t-if="price_included">
-                    <div class="o_label_left_column">
-                        <span class="text-nowrap" t-field="product.default_code"/>
-                    </div>
-                    <div class="o_label_price_medium text-end">
-                        <t t-if="product.is_product_variant">
-                            <strong t-field="product.lst_price" t-options="{'widget': 'monetary', 'label_price': True}"/>
-                        </t>
-                        <t t-else="">
-                            <strong t-field="product.list_price" t-options="{'widget': 'monetary', 'label_price': True}"/>
-                        </t>
-                    </div>
-                </t>
-                <t t-else="">
-                    <div class="o_label_left_column o_label_full_with">
-                        <span class="text-nowrap" t-field="product.default_code"/>
-                    </div>
-                </t>
-                <div class= "text-center o_label_small_barcode">
-                    <t t-if="barcode">
-                        <div t-out="barcode" style="padding:0" t-options="{'widget': 'barcode', 'symbology': 'auto', 'img_style': barcode_size}"/>
-                        <span class="text-center" t-out="barcode"/>
-                    </t>
-                </div>
-            </div>
+        <t t-set="barcode_size" t-value="'width:26mm;height:2mm'"/>
+        <td style="padding-right: 20px">
+            <t t-if="barcode">
+              <div t-out="barcode" style="padding-top:4.5mm;" t-options="{'widget': 'barcode', 'symbology': 'auto', 'img_style': barcode_size}"/>
+              <span style="font-size:8px;" t-out="barcode"/>
+            </t>
         </td>
     </template>
 
@@ -96,11 +70,11 @@
                         <t t-set="report_to_call" t-value="'product.report_simple_label4x12'"/>
                     </t>
                     <t t-if="columns == 3 and rows == 18">
-                        <t t-set="padding_page" t-value="'padding: 20mm 8mm'"/>
+                        <t t-set="padding_page" t-value="'padding: 14mm 1mm'"/>
                         <t t-set="report_to_call" t-value="'libreria_reports.report_simple_label3x18'"/>
                     </t>
                     <t t-foreach="range(page_numbers)" t-as="page">
-                        <div class="o_label_sheet" t-att-style="padding_page">
+                        <div class="" t-att-style="padding_page">
                             <table class="my-0 table table-sm table-borderless">
                                 <t t-foreach="range(rows)" t-as="row">
                                     <tr>
