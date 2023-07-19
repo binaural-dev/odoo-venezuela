@@ -7,7 +7,7 @@ class AccountInvoice(models.Model):
     
     def button_free_form(self):
         self.write({'printed': True})
-        return self.env.ref('binaural_invoice.action_invoice_free_form_binaural_invoice').report_action(self)
+        return self.env.ref('invoice_zmart.action_invoice_free_form_bs').report_action(self)
     
     def button_free_form_usd(self):
         self.write({'printed': True})
