@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_simple_label_dymo" inherit_id="product.report_simple_label_dymo">
+        <xpath expr="." position="replace">
+            <div style="overflow: hidden;page-break-before: always;font-size:70%;width: 70mm;height: 32mm;padding-top: 2mm">
+                <div class="">
+                    <div class="text-start o_label_small_barcode">
+                        <t t-if="barcode">
+                            <div t-out="barcode" style="padding:0" t-options="{'widget': 'barcode', 'quiet': 0, 'symbology': 'auto', 'img_style': barcode_size}"/>
+                            <div class="o_label_name" style="height:1.7em;background-color: transparent;">
+                                <span t-out="barcode"/>
+                            </div>
+                        </t>
+                    </div>
+                    <div class="o_label_name" style="line-height: 100%;background-color: transparent;padding-top: 1px;">
+                        <span t-if="product.is_product_variant" t-field="product.display_name"/>
+                        <span t-else="" t-field="product.name"/>
+                    </div>
+                    <div style="float: left;width: 100%">
+                      <t t-set="tax_amount" t-value="product.taxes_id[0].amount"/>
+                      <t t-set="bi_amount" t-value="product.taxes_id.compute_all(product.list_price)['taxes'][0]['base']"/>
+                      <t t-set="iva" t-value="bi_amount * (tax_amount / 100)"/>
+                      <span class="text-nowrap">Base imponible: <t t-out="bi_amount" t-options="{'widget': 'monetary', 'display_currency': product.env.company.currency_id}"/></span> - <t t-if="tax_amount > 0">
+                          <span class="text-nowrap">IVA: <t t-out="iva" t-options="{'widget': 'monetary', 'display_currency': product.env.company.currency_id}"/></span></t>
+                    </div>
+                      <div style="float: left;width: 60%">
+                      <span class="text-nowrap">MIN: <t t-out="product.lib_reordering_min_qty"/></span> - <span class="text-nowrap">MAX: <t t-out="product.lib_reordering_max_qty"/></span>
+                    </div>
+                    <div class="text-end" style="padding: 0 4px;">
+                        <t t-if="product.is_product_variant">
+                            <strong t-field="product.lst_price" t-options="{'widget': 'monetary'}"/>
+                        </t>
+                        <t t-else="">
+                            <strong t-field="product.list_price" t-options="{'widget': 'monetary'}"/>
+                        </t>
+                        <div class="o_label_extra_data">
+                            <t t-out="extra_html"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+
+    <template id="report_simple_label3x18">
+        <t t-set="barcode_size" t-value="'width:33mm;height:4mm'"/>
+        <t t-set="table_style" t-value="'width:43mm;height:19mm;' + table_style"/>
+        <td t-att-style="make_invisible and 'visibility:hidden;'" >
+            <div class="o_label_full o_label_small_text" t-att-style="table_style">
+                <div class="o_label_name">
+                    <strong t-field="product.display_name"/>
+                </div>
+                <t t-if="price_included">
+                    <div class="o_label_left_column">
+                        <span class="text-nowrap" t-field="product.default_code"/>
+                    </div>
+                    <div class="o_label_price_medium text-end">
+                        <t t-if="product.is_product_variant">
+                            <strong t-field="product.lst_price" t-options="{'widget': 'monetary', 'label_price': True}"/>
+                        </t>
+                        <t t-else="">
+                            <strong t-field="product.list_price" t-options="{'widget': 'monetary', 'label_price': True}"/>
+                        </t>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="o_label_left_column o_label_full_with">
+                        <span class="text-nowrap" t-field="product.default_code"/>
+                    </div>
+                </t>
+                <div class= "text-center o_label_small_barcode">
+                    <t t-if="barcode">
+                        <div t-out="barcode" style="padding:0" t-options="{'widget': 'barcode', 'symbology': 'auto', 'img_style': barcode_size}"/>
+                        <span class="text-center" t-out="barcode"/>
+                    </t>
+                </div>
+            </div>
+        </td>
+    </template>
+
+
+    <template id="report_productlabel" inherit_id="product.report_productlabel">
+        <xpath expr="." position="replace">
+            <t t-call="web.html_container">
+                <t t-if="columns and rows">
+                    <t t-if="columns == 2 and rows == 7">
+                        <t t-set="padding_page" t-value="'padding: 14mm 3mm'"/>
+                        <t t-set="report_to_call" t-value="'product.report_simple_label2x7'"/>
+                    </t>
+                    <t t-if="columns == 4 and rows == 7">
+                        <t t-set="padding_page" t-value="'padding: 14mm 3mm'"/>
+                        <t t-set="report_to_call" t-value="'product.report_simple_label4x7'"/>
+                    </t>
+                    <t t-if="columns == 4 and rows == 12">
+                        <t t-set="padding_page" t-value="'padding: 20mm 8mm'"/>
+                        <t t-set="report_to_call" t-value="'product.report_simple_label4x12'"/>
+                    </t>
+                    <t t-if="columns == 3 and rows == 18">
+                        <t t-set="padding_page" t-value="'padding: 20mm 8mm'"/>
+                        <t t-set="report_to_call" t-value="'libreria_reports.report_simple_label3x18'"/>
+                    </t>
+                    <t t-foreach="range(page_numbers)" t-as="page">
+                        <div class="o_label_sheet" t-att-style="padding_page">
+                            <table class="my-0 table table-sm table-borderless">
+                                <t t-foreach="range(rows)" t-as="row">
+                                    <tr>
+                                        <t t-foreach="range(columns)" t-as="column">
+                                            <t t-if="not current_quantity and quantity and not (current_data and current_data[1])">
+                                                <t t-set="current_data" t-value="quantity.popitem()"/>
+                                                <t t-set="product" t-value="current_data[0]"/>
+                                                <t t-set="barcode_and_qty" t-value="current_data[1].pop()"/>
+                                                <t t-set="barcode" t-value="barcode_and_qty[0]"/>
+                                                <t t-set="current_quantity" t-value="barcode_and_qty[1]"/>
+                                            </t>
+                                            <t t-if="current_quantity">
+                                                <t t-set="make_invisible" t-value="False"/>
+                                                <t t-set="current_quantity" t-value="current_quantity - 1"/>
+                                            </t>
+                                            <t t-elif="current_data and current_data[1]">
+                                                <t t-set="barcode_and_qty" t-value="current_data[1].pop()"/>
+                                                <t t-set="barcode" t-value="barcode_and_qty[0]"/>
+                                                <t t-set="current_quantity" t-value="barcode_and_qty[1] - 1"/>
+                                            </t>
+                                            <t t-else="">
+                                                <t t-set="make_invisible" t-value="True"/>
+                                            </t>
+                                            <t t-set="table_style" t-value="'border: 1px solid %s;' % (product.env.user.company_id.primary_color or 'black')"/>
+                                            <t t-call="{{report_to_call}}"/>
+                                        </t>
+                                    </tr>
+                                </t>
+                            </table>
+                        </div>
+                    </t>
+                </t>
+            </t>
+            </xpath>
+        </template>
+
+</odoo>
