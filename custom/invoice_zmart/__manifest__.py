@@ -11,6 +11,7 @@
     'version': '16.0',
     'depends': ['binaural_invoice'],
     'data': [
+        'data/paperformat.xml',
         'data/res_group.xml',
         'security/ir.model.access.csv',
         'report/delivery_note_bs.xml',
