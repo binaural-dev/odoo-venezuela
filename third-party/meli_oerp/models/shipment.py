@@ -333,11 +333,11 @@ class mercadolibre_shipment(models.Model):
 
             sorder.meli_shipping_cost = shipment.shipping_cost
             sorder.meli_shipping_list_cost = shipment.shipping_list_cost
-            sorder.meli_shipment_logistic_type = shipment.logistic_type
+            sorder.meli_shipment_logistic_type = shipment.logistic_type or shipment.mode
 
             order.shipping_cost = shipment.shipping_cost
             order.shipping_list_cost = shipment.shipping_list_cost
-            order.shipment_logistic_type = shipment.logistic_type
+            order.shipment_logistic_type = shipment.logistic_type or shipment.mode
 
             if (sorder.partner_shipping_id):
                 partner_shipping_id = sorder.partner_shipping_id
@@ -1009,7 +1009,7 @@ class mercadolibre_shipment(models.Model):
                                 if (mOrder.fee_amount):
                                     sorder_pack.meli_fee_amount = sorder_pack.meli_fee_amount + mOrder.fee_amount
 
-                                saleorderline_item_fields.update( order._set_product_unit_price( product_related_obj, mOrder.order_items[0] ) )
+                                saleorderline_item_fields.update( order._set_product_unit_price( product_related_obj, mOrder.order_items[0], config=config ) )
 
                                 saleorderline_item_ids = saleorderline_obj.search( [('meli_order_item_id','=',saleorderline_item_fields['meli_order_item_id']),
                                                                                     ('meli_order_item_variation_id','=',saleorderline_item_fields['meli_order_item_variation_id']),

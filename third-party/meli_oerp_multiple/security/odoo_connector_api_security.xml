@@ -41,4 +41,11 @@
         <field name="model_id" ref="model_mercadolibre_configuration"/>
         <field name="domain_force">['|',('company_id','=',False),('company_id', 'in', company_ids)]</field>
     </record>
+
+    <record model="ir.rule" id="mercadolibre_product_maestro_comp_rule">
+        <field name="name">MercadoLibre Product Maestro multi-company</field>
+        <field name="model_id" ref="model_mercadolibre_product_maestro"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id', 'in', company_ids)]</field>
+    </record>
+
 </odoo>

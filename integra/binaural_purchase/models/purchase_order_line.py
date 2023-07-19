@@ -1,5 +1,6 @@
 from odoo import api, fields, models, _
 
+
 class PurchaseOrderLine(models.Model):
     _inherit = "purchase.order.line"
 
@@ -12,6 +13,7 @@ class PurchaseOrderLine(models.Model):
         compute="_compute_foreign_price",
         digits="Tasa",
         store=True,
+        states={"draft": [("readonly", False)]},
     )
     foreign_subtotal = fields.Monetary(
         help="Foreign Subtotal of the line",
