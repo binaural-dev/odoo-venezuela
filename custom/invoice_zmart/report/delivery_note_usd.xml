@@ -183,6 +183,7 @@
                             </td>
                             <td style="width:80px;text-align:center;">
                                 $<span t-esc="'{0:,.2f}'.format(float(line.price_unit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+
                             </td>
                             <td style="width:50px;text-align:center;">
                                 <span t-esc="line.discount"/>

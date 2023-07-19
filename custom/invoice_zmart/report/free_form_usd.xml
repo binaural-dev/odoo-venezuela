@@ -137,7 +137,7 @@
                                         </tbody>
                                     </table>
 
-                               
+                           
                                 </div>   
                                 <div t-if="not is_html_empty(o.narration)" name="comment">
                                     <span t-field="o.narration"/>
