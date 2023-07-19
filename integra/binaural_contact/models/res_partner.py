@@ -73,13 +73,14 @@ class ResPartner(models.Model):
             UserError: Error to connect with CNE, please check your internet connection or try again later
 
         """
-        self._check_vat()
-        name, flag = binaural_cne_query.get_default_name_by_vat(self, self.prefix_vat, self.vat)
-        if not flag:
-            raise MissingError(
-                _(
-                    "Error to connect with CNE, please check your internet connection or try again later"
+        if self.vat:
+            self._check_vat()
+            name, flag = binaural_cne_query.get_default_name_by_vat(self, self.prefix_vat, self.vat)
+            if not flag:
+                raise MissingError(
+                    _(
+                        "Error to connect with CNE, please check your internet connection or try again later"
+                    )
                 )
-            )
-        for record in self:
-            record.name = name
+            for record in self:
+                record.name = name
