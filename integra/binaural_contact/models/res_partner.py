@@ -1,7 +1,8 @@
+import logging
+import re
 from odoo import models, fields, api, _
 from odoo.exceptions import MissingError
 from ...tools import binaural_cne_query
-import logging
 
 _logger = logging.getLogger(__name__)
 
@@ -52,7 +53,15 @@ class ResPartner(models.Model):
                     vals["name"] = name
         return super(ResPartner, self).create(vals_list)
 
-    def get_default_name_by_vat(self):
+    def _check_vat(self):
+        pattern = "^[0-9]*$"
+        for record in self:
+            if record.vat:
+                if not re.match(pattern, record.vat):
+                    raise MissingError(_("The vat field only accepts numbers"))
+
+    @api.onchange("vat")
+    def _onchange_(self):
         """This function assign the name of the person by the vat number and the prefix of the vat number
         calling the function get_default_name_by_vat from binaural_cne_query
 
@@ -64,6 +73,7 @@ class ResPartner(models.Model):
             UserError: Error to connect with CNE, please check your internet connection or try again later
 
         """
+        self._check_vat()
         name, flag = binaural_cne_query.get_default_name_by_vat(self, self.prefix_vat, self.vat)
         if not flag:
             raise MissingError(

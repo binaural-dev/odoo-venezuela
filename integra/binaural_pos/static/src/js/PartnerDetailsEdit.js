@@ -27,18 +27,33 @@ odoo.define("binaural_pos.PartnerDetailsEdit", function(require) {
         }
       }
 
+      async onEnter(event) {
+        if (event.code === "Enter") {
+          let name = await this.searchRif(event.target.value)
+          this.nameField.el.value = name
+          this.changes.name = name
+        }
+      }
+
       async onblur(event) {
         if (this.nameField.el.value == "") {
-          const data = await this.env.services.rpc({
-            model: 'res.partner',
-            method: 'get_default_name_by_vat_param',
-            args: [[], "V", event.target.value],
-          });
-
-          this.nameField.el.value = data
-
+          let name = await this.searchRif(event.target.value)
+          this.nameField.el.value = name
+          this.changes.name = name
         }
+      }
 
+      async searchRif(rif) {
+        let data = await this.env.services.rpc({
+          model: 'res.partner',
+          method: 'get_default_name_by_vat_param',
+          args: [[], "V", rif],
+        });
+
+        if (data == "Esta cédula de identidad no se encuentra inscrito en el Registro Electoral.") {
+          data = "N/D"
+        }
+        return data
       }
       async saveChanges() {
         let processedChanges = {};

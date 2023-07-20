@@ -1,0 +1,96 @@
+html {
+    scroll-behavior: smooth;
+}
+
+//------------------------------------------------------------------------------
+// Text selection
+//------------------------------------------------------------------------------
+::selection {
+    background: rgba(o-color('primary'), .2);
+}
+::-moz-selection {
+    background: rgba(o-color('primary'), .2);
+}
+
+//------------------------------------------------------------------------------
+// Dropdown
+//------------------------------------------------------------------------------
+%tp-dropdown-toggle {
+    font-family: FontAwesome;
+    border: 0;
+    vertical-align: initial;
+}
+.dropleft .dropdown-toggle::before {
+    content: "\f104";
+    @extend %tp-dropdown-toggle;
+}
+.dropright .dropdown-toggle::after {
+    content: "\f105";
+    @extend %tp-dropdown-toggle;
+}
+.dropup .dropdown-toggle::after {
+    content: "\f106";
+    @extend %tp-dropdown-toggle;
+}
+.dropdown-toggle::after {
+    content: "\f107";
+    @extend %tp-dropdown-toggle;
+}
+.dropdown-menu {
+    box-shadow: $dropdown-box-shadow;
+}
+
+//------------------------------------------------------------------------------
+// Droggol Icons
+//------------------------------------------------------------------------------
+[class^="dri-"], [class*=" dri-"] {
+    display: inline-block;
+}
+.dri-category {
+    transform: scale(1.1);
+}
+
+//------------------------------------------------------------------------------
+// Soft Buttons
+//------------------------------------------------------------------------------
+@each $colorName, $color in (('primary': o-color('primary'))) {
+    .btn-#{$colorName}-soft {
+        @include button-variant(rgba($color, 0.1), rgba($color, 0.1), $color, $color, $color, color-contrast($color), $color, $color, color-contrast($color));
+        border-color: transparent;
+        color: $color;
+        &:hover, &:focus {
+            box-shadow: 0 4px 11px rgba($color, 0.35);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+// Soft Background
+//------------------------------------------------------------------------------
+@each $color in 'primary', 'danger', 'success' {
+    .tp-bg-soft-#{$color} {
+        background-color: rgba(o-color($color), .1) !important;
+        color: o-color($color) !important;
+    }
+}
+
+//------------------------------------------------------------------------------
+// Layout
+//------------------------------------------------------------------------------
+@mixin tp-container-width($width){
+    @media (min-width: $width) {
+        $max-width: $width * 93 / 100;
+        .container {
+            max-width: $max-width;
+        }
+        .dropdown-menu.o_mega_menu_container_size {
+            max-width: $max-width - $grid-gutter-width;
+        }
+    }
+}
+
+@include tp-container-width(1200px);
+@include tp-container-width(1240px);  // for 1280x800
+@include tp-container-width(1300px);  // for 1356x768
+@include tp-container-width(1400px);  // for 1440x900
+@include tp-container-width(1505px);  // To make max width 1400 px

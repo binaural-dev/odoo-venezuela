@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="alphabot_fel_digifact_view_company_form" model="ir.ui.view">
+            <field name="name">res.company.form.inherit.alphabotfel</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='vat']" position="after">
+		            <field name="alphabot_fel_rs"  />
+                </xpath>
+                <xpath expr="//field[@name='vat']" position="after">
+                    <field name="alphabot_fel_seller_dv"/>
+                </xpath>
+                <xpath expr="//field[@name='alphabot_fel_cod_sucursal']" position="replace">
+                </xpath>
+                <xpath expr="//field[@name='alphabot_fel_punto_fac']" position="replace">
+                </xpath>
+                <xpath expr="//page[@name='AlphabotFEL']//group//group" position="inside">
+                    <field name="alphabot_fel_seller_ruc_type"/>
+                    <field name="alphabot_fel_seller_main_branchpoos"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

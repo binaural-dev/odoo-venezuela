@@ -1,0 +1,4 @@
+.s_shop_offer_4 .tp-banner-text {
+    @include o-position-absolute($top: 20%, $left: 50%);
+    transform: translate(-50% , -20%);
+}

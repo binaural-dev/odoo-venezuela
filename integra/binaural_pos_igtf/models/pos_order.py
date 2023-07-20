@@ -14,6 +14,11 @@ class PosOrder(models.Model):
         res["bi_igtf"] = ui_order["bi_igtf"]
         return res
 
+    def _payment_fields(self, order, ui_paymentline):
+        res = super()._payment_fields(order,ui_paymentline)
+        res["include_igtf"] = ui_paymentline["include_igtf"]
+        return res
+
     def _create_invoice(self, move_vals):
         res = super()._create_invoice(move_vals)
         res.write({"bi_igtf": self.bi_igtf})

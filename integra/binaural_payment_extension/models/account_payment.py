@@ -1,4 +1,5 @@
-from odoo import models, fields, Command
+from odoo import api, fields, models, Command
+
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"
@@ -37,6 +38,34 @@ class AccountPayment(models.Model):
         related="retention_id.number",
         store=True,
     )
+
+    def _synchronize_to_moves(self, changed_fields):
+        """
+        Override the original method to change the name of the move based on the retention type
+        using the retention's number and the invoice's name of the retention.
+        """
+        res = super()._synchronize_to_moves(changed_fields)
+        account_move_name_by_retention_type = {
+            "iva": "RIV",
+            "islr": "RIS",
+            "municipal": "RM",
+        }
+        for payment in self.filtered("is_retention").with_context(
+            skip_account_move_synchronization=True
+        ):
+            if not all((payment.retention_line_ids, payment.retention_id.number)):
+                continue
+            move = payment.move_id
+            vals_to_change = {
+                "name": (
+                    account_move_name_by_retention_type[payment.retention_id.type_retention]
+                    + f"-{payment.retention_id.number}"
+                    + f"-{payment.retention_line_ids[0].move_id.name}"
+                )
+            }
+            move.write(vals_to_change)
+            move.line_ids.write(vals_to_change)
+        return res
 
     def unlink(self):
         for payment in self:

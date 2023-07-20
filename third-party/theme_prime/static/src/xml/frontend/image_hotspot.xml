@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+    <t t-name="theme_prime.tp_img_static_template">
+        <div class="tp-popover-container d-flex" style="width:275px;">
+            <t t-set="productInfo" t-value="widget.productInfo"></t>
+            <t t-if="productInfo">
+                <div class="text-center align-self-center w-25">
+                    <img t-att-src="productInfo.img_small" class="img o_object_fit_cover w-100 o_image_64_max img-fluid"/>
+                </div>
+                <div class="px-2" style="flex: 0 0 60%;max-width: 60%;">
+                    <h6 class="card-text text-truncate fw-normal mb-1 d-product-name">
+                        <a t-att-href="productInfo.website_url"><t t-esc="productInfo.name"/></a>
+                    </h6>
+                    <div class="mt-2">
+                        <p class="text-primary mb-0 h6" t-raw="productInfo.price"/>
+                    </div>
+                    <div class="mt-2">
+                        <span t-if="productInfo.has_discounted_price" class="text-muted" style="text-decoration: line-through; white-space: nowrap;" t-raw="productInfo.list_price"/>
+                        <span class="tp-discount-badge small ms-2" t-if="productInfo.discount"><t t-esc="productInfo.discount"></t>% OFF</span>
+                    </div>
+                </div>
+                <div style="flex: 0 0 15%;" class="position-relative">
+                    <t t-if="productInfo.rating_avg">
+                        <i class="fa fa-star" style="color:#fea569"></i> <span class="fw-bold" t-esc="productInfo.rating_avg"></span>
+                    </t>
+                    <button t-att-data-product-product-id="productInfo.product_variant_id" class="btn btn-sm btn-primary tp-add-to-cart-action d-block"><i class="dri dri-cart"></i></button>
+                </div>
+            </t>
+            <t t-else="">
+                <div class="text-center align-self-center w-25">
+                    <img t-att-src="data.imageSrc" class="img img-fluid"/>
+                </div>
+                <div class="px-2 w-75">
+                    <h6 t-if="data.titleText" class="card-text mb-1"><t t-esc="data.titleText"/></h6>
+                    <p t-if="data.subtitleText" class="text-muted mb-2"><t t-esc="data.subtitleText"/></p>
+                    <a t-att-href="data.buttonLink" class="btn btn-sm btn-primary"><t t-esc="data.buttonText"/></a>
+                </div>
+            </t>
+        </div>
+    </t>
+</template>

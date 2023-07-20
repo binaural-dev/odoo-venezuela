@@ -15,8 +15,11 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
       get currentOrder() {
         return this.get_order();
       }
+
+      aditionalInfo() {
+        return []
+      }
       async get_data_invoice(order) {
-        console.log(this)
         const currency = { symbol: 'Bs', position: 'after', rounding: 0.01, decimals: 2 };
 
 
@@ -24,7 +27,8 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           company_id: {
             name: this.company.name,
           },
-          flag_21: this.config.flag_21
+          flag_21: this.config.flag_21,
+          traditional_line: this.config.traditional_line
         }
         if (order.get_partner()) {
 
@@ -36,6 +40,8 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           invoice['partner_id']['address'] = client.address || false
           invoice['partner_id']['phone'] = client.phone || false
         }
+
+        invoice["info"] = this.aditionalInfo()
 
         let uid = order.uid
         const values = Object.values(this.env.pos.toRefundLines)
@@ -55,7 +61,6 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               args: [[], lines[0].orderline.orderUid],
               kwargs: {},
             })
-            console.log("ALO", response)
             if (response.length > 0) {
               invoice["invoice_affected"] = {
                 "number": response[0].mf_invoice_number,
@@ -84,13 +89,13 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               price_unit: Math.abs(amount),
               quantity: Math.abs(el.quantity),
               name: el.product.display_name,
-              code: false,
+              code: el.product.default_code,
               tax: el.get_taxes().length > 0 ? el.get_taxes()[0]['fiscal_code'] : 0
             }
           })
           invoice['payment_lines'] = order.paymentlines.map((el) => {
 
-            let amount = vef_base ? el.amount : el.amount * this.config.foreign_inverse_rate 
+            let amount = vef_base ? el.amount : el.get_foreign_amount()
             return {
               payment_method: el.payment_method.code_fiscal_printer,
               amount: Math.abs(amount),
@@ -119,14 +124,14 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         order.mf_invoice_number = data["sequence"] || false;
       }
       async push_single_order(order, opts) {
-        if (this.useFiscalMachine() && order && order.to_invoice) {
+        if (this.useFiscalMachine() && order && !order.to_receipt) {
           try {
             const response = await this.print_out_invoice(await this.get_data_invoice(order))
             if (!response.valid) {
               throw new Error(response["message"])
             }
             this.set_data_from_fiscal_machine(order, response)
-            return await super.push_single_order.apply(this, [order, opts]);
+            return await super.push_single_order(order, opts);
           } catch (err) {
             return Promise.reject({
               code: 701,
@@ -137,7 +142,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             });
           }
         }
-        return await super.push_orders.apply(this, arguments);
+        return await super.push_single_order(...arguments);
       }
     };
   Registries.Model.extend(PosGlobalState, BinauralPosState);

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="theme_prime.TpDropDown" owl="1">
+        <t t-set="record" t-value="_getRecordByID(this.props.value)"/>
+        <div class="px-2">
+            <h6 t-if="title" class="tp-text-body my-3 text-uppercase small"><t t-out="title"/>: </h6>
+            <div t-attf-class="dropdown">
+                <button t-attf-class="btn dropdown-toggle #{buttonClasses}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <t t-call="theme_prime.tp_dropdown_placeholder">
+                        <t t-set="no_funk" t-value="true"/>
+                    </t>
+                </button>
+                <ul class="dropdown-menu overflow-auto tp-dropdown-menu p-0 px-2 tp-rounded-border border w-100" style="top:7px !important;">
+                    <t t-foreach="this.props.records" t-as="record" t-key="record.id">
+                        <li t-if="record.id">
+                            <a t-on-click="() => this._onClickItem(record.id)" class="dropdown-item tp-rounded-border my-2 p-2 text-wrap" href="#"><t t-call="theme_prime.tp_dropdown_placeholder"/></a>
+                        </li>
+                    </t>
+                </ul>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="theme_prime.tp_dropdown_placeholder" owl="1">
+        <div class="d-flex align-items-center w-100">
+            <div t-if="record.imgSrc" class="flex-shrink-0 me-3">
+                <img t-if="record.imgSrc" t-att-src="record.imgSrc" class="img tp-rounded-border img-fluid o_image_40_cover"/>
+            </div>
+            <div class="flex-grow-1 text-start">
+                <p class="mb-0 text-uppercase tp-text-body" t-out="record.title"/>
+                <small style="font-size:70%;" t-if="record.subtitle" class="d-block mt-1 text-muted" t-out="record.subtitle"/>
+            </div>
+            <i class="fa text-primary fa-check-circle me-1" t-if="this.props.value === record.id and !no_funk"/>
+        </div>
+    </t>
+</templates>

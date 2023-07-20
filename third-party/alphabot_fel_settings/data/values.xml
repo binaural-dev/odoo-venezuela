@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<data noupdate="0">
+	<record id="generation_process_1" model="alphabot.fel.values">
+		<field name="name">Generación por Sistema</field>
+		<field name="comment">Generación por el sistema de facturación del contribuyente (desarrollo propio o producto adquirido)</field>
+		<field name="code">1</field>
+		<field name="nick">generacion_sistema</field>
+	</record>
+	<record id="taxpayer_type_1" model="alphabot.fel.values">
+		<field name="name">Contribuyente</field>
+		<field name="code">01</field>
+		<field name="nick">taxpayer_contribuyente</field>
+	</record>
+	<record id="taxpayer_type_2" model="alphabot.fel.values">
+		<field name="name">Consumidor final</field>
+		<field name="code">02</field>
+		<field name="nick">taxpayer_consumidor</field>
+	</record>
+	<record id="taxpayer_type_3" model="alphabot.fel.values">
+		<field name="name">Gobierno</field>
+		<field name="code">03</field>
+		<field name="nick">taxpayer_gobierno</field>
+	</record>
+	<record id="taxpayer_type_4" model="alphabot.fel.values">
+		<field name="name">Extranjero</field>
+		<field name="code">04</field>
+		<field name="nick">taxpayer_extranjero</field>
+	</record>
+	<record id="ruc_type_1" model="alphabot.fel.values">
+		<field name="name">RUC Persona Natural</field>
+		<field name="code">1</field>
+		<field name="nick">ruc_natural</field>
+	</record>
+	<record id="ruc_type_2" model="alphabot.fel.values">
+		<field name="name">RUC Juridíco</field>
+		<field name="code">2</field>
+		<field name="nick">ruc_juridico</field>
+	</record>
+	<record id="cafe_format_1" model="alphabot.fel.values">
+		<field name="name">Sin generación de CAFE</field>
+		<field name="code">1</field>
+		<field name="nick">cafe_formato_ninguno</field>
+	</record>
+	<record id="cafe_format_2" model="alphabot.fel.values">
+		<field name="name">Cinta de papel</field>
+		<field name="code">2</field>
+		<field name="nick">cafe_formato_termico</field>
+	</record>
+	<record id="cafe_format_3" model="alphabot.fel.values">
+		<field name="name">Papel formato carta</field>
+		<field name="code">3</field>
+		<field name="nick">cafe_formato_carta</field>
+	</record>
+	<record id="cafe_delivery_1" model="alphabot.fel.values">
+		<field name="name">Sin generación de CAFE</field>
+		<field name="code">1</field>
+		<field name="nick">cafe_delivery_ninguno</field>
+	</record>
+	<record id="cafe_delivery_2" model="alphabot.fel.values">
+		<field name="name">Entregado en papel</field>
+		<field name="code">2</field>
+		<field name="nick">cafe_delivery_papel</field>
+	</record>
+	<record id="cafe_delivery_3" model="alphabot.fel.values">
+		<field name="name">Entregado de forma electrónica</field>
+		<field name="code">3</field>
+		<field name="nick">cafe_delivery_email</field>
+	</record>
+	<record id="issue_type_01" model="alphabot.fel.values">
+		<field name="name">Autorización de Uso Previa, operación normal</field>
+		<field name="code">01</field>
+		<field name="nick">autoriza_previa_normal</field>
+	</record>
+	<record id="issue_type_02" model="alphabot.fel.values">
+		<field name="name">Autorización de Uso Previa, operación en contingencia</field>
+		<field name="code">02</field>
+		<field name="nick">autoriza_previa_contingencia</field>
+	</record>
+	<record id="issue_type_03" model="alphabot.fel.values">
+		<field name="name">Autorización de Uso Posterior, operación normal</field>
+		<field name="code">03</field>
+		<field name="nick">autoriza_posterior_normal</field>
+	</record>
+	<record id="issue_type_04" model="alphabot.fel.values">
+		<field name="name">Autorización de Uso posterior, operación en contingencia</field>
+		<field name="code">04</field>
+		<field name="nick">autoriza_posterior_contigencia</field>
+	</record>
+	<record id="payment_type_01" model="alphabot.fel.values">
+		<field name="name">Crédito</field>
+		<field name="code">01</field>
+		<field name="nick">pago_CRD_pos_Credito</field>
+	</record>
+	<record id="payment_type_02" model="alphabot.fel.values">
+		<field name="name">Efectivo</field>
+		<field name="code">02</field>
+		<field name="nick">pago_CSH_pos_Efectivo</field>
+	</record>
+	<record id="payment_type_03" model="alphabot.fel.values">
+		<field name="name">Tarjeta Crédito</field>
+		<field name="code">03</field>
+		<field name="nick">pago_TCRD_pos_Tarjeta</field>
+	</record>
+	<record id="payment_type_04" model="alphabot.fel.values">
+		<field name="name">Tarjeta Débito</field>
+		<field name="code">04</field>
+		<field name="nick">pago_TDEB_pos_Debito</field>
+	</record>
+	<record id="payment_type_05" model="alphabot.fel.values">
+		<field name="name">Tarjeta Fidelización</field>
+		<field name="code">05</field>
+		<field name="nick">pago_TFID_pos_Club</field>
+	</record>
+	<record id="payment_type_06" model="alphabot.fel.values">
+		<field name="name">Vale</field>
+		<field name="code">06</field>
+		<field name="nick">pago_VAL_pos_Vale</field>
+	</record>
+	<record id="payment_type_07" model="alphabot.fel.values">
+		<field name="name">Tarjeta Regalo</field>
+		<field name="code">07</field>
+		<field name="nick">pago_TREG_pos_Regalo</field>
+	</record>
+	<record id="payment_type_08" model="alphabot.fel.values">
+		<field name="name">Transf. Bancaria</field>
+		<field name="code">08</field>
+		<field name="nick">pago_BNK_ACH_Banco_Yappy</field>
+	</record>
+	<record id="payment_type_09" model="alphabot.fel.values">
+		<field name="name">Cheque</field>
+		<field name="code">09</field>
+		<field name="nick">pago_CHQ_pos_Cheque</field>
+	</record>
+	<record id="payment_type_099" model="alphabot.fel.values">
+		<field name="name">Otro</field>
+		<field name="code">99</field>
+		<field name="nick">pago_OTRO_pos_Otro</field>
+	</record>
+	<record id="branchtype_type_1" model="alphabot.fel.values">
+		<field name="name">Operaciones venta al detal (retail)</field>
+		<field name="code">1</field>
+		<field name="nick">branch_retail</field>
+	</record>
+	<record id="branchtype_type_2" model="alphabot.fel.values">
+		<field name="name">Operaciones venta al por mayor</field>
+		<field name="code">2</field>
+		<field name="nick">branch_wholesale</field>
+	</record>
+	<record id="oper_type_in" model="alphabot.fel.values">
+		<field name="name">Salida o venta</field>
+		<field name="code">1</field>
+		<field name="nick">operation_type_out</field>
+	</record>
+	<record id="oper_type_out" model="alphabot.fel.values">
+		<field name="name">Entrada o compra</field>
+		<field name="comment">Entrada o compra (factura de compra- para comercio informal. Ej.: taxista, trabajadores manuales)</field>
+		<field name="code">2</field>
+		<field name="nick">operation_type_in</field>
+	</record>
+	<record id="oper_nat_01" model="alphabot.fel.values">
+		<field name="name">Venta</field>
+		<field name="code">01</field>
+		<field name="nick">operation_nature_venta</field>
+	</record>
+	<record id="oper_nat_02" model="alphabot.fel.values">
+		<field name="name">Exportación</field>
+		<field name="code">02</field>
+		<field name="nick">operation_nature_export</field>
+	</record>
+	<record id="oper_nat_10" model="alphabot.fel.values">
+		<field name="name">Transferencia</field>
+		<field name="code">10</field>
+		<field name="nick">operation_nature_transf</field>
+	</record>
+	<record id="oper_nat_11" model="alphabot.fel.values">
+		<field name="name">Devolución</field>
+		<field name="code">11</field>
+		<field name="nick">operation_nature_devol</field>
+	</record>
+	<record id="oper_nat_12" model="alphabot.fel.values">
+		<field name="name">Consignación</field>
+		<field name="code">12</field>
+		<field name="nick">operation_nature_consig</field>
+	</record>
+	<record id="oper_nat_13" model="alphabot.fel.values">
+		<field name="name">Remesa</field>
+		<field name="code">13</field>
+		<field name="nick">operation_nature_remesa</field>
+	</record>
+	<record id="oper_nat_14" model="alphabot.fel.values">
+		<field name="name">Entrega gratuita</field>
+		<field name="code">14</field>
+		<field name="nick">operation_nature_gratuito</field>
+	</record>
+	<record id="oper_nat_20" model="alphabot.fel.values">
+		<field name="name">Compra</field>
+		<field name="code">20</field>
+		<field name="nick">operation_nature_compra</field>
+	</record>
+	<record id="oper_nat_21" model="alphabot.fel.values">
+		<field name="name">Importación</field>
+		<field name="code">21</field>
+		<field name="nick">operation_nature_import</field>
+	</record>
+	<record id="fel_container_1" model="alphabot.fel.values">
+		<field name="name">Normal</field>
+		<field name="code">1</field>
+		<field name="nick">fel_container_normal</field>
+	</record>
+	<record id="fel_container_2" model="alphabot.fel.values">
+		<field name="name">El receptor exceptúa al emisor de la obligatoriedad de envío del contenedor</field>
+		<field name="comment">El emisor podrá decidir entregar el contenedor, por cualquier razón, en momento posterior a la autorización de uso, pero no era esta su intención en el momento de la emisión de la FE</field>
+		<field name="code">2</field>
+		<field name="nick">fel_container_exceptuado</field>
+	</record>
+	<record id="oper_oper_dest_1" model="alphabot.fel.values">
+		<field name="name">Panamá</field>
+		<field name="code">1</field>
+		<field name="nick">oper_oper_panama</field>
+	</record>
+	<record id="oper_oper_dest_2" model="alphabot.fel.values">
+		<field name="name">Extranjero</field>
+		<field name="code">2</field>
+		<field name="nick">oper_oper_extranjero</field>
+	</record>
+	<record id="sale_type_1" model="alphabot.fel.values">
+		<field name="name">Venta de Giro del negocio</field>
+		<field name="code">1</field>
+		<field name="nick">sale_type_nomal</field>
+	</record>
+	<record id="sale_type_2" model="alphabot.fel.values">
+		<field name="name">Venta Activo Fijo</field>
+		<field name="code">2</field>
+		<field name="nick">sale_type_activo</field>
+	</record>
+	<record id="sale_type_3" model="alphabot.fel.values">
+		<field name="name">Venta de Bienes Raíces</field>
+		<field name="code">3</field>
+		<field name="nick">sale_type_propiedad</field>
+	</record>
+	<record id="sale_type_4" model="alphabot.fel.values">
+		<field name="name">Prestación de Servicio</field>
+		<field name="code">4</field>
+		<field name="nick">sale_type_servicio</field>
+	</record>
+	</data>
+</odoo>

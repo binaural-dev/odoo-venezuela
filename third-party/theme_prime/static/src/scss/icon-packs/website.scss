@@ -1,0 +1,40 @@
+.dri {
+    $size: 3rem;
+
+    &.rounded-circle,
+    &.rounded,
+    &.rounded-0,
+    &.rounded-leaf,
+    &.img-thumbnail,
+    &.shadow {
+        display: inline-block;
+        vertical-align: middle;
+        text-align: center;
+        // fa-1x is not ouput
+        height: $size;
+        width: $size;
+        line-height: $size;
+        @for $i from 2 through 5 {
+            &.fa-#{$i}x {
+                height: $size + $i;
+                width: $size + $i;
+                line-height: $size + $i;
+            }
+        }
+        // Default, if no background-color already selected
+        background-color: $gray-100;
+    }
+    &.img-thumbnail {
+        padding: 0;
+    }
+    &.rounded-leaf {
+        border-top-left-radius: $size;
+        border-bottom-right-radius: $size;
+    }
+    &.rounded-empty-circle {
+        @extend .rounded-circle;
+        border-width: ceil(1.4 * $border-width);
+        border-style: solid;
+        background: transparent;
+    }
+}

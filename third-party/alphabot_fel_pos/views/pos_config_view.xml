@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="pos_config_form_view_inherit" model="ir.ui.view">
+        <field name="name">pos.config.form.view.inherit</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@id='other_devices']" position='after'>
+                    <div class="col-12 col-lg-6 o_setting_box" id="alphabot_customer" title="Cliente predefinido">
+                        <div class="o_setting_right_pane">
+                            <label for="alphabot_cliente_id"/>
+                            <div class="text-muted">
+                                Cliente predefinido
+                            </div>
+                            <div class="content-group mt16">
+                                <field name="alphabot_cliente_id" colspan="4" nolabel="1"/>
+                            </div>
+                        </div>
+                    </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

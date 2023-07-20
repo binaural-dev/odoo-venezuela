@@ -1,4 +1,4 @@
-from odoo import api, fields, models, _
+from odoo import models
 from odoo.tools import get_lang
 
 
