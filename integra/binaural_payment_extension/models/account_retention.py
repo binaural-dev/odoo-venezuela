@@ -383,6 +383,7 @@ class AccountRetention(models.Model):
 
             for line in retention.retention_line_ids:
                 if (
+                    line.move_id.id and
                     lines_per_invoice_counter[str(line.move_id.id)]
                     != original_lines_per_invoice_counter[str(line.move_id.id)]
                 ):
