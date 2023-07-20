@@ -8,7 +8,7 @@
     "category": "Accounting/Igtf",
     "version": "1.2",
     # any module necessary for this one to work correctly
-    "depends": ["base", "binaural_accountant", "binaural_tax", "binaural_rate", "binaural_fiscal"],
+    "depends": ["base", "binaural_accountant", "binaural_tax", "binaural_rate", "binaural_fiscal", "binaural_payment_reports"],
     # always loaded
     "data": [
         "views/res_config_settings.xml",
