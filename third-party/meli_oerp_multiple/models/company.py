@@ -128,13 +128,28 @@ class ResCompany(models.Model):
 
         company = self or self.env.user.company_id
 
-        for comp in company:
+        _logger.info("cron_meli_process_post_stock > self"+str(self and self.name))
+        _logger.info("cron_meli_process_post_stock > company "+str(company and company.name))
+        #for comp in company:
 
+        #    for account in comp.mercadolibre_connections:
+        #        _logger.info("cron_meli_process_post_stock > account "+str(account and account.name))
+        #        config = account.configuration
+        #        if (config.mercadolibre_cron_post_update_stock):
+        #            _logger.info("config.mercadolibre_cron_post_update_stock")
+        #            account.meli_update_remote_stock(meli=meli)
+
+        company_ids = self.env.user.company_ids
+        for comp in company_ids:
+            _logger.info("cron_meli_process_post_stock > company "+str(comp))
             for account in comp.mercadolibre_connections:
+                _logger.info("cron_meli_process_post_stock > account "+str(account and account.name))
                 config = account.configuration
                 if (config.mercadolibre_cron_post_update_stock):
                     _logger.info("config.mercadolibre_cron_post_update_stock")
                     account.meli_update_remote_stock(meli=meli)
+
+
 
     def cron_meli_process_post_price( self, meli=None ):
 

@@ -8,6 +8,8 @@ import datetime
 import sys
 import json
 import glob
+import urllib3
+import platform
 from functools import reduce
 
 from odoo.addons.hw_drivers.iot_handlers.sdk.ReportData import ReportData
@@ -26,6 +28,7 @@ from odoo.addons.hw_drivers.iot_handlers.sdk.AcumuladosX import AcumuladosX
 from odoo import http
 from odoo.addons.hw_drivers.main import iot_devices
 from odoo.addons.hw_drivers.event_manager import event_manager
+from odoo.addons.hw_drivers.tools import helpers
 
 from odoo.addons.hw_drivers.iot_handlers.drivers.SerialBaseDriver import (
     SerialDriver,
@@ -177,7 +180,6 @@ _logger = logging.getLogger(__name__)
 
 DEVICE_NAME = "/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0"
 DEVICE_SHORT_NAME = "/dev/ttyACM"
-DEVICE_WINDOWS = "COM"
 
 FiscalProtocol = SerialProtocol(
     name="FiscalMachine",
@@ -215,19 +217,41 @@ class SerialFiscalDriver(SerialDriver):
 
     @classmethod
     def supported(cls, device):
-        if (
-            device["identifier"].__contains__(DEVICE_NAME)
-            or device["identifier"].__contains__(DEVICE_SHORT_NAME)
-            or device["identifier"].__contains__(DEVICE_WINDOWS)
-        ):
-            try:
-                protocol = cls._protocol
-                return serial_connection(device["identifier"], protocol)
-            except Exception:
-                _logger.exception(
-                    "Error while probing %s with protocol %s" % (device, cls._protocol.name)
+        try:
+            condition = False
+
+            if platform.system() == "Windows":
+                server = helpers.get_odoo_server_url()
+                urllib3.disable_warnings()
+                http = urllib3.PoolManager(cert_reqs="CERT_NONE")
+                waiting = http.request(
+                    "GET",
+                    server + "/iot_fiscal/ports",
                 )
-            return True
+
+                b_body = waiting._body
+                body = json.loads(b_body.decode("utf-8"))
+
+                condition = device["identifier"] in body[helpers.get_mac_address()]
+
+            elif platform.system() == "Linux":
+                condition = device["identifier"].__contains__(DEVICE_NAME) or device[
+                    "identifier"
+                ].__contains__(DEVICE_SHORT_NAME)
+
+            if condition:
+                try:
+                    protocol = cls._protocol
+                    return serial_connection(device["identifier"], protocol)
+                except Exception:
+                    _logger.exception(
+                        "Error while probing %s with protocol %s" % (device, cls._protocol.name)
+                    )
+                return True
+        except Exception as e:
+            _logger.error("Could not reach configured server")
+            _logger.error("A error encountered : %s " % e)
+            return super().supported(device)
         return super().supported(device)
 
     def _set_actions(self):
@@ -378,7 +402,14 @@ class SerialFiscalDriver(SerialDriver):
                     )
             cmd.append(str("3"))  # sub total en factura
 
+            def filter_unique_type_method(payment):
+                return payment["payment_method"] == "20"
+
             if len(invoice["payment_lines"]) == 1 or invoice["payment_lines"][0]["amount"] == 0:
+                cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
+            elif len(invoice["payment_lines"]) > 1 and len(
+                list(filter(filter_unique_type_method, invoice["payment_lines"]))
+            ) == len(invoice["payment_lines"]):
                 cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
             else:
                 for item in invoice["payment_lines"]:
@@ -394,6 +425,7 @@ class SerialFiscalDriver(SerialDriver):
                             + amount_d
                         )
                     )
+
 
             cmd.append(str("101"))
             cmd.append(str("199"))
@@ -934,13 +966,13 @@ class SerialFiscalDriver(SerialDriver):
 
     def _write(self, msj):
         connection = self._connection
-        _logger.info("WRITE: %s",msj.encode("latin-1"))
+        _logger.info("WRITE: %s", msj.encode("latin-1"))
         connection.write(msj.encode("latin-1"))
 
     def _read(self, bytes):
         connection = self._connection
         msj = connection.read(bytes)
-        _logger.info("READ: %s",msj)
+        _logger.info("READ: %s", msj)
         return msj.decode()
 
     def _AssembleQueryToSend(self, linea):

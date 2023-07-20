@@ -42,10 +42,12 @@ class AccountMove(models.Model):
                 
                 if not settlement_date:
                     if reconcilieds:
-                        settlement_date = max(invoice[2].date for invoice in reconcilieds)
+                        value = [invoice[0][2].date for invoice in reconcilieds if invoice and not isinstance(invoice[0], int)]
+                        if value:
+                            settlement_date = max(value)
             else:
                 if reconcilieds:
-                    value = [invoice[0][2].date for invoice in reconcilieds if invoice]
+                    value = [invoice[0][2].date for invoice in reconcilieds if invoice and not isinstance(invoice[0], int)]
                     if value: 
                         max_value = max(value)
                         settlement_date = max_value

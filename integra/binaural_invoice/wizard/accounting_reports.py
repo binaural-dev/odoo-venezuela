@@ -731,9 +731,26 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         for base in tax_base.items():
             taxes = base[1]
 
+            exent_aliquot = False
+            general_aliquot = False
+            reduced_aliquot = False
+            extend_aliquot = False
+
+            if self.report == "sale":
+                exent_aliquot = self.company_id.exent_aliquot_sale.tax_group_id.id
+                reduced_aliquot = self.company_id.reduced_aliquot_sale.tax_group_id.id
+                general_aliquot = self.company_id.general_aliquot_sale.tax_group_id.id
+                extend_aliquot = self.company_id.extend_aliquot_sale.tax_group_id.id
+            else:
+                exent_aliquot = self.company_id.exent_aliquot_purchase.tax_group_id.id
+                reduced_aliquot = self.company_id.reduced_aliquot_purchase.tax_group_id.id
+                general_aliquot = self.company_id.general_aliquot_purchase.tax_group_id.id
+                extend_aliquot = self.company_id.extend_aliquot_purchase.tax_group_id.id
+
             for tax in taxes:
-                tax_name = tax.get("tax_group_name")
-                is_exempt = tax_name == "IVA 0%"
+                tax_group_id = tax.get("tax_group_id")
+
+                is_exempt = tax_group_id == exent_aliquot
                 if is_exempt:
                     tax_result.update(
                         {
@@ -742,7 +759,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         }
                     )
 
-                is_reduced_aliquot = tax_name == "IVA 8%"
+                is_reduced_aliquot = tax_group_id == reduced_aliquot
                 if is_reduced_aliquot:
                     tax_result.update(
                         {
@@ -753,7 +770,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
                     continue
 
-                is_general_aliquot = tax_name == "IVA 16%"
+                is_general_aliquot = tax_group_id == general_aliquot
                 if is_general_aliquot:
                     tax_result.update(
                         {
@@ -764,7 +781,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
                     continue
 
-                is_extend_aliquot = tax_name == "IVA 31%"
+                is_extend_aliquot = tax_group_id == extend_aliquot
                 if is_extend_aliquot:
                     tax_result.update(
                         {

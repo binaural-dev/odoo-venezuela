@@ -30,6 +30,7 @@ class stock_move(models.Model):
                     #_logger.info("post stock for: "+p.display_name)
                     if p.id not in model_ids:
                         #removing duplicates
+                        p.process_meli_stock_moves_update()
                         model_ids.append(p.id)
 
             if model_ids and len(model_ids)>0:

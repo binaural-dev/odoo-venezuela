@@ -176,10 +176,11 @@ class product_template(models.Model):
                 if ( variant._conditions_ok() ):
                     variant.meli_pub = True
                     var = variant._combination()
+                    var_info = var
                     if (var):
                         if (variations==False):
                             variations = []
-                        var_attributes = variant._update_sku_attribute( attributes=("attributes" in var and var["attributes"]), set_sku=config.mercadolibre_post_default_code )
+                        var_attributes = variant._update_sku_attribute( attributes=("attributes" in var and var["attributes"]), set_sku=config.mercadolibre_post_default_code,var_info=var_info )
                         var_attributes and var.update({"attributes": var_attributes })
                         variations.append(var)
 
@@ -236,10 +237,21 @@ class product_template(models.Model):
                 ' with the operator: {}',format(operator)
             )
 
+    def product_meli_block( self ):
+        for product_tmpl in self:
+            product_tmpl.meli_update_stock_blocked = True;
+            for product in product_tmpl.product_variant_ids:
+                product.meli_update_stock_blocked = True;
+
+    def product_meli_unblock( self ):
+        for product_tmpl in self:
+            product_tmpl.meli_update_stock_blocked = False;
+            for product in product_tmpl.product_variant_ids:
+                product.meli_update_stock_blocked = False;
 
     def action_meli_pause(self):
         for product in self:
-            #product.product_meli_block()
+            product.product_meli_block()
             for variant in product.product_variant_ids:
                 if (variant.meli_pub):
                     variant.product_meli_status_pause()
@@ -249,7 +261,7 @@ class product_template(models.Model):
     def action_meli_activate(self):
 
         for product in self:
-            #product.product_meli_unblock()
+            product.product_meli_unblock()
             for variant in product.product_variant_ids:
                 if (variant.meli_pub):
                     variant.product_meli_status_active()
@@ -291,7 +303,10 @@ class product_template(models.Model):
 
     def get_price_for_category_predictor(self):
         pricelist = self._get_pricelist_for_meli()
-        return int(self.with_context(pricelist=pricelist.id).price)
+        if pricelist:
+            return get_price_from_pl( pricelist, self, 1.0 )[pricelist.id]
+        else:
+            return 1.0
 
     def action_category_predictor(self):
         self.ensure_one()
@@ -665,9 +680,10 @@ class product_product(models.Model):
                 new_price = txfixed + new_price * (1.0 + txpercent*0.01)
                 #_logger.info("Price adjusted with taxes:"+str(new_price))
 
+
         new_price = round(new_price,2)
 
-        if (product_tmpl.meli_currency and product_tmpl.meli_currency == 'MXN'):
+        if (product_tmpl.meli_currency and (product_tmpl.meli_currency == 'MXN' or product_tmpl.meli_currency == 'USD')):
             new_price = str((float(new_price)))
         elif (product_tmpl.meli_currency and product_tmpl.meli_currency == 'CLP'):
             new_price = str( int( int( math.floor(int(new_price) / 100 ) * 100 + 90 ) ) )
@@ -2527,7 +2543,7 @@ class product_product(models.Model):
                 product.meli_id = variant_principal.meli_id
 
     #Add/Update SELLER_SKU attribute, only if present in Odoo, also can update GTIN (barcode)
-    def _update_sku_attribute( self, attributes=[], set_sku=True, set_barcode=True ):
+    def _update_sku_attribute( self, attributes=[], set_sku=True, set_barcode=True, var_info = [] ):
 
         variant = self
 
@@ -2546,7 +2562,8 @@ class product_product(models.Model):
                 barcode_updated = True
                 att = { "id": att["id"], "value_name": variant.barcode }
 
-            updated_attributes.append(att)
+            if att:
+                updated_attributes.append(att)
 
         if not sku_updated and set_sku and variant.default_code:
             updated_attributes.append( { "id": "SELLER_SKU", "value_name": variant.default_code } )
@@ -2554,7 +2571,52 @@ class product_product(models.Model):
         if not barcode_updated and set_barcode and variant.barcode:
             updated_attributes.append( { "id": "GTIN", "value_name": variant.barcode } )
 
+        var_attributes_grid = variant._update_row_size_grid_attribute( attributes=attributes, var_info = var_info )
+        _logger.info("var_attributes_grid:"+str(var_attributes_grid))
+        if var_attributes_grid:
+            updated_attributes.append(var_attributes_grid)
+
         return updated_attributes
+
+    def _update_row_size_grid_attribute( self, attributes=[], var_info = [] ):
+
+        variant = self
+
+        updated_row_size_attribute = {}
+        SIZE_GRID_ROW_ID_updated = False
+        Has_SIZE = False
+        SIZE_value = None
+        GRID_ROW_SIZE_id = None
+        _logger.info("_update_row_size_grid_attribute var_info:"+str(var_info))
+
+        attribute_combinations = (var_info and "attribute_combinations" in var_info and var_info["attribute_combinations"])
+
+        for att_comb in attribute_combinations:
+            _logger.info("_update_row_size_grid_attribute att_comb:"+str(att_comb))
+            if (att_comb and "id" in att_comb and att_comb["id"] == "SIZE"):
+                Has_SIZE = True
+                SIZE_value = att_comb["value_name"]
+                break;
+
+        if (Has_SIZE and SIZE_value and "meli_grid_chart_id" in self._fields and self.meli_grid_chart_id):
+
+            #search for the only row id
+            GRID_ROW_SIZE_id = self.meli_grid_chart_id.search_row_id(value=SIZE_value)
+
+            if GRID_ROW_SIZE_id:
+                #founded and assign
+                for att in attributes:
+
+                    if ("id" in att and att["id"]=="SIZE_GRID_ROW_ID"):
+                        SIZE_GRID_ROW_ID_updated = True
+                        updated_row_size_attribute = { "id": "SIZE_GRID_ROW_ID", "value_name": str(GRID_ROW_SIZE_id) }
+
+                if not SIZE_GRID_ROW_ID_updated:
+                    updated_row_size_attribute = { "id": "SIZE_GRID_ROW_ID", "value_name": str(GRID_ROW_SIZE_id) }
+
+
+        return updated_row_size_attribute
+
 
     def _update_sale_terms( self, meli, productjson=None ):
         #check and fix warranty:
@@ -2617,14 +2679,15 @@ class product_product(models.Model):
             if meli.need_login():
                 return meli.redirect_login()
         #return {}
-        #description_sale =  product_tmpl.description_sale
-        translation = self.env['ir.translation'].search([('res_id','=',product_tmpl.id),
-                                                        ('name','=','product.template,description_sale'),
-                                                        ('lang','=','es_AR')])
-        if translation:
+        description_sale =  product_tmpl.description_sale
+        #translation = self.env['ir.translation'].search([('res_id','=',product_tmpl.id),
+        #                                                ('name','=','product.template,description_sale'),
+        #                                                ('lang','=','es_MX')])
+        #if translation:
             #_logger.info("translation")
             #_logger.info(translation.value)
-            description_sale = translation.value
+        #    description_sale = translation.value
+
 
         productjson = False
         if (product.meli_id):
@@ -3049,6 +3112,7 @@ class product_product(models.Model):
                         varias = {
                             "title": body["title"],
                             "pictures": body["pictures"],
+                            "attributes": attributes or ("attributes" in body and body["attributes"]),
                             "variations": []
                         }
 
@@ -3087,7 +3151,7 @@ class product_product(models.Model):
                                     vars_updated+= var_product
 
                             #TODO: add SKU
-                            var_attributes = var_product._update_sku_attribute( attributes=("attributes" in var_info and var_info["attributes"]) or [], set_sku=config.mercadolibre_post_default_code)
+                            var_attributes = var_product._update_sku_attribute( attributes=("attributes" in var_info and var_info["attributes"]) or [], set_sku=config.mercadolibre_post_default_code,var_info=var_info)
 
                             var = {
                                 "id": str(var_info["id"]),
@@ -3110,7 +3174,7 @@ class product_product(models.Model):
                                 var_info = _all_variations[aix]
                                 for pvar in _new_candidates:
                                     if (pvar._is_product_combination(var_info)):
-                                        var_attributes = pvar._update_sku_attribute( attributes=("attributes" in var_info and var_info["attributes"]), set_sku=config.mercadolibre_post_default_code )
+                                        var_attributes = pvar._update_sku_attribute( attributes=("attributes" in var_info and var_info["attributes"]), set_sku=config.mercadolibre_post_default_code,var_info=var_info )
                                         var_attributes and var_info.update({"attributes": var_attributes })
                                         varias["variations"].append(var_info)
                                         _logger.info("news:")
@@ -3168,7 +3232,8 @@ class product_product(models.Model):
                 varias = {
                     "title": body["title"],
                     "pictures": body["pictures"],
-                    "variations": []
+                    "variations": [],
+                    "attributes": attributes or ("attributes" in body and body["attributes"])
                 }
                 var_pics = []
                 if (len(body["pictures"])):
@@ -3184,7 +3249,7 @@ class product_product(models.Model):
                         "available_quantity": product.meli_available_quantity,
                         "picture_ids": var_pics
                     }
-                    var_attributes = product._update_sku_attribute( attributes=("attributes" in var_info and var_info["attributes"]), set_sku=config.mercadolibre_post_default_code )
+                    var_attributes = product._update_sku_attribute( attributes=("attributes" in var_info and var_info["attributes"]), set_sku=config.mercadolibre_post_default_code, var_info=var_info )
                     var_attributes and var_info.update({"attributes": var_attributes })
                     varias["variations"].append(var_info)
 
@@ -3731,7 +3796,7 @@ class product_product(models.Model):
     meli_model = fields.Char(string="Modelo",size=256)
     meli_brand = fields.Char(string="Marca",size=256)
     meli_default_stock_product = fields.Many2one("product.product","Producto de referencia para stock")
-    meli_id_variation = fields.Char( string='Variation Id',help='Id de Variante de Meli', size=256)
+    meli_id_variation = fields.Char( string='Variation Id',help='Id de Variante de Meli', size=256, index=True )
 
     meli_catalog_listing = fields.Boolean(string='Catalog Listing')
     meli_catalog_product_id = fields.Char(string='Catalog Product Id', size=256)
@@ -3754,7 +3819,12 @@ class product_product(models.Model):
         for var in self:
             var.meli_stock_moves_update = (var.stock_move_ids and var.stock_move_ids.sorted(lambda o: o.create_date, reverse=True)[0].create_date) or False
 
-    meli_stock_moves_update = fields.Datetime(compute=_meli_stock_moves_update,string="Stock Last Move",help="Ultimo movimiento de stock")
+    def process_meli_stock_moves_update( self ):
+        for var in self:
+            var._meli_stock_moves_update()
+
+
+    meli_stock_moves_update = fields.Datetime(compute=_meli_stock_moves_update,string="Stock Last Move",help="Ultimo movimiento de stock",store=True,index=True)
 
     meli_stock_error = fields.Char(string="Stock Error",index=True)
     meli_price_error = fields.Char(string="Price Error",index=True)

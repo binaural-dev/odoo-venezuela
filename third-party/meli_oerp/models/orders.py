@@ -138,7 +138,7 @@ class sale_order(models.Model):
     meli_shipping_id =  fields.Char('Meli Shipping Id')
     meli_shipment = fields.Many2one('mercadolibre.shipment',string='Meli Shipment Obj')
     meli_shipment_logistic_type = fields.Char(string="Logistic Type",index=True)
-    meli_update_forbidden = fields.Boolean(string="Bloqueado para actualizar desde ML",default=False, index=True)
+    meli_update_forbidden = fields.Boolean(string="Bloqueado para actualizar desde ML",default=True, index=True)
 
     def action_confirm(self):
         #_logger.info("meli order action_confirm: " + str(self.mapped("name")) )
@@ -396,8 +396,6 @@ class sale_order(models.Model):
                 so.sudo().write( { 'user_id': seller_user.id } )
             else:
                 so.sudo().write( { 'user_id': None } )
-
-
 
     def meli_oerp_update( self ):
         res = {}
@@ -1696,7 +1694,7 @@ class mercadolibre_orders(models.Model):
                 post_related = posting_obj.search([
                                                 ('meli_id','=',Item['item']['id']),
                                                 ('meli_variation_id','=',Item['item']['variation_id'])
-                                                ])
+                                                ],limit=1)
                 if (post_related):
                     pass;
                     #_logger.info("order post related by meli_id:"+str(post_related))
@@ -1851,7 +1849,6 @@ class mercadolibre_orders(models.Model):
                     'order_item_variation_id': Item['item']['variation_id'],
                     'order_item_title': Item['item']['title'],
                     'order_item_category_id': Item['item']['category_id'],
-                    #'unit_price': Item['unit_price'],
                     'unit_price': Item['full_unit_price'],
                     'quantity': Item['quantity'],
                     'currency_id': Item['currency_id'],
@@ -2612,6 +2609,8 @@ class sale_order_cancel_wiz_meli(models.TransientModel):
     _name = "sale.order.cancel.wiz.meli"
     _description = "Cancel Order"
 
+    cancel_blocked = fields.Boolean(string="Desbloquear y Cancelar", default=True)
+
     def cancel_order(self, context=None):
         context = context or self.env.context
         orders_ids = ('active_ids' in context and context['active_ids']) or []
@@ -2625,6 +2624,12 @@ class sale_order_cancel_wiz_meli(models.TransientModel):
                 _logger.info("cancel_order: %s " % (order_id) )
 
                 order = orders_obj.browse(order_id)
+                if (order and order.state in ["done"] and self.cancel_blocked):
+                    #asd
+                    _logger.info("cancel_order: unblock")
+                    order.action_unlock()
+                    order.action_cancel()
+
                 if (order and order.state in ["draft","sale","sent"]):
                     order.action_cancel()
 
