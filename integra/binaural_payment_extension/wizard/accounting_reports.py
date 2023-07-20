@@ -156,14 +156,14 @@ class WizardAccountingReports(models.TransientModel):
         retention = ret_lines.mapped("retention_id")
         ret_vals = dict()
 
-        if not ret_lines or self._check_future_retention_dates(retention.date):
+        if not ret_lines:
             return {
                 "date_retention": "",
                 "number_retention": "",
                 "iva_retained": "",
             }
 
-        if ret_lines and not is_purchase and self._check_future_retention_dates(retention.date_accounting):
+        if ret_lines and self._check_future_retention_dates(retention.date_accounting):
             return {
                 "date_retention": "",
                 "number_retention": "",
