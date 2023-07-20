@@ -243,7 +243,11 @@ class AccountMove(models.Model):
 
         # If the move is a retention payment we need to use the retention_foreign_amount of the
         # payment to compute the foreign debit/credit.
-        if payment and "retention_foreign_amount" in self.env["account.payment"]._fields:
+        if (
+            payment
+            and "retention_foreign_amount" in self.env["account.payment"]._fields
+            and payment.is_retention
+        ):
             for line in self.line_ids:
                 if line.debit != 0:
                     line.foreign_debit = payment.retention_foreign_amount
