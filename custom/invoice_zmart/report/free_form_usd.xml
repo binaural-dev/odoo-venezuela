@@ -26,7 +26,7 @@
                             <section id="segmento_1" style="display: flex; flex-direction: row; justify-content: flex-end; align-items: center;font-size:13px">
                                 <div style="margin-left: 800px;">
                                     <div>
-                                        <div>Factura:<span t-field="o.correlative"/></div>
+                                        <div>Factura:<span t-field="o.name"/></div>
                                         <div>Fecha de Emision:<span t-field="o.invoice_date"/></div>
                                         <div>Cond. Pago:<span t-field="o.invoice_payment_term_id"/></div>
                                     </div>
@@ -46,7 +46,7 @@
                             <div class="page">
                             
                                 <t t-set="display_discount" t-value="any(l.discount for l in o.invoice_line_ids)"/>
-                                    <table class="table table-sm o_main_table table-borderless" name="invoice_line_table" style="font-size:12px;">
+                                    <table class="table table-sm o_main_table table-borderless" name="invoice_line_table" style="font-size:12px;margin-top:-40px">
                                         <thead>
                                             <tr class="border-bottom border-dark" style="border-top: 1px solid black;">
                                                 <th name="th_description" class="text-start"><span>Código</span></th>
