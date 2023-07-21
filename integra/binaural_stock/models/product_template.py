@@ -1,6 +1,7 @@
 import logging
 
 from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -24,6 +25,12 @@ class ProductTemplate(models.Model):
         # TDE FIXME: this button is very interesting
         # Maldito Raiver e.e
         return True
+
+    @api.constrains("taxes_id")
+    def _check_taxes_id(self):
+        for product in self:
+            if len(product.taxes_id) != 1:
+                raise ValidationError(_("This product must have only one tax."))
 
     @api.depends("qty_available", "outgoing_qty")
     def _compute_available_quantity(self):
