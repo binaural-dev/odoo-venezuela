@@ -26,15 +26,16 @@ class AccountPayment(models.Model):
                     "You must configure the advance customer account and the advance supplier account in the company settings"
                 )
             )
-        if self.is_advance_payment:
-            if self.partner_type == "customer":
-                self.destination_account_id = customer_account
-                return
-            elif self.partner_type == "supplier":
-                self.destination_account_id = supplier_account
-                return
-        else:
-            return super(AccountPayment, self)._compute_destination_account_id()
+        for payment in self:
+            if payment.is_advance_payment:
+                if payment.partner_type == "customer":
+                    payment.destination_account_id = customer_account
+                    return
+                elif payment.partner_type == "supplier":
+                    payment.destination_account_id = supplier_account
+                    return
+            else:
+                return super(AccountPayment, self)._compute_destination_account_id()
 
     def _seek_for_lines(self):
         """Helper used to dispatch the journal items between:
