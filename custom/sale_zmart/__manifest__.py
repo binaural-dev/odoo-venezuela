@@ -8,7 +8,7 @@
     "category": "Sale/Sale",
     "version": "16.1",
     "depends": [
-        "binaural_sale",
+        "sale","invoice_zmart"
     ],
     "data": [
         'data/res_group.xml',
