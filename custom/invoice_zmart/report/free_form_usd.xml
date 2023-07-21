@@ -34,7 +34,7 @@
                             </section>
                             <section id="segmento_1" style="display: flex; flex-direction: row;font-size:13px">
                                 <hr style="border: none; visibility: hidden;"/>
-                                <div style="margin-bottom: 5px;margin-top:50px">Cliente: <span t-field="o.partner_id.name"/></div>
+                                <div style="margin-bottom: 5px;margin-top:10px">Cliente: <span t-field="o.partner_id.name"/></div>
                                 <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.vat"/></div>
                                 <div style="margin-bottom: 5px;">Correo del Comprador: <span t-field="o.partner_id.email"/></div>
                                 <div style="margin-bottom: 5px;">Dirección: <span t-field="o.partner_id.contact_address_complete"/></div>
