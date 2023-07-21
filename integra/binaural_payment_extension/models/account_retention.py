@@ -4,6 +4,7 @@ from odoo.exceptions import UserError
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
 import json
+from odoo.tools.float_utils import float_round
 
 
 class AccountRetention(models.Model):
@@ -203,19 +204,55 @@ class AccountRetention(models.Model):
 
             for line in retention.retention_line_ids:
                 if line.move_id.move_type in ("in_refund", "out_refund"):
-                    retention.total_invoice_amount -= line.invoice_amount
-                    retention.total_iva_amount -= line.iva_amount
-                    retention.total_retention_amount -= line.retention_amount
-                    retention.foreign_total_invoice_amount -= line.foreign_invoice_amount
-                    retention.foreign_total_iva_amount -= line.foreign_iva_amount
-                    retention.foreign_total_retention_amount -= line.foreign_retention_amount
+                    retention.total_invoice_amount -= float_round(
+                        line.invoice_amount,
+                        precision_digits=retention.company_currency_id.decimal_places,
+                    )
+                    retention.total_iva_amount -= float_round(
+                        line.iva_amount,
+                        precision_digits=retention.company_currency_id.decimal_places,
+                    )
+                    retention.total_retention_amount -= float_round(
+                        line.retention_amount,
+                        precision_digits=retention.company_currency_id.decimal_places,
+                    )
+                    retention.foreign_total_invoice_amount -= float_round(
+                        line.foreign_invoice_amount,
+                        precision_digits=retention.foreign_currency_id.decimal_places,
+                    )
+                    retention.foreign_total_iva_amount -= float_round(
+                        line.foreign_iva_amount,
+                        precision_digits=retention.foreign_currency_id.decimal_places,
+                    )
+                    retention.foreign_total_retention_amount -= float_round(
+                        line.foreign_retention_amount,
+                        precision_digits=retention.foreign_currency_id.decimal_places,
+                    )
                 else:
-                    retention.total_invoice_amount += line.invoice_amount
-                    retention.total_iva_amount += line.iva_amount
-                    retention.total_retention_amount += line.retention_amount
-                    retention.foreign_total_invoice_amount += line.foreign_invoice_amount
-                    retention.foreign_total_iva_amount += line.foreign_iva_amount
-                    retention.foreign_total_retention_amount += line.foreign_retention_amount
+                    retention.total_invoice_amount += float_round(
+                        line.invoice_amount,
+                        precision_digits=retention.company_currency_id.decimal_places,
+                    )
+                    retention.total_iva_amount += float_round(
+                        line.iva_amount,
+                        precision_digits=retention.company_currency_id.decimal_places,
+                    )
+                    retention.total_retention_amount += float_round(
+                        line.retention_amount,
+                        precision_digits=retention.company_currency_id.decimal_places,
+                    )
+                    retention.foreign_total_invoice_amount += float_round(
+                        line.foreign_invoice_amount,
+                        precision_digits=retention.foreign_currency_id.decimal_places,
+                    )
+                    retention.foreign_total_iva_amount += float_round(
+                        line.foreign_iva_amount,
+                        precision_digits=retention.foreign_currency_id.decimal_places,
+                    )
+                    retention.foreign_total_retention_amount += float_round(
+                        line.foreign_retention_amount,
+                        precision_digits=retention.foreign_currency_id.decimal_places,
+                    )
 
     @api.onchange("partner_id")
     def onchange_partner_id(self):
