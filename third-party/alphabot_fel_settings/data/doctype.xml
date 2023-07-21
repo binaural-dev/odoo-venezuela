@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<record id="doc_type_01" model="alphabot.fel.doctype">
+		<field name="name">Factura de operación interna</field>
+		<field name="code">01</field>
+		<field name="nick">fact_interna</field>
+	</record>
+	<record id="doc_type_02" model="alphabot.fel.doctype">
+		<field name="name">Factura de importación</field>
+		<field name="code">02</field>
+		<field name="nick">fact_importacion</field>
+	</record>
+	<record id="doc_type_03" model="alphabot.fel.doctype">
+		<field name="name">Factura de exportación</field>
+		<field name="code">03</field>
+		<field name="nick">fact_exportacion</field>
+	</record>
+	<record id="doc_type_04" model="alphabot.fel.doctype">
+		<field name="name">Nota de Crédito referente a una FE</field>
+		<field name="code">04</field>
+		<field name="nick">dev_fel</field>
+	</record>
+	<record id="doc_type_05" model="alphabot.fel.doctype">
+		<field name="name">Nota de Débito referente a una FE</field>
+		<field name="code">05</field>
+		<field name="nick">debit_fel</field>
+	</record>
+	<record id="doc_type_06" model="alphabot.fel.doctype">
+		<field name="name">Nota de Crédito genérica</field>
+		<field name="code">06</field>
+		<field name="nick">dev_generica</field>
+	</record>
+	<record id="doc_type_07" model="alphabot.fel.doctype">
+		<field name="code">Nota de Débito genérica</field>
+		<field name="code">07</field>
+		<field name="nick">debit_generica</field>
+	</record>
+	<record id="doc_type_08" model="alphabot.fel.doctype">
+		<field name="name">Factura de Zona Franca</field>
+		<field name="code">08</field>
+		<field name="nick">fact_zona_franca</field>
+	</record>
+	<record id="doc_type_09" model="alphabot.fel.doctype">
+		<field name="name">Reembolso</field>
+		<field name="code">09</field>
+		<field name="nick">reembolso</field>
+	</record>	
+</odoo>

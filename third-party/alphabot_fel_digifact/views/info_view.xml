@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="account_move_form_fel_inherited" model="ir.ui.view">
+            <field name="name">Account Move</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form"/>
+            <field name="arch" type="xml">
+               <xpath expr="//header" position="after">
+                    <field name="fel_alerta_sin_folios" invisible="1"/>
+                    <div role="alert" class="alert alert-danger mb-0"
+                         attrs="{'invisible':['|',('fel_alerta_sin_folios','=',False),('move_type','not in',('out_invoice','out_refund','out_receipt'))]}">
+                        <strong><field name="fel_alerta_sin_folios"/></strong>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

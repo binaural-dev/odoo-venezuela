@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>  
+				
+		<menuitem id="menu_fel_panama_root"
+                  name="Factura Electrónica"
+                  sequence="110"
+                  groups="account.group_account_manager"
+                  parent="account.menu_finance" />									
+    </data>		
+</odoo>
