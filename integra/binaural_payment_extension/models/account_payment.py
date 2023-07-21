@@ -1,4 +1,5 @@
 from odoo import api, fields, models, Command
+from odoo.tools.float_utils import float_round
 
 
 class AccountPayment(models.Model):
@@ -88,5 +89,10 @@ class AccountPayment(models.Model):
     def _compute_retention_foreign_amount(self):
         for payment in self:
             payment.retention_foreign_amount = sum(
-                payment.retention_line_ids.mapped("foreign_retention_amount")
+                payment.retention_line_ids.mapped(
+                    lambda l: float_round(
+                        l.foreign_retention_amount,
+                        precision_digits=l.retention_id.foreign_currency_id.decimal_places,
+                    )
+                )
             )
