@@ -212,7 +212,7 @@ class AccountMove(models.Model):
     def _check_taxes_id(self):
         for moves in self:
             for line in moves.invoice_line_ids:
-                if len(line.tax_ids) != 1 and line.display_type == "product":
+                if len(line.tax_ids) != 1 and line.display_type == "product" and self.env.company.unique_tax:
                     raise ValidationError(_("This product must have only one tax."))
 
     def compute_line_ids_foreign_debit_and_credit(self):

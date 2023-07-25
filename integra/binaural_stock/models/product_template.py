@@ -29,7 +29,7 @@ class ProductTemplate(models.Model):
     @api.constrains("taxes_id")
     def _check_taxes_id(self):
         for product in self:
-            if len(product.taxes_id) != 1:
+            if len(product.taxes_id) != 1 and self.env.company.unique_tax:
                 raise ValidationError(_("This product must have only one tax."))
 
     @api.depends("qty_available", "outgoing_qty")

@@ -70,7 +70,7 @@ class SaleOrder(models.Model):
     def _check_taxes_id(self):
         for order in self:
             for line in order.order_line:
-                if len(line.tax_id) != 1 and not line.display_type:
+                if len(line.tax_id) != 1 and not line.display_type and self.env.company.unique_tax:
                     raise ValidationError(_("All products must contain only one tax."))
 
     @api.depends("tax_totals")

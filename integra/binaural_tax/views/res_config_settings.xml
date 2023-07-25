@@ -20,6 +20,14 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="base_igtf_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="unique_tax"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="unique_tax"/>
+                            </div>
+                        </div>
                         <div class="col-12 col-lg-6 o_setting_box" id="base_taxes_setting">
                             <h3>Sale</h3>
                             <div class="o_setting_left_pane">
