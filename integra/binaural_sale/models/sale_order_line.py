@@ -25,7 +25,8 @@ class PurchaseOrderLine(models.Model):
         for line in self:
             line.foreign_price = line.price_unit * line.foreign_inverse_rate
 
-    @api.depends("product_uom_qty", "foreign_price")
+    @api.depends("product_uom_qty", "foreign_price","discount")
     def _compute_foreign_subtotal(self):
         for line in self:
-            line.foreign_subtotal = line.foreign_price * line.product_uom_qty
+            line_discount_price_unit = line.foreign_price * (1 - (line.discount / 100.0))
+            line.foreign_subtotal = line_discount_price_unit * line.product_uom_qty
