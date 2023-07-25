@@ -42,14 +42,10 @@ class ResPartner(models.Model):
                 prefix_vat = vals.get("prefix_vat")
                 name = vals.get("name")
                 vat = vals.get("vat")
-                if prefix_vat == "V" and not name:
+                if prefix_vat == "V" and not name and prefix_vat in ["V", "E"]:
                     name, flag = binaural_cne_query.get_default_name_by_vat(self, prefix_vat, vat)
                     if not flag:
-                        raise MissingError(
-                            _(
-                                "Error to connect with CNE, please check your internet connection or try again later"
-                            )
-                        )
+                       continue 
                     vals["name"] = name
         return super(ResPartner, self).create(vals_list)
 
@@ -68,19 +64,11 @@ class ResPartner(models.Model):
         Args:
             prefix_vat (string): prefix of the vat number (V)
             vat (string): vat number of the person, this number is unique in Venezuela
-
-        Raises:
-            UserError: Error to connect with CNE, please check your internet connection or try again later
-
         """
-        if self.vat:
+        if self.vat and not self.name and self.prefix_vat in ["V", "E"]:
             self._check_vat()
             name, flag = binaural_cne_query.get_default_name_by_vat(self, self.prefix_vat, self.vat)
             if not flag:
-                raise MissingError(
-                    _(
-                        "Error to connect with CNE, please check your internet connection or try again later"
-                    )
-                )
+                return
             for record in self:
                 record.name = name
