@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230605\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230710\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-19 19:21+0000\n"
-"PO-Revision-Date: 2023-06-19 19:21+0000\n"
+"POT-Creation-Date: 2023-07-25 19:40+0000\n"
+"PO-Revision-Date: 2023-07-25 19:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -81,6 +81,11 @@ msgstr "Cambiar precio en orden de POS"
 #: model:res.groups,name:binaural_pos.group_change_qty_on_pos_order
 msgid "Change quantity on POS order"
 msgstr "Cambiar cantidad en orden de POS"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "Change state to draft in account moves from POS"
+msgstr "Cambiar el estado a borrador de asientos contables creados desde POS"
 
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_res_company
@@ -314,6 +319,12 @@ msgid "Point of Sale Session"
 msgstr "Sesión TPV"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_res_company__pos_move_to_draft
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_move_to_draft
+msgid "Pos Move To Draft"
+msgstr "Mover asientos contables borrador"
+
+#. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_config__pos_show_free_qty
 #: model:ir.model.fields,field_description:binaural_pos.field_res_company__pos_show_free_qty
 #: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_show_free_qty
@@ -432,6 +443,15 @@ msgstr ""
 #, python-format
 msgid "Validate"
 msgstr "Validar"
+
+#. module: binaural_pos
+#. odoo-python
+#: code:addons/binaural_pos/models/account_move.py:0
+#, python-format
+msgid ""
+"You cannot modify a journal entry linked to a POS session that is still "
+"opened"
+msgstr "No puede modificar un asiento contable vinculado a una sesión de POS que aún está abierta"
 
 #. module: binaural_pos
 #. odoo-javascript
