@@ -88,6 +88,13 @@ msgid "Change state to draft in account moves from POS"
 msgstr "Cambiar el estado a borrador de asientos contables creados desde POS"
 
 #. module: binaural_pos
+#. odoo-python
+#: code:addons/binaural_pos/models/pos_session.py:0
+#, python-format
+msgid "Combine %s POS payments from %s"
+msgstr ""
+
+#. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_res_company
 msgid "Companies"
 msgstr "Compañías"
