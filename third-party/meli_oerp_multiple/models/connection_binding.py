@@ -1083,6 +1083,8 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
     meli_stock_moves_update = fields.Datetime(compute=_meli_stock_moves_update,string="Stock Last Move",help="Ultimo movimiento de stock")
 
+    #meli_stock_moves_ids = fields.One2many(related="product.stock_move_ids")
+
     def _meli_stock_status( self ):
         for bind in self:
 
@@ -1580,10 +1582,14 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                     if (new_price>0):
                         bind.meli_price = new_price
 
-            if (product.meli_currency and product.meli_currency == 'MXN'):
+            bind.meli_price = round(bind.meli_price,2)
+
+            if (product_tmpl.meli_currency and (product_tmpl.meli_currency == 'MXN' or product_tmpl.meli_currency == 'USD')):
                 bind.meli_price = str((float(bind.meli_price)))
+            elif (product_tmpl.meli_currency and product_tmpl.meli_currency == 'CLP'):
+                bind.meli_price = str( int( int( math.floor(int(bind.meli_price) / 100 ) * 100 + 90 ) ) )
             else:
-                bind.meli_price = math.ceil(float(bind.meli_price))
+                bind.meli_price = math.ceil(bind.meli_price)
                 bind.meli_price = str(int(float(bind.meli_price)))
 
             _logger.info("update_price meli_price (forced?): "+str(meli_price))
