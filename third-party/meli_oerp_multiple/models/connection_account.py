@@ -1482,7 +1482,7 @@ class MercadoLibreConnectionAccount(models.Model):
             _logger.info("query: "+str(query)+" results update null:"+str(results))
 
             #query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.stock_update IS NOT NULL""" % (account.id)
-            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.meli_stock_status != 'update' AND melip.meli_stock_status != 'updated'""" % (account.id)
+            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.meli_stock_status != 'update' AND melip.meli_stock_status != 'updated' AND melip.meli_stock_status != 'revision_fullfilment' AND melip.meli_stock_status != 'revision_error' AND melip.meli_stock_status != 'revision_unmoved'""" % (account.id)
             cr = self._cr
             respquery = cr.execute(query)
             results = cr.fetchall()

@@ -2,7 +2,6 @@ Este módulo permite visualizar los reportes financieros de odoo tanto en la
 moneda base como en la moneda alterna (Bolívares o dólares) de la empresa.
 Estos son:
 
-* Estado de Resultado
 * Balance de Situación
 * Resumen Ejecutivo
 * Pérdidas y Ganancias
