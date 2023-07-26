@@ -1,0 +1,89 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* libreria_reports
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20230710\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-07-19 13:21+0000\n"
+"PO-Revision-Date: 2023-07-19 13:21+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: libreria_reports
+#: model:ir.model.fields.selection,name:libreria_reports.selection__product_label_layout__print_format__3x18
+msgid "3 x 18"
+msgstr ""
+
+#. module: libreria_reports
+#: model_terms:ir.ui.view,arch_db:libreria_reports.report_simple_label_dymo
+msgid "Base imponible:"
+msgstr ""
+
+#. module: libreria_reports
+#: model:ir.model,name:libreria_reports.model_product_label_layout
+msgid "Choose the sheet layout to print the labels"
+msgstr "Elija el diseño de la hoja para imprimir etiquetas"
+
+#. module: libreria_reports
+#: model:ir.model,name:libreria_reports.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: libreria_reports
+#: model:ir.model,name:libreria_reports.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
+
+#. module: libreria_reports
+#: model:ir.model.fields,field_description:libreria_reports.field_product_label_layout__print_format
+msgid "Format"
+msgstr "Formatear"
+
+#. module: libreria_reports
+#: model_terms:ir.ui.view,arch_db:libreria_reports.report_simple_label_dymo
+msgid "IVA:"
+msgstr ""
+
+#. module: libreria_reports
+#: model:ir.model.fields,field_description:libreria_reports.field_product_product__lib_reordering_max_qty
+#: model:ir.model.fields,field_description:libreria_reports.field_product_template__lib_reordering_max_qty
+msgid "Lib Reordering Max Qty"
+msgstr "Maximo"
+
+#. module: libreria_reports
+#: model:ir.model.fields,field_description:libreria_reports.field_product_product__lib_reordering_min_qty
+#: model:ir.model.fields,field_description:libreria_reports.field_product_template__lib_reordering_min_qty
+msgid "Lib Reordering Min Qty"
+msgstr "Minimo"
+
+#. module: libreria_reports
+#: model_terms:ir.ui.view,arch_db:libreria_reports.report_simple_label_dymo
+msgid "MAX:"
+msgstr ""
+
+#. module: libreria_reports
+#: model_terms:ir.ui.view,arch_db:libreria_reports.report_simple_label_dymo
+msgid "MIN:"
+msgstr ""
+
+#. module: libreria_reports
+#: model:ir.model,name:libreria_reports.model_product_template
+msgid "Product"
+msgstr "Producto"
+
+#. module: libreria_reports
+#: model_terms:ir.ui.view,arch_db:libreria_reports.res_config_settings_view_form_libreria
+msgid "Stock Settings"
+msgstr "Configuracion de Inventario (Libreria)"
+
+#. module: libreria_reports
+#: model:ir.model.fields,field_description:libreria_reports.field_res_company__store_location_id
+#: model:ir.model.fields,field_description:libreria_reports.field_res_config_settings__store_location_id
+msgid "Store Location"
+msgstr "Tienda"
