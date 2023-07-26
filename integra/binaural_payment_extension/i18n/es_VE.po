@@ -2227,7 +2227,7 @@ msgstr "La factura %s no tiene impuesto"
 #: code:addons/binaural_payment_extension/models/account_move.py:0
 #, python-format
 msgid "The invoice has no tax."
-msgstr "ra factura no tiene impuesto"
+msgstr "La factura no tiene impuesto"
 
 #. module: binaural_payment_extension
 #. odoo-python
