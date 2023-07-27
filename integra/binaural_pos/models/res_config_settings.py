@@ -19,6 +19,7 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.module_binaural_pos_advance_payment", readonly=False
     )
     pos_tax_inside = fields.Boolean(related="company_id.pos_tax_inside", readonly=False)
+    pos_move_to_draft = fields.Boolean(related="company_id.pos_move_to_draft", readonly=False)
     receipt_journal_id = fields.Many2one(
         "account.journal", related="pos_config_id.receipt_journal_id", readonly=False
     )

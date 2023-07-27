@@ -10,7 +10,6 @@ class ResPartnerInherit(models.Model):
     seller_id = fields.Many2one(
         "hr.employee",
         string="Seller",
-        required=True,
         tracking=True,
         help="Seller associated with the partner.",
     )

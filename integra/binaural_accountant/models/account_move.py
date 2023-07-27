@@ -1,8 +1,11 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tools import index_exists, drop_index
 from lxml import etree
 from collections import defaultdict
+
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
@@ -204,6 +207,13 @@ class AccountMove(models.Model):
         for move in self:
             move.compute_line_ids_foreign_debit_and_credit()
         return res
+
+    @api.constrains("invoice_line_ids")
+    def _check_taxes_id(self):
+        for moves in self:
+            for line in moves.invoice_line_ids:
+                if len(line.tax_ids) != 1 and line.display_type == "product" and self.env.company.unique_tax:
+                    raise ValidationError(_("This product must have only one tax."))
 
     def compute_line_ids_foreign_debit_and_credit(self):
         """
