@@ -1,8 +1,8 @@
-from odoo import models, fields, tools, _
+from odoo import models, fields, _
 from datetime import date
 from dateutil.relativedelta import relativedelta
 import xlsxwriter
-from odoo.exceptions import MissingError
+from odoo.exceptions import MissingError, ValidationError
 from io import BytesIO
 import base64
 import pandas
@@ -26,6 +26,9 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
     def print_xlsx(self):
         domain = self._get_municipal_retention_domain()
         retentions_count = self.env["account.retention"].search_count(domain)
+
+        if not self.env.company.tax_authorities_name:
+            raise ValidationError(_("The company has no tax authorities name"))
 
         if not retentions_count:
             raise MissingError(
