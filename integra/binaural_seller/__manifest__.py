@@ -5,7 +5,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.3",
+    "version": "16.4",
     "category": "Hr/Invoicing/Account",
     "depends": [
         "account",
@@ -17,6 +17,7 @@
     "data": [
         "views/account_move.xml",
         "views/res_partner.xml",
+        "views/res_config_settigs.xml",
     ],
     "images": ["static/description/icon.png"],
 }

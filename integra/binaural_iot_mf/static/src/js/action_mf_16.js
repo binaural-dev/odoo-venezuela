@@ -40,6 +40,8 @@ export class IoTFiscalMachineComponent extends Widget {
       "programacion": _t("Programming"),
       "status_1": _t("Get Status 1"),
       "reprint_document": _t("Reprint Document"),
+      "reprint_type": _t("Reprint"),
+      "reprint_type_date": _t("Reprint Date"),
       "payment_method": _t("Set Payment Method"),
       "command": _t("Send Command"),
     }
@@ -113,6 +115,65 @@ export class IoTFiscalMachineComponent extends Widget {
      this.iotDevice.action({
        action: "logger",
        data: `PE${request.payment_methods}${request.payment_method_name}`.toUpperCase(),
+     })
+       .then(data => {
+         onIoTActionResult(data, this.env)
+       })
+       .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+    
+  }
+
+  async reprint_type_date(){
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    const device = this.props.record.resId
+
+    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
+      model: 'iot.device',
+      method: 'get_range_reprint',
+      args: [device],
+      kwargs: {},
+    })
+
+     this.iotDevice.addListener(({ value }) => {
+       this.iotDevice.removeListener();
+     });
+
+     this.iotDevice.action({
+       action: "reprint_date",
+       data: request,
+     })
+       .then(data => {
+         onIoTActionResult(data, this.env)
+       })
+       .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+    
+  }
+  async reprint_type(){
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    const device = this.props.record.resId
+
+    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_reprint", {
+      model: 'iot.device',
+      method: 'get_range_reprint',
+      args: [device],
+      kwargs: {},
+    })
+
+     this.iotDevice.addListener(({ value }) => {
+       this.iotDevice.removeListener();
+     });
+
+     this.iotDevice.action({
+       action: "reprint_type",
+       data: request,
      })
        .then(data => {
          onIoTActionResult(data, this.env)

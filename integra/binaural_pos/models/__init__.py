@@ -7,3 +7,4 @@ from . import res_config_settings
 from . import res_company
 from . import res_users
 from . import pos_payment
+from . import account_move
