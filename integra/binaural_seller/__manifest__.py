@@ -17,7 +17,7 @@
     "data": [
         "views/account_move.xml",
         "views/res_partner.xml",
-        "views/res_config_settigs.xml",
+        "views/res_config_settings.xml",
     ],
     "images": ["static/description/icon.png"],
 }
