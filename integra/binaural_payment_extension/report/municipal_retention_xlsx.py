@@ -122,7 +122,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         worksheet2.write("I" + str(col2 + 1), total_retained, money_format)
         boldWithBorderTop = workbook.add_format({"bold": 1, "top": 1})
 
-        worksheet2.write("B" + str(col2 + 8), "Firma del Beneficiario", boldWithBorderTop)
+        worksheet2.write("B" + str(col2 + 8), "Firma del Agente de Retención", boldWithBorderTop)
 
         worksheet2.write("F" + str(col2 + 8), "Firma del Beneficiario", boldWithBorderTop)
 
