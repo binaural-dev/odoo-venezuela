@@ -13,7 +13,7 @@ class ResConfigSettings(models.TransientModel):
     )
 
     initial_seller = fields.Many2one(
-                                string='Default seller when creating contact',
-                                related='company_id.initial_seller',
-                                readonly=False,
-                            )
+        string="Default seller when creating contact",
+        related="company_id.initial_seller",
+        readonly=False,
+    )
