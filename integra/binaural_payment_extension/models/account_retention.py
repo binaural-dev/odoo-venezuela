@@ -611,7 +611,7 @@ class AccountRetention(models.Model):
         }
 
     def _set_sequence(self):
-        for retention in self:
+        for retention in self.filtered(lambda r: not r.number):
             sequence_number = ""
             if retention.type_retention == "iva":
                 sequence_number = retention.get_sequence_iva_retention().next_by_id()
