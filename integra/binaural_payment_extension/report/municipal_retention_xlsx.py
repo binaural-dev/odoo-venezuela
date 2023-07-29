@@ -131,10 +131,8 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         )
 
         if any(signature) and signature.signature:
-            logo = tools.ImageProcess(signature.signature)
-            logo = logo.resize(200, 200)
-            logo = logo.image_base64()
-            image_signature = BytesIO(base64.b64decode(logo))
+            logo = tools.image_process(base64.b64decode(signature.signature), (200, 200))
+            image_signature = BytesIO(logo)
             worksheet2.insert_image(
                 "F" + str(col2 + 4), "image.png", {"image_data": image_signature}
             )
