@@ -940,7 +940,7 @@ class product_product(models.Model):
             'name': 'Post ('+str(product.meli_id)+'): ' + product.meli_title
         }
 
-        posting = self.env['mercadolibre.posting'].search([('meli_id','=',rjson['id'])])
+        posting = self.env['mercadolibre.posting'].search([('meli_id','=',rjson['id'])], limit=1)
         posting_id = posting.id
 
         if not posting_id:
