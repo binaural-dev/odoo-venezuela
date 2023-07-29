@@ -122,9 +122,10 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         worksheet2.write("I" + str(col2 + 1), total_retained, money_format)
         boldWithBorderTop = workbook.add_format({"bold": 1, "top": 1})
 
-        worksheet2.write("B" + str(col2 + 8), "Firma del Agente de Retención", boldWithBorderTop)
+        worksheet2.write("B" + str(col2 + 12), "\t\tFirma del Agente de Retención", boldWithBorderTop)
+        worksheet2.write("C" + str(col2 + 12), "", boldWithBorderTop)
 
-        worksheet2.write("F" + str(col2 + 8), "Firma del Beneficiario", boldWithBorderTop)
+        worksheet2.write("F" + str(col2 + 12), "Firma del Beneficiario", boldWithBorderTop)
 
         signature = self.env["signature.config"].search(
             [("active", "=", True)], limit=1, order="id asc"
@@ -134,7 +135,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
             logo = tools.image_process(base64.b64decode(signature.signature), (200, 200))
             image_signature = BytesIO(logo)
             worksheet2.insert_image(
-                "F" + str(col2 + 4), "image.png", {"image_data": image_signature}
+                "F" + str(col2 + 5), "image.png", {"image_data": image_signature}
             )
 
         workbook.close()
