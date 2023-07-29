@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, reopened]
     branches:
-    - "master"
+    - "release*"
 
 jobs:
   generate_module_readme:
@@ -33,7 +33,7 @@ jobs:
           pip install -r ./scripts/requirements.txt
       - name: Executing README creation/updating.
         run: |
-          python3 $(pwd)/scripts/gen_addon_readme.py --commit --repo-name=integra --branch=${{ github.head_ref }} --addons-dir=integra/
+          python3 $(pwd)/scripts/gen_addon_readme.py --commit --repo-name=integra --branch=${{ github.head_ref }} --addons-dir=integra/ --addons-dir=custom/
       - name: Pushing README.rst and index.html to current branch.
         run: |
           git push origin ${{ github.head_ref }}
