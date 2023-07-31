@@ -421,8 +421,8 @@ class AccountRetention(models.Model):
 
             for line in retention.retention_line_ids:
                 if (
-                    line.move_id.id and
-                    lines_per_invoice_counter[str(line.move_id.id)]
+                    line.move_id.id
+                    and lines_per_invoice_counter[str(line.move_id.id)]
                     != original_lines_per_invoice_counter[str(line.move_id.id)]
                 ):
                     retention.retention_line_ids -= line
@@ -599,6 +599,7 @@ class AccountRetention(models.Model):
                 payments = retention.create_payment_from_retention_form()
                 retention.payment_ids = payments.ids
 
+        self.payment_ids.write({"date": self.date_accounting})
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
 
