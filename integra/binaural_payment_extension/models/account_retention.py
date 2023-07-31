@@ -1,4 +1,5 @@
 from odoo import api, models, fields, Command, _
+from odoo.tests import Form
 from datetime import datetime
 from odoo.exceptions import UserError
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
@@ -420,8 +421,8 @@ class AccountRetention(models.Model):
 
             for line in retention.retention_line_ids:
                 if (
-                    line.move_id.id and
-                    lines_per_invoice_counter[str(line.move_id.id)]
+                    line.move_id.id
+                    and lines_per_invoice_counter[str(line.move_id.id)]
                     != original_lines_per_invoice_counter[str(line.move_id.id)]
                 ):
                     retention.retention_line_ids -= line
@@ -598,8 +599,17 @@ class AccountRetention(models.Model):
                 payments = retention.create_payment_from_retention_form()
                 retention.payment_ids = payments.ids
 
+        self.payment_ids.write({"date": self.date_accounting})
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
+
+    def action_print_municipal_retention_xlsx(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_url",
+            "url": f"/web/get_xlsx_municipal_retention?&retention_id={self.id}",
+            "target": "self",
+        }
 
     def _set_sequence(self):
         for retention in self:

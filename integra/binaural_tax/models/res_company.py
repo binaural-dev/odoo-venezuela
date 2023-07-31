@@ -5,6 +5,7 @@ class ResCompany(models.Model):
     _inherit = "res.company"
 
     module_binaural_igtf = fields.Boolean("IGTF")
+    unique_tax = fields.Boolean()
 
     exent_aliquot_sale = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "sale")])
     general_aliquot_sale = fields.Many2one("account.tax", domain=[("type_tax_use", "=", "sale")])
