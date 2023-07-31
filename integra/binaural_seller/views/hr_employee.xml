@@ -10,7 +10,6 @@
             <xpath expr="//page[@name='hr_settings']/group/group/field[@name='user_id']" position='attributes'>
                 <attribute name="domain">[]</attribute>
             </xpath>
-
             <xpath expr="//page[@name='hr_settings']/group/group/field[@name='user_id']" position='after'>
                 <field name="is_seller"/>
             </xpath>
