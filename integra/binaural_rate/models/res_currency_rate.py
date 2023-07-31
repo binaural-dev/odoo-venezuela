@@ -37,12 +37,17 @@ class ResCurrencyRate(models.Model):
         dict
             A dictionary with the rate and inverse rate for the given currency and date.
         """
-        rates = self.env["res.currency.rate"].search([("currency_id", "=", foreign_currency_id), ("company_id", "=", self.env.company.id)])
+        rates = self.env["res.currency.rate"].search(
+            [
+                ("currency_id", "=", foreign_currency_id),
+                ("company_id", "=", self.env.company.id),
+                ("name", "<=", rate_date),
+            ]
+        )
         if not rates:
             return {}
 
         rate = rates.filtered(lambda r: r.name == rate_date) or rates[0]
-        _logger.warning("rate: %s", rate)
         base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
             "base.USD", raise_if_not_found=False
         )
