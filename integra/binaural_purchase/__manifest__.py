@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Purchase/Purchase",
-    "version": "16.3",
+    "version": "16.5",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
