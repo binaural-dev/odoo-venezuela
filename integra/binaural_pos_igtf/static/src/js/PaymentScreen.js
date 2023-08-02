@@ -18,7 +18,7 @@ odoo.define("binaural_pos_igtf.PaymentScreen", function(require) {
         if (order.igtf_amount > 0) {
           let payment_lines = order.get_paymentlines()
           let include = payment_lines.filter(el => el.include_igtf)
-          if (include.length == 0) {
+          if (include.length != 1) {
 
             await this.showPopup("ErrorPopup", {
               title: _t("Validation Error"),

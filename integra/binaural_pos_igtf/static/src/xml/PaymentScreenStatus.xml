@@ -37,6 +37,9 @@
         </xpath>
         <xpath expr="//div[hasclass('payment-status-total-due')]" position="inside">
             <t t-if="isIgtf">
+                <span>BI IGTF:</span>
+                <span t-esc="biAmount"/>
+                <br/>
                 <span>IGTF:</span>
                 <span t-esc="igtfAmount"/>
                 <br/>
