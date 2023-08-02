@@ -311,6 +311,13 @@ msgid "Payment method"
 msgstr "Metodo de pago"
 
 #. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "Payments"
+msgstr "Pagos"
+
+#. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid ""
 "Please create/select a Point of Sale above to show the configuration "
@@ -477,6 +484,13 @@ msgid ""
 "You cannot modify a journal entry linked to a POS session that is still "
 "opened"
 msgstr "No puede modificar un asiento contable vinculado a una sesión de POS que aún está abierta"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "View Payments Origin"
+msgstr "Ver Pagos del Origen"
 
 #. module: binaural_pos
 #. odoo-javascript
