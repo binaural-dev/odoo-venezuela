@@ -211,6 +211,9 @@ class AccountMove(models.Model):
     @api.constrains("invoice_line_ids")
     def _check_taxes_id(self):
         for moves in self:
+            if moves.move_type == "entry":
+                continue
+
             for line in moves.invoice_line_ids:
                 if len(line.tax_ids) != 1 and line.display_type == "product" and self.env.company.unique_tax:
                     raise ValidationError(_("This product must have only one tax."))
