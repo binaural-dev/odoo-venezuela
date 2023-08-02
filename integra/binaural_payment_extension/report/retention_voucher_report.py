@@ -1,4 +1,5 @@
-from odoo import models, api
+from odoo import models, api, _
+from odoo.exceptions import ValidationError
 
 
 class BinauralPaymentExtensionRetentionIvaVoucher(models.AbstractModel):
@@ -7,6 +8,11 @@ class BinauralPaymentExtensionRetentionIvaVoucher(models.AbstractModel):
     @api.model
     def _get_report_values(self, docids, data=None):
         docs_retentions = self.env["account.retention"].browse(docids)
+        if any(retention.type_retention == "municipal" for retention in docs_retentions):
+            raise ValidationError(
+                _("Municipal retentions do not have PDF voucher. Please print the xslx")
+            )
+
         return {
             "docids": docids,
             "doc_model": "account.retention",

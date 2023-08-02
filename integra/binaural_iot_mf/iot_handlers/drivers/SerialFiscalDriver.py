@@ -264,6 +264,8 @@ class SerialFiscalDriver(SerialDriver):
                 "print_out_invoice": self.print_out_invoice,
                 "print_out_refund": self.print_out_refund,
                 "reprint": self.reprint,
+                "reprint_type": self.reprint_type,
+                "reprint_date": self.reprint_date,
                 "report_x": self.PrintXReport,
                 "report_z": self.PrintZReport,
                 "get_last_invoice_number": self.get_last_invoice_number,
@@ -312,6 +314,34 @@ class SerialFiscalDriver(SerialDriver):
             return self.data["value"]
 
         self.data["value"] = self._print_out_refund(invoice)
+        event_manager.device_changed(self)
+        return self.data["value"]
+
+    def reprint_date(self,data):
+        self.data["value"] = {"valid": False, "message": "No se ha completado"}
+        _data = data.get("data", False)
+        if _data:
+            data = _data
+        _logger.info(data)
+        mode = data.get("mode","Rs")
+        self.SendCmd(
+                mode + str(data["reprint_range_from"].zfill(7) + data["reprint_range_to"].zfill(7))
+        )
+        self.data["value"] = {"valid": True, "message": "MENSAJE"}
+        event_manager.device_changed(self)
+        return self.data["value"]
+
+    def reprint_type(self, data):
+        self.data["value"] = {"valid": False, "message": "No se ha completado"}
+        _data = data.get("data", False)
+        if _data:
+            data = _data
+        _logger.info(data)
+        mode = data.get("mode","R@")
+        self.SendCmd(
+            mode + str(data["reprint_range_from"].zfill(7) + str(data["reprint_range_to"].zfill(7)))
+        )
+        self.data["value"] = {"valid": True, "message": "MENSAJE"}
         event_manager.device_changed(self)
         return self.data["value"]
 
