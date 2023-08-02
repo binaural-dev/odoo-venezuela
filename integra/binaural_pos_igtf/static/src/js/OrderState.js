@@ -56,23 +56,20 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         let repeat_same_method = [];
         let bi_payments = [];
 
-        let has_change = false
-
         paymentlines.forEach((payment) => {
           let is_change = false
-          if(!is_return){
+          if (!is_return) {
             is_change = payment.amount < 0
-          }else{
+          } else {
             is_change = payment.amount > 0
-          }
-
-          if (!payment.payment_method.apply_igtf
-            || repeat_same_method.includes(payment.payment_method.id) || is_change) {
-            return;
           }
 
           if (payment.payment_method.apply_igtf && last_igtf_amount == payment.amount) {
             return
+          }
+
+          if (!payment.payment_method.apply_igtf || is_change) {
+            return;
           }
 
           bi_igtf += round_pr(payment.amount, rounding);
@@ -81,16 +78,7 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
           bi_payments.push(payment.cid)
         })
 
-        if (
-          bi_igtf !== 0 &&
-          (
-            bi_igtf > this.get_total_without_igtf()
-            || (
-              bi_igtf < this.get_total_without_igtf()
-              && !has_change
-            )
-          )
-        ) {
+        if (bi_igtf !== 0 && ((bi_igtf > this.get_total_without_igtf() && !is_return) || (bi_igtf < this.get_total_without_igtf() && is_return))) {
           bi_igtf = this.get_total_without_igtf()
           foreign_bi_igtf = this.get_foreign_total_without_igtf()
         }
@@ -105,9 +93,9 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
 
         paymentlines.forEach((el) => {
           let is_change = false
-          if(!is_return){
+          if (!is_return) {
             is_change = el.amount < 0
-          }else{
+          } else {
             is_change = el.amount > 0
           }
 

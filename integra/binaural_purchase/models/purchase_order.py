@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 from lxml import etree
 
 
@@ -64,6 +65,13 @@ class PurchaseOrder(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
+
+    @api.constrains("order_line")
+    def _check_taxes_id(self):
+        for order in self:
+            for line in order.order_line:
+                if len(line.taxes_id) != 1 and not line.display_type and self.env.company.unique_tax:
+                    raise ValidationError(_("All products must contain only one tax."))
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -166,7 +174,7 @@ class PurchaseOrder(models.Model):
         """
         self._compute_rate()
 
-    @api.depends("date_order", "date_approve")
+    @api.depends("date_order")
     def _compute_rate(self):
         """
         Compute the rate of the purchase order using the compute_rate method of the
