@@ -9,12 +9,27 @@ odoo.define("binaural_pos.OrderState", function(require) {
 
   const BinauralOrderState = (Order) =>
     class BinauralOrderState extends Order {
-      constructor(data,opt) {
+      constructor(data, opt) {
         super(...arguments);
         this.to_invoice = true;
         let always_invoice = !this.pos.config.always_invoice;
         this.to_receipt = always_invoice;
         this.toggle_receipt_invoice(always_invoice)
+      }
+      get is_refund(){
+        return Object.values(this.pos.toRefundLines).length != 0
+      }
+      get current_rate() {
+        let rate = this.pos.config.foreign_rate
+        if (Object.values(this.pos.toRefundLines).length == 0){
+          return rate
+        } 
+        Object.values(this.pos.toRefundLines).forEach(el => {
+          if (el.orderline.foreign_currency_rate != rate) {
+            rate = el.orderline.foreign_currency_rate
+          }
+        })
+        return rate
       }
       init_from_JSON(json) {
         super.init_from_JSON(...arguments)
@@ -23,7 +38,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
       }
 
       set_orderline_options(orderline, options) {
-        super.set_orderline_options(orderline,options)
+        super.set_orderline_options(orderline, options)
 
         if (options.foreign_currency_rate !== undefined) {
           orderline.set_foreign_currency_rate(options.foreign_currency_rate);

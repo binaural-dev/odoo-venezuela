@@ -6,12 +6,7 @@ odoo.define("binaural_pos.OrderWidget", function(require) {
   const BinauralOrderWidget = (OrderWidget) =>
     class BinauralOrderWidget extends OrderWidget {
       get rate_bcv() {
-        let rate = this.env.pos.config.foreign_rate
-        this.env.pos.get_order().get_orderlines().forEach(el =>{
-          if(el.foreign_currency_rate != rate){
-            rate = el.foreign_currency_rate
-          }
-        })
+        let rate = this.env.pos.get_order().current_rate
         let amount = this.env.pos.format_currency_no_symbol(
           rate,
           "Product Price",

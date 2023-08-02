@@ -11,7 +11,7 @@ odoo.define("binaural_pos.PaymentScreen", function(require) {
 
         if (!this.selectedPaymentLine.payment_method.is_foreign_currency) {
           let res = super._updateSelectedPaymentline()
-          if(!!this.selectedPaymentLine){
+          if (!!this.selectedPaymentLine) {
             this.selectedPaymentLine
               .set_foreign_amount(NumberBuffer.getFloat() * this.env.pos.config.foreign_rate)
           }
@@ -31,6 +31,36 @@ odoo.define("binaural_pos.PaymentScreen", function(require) {
         // click_invoice
         this.currentOrder.toggle_receipt_invoice(!this.currentOrder.is_to_receipt());
         this.render(true);
+      }
+      async showPaymentsOrigin() {
+
+        let id = []
+        if (Object.values(this.env.pos.toRefundLines).length == 0) {
+          return
+        }
+        Object.values(this.env.pos.toRefundLines).forEach(el => {
+          id = el.orderline.orderBackendId
+        })
+        let payments = await this.rpc({
+          model: 'pos.order',
+          method: 'get_payments_order_refund',
+          args: [id],
+          kwargs: {},
+        });
+
+        let payment_list = payments.map(el => {
+          return {
+          id: el.id,
+          label: el.payment_method_id[1] + " " + el.display_name,
+          isSelected: false,
+          item: el,
+        }
+
+        })
+        this.showPopup("SelectionPopup", {
+          title: this.env._t("Payments"),
+          list: payment_list,
+        });
       }
     }
 

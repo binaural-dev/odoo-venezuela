@@ -40,6 +40,9 @@ class PosOrder(models.Model):
         res["foreign_currency_rate"] = order.foreign_currency_rate
         return res 
 
+    def get_payments_order_refund(self):
+        return self.payment_ids.read()
+
 class PosOrderLine(models.Model):
     _inherit = "pos.order.line"
 
