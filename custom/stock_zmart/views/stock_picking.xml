@@ -7,8 +7,8 @@
             <field name="arch" type="xml">
                 <xpath expr="//button[@name='button_scrap']" position="before">
                     <button string="Picking Order" type="object" name="print_operation_albaran"  attrs="{'invisible': [('sequence_code', '!=', 'PICK')]}"/>
-                    <button string="Imprimir" type="object" name="print_albaran"  attrs="{'invisible': [('sequence_code', '!=', 'OUT')]}" />
-                    <button string="Imprimir" type="object" name="do_print_picking"  invisible="1" />
+                    <button string="Imprimir" type="object" name="print_albaran" attrs="{'invisible': [('sequence_code', '!=', 'OUT')]}"/>
+                    <button string="Imprimir" type="object" name="do_print_picking" invisible="1"/>
                     <xpath expr="//button[@name='action_sale_quotations_new']" position="replace"/>
                 </xpath>
                 <xpath expr="//button[@name='344']" position="replace">

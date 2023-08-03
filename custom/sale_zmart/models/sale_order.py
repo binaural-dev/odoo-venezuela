@@ -133,8 +133,9 @@ class SaleOrderZmart(models.Model):
     def onchange_discount_4(self):
         if self.discount_4:
             for line in self.order_line:
-                line.discount = 4
-                
+                if not line.product_id.no_has_discount:
+                    line.discount = 4
+                    
     def check_pending_orders(self):
         current_time = datetime.now()
         orders_to_cancel = self.search([
