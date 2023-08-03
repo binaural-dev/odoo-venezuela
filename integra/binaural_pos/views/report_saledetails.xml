@@ -22,17 +22,17 @@
                         <tbody>
                         <tr t-foreach='payments' t-as='payment'>
                             <td><t t-esc="payment['name']" /></td>
-                            <td><t t-esc="payment['total']" t-options="{'widget': 'float', 'precision': currency_precision}"/></td>
-                            <td><t t-esc="payment['f_total']" t-options="{'widget': 'float', 'precision': currency_precision}"/></td>
+                            <td><t t-esc="payment['total']" t-options='{"widget": "monetary", "display_currency": currency}' /></td>
+                            <td><t t-esc="payment['f_total']" t-options='{"widget": "monetary", "display_currency": foreign_currency}'/></td>
                         </tr>
                         </tbody>
                     </table>
 
                     <br/>
 
-                    <strong>Total: <t t-esc='total_paid' t-options="{'widget': 'float', 'precision': currency_precision}"/></strong>
+                    <strong>Total: <t t-esc='total_paid' t-options='{"widget": "monetary", "display_currency": currency}'/></strong>
                     <br/>
-                    <strong>Foreign Total: <t t-esc='foreign_total_paid' t-options="{'widget': 'float', 'precision': currency_precision}"/></strong>
+                    <strong>Foreign Total: <t t-esc='foreign_total_paid' t-options='{"widget": "monetary", "display_currency": foreign_currency}'/></strong>
 
                     <br/>
                     <br/>
@@ -48,8 +48,8 @@
                         <tbody>
                         <tr t-foreach='taxes' t-as='tax'>
                             <td><t t-esc="tax['name']" /></td>
-                            <td><t t-esc="tax['tax_amount']" t-options="{'widget': 'float', 'precision': currency_precision}"/></td>
-                            <td><t t-esc="tax['base_amount']" t-options="{'widget': 'float', 'precision': currency_precision}"/></td>
+                            <td><t t-esc="tax['tax_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                            <td><t t-esc="tax['base_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
                         </tr>
                         </tbody>
                     </table>
@@ -78,7 +78,7 @@
                                 </t>
                             </td>
                             <td>
-                                <t t-esc='line["price_unit"]' />
+                                <t t-esc='line["price_unit"]' t-options='{"widget": "monetary", "display_currency": currency}' />
                             <t t-if='line["discount"] != 0'>
                                 Disc: <t t-esc='line["discount"]' />%
                             </t>

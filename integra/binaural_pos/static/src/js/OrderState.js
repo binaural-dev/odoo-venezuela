@@ -19,6 +19,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
       init_from_JSON(json) {
         super.init_from_JSON(...arguments)
         this.to_receipt = json["to_receipt"]
+        this.to_invoice = true;
       }
       add_orderline(line) {
         super.add_orderline(...arguments)
