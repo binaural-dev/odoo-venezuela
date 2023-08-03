@@ -1,6 +1,8 @@
 from datetime import datetime,timedelta
 from odoo import api, fields, models,_
-
+from odoo.exceptions import UserError
+import logging
+_logger = logging.getLogger(__name__)
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
     
@@ -51,28 +53,41 @@ class SaleOrderZmart(models.Model):
         store = True
     )
     product_id = fields.Many2one(
-        'product.template', 
+        'product.template',
         string = 'Product'
     )
     unlock_date = fields.Date(string='Unlock Date', readonly=True)
-    def action_confirm(self):
-        res = super().action_confirm()
-        for order in self:
-            order.unlock_date = (datetime.today() + timedelta(days=2)).date()
-        return res
-
-    def action_cancel_if_no_invoice(self):
-        orders = self.search([('state', '=', 'sale'),('invoice_status','=','invoiced'), ('unlock_date', '<=', fields.Date.today())])
-        for order in orders:
-            if not order.invoice_ids:
-                order.action_cancel()
-
-
+    discount_4 = fields.Boolean()
+    confirmation_date = fields.Datetime(
+        string='Confirmation Date', 
+        readonly=True
+    )
+    notification_email_sent = fields.Boolean(
+        default=False
+    )
+    
+    def button_invoice_sale_note_rma(self):
+        return self.env.ref('sale_zmart.action_invoice_sale_note_rma').report_action(self)
+    
     def send_cancel_warning_email(self):
-        for order in self:
-            if order.user_id and order.partner_id.email:
-                template = self.env.ref('sale_zmart.email_template_cancel_warning')
-                template.with_context(order=order).send_mail(order.user_id.id, force_send=True)
+        current_time = datetime.now()
+        orders_to_notify = self.search([
+            ('state', '=', 'sale'), 
+            ('invoice_status', '!=', 'invoiced'), 
+            ('confirmation_date', '<', datetime.now() - timedelta(minutes=5)),
+            ('notification_email_sent', '=', False)])
+        for order in orders_to_notify:
+            try:
+                order.action_send_cancel_warning_email()
+                order.notification_email_sent = True
+            except UserError as e:
+                _logger.error("Error while sending cancel warning email for order %s: %s", order.name, e)
+
+    def action_send_cancel_warning_email(self):
+        template = self.env.ref('sale_zmart.cancel_warning_email_template')
+        if not template:
+            raise UserError('Email template not found')
+        template.send_mail(self.id, force_send=True)
     
     def button_sale_order(self):
         return self.env.ref('sale.action_report_saleorder').report_action(self)
@@ -113,14 +128,21 @@ class SaleOrderZmart(models.Model):
                 'default_carrier_id': carrier_id,
             }
         }
-    class MailTemplate(models.Model):
-        _inherit = 'mail.template'
 
-    @api.model
-    def send_cancel_warning_email(self, order_id):
-        order = self.env['sale.order'].browse(order_id)
-        if order.user_id and order.partner_id.email:
-            template = self.env.ref('sale_zmart.email_template_cancel_warning')
-            template.with_context(order=order).send_mail(order.user_id.id, force_send=True)
-            
-    
+    @api.onchange('discount_4')
+    def onchange_discount_4(self):
+        if self.discount_4:
+            for line in self.order_line:
+                line.discount = 4
+                
+    def check_pending_orders(self):
+        current_time = datetime.now()
+        orders_to_cancel = self.search([
+            ('state', '=', 'sale'), 
+            ('invoice_status', '!=', 'invoiced'), 
+            ('confirmation_date', '<', current_time - timedelta(minutes=10))])
+        for order in orders_to_cancel:
+            cancel_wizard = self.env['sale.order.cancel'].create({
+                'order_id': order.id,
+            })
+            cancel_wizard.with_context(active_ids=order.ids).action_cancel()
