@@ -136,6 +136,7 @@ class SaleOrderZmart(models.Model):
                 if not line.product_id.no_has_discount:
                     line.discount = 4
                     
+
     def check_pending_orders(self):
         current_time = datetime.now()
         orders_to_cancel = self.search([

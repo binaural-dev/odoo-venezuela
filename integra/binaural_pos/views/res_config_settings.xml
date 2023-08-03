@@ -61,6 +61,19 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_move_to_draft"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_move_to_draft"/>
+                                <div class="text-muted">
+                                    Change state to draft in account moves from POS 
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
                             <div class="o_setting_left_pane">
                                 <field name="pos_show_just_products_with_available_qty"/>
