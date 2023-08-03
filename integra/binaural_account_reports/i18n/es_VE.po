@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230518\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230713\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-23 15:29+0000\n"
-"PO-Revision-Date: 2023-05-23 15:29+0000\n"
+"POT-Creation-Date: 2023-07-17 19:38+0000\n"
+"PO-Revision-Date: 2023-07-17 19:38+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -65,6 +65,11 @@ msgid "Balance Sheet USD"
 msgstr "Balance de Situación $"
 
 #. module: binaural_account_reports
+#: model:account.report.line,name:binaural_account_reports.account_financial_report_cost_result_statement
+msgid "COST"
+msgstr "COSTO"
+
+#. module: binaural_account_reports
 #: model:ir.actions.client,name:binaural_account_reports.action_account_report_cs_usd
 #: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_cash_flow_usd
 msgid "Cash Flow Statement USD"
@@ -79,11 +84,6 @@ msgstr "Marque esta casilla si el informe se va a mostrar en $."
 #: model:ir.model,name:binaural_account_reports.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
-
-#. module: binaural_account_reports
-#: model:account.report.line,name:binaural_account_reports.account_financial_report_cost_sales0_result_statement
-msgid "Cost"
-msgstr "Costo"
 
 #. module: binaural_account_reports
 #. odoo-python
@@ -121,26 +121,20 @@ msgid "Debit"
 msgstr "Débito"
 
 #. module: binaural_account_reports
-#: model:account.report.line,name:binaural_account_reports.account_financial_report_depreciation0_result_statement
-msgid "Depreciation"
-msgstr "Depreciación"
-
-#. module: binaural_account_reports
 #: model:account.report.line,name:binaural_account_reports.account_financial_report_equity_financial_situation_statement
 msgid "EQUITY"
 msgstr "CAPITAL"
+
+#. module: binaural_account_reports
+#: model:account.report.line,name:binaural_account_reports.account_financial_report_egresses_result_statement
+msgid "EGRESSES"
+msgstr "EGRESOS"
 
 #. module: binaural_account_reports
 #: model:ir.actions.client,name:binaural_account_reports.action_account_report_exec_summary_usd
 #: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_exec_summary_usd
 msgid "Executive Summary USD"
 msgstr "Resumen Ejecutivo $"
-
-#. module: binaural_account_reports
-#: model:account.report.line,name:binaural_account_reports.account_financial_report_expense0_result_statement
-#: model:account.report.line,name:binaural_account_reports.account_financial_report_less_expenses0_result_statement
-msgid "Expenses"
-msgstr "Gastos"
 
 #. module: binaural_account_reports
 #: model:account.report,name:binaural_account_reports.financial_situation_statement
@@ -167,14 +161,9 @@ msgid "General Ledger USD"
 msgstr "Libro mayor $"
 
 #. module: binaural_account_reports
-#: model:account.report.line,name:binaural_account_reports.account_financial_report_gross_profit0_result_statement
-msgid "Gross Profit"
-msgstr "Ganancia Bruta"
-
-#. module: binaural_account_reports
-#: model:account.report.line,name:binaural_account_reports.account_financial_report_totalincome0_result_statement
-msgid "Income"
-msgstr "Ingreso"
+#: model:account.report.line,name:binaural_account_reports.account_financial_report_income_result_statement
+msgid "INCOME"
+msgstr "INGRESOS"
 
 #. module: binaural_account_reports
 #. odoo-python
@@ -189,19 +178,9 @@ msgid "LIABILITIES"
 msgstr "PASIVOS"
 
 #. module: binaural_account_reports
-#: model:account.report.line,name:binaural_account_reports.account_financial_report_result_net_profit_result_statement
-msgid "Net Profit"
-msgstr "Ganancias Netas"
-
-#. module: binaural_account_reports
-#: model:account.report.line,name:binaural_account_reports.account_financial_report_income0_result_statement
-msgid "Operating Income"
-msgstr "Ingreso Operativo"
-
-#. module: binaural_account_reports
-#: model:account.report.line,name:binaural_account_reports.account_financial_report_other_income0_result_statement
-msgid "Other Income"
-msgstr "Otros Ingresos"
+#: model:account.report.line,name:binaural_account_reports.account_financial_report_profit_and_loss_result_statement
+msgid "PROFIT AND/OR LOSS"
+msgstr "GANANCIAS Y/O PÉRDIDAS"
 
 #. module: binaural_account_reports
 #: model:ir.model,name:binaural_account_reports.model_account_partner_ledger_report_handler
