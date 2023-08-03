@@ -10,23 +10,9 @@ odoo.define("binaural_pos.OrderlineState", function(require) {
 
   const BinauralOrderline = (Orderline) =>
     class BinauralOrderline extends Orderline {
-      constructor(data, options) {
+      constructor(){
         super(...arguments)
         this.order.toggle_receipt_invoice(this.order.to_receipt)
-        this.foreign_currency_rate = options.order.foreign_currency_rate || this.pos.config.foreign_rate
-      }
-      set_foreign_currency_rate(rate) {
-        this.foreign_currency_rate = rate
-      }
-      init_from_JSON(json) {
-        super.init_from_JSON(...arguments)
-        this.foreign_currency_rate = json.foreign_currency_rate
-      }
-
-      export_as_JSON() {
-        let res = super.export_as_JSON()
-        res["foreign_currency_rate"] = this.foreign_currency_rate
-        return res 
       }
       isExempt() {
         const product_tax = this.tax_ids || this.product.taxes_id;
@@ -44,7 +30,7 @@ odoo.define("binaural_pos.OrderlineState", function(require) {
         // round and truncate to mimic _symbol_set behavior
         return parseFloat(
           round_di((this.price || 0) *
-            this.foreign_currency_rate,
+            this.pos.config.foreign_inverse_rate,
             digits)
             .toFixed(digits));
       }
