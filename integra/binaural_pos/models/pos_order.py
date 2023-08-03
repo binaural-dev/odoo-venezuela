@@ -34,17 +34,3 @@ class PosOrder(models.Model):
             return res
         res.update({"journal_id": self.session_id.config_id.receipt_journal_id.id})
         return res
-
-    def _export_for_ui(self, order):
-        res = super()._export_for_ui(order)
-        res["foreign_currency_rate"] = order.foreign_currency_rate
-        return res 
-
-    def get_payments_order_refund(self):
-        return self.payment_ids.read()
-
-class PosOrderLine(models.Model):
-    _inherit = "pos.order.line"
-
-    foreign_currency_rate = fields.Float(related="order_id.foreign_currency_rate")
-
