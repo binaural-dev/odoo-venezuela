@@ -213,11 +213,6 @@ msgid "Package Quantity"
 msgstr "N° de Cajas"
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__packing_factor
-msgid "Packing Factor"
-msgstr "Factor de embalaje"
-
-#. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
 msgid "Pick:"
 msgstr ""
@@ -364,3 +359,13 @@ msgstr "Vendedor"
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_sale
 msgid "Salesperson"
 msgstr "Vendedor"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__discount_4
+msgid "Discount 4"
+msgstr "Descuento 4%"
+
+#. module: sale_zmart
+#: model:res.groups,name:sale_zmart.group_sale_note_rma
+msgid "Sale Note RMA"
+msgstr "Nota de entrega RMA"

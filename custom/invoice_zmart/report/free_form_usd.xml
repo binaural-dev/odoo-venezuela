@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
-        <record id="action_invoice_free_form_bs" model="ir.actions.report">
-            <field name="name">Free form bs</field>
+        <record id="action_invoice_free_form_usd" model="ir.actions.report">
+            <field name="name">Free form usd</field>
             <field name="model">account.move</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">invoice_zmart.template_invoice_free_form_bs</field>
-            <field name="report_file">invoice_zmart.template_invoice_free_form_bs</field>
+            <field name="report_name">invoice_zmart.template_invoice_free_form_usd</field>
+            <field name="report_file">invoice_zmart.template_invoice_free_form_usd</field>
             <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
             <field name="paperformat_id" ref="invoice_zmart.paperformat_invoice"/>
             <field name="binding_model_id" eval="False"/>
             <field name="binding_type">report</field>
             <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
         </record>
-        <template id="template_invoice_free_form_bs">
+
+        <template id="template_invoice_free_form_usd">
             <t t-call="web.html_container">
                 <t t-call="web.basic_layout">
                     <t t-foreach="docs" t-as="o">
@@ -21,7 +22,7 @@
                         <t t-set="lang" t-value="o.partner_id.lang"/>
                         <t t-set="o" t-value="o.with_context(lang=lang)" />
                         <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
-                        <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/>
+                        <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/> <!-- So that it appears in the footer of the report instead of the company VAT if it's set -->
                             <section id="segmento_1" style="display: flex; flex-direction: row; justify-content: flex-end; align-items: center;font-size:13px">
                                 <div style="margin-left: 800px;">
                                     <div>
@@ -42,7 +43,8 @@
                                 <div>Transporte:<span/></div>
                             </section>
                             <div class="mt-5">
-                                <div class="page">
+                            <div class="page">
+                            
                                 <t t-set="display_discount" t-value="any(l.discount for l in o.invoice_line_ids)"/>
                                     <table class="table table-sm o_main_table table-borderless" name="invoice_line_table" style="font-size:12px;margin-top:-40px">
                                         <thead>
@@ -91,19 +93,19 @@
                                                         </td>  
                                                         <td t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                                             <t>
-                                                                <span class="text-nowrap" t-field="line.foreign_price"/>
+                                                                <span class="text-nowrap" t-field="line.price_unit"/>
                                                             </t>
                                                         </td>
                                                         <td t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                                             <span class="text-nowrap" t-field="line.discount"/>
                                                         </td>
                                                         <td t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
-                                                        <span t-esc="', '.join(map(lambda x: ( str(x.amount) + '%' if x.amount > 0 else ''), line.tax_ids))" id="line_tax_ids"/>
-                                            </td>
+                                                            <span t-esc="', '.join(map(lambda x: ( str(x.amount) + '%' if x.amount > 0 else ''), line.tax_ids))" id="line_tax_ids"/>
+                                                        </td>
                                                         <td class="text-end o_price_total">
                                                             <t>
-                                                                <span class="text-nowrap" t-field="line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
-                                                                <span class="text-nowrap" t-field="line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
+                                                                <span class="text-nowrap" t-field="line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                                                <span class="text-nowrap" t-field="line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
                                                             </t>
                                                         </td>
                                                     </t>
@@ -134,6 +136,8 @@
                                             </t>
                                         </tbody>
                                     </table>
+
+                           
                                 </div>   
                                 <div t-if="not is_html_empty(o.narration)" name="comment">
                                     <span t-field="o.narration"/>
@@ -156,7 +160,7 @@
                                                     <!--Tax totals-->
                                                     <t t-set="tax_totals" t-value="o.tax_totals"/>
                                                     <t>
-                                                        <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
+                                                        <t t-set="base_vef" t-value="o.currency_id.id == %(base.USD)s"/>
                                                         <t t-set="str_tax" t-value="'subtotals' if base_vef else 'foreign_subtotals'"/>
                                                         <t t-foreach="tax_totals[str_tax]" t-as="subtotal">
                                                             <tr class="border-black o_subtotal">
@@ -176,7 +180,7 @@
                                                             </tr>
                                                             <t t-set="subtotal_to_show" t-value="subtotal['name']"/>
                                                             <t>
-                                                                <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
+                                                                <t t-set="base_vef" t-value="o.currency_id.id == %(base.USD)s"/>
                                                                 <t t-set="str_tax" t-value="'groups_by_subtotal' if base_vef else 'groups_by_foreign_subtotal'"/>
                                                                 <t t-foreach="tax_totals[str_tax][subtotal_to_show]" t-as="amount_by_group">
                                                                     <tr>
@@ -248,10 +252,13 @@
                                                                         </t>
                                                             </t>
                                                         </t>
+
                                                         <t t-set="has_rounding" t-value="'formatted_amount_total_rounded' in tax_totals"/>
+                                                        <!--Total amount with all taxes-->
+                                                            
                                                             <tr class="border-black o_total">
-                                                                <t t-if="has_rounding"><td>Total en Bs</td></t>
-                                                                <t t-else=""><td><strong>Total en Bs</strong></td></t>
+                                                                <t t-if="has_rounding"><td>Total en USD</td></t>
+                                                                <t t-else=""><td><strong>Total en USD</strong></td></t>
                                                                 <td></td>
                                                                 <td></td>
                                                                 <td></td>
@@ -261,14 +268,14 @@
                                                                 <td></td>
                                                                 <td class="text-end">
                                                                     <t>
-                                                                       <span t-esc="tax_totals['foreign_formatted_amount_total']"/>
+                                                                        <span t-esc="tax_totals['formatted_amount_total']"/>
                                                                     </t>
                                                                 </td>
                                                             </tr>
                                                             <tr t-if="has_rounding">
                                                                 <td><strong>Total Rounded</strong></td>
                                                                 <td class="text-end">
-                                                                    <span t-esc="tax_totals['foreign_formatted_amount_total']"/>
+                                                                    <span t-esc="tax_totals['formatted_amount_total_rounded']"/>
                                                                 </td>
                                                             </tr>
                                                         </t>
