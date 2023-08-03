@@ -73,6 +73,11 @@ msgid "Available:"
 msgstr "Disponible:"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Base Amount"
+msgstr "Base Imponible"
+
+#. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Calculate IGTF with payments made in USD"
 msgstr "Calcula el IGTF con los pagos realizados en USD"
@@ -145,6 +150,11 @@ msgstr "Eliminar automáticamente los productos sin disponibilidad del POS"
 #, python-format
 msgid "Deny Order"
 msgstr "Orden denegada"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Disc:"
+msgstr "Descuento:"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.pos_config_form_view_validation
@@ -281,6 +291,7 @@ msgstr "Pago de anticipos"
 #. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/xml/PartnerDetailsEdit.xml:0
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
 #, python-format
 msgid "Name"
 msgstr "Nombre"
@@ -289,6 +300,13 @@ msgstr "Nombre"
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "No Point of Sale selected"
 msgstr "No se ha seleccionado un punto de venta"
+
+#. module: binaural_pos
+#. odoo-python
+#: code:addons/binaural_pos/report/report_saledetails.py:0
+#, python-format
+msgid "No Taxes"
+msgstr "Sin impuesto"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -314,6 +332,7 @@ msgstr "Metodo de pago"
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/PaymentScreen.js:0
 #, python-format
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
 msgid "Payments"
 msgstr "Pagos"
 
@@ -334,6 +353,11 @@ msgstr ""
 #: model:ir.model,name:binaural_pos.model_pos_config
 msgid "Point of Sale Configuration"
 msgstr "Configuración del TPV"
+
+#. module: binaural_pos
+#: model:ir.model,name:binaural_pos.model_report_point_of_sale_report_saledetails
+msgid "Point of Sale Details"
+msgstr "Detalles del Punto de Venta"
 
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_pos_order
@@ -383,9 +407,29 @@ msgid "Pos Tax Inside"
 msgstr "Impuestos incluidos"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Price Unit"
+msgstr "Precio unitario"
+
+#. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Print invoices on Fiscal Machine, and get reports"
 msgstr "Imprimir Facturas en maquina fiscal, y obtener reportes"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Product"
+msgstr "Producto"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Products"
+msgstr "Productos"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Quantity"
+msgstr "Cantidad"
 
 #. module: binaural_pos
 #. odoo-javascript
@@ -418,6 +462,11 @@ msgid "Receipt Journal"
 msgstr "Diario de recibo"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Sales Details"
+msgstr "Detalle de ventas"
+
+#. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Set default invoice or receipt with account moves"
 msgstr ""
@@ -441,6 +490,16 @@ msgid "Tasa BCV:"
 msgstr ""
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Tax Amount"
+msgstr "Monto de Impuesto"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Taxes"
+msgstr "Impuestos"
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/xml/OrderSummary.xml:0
 #, python-format
@@ -456,6 +515,17 @@ msgstr "La tarifa que siempre se mostrará al usuario."
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_order__to_receipt
 msgid "To Receipt"
 msgstr "Para recibo"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_order__foreign_amount_total
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Total"
+msgstr ""
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Total:"
+msgstr ""
 
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_res_users
