@@ -4,6 +4,7 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 
 	const Registries = require('point_of_sale.Registries');
 	const ProductScreen = require('point_of_sale.ProductScreen');
+  const NumberBuffer = require('point_of_sale.NumberBuffer');
     const { _t } = require('web.core');
 
 	const BinauralProductScreen = (ProductScreen) =>
