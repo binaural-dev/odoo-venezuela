@@ -11,6 +11,19 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 			super() {
 				super.setup();
 			}
+      async _clickProduct(event) {
+        if (!this.currentOrder) {
+            this.env.pos.add_new_order();
+        }
+        const product = event.detail;
+        const options = await this._getAddProductOptions(product);
+        // Do not add product if options is undefined.
+        product.optional_product_ids = [];
+        if (!options) return;
+        // Add the product after having the extra information.
+        await this._addProduct(product, options);
+        NumberBuffer.reset();
+      }
 			async _onClickPay() {
 				var self = this;
 				let order = this.env.pos.get_order();
