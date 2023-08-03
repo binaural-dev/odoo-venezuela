@@ -1,5 +1,6 @@
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError
+from datetime import datetime
 
 import logging
 
@@ -18,7 +19,7 @@ class IotDeviceInherit(models.Model):
     max_payment_amount_decimal = fields.Integer(compute="_compute_max_amounts")
     max_description = fields.Integer(default=127)
     traditional_line = fields.Boolean(default=True)
-    flag_21 = fields.Selection([("30", "30"),("00","00")], default="30")
+    flag_21 = fields.Selection([("30", "30"), ("00", "00")], default="30")
     payment_methods = fields.Selection(
         [
             ("1", "1"),
@@ -49,6 +50,34 @@ class IotDeviceInherit(models.Model):
     )
     payment_method_name = fields.Char()
     command = fields.Char()
+    reprint_range_from_number = fields.Char()
+    reprint_range_to_number = fields.Char()
+    reprint_range_from_date = fields.Date(default=fields.Date().today())
+    reprint_range_to_date = fields.Date(default=fields.Date().today())
+    reprint_type = fields.Selection([("date", "Date"), ("number", "Number")])
+    reprint_type_number = fields.Selection(
+        [
+            ("RF", "Invoices"),
+            ("RC", "Refund"),
+            ("RT", "No Fiscal"),
+            ("RX", "Report X"),
+            ("RZ", "Report Z"),
+            ("R@", "All"),
+        ],
+        default="RF",
+    )
+
+    reprint_type_date = fields.Selection(
+        [
+            ("Rf", "Invoices"),
+            ("Rc", "Refund"),
+            ("Rt", "No Fiscal"),
+            ("Rx", "Report X"),
+            ("Rz", "Report Z"),
+            ("Ra", "All"),
+        ],
+        default="Rf",
+    )
 
     def get_data_to_payment_method(self):
         if not self.payment_method_name or self.payment_method_name == "":
@@ -69,6 +98,47 @@ class IotDeviceInherit(models.Model):
         return {
             "command": self.command,
         }
+
+    def get_range_reprint(self):
+        if self.reprint_type == "number" and (
+            not self.reprint_range_from_number or not self.reprint_range_to_number
+        ):
+            raise ValidationError(
+                _("You must fill in the start or end field, if there is one, repeat the number")
+            )
+
+        if self.reprint_type == "date" and (
+            not self.reprint_range_from_date or not self.reprint_range_to_date
+        ):
+            raise ValidationError(
+                _("You must fill in the start or end field, if there is one, repeat the date")
+            )
+
+        if self.reprint_type == "number" and int(self.reprint_range_to_number) < int(
+            self.reprint_range_from_number
+        ):
+            raise ValidationError(_("Range to is greater than range from"))
+
+        if (
+            self.reprint_type == "date"
+            and self.reprint_range_to_date < self.reprint_range_from_date
+        ):
+            raise ValidationError(_("Range to is greater than range from"))
+
+        if self.reprint_type == "number":
+            data = {
+                "reprint_range_from": self.reprint_range_from_number,
+                "reprint_range_to": self.reprint_range_to_number,
+                "mode": self.reprint_type_number,
+            }
+        else:
+            data = {
+                "reprint_range_from": self.reprint_range_from_date.strftime("%d%m%y"),
+                "reprint_range_to": self.reprint_range_to_date.strftime("%d%m%y"),
+                "mode": self.reprint_type_date,
+            }
+
+        return data
 
     @api.depends("flag_21")
     def _compute_max_amounts(self):
