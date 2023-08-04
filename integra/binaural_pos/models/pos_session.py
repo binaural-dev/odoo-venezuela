@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.tools import float_is_zero, float_compare
+from odoo.osv.expression import AND, OR
 
 
 class PosSession(models.Model):
@@ -47,6 +48,48 @@ class PosSession(models.Model):
         params["search_params"]["fields"].append("qty_available")
         return params
 
+    def _get_pos_ui_product_product(self, params):
+        self = self.with_context(**params["context"])
+        products = []
+        if not self.config_id.limited_products_loading:
+            products = self.env["product.product"].search_read(**params["search_params"])
+        else:
+            products = self.config_id.get_limited_products_loading(
+                params["search_params"]["fields"]
+            )
+
+        products = self._filter_products(products)
+        self._process_pos_ui_product_product(products)
+        return products
+
+    def get_pos_ui_product_product_by_params(self, custom_search_params):
+        """
+        :param custom_search_params: a dictionary containing params of a search_read()
+        """
+        params = self._loader_params_product_product()
+        # custom_search_params will take priority
+        params["search_params"] = {**params["search_params"], **custom_search_params}
+        products = (
+            self.env["product.product"]
+            .with_context(active_test=False)
+            .search_read(**params["search_params"])
+        )
+        products = self._filter_products(products)
+        if len(products) > 0:
+            self._process_pos_ui_product_product(products)
+        return products
+
+    def _filter_products(self, products):
+        if not self.env.company.pos_show_just_products_with_available_qty:
+            return products
+
+        filter_products = []
+        for product in products:
+            if product["qty_available"] > 0:
+                filter_products.append(product)
+
+        return filter_products
+
     def _get_pos_ui_res_currency(self, params):
         """
         This method is used to get the res.currency for the pos
@@ -62,10 +105,8 @@ class PosSession(models.Model):
             return [res[1], res[0]]
         return res
 
-
     def is_user_authorized(self):
         return self.env.user.authorized_discount_pos
-
 
     def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
         # OVERWRITE
