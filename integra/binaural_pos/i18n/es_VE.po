@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230710\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230725\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-25 19:40+0000\n"
-"PO-Revision-Date: 2023-07-25 19:40+0000\n"
+"POT-Creation-Date: 2023-08-02 23:33+0000\n"
+"PO-Revision-Date: 2023-08-02 23:33+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -323,6 +323,9 @@ msgid "Payment method"
 msgstr "Metodo de pago"
 
 #. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/PaymentScreen.js:0
+#, python-format
 #: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
 msgid "Payments"
 msgstr "Pagos"
@@ -545,6 +548,13 @@ msgid ""
 "You cannot modify a journal entry linked to a POS session that is still "
 "opened"
 msgstr "No puede modificar un asiento contable vinculado a una sesión de POS que aún está abierta"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "View Payments Origin"
+msgstr "Ver Pagos del Origen"
 
 #. module: binaural_pos
 #. odoo-javascript
