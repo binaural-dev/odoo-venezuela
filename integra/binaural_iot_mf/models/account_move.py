@@ -106,6 +106,8 @@ class AccountMoveInh(models.Model):
             raise ValidationError(_("The invoice has no fiscal machine assigned"))
         if self.state in ["draft", "cancel"]:
             raise ValidationError(_("Cannot print an invoice without validation"))
+        if self.invoice_date != fields.Date.today():
+            raise ValidationError(_("Cannot print an invoice with a future date"))
         if self.is_credit and self.amount_residual != self.amount_total:
             raise ValidationError(_("You cannot print a credit invoice with associated payments"))
 
@@ -204,6 +206,8 @@ class AccountMoveInh(models.Model):
             raise ValidationError(_("The invoice has no fiscal machine assigned"))
         if self.iot_mf.serial_machine != self.reversed_entry_id.mf_serial:
             raise ValidationError(_("The credit note must be made in the same fiscal machine"))
+        if self.invoice_date != fields.Date.today():
+            raise ValidationError(_("The credit note must be made on the same day"))
         if self.state in ["draft", "cancel"]:
             raise ValidationError(_("Cannot print an invoice without validation"))
 
