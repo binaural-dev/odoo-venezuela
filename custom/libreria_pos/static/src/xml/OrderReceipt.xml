@@ -3,102 +3,146 @@
     <t t-name="OrderReceipt" t-inherit="point_of_sale.OrderReceipt" t-inherit-mode="extension" owl="1">
         <xpath expr="//div[hasclass('pos-receipt')]" position="replace">
             <div class="pos-receipt">
+                <t t-log="receipt.orderlines" />
                 <t t-log="env" />
                 <t t-log="receipt"/>
                 <t t-log="env.pos" />
+		<t t-log="env.pos.selectedOrder.orderlines"/>
+		<t t-log="env.pos.selectedOrder.orderlines.length"/>
+		<t t-log="Object.values(env.pos.selectedOrder.orderlines)[0]"/>
                 <div class="pos-receipt-contact">
                     <t t-if="receipt.header_html">
                         <t t-out="receipt.header_html" />
                     </t>
                     
                     <div>
-                    <p><strong>SENIAT</strong></p>
-                    <p class="letter">
-                     <t t-esc="receipt.company.vat" />
-                    <br />
-                    <t t-esc="receipt.company.name"/>
-                    <br />
-                    <strong>AV.</strong> Bolivar Norte Edif. Jota Jota Piso PB Local Planta Baja Urb. La Alegria. Valencia Carabobo (VE) Venezuela
-                    TELEFONO: <t t-esc="receipt.company.phone" />
-                    </p>
-                </div>
-
-                </div>
-                <br />
-                <div class="d-flex justify-content-start letter">
+                    	<p><strong>SENIAT</strong></p>
+                    	<p class="letter">
+                     	<t t-esc="receipt.company.vat" />
+                    	<br />
+                    	<t t-esc="receipt.company.name"/>
+                    	<br />
+                    	<strong>AV.</strong> Bolivar Norte Edif. Jota Jota Piso PB Local Planta Baja Urb. La Alegria. Valencia Carabobo (VE) Venezuela
+                    	TELEFONO: <t t-esc="receipt.company.phone" />
+                    	</p>
+                    </div>
+            	</div>
+                <br/>
+        	<div class="d-flex justify-content-start letter">
                     <div>CLIENTE: <t t-esc="receipt.partner.name" /></div>
-                    <div >
-                        RIF: 
-                        
-                            <t t-esc="receipt.partner.prefix_vat" />
-                            <t t-esc="receipt.partner.vat" />
-                        
+                    <div>
+                    	RIF: 
+
+                    	<t t-esc="receipt.partner.prefix_vat" />
+                    	<t t-esc="receipt.partner.vat" />
+
                     </div>
                     <div t-if="receipt.partner.phone">DIRECCION:<t t-esc="receipt.partner.street" /></div>
-                    <div>USUARIO <t t-esc="env.pos.config.name" /> </div>
-                </div>
-                <br />
+                    <div>USUARIO: <t t-esc="env.pos.config.name" /> </div>
+		</div>
+            	<br/>
 
-                <div style="text-align:center;">
-                FACTURA: 
-                </div>
-                <br/>
+            	    <div style="text-align:center;">
+        	    	FACTURA 
+            	    </div>
+            	    <br/>
 
-                <div class="container">
-                <div>
-                FACTURA
-                </div>
-                <div>
-                <t t-out="env.pos.selectedOrder.uid" />
-                </div>
-                </div>
-                <div>
-                FECHA:
+            	    <div class="container">
+        	    	<div>
+                    	    FACTURA:
+                	</div>
+            	    <div>
+            	    <t t-out="env.pos.selectedOrder.uid" />
+            	</div>
+    	    </div>
+    	    <div>
+            	FECHA:
                 <t t-out="env.pos.selectedOrder.formatted_validation_date"/>
-                </div>
-                <hr />
-
-                <!-- Orderlines -->
-                <!-- <t t-foreach="env.pos.selectedOrder.orderLines" t-as="line" t-key="line.id"> -->
-                    <div class="orderlines">
-                        <b class="price_display pos-receipt-right-align"/>
-                        <!-- <t t-set="foreign_product_price" t-value="get_orderline(line.product_name).get_display_foreign_price()"/>
-                        <t t-out="env.pos.format_currency_no_symbol(foreign_product_price, 'Tasa', currency)" /> -->
-
-                        <!-- <t t-out="env.pos.selectedOrder.orderLines" /> -->
-                        <t t-call="OrderLinesReceipt"/>
+    	    </div>
+	    <hr/>
+	    <!-- Orderlines -->
+	    <div class="orderlines">
+	    <t t-foreach="env.pos.selectedOrder.orderlines" t-as="line" t-key="line.id">
+        	<div class="flex">
+                    <div>
+                    	<div>
+                            <t t-out="line.quantityStr"/>
+                	    x
+			    <t t-out="env.pos.format_foreign_currency(line.get_display_foreign_price() / line.quantity)"/>
+                    	</div>
+                    	<div t-out="line.product.display_name"/>
                     </div>
 
-                <!-- </t> -->
+                    <div class="price_display">
+                	<t t-set="foreign_product_price" t-value="line.get_display_foreign_price()"/>
+                    	<t t-out="env.pos.format_currency_no_symbol(foreign_product_price, 'Tasa', currency)" />
+                    </div>
+            	</div>
+            </t>
+	    	<!-- <t t-call="OrderLinesReceipt"/> -->
+    	    </div>
 
-                <!-- Total -->
+	    <!-- <t t-foreach="env.pos.selectedOrder.orderLines" t-as="line" t-key="line.id"> -->
+            	<!-- <div class="orderlines"> -->
+	    	    <!-- <b class="price_display pos-receipt-right-align"/> -->
+	    	    <!-- <t t-set="foreign_product_price" t-value="line.get_foreign_price_with_tax()"/> -->
+	    	    <!-- <t t-out="env.pos.format_currency_no_symbol(foreign_product_price, 'Tasa', currency)" /> -->
+
+	    	    <!-- <t t-out="env.pos.selectedOrder.orderLines" /> -->
+        	<!-- </div> -->
+	    <!-- </t> -->
+
+            <!-- Total -->
+            <br/>
+            <hr />
+            <div class="pos-receipt-amount">
+                TOTAL
+                <span t-esc="env.pos.format_foreign_currency(env.pos.selectedOrder.get_foreign_total_with_tax())" class="pos-receipt-right-align"/>
+            </div>
+            <br/>
+            <div>
+        	* NO SE REALIZA DEVOLUCION DE DINERO
                 <br/>
-                <hr />
-                <div class="pos-receipt-amount">
-                    TOTAL
-                    <span t-esc="env.pos.format_foreign_currency(env.pos.selectedOrder.get_foreign_total_with_tax())" class="pos-receipt-right-align"/>
-                </div>
-                <br/>
-                <div>
-                * NO SE REALIZA DEVOLUCION DE DINERO
-                <br />
                 * CAMBIOS VALIDOS SOLO POR 3 DIAS CON LA 
                 PRESENTACION DE LA FACTURA ORIGINAL
-                <br />
+                <br/>
                 * LOS LIBROS NO TIENEN CAMBIOS
-                <br />
+                <br/>
                 *** GRACIAS POR SU COMPRA ***
+            </div>
+            <br/>
+            <div class="container">
+        	<div>
+                    MH
                 </div>
-                <br />
-                <div class="container">
                 <div>
-                MH
+                    Z1B8032319
                 </div>
-                <div>
-                Z1B8032319
-                </div>
-                </div>
-             
+            </div>
+	</div>
+    	</xpath>
     </t>
 
+    <!-- <t t-name="OrderLineReceipt" t-inherit="point_of_sale.OrderLinesReceipt" t-inherit-mode="extension" owl="1"> -->
+	<!-- <xpath expr="." position="replace"> -->
+	    <!-- <t t-foreach="env.pos.selectedOrder.orderlines" t-as="line" t-key="line.id"> -->
+    <!--     	<div class="flex"> -->
+    <!--                 <div> -->
+    <!--                 	<div> -->
+    <!--                         <t t-out="line.quantity"/> -->
+    <!--             	    x -->
+    <!--                         <t t-out="format_currency(line.get_foreign_unit_price())" /> -->
+    <!--                 	</div> -->
+    <!--                 	<div t-out="line.product_name_wrapped[0]" /> -->
+    <!--                 	<WrappedProductNameLines line="line" /> -->
+    <!--                 </div> -->
+
+    <!--                 <div class="price_display"> -->
+    <!--             	<t t-set="foreign_product_price" t-value="line.get_display_foreign_price()"/> -->
+    <!--                 	<t t-out="env.pos.format_currency_no_symbol(foreign_product_price, 'Tasa', currency)" /> -->
+    <!--                 </div> -->
+    <!--         	</div> -->
+    <!--         </t> -->
+	<!-- </xpath> -->
+    <!-- </t> -->
 </templates>
