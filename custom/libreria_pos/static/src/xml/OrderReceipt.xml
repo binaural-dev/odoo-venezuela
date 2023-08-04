@@ -79,18 +79,7 @@
                     </div>
             	</div>
             </t>
-	    	<!-- <t t-call="OrderLinesReceipt"/> -->
     	    </div>
-
-	    <!-- <t t-foreach="env.pos.selectedOrder.orderLines" t-as="line" t-key="line.id"> -->
-            	<!-- <div class="orderlines"> -->
-	    	    <!-- <b class="price_display pos-receipt-right-align"/> -->
-	    	    <!-- <t t-set="foreign_product_price" t-value="line.get_foreign_price_with_tax()"/> -->
-	    	    <!-- <t t-out="env.pos.format_currency_no_symbol(foreign_product_price, 'Tasa', currency)" /> -->
-
-	    	    <!-- <t t-out="env.pos.selectedOrder.orderLines" /> -->
-        	<!-- </div> -->
-	    <!-- </t> -->
 
             <!-- Total -->
             <br/>
@@ -122,27 +111,4 @@
 	</div>
     	</xpath>
     </t>
-
-    <!-- <t t-name="OrderLineReceipt" t-inherit="point_of_sale.OrderLinesReceipt" t-inherit-mode="extension" owl="1"> -->
-	<!-- <xpath expr="." position="replace"> -->
-	    <!-- <t t-foreach="env.pos.selectedOrder.orderlines" t-as="line" t-key="line.id"> -->
-    <!--     	<div class="flex"> -->
-    <!--                 <div> -->
-    <!--                 	<div> -->
-    <!--                         <t t-out="line.quantity"/> -->
-    <!--             	    x -->
-    <!--                         <t t-out="format_currency(line.get_foreign_unit_price())" /> -->
-    <!--                 	</div> -->
-    <!--                 	<div t-out="line.product_name_wrapped[0]" /> -->
-    <!--                 	<WrappedProductNameLines line="line" /> -->
-    <!--                 </div> -->
-
-    <!--                 <div class="price_display"> -->
-    <!--             	<t t-set="foreign_product_price" t-value="line.get_display_foreign_price()"/> -->
-    <!--                 	<t t-out="env.pos.format_currency_no_symbol(foreign_product_price, 'Tasa', currency)" /> -->
-    <!--                 </div> -->
-    <!--         	</div> -->
-    <!--         </t> -->
-	<!-- </xpath> -->
-    <!-- </t> -->
 </templates>
