@@ -36,6 +36,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
         this.to_receipt = json["to_receipt"]
         this.to_invoice = true;
         this.foreign_currency_rate = json.foreign_currency_rate || this.pos.config.foreign_rate
+        this.to_invoice = true;
       }
 
       set_orderline_options(orderline, options) {
