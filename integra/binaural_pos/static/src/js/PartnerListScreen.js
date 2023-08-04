@@ -51,10 +51,17 @@ odoo.define("binaural_pos.PartnerListScreen", function(require) {
           }
           this.activateEditMode();
         } catch (e) {
+          this.env.services.ui.unblock()
+          this.state.editModeProps.partner = {
+            country_id: this.env.pos.company.country_id,
+            state_id: this.env.pos.company.state_id,
+          }
+          this.activateEditMode();
           return this.showPopup('ErrorPopup', {
             title: _t('Failed connection'),
           });
         }
+        this.activateEditMode();
         this.env.services.ui.unblock()
       }
 

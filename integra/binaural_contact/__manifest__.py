@@ -9,7 +9,7 @@
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
     'category': 'Contacts/Contacts',
-    'version': '1.1',
+    'version': '1.4',
 
     # any module necessary for this one to work correctly
     'depends': ['base','contacts'],

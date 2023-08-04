@@ -89,7 +89,6 @@ class AccountMoveRetention(models.Model):
                 move._validate_municipal_retention()
                 retention = move._create_supplier_retention("municipal")
                 retention.action_post()
-                move.islr_voucher_number = retention.number
 
             # The IVA retention will not be generated if the invoice already has a retention that
             # is not cancelled
