@@ -33,7 +33,7 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.amount_to_pay_igtf = 0
-            if move.invoice_line_ids and move.is_invoice(include_receipts=True):
+            if move.invoice_line_ids and move.is_invoice(include_receipts=True) and move.tax_totals:
                 move.amount_to_pay_igtf = move.tax_totals["igtf"]["igtf_amount"] - move.amount_paid
 
     @api.depends(
