@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="PaymentScreen" t-inherit="point_of_sale.PaymentScreen" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[@class='button back']" position="after">
+            <div class="button"
+                t-on-click="() => this.showPaymentsOrigin()"
+                t-if="currentOrder.is_refund">
+                <span class="back_text">View Payments Origin</span>
+            </div>
+        </xpath>
         <xpath expr="//div[hasclass('left-content')]" position="replace">
             <div class="left-content">
                 <t t-if="env.isMobile">
@@ -23,8 +30,12 @@
                         </t>
                     </div>
                 </div>
-                <div t-if="!env.isMobile" class="button next validation" t-att-class="{ highlight: currentOrder.is_paid() and currentOrder._isValidEmptyOrder() }"
-                    t-on-click="() => this.trigger('validate-order')">
+		<div
+                    t-if="!env.isMobile"
+                    class="button next validation"
+                    t-att-class="{ highlight: currentOrder.is_paid() and currentOrder._isValidEmptyOrder() and isChangeZero}"
+		    t-on-click="() => this.trigger('validate-order')"
+		>
                     <div class="pay-circle">
                         <i class="fa fa-chevron-right" role="img" aria-label="Pay" title="Pay" />
                     </div>

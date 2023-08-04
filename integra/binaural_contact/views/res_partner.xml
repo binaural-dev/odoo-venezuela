@@ -6,16 +6,13 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='vat']" position="before">
-                <field name="prefix_vat"/>
+            <xpath expr="//field[@name='vat']" position="replace">
             </xpath>
-            <xpath expr="//field[@name='vat']" position="after">                
-                <button name="get_default_name_by_vat"
-                        type="object"
-                        icon = "fa-search"
-                >
-                <span>Search</span>
-                </button>
+            <xpath expr="//h1" position="before">
+                <group class="col-4">
+                    <field name="prefix_vat"/>
+                    <field name="vat"/>
+                </group>
             </xpath>
         </field>
     </record>

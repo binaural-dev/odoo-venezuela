@@ -800,6 +800,7 @@ class product_template_import(models.TransientModel):
             "batch_processing_unit_offset": self.batch_processing_unit_offset,
             "batch_actives_to_sync": self.batch_actives_to_sync,
             "batch_paused_to_sync": self.batch_paused_to_sync,
+            "batch_left_to_sync": self.batch_left_to_sync
         }
 
         _logger.info("product_template_import custom_context:"+str(custom_context)+" account:"+str(account and account.name))
@@ -840,7 +841,8 @@ class product_template_import(models.TransientModel):
             csv_report_attachment_last = self.env["ir.attachment"].search([('res_id','=',self.id)], order='id desc', limit=1 )
             if (csv_report_attachment_last):
                 csv_report_last = csv_report_attachment_last.index_content
-                csv_report = csv_report_last+"\n"+csv_report
+                if csv_report_last:
+                    csv_report = str(csv_report_last)+"\n"+str(csv_report)
             else:
                 csv_report = csv_report_header+"\n"+csv_report
             #_logger.info(csv_report)
@@ -874,5 +876,44 @@ class product_template_import(models.TransientModel):
         return res
 
 
-        
-        
+
+class mercadolibre_product_maestro_update(models.TransientModel):
+    _name = "mercadolibre.product.maestro.update"
+    _description = "MercadoLibre Product Maestro Update Wizard"
+
+    connection_account = fields.Many2one("mercadolibre.account",string="MercadoLibre Account")
+
+    def maestro_update(self, context=None):
+        context = context or self.env.context
+        _logger.info("meli_oerp_multiple >> wizard maestro_update "+str(context))
+        company = self.env.user.company_id
+        product_ids = []
+        if ('active_ids' in context):
+            product_ids = context['active_ids']
+        maestro_product_obj = self.env['mercadolibre.product.maestro']
+
+        warningobj = self.env['meli.warning']
+
+        account = self.connection_account
+        company = (account and account.company_id) or company
+
+        if account:
+            meli = self.env['meli.util'].get_new_instance( company, account )
+            if meli.need_login():
+                return meli.redirect_login()
+        else:
+            meli = None
+
+        res = {}
+        #for product_id in product_ids:
+        #    product = product_obj.browse(product_id)
+        #    if (product):
+        #        res = product.calculate_variations()
+
+        maestro_products = maestro_product_obj.search([('id','in',product_ids)])
+        if (maestro_products):
+            maestro_products.calculate_variations(meli=None)
+            if res and 'name' in res:
+                return res
+
+        return res

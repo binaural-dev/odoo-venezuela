@@ -264,6 +264,8 @@ class SerialFiscalDriver(SerialDriver):
                 "print_out_invoice": self.print_out_invoice,
                 "print_out_refund": self.print_out_refund,
                 "reprint": self.reprint,
+                "reprint_type": self.reprint_type,
+                "reprint_date": self.reprint_date,
                 "report_x": self.PrintXReport,
                 "report_z": self.PrintZReport,
                 "get_last_invoice_number": self.get_last_invoice_number,
@@ -312,6 +314,34 @@ class SerialFiscalDriver(SerialDriver):
             return self.data["value"]
 
         self.data["value"] = self._print_out_refund(invoice)
+        event_manager.device_changed(self)
+        return self.data["value"]
+
+    def reprint_date(self,data):
+        self.data["value"] = {"valid": False, "message": "No se ha completado"}
+        _data = data.get("data", False)
+        if _data:
+            data = _data
+        _logger.info(data)
+        mode = data.get("mode","Rs")
+        self.SendCmd(
+                mode + str(data["reprint_range_from"].zfill(7) + data["reprint_range_to"].zfill(7))
+        )
+        self.data["value"] = {"valid": True, "message": "MENSAJE"}
+        event_manager.device_changed(self)
+        return self.data["value"]
+
+    def reprint_type(self, data):
+        self.data["value"] = {"valid": False, "message": "No se ha completado"}
+        _data = data.get("data", False)
+        if _data:
+            data = _data
+        _logger.info(data)
+        mode = data.get("mode","R@")
+        self.SendCmd(
+            mode + str(data["reprint_range_from"].zfill(7) + str(data["reprint_range_to"].zfill(7)))
+        )
+        self.data["value"] = {"valid": True, "message": "MENSAJE"}
         event_manager.device_changed(self)
         return self.data["value"]
 
@@ -402,7 +432,14 @@ class SerialFiscalDriver(SerialDriver):
                     )
             cmd.append(str("3"))  # sub total en factura
 
+            def filter_unique_type_method(payment):
+                return payment["payment_method"] == "20"
+
             if len(invoice["payment_lines"]) == 1 or invoice["payment_lines"][0]["amount"] == 0:
+                cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
+            elif len(invoice["payment_lines"]) > 1 and len(
+                list(filter(filter_unique_type_method, invoice["payment_lines"]))
+            ) == len(invoice["payment_lines"]):
                 cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
             else:
                 for item in invoice["payment_lines"]:
@@ -418,6 +455,7 @@ class SerialFiscalDriver(SerialDriver):
                             + amount_d
                         )
                     )
+
 
             cmd.append(str("101"))
             cmd.append(str("199"))

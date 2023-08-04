@@ -56,6 +56,7 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
 
     image_bindings = fields.One2many('mercadolibre.product.image', "binding_product_tmpl_id", string="Product Template Images")
 
+    active = fields.Boolean(string="Product Template Active",related="product_tmpl_id.active",index=True)
 
     meli_title = fields.Char(string='Nombre del producto en Mercado Libre',size=256,index=True)
     meli_description = fields.Text(string='Descripción')
@@ -756,16 +757,33 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
             _logger.error("Undefined status set, meli_id: "+str(meli_id)+" status: "+str(status))
         return {}
 
+    def product_meli_block(self):
+        self.meli_update_stock_blocked = True
+        #product = bind.product_tmpl_id
+        #product.meli_update_stock_blocked = True
+        #for variant in product.product_variant_ids:
+        #    product.meli_update_stock_blocked = True
+
+    def product_meli_unblock(self):
+        self.meli_update_stock_blocked = False
+        #product = bind.product_tmpl_id
+        #product.meli_update_stock_blocked = False
+        #for variant in product.product_variant_ids:
+            #product.meli_update_stock_blocked = False
+
+
     def product_meli_status_close( self, context=None, meli=False ):
         _logger.info("MercadoLibre Product Tpl product_meli_status_close")
         return self.product_meli_status_put(context=context,status='closed',meli=meli)
 
     def product_meli_status_pause( self, context=None, meli=False ):
         _logger.info("MercadoLibre Product Tpl product_meli_status_pause")
+        self.product_meli_block()
         return self.product_meli_status_put(context=context,status='paused',meli=meli)
 
     def product_meli_status_active( self, context=None, meli=False ):
         _logger.info("MercadoLibre Product Tpl product_meli_status_active")
+        self.product_meli_unblock()
         return self.product_meli_status_put(context=context,status='active',meli=meli)
 
     def product_meli_delete( self, context=None, meli=False ):
@@ -889,6 +907,7 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
                     question = self.env["mercadolibre.questions"].process_question( Question=Question, meli=meli, config=config )
 
     meli_questions = fields.One2many( "mercadolibre.questions", "product_template_binding", string="Preguntas" )
+    meli_update_stock_blocked = fields.Boolean(string="Bloquea publicacion",default=False,index=True)
 
 
 class MercadoLibreConnectionBindingProductVariant(models.Model):
@@ -967,7 +986,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
     meli_price = fields.Char( string='Precio',help='Precio de venta en ML', size=128,index=True)
     meli_price_fixed = fields.Boolean(string='Price is fixed')
     meli_pricelist = fields.Many2one("product.pricelist",string="Pricelist")
-    #active = fields.Boolean(string="Product Active",related="product_id.active")
+    active = fields.Boolean(string="Product Active",related="product_id.active",index=True)
 
     @api.onchange('meli_price_fixed')
     def _onchange_meli_price_fixed( self ):
@@ -1055,26 +1074,73 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
     def _meli_stock_moves_update( self ):
         for bind in self:
             bind.meli_stock_moves_update = bind.product_id and bind.product_id.meli_stock_moves_update
+            bind._meli_stock_status()
+
+    def process_meli_stock_moves_update( self ):
+        for bind in self:
+            bind._meli_stock_moves_update()
+
 
     meli_stock_moves_update = fields.Datetime(compute=_meli_stock_moves_update,string="Stock Last Move",help="Ultimo movimiento de stock")
 
-    def get_stock_str(self):
+    #meli_stock_moves_ids = fields.One2many(related="product.stock_move_ids")
+
+    def _meli_stock_status( self ):
+        for bind in self:
+
+            bind.meli_stock_status = 'revision'
+
+            if ( bind.stock_error != 'Ok' ):
+
+                bind.meli_stock_status = 'revision_error'
+
+                if ( bind.stock_error and 'fulfillment' in bind.stock_error ):
+
+                    bind.meli_stock_status = 'revision_fulfillment'
+
+            else:
+                if (bind.meli_stock_moves_update):
+                    if (bind.stock_update):
+                        if ( bind.meli_stock_moves_update > bind.stock_update ):
+                            bind.meli_stock_status = 'update'
+                        else:
+                            bind.meli_stock_status = 'updated'
+                    else:
+                        bind.meli_stock_status = 'update'
+                else:
+                    bind.meli_stock_status = 'revision_unmoved'
+
+    meli_stock_status = fields.Selection(selection=[('update','Actualizar'),('updated','Actualizado'),('revision','Revisar'),('revision_unmoved','Revisar sin movimientos'),('revision_error','Revisar con error'),('revision_fulfillment','Fulfillment')],string="Status de stock",compute=_meli_stock_status,store=True,index=True)
+
+    def get_stock_str(self,meli=None):
         stocks = []
         stocks_str = ""
         stocks_on_hand = 0.0
         stocks_available = 0.0
+        stocks_meli = 0.0
         #ss = variant._product_available()
-
-        variant = self.product_id
-        account = self.connection_account
+        bindv = self
+        variant = bindv.product_id
+        account = bindv.connection_account
         if not variant or not account:
-            return stocks_str, stocks_on_hand, stocks_available
+            return stocks_str, stocks_on_hand, stocks_available, stocks_meli
 
+        config = account.configuration
+        if not meli:
+            meli = self.env['meli.util'].get_new_instance( account.company_id, account )
         #_logger.info("account.configuration.publish_stock_locations")
         #_logger.info(account.configuration.publish_stock_locations.mapped("id"))
         #locids = account.configuration.publish_stock_locations.mapped("id")
-        locids = account.get_location_ids()
-        sq = self.env["stock.quant"].search([('product_id','=',variant.id),('location_id','in',locids)],order="location_id asc")
+        meli_id = bindv.conn_id
+        meli_id_variation = bindv.conn_variation_id
+
+        locids = variant._meli_get_location_id( meli_id=meli_id, meli=meli,config=config)
+        #_logger.info("locids:"+str(locids))
+        sq = None
+        if (locids):
+            locids_id = [locid.id for locid in locids]
+            #_logger.info("locids_id:"+str(locids_id))
+            sq = self.env["stock.quant"].search([('product_id','=',variant.id),('location_id','in',locids_id)],order="location_id asc")
         if (sq):
             #_logger.info( sq )
             #_logger.info( sq.name )
@@ -1083,7 +1149,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 #TODO: merge de stocks
                 #TODO: solo publicar available
                 if ( s.location_id.usage == "internal"):
-                    _logger.info( s )
+                    #_logger.info( s )
                     sjson = {
                         "warehouseId": s.location_id.id,
                         "warehouse": s.location_id.display_name,
@@ -1097,8 +1163,25 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                     stocks_on_hand+= sjson["quantity"]
                     stocks_available+= sjson["available"]
                     #variant.stock = sjson["available"]
+            res = "/items/%s" % (meli_id)
+            #_logger.info("res:"+str(res)+" meli.access_token:"+str(meli.access_token))
+            response = meli.get( res, {'access_token':meli.access_token})
+            rjson = response.json()
 
-        return stocks_str, stocks_on_hand, stocks_available
+            if (meli_id_variation):
+                if rjson and "variations" in rjson:
+                    for var in rjson["variations"]:
+                        #_logger.info("var:"+str(var))
+                        if (str(var["id"])==str(meli_id_variation)):
+                            #_logger.info("var YES:"+str(var))
+                            stocks_meli = var["available_quantity"]
+                            break;
+
+            else:
+                if rjson and "available_quantity" in rjson and rjson["available_quantity"]:
+                    stocks_meli = rjson["available_quantity"]
+
+        return stocks_str, stocks_on_hand, stocks_available, stocks_meli
 
     def _search_stock_resume_on_hand(self, operator, value):
         ids = []
@@ -1161,14 +1244,27 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
     def _meli_stock_resume(self):
         #_logger.info("Calculate stock resume")
+        account_def = None
+        meli = None
         for bind in self:
+            account = bind.connection_account
+            if (account_def!=account):
+                account_def = account
+                meli = None
+                if not meli:
+                    meli = self.env['meli.util'].get_new_instance( account.company_id, account )
+
             bind.meli_stock_resume = ""
-            stocks_str, stocks_on_hand, stocks_available = bind.get_stock_str()
+            stocks_str, stocks_on_hand, stocks_available, stocks_meli = bind.get_stock_str(meli=meli)
             bind.meli_stock_resume = stocks_str
             bind.meli_stock_resume_on_hand = stocks_on_hand
             bind.meli_stock_resume_available = stocks_available
+            bind.meli_stock_resume_mercadolibre = stocks_meli
 
-    #meli_stock_resume = fields.Char(string="Stock Resumen", compute="_meli_stock_resume", store=False )
+    meli_stock_resume = fields.Char(string="Stock Resumen", compute="_meli_stock_resume", store=False )
+    meli_stock_resume_on_hand = fields.Float(string="En mano")
+    meli_stock_resume_available = fields.Float(string="Disponible")
+    meli_stock_resume_mercadolibre = fields.Float(string="Stock en MercadoLibre")
     #meli_stock_resume_on_hand = fields.Float(string="Qty On hand", compute="_meli_stock_resume"
                         #, search="_search_stock_resume_on_hand"
     #                    )
@@ -1200,7 +1296,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
     meli_shipping_logistic_type = fields.Char(string="Logistic Type",index=True)
     meli_shipping_free = fields.Boolean(string="Shipping Free",default=False,index=True)
 
-
     meli_inventory_id = fields.Char(string="Inventory Id",index=True)
 
     meli_shipping_mode = fields.Char(string="Shipping Mode",help="Shipping modes (por usuario): custom, not_specified, me2. https://api.mercadolibre.com/users/USERID/shipping_preferences",index=True)
@@ -1208,6 +1303,8 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
     meli_max_purchase_quantity = fields.Integer(string='Max Compra', help='Cantidad maxima por compra en ML')
     meli_manufacturing_time = fields.Char(string='Manufacturing time', help='Tiempo de fabricacion (30 días)')
+
+    #meli_update_stock_blocked = fields.Boolean(string="Bloquea publicacion",default=False,index=True)
 
     def copy_from_meli_oerp( self ):
         for bind in self:
@@ -1485,10 +1582,14 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                     if (new_price>0):
                         bind.meli_price = new_price
 
-            if (product.meli_currency and product.meli_currency == 'MXN'):
+            bind.meli_price = round(bind.meli_price,2)
+
+            if (product_tmpl.meli_currency and (product_tmpl.meli_currency == 'MXN' or product_tmpl.meli_currency == 'USD')):
                 bind.meli_price = str((float(bind.meli_price)))
+            elif (product_tmpl.meli_currency and product_tmpl.meli_currency == 'CLP'):
+                bind.meli_price = str( int( int( math.floor(int(bind.meli_price) / 100 ) * 100 + 90 ) ) )
             else:
-                bind.meli_price = math.ceil(float(bind.meli_price))
+                bind.meli_price = math.ceil(bind.meli_price)
                 bind.meli_price = str(int(float(bind.meli_price)))
 
             _logger.info("update_price meli_price (forced?): "+str(meli_price))
@@ -1572,7 +1673,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
     def product_post_stock( self, context=None, meli=None, optimize=False ):
         #_logger.info("MercadoLibre Product product_post_stock: context: "+str(context)+" meli: "+str(meli)+" optimize:"+str(optimize))
         for bindv in self:
-
+            bindv._meli_stock_status()
             account = bindv.connection_account
             config = account and account.configuration
             product = bindv.product_id
@@ -1580,6 +1681,9 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
             meli_id = bindv.conn_id
             meli_id_variation = bindv.conn_variation_id
             bindT = bindv.binding_product_tmpl_id
+
+            if bindT.meli_update_stock_blocked or product.meli_update_stock_blocked or product_template.meli_update_stock_blocked:
+                continue;
 
             if not product or not product_template or not product.active or not product_template.active:
                 _logger.error("bindv > product_post_stock > Product Binded not active or missing! "+str(product and product.name)+" tpl:"+str(product_template and product_template.name))
@@ -1605,6 +1709,8 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                         res = { "error": "fulfillment"}
                         bindv.stock_error = str(res)
                         bindv.stock_update = ml_datetime( str( datetime.now() ) )
+                        bindT.stock_update = bindv.stock_update
+                        bindT.stock_error = bindv.stock_error
                         #_logger.info(bindv.stock_error)
                         rjson = account.fetch_meli_product(meli_id=meli_id,meli=meli)
                         if bindv.stock<=0:
@@ -1628,12 +1734,16 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                     res = { "error": "product archived"}
                     bindv.stock_error = str(res)
                     bindv.stock_update = ml_datetime( str( datetime.now() ) )
+                    bindT.stock_update = bindv.stock_update
+                    bindT.stock_error = bindv.stock_error
                     _logger.error(bindv.stock_error)
                     return res
                 if not bindv.product_id:
                     res = { "error": "no product binded"}
                     bindv.stock_error = str(res)
                     bindv.stock_update = ml_datetime( str( datetime.now() ) )
+                    bindT.stock_update = bindv.stock_update
+                    bindT.stock_error = bindv.stock_error
                     _logger.error(bindv.stock_error)
                     return res
 
@@ -1654,17 +1764,27 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                     #    bindv.meli_inventory_id = "fetch"
                     bindv.stock_error = str(res)
                     bindv.stock_update = ml_datetime( str( datetime.now() ) )
+                    bindv._meli_stock_status()
+                    bindT.stock_update = bindv.stock_update
+                    bindT.stock_error = bindv.stock_error
                     return res
                 #bindv.meli_inventory_id = None
                 #more than one
                 bindv.stock_error = "Ok"
                 bindv.stock_update = ml_datetime( str( datetime.now() ) )
+                bindv._meli_stock_status()
+                bindT.stock_update = bindv.stock_update
+                bindT.stock_error = bindv.stock_error
 
             except Exception as e:
                 _logger.info("mercadolibre.product product_post_stock > exception error")
                 _logger.info(e, exc_info=True)
                 bindv.stock_error = str(e)
                 bindv.stock_update = ml_datetime( str( datetime.now() ) )
+                bindv._meli_stock_status()
+
+                bindT.stock_update = bindv.stock_update
+                bindT.stock_error = bindv.stock_error
                 pass;
 
             return {}
@@ -1705,6 +1825,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 _logger.info("mercadolibre.product product_post_price: bindv.price:"+str(bindv.price)+" meli_price: "+str(bindv.meli_price))
                 res = product.x_product_post_price( context=context, meli_price=bindv.meli_price, meli_currency=meli_currency, meli=meli, config=config, meli_id=meli_id, meli_id_variation=meli_id_variation )
                 if res and 'error' in res:
+                    bindv.price_update = ml_datetime( str( datetime.now() ) )
                     return res
                 bindv.price_update = ml_datetime( str( datetime.now() ) )
                 #more than one
@@ -1744,10 +1865,17 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
     def product_meli_status_pause( self, context=None, meli=False ):
         _logger.info("MercadoLibre Product product_meli_status_pause")
+        for bindv in self:
+            bindT = bindv.binding_product_tmpl_id
+            bindT.product_meli_block()
+
         return self.product_meli_status_put(context=context,status='paused',meli=meli)
 
     def product_meli_status_active( self, context=None, meli=False ):
         _logger.info("MercadoLibre Product product_meli_status_active")
+        for bindv in self:
+            bindT = bindv.binding_product_tmpl_id
+            bindT.product_meli_unblock()
         return self.product_meli_status_put(context=context,status='active',meli=meli)
 
     def product_meli_delete( self, context=None, meli=False ):
