@@ -1,3 +1,10 @@
+.rheader {
+    font-size: 18px !important;
+}
+
+.rbody{
+    font-size: 16px !important;
+}
 .letter {
     /* font-size: 5%; */
     text-transform: uppercase;

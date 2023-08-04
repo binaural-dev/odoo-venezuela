@@ -8,7 +8,7 @@
                         <t t-out="receipt.header_html" />
                     </t>
                     
-                    <div>
+                    <div class="rheader">
                     	<p><strong>SENIAT</strong></p>
                     	<p class="letter">
                      	<t t-esc="receipt.company.vat" />
@@ -21,7 +21,7 @@
                     </div>
             	</div>
                 <br/>
-        	<div class="d-flex justify-content-start letter">
+        	<div class="d-flex justify-content-start letter rbody">
                     <div>CLIENTE: <t t-esc="receipt.partner.name" /></div>
                     <div>
                     	RIF: 
@@ -35,26 +35,26 @@
 		</div>
             	<br/>
 
-            	    <div style="text-align:center;">
-        	    	FACTURA 
-            	    </div>
-            	    <br/>
+            	<div style="text-align:center;" class="rbody">
+        	    FACTURA 
+            	</div>
+            	<br/>
 
-            	    <div class="container">
-        	    	<div>
-                    	    FACTURA:
-                	</div>
-            	    <div>
-            	    <t t-out="env.pos.selectedOrder.uid.replaceAll('-', '')" />
+            	<div class="container rbody">
+        	    <div>
+                    	FACTURA:
+                    </div>
+            	<div class="rbody">
+            	    <t t-out="env.pos.selectedOrder.uid.replaceAll('-', '')"/>
             	</div>
     	    </div>
-    	    <div>
+    	    <div class="rbody">
             	FECHA:
                 <t t-out="env.pos.selectedOrder.formatted_validation_date"/>
     	    </div>
 	    <hr/>
 	    <!-- Orderlines -->
-	    <div class="orderlines">
+	    <div class="orderlines rbody">
 	    <t t-foreach="env.pos.selectedOrder.orderlines" t-as="line" t-key="line.id">
         	<div class="flex">
                     <div>
@@ -77,12 +77,12 @@
             <!-- Total -->
             <br/>
             <hr />
-            <div class="pos-receipt-amount">
+            <div class="pos-receipt-amount rbody">
                 TOTAL
                 <span t-esc="env.pos.format_foreign_currency(env.pos.selectedOrder.get_foreign_total_with_tax())" class="pos-receipt-right-align"/>
             </div>
             <br/>
-            <div>
+            <div class="rbody">
         	* NO SE REALIZA DEVOLUCION DE DINERO
                 <br/>
                 * CAMBIOS VALIDOS SOLO POR 3 DIAS CON LA 
@@ -93,7 +93,7 @@
                 *** GRACIAS POR SU COMPRA ***
             </div>
             <br/>
-            <div class="container">
+            <div class="container rbody">
         	<div>
                     MH
                 </div>
