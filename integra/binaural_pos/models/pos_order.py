@@ -9,7 +9,7 @@ class PosOrder(models.Model):
     _inherit = "pos.order"
 
     foreign_currency_id = fields.Many2one("res.currency", related="company_id.currency_foreign_id")
-    foreign_amount_total = fields.Float(string="Total", readonly=True, required=True)
+    foreign_amount_total = fields.Float(string="Foreign Total", readonly=True, required=True)
     foreign_currency_rate = fields.Float(readonly=True, required=True)
     to_receipt = fields.Boolean(readonly=True)
 

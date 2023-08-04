@@ -199,9 +199,10 @@ msgid "Foreign Amount"
 msgstr "Monto Alterno"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.view_pos_order_tree
 #: model_terms:ir.ui.view,arch_db:binaural_pos.view_pos_payment_tree
 msgid "Foreign Amount total"
-msgstr "Monto Alterno"
+msgstr "Monto alterno"
 
 #. module: binaural_pos
 #. odoo-javascript
@@ -209,6 +210,11 @@ msgstr "Monto Alterno"
 #, python-format
 msgid "Foreign Change"
 msgstr "Cambio alterno"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment__foreign_currency_id
+msgid "Foreign Currency"
+msgstr "Moneda alterna"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_order__foreign_currency_rate
@@ -234,6 +240,7 @@ msgid "Foreign Remaining"
 msgstr "Restante alterno"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_order__foreign_amount_total
 #: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
 msgid "Foreign Total"
 msgstr "Monto Alterno"

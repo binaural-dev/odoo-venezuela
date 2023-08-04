@@ -59,6 +59,23 @@
         </field>
     </record>
 
+    <record id="view_quotation_tree" model="ir.ui.view">
+        <field name="name">sale.order.tree</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="foreign_currency_id" invisible="1"/>
+                <field 
+                    name="foreign_total_billed" 
+                    sum="Foreign Amount total" 
+                    widget="monetary" 
+                    options="{'currency_field': 'foreign_currency_id'}"
+                    decoration-bf="1"/>
+            </xpath>
+        </field>
+    </record> 
+
     <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">
         <field name="name">Quotations</field>
         <field name="type">ir.actions.act_window</field>
