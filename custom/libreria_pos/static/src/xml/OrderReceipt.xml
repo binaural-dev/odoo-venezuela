@@ -45,7 +45,7 @@
                     	    FACTURA:
                 	</div>
             	    <div>
-            	    <t t-out="env.pos.selectedOrder.uid" />
+            	    <t t-out="env.pos.selectedOrder.uid.replaceAll('-', '')" />
             	</div>
     	    </div>
     	    <div>
