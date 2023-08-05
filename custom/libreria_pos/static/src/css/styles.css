@@ -1,10 +1,28 @@
+@font-face {
+   font-family: 'shaston';
+   src: url('/libreria_pos/static/src/fonts/Shaston640.ttf') format('truetype');  
+   font-weight: normal;
+   font-style: normal;
+}
+
+@font-face {
+   font-family: 'shaston';
+   src: url('/libreria_pos/static/src/fonts/Shaston320.ttf') format('truetype');
+   font-weight: bold;
+   font-style: normal;
+}
+
 .rheader {
-    font-size: 18px !important;
+    font-size: 16px;
+    font-family: 'shaston';
+    text-align: center;
 }
 
 .rbody{
-    font-size: 16px !important;
+    font-size: 14px;
+    font-family: 'shaston';
 }
+
 .letter {
     /* font-size: 5%; */
     text-transform: uppercase;
@@ -19,4 +37,8 @@
 .border {
     border-bottom: 3px;
     color: black;
+}
+
+.dotted-hr {
+    border: 0.5px dotted #000;
 }

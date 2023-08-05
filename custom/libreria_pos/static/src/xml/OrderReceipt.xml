@@ -9,15 +9,16 @@
                     </t>
                     
                     <div class="rheader">
-                    	<p><strong>SENIAT</strong></p>
-                    	<p class="letter">
+                    	<strong>SENIAT</strong>
+			<br/>
+                    	<span class="letter">
                      	<t t-esc="receipt.company.vat" />
                     	<br />
                     	<t t-esc="receipt.company.name"/>
                     	<br />
-                    	<strong>AV.</strong> Bolivar Norte Edif. Jota Jota Piso PB Local Planta Baja Urb. La Alegria. Valencia Carabobo (VE) Venezuela
+                    	AV. Bolivar Norte Edif. Jota Jota Piso PB Local Planta Baja Urb. La Alegria. Valencia Carabobo (VE) Venezuela
                     	TELEFONO: <t t-esc="receipt.company.phone" />
-                    	</p>
+                    	</span>
                     </div>
             	</div>
                 <br/>
@@ -52,7 +53,7 @@
             	FECHA:
                 <t t-out="env.pos.selectedOrder.formatted_validation_date"/>
     	    </div>
-	    <hr/>
+	    <hr class="dotted-hr"/>
 	    <!-- Orderlines -->
 	    <div class="orderlines rbody">
 	    <t t-foreach="env.pos.selectedOrder.orderlines" t-as="line" t-key="line.id">
@@ -76,10 +77,12 @@
 
             <!-- Total -->
             <br/>
-            <hr />
-            <div class="pos-receipt-amount rbody">
-                TOTAL
-                <span t-esc="env.pos.format_foreign_currency(env.pos.selectedOrder.get_foreign_total_with_tax())" class="pos-receipt-right-align"/>
+            <hr class="dotted-hr"/>
+	    <strong>
+	    	<span style="text-aling:left !important;" class="rbody">TOTAL</span>
+            	<span t-esc="env.pos.format_foreign_currency(env.pos.selectedOrder.get_foreign_total_with_tax())" class="pos-receipt-right-align rbody"/>
+    	    </strong>
+            <div class="pos-receipt-amount rbody" style="text-align:left;">
             </div>
             <br/>
             <div class="rbody">
@@ -95,7 +98,7 @@
             <br/>
             <div class="container rbody">
         	<div>
-                    MH
+		    <em>MH</em>
                 </div>
                 <div>
                     Z1B8032319

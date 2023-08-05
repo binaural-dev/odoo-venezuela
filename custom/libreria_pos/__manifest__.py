@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.2",
+    "version": "16.3",
     # any module necessary for this one to work correctly
     "depends": ["base", "point_of_sale"],
     # always loaded
@@ -15,8 +15,9 @@
     "application": True,
     "assets": {
         "point_of_sale.assets": [
-            "libreria_pos/static/src/xml/*.xml",
+            "libreria_pos/static/src/fonts*.ttf",
             "libreria_pos/static/src/css/*.css",
+            "libreria_pos/static/src/xml/*.xml",
         ],
     },
 }
