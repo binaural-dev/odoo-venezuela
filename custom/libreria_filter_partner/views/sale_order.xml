@@ -1,0 +1,5 @@
+<odoo>
+    <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">
+        <field name="context">{'search_default_my_quotation': 1, 'default_filter_partner': 'contact'}</field>
+    </record>
+</odoo>
