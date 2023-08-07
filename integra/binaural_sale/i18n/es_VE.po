@@ -4,16 +4,23 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230410\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230710\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-10 14:56+0000\n"
-"PO-Revision-Date: 2023-04-10 14:56+0000\n"
+"POT-Creation-Date: 2023-07-25 21:06+0000\n"
+"PO-Revision-Date: 2023-07-25 21:06+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: binaural_sale
+#. odoo-python
+#: code:addons/binaural_sale/models/sale_order.py:0
+#, python-format
+msgid "All products must contain only one tax."
+msgstr "Todos los productos deben contener solo un impuesto."
 
 #. module: binaural_sale
 #: model_terms:ir.ui.view,arch_db:binaural_sale.res_config_settings_binaural_sale
@@ -31,8 +38,8 @@ msgid ""
 "Check this if you want the rate of the invoice to be taken from its sale "
 "order. Else it will take the rate of the date when it is created."
 msgstr ""
-"Marque esta opción si quiere que la factura utilice la tasa de su orden"
-" de venta. De lo contrario utilizará la tasa del día en el que sea creada."
+"Marque esta opción si quiere que la factura utilice la tasa de su orden de "
+"venta. De lo contrario utilizará la tasa del día en el que sea creada."
 
 #. module: binaural_sale
 #: model:ir.model,name:binaural_sale.model_res_company

@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.1",
+    "version": "16.6",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -20,6 +20,7 @@
     # always loaded
     "data": [
         "data/account_data.xml",
+        "data/ir_actions_server.xml",
         "views/account_invoice_report.xml",
         "views/account_move.xml",
         "views/account_move_line.xml",

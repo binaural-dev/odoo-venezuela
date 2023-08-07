@@ -17,7 +17,6 @@
         <record id="paperformat_note" model="report.paperformat">
             <field name="name">Free Form Paperformat</field>
             <field name="default" eval="True"/>
-            <field name="format">A4</field>
             <field name="orientation">Portrait</field>
             <field name="margin_top">10</field>
             <field name="margin_bottom">11</field>
