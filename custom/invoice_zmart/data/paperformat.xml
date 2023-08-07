@@ -5,8 +5,6 @@
             <field name="name">Free Form Paperformat</field>
             <field name="default" eval="True"/>
             <field name="format">A4</field>
-            <!--<field name="page_height">154</field>
-            <field name="page_width">210</field>-->
             <field name="orientation">Portrait</field>
             <field name="margin_top">25</field>
             <field name="margin_bottom">11</field>
@@ -16,12 +14,9 @@
             <field name="header_spacing">3</field>
             <field name="dpi">110</field>
         </record>
-         <record id="paperformat_note" model="report.paperformat">
+        <record id="paperformat_note" model="report.paperformat">
             <field name="name">Free Form Paperformat</field>
             <field name="default" eval="True"/>
-            <field name="format">A4</field>
-            <!--<field name="page_height">154</field>
-            <field name="page_width">210</field>-->
             <field name="orientation">Portrait</field>
             <field name="margin_top">10</field>
             <field name="margin_bottom">11</field>
@@ -32,5 +27,4 @@
             <field name="dpi">110</field>
         </record>
     </data>
-
 </odoo>

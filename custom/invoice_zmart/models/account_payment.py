@@ -1,5 +1,5 @@
-from odoo import api, models, fields, _, Command
-from odoo.exceptions import UserError, ValidationError
+from odoo import api, models, fields, _
+from odoo.exceptions import ValidationError
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"
@@ -27,7 +27,6 @@ class AccountPayment(models.Model):
                 raise ValidationError(
                     'El memo del pago debe ser unico')
         return super().write(vals)
-    
     
     @api.model
     def create(self, vals):

@@ -107,7 +107,8 @@ class ProductTemplateZmart(models.Model):
 	model_product = fields.Char(
 		store = True
 	)
-
+	no_has_discount = fields.Boolean(
+	)
 	@api.depends('oem', 'oem.code')
 	def _compute_code(self):
 		for record in self:

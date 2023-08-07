@@ -297,3 +297,15 @@ msgstr "Unidad de Medición"
 #: model:ir.model.fields,field_description:product_zmart.field_product_template__unit_of_measurement_unit_sale
 msgid "Unit Of Measurement Unit Sale"
 msgstr "Unidad de Medición"
+
+#. module: product_zmart
+#: model:ir.model.fields,field_description:product_zmart.field_product_product__no_has_discount
+#: model:ir.model.fields,field_description:product_zmart.field_product_template__no_has_discount
+msgid "No Has Discount"
+msgstr "No tiene descuento"
+
+#. module: product_zmart
+#: model:ir.model.fields,field_description:product_zmart.field_product_product__model_product
+#: model:ir.model.fields,field_description:product_zmart.field_product_template__model_product
+msgid "Model Product"
+msgstr "Modelo de producto"

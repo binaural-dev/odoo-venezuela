@@ -20,7 +20,6 @@
                 <field name="shipping_type"/>
                 <field name="shipping_mean"/>
                 <field name="shipping_method" attrs="{'invisible': [('shipping_type', '==', 'withdrawal')]}"/>
-                <field name="unlock_date"/>
             </xpath>
             
         </field>
