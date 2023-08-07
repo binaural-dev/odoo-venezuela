@@ -1,5 +1,5 @@
 <odoo>
     <record id="purchase.purchase_rfq" model="ir.actions.act_window">
-        <field name="context">{'quotation_only': True, 'default_filter_partner': 'contact'}</field>
+        <field name="context">{'quotation_only': True, 'default_filter_partner': ''}</field>
     </record>
 </odoo>

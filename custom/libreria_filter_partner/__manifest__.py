@@ -8,7 +8,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Technical",
-    "version": "16.0",
+    "version": "16.1",
     # any module necessary for this one to work correctly
     "depends": [
         "binaural_filter_partner",
