@@ -66,6 +66,9 @@ class MunicipalRetentionPatentReport(models.TransientModel):
                 ("move_id.invoice_date", "<=", self.date_end),
                 ("move_id.move_type", "in", ["out_invoice", "out_refund"]),
                 ("move_id.financial_document", "=", True),
+                ("move_id.journal_id.fiscal", "=", True),
+                ("move_id.state", "=", "posted"),
+
             ]
         )
 
@@ -137,6 +140,8 @@ class MunicipalRetentionPatentReport(models.TransientModel):
                 ("move_id.invoice_date", "<=", self.date_end),
                 ("move_id.move_type", "in", ["out_invoice", "out_refund"]),
                 ("move_id.financial_document", "=", False),
+                ("move_id.journal_id.fiscal", "=", True),
+                ("move_id.state", "=", "posted"),
             ]
         )
 
