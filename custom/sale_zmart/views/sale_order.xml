@@ -47,4 +47,15 @@
             </xpath>
         </field>
     </record>
+    <record id="sale_order_view_search_inherit_quotation_zmart" model="ir.ui.view">
+        <field name="name">sale.order.search.inherit.quotation.zmart</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.sale_order_view_search_inherit_quotation"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='my_quotation']" position="after">
+                <filter name="Facturas" domain="[('invoice_type','=','Factura')]"/>
+                <filter name="Notas de entrega" domain="[('invoice_type','=','Nota de Entrega')]"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>
