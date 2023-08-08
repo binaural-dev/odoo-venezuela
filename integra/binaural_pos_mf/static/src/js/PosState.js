@@ -86,7 +86,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             let amount = vef_base ? el.price : el.get_foreign_unit_price()
 
             return {
-              price_unit: Math.abs(amount),
+              price_unit: amount,
               quantity: Math.abs(el.quantity),
               name: el.product.display_name,
               code: el.product.default_code,
