@@ -69,7 +69,7 @@
                                     <tbody>
                                         <t t-foreach="o.move_line_ids_without_package" t-as="ml">
                                             <tr style="border: 1px solid white;">
-                                                <td style="text-align:center">
+                                                <td style="text-align:center;width:110px">
                                                     <span t-field="ml.product_id.default_code"/>
                                                 </td>
                                                 <td style="text-align:left">

@@ -70,7 +70,7 @@ class StockPicking(models.Model):
         return [('id', '=', self.env.user.id)]
     
     def button_validate(self):
-        super().button_validate()
+        res = super().button_validate()
         if self.sequence_code == 'PICK':
             current_user = self.env.user
             self.user_pick_id = current_user.id
@@ -80,6 +80,7 @@ class StockPicking(models.Model):
         if self.sequence_code == 'OUT':
             current_user = self.env.user
             self.user_out_id = current_user
+        return res
     
     @api.onchange('guide','package_qty','user_pack_id')
     def onchange_guide(self):

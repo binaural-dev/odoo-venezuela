@@ -32,5 +32,17 @@
                 </xpath>
             </field>
         </record>
+        <record id="view_picking_tree_inherit_zmart" model="ir.ui.view">
+            <field name="name">stock.picking.tree.zmart</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.vpicktree"/>
+            <field name="arch" type="xml">
+                <field name="partner_id" position="after">
+                    <field name="exit_etd"/>
+                    <field name="inlay_port"/>
+                    <field name="date_in_store"/>
+                </field>
+            </field>
+        </record>
     </data>
 </odoo>

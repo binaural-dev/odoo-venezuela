@@ -6,12 +6,10 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Purchase/Purchase",
-    "version": "16.0",
-    # any module necessary for this one to work correctly
+    "version": "16.0.0.1",
     "depends": [
         "binaural_purchase",
     ],
-    # always loaded
     "data": [
         "security/ir.model.access.csv",
         'report/report_purchase.xml',
