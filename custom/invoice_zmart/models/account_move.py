@@ -11,9 +11,9 @@ class AccountInvoice(models.Model):
     def _compute_invoice_type(self):
         for move in self:
             if move.journal_id.type == "sale" and move.journal_id.fiscal:
-                move.invoice_type = "Invoice"
+                move.invoice_type = "Factura"
             elif move.journal_id.type == "sale" and not move.journal_id.fiscal:
-                move.invoice_type = "Sale Note"
+                move.invoice_type = "Nota de Entrega"
             else:
                 move.invoice_type = ""
 
