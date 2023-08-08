@@ -68,3 +68,10 @@ msgstr "Nota de entrega RMA"
 #: model:res.groups,name:invoice_zmart.group_invoice
 msgid "Invoice $"
 msgstr "Factura $"
+
+#. module: invoice_zmart
+#: model:ir.model.fields,field_description:invoice_zmart.field_account_bank_statement_line__invoice_type
+#: model:ir.model.fields,field_description:invoice_zmart.field_account_move__invoice_type
+#: model:ir.model.fields,field_description:invoice_zmart.field_account_payment__invoice_type
+msgid "Invoice Type"
+msgstr "Tipo de documento"
