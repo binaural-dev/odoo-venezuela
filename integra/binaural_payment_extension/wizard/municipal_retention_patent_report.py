@@ -68,7 +68,6 @@ class MunicipalRetentionPatentReport(models.TransientModel):
                 ("move_id.financial_document", "=", True),
                 ("move_id.journal_id.fiscal", "=", True),
                 ("move_id.state", "=", "posted"),
-
             ]
         )
 
@@ -158,9 +157,10 @@ class MunicipalRetentionPatentReport(models.TransientModel):
                 price_subtotal = line.foreign_subtotal
             else:
                 price_subtotal = line.price_subtotal
-            if not line.product_id.categ_id.name in groups.keys():
-                ciu = line.ciu_id
-                groups[line.product_id.categ_id.name] = {
+            ciu = line.ciu_id
+            if not ((ciu.name, line.product_id.categ_id.name) in groups.keys()):
+                groups[ciu.name, line.product_id.categ_id.name] = {
+                    "category_name": line.product_id.categ_id.name,
                     "CIU": ciu.name,
                     "sales_total": price_subtotal if line.move_id.move_type == "out_invoice" else 0,
                     "refund_total": price_subtotal if line.move_id.move_type == "out_refund" else 0,
@@ -169,10 +169,10 @@ class MunicipalRetentionPatentReport(models.TransientModel):
                 }
                 continue
 
-            groups[line.product_id.categ_id.name]["sales_total"] += (
+            groups[ciu.name, line.product_id.categ_id.name]["sales_total"] += (
                 price_subtotal if line.move_id.move_type == "out_invoice" else 0
             )
-            groups[line.product_id.categ_id.name]["refund_total"] += (
+            groups[ciu.name, line.product_id.categ_id.name]["refund_total"] += (
                 price_subtotal if line.move_id.move_type == "out_refund" else 0
             )
 
@@ -202,7 +202,7 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         for line in groups.keys():
             rows = OrderedDict()
             rows.update(cols)
-            rows["RUBROS"] = line
+            rows["RUBROS"] = groups[line]["category_name"]
             rows["CIU"] = groups[line]["CIU"]
             rows["VENTAS BRUTAS (Factura + ND)"] = groups[line]["sales_total"]
             rows["DEVOLUC. VENTAS (NC)"] = groups[line]["refund_total"]
