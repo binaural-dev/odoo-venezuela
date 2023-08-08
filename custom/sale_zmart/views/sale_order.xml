@@ -16,6 +16,7 @@
             </field>
             <xpath expr="//field[@name='payment_term_id']" position="after">
                 <field name="printed" readonly="True"/>
+                <field name="invoice_type"/>
                 <field name="priority_sale"/>
                 <field name="shipping_type"/>
                 <field name="shipping_mean"/>
@@ -33,6 +34,7 @@
                 <field name="priority_sale"/>
                 <field name="shipping_type"/>
                 <field name="printed"/>
+                <field name="invoice_type"/>
             </xpath>
         </field>
     </record>

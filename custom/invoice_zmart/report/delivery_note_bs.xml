@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <data>
         <record id="action_invoice_sale_note_bs" model="ir.actions.report">
             <field name="name">Delivery Note</field>
             <field name="model">account.move</field>
@@ -193,14 +193,8 @@
                                                     <td style="width:130px;text-align:center;">
                                                         <span t-field="line.product_id.model_product"/>
                                                     </td>
-                                                    <t t-if="line.product_id.name">
-                                                        <t t-set="product_name" t-value="line.product_id.name[0:35]"/>
-                                                    </t>
-                                                    <t t-else="">
-                                                        <t t-set="product_name" t-value=""/>
-                                                    </t>
                                                     <td style="width:350px;text-align:left;">
-                                                        <span t-esc="line.name"/>
+                                                        <span t-esc="line.product_id.name"/>
                                                     </td>
                                                 </t>
                                                 <td style="width:50px;text-align:center;">
