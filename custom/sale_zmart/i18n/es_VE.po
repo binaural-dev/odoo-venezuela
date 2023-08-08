@@ -369,3 +369,8 @@ msgstr "Descuento 4%"
 #: model:res.groups,name:sale_zmart.group_sale_note_rma
 msgid "Sale Note RMA"
 msgstr "Nota de entrega RMA"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__invoice_type
+msgid "Invoice Type"
+msgstr "Tipo de documento"

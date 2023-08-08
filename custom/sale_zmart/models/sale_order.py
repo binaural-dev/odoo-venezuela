@@ -43,6 +43,10 @@ class SaleOrderZmart(models.Model):
     printed = fields.Boolean(
         related = 'invoice_ids.printed'
     )
+    invoice_type = fields.Char(
+        related = 'invoice_ids.invoice_type',
+        readonly =  True
+    )
     shipping_method = fields.Selection(
         [
             ("prepaid", "Prepaid"),
