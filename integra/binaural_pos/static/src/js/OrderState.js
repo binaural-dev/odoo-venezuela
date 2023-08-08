@@ -18,9 +18,12 @@ odoo.define("binaural_pos.OrderState", function(require) {
         this.lock_toggle_receipt_invoice = false
       }
       get_orderlines() {
+        if(!this.cid || !this.pos.get_order()){
+          return this.orderlines
+        }
+
         if (this.cid != this.pos.get_order().cid) {
           return this.orderlines;
-
         }
 
         if (this.orderlines.length < 1) {
