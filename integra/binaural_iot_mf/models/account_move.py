@@ -100,6 +100,8 @@ class AccountMoveInh(models.Model):
         return _data
 
     def check_print_out_invoice(self):
+        if not self.journal_id.fiscal:
+            raise ValidationError(_("You cannot print an invoice with a non-fiscal journal"))
         if self.mf_invoice_number:
             raise ValidationError(_("The invoice has already been printed"))
         if not self.iot_mf:
