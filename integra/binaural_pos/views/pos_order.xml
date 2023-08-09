@@ -17,4 +17,21 @@
             </xpath>
         </field>
     </record>
+
+    <record id="view_pos_order_tree" model="ir.ui.view">
+        <field name="name">pos.order.tree</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="foreign_currency_id" invisible="1"/>
+                <field 
+                    name="foreign_amount_total" 
+                    sum="Foreign Amount total" 
+                    widget="monetary" 
+                    options="{'currency_field': 'foreign_currency_id'}"
+                    decoration-bf="1"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>
