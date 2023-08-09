@@ -13,13 +13,13 @@
 }
 
 .rheader {
-    font-size: 18px;
+    font-size: 20px;
     font-family: 'shaston';
     text-align: center;
 }
 
 .rbody{
-    font-size: 16px;
+    font-size: 20px;
     font-family: 'shaston';
 }
 
@@ -29,6 +29,32 @@
     justify-content: start;
 }
 
+.pl{
+    padding:2px 0px;
+}
+
+
+.line-receipt{
+  width: 100%;
+  display:flex;
+  flex-direction: row;
+  align-items:end;
+  flex-wrap: nowrap;
+  gap: 3px;
+  margin-bottom: 2px;
+}
+.product-line{
+  width: 70%
+}
+
+.text-right{
+  display:flex;
+  flex-direction: column;
+  align-items: end;
+  text-align: right;
+  justify-content: space-between;
+  width: 30%
+}
 .container {
     display: flex;
     justify-content: space-between;
