@@ -20,6 +20,7 @@
         "report/stock_report_view.xml",
         "views/sale_order.xml",
         "views/stock_picking.xml",
+        "views/res_company.xml"
     ],
     "images": ["static/description/icon.png"],
     "application": True,

@@ -34,11 +34,11 @@
                             </style>
                             <section id="segmento_1" style="font-size: 0.3em; line-height: 0.8em; width: 4cm;">
                                 <div style="display: inline-block; text-align: center; width: 100%;margin-top:-10px">
-                                    <img t-if="o.company_id.logo"
-                                        t-att-src="image_data_uri(o.company_id.logo)"
-                                        height="30"
-                                        width="40"
-                                        class="mr-3 mt-1" style="display: inline-block; vertical-align: middle;"/>
+                                    <img t-if="o.company_id.logo_2"
+                                        t-att-src="image_data_uri(o.company_id.logo_2)"
+                                        height="22"
+                                        width="55"
+                                        class="mr-3 mt-1" style="display: inline-block; vertical-align: middle;padding-right:5px;padding-top:5px"/>
                                     <div style="display: inline-block; vertical-align: middle; width: 50%; border-left: 1px solid black">
                                         <div class="col-8">
                                             <table style="display: inline-block; vertical-align: middle;width:150%;margin-top:11px;">
@@ -68,6 +68,7 @@
                                         </div>
                                         <div>
                                             <span style="margin-right: 1px;font-family: Arial"><strong>Cédula/RIF:</strong></span>
+                                            <span style="font-family: Arial" t-out="o.partner_id.prefix_vat"/>
                                             <span style="font-family: Arial" t-out="o.partner_id.vat"/>
                                         </div>
                                         <div>
@@ -86,9 +87,9 @@
                                             <span style="margin-right: 1px;font-family: Arial"><strong>Estado:</strong></span>
                                             <span style="font-family: Arial" t-out="o.partner_id.state_id.name"/>
                                         </div>
-                                        <div>
-                                            <span style="margin-right: 1px;font-family: Arial"><strong>Dirección:</strong></span>
-                                            <span style="font-family: Arial" t-out="o.partner_id.contact_address_complete"/>
+                                        <div style="text-align: justify;">
+                                            <span style="margin-right: 1px; font-family: Arial;"><strong>Dirección:</strong></span>
+                                            <span style="font-family: Arial;" t-out="o.partner_id.contact_address_complete"/>
                                         </div>
                                     </div>
                                 </div>
@@ -125,8 +126,8 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <div style="float: left; width: 50%;">
-                                        <div style="display: flex; flex-wrap: wrap; margin-top: 30px;">
+                                    <div style="float: left; width: 55%;">
+                                        <div style="display: flex; flex-wrap: wrap; margin-top: 40px;">
                                             <div style="display: flex; align-items: center;margin-left:10px">
                                                 <div style="flex: 1 1 100%; display: flex; justify-content: center;">
                                                     <span style="font-family:Arial;font-weight:bold;font-size:6px">BULTOS: <t t-out="i+1"/> de <t t-out="o.package_qty"/></span>
@@ -134,7 +135,7 @@
                                             </div>
                                         </div>
                                         <div style="display: inline-block; vertical-align: middle;font-size:3px;border-top: 1px solid black">
-                                            <div style="float: left; width: 50%;">
+                                            <div style="float: left;margin-top:2px">
                                                 <div style="text-align:left;">
                                                     <span>Fecha:</span>
                                                     <span t-out="o.date.strftime('%d/%m/%Y')"/>
@@ -148,8 +149,8 @@
                                                     <span t-out="o.user_vend_id.name" style="padding-right:10px"></span>
                                                 </div>
                                             </div>
-                                            <div style="float: left; width: 50%;">
-                                                <div style="text-align:left">
+                                            <div style="float: left">
+                                                <div style="text-align:left;margin-top:2px">
                                                     <span>Pick:</span>
                                                     <span t-out="o.user_pick_id.name"/>
                                                 </div>
@@ -164,12 +165,12 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div style="flex: 1 1 100%;font-size:4px"><strong>Observaciones: </strong></div>
-                                        <span style="flex: 1 1 100%;font-size:4px" t-out="o.note"/>
+                                        <div style="flex: 1 1 100%;font-size:3px;margin-top:2px"><strong>Observaciones: </strong></div>
+                                        <span style="flex: 1 1 100%;font-size:3px" t-out="o.note"/>
                                     </div>
                                     
-                                    <div style="float: left; width: 50%;margin-top:-10px">
-                                            <div style="width: 37px; height: 37px; border: 1px dashed black; padding: 10px; margin-left: 20px; text-align: center;font-size:8px;font-weight:bold">
+                                    <div style="float: left; width: 45%">
+                                            <div style="width: 37px; height: 37px; border: 1px dashed black; padding-top: 10px; margin-left: 20px; text-align: center;font-size:9px;font-weight:bold">
                                                 <t t-if="o.shipping_mean == 'zmart_express'">
                                                     <span>EXP</span>
                                                 </t>
