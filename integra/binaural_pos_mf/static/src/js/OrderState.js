@@ -11,6 +11,8 @@ odoo.define("binaural_pos_mf.OrderState", function(require) {
     class BinauralOrderState extends Order {
       constructor(obj, options) {
         super(...arguments);
+        this.fiscal_machine = this.fiscal_machine || false;
+        this.mf_invoice_number = this.mf_invoice_number || 0;
       }
       init_from_JSON(json){
         super.init_from_JSON(json);

@@ -18,7 +18,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
         this.lock_toggle_receipt_invoice = false
       }
       get_orderlines() {
-        if(!this.cid || !this.pos.get_order()){
+        if (!this.cid || !this.pos.get_order()) {
           return this.orderlines
         }
 
@@ -34,10 +34,10 @@ odoo.define("binaural_pos.OrderState", function(require) {
         let line = this.orderlines[0]
 
         if (!line.refunded_orderline_id) {
-          return  this.orderlines
+          return this.orderlines
         }
-        
-        if(this.lock_toggle_receipt_invoice){
+
+        if (this.lock_toggle_receipt_invoice) {
           return this.orderlines
         }
 
@@ -51,6 +51,9 @@ odoo.define("binaural_pos.OrderState", function(require) {
         })
 
         return this.orderlines;
+      }
+      get is_refund() {
+        return Object.values(this.pos.toRefundLines).length != 0
       }
       get current_rate() {
         let rate = this.pos.config.foreign_rate
@@ -77,6 +80,9 @@ odoo.define("binaural_pos.OrderState", function(require) {
 
         if (options.foreign_currency_rate !== undefined) {
           orderline.set_foreign_currency_rate(options.foreign_currency_rate);
+        }
+        if (options.foreign_price !== undefined) {
+          orderline.set_foreign_price(options.foreign_price);
         }
       }
       add_orderline(line) {
@@ -266,6 +272,21 @@ odoo.define("binaural_pos.OrderState", function(require) {
           }
         }
         return 0;
+      }
+
+      calculate_foreign_base_amount(tax_ids_array, lines) {
+        // Consider price_include taxes use case
+        let has_taxes_included_in_price = tax_ids_array.filter(tax_id =>
+          this.pos.taxes_by_id[tax_id].price_include
+        ).length;
+
+        let base_amount = lines.reduce((sum, line) =>
+          sum +
+          line.get_foreign_price_without_tax() +
+          (has_taxes_included_in_price ? line.get_foreign_total_taxes_included_in_price() : 0),
+          0
+        );
+        return base_amount;
       }
     };
   Registries.Model.extend(Order, BinauralOrderState);

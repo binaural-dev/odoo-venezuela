@@ -14,19 +14,29 @@ odoo.define("binaural_pos.OrderlineState", function(require) {
         super(...arguments)
         this.order.toggle_receipt_invoice(this.order.to_receipt)
         this.foreign_currency_rate = options.order.foreign_currency_rate || this.pos.config.foreign_rate
+        this.foreign_price = this.foreign_price || 0
       }
       set_foreign_currency_rate(rate) {
         this.foreign_currency_rate = rate
       }
+      set_foreign_price(price) {
+        this.order.assert_editable();
+        var parsed_price = !isNaN(price) ?
+          price :
+          isNaN(parseFloat(price)) ? 0 : field_utils.parse.float('' + price)
+        this.foreign_price = parsed_price || 0;
+      }
       init_from_JSON(json) {
         super.init_from_JSON(...arguments)
         this.foreign_currency_rate = json.foreign_currency_rate
+        this.foreign_price = json.foreign_price
       }
 
       export_as_JSON() {
         let res = super.export_as_JSON()
         res["foreign_currency_rate"] = this.foreign_currency_rate
-        return res 
+        res["foreign_price"] = this.foreign_price
+        return res
       }
       isExempt() {
         const product_tax = this.tax_ids || this.product.taxes_id;
@@ -41,6 +51,9 @@ odoo.define("binaural_pos.OrderlineState", function(require) {
       }
       get_foreign_unit_price() {
         var digits = this.pos.dp['Product Price'];
+        if (this.foreign_price !== undefined && this.foreign_price !== null && this.foreign_price !== 0) {
+          return this.foreign_price
+        }
         // round and truncate to mimic _symbol_set behavior
         return parseFloat(
           round_di((this.price || 0) *
@@ -103,6 +116,15 @@ odoo.define("binaural_pos.OrderlineState", function(require) {
         } else {
           return this.get_foreign_base_price();
         }
+      }
+      get_foreign_total_taxes_included_in_price() {
+        const productTaxes = this._getProductTaxesAfterFiscalPosition();
+        const taxDetails = this.get_tax_details();
+        return productTaxes
+          .filter(tax => tax.price_include)
+          .reduce((sum, tax) => sum + taxDetails[tax.id].foreign_amount,
+            0
+          );
       }
     };
   Registries.Model.extend(Orderline, BinauralOrderline);

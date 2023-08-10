@@ -124,7 +124,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         order.mf_invoice_number = data["sequence"] || false;
       }
       async push_single_order(order, opts) {
-        if (this.useFiscalMachine() && order && !order.to_receipt) {
+        if (this.useFiscalMachine() && order && !order.to_receipt && !order.mf_invoice_number) {
           try {
             const response = await this.print_out_invoice(await this.get_data_invoice(order))
             if (!response.valid) {
