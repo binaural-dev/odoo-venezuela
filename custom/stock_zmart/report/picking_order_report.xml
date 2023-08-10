@@ -19,32 +19,30 @@
                 <t t-call="web.html_container">
                     <t t-foreach="docs" t-as="o">
                         <t t-call="web.external_layout">
-                            <div style="font-size:20px">
-                                <table style="width:700px;;display: inline-block; vertical-align: middle;margin-left:800px;border: 2px solid #fff;border-collapse: collapse;line-height: 1.4;">
-                                        <div style="text-align:left;;padding-top:5px">
-                                            <th style="font-weight:normal">Nº Orden:<span t-out="o.origin"></span></th>
-                                            
-                                        </div>
+                            <div style="font-size:22px">
+                                <div style="width:700px;;display: inline-block; vertical-align: middle;margin-left:700px;border: 2px solid #fff;border-collapse: collapse;line-height: 1.4;">
+                                    <table style="width:700px; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
+                                        <tr>
+                                            <th style="font-weight:normal; text-align: left;">Nº Orden: <span t-out="o.origin"/></th>
+                                        </tr>
                                     </table>
-                                     <table style="width:700px;display: inline-block; vertical-align: middle;margin-left:800px;border: 2px solid #fff;border-collapse: collapse;line-height: 1.4;">
-                                        <div style="text-align:left;;padding-top:5px">
-                                            <th style="font-weight:normal">T/Entrega:<span t-field="o.shipping_type"/></th>
-                                            
-                                        </div>
+                                    <table style="width:700px; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
+                                        <tr>
+                                            <th style="font-weight:normal; text-align: left;">T/Entrega: <span t-field="o.shipping_type"/></th>
+                                        </tr>
                                     </table>
-                                     <table style="width:700pxdisplay: inline-block; vertical-align: middle;margin-left:800px;border: 2px solid #fff;border-collapse: collapse;line-height: 1.4;">
-                                        <div style="text-align:left;padding-top:5px">
-                                            <th style="font-weight:normal">Prioridad:<span t-field="o.priority_sale"/></th>
-                                            
-                                        </div>
+                                    <table style="width:700px; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
+                                        <tr>
+                                            <th style="font-weight:normal; text-align: left;">Prioridad: <span t-field="o.priority_sale"/></th>
+                                        </tr>
                                     </table>
-                                    <table style="width:500px;margin-left:660px;border-collapse: collapse;">
-                                        <div style="text-align:left;padding-top:5px">
-                                            <th style="font-weight:normal;border: 1px solid white;">Cliente: <span t-field="o.partner_id.name"></span></th>
-                                        </div>
+                                    <table style="width:60%; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
+                                        <tr>
+                                            <th style="font-weight:normal; border: 1px solid white;text-align: left">Cliente: <span style="text-align: left" t-field="o.partner_id.name"/></th>
+                                        </tr>
                                     </table>
-
                                 </div>
+                            </div>
                                 
                             <div class="page">
                                 <br/>
@@ -79,7 +77,7 @@
                                                     <span t-field="ml.product_id.default_code"/>
                                                 </td>
                                                 <td style="text-align:left">
-                                                    <span t-esc="ml.product_id.name[:40]"/>
+                                                    <span t-esc="ml.product_id.name[:85]"/>
                                                 </td>
                                                 <td  style="text-align:center">
                                                     <div>
