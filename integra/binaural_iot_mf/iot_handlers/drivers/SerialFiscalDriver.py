@@ -406,7 +406,7 @@ class SerialFiscalDriver(SerialDriver):
 
                 code = ""
                 if item.get("code", False):
-                    code = "[" + item.get("code", "") + "]"
+                    code = "|" + item.get("code", "") + "|"
                 amount_i, amount_d = self.split_amount(abs(item["price_unit"]))
                 qty_i, qty_d = self.split_amount(item["quantity"])
 
@@ -480,15 +480,6 @@ class SerialFiscalDriver(SerialDriver):
             for command in cmd:
                 self.SendCmd(command)
 
-            # time.sleep(3)
-            # status = self.ReadFpStatus(True)
-            # if status["data"]["error"]["code"] != "0":
-            #     raise Exception(status["data"]["error"]["msg"])
-            # if status["data"]["status"]["code"] not in ["1", "4"]:
-            #     _logger.warning(status["data"]["status"]["code"])
-            #     self.SendCmd("7")
-            #     raise Exception("No se ha podido completar con la nota de credito y se ha anulado")
-
             msg = "Nota de credito impresa correctamente"
 
             trama = self._States("S1")
@@ -545,7 +536,7 @@ class SerialFiscalDriver(SerialDriver):
 
                 code = ""
                 if item.get("code", False):
-                    code = "[" + item.get("code", "") + "]"
+                    code = "|" + item.get("code", "") + "|"
                 amount_i, amount_d = self.split_amount(item["price_unit"])
                 qty_i, qty_d = self.split_amount(item["quantity"])
 
@@ -617,15 +608,6 @@ class SerialFiscalDriver(SerialDriver):
 
             for command in cmd:
                 self.SendCmd(command)
-
-            # time.sleep(5)
-            # status = self.ReadFpStatus(True)
-            # if status["data"]["error"]["code"] != "0":
-            #     raise Exception(status["data"]["error"]["msg"])
-            # if status["data"]["status"]["code"] not in ["1", "4"]:
-            #     _logger.warning(status["data"]["status"]["code"])
-            #     self.SendCmd("7")
-            #     raise Exception("No se ha podido completar con la factura y se ha anulado")
 
             msg = "Factura impresa correctamente"
             trama = self._States("S1")
@@ -1421,6 +1403,7 @@ class SerialFiscalDriver(SerialDriver):
             "0x58": {"msg": "No hay asignadas  directivas", "code": "88"},
             "0x54": {"msg": "Tasa Invalida", "code": "84"},
             "0x50": {"msg": "Comando Invalido/Valor Invalido", "code": "80"},
+            "0x48": {"msg": "Error Gaveta", "code": "72"},
             "0x43": {"msg": "Fin en la entrega de papel y error mec�nico", "code": "3"},
             "0x42": {"msg": "Error de indole mecanico en la entrega de papel", "code": "2"},
             "0x41": {"msg": "Fin en la entrega de papel", "code": "1"},
