@@ -170,7 +170,7 @@
                                     </div>
                                     
                                     <div style="float: left; width: 45%">
-                                            <div style="width: 37px; height: 37px; border: 1px dashed black; padding-top: 10px; margin-left: 20px; text-align: center;font-size:9px;font-weight:bold">
+                                            <div style="width: 34px; height: 34px; border: 1px dashed black; padding-top: 10px; margin-left: 20px; text-align: center;font-size:9px;font-weight:bold">
                                                 <t t-if="o.shipping_mean == 'zmart_express'">
                                                     <span>EXP</span>
                                                 </t>
@@ -199,7 +199,7 @@
                                                     <span>YUM</span>
                                                 </t>
                                             </div>
-                                            <img t-if="o.qr_code" t-att-src="'data:image/png;base64,' + o.qr_code.decode('utf-8')" style="max-width: 50px; max-height: 50px;margin-left:14px"/>
+                                            <img t-if="o.qr_code" t-att-src="'data:image/png;base64,' + o.qr_code.decode('utf-8')" style="max-width: 45px; max-height: 45;margin-left:14px"/>
                                         </div>
                                 </div>
                             </section>
