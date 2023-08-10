@@ -47,4 +47,5 @@ class PosOrderLine(models.Model):
     _inherit = "pos.order.line"
 
     foreign_currency_rate = fields.Float(related="order_id.foreign_currency_rate")
+    to_receipt = fields.Boolean(related="order_id.to_receipt")
 
