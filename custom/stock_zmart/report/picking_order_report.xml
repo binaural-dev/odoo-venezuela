@@ -38,11 +38,12 @@
                                             
                                         </div>
                                     </table>
-                                     <table style="width:500px;margin-left:660px;">
+                                    <table style="width:500px;margin-left:660px;border-collapse: collapse;">
                                         <div style="text-align:left;padding-top:5px">
-                                            <th style="font-weight:normal">Cliente: <span t-field="o.partner_id.name"></span></th>
+                                            <th style="font-weight:normal;border: 1px solid white;">Cliente: <span t-field="o.partner_id.name"></span></th>
                                         </div>
                                     </table>
+
                                 </div>
                                 
                             <div class="page">
@@ -54,7 +55,7 @@
                                     <t t-set="has_serial_number" t-value="any(move_line.lot_id or move_line.lot_name for move_line in o.move_line_ids)" groups="stock.group_production_lot"/>
                                     <thead>
                                         <tr>
-                                            <th name="th_product">
+                                            <th name="th_product" >
                                                 <strong>Código</strong>
                                             </th>
                                             <th>
@@ -77,9 +78,9 @@
                                                 <td style="text-align:center;width:110px">
                                                     <span t-field="ml.product_id.default_code"/>
                                                 </td>
-                                                <!-- <td style="text-align:left">
-                                                    <span t-field="ml.product_id.name"/>
-                                                </td> -->
+                                                <td style="text-align:left">
+                                                    <span t-esc="ml.product_id.name[:40]"/>
+                                                </td>
                                                 <td  style="text-align:center">
                                                     <div>
                                                         <span t-field="ml.location_id"/>
@@ -97,7 +98,7 @@
                                                 <td class="text-center" t-if="has_barcode" style="text-align:center">
                                                     <t t-if="product_barcode != ml.product_id.barcode">
                                                         <span t-if="ml.product_id and ml.product_id.barcode">
-                                                            <div t-field="ml.product_id.barcode" t-options="{'widget': 'barcode', 'symbology': 'auto', 'width': 400, 'height': 100, 'quiet': 0, 'img_style': 'height:35px;'}"/>
+                                                            <div t-field="ml.product_id.barcode" t-options="{'widget': 'barcode', 'symbology': 'auto', 'width': 300, 'height': 100, 'quiet': 0, 'img_style': 'height:28px;'}"/>
                                                             <div t-field="ml.product_id.barcode"/>
                                                         </span>
                                                         <t t-set="product_barcode" t-value="ml.product_id.barcode"/>
