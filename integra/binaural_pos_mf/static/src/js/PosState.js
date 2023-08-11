@@ -86,7 +86,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             let amount = vef_base ? el.price : el.get_foreign_unit_price()
 
             return {
-              price_unit: Math.abs(amount),
+              price_unit: amount,
               quantity: Math.abs(el.quantity),
               name: el.product.display_name,
               code: el.product.default_code,
@@ -124,7 +124,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         order.mf_invoice_number = data["sequence"] || false;
       }
       async push_single_order(order, opts) {
-        if (this.useFiscalMachine() && order && !order.to_receipt) {
+        if (this.useFiscalMachine() && order && !order.to_receipt && !order.mf_invoice_number) {
           try {
             const response = await this.print_out_invoice(await this.get_data_invoice(order))
             if (!response.valid) {
