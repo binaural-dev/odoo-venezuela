@@ -60,13 +60,29 @@ class AccountMoveInh(models.Model):
         account_moves = self.env["account.move"].search(
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
-        if not response["valid"]:
-            raise ValidationError(_(response["message"]))
+        if not response.get("valid", False):
+            raise ValidationError(response.get("message", "No se pudo imprimir el reporte Z"))
 
-        _logger.info(response)
+        data = response.get("data", False)
+        _numberOfLastZReport = data.get("_numberOfLastZReport", False)
+        if False in [data, _numberOfLastZReport]:
+            _logger.info("NO SE RECUPERO EL Z DE LA MAQUINA: %s", serial)
+            _numberOfLastZReport = self._get_z_and_add_one(serial)
+            _logger.info("ULTIMO Z: %s", _numberOfLastZReport)
 
         for invoice in account_moves:
-            invoice.write({"mf_reportz": int(response["data"]["_numberOfLastZReport"]) + 1})
+            invoice.write({"mf_reportz": int(_numberOfLastZReport) + 1})
+        return _numberOfLastZReport
+
+    def _get_z_and_add_one(self, serial):
+        account_move = self.env["account.move"].search(
+            ["&", ("mf_serial", "=", serial), ("mf_reportz", "!=", False)],
+            order="mf_reportz desc",
+            limit=1,
+        )
+        if not account_move:
+            return 0
+        return account_move.mf_reportz
 
     @api.onchange("is_credit")
     def _onchange_is_credit(self):

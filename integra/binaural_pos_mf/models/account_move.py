@@ -35,6 +35,6 @@ class AccountMoveInh(models.Model):
         )
 
         for order in pos_order_ids:
-            order.write({"mf_reportz": int(response["data"]["_numberOfLastZReport"]) + 1})
+            order.write({"mf_reportz": int(res) + 1})
 
         return res
