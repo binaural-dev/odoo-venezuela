@@ -805,3 +805,10 @@ msgstr ""
 #, python-format
 msgid "message"
 msgstr ""
+
+#. module: binaural_iot_mf
+#. odoo-python
+#: code:addons/binaural_iot_mf/models/account_move.py:0
+#, python-format
+msgid "You cannot print an invoice with a non-fiscal journal"
+msgstr "No puede imprimir una factura con un  diario no fiscal"
