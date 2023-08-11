@@ -15,6 +15,42 @@ odoo.define("binaural_pos.OrderState", function(require) {
         let always_invoice = !this.pos.config.always_invoice;
         this.to_receipt = always_invoice;
         this.toggle_receipt_invoice(always_invoice)
+        this.lock_toggle_receipt_invoice = false
+      }
+      get_orderlines() {
+        if(!this.cid || !this.pos.get_order()){
+          return this.orderlines
+        }
+
+        if (this.cid != this.pos.get_order().cid) {
+          return this.orderlines;
+        }
+
+        if (this.orderlines.length < 1) {
+          this.lock_toggle_receipt_invoice = false
+          return this.orderlines
+        }
+
+        let line = this.orderlines[0]
+
+        if (!line.refunded_orderline_id) {
+          return  this.orderlines
+        }
+        
+        if(this.lock_toggle_receipt_invoice){
+          return this.orderlines
+        }
+
+        this.pos.env.services.rpc({
+          model: 'pos.order.line',
+          method: 'search_read',
+          domain: [['id', '=', line.refunded_orderline_id]],
+        }).then((el) => {
+          this.to_receipt = el[0].to_receipt
+          this.lock_toggle_receipt_invoice = true
+        })
+
+        return this.orderlines;
       }
       get is_refund(){
         return this.getHasRefundLines()
@@ -80,6 +116,9 @@ odoo.define("binaural_pos.OrderState", function(require) {
         }
       }
       toggle_receipt_invoice(to_receipt) {
+        if (this.lock_toggle_receipt_invoice) {
+          return
+        }
         this.assert_editable();
         this.to_receipt = to_receipt;
         this.onchage_receipt(to_receipt)
