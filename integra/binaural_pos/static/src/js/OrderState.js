@@ -17,11 +17,11 @@ odoo.define("binaural_pos.OrderState", function(require) {
         this.toggle_receipt_invoice(always_invoice)
       }
       get is_refund(){
-        return Object.values(this.pos.toRefundLines).length != 0
+        return this.getHasRefundLines()
       }
       get current_rate() {
         let rate = this.pos.config.foreign_rate
-        if (Object.values(this.pos.toRefundLines).length == 0){
+        if (!this.is_refund){
           return rate
         } 
         Object.values(this.pos.toRefundLines).forEach(el => {
