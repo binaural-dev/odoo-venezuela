@@ -36,7 +36,7 @@
                                 <div style="display: inline-block; text-align: center; width: 100%;margin-top:-10px">
                                     <img t-if="o.company_id.logo_2"
                                         t-att-src="image_data_uri(o.company_id.logo_2)"
-                                        height="22"
+                                        height="20"
                                         width="55"
                                         class="mr-3 mt-1" style="display: inline-block; vertical-align: middle;padding-right:5px;padding-top:5px"/>
                                     <div style="display: inline-block; vertical-align: middle; width: 50%; border-left: 1px solid black">
@@ -60,7 +60,7 @@
                                 </div>
                                 
                                 <div style="display: flex; flex-wrap: wrap;border-top: 1px solid black;border-bottom: 1px solid black;">
-                                    <div style="flex: 1 1 100%; margin-bottom: 0.5em;">
+                                    <div style="flex: 1 1 100%; margin-bottom: 0.5em;font-size: 4px">
                                         <div style="font-family: Arial;margin-top:5px"><strong>DESTINATARIO:</strong></div>
                                         <div>  
                                             <span style="margin-right: 1px;font-family: Arial"><strong>Nombre/Razón Social:</strong></span>
@@ -93,10 +93,10 @@
                                         </div>
                                     </div>
                                 </div>
-                               <div style="overflow: auto;border-bottom: 1px solid black;">
+                               <div style="overflow: auto;border-bottom: 1px solid black;font-size: 114%">
                                     <div style="float: left; width: 50%;">
                                         <div style="text-align: center; padding: 1px; font-family: Arial;">
-                                            <div style="margin-top:2px;margin-left:-22px">
+                                            <div style="margin-top:2px;margin-left:-18px">
                                                 <strong style="font-family: Arial">N° GUÍA:</strong>
                                                 <strong><span style="margin-right: 5px;font-family: Arial" t-field="o.guide"></span></strong>
                                             </div>
@@ -111,7 +111,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div style="margin-top:4px;font-size:5px">
+                                <div style="margin-top:4px;font-size:7px">
                                     <div style="width:100%">
                                         <span style="margin-right: 1px;font-family: Arial"><strong>DOC DE VENTA:</strong></span>
                                         <span style="font-family: Arial" t-field="o.origin"/>
@@ -130,7 +130,7 @@
                                         <div style="display: flex; flex-wrap: wrap; margin-top: 40px;">
                                             <div style="display: flex; align-items: center;margin-left:10px">
                                                 <div style="flex: 1 1 100%; display: flex; justify-content: center;">
-                                                    <span style="font-family:Arial;font-weight:bold;font-size:6px">BULTOS: <t t-out="i+1"/> de <t t-out="o.package_qty"/></span>
+                                                    <span style="font-family:Arial;font-weight:bold;font-size:7px">BULTOS: <t t-out="i+1"/> de <t t-out="o.package_qty"/></span>
                                                 </div>
                                             </div>
                                         </div>

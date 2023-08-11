@@ -75,3 +75,19 @@ msgstr "Factura $"
 #: model:ir.model.fields,field_description:invoice_zmart.field_account_payment__invoice_type
 msgid "Invoice Type"
 msgstr "Tipo de documento"
+
+#. module: invoice_zmart
+#. odoo-python
+#: code:addons/invoice_zmart/models/account_move.py:0
+#: code:addons/invoice_zmart/models/account_move.py:0
+#, python-format
+msgid "Cannot print an invoice with a non-fiscal journal"
+msgstr "No se puede imprimir una factura con un diario no fiscal"
+
+#. module: invoice_zmart
+#. odoo-python
+#: code:addons/invoice_zmart/models/account_move.py:0
+#: code:addons/invoice_zmart/models/account_move.py:0
+#, python-format
+msgid "Cannot print an sale note with a fiscal journal"
+msgstr "No se puede imprimir una nota de entrega con un diario no fiscal"

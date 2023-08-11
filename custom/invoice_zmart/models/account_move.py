@@ -1,5 +1,5 @@
-from odoo import models, fields, api
-
+from odoo import models, fields, api,_
+from odoo.exceptions import ValidationError
 
 class AccountInvoice(models.Model):
     _inherit = "account.move"
@@ -18,15 +18,24 @@ class AccountInvoice(models.Model):
                 move.invoice_type = ""
 
     def button_free_form(self):
-        self.write({"printed": True})
-        return self.env.ref("invoice_zmart.action_invoice_free_form_bs").report_action(self)
+        if self.journal_id.fiscal:
+            self.write({"printed": True})
+            return self.env.ref("invoice_zmart.action_invoice_free_form_bs").report_action(self)
+        raise ValidationError(_( 'Cannot print an invoice with a non-fiscal journal'))
+
 
     def button_free_form_usd(self):
-        self.write({"printed": True})
-        return self.env.ref("invoice_zmart.action_invoice_free_form_usd").report_action(self)
+        if self.journal_id.fiscal:
+            self.write({"printed": True})
+            return self.env.ref("invoice_zmart.action_invoice_free_form_usd").report_action(self)
+        raise ValidationError(_( 'Cannot print an invoice with a non-fiscal journal'))
 
     def button_invoice_sale_note(self):
-        return self.env.ref("invoice_zmart.action_invoice_sale_note_usd").report_action(self)
-
+        if not self.journal_id.fiscal:
+            return self.env.ref("invoice_zmart.action_invoice_sale_note_usd").report_action(self)
+        raise ValidationError(_( 'Cannot print an sale note with a fiscal journal'))
+    
     def button_invoice_sale_note_bs(self):
-        return self.env.ref("invoice_zmart.action_invoice_sale_note_bs").report_action(self)
+        if not self.journal_id.fiscal:
+            return self.env.ref("invoice_zmart.action_invoice_sale_note_bs").report_action(self)
+        raise ValidationError(_( 'Cannot print an sale note with a fiscal journal'))
