@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="cart" inherit_id="website_sale.cart">
+	<xpath expr="//div[hasclass('oe_website_sale')]/div" position="before">
+	    <t t-if="errors">
+		<h5 class="text-danger">The following products does not have enough stock:</h5>
+		<ul>
+		    <t t-foreach="errors" t-as="error">
+			<li>
+			    <p class="text-danger">
+				<t t-out="error['product']"/> (available quantity
+				<t t-out="error['qty'] + ')'"/>
+			    </p>
+			</li>
+		    </t>
+		</ul>
+	    </t>
+	</xpath>
+    </template>
+</odoo>
