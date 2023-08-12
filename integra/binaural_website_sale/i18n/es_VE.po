@@ -15,22 +15,22 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
 
-#. module: bodegon_website_sale
+#. module: binaural_website_sale
 #: model_terms:ir.ui.view,arch_db:binaural_website_sale.cart
 msgid "(available quantity"
 msgstr "(cantidad disponible"
 
-#. module: bodegon_website_sale
+#. module: binaural_website_sale
 #: model:ir.model,name:binaural_website_sale.model_product_template
 msgid "Product"
 msgstr "Producto"
 
-#. module: bodegon_website_sale
+#. module: binaural_website_sale
 #: model:ir.model,name:binaural_website_sale.model_product_product
 msgid "Product Variant"
 msgstr "Variantes de producto"
 
-#. module: bodegon_website_sale
+#. module: binaural_website_sale
 #: model_terms:ir.ui.view,arch_db:binaural_website_sale.cart
 msgid "The following products does not have enough stock:"
 msgstr "Algunos productos no tienen inventario suficiente:"
