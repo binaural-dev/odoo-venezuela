@@ -14,7 +14,10 @@ class ProductTemplate(models.Model):
     @api.model
     def _search_build_domain(self, domain, search, fields, extra=None):
         res = super()._search_build_domain(domain, search, fields, extra=extra)
-        qty_available_domain = [("qty_available", ">", 0), ("company_id", "=", self.env.company.id)]
+        qty_available_domain = [
+            ("qty_available", ">", 0),
+            ("company_id", "in", (self.env.company.id, False)),
+        ]
         return expression.AND([qty_available_domain, res])
 
     @api.model
