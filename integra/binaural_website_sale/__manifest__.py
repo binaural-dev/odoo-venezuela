@@ -7,8 +7,10 @@
     "license": "LGPL-3",
     "version": "16.4",
     "depends": ["binaural_stock", "website_sale"],
-    "data": ["views/templates.xml"],
+    "data": [
+        "views/res_config_settings_views.xml",
+        "views/templates.xml"
+    ],
     "installable": True,
     "images": ["static/description/icon.png"],
-    "application": True,
 }
