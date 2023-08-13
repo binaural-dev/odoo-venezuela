@@ -14,6 +14,9 @@ class ProductTemplate(models.Model):
     @api.model
     def _search_build_domain(self, domain, search, fields, extra=None):
         res = super()._search_build_domain(domain, search, fields, extra=extra)
+        if not request.website.sudo().do_not_show_products_without_availability_on_site:
+            return res
+
         qty_available_domain = [
             ("qty_available", ">", 0),
             ("company_id", "in", (self.env.company.id, False)),
@@ -27,8 +30,10 @@ class ProductTemplate(models.Model):
         have available quantity on any location of the website's warehouse.
         """
         results, count = super()._search_fetch(search_detail, search, limit, order)
-        WAREHOUSE_ID = request.website.sudo().warehouse_id
+        if not request.website.sudo().do_not_show_products_without_availability_on_site:
+            return results, count
 
+        WAREHOUSE_ID = request.website.sudo().warehouse_id
         def is_available_quantity_greater_than_zero_on_warehouse(product):
             return (
                 sum(
