@@ -55,7 +55,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if (
                 payment.env.company.taxpayer_type == "special"
                 and payment.partner_id.taxpayer_type != "special"
-                and payment.line_ids.move_id.move_type == "in_invoice"
+                and payment.partner_type == "supplier"
+
             ):
                 payment.igtf_percentage = 2.0
 
