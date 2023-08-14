@@ -4,7 +4,7 @@
         <xpath expr="//div[@class='button back']" position="after">
             <div class="button"
                 t-on-click="() => this.showPaymentsOrigin()"
-                t-if="currentOrder.is_refund">
+                t-if="currentOrder.getHasRefundLines()"> 
                 <span class="back_text">View Payments Origin</span>
             </div>
         </xpath>
