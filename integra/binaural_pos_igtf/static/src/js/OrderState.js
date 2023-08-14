@@ -172,7 +172,6 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
 
         if (!this.to_receipt
           && !payment_method.apply_igtf
-          || this.get_due() == this.get_igtf_amount()
           || this.get_due() <= this.get_igtf_amount()
           || is_change) {
           let res = super.add_paymentline(...arguments);
