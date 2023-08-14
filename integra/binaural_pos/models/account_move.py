@@ -12,12 +12,13 @@ class AccountMove(models.Model):
         pos_session_opened = self.env["pos.session"].search(
             [("state", "=", "opened"), ("company_id", "=", self.env.company.id)]
         )
-        all_related_moves = pos_session_opened._get_related_account_moves()
-        if (
-            self.id in all_related_moves.mapped(lambda x: x.id)
-            and not self.env.company.pos_move_to_draft
-        ):
-            raise UserError(
-                _("You cannot modify a journal entry linked to a POS session that is still opened")
-            )
+        for pos_session in pos_session_opened:
+            all_related_moves = pos_session._get_related_account_moves()
+            if (
+                self.id in all_related_moves.mapped(lambda x: x.id)
+                and not self.env.company.pos_move_to_draft
+            ):
+                raise UserError(
+                    _("You cannot modify a journal entry linked to a POS session that is still opened")
+                )
         return super().button_draft()
