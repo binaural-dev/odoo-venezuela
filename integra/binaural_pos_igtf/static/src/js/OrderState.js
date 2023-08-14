@@ -101,6 +101,10 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
 
           el.set_include_igtf(false)
 
+          if(bi_payments.length == 0){
+            return
+          }
+
           if (!is_return) {
             if (this.igtf_amount <= el.amount && !is_change && !bi_payments.includes(el.cid)) {
               el.set_include_igtf(true)
@@ -115,6 +119,18 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         if (
           bi_payments.length > 0
           && paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount > this.get_total_with_tax() && !is_return
+          && paymentlines.filter((el) => el.include_igtf).length == 0
+        ) {
+          paymentlines.filter((el) => bi_payments[0] == el.cid)[0].set_include_igtf(true)
+        }
+
+        if (
+          bi_payments.length == 1
+          && (
+            paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount > this.get_total_without_igtf() 
+            && paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount < this.get_total_with_tax() 
+            && !is_return
+          )
           && paymentlines.filter((el) => el.include_igtf).length == 0
         ) {
           paymentlines.filter((el) => bi_payments[0] == el.cid)[0].set_include_igtf(true)
