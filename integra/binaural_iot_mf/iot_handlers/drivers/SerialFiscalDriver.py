@@ -1084,8 +1084,8 @@ class SerialFiscalDriver(SerialDriver):
                 msj = 1
                 msj = self._AssembleQueryToSend(cmd)
                 self._write(msj)
-                rt = self._read(1)
-                while rt == chr(0x05):
+                retries = 0
+                while True and retries < 3:
                     rt = self._read(1)
                     if rt != None:
                         time.sleep(0.05)
@@ -1099,6 +1099,7 @@ class SerialFiscalDriver(SerialDriver):
                         self.envio = "Error... CTS in False"
                         rt = None
                         connection.setRTS(False)
+                    retries += 1
         except serial.SerialException:
             rt = None
             return rt
