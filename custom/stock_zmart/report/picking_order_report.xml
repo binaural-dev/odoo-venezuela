@@ -19,37 +19,41 @@
                 <t t-call="web.html_container">
                     <t t-foreach="docs" t-as="o">
                         <t t-call="web.external_layout">
-                            <div style="margin-top:-10px">
-                                <table style="display: inline-block; vertical-align: middle;margin-left:400px;border: 2px solid #fff;border-collapse: collapse;line-height: 1.4;">
-                                        <tr style="text-align:left;width:10%;padding-top:5px;margin-top:400px">
-                                            <th style="font-weight:normal">Nº Orden:</th>
-                                            <td t-out="o.origin"></td>
+                            <div style="font-size:22px">
+                                <div style="width:700px;;display: inline-block; vertical-align: middle;margin-left:700px;border: 2px solid #fff;border-collapse: collapse;line-height: 1.4;">
+                                    <table style="width:700px; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
+                                        <tr>
+                                            <th style="font-weight:normal; text-align: left;">Nº Orden: <span t-out="o.origin"/></th>
                                         </tr>
-                                        <tr style="text-align:left;width:10%;padding-top:5px">
-                                            <th style="font-weight:normal">T/Entrega:</th>
-                                            <td><div t-field="o.shipping_type"/></td>
+                                    </table>
+                                    <table style="width:700px; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
+                                        <tr>
+                                            <th style="font-weight:normal; text-align: left;">T/Entrega: <span t-field="o.shipping_type"/></th>
                                         </tr>
-                                        <tr style="text-align:left;padding-top:5px">
-                                            <th style="font-weight:normal">Prioridad: </th>
-                                            <td><div t-field="o.priority_sale"/></td>
+                                    </table>
+                                    <table style="width:700px; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
+                                        <tr>
+                                            <th style="font-weight:normal; text-align: left;">Prioridad: <span t-field="o.priority_sale"/></th>
                                         </tr>
-                                        <tr style="text-align:left;padding-top:5px">
-                                            <th style="font-weight:normal">Cliente:</th>
-                                            <td t-out="o.partner_id.name"></td>
+                                    </table>
+                                    <table style="width:60%; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
+                                        <tr>
+                                            <th style="font-weight:normal; border: 1px solid white;text-align: left">Cliente: <span style="text-align: left" t-field="o.partner_id.name"/></th>
                                         </tr>
                                     </table>
                                 </div>
+                            </div>
                                 
                             <div class="page">
                                 <br/>
-                                <div style="margin-left:42%;font-size:22px;margin-top:25px">Picking Order</div>
+                                <div style="margin-left:42%;font-size:22px;margin-top:55px">Picking Order</div>
                                 <br/>
                                 <table class="table table-sm" t-if="o.move_line_ids and o.move_ids_without_package">
                                     <t t-set="has_barcode" t-value="any(move_line.product_id and move_line.product_id.sudo().barcode or move_line.package_id for move_line in o.move_line_ids)"/>
                                     <t t-set="has_serial_number" t-value="any(move_line.lot_id or move_line.lot_name for move_line in o.move_line_ids)" groups="stock.group_production_lot"/>
                                     <thead>
                                         <tr>
-                                            <th name="th_product">
+                                            <th name="th_product" >
                                                 <strong>Código</strong>
                                             </th>
                                             <th>
@@ -69,11 +73,11 @@
                                     <tbody>
                                         <t t-foreach="o.move_line_ids_without_package" t-as="ml">
                                             <tr style="border: 1px solid white;">
-                                                <td style="text-align:center">
+                                                <td style="text-align:center;width:110px">
                                                     <span t-field="ml.product_id.default_code"/>
                                                 </td>
                                                 <td style="text-align:left">
-                                                    <span t-field="ml.product_id.name"/>
+                                                    <span t-esc="ml.product_id.name[:85]"/>
                                                 </td>
                                                 <td  style="text-align:center">
                                                     <div>
@@ -92,6 +96,7 @@
                                                 <td class="text-center" t-if="has_barcode" style="text-align:center">
                                                     <t t-if="product_barcode != ml.product_id.barcode">
                                                         <span t-if="ml.product_id and ml.product_id.barcode">
+                                                            <div t-field="ml.product_id.barcode" t-options="{'widget': 'barcode', 'symbology': 'auto', 'width': 300, 'height': 100, 'quiet': 0, 'img_style': 'height:28px;'}"/>
                                                             <div t-field="ml.product_id.barcode"/>
                                                         </span>
                                                         <t t-set="product_barcode" t-value="ml.product_id.barcode"/>

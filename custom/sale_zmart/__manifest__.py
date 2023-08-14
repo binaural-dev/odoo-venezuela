@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sale/Sale",
-    "version": "16.1",
+    "version": "16.0.0.2",
     "depends": [
         "sale","invoice_zmart"
     ],
@@ -20,6 +20,7 @@
         "report/stock_report_view.xml",
         "views/sale_order.xml",
         "views/stock_picking.xml",
+        "views/res_company.xml"
     ],
     "images": ["static/description/icon.png"],
     "application": True,
