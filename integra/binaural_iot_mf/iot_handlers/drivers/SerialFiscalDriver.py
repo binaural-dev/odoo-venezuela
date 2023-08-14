@@ -1071,8 +1071,7 @@ class SerialFiscalDriver(SerialDriver):
                 msj = 1
                 msj = self._AssembleQueryToSend(cmd)
                 self._write(msj)
-                rt = self._read(1)
-                while rt == chr(0x05):
+                while True:
                     rt = self._read(1)
                     if rt != None:
                         time.sleep(0.05)
