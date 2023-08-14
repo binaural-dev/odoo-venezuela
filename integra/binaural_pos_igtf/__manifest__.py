@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "16.0.3",
+    "version": "16.0.4",
     "depends": ["base", "binaural_pos", "binaural_base_igtf"],
     "data": ["views/pos_payment_method.xml"],
     "images": ["static/description/icon.png"],
