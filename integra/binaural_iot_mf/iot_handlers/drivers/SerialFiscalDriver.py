@@ -440,6 +440,11 @@ class SerialFiscalDriver(SerialDriver):
                             + item["name"][0:127].replace("Ñ", "N").replace("ñ", "n")
                         )
                     )
+
+                if item.get("discount", 0) > 0:
+                    amount_i, amount_d = self.split_amount(item.get("discount"))
+                    cmd.append(f"p-{amount_i.zfill(2)}{amount_d.zfill(2)}")
+
             cmd.append(str("3"))  # sub total en factura
 
             if discount_amount > 0:
@@ -569,6 +574,9 @@ class SerialFiscalDriver(SerialDriver):
                             + item["name"][0:127]
                         )
                     )
+                if item.get("discount", 0) > 0:
+                    amount_i, amount_d = self.split_amount(item.get("discount"))
+                    cmd.append(f"p-{amount_i.zfill(2)}{amount_d.zfill(2)}")
 
             cmd.append(str("3"))  # sub total en factura
             if discount_amount > 0:

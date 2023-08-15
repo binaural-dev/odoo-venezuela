@@ -17,7 +17,10 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
       }
 
       aditionalInfo() {
-        return []
+        let res = []
+        res.push(`OPERADOR: ${this.env.pos.get_cashier().name}`)
+        res.push(`PEDIDO: ${this.env.pos.get_order().uid}`)
+        return res
       }
       async get_data_invoice(order) {
         const currency = { symbol: 'Bs', position: 'after', rounding: 0.01, decimals: 2 };
@@ -87,6 +90,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
 
             return {
               price_unit: amount,
+              discount: el.get_discount(),
               quantity: Math.abs(el.quantity),
               name: el.product.display_name,
               code: el.product.default_code,
