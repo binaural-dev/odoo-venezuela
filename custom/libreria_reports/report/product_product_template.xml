@@ -27,12 +27,7 @@
                       <span class="text-nowrap">MIN: <t t-out="product.lib_reordering_min_qty"/></span> - <span class="text-nowrap">MAX: <t t-out="product.lib_reordering_max_qty"/></span>
                     </div>
                     <div class="text-end" style="padding: 0 4px;">
-                        <t t-if="product.is_product_variant">
-                            <strong t-field="product.lst_price" t-options="{'widget': 'monetary'}"/>
-                        </t>
-                        <t t-else="">
-                            <strong t-field="product.list_price" t-options="{'widget': 'monetary'}"/>
-                        </t>
+                        <strong t-esc="bi_amount + iva" t-options="{'widget': 'monetary', 'display_currency': product.env.company.currency_id}"/>
                         <div class="o_label_extra_data">
                             <t t-out="extra_html"/>
                         </div>

@@ -41,6 +41,7 @@ Y somos especialistas en la implementación de Odoo.
 Sitio web: https://binauraldev.com/.
 
 Correo electrónico: contacto@binauraldev.com.
+.
 
 Github: https://github.com/binaural-dev.
 
