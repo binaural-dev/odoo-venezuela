@@ -10,35 +10,33 @@ odoo.define('binaural_pos.TicketScreen', function(require) {
         let res = super._prepareRefundOrderlineOptions(toRefundDetail)
         const { orderline } = toRefundDetail;
         res["foreign_currency_rate"] = orderline.foreign_currency_rate
+        res["foreign_price"] = orderline.foreign_price
         return res
       }
 
       _getToRefundDetail(orderline) {
-        if (orderline.id in this.env.pos.toRefundLines) {
-          return this.env.pos.toRefundLines[orderline.id];
-        } else {
-          const partner = orderline.order.get_partner();
-          const orderPartnerId = partner ? partner.id : false;
-          const newToRefundDetail = {
-            qty: 0,
-            orderline: {
-              id: orderline.id,
-              productId: orderline.product.id,
-              price: orderline.price,
-              qty: orderline.quantity,
-              refundedQty: orderline.refunded_qty,
-              orderUid: orderline.order.uid,
-              orderBackendId: orderline.order.backendId,
-              foreign_currency_rate: orderline.order.foreign_currency_rate,
-              orderPartnerId,
-              tax_ids: orderline.get_taxes().map(tax => tax.id),
-              discount: orderline.discount,
-            },
-            destinationOrderUid: false,
-          };
-          this.env.pos.toRefundLines[orderline.id] = newToRefundDetail;
-          return newToRefundDetail;
-        }
+        const partner = orderline.order.get_partner();
+        const orderPartnerId = partner ? partner.id : false;
+        const newToRefundDetail = {
+          qty: 0,
+          orderline: {
+            id: orderline.id,
+            productId: orderline.product.id,
+            price: orderline.price,
+            foreign_price: orderline.foreign_price,
+            qty: orderline.quantity,
+            refundedQty: orderline.refunded_qty,
+            orderUid: orderline.order.uid,
+            orderBackendId: orderline.order.backendId,
+            foreign_currency_rate: orderline.order.foreign_currency_rate,
+            orderPartnerId,
+            tax_ids: orderline.get_taxes().map(tax => tax.id),
+            discount: orderline.discount,
+          },
+          destinationOrderUid: false,
+        };
+        this.env.pos.toRefundLines[orderline.id] = newToRefundDetail;
+        return newToRefundDetail;
       }
       async _onDoRefund() {
         const order = this.getSelectedSyncedOrder();
