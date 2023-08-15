@@ -458,6 +458,19 @@ class SerialFiscalDriver(SerialDriver):
             def filter_unique_type_method(payment):
                 return payment["payment_method"] == "20"
 
+            new_payment_lines = []
+            for item in invoice["payment_lines"]:
+                if item["payment_method"] not in [payment["payment_method"] for payment in new_payment_lines]:
+                    new_payment_lines.append(item)
+                    continue
+
+                for value in new_payment_lines:
+                    if item["payment_method"] == value["payment_method"]:
+                        value["amount"] += item["amount"]
+
+            for item in new_payment_lines:
+                item["amount"] = abs(item["amount"])
+
             if len(invoice["payment_lines"]) == 1 or invoice["payment_lines"][0]["amount"] == 0:
                 cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
             elif len(invoice["payment_lines"]) > 1 and len(
@@ -465,7 +478,7 @@ class SerialFiscalDriver(SerialDriver):
             ) == len(invoice["payment_lines"]):
                 cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
             else:
-                for item in invoice["payment_lines"]:
+                for item in new_payment_lines:
                     amount_i, amount_d = self.split_amount(
                         item["amount"],
                         dec=FLAG_21[invoice["flag_21"]]["max_payment_amount_decimal"],
@@ -590,6 +603,16 @@ class SerialFiscalDriver(SerialDriver):
             def filter_unique_type_method(payment):
                 return payment["payment_method"] == "20"
 
+            new_payment_lines = []
+            for item in invoice["payment_lines"]:
+                if item["payment_method"] not in [payment["payment_method"] for payment in new_payment_lines]:
+                    new_payment_lines.append(item)
+                    continue
+
+                for value in new_payment_lines:
+                    if item["payment_method"] == value["payment_method"]:
+                        value["amount"] += item["amount"]
+
             if len(invoice["payment_lines"]) == 1 or invoice["payment_lines"][0]["amount"] == 0:
                 cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
             elif len(invoice["payment_lines"]) > 1 and len(
@@ -597,7 +620,7 @@ class SerialFiscalDriver(SerialDriver):
             ) == len(invoice["payment_lines"]):
                 cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
             else:
-                for item in invoice["payment_lines"]:
+                for item in new_payment_lines:
                     amount_i, amount_d = self.split_amount(
                         item["amount"],
                         dec=FLAG_21[invoice["flag_21"]]["max_payment_amount_decimal"],

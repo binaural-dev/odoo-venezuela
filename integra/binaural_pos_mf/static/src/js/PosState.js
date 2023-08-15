@@ -102,7 +102,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             let amount = vef_base ? el.amount : el.get_foreign_amount()
             return {
               payment_method: el.payment_method.code_fiscal_printer,
-              amount: Math.abs(amount),
+              amount: amount,
             }
           })
         }
