@@ -35,7 +35,6 @@
                 <field name="shipping_type"/>
                 <field name="printed"/>
                 <field name="invoice_type"/>
-                <field name="shipping_mean"/>
             </xpath>
         </field>
     </record>
