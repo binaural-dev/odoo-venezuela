@@ -29,7 +29,9 @@ class AccountMove(models.Model):
         default=default_alternate_currency,
     )
 
-    invoice_date = fields.Date(default=fields.Date.today)
+    @api.onchange("move_type")
+    def _onchange_move_type(self):
+        self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
