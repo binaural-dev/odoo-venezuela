@@ -55,7 +55,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if (
                 payment.env.company.taxpayer_type == "special"
                 and payment.partner_id.taxpayer_type != "special"
-                and payment.line_ids.move_id.move_type == "in_invoice"
+                and payment.partner_type == "supplier"
+
             ):
                 payment.igtf_percentage = 2.0
 
@@ -134,6 +135,13 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 and payment.currency_id.name == "USD"
                 and payment.is_igtf_on_foreign_exchange
             ):
+                if self.igtf_percentage != 3:
+                    if payment.reconciled_invoice_ids:
+                        payment.reconciled_invoice_ids.is_two_percentage = True
+
+                    if payment.reconciled_bill_ids:
+                        payment.reconciled_bill_ids.is_two_percentage = True
+
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     if payment.reconciled_invoice_ids:
                         payment.reconciled_invoice_ids.bi_igtf += self.amount_without_difference * self.foreign_rate
