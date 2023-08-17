@@ -91,7 +91,6 @@ class AccountPaymentIgtf(models.Model):
 
         if self.igtf_percentage == 2:
             self._create_igtf_move_supplier_two_percentage()
-            _logger.warning("epale mi loco")
 
         return vals
 
@@ -109,7 +108,10 @@ class AccountPaymentIgtf(models.Model):
                 "journal_id": igtf_journal,
                 "date": self.date,
                 "partner_id": self.partner_id.id,
+                "manually_set_rate": True,
                 "payment_igtf_id": self.id,
+                "foreign_rate":self.foreign_rate,
+                "foreign_inverse_rate": self.foreign_inverse_rate,
                 "ref": "IGTF EXPENSE SUPPLIER" + self.name,
                 "line_ids": [
                     Command.create(
