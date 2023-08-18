@@ -176,7 +176,7 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
 
         return (full_query, all_params)
 
-    ddef _get_initial_balance_values(self, report, account_ids, options):
+    def _get_initial_balance_values(self, report, account_ids, options):
         """
         Get sums for the initial balance.
         """
