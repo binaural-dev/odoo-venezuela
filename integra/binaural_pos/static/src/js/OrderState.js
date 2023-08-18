@@ -15,15 +15,51 @@ odoo.define("binaural_pos.OrderState", function(require) {
         let always_invoice = !this.pos.config.always_invoice;
         this.to_receipt = always_invoice;
         this.toggle_receipt_invoice(always_invoice)
+        this.lock_toggle_receipt_invoice = false
+      }
+      get_orderlines() {
+        if(!this.cid || !this.pos.get_order()){
+          return this.orderlines
+        }
+
+        if (this.cid != this.pos.get_order().cid) {
+          return this.orderlines;
+        }
+
+        if (this.orderlines.length < 1) {
+          this.lock_toggle_receipt_invoice = false
+          return this.orderlines
+        }
+
+        let line = this.orderlines[0]
+
+        if (!line.refunded_orderline_id) {
+          return  this.orderlines
+        }
+        
+        if(this.lock_toggle_receipt_invoice){
+          return this.orderlines
+        }
+
+        this.pos.env.services.rpc({
+          model: 'pos.order.line',
+          method: 'search_read',
+          domain: [['id', '=', line.refunded_orderline_id]],
+        }).then((el) => {
+          this.to_receipt = el[0].to_receipt
+          this.lock_toggle_receipt_invoice = true
+        })
+
+        return this.orderlines;
       }
       get is_refund(){
-        return Object.values(this.pos.toRefundLines).length != 0
+        return this.getHasRefundLines()
       }
       get current_rate() {
         let rate = this.pos.config.foreign_rate
-        if (Object.values(this.pos.toRefundLines).length == 0){
+        if (!this.is_refund){
           return rate
-        } 
+        }
         Object.values(this.pos.toRefundLines).forEach(el => {
           if (el.orderline.foreign_currency_rate != rate) {
             rate = el.orderline.foreign_currency_rate
@@ -43,6 +79,9 @@ odoo.define("binaural_pos.OrderState", function(require) {
 
         if (options.foreign_currency_rate !== undefined) {
           orderline.set_foreign_currency_rate(options.foreign_currency_rate);
+        }
+        if (options.foreign_price !== undefined) {
+          orderline.set_foreign_price(options.foreign_price);
         }
       }
       add_orderline(line) {
@@ -77,6 +116,9 @@ odoo.define("binaural_pos.OrderState", function(require) {
         }
       }
       toggle_receipt_invoice(to_receipt) {
+        if (this.lock_toggle_receipt_invoice) {
+          return
+        }
         this.assert_editable();
         this.to_receipt = to_receipt;
         this.onchage_receipt(to_receipt)
@@ -229,6 +271,21 @@ odoo.define("binaural_pos.OrderState", function(require) {
           }
         }
         return 0;
+      }
+
+      calculate_foreign_base_amount(tax_ids_array, lines) {
+        // Consider price_include taxes use case
+        let has_taxes_included_in_price = tax_ids_array.filter(tax_id =>
+          this.pos.taxes_by_id[tax_id].price_include
+        ).length;
+
+        let base_amount = lines.reduce((sum, line) =>
+          sum +
+          line.get_foreign_price_without_tax() +
+          (has_taxes_included_in_price ? line.get_foreign_total_taxes_included_in_price() : 0),
+          0
+        );
+        return base_amount;
       }
     };
   Registries.Model.extend(Order, BinauralOrderState);

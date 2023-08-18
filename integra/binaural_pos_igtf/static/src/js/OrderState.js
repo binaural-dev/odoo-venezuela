@@ -101,6 +101,10 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
 
           el.set_include_igtf(false)
 
+          if (bi_payments.length == 0) {
+            return
+          }
+
           if (!is_return) {
             if (this.igtf_amount <= el.amount && !is_change && !bi_payments.includes(el.cid)) {
               el.set_include_igtf(true)
@@ -114,10 +118,35 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
 
         if (
           bi_payments.length > 0
+          && paymentlines.length > 0
           && paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount > this.get_total_with_tax() && !is_return
           && paymentlines.filter((el) => el.include_igtf).length == 0
         ) {
           paymentlines.filter((el) => bi_payments[0] == el.cid)[0].set_include_igtf(true)
+        }
+
+        if (
+          bi_payments.length == 1
+          && paymentlines.length > 0
+          && (
+            paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount > this.get_total_without_igtf()
+            && paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount < this.get_total_with_tax()
+          )
+          && !is_return
+          && paymentlines.filter((el) => el.include_igtf).length == 0
+        ) {
+          paymentlines.filter((el) => bi_payments[0] == el.cid)[0].set_include_igtf(true)
+        }
+
+
+        if (
+          paymentlines.length > 0
+          && bi_payments.length == paymentlines.length
+          && paymentlines.filter((el) => el.include_igtf).length == 0
+          && paymentlines.filter((el) => el.amount > this.get_igtf_amount()).length > 0
+          && paymentlines.filter((el) => el.amount > this.get_igtf_amount())
+        ) {
+          paymentlines.filter((el) => el.amount > this.get_igtf_amount())[0].set_include_igtf(true)
         }
 
         return this.igtf_amount;
@@ -145,7 +174,10 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
           is_change = this.get_due() > 0
         }
 
-        if (!this.to_receipt && !payment_method.apply_igtf || this.get_due() == this.get_igtf_amount() || is_change) {
+        if (!this.to_receipt
+          && !payment_method.apply_igtf
+          || this.get_due() <= this.get_igtf_amount()
+          || is_change) {
           let res = super.add_paymentline(...arguments);
           this.update_igtf()
           return res;
