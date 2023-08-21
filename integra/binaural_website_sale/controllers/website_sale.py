@@ -62,7 +62,7 @@ class BinauralWebsiteSale(WebsiteSale):
 
     def _get_checkout_errors(self, order):
         """
-        Returns a list of products that does not have availability for the given order.
+        Returns a list of products that do not have availability for the given order.
 
         Parameters
         ----------
@@ -76,9 +76,10 @@ class BinauralWebsiteSale(WebsiteSale):
         """
         errors = []
         for line in order.order_line:
-            quantity_available = line.product_id.get_available_quantity_by_warehouse(
-                request.website.sudo().warehouse_id
-            )
+            quantities_dict = line.product_id.with_context(
+                warehouse=request.website.sudo().warehouse_id.id
+            )._compute_quantities_dict(None, None, None)[line.product_id.id]
+            quantity_available = quantities_dict["qty_available"] - quantities_dict["outgoing_qty"]
             if quantity_available - line.product_uom_qty < 0:
                 errors.append({"product": line.product_id.name, "qty": str(quantity_available)})
 
