@@ -47,4 +47,30 @@ class PosOrderLine(models.Model):
     _inherit = "pos.order.line"
 
     foreign_currency_rate = fields.Float(related="order_id.foreign_currency_rate")
+    to_receipt = fields.Boolean(related="order_id.to_receipt")
+    foreign_price = fields.Float(string="Foreign Price", readonly=True)
+
+    def _prepare_refund_data(self, refund_order, PosOrderLineLot):
+        res = super()._prepare_refund_data(refund_order, PosOrderLineLot)
+        res.update({"foreign_price": self.foreign_price})
+        return res 
+
+    def _export_for_ui(self, orderline):
+        return {
+            'qty': orderline.qty,
+            'price_unit': orderline.price_unit,
+            'foreign_price': orderline.foreign_price,
+            'price_subtotal': orderline.price_subtotal,
+            'price_subtotal_incl': orderline.price_subtotal_incl,
+            'product_id': orderline.product_id.id,
+            'discount': orderline.discount,
+            'tax_ids': [[6, False, orderline.tax_ids.mapped(lambda tax: tax.id)]],
+            'id': orderline.id,
+            'pack_lot_ids': [[0, 0, lot] for lot in orderline.pack_lot_ids.export_for_ui()],
+            'customer_note': orderline.customer_note,
+            'refunded_qty': orderline.refunded_qty,
+            'price_extra': orderline.price_extra,
+            'refunded_orderline_id': orderline.refunded_orderline_id,
+            'full_product_name': orderline.full_product_name,
+        }
 
