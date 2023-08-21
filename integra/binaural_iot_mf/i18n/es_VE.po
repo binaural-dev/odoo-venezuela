@@ -111,7 +111,8 @@ msgstr "Todos"
 #: code:addons/binaural_iot_mf/models/account_move.py:0
 #, python-format
 msgid "Cannot print an invoice with a future date"
-msgstr "No se puede imprimir una factura con una fecha futura"
+msgstr "No puede emitir una Nota de credito por Maquina fiscal con una fecha distinta a la de hoy, por favor edite la fecha de la factura, la tasa y verifique montos en  Bs"
+
 
 #. module: binaural_iot_mf
 #. odoo-python
@@ -702,7 +703,7 @@ msgstr "La nota de credito debe ser realizada en la misma maquina fiscal"
 #: code:addons/binaural_iot_mf/models/account_move.py:0
 #, python-format
 msgid "The credit note must be made on the same day"
-msgstr "La nota de credito debe ser realizada el mismo dia"
+msgstr "No puede emitir una Nota de credito por Maquina fiscal con una fecha distinta a la de hoy, por favor edite la fecha de la factura, la tasa y verifique montos en  Bs"
 
 #. module: binaural_iot_mf
 #. odoo-python
@@ -805,3 +806,10 @@ msgstr ""
 #, python-format
 msgid "message"
 msgstr ""
+
+#. module: binaural_iot_mf
+#. odoo-python
+#: code:addons/binaural_iot_mf/models/account_move.py:0
+#, python-format
+msgid "You cannot print an invoice with a non-fiscal journal"
+msgstr "No puede imprimir una factura con un  diario no fiscal"
