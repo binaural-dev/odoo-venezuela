@@ -43,7 +43,7 @@ class AccountTax(models.Model):
 
         foreign_currency = self.env.company.currency_foreign_id
         rate = invoice.foreign_inverse_rate
-        float_igtf_percentage = self.env.company.igtf_percentage
+        float_igtf_percentage = self.env.company.igtf_percentage if not invoice.is_two_percentage else 2
         igtf_percentage = (float_igtf_percentage or 0) / 100
 
         igtf_base_amount = float_round(invoice.bi_igtf or 0, precision_rounding=currency.rounding)

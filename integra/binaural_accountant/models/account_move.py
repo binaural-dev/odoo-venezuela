@@ -5,6 +5,7 @@ from lxml import etree
 from collections import defaultdict
 
 import logging
+
 _logger = logging.getLogger(__name__)
 
 
@@ -211,8 +212,15 @@ class AccountMove(models.Model):
     @api.constrains("invoice_line_ids")
     def _check_taxes_id(self):
         for moves in self:
+            if moves.move_type == "entry":
+                continue
+
             for line in moves.invoice_line_ids:
-                if len(line.tax_ids) != 1 and line.display_type == "product" and self.env.company.unique_tax:
+                if (
+                    len(line.tax_ids) != 1
+                    and line.display_type == "product"
+                    and self.env.company.unique_tax
+                ):
                     raise ValidationError(_("This product must have only one tax."))
 
     def compute_line_ids_foreign_debit_and_credit(self):
@@ -320,7 +328,9 @@ class AccountMove(models.Model):
         # We need to do this because the POS moves can have more than 1 journal entries with a
         # payable or receivable account, and in those cases is necessary that the foreign
         # debit/credit of that entry is computed using the rate.
-        if len(account_payable_or_receivable_line) > 1:
+        if len(account_payable_or_receivable_line) > 1 or (
+            payment and payment.is_igtf_on_foreign_exchange
+        ):
             return
 
         if account_payable_or_receivable_line.debit > 0:

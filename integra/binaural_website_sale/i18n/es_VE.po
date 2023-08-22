@@ -1,0 +1,57 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_website_sale
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-08-13 23:55+0000\n"
+"PO-Revision-Date: 2023-08-13 23:55+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_website_sale
+#: model_terms:ir.ui.view,arch_db:binaural_website_sale.cart
+msgid "(available quantity"
+msgstr "(cantidad disponible"
+
+#. module: binaural_website_sale
+#: model:ir.model,name:binaural_website_sale.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
+
+#. module: binaural_website_sale
+#: model:ir.model.fields,field_description:binaural_website_sale.field_res_config_settings__do_not_show_products_without_availability_on_site
+#: model:ir.model.fields,field_description:binaural_website_sale.field_website__do_not_show_products_without_availability_on_site
+msgid "Do Not Show Products Without Availability On Site"
+msgstr "No mostrar productos sin disponibilidad en el sitio"
+
+#. module: binaural_website_sale
+#: model_terms:ir.ui.view,arch_db:binaural_website_sale.res_config_settings_view_form
+msgid "Do not show products without availability"
+msgstr "No mostrar productos sin disponibilidad"
+
+#. module: binaural_website_sale
+#: model:ir.model,name:binaural_website_sale.model_product_template
+msgid "Product"
+msgstr "Producto"
+
+#. module: binaural_website_sale
+#: model:ir.model,name:binaural_website_sale.model_product_product
+msgid "Product Variant"
+msgstr "Variantes de producto"
+
+#. module: binaural_website_sale
+#: model_terms:ir.ui.view,arch_db:binaural_website_sale.cart
+msgid "The following products does not have enough stock:"
+msgstr "Algunos productos no tienen inventario suficiente:"
+
+#. module: binaural_website_sale
+#: model:ir.model,name:binaural_website_sale.model_website
+msgid "Website"
+msgstr "Sitio web"
