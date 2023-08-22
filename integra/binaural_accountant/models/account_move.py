@@ -49,6 +49,8 @@ class AccountMove(models.Model):
         readonly=False,
     )
 
+    manually_set_rate = fields.Boolean(default=False)
+
     vat = fields.Char(
         string="VAT",
         help="VAT of the partner",
@@ -409,6 +411,8 @@ class AccountMove(models.Model):
         """
         Rate = self.env["res.currency.rate"]
         for move in self:
+            if move.manually_set_rate:
+                continue
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
             )
