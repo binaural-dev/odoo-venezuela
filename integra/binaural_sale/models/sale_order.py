@@ -252,21 +252,3 @@ class SaleOrder(models.Model):
                     "foreign_inverse_rate": sale.foreign_inverse_rate,
                 }
             )
-
-    @api.onchange("pricelist_id")
-    def _onchange_pricelist_id(self):
-        """
-        Recalculate the prices of the products in the purchase order when the rate changes.
-        """
-        try:
-            sale_order_id = int(str(self.id)[6:])
-            sale_order = self.env["sale.order"].browse(sale_order_id)
-                    
-            sale_order._recompute_prices()
-            sale_order.message_post(body=_(
-                "Product prices have been recomputed according to pricelist %s.",
-                self.pricelist_id._get_html_link()
-            ))
-            
-        except:
-            self._recompute_prices()

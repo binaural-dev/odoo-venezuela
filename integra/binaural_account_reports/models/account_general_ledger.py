@@ -188,14 +188,14 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
             options
         ).items():
             new_options = self._get_options_initial_balance(options_group)
-            ct_query = self.env['res.currency']._get_query_currency_table(new_options)
-            domain = [('account_id', 'in', account_ids)]
-            if new_options.get('include_current_year_in_unaff_earnings'):
-                domain += [('account_id.include_initial_balance', '=', True)]
+            ct_query = self.env["res.currency"]._get_query_currency_table(new_options)
             tables, where_clause, where_params = report._query_get(
                 new_options,
                 "normal",
-                domain=domain,
+                domain=[
+                    ("account_id", "in", account_ids),
+                    ("account_id.include_initial_balance", "=", True),
+                ],
             )
             params.append(column_group_key)
             params += where_params
