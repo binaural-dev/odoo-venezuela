@@ -1,5 +1,7 @@
 from odoo import api, fields, models
 from odoo.tools import float_is_zero
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class ProductProduct(models.Model):
@@ -10,9 +12,7 @@ class ProductProduct(models.Model):
         
         product = None
         
-        char_fields_products = self.env.company.sh_search_char_field_product
-        
-        for char_fields in char_fields_products:
+        for char_fields in self.env.company.sh_search_char_field_product:
             product = self.env["product.product"].search([(
                 char_fields.name, "=", barcode
             )], limit=1)
@@ -23,19 +23,18 @@ class ProductProduct(models.Model):
             return super().all_scan_search(barcode)
         
         res = super().all_scan_search(barcode)
-        
         foreign_currency = self.env.company.currency_foreign_id
         rate = self.env["res.currency.rate"].search([
             ("currency_id", "=", foreign_currency.id),
             ("company_id", "=", self.env.company.id)
         ], limit=1)
         foreign_currency_name = foreign_currency.name
-        foreign_currency_symbol = foreign_currency.symbol or ""
-        last_currency_rate = rate.company_rate or 1
+        foreign_currency_symbol = foreign_currency.symbol
+        last_currency_rate = rate
         currency_symbol = product.currency_id.symbol
         currency_name = product.currency_id.name
         
-        price = product.list_price * last_currency_rate
+        price = product.list_price * last_currency_rate.company_rate
         iva = price * product.taxes_id.amount / 100
         iva_rounded = round(iva, 2)
         price_with_iva = iva + price
@@ -44,7 +43,7 @@ class ProductProduct(models.Model):
         sale_price = round(price, 2)
 
         foreign_sale_price = (
-            str(round(price_with_iva / last_currency_rate, 2))
+            str(round(price_with_iva / last_currency_rate.company_rate, 2))
             .replace(".",",")
         )
         

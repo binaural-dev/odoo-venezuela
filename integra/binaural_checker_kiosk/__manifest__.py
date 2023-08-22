@@ -9,7 +9,7 @@
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
     'category': 'Extra Tools',
-    'version': '0.4.0',
+    'version': '0.3.0',
 
     # any module necessary for this one to work correctly
     'depends': ['sh_price_checker_kiosk'],
