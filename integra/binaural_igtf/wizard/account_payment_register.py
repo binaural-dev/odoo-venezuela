@@ -34,19 +34,20 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     @api.depends("journal_id")
     def _compute_check_igtf(self):
         for payment in self:
-            if (
-                self.env.company.taxpayer_type == "ordinary"
-                and payment.line_ids.move_id.move_type == "out_invoice"
-            ):
-                payment.is_igtf = False
-            if (
-                self.env.company.taxpayer_type == "ordinary"
-                and payment.line_ids.move_id.partner_id.taxpayer_type == "ordinary"
-                and payment.line_ids.move_id.move_type == "in_invoice"
-            ):
-                payment.is_igtf = False
-            else:
-                payment.is_igtf = self.env.company.is_igtf
+            for line in payment.line_ids:
+                if (
+                    self.env.company.taxpayer_type == "ordinary"
+                    and line.move_id.move_type == "out_invoice"
+                ):
+                    payment.is_igtf = False
+                if (
+                    self.env.company.taxpayer_type == "ordinary"
+                    and line.move_id.partner_id.taxpayer_type == "ordinary"
+                    and line.move_id.move_type == "in_invoice"
+                ):
+                    payment.is_igtf = False
+                else:
+                    payment.is_igtf = self.env.company.is_igtf
 
     @api.depends("is_igtf")
     def _compute_igtf_percentage(self):
