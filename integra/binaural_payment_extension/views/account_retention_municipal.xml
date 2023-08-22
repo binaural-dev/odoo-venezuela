@@ -8,6 +8,7 @@
             <field name="arch" type="xml">
                 <form string="Retention">
                     <header>
+			<button name="action_print_municipal_retention_xlsx" type="object" string="Print municipal retention XLSX"/>
 	                <button name="action_draft" type="object" states="cancel" string="Convert to draft"/>
                         <button name="action_post" type="object" states="draft" string="Approve" class="oe_highlight"/>
                         <button name="action_cancel" type="object" states="emitted" string="Cancel" confirm="Are you sure you want to cancel this voucher? The associated accounting entries will be reversed"/>

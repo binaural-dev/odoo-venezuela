@@ -12,8 +12,8 @@ odoo.define("binaural_pos.PaymentState", function(require) {
     class BinauralPayment extends Payment {
       constructor() {
         super(...arguments);
-        this.foreign_amount = 0;
-        this.foreign_rate = this.pos.config.foreign_rate;
+        this.foreign_amount = this.foreign_amount || 0;
+        this.foreign_rate = this.foreign_rate || this.pos.config.foreign_rate;
       }
       export_as_JSON() {
         let res = super.export_as_JSON();
@@ -21,6 +21,13 @@ odoo.define("binaural_pos.PaymentState", function(require) {
         res["foreign_rate"] = this.foreign_rate;
         return res
       }
+
+      init_from_JSON(json){
+        super.init_from_JSON(json);
+        this.foreign_amount = json.foreign_amount || 0;
+        this.foreign_rate = json.foreign_rate || 0;
+      }
+
       get_foreign_amount() {
         return this.foreign_amount;
       }

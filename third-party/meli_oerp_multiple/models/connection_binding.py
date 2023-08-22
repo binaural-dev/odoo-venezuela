@@ -1083,6 +1083,8 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
     meli_stock_moves_update = fields.Datetime(compute=_meli_stock_moves_update,string="Stock Last Move",help="Ultimo movimiento de stock")
 
+    #meli_stock_moves_ids = fields.One2many(related="product.stock_move_ids")
+
     def _meli_stock_status( self ):
         for bind in self:
 
@@ -1095,6 +1097,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 if ( bind.stock_error and 'fulfillment' in bind.stock_error ):
 
                     bind.meli_stock_status = 'revision_fulfillment'
+
             else:
                 if (bind.meli_stock_moves_update):
                     if (bind.stock_update):
@@ -1110,7 +1113,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
     meli_stock_status = fields.Selection(selection=[('update','Actualizar'),('updated','Actualizado'),('revision','Revisar'),('revision_unmoved','Revisar sin movimientos'),('revision_error','Revisar con error'),('revision_fulfillment','Fulfillment')],string="Status de stock",compute=_meli_stock_status,store=True,index=True)
 
     def get_stock_str(self,meli=None):
-
         stocks = []
         stocks_str = ""
         stocks_on_hand = 0.0
@@ -1580,10 +1582,14 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                     if (new_price>0):
                         bind.meli_price = new_price
 
-            if (product.meli_currency and product.meli_currency == 'MXN'):
+            bind.meli_price = round(bind.meli_price,2)
+
+            if (product_tmpl.meli_currency and (product_tmpl.meli_currency == 'MXN' or product_tmpl.meli_currency == 'USD')):
                 bind.meli_price = str((float(bind.meli_price)))
+            elif (product_tmpl.meli_currency and product_tmpl.meli_currency == 'CLP'):
+                bind.meli_price = str( int( int( math.floor(int(bind.meli_price) / 100 ) * 100 + 90 ) ) )
             else:
-                bind.meli_price = math.ceil(float(bind.meli_price))
+                bind.meli_price = math.ceil(bind.meli_price)
                 bind.meli_price = str(int(float(bind.meli_price)))
 
             _logger.info("update_price meli_price (forced?): "+str(meli_price))
@@ -1819,6 +1825,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 _logger.info("mercadolibre.product product_post_price: bindv.price:"+str(bindv.price)+" meli_price: "+str(bindv.meli_price))
                 res = product.x_product_post_price( context=context, meli_price=bindv.meli_price, meli_currency=meli_currency, meli=meli, config=config, meli_id=meli_id, meli_id_variation=meli_id_variation )
                 if res and 'error' in res:
+                    bindv.price_update = ml_datetime( str( datetime.now() ) )
                     return res
                 bindv.price_update = ml_datetime( str( datetime.now() ) )
                 #more than one

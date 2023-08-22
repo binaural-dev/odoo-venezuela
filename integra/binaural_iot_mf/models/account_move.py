@@ -60,13 +60,29 @@ class AccountMoveInh(models.Model):
         account_moves = self.env["account.move"].search(
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
-        if not response["valid"]:
-            raise ValidationError(_(response["message"]))
+        if not response.get("valid", False):
+            raise ValidationError(response.get("message", "No se pudo imprimir el reporte Z"))
 
-        _logger.info(response)
+        data = response.get("data", False)
+        _numberOfLastZReport = data.get("_numberOfLastZReport", False)
+        if False in [data, _numberOfLastZReport]:
+            _logger.info("NO SE RECUPERO EL Z DE LA MAQUINA: %s", serial)
+            _numberOfLastZReport = self._get_z_and_add_one(serial)
+            _logger.info("ULTIMO Z: %s", _numberOfLastZReport)
 
         for invoice in account_moves:
-            invoice.write({"mf_reportz": int(response["data"]["_numberOfLastZReport"]) + 1})
+            invoice.write({"mf_reportz": int(_numberOfLastZReport) + 1})
+        return _numberOfLastZReport
+
+    def _get_z_and_add_one(self, serial):
+        account_move = self.env["account.move"].search(
+            ["&", ("mf_serial", "=", serial), ("mf_reportz", "!=", False)],
+            order="mf_reportz desc",
+            limit=1,
+        )
+        if not account_move:
+            return 0
+        return account_move.mf_reportz
 
     @api.onchange("is_credit")
     def _onchange_is_credit(self):
@@ -100,12 +116,16 @@ class AccountMoveInh(models.Model):
         return _data
 
     def check_print_out_invoice(self):
+        if not self.journal_id.fiscal:
+            raise ValidationError(_("You cannot print an invoice with a non-fiscal journal"))
         if self.mf_invoice_number:
             raise ValidationError(_("The invoice has already been printed"))
         if not self.iot_mf:
             raise ValidationError(_("The invoice has no fiscal machine assigned"))
         if self.state in ["draft", "cancel"]:
             raise ValidationError(_("Cannot print an invoice without validation"))
+        if self.invoice_date != fields.Date.today():
+            raise ValidationError(_("Cannot print an invoice with a future date"))
         if self.is_credit and self.amount_residual != self.amount_total:
             raise ValidationError(_("You cannot print a credit invoice with associated payments"))
 
@@ -204,6 +224,8 @@ class AccountMoveInh(models.Model):
             raise ValidationError(_("The invoice has no fiscal machine assigned"))
         if self.iot_mf.serial_machine != self.reversed_entry_id.mf_serial:
             raise ValidationError(_("The credit note must be made in the same fiscal machine"))
+        if self.invoice_date != fields.Date.today():
+            raise ValidationError(_("The credit note must be made on the same day"))
         if self.state in ["draft", "cancel"]:
             raise ValidationError(_("Cannot print an invoice without validation"))
 

@@ -57,6 +57,9 @@ class AccountMoveIgtf(models.Model):
                 result = 0
             move_credit.write({"bi_igtf": result})
 
+            if payment_credit.is_two_percentage:
+                move_credit.write({"is_two_percentage": True})
+
         if (
             payment_debit.is_igtf
             and payment_debit.is_igtf_on_foreign_exchange
@@ -72,6 +75,9 @@ class AccountMoveIgtf(models.Model):
             if result < 0:
                 result = 0
             move_debit.write({"bi_igtf": result})
+            if payment_debit.is_two_percentage:
+                move_debit.write({"is_two_percentage": True})
+
 
         if (
             payment_credit.is_igtf
@@ -88,6 +94,8 @@ class AccountMoveIgtf(models.Model):
             if result < 0:
                 result = 0
             reverse_move_credit.write({"bi_igtf": result})
+            if payment_credit.is_two_percentage:
+                move_credit.write({"is_two_percentage": True})
 
         if (
             payment_debit.is_igtf
@@ -104,6 +112,8 @@ class AccountMoveIgtf(models.Model):
             if result < 0:
                 result = 0
             reverse_move_debit.write({"bi_igtf": result})
+            if payment_debit.is_two_percentage:
+                reverse_move_debit.write({"is_two_percentage": True})
 
     def js_remove_outstanding_partial(self, partial_id):
         self.remove_igtf_from_move(partial_id)

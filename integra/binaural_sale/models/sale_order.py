@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 from lxml import etree
 
 
@@ -64,6 +65,13 @@ class SaleOrder(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
+
+    @api.constrains("order_line")
+    def _check_taxes_id(self):
+        for order in self:
+            for line in order.order_line:
+                if len(line.tax_id) != 1 and not line.display_type and self.env.company.unique_tax:
+                    raise ValidationError(_("All products must contain only one tax."))
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -244,3 +252,21 @@ class SaleOrder(models.Model):
                     "foreign_inverse_rate": sale.foreign_inverse_rate,
                 }
             )
+
+    @api.onchange("pricelist_id")
+    def _onchange_pricelist_id(self):
+        """
+        Recalculate the prices of the products in the purchase order when the rate changes.
+        """
+        try:
+            sale_order_id = int(str(self.id)[6:])
+            sale_order = self.env["sale.order"].browse(sale_order_id)
+                    
+            sale_order._recompute_prices()
+            sale_order.message_post(body=_(
+                "Product prices have been recomputed according to pricelist %s.",
+                self.pricelist_id._get_html_link()
+            ))
+            
+        except:
+            self._recompute_prices()

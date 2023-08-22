@@ -8,6 +8,7 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", store=True, copy=False)
+    is_two_percentage = fields.Boolean(string="Is two percentage", default=False, store=True, copy=False)
     amount_paid = fields.Monetary(string="Paid", default=0.00, help="Paid", store=True, copy=False)
     amount_to_pay_igtf = fields.Monetary(
         string="IGTF Paid",
@@ -33,7 +34,7 @@ class AccountMove(models.Model):
         """
         for move in self:
             move.amount_to_pay_igtf = 0
-            if move.invoice_line_ids and move.is_invoice(include_receipts=True):
+            if move.invoice_line_ids and move.is_invoice(include_receipts=True) and move.tax_totals:
                 move.amount_to_pay_igtf = move.tax_totals["igtf"]["igtf_amount"] - move.amount_paid
 
     @api.depends(

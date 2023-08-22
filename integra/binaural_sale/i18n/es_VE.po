@@ -4,16 +4,23 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230410\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230710\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-10 14:56+0000\n"
-"PO-Revision-Date: 2023-04-10 14:56+0000\n"
+"POT-Creation-Date: 2023-07-25 21:06+0000\n"
+"PO-Revision-Date: 2023-07-25 21:06+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: binaural_sale
+#. odoo-python
+#: code:addons/binaural_sale/models/sale_order.py:0
+#, python-format
+msgid "All products must contain only one tax."
+msgstr "Todos los productos deben contener solo un impuesto."
 
 #. module: binaural_sale
 #: model_terms:ir.ui.view,arch_db:binaural_sale.res_config_settings_binaural_sale
@@ -31,8 +38,8 @@ msgid ""
 "Check this if you want the rate of the invoice to be taken from its sale "
 "order. Else it will take the rate of the date when it is created."
 msgstr ""
-"Marque esta opción si quiere que la factura utilice la tasa de su orden"
-" de venta. De lo contrario utilizará la tasa del día en el que sea creada."
+"Marque esta opción si quiere que la factura utilice la tasa de su orden de "
+"venta. De lo contrario utilizará la tasa del día en el que sea creada."
 
 #. module: binaural_sale
 #: model:ir.model,name:binaural_sale.model_res_company
@@ -57,6 +64,11 @@ msgid ""
 msgstr ""
 "Filtro de contacto ya sea por cliente o proveedor (dependiendo de lo que se "
 "necesite)"
+
+#. module: binaural_sale
+#: model_terms:ir.ui.view,arch_db:binaural_sale.view_quotation_tree
+msgid "Foreign Amount total"
+msgstr ""
 
 #. module: binaural_sale
 #: model:ir.model.fields,field_description:binaural_sale.field_sale_order__foreign_currency_id
@@ -137,6 +149,28 @@ msgstr "Tasa inversa alterna"
 #: model:ir.model.fields,field_description:binaural_sale.field_sale_order__partner_id_domain
 msgid "Partner Id Domain"
 msgstr ""
+
+#. module: binaural_sale
+#. odoo-python
+#: code:addons/binaural_sale/models/sale_order.py:0
+#, python-format
+msgid "Product prices have been recomputed according to pricelist %s."
+msgstr "Se han vuelto a calcular los precios de los productos según la lista de precios %s."
+
+#. module: binaural_sale
+#: model:ir.model.fields,field_description:binaural_sale.field_product_pricelist_item__price_with_tax
+msgid "Price With Tax"
+msgstr "Precio + IVA"
+
+#. module: binaural_sale
+#: model:ir.model.fields,field_description:binaural_sale.field_product_pricelist_item__price_without_tax
+msgid "Price Without Tax"
+msgstr "Precio sin Impuesto"
+
+#. module: binaural_sale
+#: model:ir.model,name:binaural_sale.model_product_pricelist_item
+msgid "Pricelist Rule"
+msgstr "Regla de Tarifa"
 
 #. module: binaural_sale
 #: model:ir.model.fields,help:binaural_sale.field_sale_order__foreign_inverse_rate

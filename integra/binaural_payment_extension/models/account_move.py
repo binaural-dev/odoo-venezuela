@@ -5,14 +5,6 @@ from odoo.exceptions import UserError
 class AccountMoveRetention(models.Model):
     _inherit = "account.move"
 
-    company_currency_id = fields.Many2one(
-        "res.currency",
-        compute="_compute_currency_fields",
-    )
-    foreign_currency_id = fields.Many2one(
-        "res.currency",
-        compute="_compute_currency_fields",
-    )
     base_currency_is_vef = fields.Boolean(
         compute="_compute_currency_fields",
     )
@@ -64,8 +56,6 @@ class AccountMoveRetention(models.Model):
 
     def _compute_currency_fields(self):
         for retention in self:
-            retention.company_currency_id = self.env.company.currency_id.id
-            retention.foreign_currency_id = self.env.company.currency_foreign_id.id
             retention.base_currency_is_vef = self.env.company.currency_id == self.env.ref(
                 "base.VEF"
             )
@@ -89,9 +79,14 @@ class AccountMoveRetention(models.Model):
                 move._validate_municipal_retention()
                 retention = move._create_supplier_retention("municipal")
                 retention.action_post()
-                move.islr_voucher_number = retention.number
 
-            if move.generate_iva_retention and move.fiscal:
+            # The IVA retention will not be generated if the invoice already has a retention that
+            # is not cancelled
+            if (
+                move.generate_iva_retention
+                and move.fiscal
+                and not move.retention_iva_line_ids.filtered(lambda l: l.state != "cancel")
+            ):
                 move._validate_iva_retention()
                 retention = move._create_supplier_retention("iva")
                 retention.action_post()

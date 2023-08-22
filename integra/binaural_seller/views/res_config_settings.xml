@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="binaural_movil_seller_res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">binaural.movil.seller.res.config.settings.view.form</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="100"/>
+        <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//div[@name='binaural_rate_settings']" position="after">
+                <h2>Seller Settings</h2>
+                <div class="row mt16 o_settings_container" name="Binaural_seller_settings">
+                    <div class="o_setting_right_pane">
+                        <group colspan="4" col="4">
+                            <field name="initial_seller"/>
+                        </group>
+                    </div>
+                </div>
+            </xpath>
+
+        </field>
+    </record>
+
+    <record id="binaural_seller_res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">binaural.seller.res.config.settings.view.form</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="100"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//field[@name='initial_seller']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

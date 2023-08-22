@@ -56,23 +56,20 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         let repeat_same_method = [];
         let bi_payments = [];
 
-        let has_change = false
-
         paymentlines.forEach((payment) => {
           let is_change = false
-          if(!is_return){
+          if (!is_return) {
             is_change = payment.amount < 0
-          }else{
+          } else {
             is_change = payment.amount > 0
-          }
-
-          if (!payment.payment_method.apply_igtf
-            || repeat_same_method.includes(payment.payment_method.id) || is_change) {
-            return;
           }
 
           if (payment.payment_method.apply_igtf && last_igtf_amount == payment.amount) {
             return
+          }
+
+          if (!payment.payment_method.apply_igtf) {
+            return;
           }
 
           bi_igtf += round_pr(payment.amount, rounding);
@@ -81,16 +78,7 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
           bi_payments.push(payment.cid)
         })
 
-        if (
-          bi_igtf !== 0 &&
-          (
-            bi_igtf > this.get_total_without_igtf()
-            || (
-              bi_igtf < this.get_total_without_igtf()
-              && !has_change
-            )
-          )
-        ) {
+        if (bi_igtf !== 0 && ((bi_igtf > this.get_total_without_igtf() && !is_return) || (bi_igtf < this.get_total_without_igtf() && is_return))) {
           bi_igtf = this.get_total_without_igtf()
           foreign_bi_igtf = this.get_foreign_total_without_igtf()
         }
@@ -105,13 +93,17 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
 
         paymentlines.forEach((el) => {
           let is_change = false
-          if(!is_return){
+          if (!is_return) {
             is_change = el.amount < 0
-          }else{
+          } else {
             is_change = el.amount > 0
           }
 
           el.set_include_igtf(false)
+
+          if (bi_payments.length == 0) {
+            return
+          }
 
           if (!is_return) {
             if (this.igtf_amount <= el.amount && !is_change && !bi_payments.includes(el.cid)) {
@@ -125,10 +117,36 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         })
 
         if (
-          bi_payments.length == 1
+          bi_payments.length > 0
+          && paymentlines.length > 0
           && paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount > this.get_total_with_tax() && !is_return
+          && paymentlines.filter((el) => el.include_igtf).length == 0
         ) {
           paymentlines.filter((el) => bi_payments[0] == el.cid)[0].set_include_igtf(true)
+        }
+
+        if (
+          bi_payments.length == 1
+          && paymentlines.length > 0
+          && (
+            paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount > this.get_total_without_igtf()
+            && paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount < this.get_total_with_tax()
+          )
+          && !is_return
+          && paymentlines.filter((el) => el.include_igtf).length == 0
+        ) {
+          paymentlines.filter((el) => bi_payments[0] == el.cid)[0].set_include_igtf(true)
+        }
+
+
+        if (
+          paymentlines.length > 0
+          && bi_payments.length == paymentlines.length
+          && paymentlines.filter((el) => el.include_igtf).length == 0
+          && paymentlines.filter((el) => el.amount > this.get_igtf_amount()).length > 0
+          && paymentlines.filter((el) => el.amount > this.get_igtf_amount())
+        ) {
+          paymentlines.filter((el) => el.amount > this.get_igtf_amount())[0].set_include_igtf(true)
         }
 
         return this.igtf_amount;
@@ -143,8 +161,23 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
       get_foreign_igtf_amount() {
         return this.foreign_igtf_amount;
       }
+      get_bi_igtf() {
+        return this.bi_igtf;
+      }
       add_paymentline(payment_method) {
-        if (!payment_method.apply_igtf || this.get_due() == this.get_igtf_amount()) {
+
+        let is_change = false
+        let is_return = this.get_total_without_igtf() < 0
+        if (!is_return) {
+          is_change = this.get_due() < 0
+        } else {
+          is_change = this.get_due() > 0
+        }
+
+        if (!this.to_receipt
+          && !payment_method.apply_igtf
+          || this.get_due() <= this.get_igtf_amount()
+          || is_change) {
           let res = super.add_paymentline(...arguments);
           this.update_igtf()
           return res;

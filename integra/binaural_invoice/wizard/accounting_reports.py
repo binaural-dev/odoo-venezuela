@@ -20,13 +20,13 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         is_system_currency_bs = self.env.company.currency_id.name == "VEF"
         return is_system_currency_bs
 
-    def _default_date_from(self):
+    def _default_date_to(self):
         current_day = fields.Date.today()
         return current_day
 
-    def _default_date_to(self):
-        current_day = self._default_date_from()
-        final_day_month = relativedelta(months=1, days=-1)
+    def _default_date_from(self):
+        current_day = self._default_date_to()
+        final_day_month = relativedelta(months=-1)
         increment_date = current_day + final_day_month
         return increment_date
 

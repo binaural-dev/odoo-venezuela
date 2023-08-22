@@ -933,7 +933,24 @@ class product_product(models.Model):
         if (1==2 and rjson['available_quantity']==0):
             product_template.website_published = False
 
-        #posting.posting_query_questions()
+        posting_fields = {
+            'posting_date': str(datetime.now()),
+            'meli_id':rjson['id'],
+            'product_id':product.id,
+            'name': 'Post ('+str(product.meli_id)+'): ' + product.meli_title
+        }
+
+        posting = self.env['mercadolibre.posting'].search([('meli_id','=',rjson['id'])], limit=1)
+        posting_id = posting.id
+
+        if not posting_id:
+            posting = self.env['mercadolibre.posting'].create((posting_fields))
+            posting_id = posting.id
+            #if (posting):
+            #    posting.posting_query_questions()
+        else:
+            posting.write({'product_id':product.id })
+            #posting.posting_query_questions()
 
         b_search_nonfree_ship = False
         if ('shipping' in rjson):

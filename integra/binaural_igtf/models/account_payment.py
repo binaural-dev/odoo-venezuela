@@ -46,9 +46,10 @@ class AccountPaymentIgtf(models.Model):
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
             if (
+                payment.is_igtf_on_foreign_exchange and
                 payment.env.company.taxpayer_type == "special"
                 and payment.partner_id.taxpayer_type != "special"
-                and payment.payment_type == "outbound"
+                and payment.partner_type == "supplier"
             ):
                 payment.igtf_percentage = 2.0
 
