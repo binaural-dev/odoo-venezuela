@@ -5,6 +5,7 @@ from lxml import etree
 from collections import defaultdict
 
 import logging
+
 _logger = logging.getLogger(__name__)
 
 
@@ -28,7 +29,9 @@ class AccountMove(models.Model):
         default=default_alternate_currency,
     )
 
-    invoice_date = fields.Date(default=fields.Date.today)
+    @api.onchange("move_type")
+    def _onchange_move_type(self):
+        self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
@@ -215,7 +218,11 @@ class AccountMove(models.Model):
                 continue
 
             for line in moves.invoice_line_ids:
-                if len(line.tax_ids) != 1 and line.display_type == "product" and self.env.company.unique_tax:
+                if (
+                    len(line.tax_ids) != 1
+                    and line.display_type == "product"
+                    and self.env.company.unique_tax
+                ):
                     raise ValidationError(_("This product must have only one tax."))
 
     def compute_line_ids_foreign_debit_and_credit(self):
@@ -240,6 +247,11 @@ class AccountMove(models.Model):
         If none of this is true and the currency of the journal entry is the same as the foreign
         currency of the company, the currency amount will be the one used to set the foreign debit
         or foreign credit on the corresponding line.
+
+        And if there are two lines and one of them is in foreign currency, the amount placed in 
+        amount in currency will be placed in both corresponding lines in foreign debit and credit.
+
+        If the adjustment is placed, it overwrites both lines so that they are the same amount
 
         Ohterwise, if the move is not an invoice the foreign debit and foreign credit will be the
         debit and credit of the line multiplied by the inverse rate.
@@ -267,6 +279,12 @@ class AccountMove(models.Model):
                 if line.credit != 0:
                     line.foreign_credit = payment.retention_foreign_amount
         else:
+            line_foreign_currency_id = [
+                line
+                for line in self.line_ids
+                if line.currency_id == self.env.company.currency_foreign_id
+            ]
+
             for line in self.line_ids:
                 # If the line is an adjustment line, the foreign debit and foreign credit will be
                 # the foreign debit and foreign credit adjustment fields.
@@ -274,6 +292,29 @@ class AccountMove(models.Model):
                     line.foreign_debit = line.foreign_debit_adjustment
                     line.foreign_credit = line.foreign_credit_adjustment
                     continue
+
+                if (
+                    len(self.line_ids) == 2
+                    and len(line_foreign_currency_id) == 1
+                    and line_foreign_currency_id[0].id != line.id
+                ):
+                    line_foreign_id = line_foreign_currency_id[0]
+                    if (line_foreign_id.foreign_debit_adjustment + line_foreign_id.foreign_credit_adjustment) != 0:
+                        line.foreign_debit = line_foreign_id.foreign_credit_adjustment
+                        line.foreign_credit = line_foreign_id.foreign_debit_adjustment
+                    else:
+                        line.foreign_debit = (
+                            abs(line_foreign_id.amount_currency)
+                            if line_foreign_id.amount_currency < 0
+                            else 0
+                        )
+                        line.foreign_credit = (
+                            abs(line_foreign_id.amount_currency)
+                            if line_foreign_id.amount_currency > 0
+                            else 0
+                        )
+                    continue
+
                 line_name = line.name or False
                 subtotal_found = False
                 if is_invoice and line_name in subtotals_by_name:
@@ -323,7 +364,9 @@ class AccountMove(models.Model):
         # We need to do this because the POS moves can have more than 1 journal entries with a
         # payable or receivable account, and in those cases is necessary that the foreign
         # debit/credit of that entry is computed using the rate.
-        if len(account_payable_or_receivable_line) > 1:
+        if len(account_payable_or_receivable_line) > 1 or (
+            payment and payment.is_igtf_on_foreign_exchange
+        ):
             return
 
         if account_payable_or_receivable_line.debit > 0:

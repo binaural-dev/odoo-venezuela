@@ -8,6 +8,7 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", store=True, copy=False)
+    is_two_percentage = fields.Boolean(string="Is two percentage", default=False, store=True, copy=False)
     amount_paid = fields.Monetary(string="Paid", default=0.00, help="Paid", store=True, copy=False)
     amount_to_pay_igtf = fields.Monetary(
         string="IGTF Paid",

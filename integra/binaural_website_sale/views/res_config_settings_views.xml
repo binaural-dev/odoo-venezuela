@@ -6,13 +6,11 @@
         <field name="arch" type="xml">
             <div id="sale_product_catalog_settings" position="inside">
 		<div class="col-12 col-lg-6 o_setting_box">
+		    <div class="o_setting_left_pane">
+                        <field name="do_not_show_products_without_availability_on_site" />
+                    </div>
                     <div class="o_setting_right_pane">
                         <label string="Do not show products without availability" for="do_not_show_products_without_availability_on_site"/>
-                        <div class="content-group">
-                            <div class="mt16">
-                                <field name="do_not_show_products_without_availability_on_site" class="o_light_label"/>
-                            </div>
-                        </div>
                     </div>
                 </div>
 	    </div>
