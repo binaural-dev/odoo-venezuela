@@ -79,6 +79,9 @@ class IotDeviceInherit(models.Model):
         default="Rf",
     )
 
+    resume_range_from = fields.Date(default=fields.Date().today())
+    resume_range_to = fields.Date(default=fields.Date().today())
+
     def get_data_to_payment_method(self):
         if not self.payment_method_name or self.payment_method_name == "":
             raise ValidationError(_("Payment method name is empty"))
@@ -97,6 +100,17 @@ class IotDeviceInherit(models.Model):
 
         return {
             "command": self.command,
+        }
+
+    def get_range_resume(self):
+        if not self.resume_range_from or not self.resume_range_to:
+            raise ValidationError(_("You must fill in the start or end field, if there is one"))
+        if self.resume_range_to < self.resume_range_from:
+            raise ValidationError(_("Range to is greater than range from"))
+
+        return {
+            "resume_range_from": self.resume_range_from.strftime("%d%m%y"),
+            "resume_range_to": self.resume_range_to.strftime("%d%m%y"),
         }
 
     def get_range_reprint(self):

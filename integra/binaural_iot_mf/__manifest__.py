@@ -1,8 +1,8 @@
 {
-    "name": "Binaural IoT - The Factory KHA",
-    "version": "2.6",
+    "name": "Binaural IoT - The Factory HKA",
+    "version": "2.7",
     "category": "Accounting",
-    "summary": "The Factory KHA (SDK) en IoT",
+    "summary": "The Factory HKA (SDK) en IoT",
     "license": "LGPL-3",
     "description": """
     Implementacion de SDK de The Factory HKA (VE) a Internet of Things (IoT) y
