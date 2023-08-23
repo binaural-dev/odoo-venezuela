@@ -1,0 +1,12 @@
+<odoo>
+    <data noupdate="1">
+        <record id="sequence_alphabot_fel_seq" model="ir.sequence">
+            <field name="name">Alphabot Fel</field>
+            <field name="code">alphabot.fel.docvalues</field>
+            <field name="prefix">0</field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+    </data>
+</odoo>

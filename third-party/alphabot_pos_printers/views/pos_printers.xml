@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<data>
+	<record id='pos_printers_action' model='ir.actions.act_window'>
+		<field name="name">Comandas</field>
+		<field name="res_model">alphabot.printer.orders</field>
+		<field name="view_mode">kanban,tree</field>		
+	</record>
+	
+	
+	<menuitem name="Comandas" id="pos_printers_menu" parent="point_of_sale.menu_point_of_sale" sequence="100" action="pos_printers_action"/>
+	<record id='pos_printers_view_tree' model='ir.ui.view'>
+		<field name="name">Lista Comandas</field>
+		<field name="model">alphabot.printer.orders</field>
+		<field name="arch" type="xml">
+			<tree create="false">
+				<field name="create_date" string="Fecha"/>
+				<field name="pos_name"/>
+				<field name="order_name"/>
+				<field name="alphabot_printer"/>
+				<field name="alphabot_status"/>
+			</tree>
+		</field>
+	</record>
+		
+	<record id='pos_printers_view_kanban' model='ir.ui.view'>
+		<field name="name">Kanban Comandas</field>
+		<field name="model">alphabot.printer.orders</field>
+		<field name="arch" type="xml">	
+			<kanban class="o_kanban_dashboard o_emphasize_colors"  create="false">
+				<field name="id"/>
+				<field name="order_name"/>
+				<field name="order_color"/>
+				<field name="alphabot_printer"/>
+				<field name="alphabot_status"/>
+				<field name="alphabot_image_to_print"/>
+				<field name="image_1920"/>
+				<templates>
+					<t t-name="kanban-box">
+						<div style="width: 250px;" t-attf-class="#{kanban_color(record.order_color.raw_value)}">
+							<div class="o_kanban_image" style="width:95%;">
+								<img t-att-src="kanban_image('alphabot.printer.orders', 'image_1920', record.id.raw_value)" alt="Comanda"/>
+<!-- 								<div class="o_kanban_card_content">
+									<div class="oe_kanban_details">
+										<a type="open">
+											<field name="order_name"/>
+										</a>
+									</div>
+								</div> -->
+							</div>
+						</div>
+					</t>
+				</templates>
+			</kanban>
+		</field>
+	</record>
+</data>
+
+	<data>       
+        <record id="alphabot_printer_view_restaurant_printer" model="ir.ui.view">
+            <field name="name">Order Printers</field>
+            <field name="model">restaurant.printer</field>
+            <field name="inherit_id" ref="pos_restaurant.view_restaurant_printer"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="printer_type"/>
+					<field name="alphaprint_windows_name"/>
+                </xpath>
+                <xpath expr="//field[@name='proxy_ip']" position="replace">
+                </xpath>				
+            </field>
+        </record>	
+        <record id="alphaprint_printer_view_restaurant_printer_form" model="ir.ui.view">
+            <field name="name">Order Printer</field>
+            <field name="inherit_id" ref="pos_restaurant.view_restaurant_printer_form"/>
+            <field name="model">restaurant.printer</field>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='proxy_ip']" position="replace">                    
+                    <field name="proxy_ip" attrs="{'invisible': [('printer_type', '!=', 'iot')], 'required': [('printer_type', '=', 'iot')]}"/>                    
+					<field name="alphaprint_windows_name" attrs="{'invisible': [('printer_type', '!=', 'alphaprint')], 'required': [('printer_type', '=', 'alphaprint')]}"/>                    
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

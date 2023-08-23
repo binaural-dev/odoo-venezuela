@@ -1,0 +1,157 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* seguridad_stock
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20230508\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-07-12 20:07+0000\n"
+"PO-Revision-Date: 2023-07-12 20:07+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: seguridad_stock
+#: model:ir.actions.report,print_report_name:seguridad_stock.action_etiqueta
+msgid "'Etiqueta - %s - %s' % (object.partner_id.name or '', object.name)"
+msgstr ""
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_print_label
+msgid "<span>CELULAR:</span>"
+msgstr ""
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_print_label
+msgid "<span>TELEFONOS:</span>"
+msgstr ""
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_print_label
+msgid "CONTACTO:"
+msgstr ""
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_print_label
+msgid "DE:"
+msgstr ""
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_print_label
+msgid "DESTINO:"
+msgstr ""
+
+#. module: seguridad_stock
+#: model:ir.model.fields,field_description:seguridad_stock.field_stock_picking__destiny
+msgid "Destiny"
+msgstr "Destino"
+
+#. module: seguridad_stock
+#: model:ir.actions.report,name:seguridad_stock.action_etiqueta
+msgid "Etiqueta"
+msgstr ""
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_print_label
+msgid "Logo"
+msgstr ""
+
+#. module: seguridad_stock
+#: model:ir.model.fields,field_description:seguridad_stock.field_stock_picking__package_qty
+msgid "Package Quantity"
+msgstr "Nº de cajas"
+
+#. module: seguridad_stock
+#: model:ir.model.fields,help:seguridad_stock.field_stock_picking__package_qty
+msgid "Quantity of packages used in the picking"
+msgstr ""
+
+#. module: seguridad_stock
+#: model:ir.model.fields,field_description:seguridad_stock.field_stock_picking__shipping_method
+msgid "Shipping Method"
+msgstr "Metodo de entrega"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_print_label
+msgid "TELEFONOS:"
+msgstr ""
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_print_label
+msgid "TRANSPORTE:"
+msgstr ""
+
+#. module: seguridad_stock
+#: model:ir.model,name:seguridad_stock.model_stock_picking
+msgid "Transfer"
+msgstr "Transferir"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<span><strong>Delivery Address:</strong></span>"
+msgstr "Direccion de envio:"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Code</strong>"
+msgstr "Código"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Description</strong>"
+msgstr "Descripción"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>From</strong>"
+msgstr "Desde"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Lot/Serial Number</strong>"
+msgstr "Numero Lote/Serie"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Order:</strong>"
+msgstr "Orden:"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Product Barcode</strong>"
+msgstr "Cod Barra"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Quantity</strong>"
+msgstr "Cantidad"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Scheduled Date:</strong>"
+msgstr "Cita agendada:"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Status:</strong>"
+msgstr "Estado:"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "<strong>Warranty</strong>"
+msgstr "Garantia"
+
+#. module: seguridad_stock
+#: model_terms:ir.ui.view,arch_db:seguridad_stock.report_picking_2
+msgid "From"
+msgstr "Desde"
+
+#. module: seguridad_stock
+#: model:ir.model.fields,field_description:seguridad_stock.field_product_product__warranty
+#: model:ir.model.fields,field_description:seguridad_stock.field_product_template__warranty
+msgid "Warranty"
+msgstr "Garantia"
