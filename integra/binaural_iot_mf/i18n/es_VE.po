@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230725\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230810\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-28 17:10+0000\n"
-"PO-Revision-Date: 2023-07-28 17:10+0000\n"
+"POT-Creation-Date: 2023-08-23 20:01+0000\n"
+"PO-Revision-Date: 2023-08-23 20:01+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -111,8 +111,10 @@ msgstr "Todos"
 #: code:addons/binaural_iot_mf/models/account_move.py:0
 #, python-format
 msgid "Cannot print an invoice with a future date"
-msgstr "No puede emitir una Nota de credito por Maquina fiscal con una fecha distinta a la de hoy, por favor edite la fecha de la factura, la tasa y verifique montos en  Bs"
-
+msgstr ""
+"No puede emitir una Nota de credito por Maquina fiscal con una fecha "
+"distinta a la de hoy, por favor edite la fecha de la factura, la tasa y "
+"verifique montos en  Bs"
 
 #. module: binaural_iot_mf
 #. odoo-python
@@ -188,7 +190,7 @@ msgstr "Documento"
 #: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
 msgid ""
 "Edit the name of the payment method shown in \"programming\"\n"
-"                                and used to pay on invoices or credit notes"
+"                                        and used to pay on invoices or credit notes"
 msgstr ""
 "Editar el nombre del metodo de pago mostrado en \"programacion\"\n"
 "                                y es usado para pagar facturas y notas de credito"
@@ -496,6 +498,18 @@ msgid "Print Refund"
 msgstr "Imprimir Nota de credito"
 
 #. module: binaural_iot_mf
+#: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
+msgid "Print Reports"
+msgstr "Imprimir Reporte"
+
+#. module: binaural_iot_mf
+#. odoo-javascript
+#: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
+#, python-format
+msgid "Print Resume"
+msgstr "Imprimir Resumen"
+
+#. module: binaural_iot_mf
 #. odoo-javascript
 #: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
 #, python-format
@@ -530,6 +544,7 @@ msgstr "REIMPRIMIR DOCUMENTO"
 
 #. module: binaural_iot_mf
 #. odoo-python
+#: code:addons/binaural_iot_mf/models/iot_device.py:0
 #: code:addons/binaural_iot_mf/models/iot_device.py:0
 #: code:addons/binaural_iot_mf/models/iot_device.py:0
 #, python-format
@@ -584,6 +599,11 @@ msgstr "Reimprimir Documento"
 
 #. module: binaural_iot_mf
 #: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
+msgid "Reprint Documents"
+msgstr "Reimprimir documentos"
+
+#. module: binaural_iot_mf
+#: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
 msgid "Reprint Documents range"
 msgstr "Reimprimir rango de documentos"
 
@@ -621,6 +641,16 @@ msgstr "Tipo de Reimpresion Fecha"
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__reprint_type_number
 msgid "Reprint Type Number"
 msgstr "Tipo de Reimpresion"
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__resume_range_from
+msgid "Resume Range From"
+msgstr "Rango desde"
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__resume_range_to
+msgid "Resume Range To"
+msgstr "Rango hasta"
 
 #. module: binaural_iot_mf
 #. odoo-javascript
@@ -685,6 +715,13 @@ msgid "Tax"
 msgstr "Impuesto"
 
 #. module: binaural_iot_mf
+#. odoo-javascript
+#: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
+#, python-format
+msgid "Test"
+msgstr "Imprimir Test"
+
+#. module: binaural_iot_mf
 #. odoo-python
 #: code:addons/binaural_iot_mf/models/iot_device.py:0
 #, python-format
@@ -703,7 +740,10 @@ msgstr "La nota de credito debe ser realizada en la misma maquina fiscal"
 #: code:addons/binaural_iot_mf/models/account_move.py:0
 #, python-format
 msgid "The credit note must be made on the same day"
-msgstr "No puede emitir una Nota de credito por Maquina fiscal con una fecha distinta a la de hoy, por favor edite la fecha de la factura, la tasa y verifique montos en  Bs"
+msgstr ""
+"No puede emitir una Nota de credito por Maquina fiscal con una fecha "
+"distinta a la de hoy, por favor edite la fecha de la factura, la tasa y "
+"verifique montos en  Bs"
 
 #. module: binaural_iot_mf
 #. odoo-python
@@ -727,6 +767,11 @@ msgstr "La factura no tiene una maquina fiscal asignada"
 #, python-format
 msgid "The invoice has not already been printed"
 msgstr "La factura no fue impresa"
+
+#. module: binaural_iot_mf
+#: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
+msgid "Tools"
+msgstr "Herramientas"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__traditional_line
@@ -781,6 +826,20 @@ msgstr ""
 
 #. module: binaural_iot_mf
 #. odoo-python
+#: code:addons/binaural_iot_mf/models/account_move.py:0
+#, python-format
+msgid "You cannot print an invoice with a non-fiscal journal"
+msgstr "No puede imprimir una factura con un  diario no fiscal"
+
+#. module: binaural_iot_mf
+#. odoo-python
+#: code:addons/binaural_iot_mf/models/iot_device.py:0
+#, python-format
+msgid "You must fill in the start or end field, if there is one"
+msgstr "Debes rellenar el campo de inicio o fin, si lo hay."
+
+#. module: binaural_iot_mf
+#. odoo-python
 #: code:addons/binaural_iot_mf/models/iot_device.py:0
 #, python-format
 msgid ""
@@ -799,17 +858,3 @@ msgstr "Debes llenar el campo de inicio o fin, si lo hay, repite el número"
 #: model:ir.model,name:binaural_iot_mf.model_iot_port
 msgid "iot.port"
 msgstr ""
-
-#. module: binaural_iot_mf
-#. odoo-python
-#: code:addons/binaural_iot_mf/models/account_move.py:0
-#, python-format
-msgid "message"
-msgstr ""
-
-#. module: binaural_iot_mf
-#. odoo-python
-#: code:addons/binaural_iot_mf/models/account_move.py:0
-#, python-format
-msgid "You cannot print an invoice with a non-fiscal journal"
-msgstr "No puede imprimir una factura con un  diario no fiscal"
