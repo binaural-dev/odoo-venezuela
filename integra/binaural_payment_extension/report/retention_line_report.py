@@ -17,6 +17,7 @@ class RetentionLineReport(models.Model):
     invoice_number = fields.Char()
     invoice_correlative = fields.Char()
     retention_date = fields.Date()
+    retention_date_accounting = fields.Date()
     raw_aliquot = fields.Char()
     aliquot = fields.Char(compute="_compute_percentages")
     iva_amount = fields.Float()
@@ -68,6 +69,7 @@ class RetentionLineReport(models.Model):
                 p.name AS partner,
                 i.name AS invoice_number,
                 i.correlative AS invoice_correlative,
+                r.date_accounting AS retention_date_accounting,
                 r.date AS retention_date,
                 rl.aliquot::VARCHAR AS raw_aliquot,
                 w.value::VARCHAR AS raw_retention_percentage,"""
