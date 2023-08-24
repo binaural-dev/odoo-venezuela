@@ -161,7 +161,7 @@ class AccountMoveInh(models.Model):
         for line in data.invoice_line_ids:
             price_vef = line.price_unit
             if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
-                price_vef = line.price_unit * data.foreign_inverse_rate
+                price_vef = line.foreign_price
             _invoice_lines.append(
                 {
                     "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,
@@ -261,7 +261,7 @@ class AccountMoveInh(models.Model):
         for line in data.invoice_line_ids:
             price_vef = line.price_unit
             if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
-                price_vef = line.price_unit * data.foreign_inverse_rate
+                price_vef = line.foreign_price
             _invoice_lines.append(
                 {
                     "tax": line.tax_ids[0].fiscal_code if line.tax_ids else 0,

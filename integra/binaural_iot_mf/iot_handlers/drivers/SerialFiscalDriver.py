@@ -270,6 +270,8 @@ class SerialFiscalDriver(SerialDriver):
                 "reprint": self.reprint,
                 "reprint_type": self.reprint_type,
                 "reprint_date": self.reprint_date,
+                "print_resume": self.print_resume,
+                "test": self.test,
                 "report_x": self.PrintXReport,
                 "report_z": self.PrintZReport,
                 "get_last_invoice_number": self.get_last_invoice_number,
@@ -278,6 +280,15 @@ class SerialFiscalDriver(SerialDriver):
                 "hello": self.get_last_invoice_number,
             }
         )
+
+    def test(self, data):
+        self.SendCmd("7")
+        self.SendCmd("800")
+        self.SendCmd("80$Binaural Test")
+        self.SendCmd("80!Documento de pruebas")
+        self.SendCmd("810")
+        self.data["value"] = {"status": "true"}
+        event_manager.device_changed(self)
 
     def logger(self, data):
         self.SendCmd(str(data["data"]))
@@ -318,6 +329,19 @@ class SerialFiscalDriver(SerialDriver):
             return self.data["value"]
 
         self.data["value"] = self._print_out_refund(invoice)
+        event_manager.device_changed(self)
+        return self.data["value"]
+
+    def print_resume(self, data):
+        self.data["value"] = {"valid": False, "message": "No se ha completado"}
+        _data = data.get("data", False)
+        if _data:
+            data = _data
+        _logger.info(data)
+        self.SendCmd(
+            "I2S"+ str(data["resume_range_from"] + data["resume_range_to"])
+        )
+        self.data["value"] = {"valid": True, "message": "MENSAJE"}
         event_manager.device_changed(self)
         return self.data["value"]
 
