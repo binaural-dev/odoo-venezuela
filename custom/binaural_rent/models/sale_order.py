@@ -1,5 +1,6 @@
-from odoo import models, _
+from odoo import models,_
 from odoo.exceptions import  ValidationError
+
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
@@ -14,5 +15,8 @@ class SaleOrder(models.Model):
             ])
             for rental_schedule in rental_schedules:
                 if rental_schedule.order_line_id.id != order_line.id:
-                    raise ValidationError(_("The rental cannot be confirmed due to a schedule conflict"))
-        return res 
+                    rental_name = rental_schedule.name
+                    rental_description = rental_schedule.description
+                    raise ValidationError(_(
+                        'The rental cannot be confirmed as there is a schedule conflict with the rental %s. %s' % (rental_name, rental_description)))
+        return res
