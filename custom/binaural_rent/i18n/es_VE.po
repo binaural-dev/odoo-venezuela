@@ -16,10 +16,16 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_rent
+#: model:ir.model,name:binaural_rent.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
+
+#. module: binaural_rent
 #. odoo-python
 #: code:addons/binaural_rent/models/sale_order.py:0
 #, python-format
 msgid ""
 "The rental cannot be confirmed as there is a schedule conflict with the "
-"rental %s. %s"
-msgstr "El alquiler no puede ser confirmado ya que hay un conflicto de horario con el alquiler %s. %s"
+"rental. "
+msgstr ""
+"El alquiler no puede ser confirmado ya que hay un conflicto de horario con el alquiler"
