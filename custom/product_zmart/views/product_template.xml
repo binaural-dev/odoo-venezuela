@@ -56,7 +56,7 @@
                                         <field name="zmart_code"/>
                                         <field name="serie"/>
                                         <field name="volume_ml"/>
-                                        <field name="color"/>
+                                        <field name="product_color"/>
                                         <field name="performance_pages"/>
                                     </group>
                                     <group>

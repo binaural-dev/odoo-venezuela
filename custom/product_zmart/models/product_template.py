@@ -20,7 +20,7 @@ class ProductTemplateZmart(models.Model):
 	serie = fields.Char(
     	store = True
     )
-	color = fields.Char(
+	product_color = fields.Char(
     	store = True
     )
 	performance_pages = fields.Char(
