@@ -13,7 +13,6 @@
             <field name="binding_type">report</field>
             <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
         </record>
-
         <template id="template_invoice_free_form_usd">
             <t t-call="web.html_container">
                 <t t-call="web.basic_layout">
@@ -35,16 +34,14 @@
                             <section id="segmento_1" style="display: flex; flex-direction: row;font-size:13px">
                                 <hr style="border: none; visibility: hidden;"/>
                                 <div style="margin-bottom: 5px;margin-top:10px">Cliente: <span t-field="o.partner_id.name"/></div>
-                                <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.vat"/></div>
+                                <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.prefix_vat"/>-<span t-field="o.partner_id.vat"/></div>
                                 <div style="margin-bottom: 5px;">Correo del Comprador: <span t-field="o.partner_id.email"/></div>
-                                <div style="margin-bottom: 5px;">Dirección: <span t-field="o.partner_id.contact_address_complete"/></div>
+                                <div style="margin-bottom: 5px;">Dirección: <span style="text-transform: lowercase" t-field="o.partner_id.contact_address_complete"/></div>
                                 <div style="margin-bottom: 5px;">Teléfonos: <span t-field="o.partner_id.phone"/></div>
                                 <div style="margin-bottom: 5px;">Vendedor: <span t-field="o.invoice_user_id"/></div>
-                                <div>Transporte:<span/></div>
                             </section>
                             <div class="mt-5">
                             <div class="page">
-                            
                                 <t t-set="display_discount" t-value="any(l.discount for l in o.invoice_line_ids)"/>
                                     <table class="table table-sm o_main_table table-borderless" name="invoice_line_table" style="font-size:12px;margin-top:-40px">
                                         <thead>
@@ -137,8 +134,6 @@
                                             </t>
                                         </tbody>
                                     </table>
-
-                           
                                 </div>   
                                 <div t-if="not is_html_empty(o.narration)" name="comment">
                                     <span t-field="o.narration"/>
@@ -151,8 +146,8 @@
                                 </p>
                             </div>
                             </div>
-                             <div style="position: absolute;
-                                bottom: -1240px;
+                            <div style="position: absolute;
+                                bottom: -1255px;
                                 right: 0;">
                                     <div class="clearfix mb-4">
                                         <div id="total" class="row">
@@ -165,8 +160,8 @@
                                                         <t t-set="str_tax" t-value="'subtotals' if base_vef else 'foreign_subtotals'"/>
                                                         <t t-foreach="tax_totals[str_tax]" t-as="subtotal">
                                                             <tr class="border-black o_subtotal">
-                                                                <td><strong t-esc="subtotal['name']"/></td>
-                                                                <td></td>
+                                                                <td style="width:400px"><strong t-esc="subtotal['name']"/><td>
+                                                                </td></td>
                                                                 <td></td>
                                                                 <td></td>
                                                                 <td></td>
@@ -186,7 +181,7 @@
                                                                 <t t-foreach="tax_totals[str_tax][subtotal_to_show]" t-as="amount_by_group">
                                                                     <tr>
                                                                         <t t-if="tax_totals['display_tax_base']">
-                                                                            <td>
+                                                                            <td style="width:400px">
                                                                                 <span t-esc="amount_by_group['tax_group_name']"/>
                                                                                 <span class="text-nowrap"> on
                                                                                     <t t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
@@ -219,20 +214,20 @@
                                                                         </div>
                                                                     </tr>
                                                                 </t>
-                                                                <t t-if="o.default_is_igtf">
+                                                                <t t-if="o.bi_igtf > 0">
                                                                             <tr>
                                                                                 <th colspan="2"><strong>IGTF Percibido</strong></th>
                                                                             </tr>
                                                                             <tr>
                                                                                 <td><strong>Dolares tasa bcv (<span t-out="o.foreign_rate"/>):</strong></td>
-                                                                                <td><strong>Base $</strong></td>
-                                                                                <td><span t-out="o.bi_igtf"/></td>
+                                                                                <td style="width:100px"><strong>Base $</strong></td>
+                                                                                <td>$<span t-out="o.bi_igtf"/></td>
                                                                                 <td></td>
                                                                                 <td></td>
                                                                                 <td></td>
                                                                                 <td></td>
                                                                                 
-                                                                                <td style="padding-left:270px"><span  t-out="o.bi_igtf"/></td>
+                                                                                <td style="padding-left:270px">$<span  t-out="o.bi_igtf"/></td>
                                                                                 
                                                                             </tr>
                                                                             <tr>
@@ -243,12 +238,12 @@
                                                                                 <td><strong>IGTF Percibido (2%)</strong></td>
                                                                                 </t>
                                                                                 <td><strong>Base $ </strong></td>
-                                                                                <td><span t-out="o.amount_to_pay_igtf"/></td>
+                                                                                <td>$<span t-out="o.amount_to_pay_igtf"/></td>
                                                                                 <td></td>
                                                                                 <td></td>
                                                                                 <td></td>
                                                                                 <td></td>
-                                                                                <td style="padding-left:270px"><span t-out="o.amount_to_pay_igtf"/></td>
+                                                                                <td class="text-end">$<span t-out="o.amount_to_pay_igtf"/></td>
                                                                                 </tr>
                                                                         </t>
                                                             </t>
@@ -269,7 +264,17 @@
                                                                 <td></td>
                                                                 <td class="text-end">
                                                                     <t>
-                                                                        <span t-esc="tax_totals['formatted_amount_total']"/>
+                                                                        <t t-set="formatted_amount_total" t-value="tax_totals['formatted_amount_total']"/>
+                                                                        <t t-set="formatted_amount_total" t-value="formatted_amount_total.replace('$', '')"/>
+                                                                        <t t-set="formatted_amount_total" t-value="formatted_amount_total.replace(',', '.')"/>
+                                                                        <t t-set="formatted_amount_total" t-value="float(formatted_amount_total)"/>
+                                                                        <t t-set="valor_extra" t-value="float(o.amount_to_pay_igtf)"/>
+                                                                        <t t-if="o.bi_igtf > 0">
+                                                                            $<span t-esc="formatted_amount_total + valor_extra"/>
+                                                                        </t>
+                                                                        <t t-else="">
+                                                                            <span t-esc="formatted_amount_total"/>
+                                                                        </t>
                                                                     </t>
                                                                 </td>
                                                             </tr>
@@ -285,7 +290,7 @@
                                         </div>
                                     </div>
                                     <div id="contenedor" class="clearfix">
-                                        <div id="principal" style='width:40%;margin-top:-120px;font-size:12px'>
+                                        <div id="principal" style='width:40%;margin-top:-120px;color:#FFFFFF'>
                                             <p>TRANSFERIR A LAS CUENTAS CORRIENTES BANESCO
                                                                 0134-0335-00-3351-0608-52/ MERCANTIL 0105-0699-92-1699-1732-30 / PROVINCIAL
                                                                 0108-0027-79-0100-8966-61
