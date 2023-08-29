@@ -21,5 +21,5 @@ class PosOrder(models.Model):
 
     def _create_invoice(self, move_vals):
         res = super()._create_invoice(move_vals)
-        res.write({"bi_igtf": self.bi_igtf})
+        res.write({"bi_igtf": abs(self.bi_igtf)})
         return res
