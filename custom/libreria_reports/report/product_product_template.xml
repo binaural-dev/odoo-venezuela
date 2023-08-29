@@ -3,7 +3,7 @@
     <template id="report_simple_label_dymo" inherit_id="product.report_simple_label_dymo">
         <xpath expr="." position="replace">
             <div style="overflow: hidden;page-break-before: always;font-size:70%;width: 70mm;height: 32mm;padding-top: 2mm">
-                <div class="">
+                <div style="margin-left: 20%">
                     <div class="text-start o_label_small_barcode">
                         <t t-if="barcode">
                             <div t-out="barcode" style="padding:0" t-options="{'widget': 'barcode', 'quiet': 0, 'symbology': 'auto', 'img_style': barcode_size}"/>
