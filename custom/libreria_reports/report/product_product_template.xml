@@ -12,9 +12,9 @@
                             </div>
                         </t>
                     </div>
-                    <div class="o_label_name" style="line-height: 100%;background-color: transparent;padding-top: 1px;font-size: 7px">
-                        <span t-if="product.is_product_variant" t-field="product.display_name"/>
-                        <span t-else="" t-field="product.name"/>
+                    <div class="o_label_name" style="line-height: 100%;background-color: transparent;padding-top: 1px;">
+                        <span t-if="product.is_product_variant" t-out="product.display_name[:70]"/>
+                        <span t-else="" t-out="product.name[:70]"/>
                     </div>
                     <div style="float: left;width: 100%">
                       <t t-set="tax_amount" t-value="product.taxes_id[0].amount"/>
