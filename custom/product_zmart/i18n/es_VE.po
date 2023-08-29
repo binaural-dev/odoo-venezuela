@@ -309,3 +309,9 @@ msgstr "No tiene descuento"
 #: model:ir.model.fields,field_description:product_zmart.field_product_template__model_product
 msgid "Model Product"
 msgstr "Modelo de producto"
+
+#. module: product_zmart
+#: model:ir.model.fields,field_description:product_zmart.field_product_product__product_color
+#: model:ir.model.fields,field_description:product_zmart.field_product_template__product_color
+msgid "Product Color"
+msgstr "Color del producto"
