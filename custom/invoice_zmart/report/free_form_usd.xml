@@ -248,10 +248,7 @@
                                                                         </t>
                                                             </t>
                                                         </t>
-
                                                         <t t-set="has_rounding" t-value="'formatted_amount_total_rounded' in tax_totals"/>
-                                                        <!--Total amount with all taxes-->
-                                                            
                                                             <tr class="border-black o_total">
                                                                 <t t-if="has_rounding"><td>Total en USD</td></t>
                                                                 <t t-else=""><td><strong>Total en USD</strong></td></t>
@@ -259,7 +256,6 @@
                                                                 <td></td>
                                                                 <td></td>
                                                                 <td></td>
-
                                                                 <td></td>
                                                                 <td></td>
                                                                 <td class="text-end">
@@ -273,7 +269,7 @@
                                                                             $<span t-esc="formatted_amount_total + valor_extra"/>
                                                                         </t>
                                                                         <t t-else="">
-                                                                            <span t-esc="formatted_amount_total"/>
+                                                                            $<span t-esc="formatted_amount_total"/>
                                                                         </t>
                                                                     </t>
                                                                 </td>
