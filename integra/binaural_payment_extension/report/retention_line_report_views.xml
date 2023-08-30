@@ -5,6 +5,9 @@
 	<field name="model">retention.line.report</field>
 	<field name="arch" type="xml">
 	    <search string="Retention Line Report">
+        <filter name="retention_date_accounting"
+                domain="[]"
+                context="{'group_by' : 'retention_date_accounting'}"/>
 		<field name="type"/>
 		<separator/>
 		<filter string="Customer Retention" name="filter_type_customer" domain="[('type','=','out_invoice')]"/>
@@ -28,6 +31,7 @@
 		<field name="invoice_number"/>
 		<field name="invoice_correlative"/>
 		<field name="retention_date"/>
+        <field name="retention_date_accounting"/>
 		<field name="aliquot"/>
 		<field name="retention_percentage"/>
 		<field name="iva_amount" sum="Total IVA Amount"/>

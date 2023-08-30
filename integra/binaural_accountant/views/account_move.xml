@@ -57,19 +57,17 @@
 		<field
 		    name="foreign_debit"
 		    optional="show"
-		    groups="base.group_no_one"
 		    sum="Total Foreign Debit"
 		    readonly="1"
 		/>
 		<field
 		    name="foreign_credit"
 		    optional="show"
-		    groups="base.group_no_one"
 		    sum="Total Foreign Credit"
 		    readonly="1"
 		/>
-		<field name="foreign_credit_adjustment" optional="hide" groups="base.group_no_one"/>
-		<field name="foreign_debit_adjustment" optional="hide" groups="base.group_no_one"/>
+		<field name="foreign_credit_adjustment" optional="hide"/>
+		<field name="foreign_debit_adjustment" optional="hide"/>
                 <field name="foreign_balance" optional="hide" groups="base.group_no_one"/>
 
                 <field name="foreign_rate" optional="hide" groups="base.group_no_one"/>
