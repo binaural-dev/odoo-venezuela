@@ -1,6 +1,6 @@
 from datetime import datetime
-import xlsxwriter
 
+import xlsxwriter
 from odoo import _, api, models
 from odoo.osv import expression
 
@@ -15,9 +15,9 @@ class WizardAccountingReports(models.TransientModel):
         retention_moves -= credit_notes
 
         retention_resume_lines.append(0.0)
-        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids) for move in retention_moves]))
+        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted" and not self._check_future_retention_dates(x.retention_id.date_accounting))) for move in retention_moves]))
         retention_resume_lines.append(0.0)
-        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids) * -1 for move in credit_notes]))
+        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted" and not self._check_future_retention_dates(x.retention_id.date_accounting))) * -1 for move in credit_notes]))
 
         return retention_resume_lines
 
@@ -108,8 +108,13 @@ class WizardAccountingReports(models.TransientModel):
     def parse_sale_book_data(self):
         data = super().parse_sale_book_data()
         for move in data:
-            move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
-            if self._check_future_retention_dates(move_date):
+            date = move.get("accounting_date", False)
+            if move.get("vat", "") != "RESUMEN" and (
+                not date
+                or self._check_future_retention_dates(
+                    datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()
+                )
+            ):
                 move.update({
                     "total_sales_iva": 0,
                     "total_sales_not_iva": 0,
@@ -126,7 +131,7 @@ class WizardAccountingReports(models.TransientModel):
     def parse_purchase_book_data(self):
         data = super().parse_purchase_book_data()
         for move in data:
-            move_date = datetime.strptime(move.get("document_date"), "%d/%m/%Y").date()
+            move_date = datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()
             if self._check_future_retention_dates(move_date):
                 move.update({
                     "total_purchases_iva": 0,
@@ -145,12 +150,20 @@ class WizardAccountingReports(models.TransientModel):
 
     def get_retention_iva_values(self, move_id):
         move = self.env["account.move"].browse(move_id)
+        is_purchase = self.report == "purchase"
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
-        ret_lines = move.retention_iva_line_ids
+        ret_lines = move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted")
         retention = ret_lines.mapped("retention_id")
         ret_vals = dict()
 
-        if not ret_lines or self._check_future_retention_dates(retention.date):
+        if not ret_lines:
+            return {
+                "date_retention": "",
+                "number_retention": "",
+                "iva_retained": "",
+            }
+
+        if ret_lines and self._check_future_retention_dates(retention.date_accounting):
             return {
                 "date_retention": "",
                 "number_retention": "",
@@ -167,7 +180,7 @@ class WizardAccountingReports(models.TransientModel):
         is_check_currency_system = self.currency_system
         retention = lines.mapped("retention_id")
 
-        if self._check_future_retention_dates(retention.date):
+        if self.report == "purchase" and self._check_future_retention_dates(retention.date):
             return 0.0
         if not is_check_currency_system:
             return sum(lines.mapped("foreign_retention_amount"))

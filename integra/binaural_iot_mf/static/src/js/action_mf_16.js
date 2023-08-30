@@ -43,7 +43,9 @@ export class IoTFiscalMachineComponent extends Widget {
       "reprint_type": _t("Reprint"),
       "reprint_type_date": _t("Reprint Date"),
       "payment_method": _t("Set Payment Method"),
+      "test": _t("Test"),
       "command": _t("Send Command"),
+      "print_resume_date": _t("Print Resume"),
     }
     this.state = useState({
       action: this[this.props.action] || this.not_function,
@@ -93,7 +95,7 @@ export class IoTFiscalMachineComponent extends Widget {
       .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
   }
 
-  async payment_method (){
+  async payment_method() {
     if (!this.device) {
       this.showFailedConnection()
       return
@@ -108,22 +110,73 @@ export class IoTFiscalMachineComponent extends Widget {
       kwargs: {},
     })
 
-     this.iotDevice.addListener(({ value }) => {
-       this.iotDevice.removeListener();
-     });
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+    });
 
-     this.iotDevice.action({
-       action: "logger",
-       data: `PE${request.payment_methods}${request.payment_method_name}`.toUpperCase(),
-     })
-       .then(data => {
-         onIoTActionResult(data, this.env)
-       })
-       .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
-    
+    this.iotDevice.action({
+      action: "logger",
+      data: `PE${request.payment_methods}${request.payment_method_name}`.toUpperCase(),
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+
   }
 
-  async reprint_type_date(){
+  async status_error() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+      console.log(this.env.services.notification.add(value.message))
+    });
+
+    this.iotDevice.action({
+      action: "status",
+      data: true,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+
+  }
+
+  async print_resume_date() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    const device = this.props.record.resId
+
+    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/get_range_resume", {
+      model: 'iot.device',
+      method: 'get_range_resume',
+      args: [device],
+      kwargs: {},
+    })
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+    });
+
+    this.iotDevice.action({
+      action: "print_resume",
+      data: request,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+  }
+
+  async reprint_type_date() {
     if (!this.device) {
       this.showFailedConnection()
       return
@@ -138,21 +191,21 @@ export class IoTFiscalMachineComponent extends Widget {
       kwargs: {},
     })
 
-     this.iotDevice.addListener(({ value }) => {
-       this.iotDevice.removeListener();
-     });
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+    });
 
-     this.iotDevice.action({
-       action: "reprint_date",
-       data: request,
-     })
-       .then(data => {
-         onIoTActionResult(data, this.env)
-       })
-       .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
-    
+    this.iotDevice.action({
+      action: "reprint_date",
+      data: request,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+
   }
-  async reprint_type(){
+  async reprint_type() {
     if (!this.device) {
       this.showFailedConnection()
       return
@@ -167,21 +220,41 @@ export class IoTFiscalMachineComponent extends Widget {
       kwargs: {},
     })
 
-     this.iotDevice.addListener(({ value }) => {
-       this.iotDevice.removeListener();
-     });
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+    });
 
-     this.iotDevice.action({
-       action: "reprint_type",
-       data: request,
-     })
-       .then(data => {
-         onIoTActionResult(data, this.env)
-       })
-       .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
-    
+    this.iotDevice.action({
+      action: "reprint_type",
+      data: request,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+
   }
-  async command(){
+  async test() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+    });
+
+    this.iotDevice.action({
+      action: "test",
+      data: true,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+
+  }
+  async command() {
     if (!this.device) {
       this.showFailedConnection()
       return
@@ -196,19 +269,19 @@ export class IoTFiscalMachineComponent extends Widget {
       kwargs: {},
     })
 
-     this.iotDevice.addListener(({ value }) => {
-       this.iotDevice.removeListener();
-     });
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+    });
 
-     this.iotDevice.action({
-       action: "logger",
-       data: request["command"].toUpperCase(),
-     })
-       .then(data => {
-         onIoTActionResult(data, this.env)
-       })
-       .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
-    
+    this.iotDevice.action({
+      action: "logger",
+      data: request["command"].toUpperCase(),
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+
   }
   async generate_report_z() {
     if (!this.device) {
