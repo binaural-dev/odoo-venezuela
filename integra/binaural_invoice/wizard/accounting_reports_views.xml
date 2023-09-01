@@ -10,8 +10,8 @@
                         <group>
                             <group>
                                 <field name="report"/>
-                                <field name="date_from"/>
-                                <field name="date_to"/>
+                                <field name="date_from" widget="date"/>
+                                <field name="date_to" widget="date"/>
                                 <field name="currency_system"/>
                             </group>
                         </group>

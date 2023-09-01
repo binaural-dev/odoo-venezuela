@@ -12,6 +12,23 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 			super() {
 				super.setup();
 			}
+      onMounted() {
+        let res = super.onMounted();
+        let lines = this.env.pos.get_order().get_orderlines()
+        lines.forEach(line => {
+          if (!!line.refunded_orderline_id) {
+            this.env.services.rpc({
+              model: 'pos.order.line',
+              method: 'search_read',
+              domain: [["id", "=", line.refunded_orderline_id]],
+              kwargs: {},
+            }).then(res => {
+              line.tax_ids = res[0].tax_ids
+            })
+          }
+        })
+        return res
+      }
       async _clickProduct(event) {
         if (!this.currentOrder) {
             this.env.pos.add_new_order();

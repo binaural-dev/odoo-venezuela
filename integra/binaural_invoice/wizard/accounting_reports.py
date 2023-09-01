@@ -1,10 +1,11 @@
-from dateutil.relativedelta import relativedelta
+import logging
 from datetime import datetime
 from io import BytesIO
-from odoo import models, fields
+
 import xlsxwriter
+from dateutil.relativedelta import relativedelta
+from odoo import fields, models
 from xlsxwriter import utility
-import logging
 
 _logger = logging.getLogger(__name__)
 INIT_LINES = 8
@@ -55,6 +56,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
+            "accounting_date": self._format_date(move.date),
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
             "document_number": move.name,
@@ -77,6 +79,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return {
             "_id": move.id,
             "document_date": self._format_date(move.invoice_date),
+            "accounting_date": self._format_date(move.date),
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
             "document_number": move.name,
@@ -493,8 +496,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain = []
         is_purchase = self.report == "purchase"
 
-        field_date = "date" if is_purchase else "invoice_date"
-
         if current_company_id:
             search_domain += [("company_id", "=", current_company_id)]
 
@@ -504,10 +505,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             else ["in_invoice", "in_refund", "in_debit"]
         )
 
-        search_domain += [(field_date, ">=", self.date_from)]
-        search_domain += [(field_date, "<=", self.date_to)]
+        search_domain += [("date", ">=", self.date_from)]
+        search_domain += [("date", "<=", self.date_to)]
         search_domain += [
-            ("state", "not in", ["draft"]),
+            ("state", "=", "posted"),
             ("journal_id.fiscal", "=", True),
             ("move_type", "in", move_type),
         ]
@@ -949,11 +950,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 total_line = idx_line + 2
                 worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
 
-            column_range = f"C{row_resume + 1}:{utility.xl_col_to_name(total_line)}{row_resume + 1}"
+            column_bi_range = f"C{row_resume + 1}:{utility.xl_col_to_name(total_line - 1)}{row_resume + 1}"
+            column_df_range = f"D{row_resume + 1}:{utility.xl_col_to_name(total_line)}{row_resume + 1}"
             imposed_formula = (
-                f"=SUMPRODUCT(--({column_range}), --(MOD(COLUMN({column_range}), 2)=1))"
+                f"=SUMPRODUCT(--({column_bi_range}), --(MOD(COLUMN({column_bi_range}), 2)=1))"
             )
-            debit_formula = f"=SUMPRODUCT(--({column_range}), --(MOD(COLUMN({column_range}), 2)=0))"
+            debit_formula = f"=SUMPRODUCT(--({column_df_range}), --(MOD(COLUMN({column_df_range}), 2)=0))"
 
             worksheet.write_formula(
                 row_resume, total_line + 1, imposed_formula, cell_formats.get("number")

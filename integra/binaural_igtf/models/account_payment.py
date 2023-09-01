@@ -91,7 +91,6 @@ class AccountPaymentIgtf(models.Model):
 
         if self.igtf_percentage == 2:
             self._create_igtf_move_supplier_two_percentage()
-            _logger.warning("epale mi loco")
 
         return vals
 
@@ -99,6 +98,7 @@ class AccountPaymentIgtf(models.Model):
         igtf_journal = self.env.company.journal_igtf_expense.id
         supplier_account = self.env.company.igtf_two_percentage_account.id
         expense_account = self.env.company.igtf_account_expense.id
+        is_outbound = self.payment_type == "outbound"
 
         igtf_amount = self.igtf_amount
         if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
@@ -109,7 +109,10 @@ class AccountPaymentIgtf(models.Model):
                 "journal_id": igtf_journal,
                 "date": self.date,
                 "partner_id": self.partner_id.id,
+                "manually_set_rate": True,
                 "payment_igtf_id": self.id,
+                "foreign_rate":self.foreign_rate,
+                "foreign_inverse_rate": self.foreign_inverse_rate,
                 "ref": "IGTF EXPENSE SUPPLIER" + self.name,
                 "line_ids": [
                     Command.create(
@@ -117,7 +120,7 @@ class AccountPaymentIgtf(models.Model):
                             "name": "IGTF EXPENSE SUPPLIER" + self.name,
                             "account_id": expense_account,
                             "partner_id": self.partner_id.id,
-                            "amount_currency": igtf_amount,
+                            "amount_currency": igtf_amount if is_outbound else -igtf_amount,
                         }
                     ),
                     Command.create(
@@ -125,7 +128,7 @@ class AccountPaymentIgtf(models.Model):
                             "name": "IGTF EXPENSE SUPPLIER" + self.name,
                             "account_id": supplier_account,
                             "partner_id": self.partner_id.id,
-                            "amount_currency": -igtf_amount,
+                            "amount_currency": -igtf_amount if is_outbound else igtf_amount,
                         }
                     ),
                 ],
