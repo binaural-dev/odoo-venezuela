@@ -294,8 +294,8 @@ class MercadoLibreOrder(models.Model):
             bindP = binding_obj.search([('conn_id','=',meli_id)]
                                         + account_filter,
                                         limit=1)
-                                        
-        _logger.info("search_meli_product (multiple): bindP: "+str(bindP))                                        
+
+        _logger.info("search_meli_product (multiple): bindP: "+str(bindP))
 
         product_related = (bindP and bindP.product_id)
 
@@ -314,17 +314,21 @@ class MercadoLibreOrder(models.Model):
         if (meli_id_variation):
             product_related = product_obj.search([ ('meli_id','=',meli_id), ('meli_id_variation','=',meli_id_variation) ])
             if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
-                product_related = product_obj.sudo().search([ ('meli_id','=',meli_id), ('meli_id_variation','=',meli_id_variation) ])
+                product_related = product_obj.sudo().search([ ('meli_id','=',meli_id), ('meli_id_variation','=',meli_id_variation)])
                 for p in product_related:
-                    p.company_id = account.company_id
-                    p.product_tmpl_id.company_id = account.company_id
+                    if (p.company_id != account.company_id):
+                        _logger.info("product_related bad company: "+str(p.default_code))
+                    #p.company_id = account.company_id
+                    #p.product_tmpl_id.company_id = account.company_id
         else:
             product_related = product_obj.search([('meli_id','=', meli_id)])
             if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
                 product_related = product_obj.sudo().search([ ('meli_id','=',meli_id) ])
                 for p in product_related:
-                    p.company_id = account.company_id
-                    p.product_tmpl_id.company_id = account.company_id
+                    if (p.company_id != account.company_id):
+                        _logger.info("product_related bad company: "+str(p.default_code))
+                    #p.company_id = account.company_id
+                    #p.product_tmpl_id.company_id = account.company_id
 
         _logger.info("product_related from product:"+str(product_related))
 
@@ -339,25 +343,29 @@ class MercadoLibreOrder(models.Model):
             #1ST attempt "seller_sku" or "seller_custom_field"
             if (seller_sku):
                 _logger.info("search_meli_product (multiple): Search using seller_sku: "+str(seller_sku))
-                product_related = product_obj.search([('default_code','=ilike',seller_sku)])
+                product_related = product_obj.search([('default_code','=ilike',seller_sku),('company_id','=',account.company_id.id)])
                 if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
-                    product_related = product_obj.sudo().search([('default_code','=ilike',seller_sku)])
-                    if product_related:
-                        for p in product_related:
-                            p.company_id = account.company_id
-                            p.product_tmpl_id.company_id = account.company_id
+                    product_relateds = product_obj.sudo().search([('default_code','=ilike',seller_sku),('company_id','=',account.company_id.id)])
+                    if product_relateds:
+                        for p in product_relateds:
+                            if (p.company_id != account.company_id):
+                                _logger.info("product_related bad company: "+str(p.default_code))
+                            #p.company_id = account.company_id
+                            #p.product_tmpl_id.company_id = account.company_id
 
             #2ND attempt only old "seller_custom_field"
             if (not product_related and 'seller_custom_field' in meli_item and meli_item['seller_custom_field']):
                 seller_sku = ('seller_custom_field' in meli_item and meli_item['seller_custom_field'])
                 _logger.info("search_meli_product (multiple): Search using seller_custom_field: "+str(seller_sku))
-                product_related = product_obj.search([('default_code','=ilike',seller_sku)])
+                product_related = product_obj.search([('default_code','=ilike',seller_sku),('company_id','=',account.company_id.id)])
                 if "mercadolibre_update_product_company" in config and config.mercadolibre_update_product_company:
-                    product_related = product_obj.sudo().search([('default_code','=ilike',seller_sku)])
-                    if product_related:
-                        for p in product_related:
-                            p.company_id = account.company_id
-                            p.product_tmpl_id.company_id = account.company_id
+                    product_relateds = product_obj.sudo().search([('default_code','=ilike',seller_sku)])
+                    if product_relateds:
+                        for p in product_relateds:
+                            if (p.company_id != account.company_id):
+                                _logger.info("product_related bad company: "+str(p.default_code))
+                            #p.company_id = account.company_id
+                            #p.product_tmpl_id.company_id = account.company_id
 
             #TODO: 3RD attempt using barcode
             #if (not product_related):
@@ -630,5 +638,3 @@ class mercadolibre_shipment_print(models.TransientModel):
         warningobj = self.env['meli.warning']
 
         return self.shipment_print_report(shipment_ids=shipment_ids,meli=meli,config=config,include_ready_to_print=self.include_ready_to_print)
-    
-        

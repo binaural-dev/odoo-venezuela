@@ -51,10 +51,18 @@ class stock_move(models.Model):
                         "model_ids_count_processed": 0
                     }
                     _logger.info(internals)
-                    noti = self.env["mercadolibre.notification"].start_internal_notification( internals=internals, account=account )      
-                    _logger.info(noti)          
+                    noti = self.env["mercadolibre.notification"].start_internal_notification( internals=internals, account=account )
+                    _logger.info(noti)
         except Exception as e:
             _logger.error(e, exc_info=True)
             raise ValidationError("Error creando proceso de actualizacion de stock de MercadoLibre, intente nuevamente en unos sergundos. Error: "+str(e))
 
         return ret
+
+
+class stock_quant(models.Model):
+
+    _inherit = "stock.quant"
+
+    product_default_code = fields.Char(string="SKU",related="product_id.default_code")
+    product_barcode = fields.Char(string="BARCODE",related="product_id.barcode")
