@@ -274,7 +274,7 @@
                                                         <td></td>
                                                         <td class="text-end">
                                                                     <t>
-                                                                    <t t-set="cleaned_amount_total" t-value="tax_totals['foreign_formatted_amount_total'].replace('\xa0', '').replace('.', '').replace(',', '.').replace('Bs','')"/>
+                                                                    <t t-set="cleaned_amount_total" t-value="tax_totals['foreign_formatted_amount_total'].replace('\xa0', '').replace('.', '').replace(',', '.').replace('BsF','')"/>
                                                                     <t t-set="foreign_formatted_amount_total" t-value="float(cleaned_amount_total)"/> 
                                                                     <t t-set="value_3" t-value="(((o.bi_igtf * o.foreign_rate)/100)*3)"/>
                                                                     <t t-set="value_2" t-value="(((o.bi_igtf * o.foreign_rate)/100)*2)"/>
