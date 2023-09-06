@@ -138,7 +138,7 @@ class sale_order(models.Model):
     meli_shipping_id =  fields.Char('Meli Shipping Id')
     meli_shipment = fields.Many2one('mercadolibre.shipment',string='Meli Shipment Obj')
     meli_shipment_logistic_type = fields.Char(string="Logistic Type",index=True)
-    meli_update_forbidden = fields.Boolean(string="Bloqueado para actualizar desde ML",default=False, index=True)
+    meli_update_forbidden = fields.Boolean(string="Bloqueado para actualizar desde ML",default=True, index=True)
 
     def action_confirm(self):
         #_logger.info("meli order action_confirm: " + str(self.mapped("name")) )
@@ -642,7 +642,7 @@ class mercadolibre_orders(models.Model):
     def _set_product_unit_price( self, product_related_obj, Item, config=None ):
         order = self
         #unit price after applied taxes
-        unit_price = float(Item['unit_price'])- float(float(order.coupon_amount)/float(Item['quantity']))
+        unit_price = float(Item['full_unit_price'])- float(float(order.coupon_amount)/float(Item['quantity']))
         upd_line = {
             "price_unit": ml_product_price_conversion( self, product_related_obj=product_related_obj, price=unit_price, config=config )
         }
@@ -667,16 +667,19 @@ class mercadolibre_orders(models.Model):
                     'seller_sku': oitem.seller_sku,
                     'seller_custom_field': oitem.seller_custom_field,
                 },
-                "unit_price": oitem.unit_price,
-                "currency_id": oitem.currency_id,
+                "unit_price": oitem.full_unit_price,
+                #"currency_id": oitem.currency_id,
+                "currency_id": 'USD',
                 'quantity': oitem.quantity,
 
             })
+        sum_amount+= float(oitem.full_unit_price)*float(oitem.quantity)
         orderjson = {
             "id": self.order_id,
             "status": self.status,
             "status_detail": self.status_detail,
-            "total_amount": self.total_amount,
+            #"total_amount": self.total_amount,
+            "total_amount": sum_amount,
             "paid_amount": self.paid_amount,
             "coupon_amount": self.coupon_amount,
             "financing_fee_amount": self.financing_fee_amount,
@@ -1846,7 +1849,7 @@ class mercadolibre_orders(models.Model):
                     'order_item_variation_id': Item['item']['variation_id'],
                     'order_item_title': Item['item']['title'],
                     'order_item_category_id': Item['item']['category_id'],
-                    'unit_price': Item['unit_price'],
+                    'unit_price': Item['full_unit_price'],
                     'quantity': Item['quantity'],
                     'currency_id': Item['currency_id'],
                     'seller_sku': ('seller_sku' in Item['item'] and Item['item']['seller_sku']) or '',
@@ -1906,9 +1909,6 @@ class mercadolibre_orders(models.Model):
                         if sorder.meli_paid_amount==0.0 or 1.1<abs((sorder.meli_paid_amount-sorder.meli_coupon_amount)-sorder.amount_total):
                             saleorderline_item_ids = saleorderline_obj.create( ( saleorderline_item_fields ))
                     else:
-                        #_logger.info("saleorderline_item_ids:"+str(saleorderline_item_ids))
-                        #_logger.info("saleorderline_item_ids tax_id:"+str(saleorderline_item_ids.tax_id))
-                        #_logger.info("saleorderline_item_ids tax_id company_id:"+str(saleorderline_item_ids.tax_id.company_id))
                         saleorderline_item_ids.write( ( saleorderline_item_fields ) )
 
         if 'payments' in order_json:
