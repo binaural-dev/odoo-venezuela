@@ -39,7 +39,7 @@
                   <field name="meli_publications" readonly="1" invisible="1"></field>
                   <field name="meli_variants_status" readonly="1" invisible="1"></field>
               </label-->
-
+                <group name="ML actions">
                   <div class="oe_button_box" name="button_box_mel" style="width: auto;">
                     <button name='product_template_post' type="object"
                       string="Publicar"
@@ -83,7 +83,7 @@
                       class="oe_stat_button"
                       icon="fa-close"/>
                   </div>
-                <group name="ML actions"></group>
+                </group>
                 <!--separator string="Variants" colspan="1"/-->
                 <!--field name="product_variant_ids" options="{'no_create': True}" domain="[('meli_id','!=',None)]">
                   <tree>
@@ -125,7 +125,6 @@
                 <separator string="Descripcion del producto en ML" colspan="1"/>
                 <group name="Basic description">
                   <field name="meli_title" />
-                  <field name="meli_mercadolibre_banner" />
                   <field name="meli_description" />
                   <field name="meli_category" />
                   <field name="meli_price"/>
@@ -133,8 +132,6 @@
                   <!--<field name="meli_attributes" />-->
                   <field name="meli_brand"/>
                   <field name="meli_model"/>
-                  <field name="meli_gender"/>
-                  <field name="meli_grid_chart_id"/>
                 </group>
                 <separator string="Condiciones de venta" colspan="1"/>
                 <group name="ML buying conditions">
@@ -209,10 +206,6 @@
                   <field name="meli_price_fixed"/>
                   <field name="stock"/>
                   <field name="meli_stock_status"/>
-                  <field name="meli_stock_resume"/>
-                  <field name="meli_stock_resume_on_hand"/>
-                  <field name="meli_stock_resume_available"/>
-                  <field name="meli_stock_resume_mercadolibre"/>
                   <field name="meli_stock_moves_update"/>
                   <field name="stock_update"/>
                   <field name="stock_error"/>
@@ -225,7 +218,7 @@
                   <field name="meli_publications" readonly="1" invisible="1"></field>
                   <field name="meli_variants_status" readonly="1" invisible="1"></field>
               </label-->
-
+              <group name="buttons">
                 <div class="oe_button_box" name="button_box_mel" style="width: auto;">
                   <button name='product_meli_get_product' type="object"
                     string="Importar"
@@ -268,14 +261,14 @@
                     attrs="{'invisible':['|',('meli_state','=',True),('meli_id','=',False)]}"
                     class="oe_stat_button"
                     icon="fa-check-square"
-                    confirm="Esta seguro de Activar este Producto en Mercado Libre, se desbloqueara su stock?"/>
+                    confirm="Esta seguro de Activar este Producto en Mercado Libre?"/>
                   <button name='product_meli_status_pause' type="object"
                     string="Pausar"
                     title="Pausar producto en ML"
                     attrs="{'invisible':['|',('meli_state','=',True),('meli_id','=',False)]}"
                     class="oe_stat_button"
                     icon="fa-pause-circle"
-                    confirm="Esta seguro de Pausar este Producto en Mercado Libre, se bloqueara su stock?"/>
+                    confirm="Esta seguro de Pausar este Producto en Mercado Libre?"/>
                   <button name='product_meli_status_close' type="object"
                     string="Cerrar"
                     title="Cerrar producto en ML"
@@ -302,7 +295,7 @@
                     title="Se requiere Iniciar Sesión en ML"
                     attrs="{'invisible':[('meli_state','=',False)]}"/>
                 </div>
-              <group name="buttons"></group>
+              </group>
               <group string="Informacion de ML">
                 <group>
                   <field name="meli_post_required" invisible="1" />
@@ -324,8 +317,6 @@
                   <field name="meli_category" options="{'no_create': True}"/>
                   <field name="meli_brand"/>
                   <field name="meli_model"/>
-                  <field name="meli_gender"/>
-                  <field name="meli_grid_chart_id"/>
                   <field name="meli_listing_type" />
                   <field name="meli_buying_mode" />
                   <field name="meli_price_fixed" />
@@ -353,8 +344,6 @@
               </group>
               <separator string="Descripcion del Producto en ML"
                 colspan="2" />
-
-              <field name="meli_mercadolibre_banner" />
               <field name="meli_description" />
               <separator string="Catalogo" colspan="1"/>
               <group name="catalogo">
@@ -650,14 +639,6 @@
                 domain="[('is_combo', '=', False)]"
                 name="mercadolibre_combo_yes_filter" />
 
-                <!-- es combo valid-->
-                <filter string="Es Combo Valido"
-                  domain="[('is_combo_valid', '!=', False)]"
-                  name="mercadolibre_combo_valid_no_filter" />
-                  <filter string="No es Combo Valido"
-                    domain="[('is_combo_valid', '=', False)]"
-                    name="mercadolibre_combo_valid_yes_filter" />
-
             <!-- es combo sin ldm-->
             <filter string="Es Combo Sin LDM"
               domain="[ ('is_combo', '!=', False),'|',('barcode0','=',False),('barcode0','!=', None ),('quantity0','=',0)]"
@@ -722,8 +703,6 @@
                   context="{'group_by' : 'meli_id'}" name="meli_group_by_meli_id_filter"/>
             <filter string='Agrupar por Combo' domain="[]"
                   context="{'group_by' : 'is_combo'}" name="meli_group_by_is_combo_filter"/>
-                  <filter string='Agrupar por Combo Valido' domain="[]"
-                        context="{'group_by' : 'is_combo_valid'}" name="meli_group_by_is_combo_valid_filter"/>
             <filter string='Agrupar por Master' domain="[]"
                   context="{'group_by' : 'is_master'}" name="meli_group_by_is_master_filter"/>
 
@@ -826,7 +805,7 @@
           <tree create="1" edit="1" delete="1" class="mercadolibre_product_maestro" default_order='name asc, connection_account asc'
             decoration-success="is_valid == True"
             decoration-danger="is_valid == False"
-            decoration-warning="is_valid == True and ( not barcode or not barcodes or (barcode and barcodes and barcode not in barcodes) or (',' in barcode) )"
+            decoration-warning="is_valid == True and ( not barcode or not barcodes or (barcode and barcodes and barcode not in barcodes) )"
             decoration-bf = "is_master == True"
             decoration-info =" is_valid == True and is_combo == True " >
             <field name="connection_account" />
@@ -834,7 +813,6 @@
             <field name="is_valid"/>
             <field name="is_master"/>
             <field name="is_combo"/>
-            <field name="is_combo_valid"/>
             <field name="is_sku_odoo" optional="hide"/>
             <field name="is_barcode_odoo" optional="hide"/>
 <!-- DESCRIPTION -->
@@ -842,7 +820,9 @@
             <field name="description" optional="hide" />
             <field name="attributes" string="Atributos"/>
             <field name="sku"/>
+            <field name="skus" optional="hide"/>
             <field name="barcode"/>
+            <field name="barcodes" optional="hide"/>
 <!-- MELI PUB -->
             <field name="meli_id" string="MercadoLibre Id"/>
             <field name="meli_id_variations" string="Variations" optional="show"/>
@@ -895,11 +875,8 @@
                   <field name="is_valid"/>
                   <field name="is_master"/>
                   <field name="is_combo"/>
-                  <field name="is_combo_valid"/>
                   <field name="is_sku_odoo"/>
                   <field name="is_barcode_odoo"/>
-                  <field name="product_by_sku"/>
-                  <field name="product_template_by_sku"/>
                 </group>
                 <group>
                   <field name="description"/>
@@ -914,32 +891,21 @@
                 <group>
                   <field name="sku"/>
                   <field name="barcode"/>
-                  <field name="is_bom_created"/>
-                  <field name="is_bom_valid"/>
-                  <button name="create_bom" type="object" string="Crear Lista de materiales" title="Crear Lista de materiales" attrs="{'invisible':[('is_combo','=',False)]}" class="btn btn-primary oe_stat_button" icon="fa-user-circle"/>
-                  <hr/><hr/>
-                  <field name="barcode0"/><field name="is_barcode0_odoo"/>
+
+                  <field name="barcode0"/>
                   <field name="quantity0" />
-                  <field name="barcode1"/><field name="is_barcode1_odoo"/>
+                  <field name="barcode1"/>
                   <field name="quantity1"/>
-                  <field name="barcode2"/><field name="is_barcode2_odoo"/>
+                  <field name="barcode2"/>
                   <field name="quantity2"/>
-                  <field name="barcode3"/><field name="is_barcode3_odoo"/>
+                  <field name="barcode3"/>
                   <field name="quantity3"/>
-                  <field name="barcode4"/><field name="is_barcode4_odoo"/>
+                  <field name="barcode4"/>
                   <field name="quantity4"/>
-                  <field name="barcode5"/><field name="is_barcode5_odoo"/>
+                  <field name="barcode5"/>
                   <field name="quantity5"/>
-                  <field name="barcode6"/><field name="is_barcode6_odoo"/>
+                  <field name="barcode6"/>
                   <field name="quantity6"/>
-                  <field name="barcode7"/><field name="is_barcode7_odoo"/>
-                  <field name="quantity7"/>
-                  <field name="barcode8"/><field name="is_barcode8_odoo"/>
-                  <field name="quantity8"/>
-                  <field name="barcode9"/><field name="is_barcode9_odoo"/>
-                  <field name="quantity9"/>
-                  <field name="barcode10"/><field name="is_barcode10_odoo"/>
-                  <field name="quantity10"/>
                 </group>
                 <group>
                   <field name="skus"/>

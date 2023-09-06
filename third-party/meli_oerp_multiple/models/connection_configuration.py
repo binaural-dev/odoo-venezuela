@@ -207,8 +207,6 @@ class MercadoLibreConnectionConfiguration(models.Model):
 
     mercadolibre_payment_term = fields.Many2one("account.payment.term",string="Payment Term", required=True)
 
-    mercadolibre_banner = fields.Many2one("mercadolibre.banner",string="Plantilla Descriptiva")
-
     ## STOCK Configuration
 
     mercadolibre_stock_warehouse = fields.Many2one("stock.warehouse", string="Stock Warehouse Default", help="Almacen predeterminado", required=True)
@@ -240,12 +238,7 @@ class MercadoLibreConnectionConfiguration(models.Model):
 
 
     #TODO: activate
-    mercadolibre_stock_virtual_available = fields.Selection(selection=[
-                                                                            ("virtual","Planificado (virtual_available)"),
-                                                                            ("theoretical","En mano (quantity)"),
-                                                                            ("qty_reserved","Cantidad menos reservado (quantity - reserved)"),
-                                                                            ("virtual_absoluto","Planificado (no suma negativos)"),
-                                                                ],
+    mercadolibre_stock_virtual_available = fields.Selection([("virtual","Virtual (quantity-reserved)"),("theoretical","En mano (quantity)")],
                                                             default='virtual',
                                                             required=True)
 

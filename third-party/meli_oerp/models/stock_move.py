@@ -99,13 +99,13 @@ class StockMove(models.Model):
 
         return True
 
-    def _action_assign(self, force_qty=False):
+    def _action_assign(self):
         company = self.env.user.company_id
 
-        res = super(StockMove, self)._action_assign(force_qty=force_qty)
+        res = super(StockMove, self)._action_assign()
 
         for mov in self:
-            mov.meli_update_boms( config = company )
+            mov.meli_update_boms()
 
         return res
 
@@ -117,6 +117,6 @@ class StockMove(models.Model):
         moves_todo = super(StockMove, self)._action_done(cancel_backorder=cancel_backorder)
 
         for mov in self:
-            mov.meli_update_boms( config = company )
+            mov.meli_update_boms()
 
         return moves_todo
