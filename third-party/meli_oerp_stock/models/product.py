@@ -165,13 +165,13 @@ class product_product(models.Model):
                 if (qty_method=='theoretical'):
                     #qty_available_op = product_id.get_theoretical_quantity( product_id.id, loc.id )
                     quants = self.env['stock.quant']._gather( product_id, location_id=loc )
-                    qty_available_op = (quants and sum([(quant.quantity) for quant in quants])) or 0
+                    qty_available_op = (quants and max([(quant.quantity) for quant in quants])) or 0
                     #qty_available = product_id.qty_available
                     #_logger.info("qty_available_op theoretical: "+str(loc.name)+" "+str(qty_available_op))
 
                 if (qty_method=='qty_reserved'):
                     quants = self.env['stock.quant']._gather( product_id, location_id=loc )
-                    qty_available_op = (quants and sum([(quant.reserved_quantity) for quant in quants])) or 0
+                    qty_available_op = (quants and max([(quant.reserved_quantity) for quant in quants])) or 0
                     #qty_available_op = product_id.get_theoretical_quantity( product_id.id, loc.id )
                     #_logger.info("qty_available_op qty_reserved: "+str(loc.name)+" "+str(qty_available_op))
 

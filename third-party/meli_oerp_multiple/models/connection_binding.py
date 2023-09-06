@@ -33,7 +33,6 @@ from .versions import *
 from odoo.addons.meli_oerp.models.versions import *
 
 from odoo.exceptions import UserError, ValidationError
-from odoo.addons.meli_oerp.models.versions import *
 
 
 class MercadoLibreConnectionBinding(models.Model):
@@ -137,8 +136,6 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
 
     meli_model = fields.Char(string="Modelo [meli]",size=256)
     meli_brand = fields.Char(string="Marca [meli]",size=256)
-    meli_gender = fields.Char(string="Genero",index=True)
-    meli_grid_chart_id = fields.Many2one("mercadolibre.grid.chart",string="Guia de talles")
     meli_stock = fields.Float(string="Cantidad inicial (Solo para actualizar stock)[meli]")
 
     meli_product_bom = fields.Char(string="Lista de materiales (skux:1,skuy:2,skuz:4) [meli]")
@@ -149,7 +146,6 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
     meli_product_supplier = fields.Char(string="Proveedor del producto [meli]")
 
     meli_ids = fields.Char(size=2048,string="MercadoLibre Ids.",help="ML Ids de variantes separados por coma.",index=True)
-    meli_mercadolibre_banner = fields.Many2one("mercadolibre.banner",string="Plantilla Descriptiva")
 
     meli_catalog_listing = fields.Boolean(string='Catalog Listing')
     meli_catalog_product_id = fields.Char(string='Catalog Product Id', size=256)
@@ -181,7 +177,7 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
             if bind:
                 bindT.meli_permalink = bind.meli_permalink
 
-    meli_permalink = fields.Char( compute=product_template_permalink, size=256, string='Link',help='PermaLink in MercadoLibre', store=True )
+    meli_permalink = fields.Char( compute=product_template_permalink, size=256, string='Link',help='PermaLink in MercadoLibre', store=False )
     #meli_permalink_edit = fields.Char( compute=product_get_meli_update, size=256, string='Link Edit',help='PermaLink Edit in MercadoLibre', store=False )
 
 
@@ -603,9 +599,6 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
             bindT.meli_attributes = productT.meli_attributes
             bindT.meli_model = productT.meli_model
             bindT.meli_brand = productT.meli_brand
-            bindT.meli_gender = productT.meli_gender
-            bindT.meli_grid_chart_id = productT.meli_grid_chart_id
-
 
             #publish ref info
             bindT.meli_pub = productT.meli_pub
@@ -635,7 +628,7 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
             product_tmpl_id = bindT.product_tmpl_id
             #basic info
             catid, wwwid = self.env["mercadolibre.category"].meli_get_category( rjson['category_id'], meli=meli, create_missing_website=config.mercadolibre_create_website_categories )
-            desplain = ("description" in rjson and rjson["description"]) or None
+            desplain = ("description" in rjson and rjson["description"]) or ""
             meli_ids = rjson["id"]
             #seller_sku = product_tmpl_id.product_variant_ids.mapped("default_code") or
             #            ("seller_sku" in rjson and rjson["seller_sku"]) or
@@ -652,6 +645,7 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
             fields = {
                 #'meli_permalink': rjson['permalink'],
                 'meli_title': rjson['title'].encode("utf-8"),
+                'meli_description': desplain,
                 'meli_listing_type': rjson['listing_type_id'],
                 'meli_buying_mode':rjson['buying_mode'],
                 'meli_price': str(rjson['price']),
@@ -669,19 +663,6 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
                 #'meli_video': str(vid),
                 #'meli_dimensions': meli_dim_str,
             }
-            if desplain:
-
-                #publication specific banner
-                mlbanner = product_tmpl_id.meli_mercadolibre_banner
-                #configuration banner
-                mlbanner = mlbanner or (config and config.mercadolibre_banner)
-                if (mlbanner):
-                    #get the text, not the header nor the footer
-                    meli_description = mlbanner.get_from_ml_description( desplain )
-
-                fields["meli_description"] = meli_description
-
-
             if "meli_official_store_id" in bindT._fields:
                 fields["meli_official_store_id"] = ('official_store_id' in rjson and rjson['official_store_id']) or ""
                 meli_official_store_id = fields["meli_official_store_id"]
@@ -928,22 +909,6 @@ class MercadoLibreConnectionBindingProductTemplate(models.Model):
     meli_questions = fields.One2many( "mercadolibre.questions", "product_template_binding", string="Preguntas" )
     meli_update_stock_blocked = fields.Boolean(string="Bloquea publicacion",default=False,index=True)
 
-    @api.onchange('name')
-    def _change_meli_title(self):
-        for b in self:
-            b.meli_title = b.name
-            for bb in b.variant_bindings:
-                bb.name = b.name
-                bb.meli_title = b.meli_title
-
-    @api.depends('name')
-    def change_meli_title(self):
-        for b in self:
-            b.meli_title = b.name
-            for bb in b.variant_bindings:
-                bb.name = b.name
-                bb.meli_title = b.meli_title
-
 
 class MercadoLibreConnectionBindingProductVariant(models.Model):
 
@@ -1095,8 +1060,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
     #TODO deprecated
     meli_id = fields.Char(string='ML Id', help='Id del item asignado por Meli', size=256, index=True)
-    #meli_description_banner_id = fields.Many2one("mercadolibre.banner",string="Description Banner")
-    meli_mercadolibre_banner = fields.Many2one("mercadolibre.banner",string="Plantilla Descriptiva")
+    meli_description_banner_id = fields.Many2one("mercadolibre.banner","Banner")
 
     meli_buying_mode = fields.Selection(string='Método',help='Método de compra',selection=[("buy_it_now","Compre ahora"),("classified","Clasificado")])
     meli_available_quantity = fields.Integer(string='Cantidades', help='Cantidad disponible a publicar en ML')
@@ -1134,10 +1098,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
                     bind.meli_stock_status = 'revision_fulfillment'
 
-                if ( bind.stock_error and "has_bids" in bind.stock_error ):
-
-                    bind.meli_stock_status = 'revision_has_bids'
-
             else:
                 if (bind.meli_stock_moves_update):
                     if (bind.stock_update):
@@ -1150,7 +1110,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 else:
                     bind.meli_stock_status = 'revision_unmoved'
 
-    meli_stock_status = fields.Selection(selection=[('update','Actualizar'),('updated','Actualizado'),('revision','Revisar'),('revision_unmoved','Revisar sin movimientos'),('revision_error','Revisar con error'),('revision_fulfillment','Fulfillment'),('revision_has_bids','No se puede actualizar por ventas activas')],string="Status de stock",compute=_meli_stock_status,store=True,index=True)
+    meli_stock_status = fields.Selection(selection=[('update','Actualizar'),('updated','Actualizado'),('revision','Revisar'),('revision_unmoved','Revisar sin movimientos'),('revision_error','Revisar con error'),('revision_fulfillment','Fulfillment')],string="Status de stock",compute=_meli_stock_status,store=True,index=True)
 
     def get_stock_str(self,meli=None):
         stocks = []
@@ -1311,7 +1271,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
     #meli_stock_resume_available = fields.Float(string="Qty Available", compute="_meli_stock_resume"
     #                    #, search="_search_stock_resume_available"
     #                    )
-    meli_permalink = fields.Char( compute=product_get_meli_update, size=256, string='Link',help='PermaLink in MercadoLibre', store=True )
+    meli_permalink = fields.Char( compute=product_get_meli_update, size=256, string='Link',help='PermaLink in MercadoLibre', store=False )
     meli_permalink_edit = fields.Char( compute=product_get_meli_update, size=256, string='Link Edit',help='PermaLink Edit in MercadoLibre', store=False )
     meli_state = fields.Boolean( compute=product_get_meli_update, string='Login',help="Inicio de sesión requerida", store=False )
     meli_status = fields.Char( compute=product_get_meli_update, size=128, string='Status', help="Estado del producto en ML", store=False )
@@ -1323,9 +1283,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
     meli_model = fields.Char(string="Modelo",size=256)
     meli_brand = fields.Char(string="Marca",size=256)
-    meli_gender = fields.Char(string="Genero",index=True)
-    meli_grid_chart_id = fields.Many2one("mercadolibre.grid.chart",string="Guia de talles")
-
     meli_default_stock_product = fields.Many2one("product.product","Producto de referencia para stock")
 
     #TODO deprecated
@@ -1338,7 +1295,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
     meli_shipping_logistic_type = fields.Char(string="Logistic Type",index=True)
     meli_shipping_free = fields.Boolean(string="Shipping Free",default=False,index=True)
-
 
     meli_inventory_id = fields.Char(string="Inventory Id",index=True)
 
@@ -1390,8 +1346,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
             bind.meli_attributes = product.meli_attributes
             bind.meli_model = product.meli_model
             bind.meli_brand = product.meli_brand
-            bind.meli_gender = bind.product_tmpl_id and bind.product_tmpl_id.meli_gender
-            bind.meli_grid_chart_id = bind.product_tmpl_id and bind.product_tmpl_id.meli_grid_chart_id
 
             #publish ref info
             bind.meli_pub = product.meli_pub
@@ -1418,7 +1372,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
             #productT = bindT.product_tmpl_id
             #basic info
             catid, wwwid = self.env["mercadolibre.category"].meli_get_category( rjson['category_id'], meli=meli, create_missing_website=config.mercadolibre_create_website_categories )
-            desplain = ("description" in rjson and rjson["description"]) or None
+            desplain = ("description" in rjson and rjson["description"]) or ""
             seller_sku = None
             barcode = None
             variant_stock = 0
@@ -1447,6 +1401,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
             fields = {
                 'meli_permalink': rjson['permalink'],
                 'meli_title': rjson['title'].encode("utf-8"),
+                'meli_description': desplain,
                 'meli_listing_type': rjson['listing_type_id'],
                 'meli_buying_mode':rjson['buying_mode'],
                 'meli_price': str(rjson['price']),
@@ -1466,19 +1421,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 #'meli_video': str(vid),
                 #'meli_dimensions': meli_dim_str,
             }
-            if desplain:
-
-                #publication specific banner
-                bindT = bind.binding_product_tmpl_id
-                mlbanner = bindT and bindT.product_tmpl_id.meli_mercadolibre_banner
-                #configuration banner
-                mlbanner = mlbanner or (config and config.mercadolibre_banner)
-                if (mlbanner):
-                    #get the text, not the header nor the footer
-                    meli_description = mlbanner.get_from_ml_description( desplain )
-
-                fields["meli_description"] = meli_description
-
             meli_shipping_logistic_type = ( rjson and "shipping" in rjson and "logistic_type" in rjson["shipping"] and rjson["shipping"]["logistic_type"] ) or ""
             meli_shipping_logistic_type and fields.update({'meli_shipping_logistic_type': meli_shipping_logistic_type })
 
@@ -1640,14 +1582,14 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                     if (new_price>0):
                         bind.meli_price = new_price
 
-            bind.meli_price = round(float(bind.meli_price),2)
+            bind.meli_price = round(bind.meli_price,2)
 
             if (product_tmpl.meli_currency and (product_tmpl.meli_currency == 'MXN' or product_tmpl.meli_currency == 'USD')):
                 bind.meli_price = str((float(bind.meli_price)))
             elif (product_tmpl.meli_currency and product_tmpl.meli_currency == 'CLP'):
                 bind.meli_price = str( int( int( math.floor(int(bind.meli_price) / 100 ) * 100 + 90 ) ) )
             else:
-                bind.meli_price = math.ceil(float(bind.meli_price))
+                bind.meli_price = math.ceil(bind.meli_price)
                 bind.meli_price = str(int(float(bind.meli_price)))
 
             _logger.info("update_price meli_price (forced?): "+str(meli_price))
@@ -1767,7 +1709,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                         res = { "error": "fulfillment"}
                         bindv.stock_error = str(res)
                         bindv.stock_update = ml_datetime( str( datetime.now() ) )
-                        bindv._meli_stock_status()
                         bindT.stock_update = bindv.stock_update
                         bindT.stock_error = bindv.stock_error
                         #_logger.info(bindv.stock_error)
@@ -1801,7 +1742,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                     res = { "error": "no product binded"}
                     bindv.stock_error = str(res)
                     bindv.stock_update = ml_datetime( str( datetime.now() ) )
-                    bindv._meli_stock_status()
                     bindT.stock_update = bindv.stock_update
                     bindT.stock_error = bindv.stock_error
                     _logger.error(bindv.stock_error)
@@ -1835,14 +1775,6 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
                 bindv._meli_stock_status()
                 bindT.stock_update = bindv.stock_update
                 bindT.stock_error = bindv.stock_error
-
-                #TODO
-                stock = 0
-                stock_error = ""
-                for bindvariant in bindT.variant_bindings:
-                    stock+= (bindvariant.stock or bindvariant.meli_available_quantity)
-                    stock_error+= str(bindvariant.stock_error)
-                bindT.stock = stock
 
             except Exception as e:
                 _logger.info("mercadolibre.product product_post_stock > exception error")
@@ -1994,31 +1926,7 @@ class MercadoLibreConnectionBindingProductVariant(models.Model):
 
         return terms
 
-    @api.onchange('name')
-    def _change_meli_title(self):
-        for b in self:
-            b.meli_title = b.name
-            #change all
-            bt = b.binding_product_tmpl_id
-            if bt:
-                bt.name = b.name
-                bt.meli_title = bt.name
-                for bb in bt.variant_bindings:
-                    bb.name = bt.name
-                    bb.meli_title = bt.meli_title
 
-    @api.depends('name')
-    def change_meli_title(self):
-        for b in self:
-            b.meli_title = b.name
-            #change all
-            bt = b.binding_product_tmpl_id
-            if bt:
-                bt.name = b.name
-                bt.meli_title = bt.name
-                for bb in bt.variant_bindings:
-                    bb.name = bt.name
-                    bb.meli_title = bt.meli_title
 
 class MercadoLibreConnectionBindingSaleOrderPayment(models.Model):
 
