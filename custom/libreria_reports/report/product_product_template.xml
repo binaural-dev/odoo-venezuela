@@ -38,11 +38,11 @@
     </template>
 
     <template id="report_simple_label3x18">
-        <t t-set="barcode_size" t-value="'width:26mm;height:2mm'"/>
+        <t t-set="barcode_size" t-value="'width:26mm;height:6mm'"/>
         <td style="padding-right: 20px">
             <t t-if="barcode">
               <div t-out="barcode" style="padding-top:4.5mm;" t-options="{'widget': 'barcode', 'symbology': 'auto', 'img_style': barcode_size}"/>
-              <span style="font-size:8px;" t-out="barcode"/>
+              <span style="font-size:8px; position:relative; left: 25px; bottom: 5px" t-out="barcode"/>
             </t>
         </td>
     </template>
