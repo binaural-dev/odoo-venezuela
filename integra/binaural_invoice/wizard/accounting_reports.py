@@ -492,12 +492,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             {"name": "Total Neto", "field": "total", "headers": HEADERS},
         ]
 
-    def _get_domain(self, current_company_id=False):
+    def _get_domain(self):
         search_domain = []
         is_purchase = self.report == "purchase"
 
-        if current_company_id:
-            search_domain += [("company_id", "=", current_company_id)]
+        search_domain += [("company_id", "=", self.company_id.id)]
 
         move_type = (
             ["out_invoice", "out_refund"]
@@ -525,12 +524,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def download_sales_book(self):
         self.ensure_one()
-        url = "/web/download_sales_book"
+        url = "/web/download_sales_book?company_id=%s" % self.company_id.id
         return {"type": "ir.actions.act_url", "url": url, "target": "self"}
 
     def download_purchases_book(self):
         self.ensure_one()
-        url = "/web/download_purchase_book"
+        url = "/web/download_purchase_book?company_id=%s" % self.company_id.id
         return {"type": "ir.actions.act_url", "url": url, "target": "self"}
 
     def _format_date(self, date):
@@ -793,7 +792,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         return tax_result
 
-    def generate_sales_book(self):
+    def generate_sales_book(self, company_id):
+        self.company_id = company_id
         sale_book_lines = self.parse_sale_book_data()
         file = BytesIO()
 
@@ -856,7 +856,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         workbook.close()
         return file.getvalue()
 
-    def generate_purchases_book(self):
+    def generate_purchases_book(self, company_id)
+        self.company_id = company_id
         purchase_book_lines = self.parse_purchase_book_data()
         file = BytesIO()
 
