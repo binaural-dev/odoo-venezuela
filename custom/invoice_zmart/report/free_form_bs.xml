@@ -152,7 +152,9 @@
                                             <table class="table  table-borderless" style="page-break-inside: avoid;font-size:13px">
                                                 <!--Tax totals-->
                                                 <t t-set="tax_totals" t-value="o.tax_totals"/>
+
                                                 <t>
+
                                                     <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
                                                     <t t-set="str_tax" t-value="'subtotals' if base_vef else 'foreign_subtotals'"/>
                                                     <t t-foreach="tax_totals[str_tax]" t-as="subtotal">
@@ -224,14 +226,17 @@
                                                                     <td></td>
                                                                     <td></td>
                                                                     <td></td>
-                                                                    <td style="padding-left:270px">
-                                                                        <span t-out="'{0:,.2f}'.format((o.bi_igtf * o.foreign_rate)).replace('.', ',')"/>Bs.F
+                                                                    <td >
+                                                                        <div style="width:100px;text-align:right">
+                                                                            <span style="display: inline;" t-out="'{0:,.2f}'.format((o.bi_igtf * o.foreign_rate)).replace('.', ',')"/>
+                                                                            <span style="display: inline;" t-out="o.foreign_currency_id.symbol"/>
+                                                                        </div>
                                                                     </td>
                                                                 </tr>
                                                                 <tr>
                                                                     <t t-if="o.move_type == 'out_invoice'">
                                                                         <td><strong>IGTF Percibido (3%)</strong></td>
-                                                                        <td style="width:200px"><strong>Base $ </strong></td>
+                                                                        <td><strong>Base $ </strong></td>
                                                                         <td>
                                                                             <span t-out="'{0:,.2f}'.format(o.amount_to_pay_igtf).replace('.', ',')"/>
                                                                         </td>
@@ -239,8 +244,11 @@
                                                                         <td></td>
                                                                         <td></td>
                                                                         <td></td>
-                                                                        <td style="padding-left:270px">
-                                                                            <span t-out="'{0:,.2f}'.format(((o.bi_igtf * o.foreign_rate)/100)*3).replace('.', ',')"/>Bs.F
+                                                                        <td >
+                                                                            <div style="width:100px;text-align:right">
+                                                                                <span style="display: inline;" t-out="'{0:,.2f}'.format(((o.bi_igtf * o.foreign_rate)/100)*3).replace('.', ',')"/>
+                                                                                <span style="display: inline;" t-out="o.foreign_currency_id.symbol"/>
+                                                                            </div>
                                                                         </td>
                                                                     </t>
                                                                     <t t-else="">
@@ -252,9 +260,12 @@
                                                                         <td></td>
                                                                         <td></td>
                                                                         <td></td>
-                                                                        <td></td>
-                                                                        <td style="padding-left:270px">
-                                                                            <span t-out="'{0:,.2f}'.format(((o.bi_igtf * o.foreign_rate)/100)*2).replace('.', ',')"/>Bs.F
+                                                                        
+                                                                        <td >
+                                                                            <div style="width:100px;text-align:right">
+                                                                                <span style="display: inline;" t-out="'{0:,.2f}'.format(((o.bi_igtf * o.foreign_rate)/100)*2).replace('.', ',')"/>
+                                                                                <span style="display: inline;" t-out="o.foreign_currency_id.symbol"/>
+                                                                            </div>
                                                                         </td>
                                                                     </t>
                                                                 </tr>
@@ -279,13 +290,16 @@
                                                                     <t t-set="value_3" t-value="(((o.bi_igtf * o.foreign_rate)/100)*3)"/>
                                                                     <t t-set="value_2" t-value="(((o.bi_igtf * o.foreign_rate)/100)*2)"/>
                                                                     <t t-if="o.bi_igtf > 0 and o.move_type == 'out_invoice'">
-                                                                        <span t-esc="str(round(foreign_amount_total + value_3, 2)).replace('.', ',')"/>Bs.F
+                                                                        <span t-esc="str(round(foreign_amount_total + value_3, 2)).replace('.', ',')"/>
+                                                                        <span t-out="o.foreign_currency_id.symbol"/>
                                                                     </t>
                                                                     <t t-elif="o.bi_igtf > 0 and o.move_type == 'in_invoice'">
-                                                                            <span t-esc="str(round(foreign_amount_total + value_2, 2))"/>Bs.F
+                                                                            <span t-esc="str(round(foreign_amount_total + value_2, 2))"/>
+                                                                            <span t-out="o.foreign_currency_id.symbol"/>
                                                                     </t>
                                                                     <t t-else="">
-                                                                        <span t-esc="foreign_amount_total"/>Bs.F
+                                                                        <span t-esc="'{0:,.2f}'.format(foreign_amount_total)"/>
+                                                                        <span t-out="o.foreign_currency_id.symbol"/>
                                                                     </t>
                                                                     </t>
                                                                 </td>
