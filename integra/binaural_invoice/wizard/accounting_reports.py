@@ -856,7 +856,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         workbook.close()
         return file.getvalue()
 
-    def generate_purchases_book(self, company_id)
+    def generate_purchases_book(self, company_id):
         self.company_id = company_id
         purchase_book_lines = self.parse_purchase_book_data()
         file = BytesIO()
