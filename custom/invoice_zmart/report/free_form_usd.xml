@@ -280,19 +280,16 @@
                                                                 <td></td>
                                                                 <td class="text-end">
                                                                     <t>
-                                                                        <t t-set="formatted_amount_total" t-value="tax_totals['formatted_amount_total']"/>
-                                                                        <t t-set="formatted_amount_total" t-value="formatted_amount_total.replace('$', '')"/>
-                                                                        <t t-set="formatted_amount_total" t-value="formatted_amount_total.replace(',', '.')"/>
-                                                                        <t t-set="formatted_amount_total" t-value="float(formatted_amount_total)"/>
+                                                                        <t t-set="amount_total" t-value="tax_totals['amount_total']"/>
                                                                         <t t-set="valor_extra" t-value="float(o.amount_to_pay_igtf)"/>
                                                                         <t t-if="o.bi_igtf > 0">
                                                                             <span style="display: inline;" t-out="o.currency_id.symbol"/>
-                                                                            <span style="display: inline;" t-esc="'{0:,.2f}'.format(formatted_amount_total + valor_extra)"/>
+                                                                            <span style="display: inline;" t-esc="'{0:,.2f}'.format(amount_total + valor_extra)"/>
                                                                         </t>
                                                                         <t t-else="">
                                                                             <span style="display: inline;" t-out="o.currency_id.symbol"/>
-                                                                            <span style="display: inline;" t-esc="'{0:,.2f}'.format(formatted_amount_total)"/>
-                                                                        </t>
+                                                                            <span style="display: inline;" t-esc="'{0:,.2f}'.format(amount_total)"/>
+                                                                        </t> 
                                                                     </t>
                                                                 </td>
                                                             </tr>
