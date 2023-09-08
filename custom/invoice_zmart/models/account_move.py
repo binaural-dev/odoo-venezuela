@@ -48,3 +48,15 @@ class AccountInvoice(models.Model):
                 line.tax_ids = False
             self.state =  'posted'
         return res
+    
+    def get_total_amount_excluding_taxes(self):
+        excluded_tax_ids = [1, 2]
+        total_amount_local = 0.0
+        total_amount_foreign = 0.0
+
+        for invoice in self:
+            products = invoice.invoice_line_ids.filtered(lambda line: not any(tax in line.tax_ids.ids for tax in excluded_tax_ids))
+            total_amount_local += sum(products.mapped('price_subtotal'))
+            total_amount_foreign += sum(products.mapped('foreign_subtotal'))
+
+        return total_amount_local, total_amount_foreign
