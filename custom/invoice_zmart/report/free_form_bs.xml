@@ -152,9 +152,7 @@
                                             <table class="table  table-borderless" style="page-break-inside: avoid;font-size:13px">
                                                 <!--Tax totals-->
                                                 <t t-set="tax_totals" t-value="o.tax_totals"/>
-
                                                 <t>
-
                                                     <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
                                                     <t t-set="str_tax" t-value="'subtotals' if base_vef else 'foreign_subtotals'"/>
                                                     <t t-foreach="tax_totals[str_tax]" t-as="subtotal">
@@ -169,8 +167,9 @@
                                                             <td class="text-end">
                                                                 <span
                                                                     t-att-class="oe_subtotal_footer_separator"
-                                                                    t-esc="subtotal['formatted_amount']"
+                                                                    t-esc="o.get_total_amount_excluding_taxes()[1]"
                                                                 />
+                                                                <span style="display: inline;" t-out="o.foreign_currency_id.symbol"/>
                                                             </td>
                                                         </tr>
                                                         <t t-set="subtotal_to_show" t-value="subtotal['name']"/>
