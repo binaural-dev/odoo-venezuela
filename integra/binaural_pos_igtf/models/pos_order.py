@@ -15,8 +15,10 @@ class PosOrder(models.Model):
         return res
 
     def _payment_fields(self, order, ui_paymentline):
-        res = super()._payment_fields(order,ui_paymentline)
+        res = super()._payment_fields(order, ui_paymentline)
         res["include_igtf"] = ui_paymentline["include_igtf"]
+        res["igtf_amount"] = ui_paymentline.get("igtf_amount", 0)
+        res["foreign_igtf_amount"] = ui_paymentline.get("foreign_igtf_amount", 0)
         return res
 
     def _create_invoice(self, move_vals):

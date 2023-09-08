@@ -9,6 +9,7 @@ class AccountPayment(models.Model):
         string="Is retention",
         help="Check this box if this payment is a retention",
         default=False,
+        copy=False,
     )
 
     payment_type_retention = fields.Selection(
@@ -17,6 +18,7 @@ class AccountPayment(models.Model):
             ("islr", "ISLR"),
             ("municipal", "Municipal"),
         ],
+        copy=False,
     )
     retention_id = fields.Many2one("account.retention", ondelete="cascade")
 
@@ -25,6 +27,7 @@ class AccountPayment(models.Model):
         "payment_id",
         string="Retention Lines",
         store=True,
+        copy=False,
     )
 
     invoice_line_ids = fields.Many2many(
@@ -32,15 +35,19 @@ class AccountPayment(models.Model):
         domain="[('tax_ids', '!=', False)]",
         string="Invoice Lines",
         store=True,
+        copy=False,
     )
 
     retention_ref = fields.Char(
         string="Retention reference",
         related="retention_id.number",
         store=True,
+        copy=False,
     )
 
-    retention_foreign_amount = fields.Float(compute="_compute_retention_foreign_amount", store=True)
+    retention_foreign_amount = fields.Float(
+        compute="_compute_retention_foreign_amount", store=True, copy=False
+    )
 
     def _synchronize_to_moves(self, changed_fields):
         """
