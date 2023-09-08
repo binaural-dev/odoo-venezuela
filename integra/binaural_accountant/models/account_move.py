@@ -367,7 +367,9 @@ class AccountMove(models.Model):
         # payable or receivable account, and in those cases is necessary that the foreign
         # debit/credit of that entry is computed using the rate.
         if len(account_payable_or_receivable_line) > 1 or (
-            payment and payment.is_igtf_on_foreign_exchange
+            payment
+            and "is_igtf_on_foreign_exchange" in self.env["account.payment"]._fields
+            and payment.is_igtf_on_foreign_exchange
         ):
             return
 
