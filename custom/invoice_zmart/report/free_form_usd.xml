@@ -98,7 +98,7 @@
                                                             <span class="text-nowrap" t-field="line.discount"/>
                                                         </td>
                                                         <td t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
-                                                            <span t-esc="', '.join(map(lambda x: ( str(x.amount) + '%' if x.amount > 0 else ''), line.tax_ids))" id="line_tax_ids"/>
+                                                            <span t-esc="', '.join(map(lambda x: ( str(x.description)), line.tax_ids))" id="line_tax_ids"/>
                                                         </td>
                                                         <td class="text-end o_price_total">
                                                             <t>
@@ -168,9 +168,10 @@
                                                                 <td></td>
                                                                 <td></td>
                                                                 <td class="text-end">
+                                                                    <span style="display: inline;" t-out="o.currency_id.symbol"/>
                                                                     <span
-                                                                        t-att-class="oe_subtotal_footer_separator"
-                                                                        t-esc="subtotal['formatted_amount']"
+                                                                    t-att-class="oe_subtotal_footer_separator"
+                                                                    t-esc="o.get_total_amount_excluding_taxes()[0]"
                                                                     />
                                                                 </td>
                                                             </tr>
@@ -221,14 +222,23 @@
                                                                             <tr>
                                                                                 <td><strong>Dolares tasa bcv (<span t-out="o.foreign_rate"/>):</strong></td>
                                                                                 <td style="width:100px"><strong>Base $</strong></td>
-                                                                                <td>$<span t-out="o.bi_igtf"/></td>
+                                                                                <td>
+                                                                                    <div style="width:100px;text-align:right">
+                                                                                        <span style="display: inline;" t-out="o.currency_id.symbol"/>
+                                                                                        <span style="display: inline;" t-out="o.bi_igtf"/>
+                                                                                    </div>
+                                                                                </td>
                                                                                 <td></td>
                                                                                 <td></td>
                                                                                 <td></td>
                                                                                 <td></td>
                                                                                 
-                                                                                <td style="padding-left:270px">$<span  t-out="o.bi_igtf"/></td>
-                                                                                
+                                                                                <td>
+                                                                                    <div style="width:100px;text-align:right">
+                                                                                        <span style="display: inline;" t-out="o.currency_id.symbol"/>
+                                                                                        <span style="display: inline;" t-out="o.bi_igtf"/>
+                                                                                    </div>
+                                                                                </td>
                                                                             </tr>
                                                                             <tr>
                                                                                 <t t-if="o.move_type == 'out_invoice'">
@@ -237,14 +247,24 @@
                                                                                 <t t-else="">
                                                                                 <td><strong>IGTF Percibido (2%)</strong></td>
                                                                                 </t>
-                                                                                <td><strong>Base $ </strong></td>
-                                                                                <td>$<span t-out="o.amount_to_pay_igtf"/></td>
+                                                                                <td><strong>Base $</strong></td>
+                                                                                <td>
+                                                                                    <div style="width:100px;text-align:right">
+                                                                                        <span style="display: inline;" t-out="o.currency_id.symbol"/>
+                                                                                        <span style="display: inline;" t-out="o.amount_to_pay_igtf"/>
+                                                                                    </div>
+                                                                                </td>
                                                                                 <td></td>
                                                                                 <td></td>
                                                                                 <td></td>
                                                                                 <td></td>
-                                                                                <td class="text-end">$<span t-out="o.amount_to_pay_igtf"/></td>
-                                                                                </tr>
+                                                                                <td class="text-end">
+                                                                                    <div style="width:100px;text-align:right">
+                                                                                        <span style="display: inline;" t-out="o.currency_id.symbol"/>
+                                                                                        <span style="display: inline;" t-out="o.amount_to_pay_igtf"/>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
                                                                         </t>
                                                             </t>
                                                         </t>
@@ -266,10 +286,12 @@
                                                                         <t t-set="formatted_amount_total" t-value="float(formatted_amount_total)"/>
                                                                         <t t-set="valor_extra" t-value="float(o.amount_to_pay_igtf)"/>
                                                                         <t t-if="o.bi_igtf > 0">
-                                                                            $<span t-esc="formatted_amount_total + valor_extra"/>
+                                                                            <span style="display: inline;" t-out="o.currency_id.symbol"/>
+                                                                            <span style="display: inline;" t-esc="'{0:,.2f}'.format(formatted_amount_total + valor_extra)"/>
                                                                         </t>
                                                                         <t t-else="">
-                                                                            $<span t-esc="formatted_amount_total"/>
+                                                                            <span style="display: inline;" t-out="o.currency_id.symbol"/>
+                                                                            <span style="display: inline;" t-esc="'{0:,.2f}'.format(formatted_amount_total)"/>
                                                                         </t>
                                                                     </t>
                                                                 </td>

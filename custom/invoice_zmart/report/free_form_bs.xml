@@ -95,7 +95,7 @@
                                                             <span class="text-nowrap" t-field="line.discount"/>
                                                         </td>
                                                         <td t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
-                                                            <span t-esc="', '.join(map(lambda x: ( str(x.amount) + '%' if x.amount > 0 else ''), line.tax_ids))" id="line_tax_ids"/>
+                                                            <span t-esc="', '.join(map(lambda x: ( str(x.description)), line.tax_ids))" id="line_tax_ids"/>
                                                         </td>
                                                         <td class="text-end o_price_total">
                                                             <t>
@@ -259,7 +259,7 @@
                                                                         <td></td>
                                                                         <td></td>
                                                                         <td></td>
-                                                                        
+                                                                        <td></td>
                                                                         <td >
                                                                             <div style="width:100px;text-align:right">
                                                                                 <span style="display: inline;" t-out="'{0:,.2f}'.format(((o.bi_igtf * o.foreign_rate)/100)*2).replace('.', ',')"/>
