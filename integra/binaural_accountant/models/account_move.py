@@ -330,19 +330,6 @@ class AccountMove(models.Model):
                     continue
 
                 line_name = line.name or False
-                subtotal_found = False
-                if is_invoice and line_name in subtotals_by_name:
-                    for subtotals in subtotals_by_name[line_name]:
-                        if line.debit == subtotals["price_subtotal"]:
-                            line.foreign_debit = subtotals["foreign_subtotal"]
-                            subtotal_found = True
-                        if line.credit == subtotals["price_subtotal"]:
-                            line.foreign_credit = subtotals["foreign_subtotal"]
-                            subtotal_found = True
-                        if subtotal_found:
-                            subtotals_by_name[line_name].remove(subtotals)
-                            break
-                    continue
 
                 if line.currency_id == self.env.company.currency_foreign_id:
                     line.foreign_debit = (
@@ -370,6 +357,20 @@ class AccountMove(models.Model):
                     * lines_with_same_tax[0].tax_ids[0].amount
                     / 100
                 )
+
+                subtotal_found = False
+                if is_invoice and line_name in subtotals_by_name:
+                    for subtotals in subtotals_by_name[line_name]:
+                        if line.debit == subtotals["price_subtotal"]:
+                            line.foreign_debit = subtotals["foreign_subtotal"]
+                            subtotal_found = True
+                        if line.credit == subtotals["price_subtotal"]:
+                            line.foreign_credit = subtotals["foreign_subtotal"]
+                            subtotal_found = True
+                        if subtotal_found:
+                            subtotals_by_name[line_name].remove(subtotals)
+                            break
+                    continue
 
         account_payable_or_receivable_line = self.line_ids.filtered(
             lambda l: l.account_id.account_type in receivable_and_payable_account_types
