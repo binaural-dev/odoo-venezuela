@@ -32,16 +32,15 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         return json;
       }
       update_igtf() {
-        if (this.to_receipt) {
-          return
-        }
         var rounding = this.pos.currency.rounding;
         const paymentlines = this.get_paymentlines();
 
         let last_igtf_amount = 0
+        let last_foreign_igtf_amount = 0
 
         if (paymentlines.length > 0) {
           last_igtf_amount = this.igtf_amount
+          last_foreign_igtf_amount = this.foreign_igtf_amount
         }
 
         let is_return = this.get_total_without_igtf() < 0
@@ -55,6 +54,17 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
         let foreign_bi_igtf = 0;
         let repeat_same_method = [];
         let bi_payments = [];
+
+        let igtf_amount = 0
+        let foreign_igtf_amount = 0
+
+        paymentlines.forEach((payment) => {
+          payment.set_include_igtf(false)
+        })
+
+        if (this.to_receipt) {
+          return
+        }
 
         paymentlines.forEach((payment) => {
           let is_change = false
@@ -72,82 +82,79 @@ odoo.define("binaural_pos_igtf.OrderState", function(require) {
             return;
           }
 
+
+
           bi_igtf += round_pr(payment.amount, rounding);
           foreign_bi_igtf += round_pr(payment.get_foreign_amount(), rounding);
           repeat_same_method.push(payment.payment_method.id)
           bi_payments.push(payment.cid)
+
+
+          payment.set_include_igtf(true)
+
+          let amount_to_pay = payment.amount
+          let foreign_amount_to_pay = payment.get_foreign_amount()
+
+          if (payment.amount > this.get_total_with_tax() && !is_return || payment.amount < this.get_total_with_tax() && is_return) {
+            amount_to_pay = this.get_total_with_tax()
+            foreign_amount_to_pay = this.get_foreign_total_with_tax()
+          }
+
+          if (!is_change) {
+            payment.set_igtf_amount(this.compute_igtf_amount(amount_to_pay))
+            payment.set_foreign_igtf_amount(this.compute_igtf_amount(foreign_amount_to_pay))
+
+            igtf_amount += payment.igtf_amount
+            foreign_igtf_amount += payment.foreign_igtf_amount
+          }
+          else{
+            payment.set_include_igtf(false)
+          }
         })
 
-        if (bi_igtf !== 0 && ((bi_igtf > this.get_total_without_igtf() && !is_return) || (bi_igtf < this.get_total_without_igtf() && is_return))) {
+        if (bi_igtf !== 0 && ((bi_igtf >= this.get_total_without_igtf() && !is_return) || (bi_igtf <= this.get_total_without_igtf() && is_return))) {
           bi_igtf = this.get_total_without_igtf()
           foreign_bi_igtf = this.get_foreign_total_without_igtf()
-        }
+          igtf_amount = this.compute_igtf_amount(bi_igtf)
+          foreign_igtf_amount = this.compute_igtf_amount(foreign_bi_igtf)
 
-        if (bi_igtf !== 0) {
-          this.igtf_amount = this.compute_igtf_amount(bi_igtf)
-          this.foreign_igtf_amount = this.compute_igtf_amount(foreign_bi_igtf);
-          this.bi_igtf = bi_igtf;
-          this.foreign_bi_igtf = foreign_bi_igtf;
-        }
-
-
-        paymentlines.forEach((el) => {
-          let is_change = false
-          if (!is_return) {
-            is_change = el.amount < 0
-          } else {
-            is_change = el.amount > 0
-          }
-
-          el.set_include_igtf(false)
-
-          if (bi_payments.length == 0) {
-            return
-          }
-
-          if (!is_return) {
-            if (this.igtf_amount <= el.amount && !is_change && !bi_payments.includes(el.cid)) {
-              el.set_include_igtf(true)
+          let payment_without_change = paymentlines.filter((payment) => {
+            if(!bi_payments.includes(payment.cid)){
+              return false
             }
-          } else {
-            if (this.igtf_amount >= el.amount && !is_change && !bi_payments.includes(el.cid)) {
-              el.set_include_igtf(true)
+
+            let is_change = false
+            if (!is_return) {
+              is_change = payment.amount < 0
+            } else {
+              is_change = payment.amount > 0
             }
+
+            if (is_change) {
+              return false
+            }
+
+            return true
+
+          })
+
+          if (payment_without_change.length > 0) {
+            payment_without_change.forEach((payment) => {
+              if (!payment.include_igtf) {
+                return
+              }
+              payment.set_igtf_amount(igtf_amount / payment_without_change.length)
+              payment.set_foreign_igtf_amount(foreign_igtf_amount / payment_without_change.length)
+            })
           }
-        })
-
-        if (
-          bi_payments.length > 0
-          && paymentlines.length > 0
-          && paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount > this.get_total_with_tax() && !is_return
-          && paymentlines.filter((el) => el.include_igtf).length == 0
-        ) {
-          paymentlines.filter((el) => bi_payments[0] == el.cid)[0].set_include_igtf(true)
         }
 
-        if (
-          bi_payments.length == 1
-          && paymentlines.length > 0
-          && (
-            paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount > this.get_total_without_igtf()
-            && paymentlines.filter((el) => bi_payments[0] == el.cid)[0].amount < this.get_total_with_tax()
-          )
-          && !is_return
-          && paymentlines.filter((el) => el.include_igtf).length == 0
-        ) {
-          paymentlines.filter((el) => bi_payments[0] == el.cid)[0].set_include_igtf(true)
-        }
+        this.bi_igtf = bi_igtf;
+        this.foreign_bi_igtf = foreign_bi_igtf;
 
+        this.igtf_amount = igtf_amount;
+        this.foreign_igtf_amount = foreign_igtf_amount;
 
-        if (
-          paymentlines.length > 0
-          && bi_payments.length == paymentlines.length
-          && paymentlines.filter((el) => el.include_igtf).length == 0
-          && paymentlines.filter((el) => el.amount > this.get_igtf_amount()).length > 0
-          && paymentlines.filter((el) => el.amount > this.get_igtf_amount())
-        ) {
-          paymentlines.filter((el) => el.amount > this.get_igtf_amount())[0].set_include_igtf(true)
-        }
 
         return this.igtf_amount;
       }

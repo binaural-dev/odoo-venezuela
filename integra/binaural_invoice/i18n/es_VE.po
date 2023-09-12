@@ -65,7 +65,7 @@ msgstr ""
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
 msgid "<span>Code</span>"
-msgstr ""
+msgstr "Código"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
@@ -110,7 +110,7 @@ msgstr ""
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
 msgid "<strong>Business name:</strong>"
-msgstr ""
+msgstr "<strong>Cliente:</strong>"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
@@ -135,12 +135,12 @@ msgstr ""
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
 msgid "<strong>NIF/VAT:</strong>"
-msgstr ""
+msgstr "<strong>CI/RIF:</strong>"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
 msgid "<strong>Nro Document:</strong>"
-msgstr ""
+msgstr "<strong>Nro Documento:</strong>"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
@@ -150,12 +150,12 @@ msgstr ""
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
 msgid "<strong>Phone:</strong>"
-msgstr ""
+msgstr "<strong>Telefono:</strong>"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
 msgid "<strong>Tax residence:</strong>"
-msgstr ""
+msgstr "<strong>Dirección:</strong>"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
