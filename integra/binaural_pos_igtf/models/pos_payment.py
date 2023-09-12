@@ -1,5 +1,6 @@
 from odoo import api, fields, models, _
 from odoo.tools import formatLang, float_is_zero, float_compare
+from odoo.tools.float_utils import float_round
 
 import logging
 
@@ -10,41 +11,66 @@ class PosPayment(models.Model):
     _inherit = "pos.payment"
 
     include_igtf = fields.Boolean()
+    igtf_amount = fields.Float()
+    foreign_igtf_amount = fields.Float()
 
     def _export_for_ui(self, payment):
         res = super()._export_for_ui(payment)
         res["include_igtf"] = payment.include_igtf
+        res["igtf_amount"] = payment.igtf_amount
+        res["foreign_igtf_amount"] = payment.foreign_igtf_amount
         return res
 
     def _create_payment_moves(self):
-        result = self.env['account.move']
+        result = self.env["account.move"]
 
         for payment in self:
             add_credit_line_vals = False
             order = payment.pos_order_id
-            amount_igtf = order.igtf_amount
+            amount_igtf = float_round(
+                payment.igtf_amount,
+                precision_rounding=payment.currency_id.rounding,
+            )
 
             order = payment.pos_order_id
             payment_method = payment.payment_method_id
-            if payment_method.type == 'pay_later' or float_is_zero(payment.amount, precision_rounding=order.currency_id.rounding):
+            if payment_method.type == "pay_later" or float_is_zero(
+                payment.amount, precision_rounding=order.currency_id.rounding
+            ):
                 continue
-            accounting_partner = self.env["res.partner"]._find_accounting_partner(payment.partner_id)
+            accounting_partner = self.env["res.partner"]._find_accounting_partner(
+                payment.partner_id
+            )
             pos_session = order.session_id
             journal = pos_session.config_id.journal_id
-            payment_move = self.env['account.move'].with_context(default_journal_id=journal.id).create({
-                'journal_id': journal.id,
-                'date': fields.Date.context_today(payment),
-                'ref': _('Invoice payment for %s (%s) using %s') % (order.name, order.account_move.name, payment_method.name),
-                'pos_payment_ids': payment.ids,
-            })
-
+            payment_move = (
+                self.env["account.move"]
+                .with_context(default_journal_id=journal.id)
+                .create(
+                    {
+                        "journal_id": journal.id,
+                        "date": fields.Date.context_today(payment),
+                        "ref": _("Invoice payment for %s (%s) using %s")
+                        % (order.name, order.account_move.name, payment_method.name),
+                        "pos_payment_ids": payment.ids,
+                    }
+                )
+            )
 
             result |= payment_move
-            payment.write({'account_move_id': payment_move.id})
-            amounts = pos_session._update_amounts({'amount': 0, 'amount_converted': 0}, {'amount': payment.amount}, payment.payment_date)
+            payment.write({"account_move_id": payment_move.id})
+            amounts = pos_session._update_amounts(
+                {"amount": 0, "amount_converted": 0},
+                {"amount": payment.amount},
+                payment.payment_date,
+            )
 
             if payment.include_igtf:
-                if not(amounts["amount"] - amount_igtf == 0):
+                if not (amounts["amount"] - amount_igtf == 0):
+                    amount_without_igtf = float_round(
+                        payment.foreign_amount - payment.foreign_igtf_amount,
+                        precision_rounding=payment.currency_id.rounding,
+                    )
                     add_credit_line_vals = pos_session._credit_amounts(
                         {
                             "account_id": accounting_partner.with_company(
@@ -52,6 +78,12 @@ class PosPayment(models.Model):
                             ).property_account_receivable_id.id,
                             "partner_id": accounting_partner.id,
                             "move_id": payment_move.id,
+                            "foreign_debit_adjustment": amount_without_igtf
+                            if amount_without_igtf < 0
+                            else 0,
+                            "foreign_credit_adjustment": amount_without_igtf
+                            if amount_without_igtf > 0
+                            else 0,
                         },
                         amounts["amount"] - amount_igtf,
                         amounts["amount_converted"] - amount_igtf,
@@ -62,29 +94,57 @@ class PosPayment(models.Model):
                         "account_id": self.env.company.customer_account_igtf_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
+                        "foreign_debit_adjustment": payment.foreign_igtf_amount
+                        if payment.foreign_igtf_amount < 0
+                        else 0,
+                        "foreign_credit_adjustment": payment.foreign_igtf_amount
+                        if payment.foreign_igtf_amount > 0
+                        else 0,
                     },
                     amount_igtf,
                     amount_igtf,
                 )
             else:
-                credit_line_vals = pos_session._credit_amounts({
-                    'account_id': accounting_partner.with_company(order.company_id).property_account_receivable_id.id,  # The field being company dependant, we need to make sure the right value is received.
-                    'partner_id': accounting_partner.id,
-                    'move_id': payment_move.id,
-                }, amounts['amount'], amounts['amount_converted'])
+                credit_line_vals = pos_session._credit_amounts(
+                    {
+                        "account_id": accounting_partner.with_company(
+                            order.company_id
+                        ).property_account_receivable_id.id,  # The field being company dependant, we need to make sure the right value is received.
+                        "partner_id": accounting_partner.id,
+                        "move_id": payment_move.id,
+                        "foreign_debit_adjustment": payment.foreign_amount
+                        if payment.foreign_amount < 0
+                        else 0,
+                        "foreign_credit_adjustment": payment.foreign_amount
+                        if payment.foreign_amount > 0
+                        else 0,
+                    },
+                    amounts["amount"],
+                    amounts["amount_converted"],
+                )
 
-
-            debit_line_vals = pos_session._debit_amounts({
-                'account_id': pos_session.company_id.account_default_pos_receivable_account_id.id,
-                'move_id': payment_move.id,
-            }, amounts['amount'], amounts['amount_converted'])
+            debit_line_vals = pos_session._debit_amounts(
+                {
+                    "account_id": pos_session.company_id.account_default_pos_receivable_account_id.id,
+                    "move_id": payment_move.id,
+                    "foreign_debit_adjustment": payment.foreign_amount
+                    if payment.foreign_amount > 0
+                    else 0,
+                    "foreign_credit_adjustment": payment.foreign_amount
+                    if payment.foreign_amount < 0
+                    else 0,
+                },
+                amounts["amount"],
+                amounts["amount_converted"],
+            )
 
             if add_credit_line_vals:
                 self.env["account.move.line"].with_context(check_move_validity=False).create(
                     [add_credit_line_vals]
                 )
 
-            self.env['account.move.line'].with_context(check_move_validity=False).create([credit_line_vals, debit_line_vals])
+            self.env["account.move.line"].with_context(check_move_validity=False).create(
+                [credit_line_vals, debit_line_vals]
+            )
             payment_move._post()
         return result
-

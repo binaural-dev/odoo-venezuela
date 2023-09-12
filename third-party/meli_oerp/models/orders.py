@@ -667,7 +667,7 @@ class mercadolibre_orders(models.Model):
                     'seller_sku': oitem.seller_sku,
                     'seller_custom_field': oitem.seller_custom_field,
                 },
-                "unit_price": oitem.unit_price,
+                "unit_price": oitem.full_unit_price,
                 #"currency_id": oitem.currency_id,
                 "currency_id": 'USD',
                 'quantity': oitem.quantity,
