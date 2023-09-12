@@ -138,7 +138,7 @@ class AccountMove(models.Model):
                 raise UserError(_("The sale's series sequence must be in the selected journal."))
             return correlative.next_by_id(correlative.id)
 
-        correlative = sequence.search([("code", "=", "invoice.correlative")])
+        correlative = sequence.search([("code", "=", "invoice.correlative"),("company_id", "=", self.env.company.id)])
         if not correlative:
             correlative = sequence.create(
                 {
