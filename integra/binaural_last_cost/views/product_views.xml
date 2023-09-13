@@ -11,10 +11,16 @@
                     standard price of the product template.
                 -->
                 <field
+                    name="update_last_cost"
+                    attrs="{
+                        'invisible': [('variants_are_active', '=', True), ('product_variant_count', '>', 1), ('is_product_variant', '=', False)]
+                    }"
+                />
+                <field
                     name="latest_standard_price"
                     attrs="{
                         'readonly': [('variants_are_active', '=', True), ('is_product_variant', '=', False)],
-                        'invisible': [('variants_are_active', '=', True), ('product_variant_count', '>', 1), ('is_product_variant', '=', False)]
+                        'invisible': [('variants_are_active', '=', True), ('product_variant_count', '>', 1), ('is_product_variant', '=', False), ('update_last_cost', '=', False)]
                     }"
                 />
             </div>

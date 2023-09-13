@@ -4,6 +4,8 @@ from odoo import api, fields, models
 class ProductTemplate(models.Model):
     _inherit = "product.template"
 
+    update_last_cost = fields.Boolean(default=True, readonly=False)
+
     variants_are_active = fields.Boolean(compute="_compute_variants_are_active")
     
     latest_standard_price = fields.Monetary(
