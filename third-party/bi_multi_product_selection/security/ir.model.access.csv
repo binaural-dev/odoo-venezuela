@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_sale_order_wizard,access_sale_order_wizard,model_sale_order_wizard,base.group_user,1,1,1,1
+access_purchase_order_wizard,access_purchase_order_wizard,model_purchase_order_wizard,base.group_user,1,1,1,1
+access_account_move_wizard,access_account_move_wizard,model_account_move_wizard,base.group_user,1,1,1,1
+access_stock_picking_wizard,access_stock_picking_wizard,model_stock_picking_wizard,base.group_user,1,1,1,1
