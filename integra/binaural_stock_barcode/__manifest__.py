@@ -7,9 +7,9 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0",
+    "version": "16.1",
     "depends": ["stock", "stock_barcode"],
-    "data": ["views/res_config_settings_views.xml"],
+    "data": ["views/stock_picking_type_views.xml"],
     "assets": {
         "web.assets_backend": [
             "binaural_stock_barcode/static/src/js/*.js",
