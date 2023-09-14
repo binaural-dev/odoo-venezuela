@@ -1,4 +1,0 @@
-id,name,model_id/id,group_id/id,perm_read,perm_write,perm_create,perm_unlink
-access_alphabot_fel_digifact,access_alphabot_fel_digifact,model_alphabot_fel_digifact,base.group_user,1,1,1,1
-access_alphabot_fel_branch,access_alphabot_fel_branch,model_alphabot_fel_branch,base.group_user,1,1,1,1
-access_alphabot_fel_branchpos,access_alphabot_fel_branchpos,model_alphabot_fel_branchpos,base.group_user,1,1,1,1
