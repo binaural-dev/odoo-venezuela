@@ -60,3 +60,14 @@ class AccountInvoice(models.Model):
             total_amount_foreign += sum(products.mapped('foreign_subtotal'))
 
         return total_amount_local, total_amount_foreign
+    
+    def get_total_amount_including_taxes(self):
+        included_tax_ids = [1, 2]
+        total_amount_local = 0.0
+        total_amount_foreign = 0.0
+
+        for invoice in self:
+            products = invoice.invoice_line_ids.filtered(lambda line: any(tax in line.tax_ids.ids for tax in included_tax_ids))
+            total_amount_local += sum(products.mapped('price_subtotal'))
+            total_amount_foreign += sum(products.mapped('foreign_subtotal'))
+        return total_amount_local, total_amount_foreign
