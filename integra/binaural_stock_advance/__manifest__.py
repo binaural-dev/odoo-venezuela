@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "Binaural Inventario Avanzado",
+    "name": "Binaural Importaciones",
     "summary": """
         Modulo de localización relacionado
         al inventario.
