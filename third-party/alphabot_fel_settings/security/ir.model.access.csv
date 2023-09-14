@@ -1,6 +1,0 @@
-id,name,model_id/id,group_id/id,perm_read,perm_write,perm_create,perm_unlink
-access_alphabot_fel_values,access_alphabot_fel_values,model_alphabot_fel_values,base.group_user,1,1,1,1
-access_alphabot_fel_doctype,access_alphabot_fel_doctype,model_alphabot_fel_doctype,base.group_user,1,1,1,1
-access_alphabot_fel_segmentcpbs,access_alphabot_fel_segmentcpbs,model_alphabot_fel_segmentcpbs,base.group_user,1,1,1,1
-access_alphabot_fel_familycpbs,access_alphabot_fel_familycpbs,model_alphabot_fel_familycpbs,base.group_user,1,1,1,1
-access_alphabot_fel_taxes,access_alphabot_fel_taxes,model_alphabot_fel_taxes,base.group_user,1,1,1,1
