@@ -3,7 +3,7 @@
     <template id="report_simple_label_dymo" inherit_id="product.report_simple_label_dymo">
         <xpath expr="." position="replace">
             <div style="overflow: hidden;page-break-before: always;font-size:70%;width: 70mm;height: 32mm;padding-top: 2mm">
-                <div class="">
+                <div style="margin-left: 20%">
                     <div class="text-start o_label_small_barcode">
                         <t t-if="barcode">
                             <div t-out="barcode" style="padding:0" t-options="{'widget': 'barcode', 'quiet': 0, 'symbology': 'auto', 'img_style': barcode_size}"/>
@@ -13,8 +13,8 @@
                         </t>
                     </div>
                     <div class="o_label_name" style="line-height: 100%;background-color: transparent;padding-top: 1px;">
-                        <span t-if="product.is_product_variant" t-field="product.display_name"/>
-                        <span t-else="" t-field="product.name"/>
+                        <span t-if="product.is_product_variant" t-out="product.display_name[:50]"/>
+                        <span t-else="" t-out="product.name[:50]"/>
                     </div>
                     <div style="float: left;width: 100%">
                       <t t-set="tax_amount" t-value="product.taxes_id[0].amount"/>
@@ -38,11 +38,11 @@
     </template>
 
     <template id="report_simple_label3x18">
-        <t t-set="barcode_size" t-value="'width:26mm;height:2mm'"/>
+        <t t-set="barcode_size" t-value="'width:26mm;height:6mm'"/>
         <td style="padding-right: 20px">
             <t t-if="barcode">
               <div t-out="barcode" style="padding-top:4.5mm;" t-options="{'widget': 'barcode', 'symbology': 'auto', 'img_style': barcode_size}"/>
-              <span style="font-size:8px;" t-out="barcode"/>
+              <span style="font-size:8px; position:relative; left: 25px; bottom: 5px" t-out="barcode"/>
             </t>
         </td>
     </template>
