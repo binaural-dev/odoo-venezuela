@@ -7,6 +7,7 @@
         <field name="arch" type="xml">
 	    <field name="partner_bank_id" position="after">
 		<field name="foreign_rate"/>
+        <field name="foreign_inverse_rate" invisible="1"/>
 		<field name="foreign_inverse_rate" groups="base.group_no_one"/>
 	    </field>
         </field>
