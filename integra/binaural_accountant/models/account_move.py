@@ -250,10 +250,10 @@ class AccountMove(models.Model):
         currency of the company, the currency amount will be the one used to set the foreign debit
         or foreign credit on the corresponding line.
 
-        And if there are two lines and one of them is in foreign currency, the amount placed in 
+        And if there are two lines and one of them is in foreign currency, the amount placed in
         amount in currency will be placed in both corresponding lines in foreign debit and credit.
 
-        If all the lines are made in the alternate currency, it will take the amount in amount in 
+        If all the lines are made in the alternate currency, it will take the amount in amount in
         currency
 
         If the adjustment is placed, it overwrites both lines so that they are the same amount
@@ -304,7 +304,10 @@ class AccountMove(models.Model):
                     and line_foreign_currency_id[0].id != line.id
                 ):
                     line_foreign_id = line_foreign_currency_id[0]
-                    if (line_foreign_id.foreign_debit_adjustment + line_foreign_id.foreign_credit_adjustment) != 0:
+                    if (
+                        line_foreign_id.foreign_debit_adjustment
+                        + line_foreign_id.foreign_credit_adjustment
+                    ) != 0:
                         line.foreign_debit = line_foreign_id.foreign_credit_adjustment
                         line.foreign_credit = line_foreign_id.foreign_debit_adjustment
                     else:
@@ -399,21 +402,23 @@ class AccountMove(models.Model):
     def _reverse_moves(self, default_values_list=None, cancel=False):
         """
         Ensure that the foreign debit and foreign credit of the line_ids fields (journal entries)
-        are set to 0 when the move is reversed.
+        are recomputed when the move is reversed.
 
         This is done to avoid that the foreign debit and foreign credit of the journal entries of
         the reversed move are computed based on the foreign debit and foreign credit of the journal
         entries of the original move.
         """
         reverse_moves = super()._reverse_moves(default_values_list, cancel)
-        reverse_moves.line_ids.write(
-            {
-                "foreign_debit": 0,
-                "foreign_credit": 0,
-                "foreign_debit_adjustment": 0,
-                "foreign_credit_adjustment": 0,
-            }
-        )
+        for move in reverse_moves:
+            move.line_ids.write(
+                {
+                    "foreign_debit": 0,
+                    "foreign_credit": 0,
+                    "foreign_debit_adjustment": 0,
+                    "foreign_credit_adjustment": 0,
+                }
+            )
+            move.compute_line_ids_foreign_debit_and_credit()
         return reverse_moves
 
     def get_invoice_line_ids_subtotals_by_name(self):
