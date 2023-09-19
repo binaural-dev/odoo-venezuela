@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_picking_cart_tree" model="ir.ui.view">
+        <field name="name">stock.picking.cart.tree</field>
+        <field name="model">stock.picking.cart</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="barcode"/>
+                <field name="pick_id"/>
+                <field name="pack_id"/>
+                <field name="out_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_stock_picking_cart_form" model="ir.ui.view">
+        <field name="name">stock.picking.cart.form</field>
+        <field name="model">stock.picking.cart</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="barcode"/>
+                        <field name="pick_id"/>
+                        <field name="pack_id"/>
+                        <field name="out_id"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_stock_picking_cart_list" model="ir.actions.act_window">
+        <field name="name">Stock Picking Cart</field>
+        <field name="res_model">stock.picking.cart</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_stock_picking_cart_list" name="Carts" parent="stock.menu_warehouse_config" action="action_stock_picking_cart_list"/>
+</odoo>

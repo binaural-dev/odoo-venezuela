@@ -8,8 +8,12 @@
     "website": "https://www.binauraldev.com",
     "category": "Stock",
     "version": "16.1",
-    "depends": ["stock", "stock_barcode"],
-    "data": ["views/stock_picking_type_views.xml"],
+    "depends": ["stock", "stock_barcode","hr"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/stock_picking_type_views.xml",
+        "views/stock_picking_cart_views.xml",
+    ],
     "assets": {
         "web.assets_backend": [
             "binaural_stock_barcode/static/src/js/*.js",
