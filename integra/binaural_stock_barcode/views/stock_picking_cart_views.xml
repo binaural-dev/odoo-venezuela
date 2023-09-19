@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
     <record id="view_stock_picking_cart_tree" model="ir.ui.view">
         <field name="name">stock.picking.cart.tree</field>
         <field name="model">stock.picking.cart</field>
@@ -21,11 +22,19 @@
             <form>
                 <sheet>
                     <group>
+                        <group>
                         <field name="name"/>
-                        <field name="barcode"/>
-                        <field name="pick_id"/>
-                        <field name="pack_id"/>
-                        <field name="out_id"/>
+                            <field name="barcode"/>
+                            <button name="set_new_barcode" 
+                                string="Generate barcode" 
+                                class="btn btn-link" 
+                                type="object" />
+                        </group>
+                        <group>
+                            <field name="pick_id"/>
+                            <field name="pack_id"/>
+                            <field name="out_id"/>
+                        </group>
                     </group>
                 </sheet>
             </form>
@@ -38,5 +47,9 @@
         <field name="view_mode">tree,form</field>
     </record>
 
-    <menuitem id="menu_stock_picking_cart_list" name="Carts" parent="stock.menu_warehouse_config" action="action_stock_picking_cart_list"/>
+    <menuitem 
+        id="menu_stock_picking_cart_list" 
+        name="Carts" 
+        parent="stock.menu_warehouse_config"
+        action="action_stock_picking_cart_list"/>
 </odoo>

@@ -8,9 +8,10 @@
     "website": "https://www.binauraldev.com",
     "category": "Stock",
     "version": "16.1",
-    "depends": ["stock", "stock_barcode","hr"],
+    "depends": ["stock", "barcodes", "stock_barcode", "hr"],
     "data": [
         "security/ir.model.access.csv",
+        "data/barcode_rule.xml",
         "views/stock_picking_type_views.xml",
         "views/stock_picking_cart_views.xml",
     ],
