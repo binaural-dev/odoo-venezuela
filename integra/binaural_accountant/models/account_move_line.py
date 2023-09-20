@@ -14,7 +14,9 @@ class AccountMoveLine(models.Model):
 
     foreign_currency_id = fields.Many2one(related="move_id.foreign_currency_id", store=True)
     foreign_rate = fields.Float(related="move_id.foreign_rate", store=True)
-    foreign_inverse_rate = fields.Float(related="move_id.foreign_inverse_rate", store=True)
+    foreign_inverse_rate = fields.Float(
+        related="move_id.foreign_inverse_rate", store=True, index=True
+    )
 
     foreign_price = fields.Float(
         help="Foreign Price of the line",

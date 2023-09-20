@@ -7,8 +7,20 @@
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook/page[@name='sales_purchases']/group/group[@name='sale']/field[@name='user_id']" position="after">
-                <field name="seller_id" required="1"/>
+                <field name="seller_id" groups="base.group_no_one"/>
             </xpath>
+
+            <xpath expr="//page[@name='internal_notes']" position="before">
+                <page name="sellers_assigned" string="Sellers">
+                    <field name="seller_ids" required="1">
+                        <tree name="sellers_tree" create="0" delete="1" multi_edit="0">
+                            <field name="name"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+
+
         </field>
     </record>
 
