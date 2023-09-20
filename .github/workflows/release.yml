@@ -43,6 +43,6 @@ jobs:
           # Itera sobre la lista de proyectos destino
           while IFS= read -r project; do
             # Crea un pull request desde release-16 a staging-16 en el proyecto destino
-            gh pr create --base "staging-16" --head "release-16" --title "Merge release-16 into staging-16" --body "Automated PR creation from integra" --repo "$project"
+            gh pr create --base "staging" --head "release-16" --title "Merge release-16 into staging" --body "Automated PR creation from integra" --repo "$project"
           done < forks.txt
 
