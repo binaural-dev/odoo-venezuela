@@ -148,3 +148,9 @@ class AccountMove(models.Model):
                 }
             )
         return correlative.next_by_id(correlative.id)
+
+    def action_post(self, soft=True):
+        res = super()._post(soft)
+        for move in res:
+            if move.journal_id.fiscal:
+                move.correlative = move.get_sequence(move.journal_id.fiscal)

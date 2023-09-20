@@ -5,20 +5,20 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.6.1",
+    "version": "16.6.6",
     "category": "Hr/Invoicing/Account",
     "depends": [
         "account",
         "contacts",
-        "sale",
-        "account_accountant",
-        "hr"
+        "hr",
+        "binaural_rate",
     ],
     "data": [
         "views/account_move.xml",
         "views/res_partner.xml",
         "views/res_config_settings.xml",
         "views/hr_employee.xml",
+        "views/sale_order.xml",
     ],
     "images": ["static/description/icon.png"],
 }
