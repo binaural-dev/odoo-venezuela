@@ -18,15 +18,15 @@ class PurchaseOrder(models.Model):
         for line in self._get_lines_with_updatable_latest_standard_price():
             product = line.product_id
             latest_standard_price = line.latest_standard_price
-            price_unit = line.price_unit
+            price_per_udm = line.price_per_udm
             
             product.last_latest_standard_price = latest_standard_price
-            product.latest_standard_price = price_unit
+            product.latest_standard_price = price_per_udm
 
-            variants_are_active = product.get_variants_are_active()            
+            variants_are_active = product.get_variants_are_active()
             if not variants_are_active:
                 product.product_tmpl_id.last_latest_standard_price = latest_standard_price
-                product.product_tmpl_id.latest_standard_price = price_unit
+                product.product_tmpl_id.latest_standard_price = price_per_udm
 
         return res
 

@@ -1,5 +1,6 @@
 import logging
-from odoo import api, fields, models
+from odoo import api, fields, models,_
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -14,6 +15,14 @@ class ResPartnerInherit(models.Model):
         help="Seller associated with the partner.",
     )
 
+    seller_ids = fields.Many2many(
+        "hr.employee",
+        string="Sellers",
+        tracking=True,
+        help="Sellers associated with the partner.",
+        default=lambda self: self.env.company.initial_seller
+    )
+
     @api.model
     def _commercial_fields(self):
         """Returns the list of fields that are managed by the commercial entity
@@ -23,6 +32,26 @@ class ResPartnerInherit(models.Model):
         extended by inheriting classes."""
 
         res = super()._commercial_fields()
-        res.append("seller_id")
+        res.append("seller_ids")
 
         return res
+    
+    @api.model_create_multi
+    def create(self, vals_list):
+        partner = super().create(vals_list)
+        partner.sellers_validate()
+        return partner
+
+    def write(self, vals):
+        res = super().write(vals)
+        if "seller_ids" in vals:
+            for partner in self:
+                partner.sellers_validate()
+        return res
+
+    def sellers_validate(self):
+        for partner in self:
+            if not self.env.company.multiple_sellers and len(partner.seller_ids) > 1:
+                raise UserError(_("You are only allowed to assign a salesperson to the customer"))
+            if not len(partner.seller_ids):
+                raise UserError(_("The customer must have at least one salesperson assigned"))
