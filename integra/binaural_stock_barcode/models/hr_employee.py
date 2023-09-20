@@ -5,15 +5,7 @@ from odoo.exceptions import ValidationError
 class HrEmployee(models.Model):
     _inherit = "hr.employee"
 
-    role_picking = fields.Selection(
-        [
-            ("picker", "Picker"),
-            ("packer", "Packer"),
-            ("out", "checker"),
-            ("supervisor", "Supervisor"),
-        ],
-        default=False,
-    )
+    role_picking = fields.Selection(related="user_id.role_picking", readonly=False)
 
     password_stock_barcode = fields.Char()
 

@@ -12,6 +12,7 @@
     "data": [
         "security/ir.model.access.csv",
         "data/barcode_rule.xml",
+        "views/stock_picking_views.xml",
         "views/hr_employee_views.xml",
         "views/stock_picking_type_views.xml",
         "views/stock_picking_cart_views.xml",
