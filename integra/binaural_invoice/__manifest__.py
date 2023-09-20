@@ -20,6 +20,7 @@
     "data": [
         "security/binaural_invoice_groups.xml",
         "security/ir.model.access.csv",
+        "security/ir_rule.xml",
         "data/account_data.xml",
         "data/invoice_free_form_paperformat.xml",
         "data/invoice_sale_note_paperformat.xml",
