@@ -1,19 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <template id="portal_my_invoices" inherit_id="account.portal_my_invoices">
-        <xpath expr="//t/t[4]/tbody/t/tr/td[1]/a" position="replace">
-            <t t-if="is_seller">
-                <a t-attf-href="/my/invoices/{{invoice.id}}/seller_invoice" t-att-title="invoice.name">
-                    <t t-out="invoice.name" t-if="invoice.name != '/'"/>
-                    <em t-else="">Draft Invoice</em>
-                </a>
-            </t>
-            <t t-else="">
-                <a t-att-href="invoice.get_portal_url()" t-att-title="invoice.name">
-                    <t t-out="invoice.name" t-if="invoice.name != '/'"/>
-                    <em t-else="">Draft Invoice</em>
-                </a>
+    <template id="portal_my_home_menu_invoices_seller"  inherit_id="account.portal_my_home_menu_invoice" priority="30">
+        <xpath expr="//li[2]" position="replace">
+            <t t-if="request.env.user.employee_id.is_seller">
+                <li t-if="invoice" class="breadcrumb-item active">
+                    <a t-if="invoice" t-attf-href="/my/invoices?{{ keep_query() }}">Invoices</a>
+                </li>
             </t>
         </xpath>
     </template>
@@ -27,16 +20,11 @@
             <div class="container o_portal_invoices_seller">
                 <div class="row mb-3">
                     <div class="d-flex justify-content-center">
-                        <t t-if="invoice.journal_id.fiscal ">
-                            <a t-att-href="invoice.get_portal_url(report_type='pdf', download=True)" class="btn btn-primary col-10 mx-auto">
-                                <i class="fa fa-download"/> Download PDF
-                            </a>
-                        </t>
-                        <t t-else="">
-                            <a id="dowload-NV" class="btn btn-info col-10 mx-auto">
-                                <i class="fa fa-download"/> Download PDF
-                            </a>
-                        </t>
+                        <a id="dowload-invoice" class="btn btn-info col-10 mx-auto">
+                            <i class="fa fa-download"/> Download PDF
+                        </a>
+                        <input class="d-none" type="checkbox" id="invoice" checked="True" t-if="invoice.journal_id.fiscal"/>
+                        <input class="d-none" type="checkbox" id="invoice" t-else=""/>
                     </div>
                 </div>
                 <hr width="100%" />
@@ -67,25 +55,30 @@
                         </t>
                     </h6>
                     <h4 class="col-sm-3" style="font-weight: lighter;">Origin document:</h4>
-                    
                     <h6 class="col-sm-3" style="font-weight: bolder;" t-out="invoice.invoice_origin"/>
                 </div>
                 <hr width="100%" />
                 <div>
-                        <div class="d-flex justify-content-end">
-                            <label class="form-label">Taxable Base:     </label><label class="form-label" style="font-weight: bolder;" t-out="invoice.amount_untaxed"></label>
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            <label class="form-label">Tax:      </label><label class="form-label" style="font-weight: bolder;"  t-out="invoice.amount_tax"></label>
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            <hr width="50%" />
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            
-                            <label class="form-label">Total:    </label><label class="form-label" style="font-weight: bolder;"  t-out="invoice.amount_total"></label>
-                        </div>
+                    <div class="d-flex justify-content-end" t-if="invoice.journal_id.fiscal">
+                        <label class="form-label" style="padding-right:3px;">Taxable Base:</label><label class="form-label" style="font-weight: bolder;"  t-field="invoice.amount_untaxed"></label>
                     </div>
+                    <div id="taxes-invoices-budgets">
+
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <hr width="50%" />
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <label class="form-label">Total:    </label>
+                        <label class="form-label" style="font-weight: bolder;">
+                            <span t-field="invoice.amount_total_signed" t-if="invoice.journal_id.fiscal"/>
+                            <span t-field="invoice.amount_untaxed" t-else=""/>
+                        </label>
+                    </div>
+                </div>
+                <input type="hidden" id="symbolB" t-att-value="currency.symbol"/>
+                <input type="hidden" id="positionS" t-att-value="currency.position"/>
+                <input type="hidden" id="decimal" t-att-value="currency.decimal_places"/>
             </div>
         </t>
     </template>
