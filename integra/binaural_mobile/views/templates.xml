@@ -31,7 +31,7 @@
         <xpath expr="//t[4]//div[2]//div[2]//div[2]" position="before">
             <t t-if="request.env.user.employee_id.is_seller">
                 <div class="row">
-                <t t-if="product.default_code">
+                    <t t-if="product.default_code">
                         <label class="form-text col-sm-2">Default code</label>
                         <h5 class="form-label col-sm-4">[<t t-out="product.default_code"/>]</h5>
                     </t>
@@ -39,20 +39,26 @@
                         <label class="form-text col-sm-2">Alternate code</label>
                         <h5 class="form-label col-sm-3" t-out="product.alternate_code"></h5>
                     </t>
-                    <t t-if="product.quantity and product.quantity > 0">
-                        <label class="form-text col-sm-2">Qty</label>
-                        <h5 class="form-label col-sm-3"><t t-out="product.quantity"/></h5>
+                    <t t-if="product.type == 'product'">
+                        <t t-if="product.quantity and product.quantity > 0">
+                            <h5 class="form-label col-sm-5"><t t-out="'%.2f'% product.quantity"/><t t-out="product.uom_id.name"/></h5>
+                        </t>
+                        <t t-else="">
+                            <h5 class="text-danger col-sm-3">Out of stock</h5>
+                        </t>
                     </t>
-                    <t t-else="">
-                        <h5 class="text-danger col-sm-3">Out of stock</h5>
+                    <t t-if="product.type == 'service'">
+                        <h5 class="form-label col-sm-5 text-success">Service</h5>
                     </t>
                     <t t-if="product.brand_id.name">
                         <label class="form-text col-sm-2">Brand</label>
                         <h5 class="form-label col-sm-3" t-out="product.brand_id.name"></h5>
                     </t>
                     <t t-if="product.barcode">
-                        <label class="form-text col-sm-2">Barcode</label>
-                        <h5 class="form-label col-sm-3" t-out="product.barcode"></h5>
+                        <div class="col-sm-5">
+                            <label class="form-text">Barcode</label>
+                            <h5 class="form-label" t-out="product.barcode"/>
+                        </div>
                     </t>   
                 </div>
             </t>
@@ -75,11 +81,19 @@
                     </t>
                 </div>
                 <div class="d-flex justify-content-between">
-                    <t t-if="product.quantity and product.quantity > 0">
-                        <label class="form-text">Qty: <t t-out="product.quantity"/></label>
+                    <t t-if="product.type == 'product'">
+                        <t t-if="product.quantity and product.quantity > 0">
+                            <label class="form-text">
+                                <t t-out="'%.2f'% product.quantity"/>
+                                <t t-out="product.uom_id.name"/>
+                            </label>
+                        </t>
+                        <t t-else="">
+                            <label class="text-danger form-text">Out of stock</label>
+                        </t>
                     </t>
-                    <t t-else="">
-                        <label class="text-danger form-text">Out of stock</label>
+                    <t t-if="product.type == 'service'">
+                        <label class="text-success form-text">Service</label>
                     </t>
                 </div>
             </t>

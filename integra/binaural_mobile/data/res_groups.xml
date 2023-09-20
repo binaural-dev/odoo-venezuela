@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data>
+    
+        <record model="res.groups" id="group_sellers_edit_fee">
+            <field name="name">Portal / Vendedores que puedan editar tarifas</field>
+        </record>
+
+        <record model="res.groups" id="group_sellers_create_contact">
+            <field name="name">Portal / Vendedores que puedan crear contactos</field>
+        </record>
+
+    </data>
+    
+
+</odoo>

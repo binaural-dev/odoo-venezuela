@@ -18,7 +18,7 @@ class SaleOrder(models.Model):
 
     state_seller = fields.Char(
         "Seller State",
-        _compute="_compute_state_seller",
+        compute="_compute_state_seller",
         help="Track the actual order state to display in-app.",
     )
     tax_included = fields.Boolean(
@@ -44,13 +44,11 @@ class SaleOrder(models.Model):
     @api.depends("tax_included")
     def _compute_journal_id(self):
         for sale in self:
-            domain = copy.deepcopy(JOURNAL_DOMAIN)
             if sale.tax_included:
-                domain.append(("fiscal", "=", True))
+                journal = sale.env.company.dairy_fiscal
             else:
-                domain.append(("fiscal", "=", False))
+                journal = sale.env.company.dairy_no_fiscal
                 
-            journal = sale.env["account.journal"].search(domain, limit=1)
             if sale.invoice_ids:
                 for invoice in sale.invoice_ids:
                     if invoice.state == "draft":
