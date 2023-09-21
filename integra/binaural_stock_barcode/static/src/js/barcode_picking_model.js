@@ -192,7 +192,7 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
         await this.updateLine(currentLine, fieldsParams);
       }
       if (exceedingQuantity) { // Creates a new line for the excess quantity.
-        if(this.config.restrict_add_exceeding_quantity){
+        if (this.config.restrict_add_exceeding_quantity) {
 
           return this.notification.add(
             _t("You cannot add more products than the limit"),
@@ -210,7 +210,7 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
         });
       }
     } else { // No line found, so creates a new one.
-      if(this.config.restrict_add_exceeding_quantity){
+      if (this.config.restrict_add_exceeding_quantity) {
         return this.notification.add(
           _t("You cannot add more products than the limit"),
           { type: 'danger' }
@@ -228,6 +228,11 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
     if (currentLine) {
       this._selectLine(currentLine);
     }
+    this.trigger('update');
+  }
+
+  displaySupervisorCheck() {
+    this.view = 'supervisorCheck';
     this.trigger('update');
   }
 }

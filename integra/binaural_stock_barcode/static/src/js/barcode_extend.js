@@ -2,11 +2,22 @@
 
 import { registry } from "@web/core/registry";
 import MainComponent from "@stock_barcode/components/main";
+import SupervisorCheck from "./SupervisorCheck";
 
 import BinauralBarcodePickingModel from './barcode_picking_model';
 import BinauralBarcodeQuantModel from './barcode_quant_model';
 
-export default class MyLineComponent extends MainComponent {
+const { useState, onWillStart } = owl;
+
+export default class BinauralMainComponent extends MainComponent {
+  setup() {
+    super.setup();
+    this.state = useState({ displaySupervisorCheck: false, EditLineArgs: [] });
+    onWillStart(async () => {
+      this.env.model.on('check-supervisor', this, this.openclose)
+    });
+  }
+
   _getModel(params) {
     const { rpc, orm, notification } = this;
     if (params.model === 'stock.picking') {
@@ -17,6 +28,35 @@ export default class MyLineComponent extends MainComponent {
       throw new Error('No JS model define');
     }
   }
+
+  openclose(){
+    super._onEditLine(this.state.EditLineArgs)
+  }
+
+  get displaySupervisorChecker() {
+    return this.env.model.view === "supervisorCheck";
+  }
+
+  setDisplaySupervisorChecker(val) {
+    this.state.displaySupervisorCheck = val;
+  }
+
+  async _onEditLine(ev) {
+    if(!this.env.model.config.supervisor_required_to_edit){
+      return await super._onEditLine(...arguments)
+    }
+    this.ShowSupervisorPopup(this);
+    this.state.EditLineArgs = ev;
+  }
+  async ShowSupervisorPopup(self) {
+    this.state.displaySupervisorCheck = true;
+    this.env.model.displaySupervisorCheck();
+  }
 }
 
-registry.category("actions").add("stock_barcode_client_action", MyLineComponent, { force: true });
+BinauralMainComponent.components = {
+  ...MainComponent.components,
+  SupervisorCheck,
+};
+
+registry.category("actions").add("stock_barcode_client_action", BinauralMainComponent, { force: true });
