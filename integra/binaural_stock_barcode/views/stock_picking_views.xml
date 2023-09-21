@@ -10,17 +10,18 @@
             </xpath>
             <xpath expr="//div[@name='button_box']/button[@name='action_view_stock_valuation_layers']"
                    position="before">
+                <field name="type_delivery_step" invisible="1"/>
                 <button class="oe_stat_button" attrs="{'invisible': [('type_delivery_step', '!=', 'pick')]}">
                     <div role="img" class="fa fa-fw fa-circle text-secondary o_button_icon"
-                         attrs="{'invisible': [('operation_state', '!=', 'ready')]}" />
+                         attrs="{'invisible': [('operation_state', '!=', 'ready')]}" title="Ready"/>
                     <div role="img" class="fa fa-fw fa-circle text-primary o_button_icon"
-                         attrs="{'invisible': [('operation_state', '!=', 'in_process')]}"/>
+                         attrs="{'invisible': [('operation_state', '!=', 'in_process')]}" title="In Process"/>
                     <div role="img" class="fa fa-fw fa-circle text-warning o_button_icon"
-                         attrs="{'invisible': [('operation_state', '!=', 'paused')]}"/>
+                         attrs="{'invisible': [('operation_state', '!=', 'paused')]}" title="Paused"/>
                     <div role="img" class="fa fa-fw fa-circle text-success o_button_icon"
-                         attrs="{'invisible': [('operation_state', '!=', 'finished')]}"/>
+                         attrs="{'invisible': [('operation_state', '!=', 'finished')]}" title="Finished"/>
                     <div role="img" class="fa fa-fw fa-circle text-danger o_button_icon"
-                         attrs="{'invisible': [('operation_state', '!=', 'cancel')]}"/>
+                         attrs="{'invisible': [('operation_state', '!=', 'cancel')]}" title="Cancel"/>
 
                     <div class="o_stat_info">
                         <field name="operation_state" class="o_stat_text"/>

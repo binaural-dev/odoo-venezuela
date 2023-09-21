@@ -7,9 +7,6 @@ class HrEmployee(models.Model):
 
     role_picking = fields.Selection(related="user_id.role_picking", readonly=False)
 
-    password_stock_barcode = fields.Char()
-
-    @api.onchange("password_stock_barcode")
-    def _onchange_type_job(self):
-        if self.type_job != "supervisor":
-            raise ValidationError("Only supervisor can contain password")
+    supervisor_barcode_password = fields.Char(
+        related="user_id.supervisor_barcode_password", readonly=False
+    )
