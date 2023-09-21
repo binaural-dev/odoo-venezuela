@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.tools import float_compare
 
 
 class AccountMoveLine(models.Model):
@@ -6,7 +7,9 @@ class AccountMoveLine(models.Model):
 
     foreign_currency_id = fields.Many2one(related="move_id.foreign_currency_id", store=True)
     foreign_rate = fields.Float(related="move_id.foreign_rate", store=True)
-    foreign_inverse_rate = fields.Float(related="move_id.foreign_inverse_rate", store=True)
+    foreign_inverse_rate = fields.Float(
+        related="move_id.foreign_inverse_rate", store=True, index=True
+    )
 
     foreign_price = fields.Float(
         help="Foreign Price of the line",
@@ -32,8 +35,12 @@ class AccountMoveLine(models.Model):
     foreign_debit = fields.Monetary(currency_field="foreign_currency_id")
     foreign_credit = fields.Monetary(currency_field="foreign_currency_id")
     foreign_balance = fields.Monetary(
-        currency_field="foreign_currency_id", compute="_compute_foreign_balance", store=True
+        currency_field="foreign_currency_id",
+        compute="_compute_foreign_balance",
+        store=True,
+        precompute=True,
     )
+
     foreign_debit_adjustment = fields.Monetary(
         currency_field="foreign_currency_id",
         help="When setted, this field will be used to fill the foreign debit field",
@@ -76,3 +83,29 @@ class AccountMoveLine(models.Model):
                 # moves that are not invoices.
                 line.foreign_balance = 0.0
             line.foreign_balance = line.foreign_debit - line.foreign_credit
+
+    def _prepare_analytic_distribution_line(
+        self, distribution, account_id, distribution_on_each_plan
+    ):
+        """
+        This method adds the foreign_amount in the foreign currency to the analytical account line
+        """
+        self.ensure_one()
+        res = super()._prepare_analytic_distribution_line(
+            distribution, account_id, distribution_on_each_plan
+        )
+        account_id = int(account_id)
+        account = self.env["account.analytic.account"].browse(account_id)
+        distribution_plan = distribution_on_each_plan.get(account.root_plan_id, 0) + distribution
+        decimal_precision = self.env["decimal.precision"].precision_get("Percentage Analytic")
+        if float_compare(distribution_plan, 100, precision_digits=decimal_precision) == 0:
+            foreign_amount = (
+                -self.foreign_balance
+                * (100 - distribution_on_each_plan.get(account.root_plan_id, 0))
+                / 100.0
+            )
+        else:
+            foreign_amount = -self.foreign_balance * distribution / 100.0
+
+        res["foreign_amount"] = foreign_amount
+        return res

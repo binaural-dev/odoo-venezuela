@@ -10,3 +10,8 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.initial_seller",
         readonly=False,
     )
+
+    multiple_sellers = fields.Boolean(
+        related='company_id.multiple_sellers',
+        readonly=False
+    )

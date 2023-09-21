@@ -152,6 +152,7 @@ class SaleOrderBudget(http.Controller):
         sitemap=False,
     )
     def create_sale_order(self, **kwargs):
+        kwargs = kwargs.get("order")
         for key, value in kwargs.items():
             if value == type(str):
                 kwargs[key] = int(value)
@@ -159,20 +160,20 @@ class SaleOrderBudget(http.Controller):
         sale_order = kwargs.get("sale_order")
         tax_included = kwargs.get("tax_included", False)
         sale_order["tax_included"] = tax_included
-        seller_id = request.env.user.id
+        seller_id = request.env.user.employee_id.id
         request.update_env(user=request.session.uid)
 
         lines = utils.set_order_line(sale_order, tax_included)
         sale_order["order_line"] = lines
         sale_order.update({
             "date_order": datetime.today(),
-            "user_id": seller_id
+            "seller_id": seller_id
             })
 
         sale = False
         try:
             sale = utils.create_record("sale.order", sale_order)
-
+            
             data.update({"data": sale})
         except Exception as e:
             data.update({"status": 400, "msg": str(e)})
@@ -219,13 +220,7 @@ class SaleOrderBudget(http.Controller):
 
         sale_id = int(sale_order.pop("id", False))
         order_line = sale_order.pop("order_line", False)
-        # create_uid = int(sale_order.get("user_id", False))
 
-        # if create_uid:
-        #     request.uid = create_uid
-        #     can_access, msg = utils.check_access(create_uid)
-        #     if not can_access:
-        #         return {"status": 401, "msg": msg}
         try:
             if sale_id:
                 domain = [("id", "=", sale_id)]
@@ -249,7 +244,6 @@ class SaleOrderBudget(http.Controller):
         validation_errors = utils.ValidateRequest.require([
             ["sale_id"],
             ["tax_included"],
-            # ["uid"]
         ], kwargs)
         
         if any(validation_errors):
@@ -258,17 +252,6 @@ class SaleOrderBudget(http.Controller):
         data = {"status": 200, "msg": _("Success")}
         sale_id = kwargs.get("sale_id", False)
         tax_included = kwargs.get("tax_included", False)
-
-        # uid = int(kwargs.get("uid", False))
-
-        # if uid:
-        #     request.uid = uid
-        #     can_access, msg = utils.check_access(uid)
-
-        #     if not can_access:
-        #         data.update({"status": 401, "msg": msg})
-        #         return data
-
         try:
             sale = utils.browse_model_data("sale.order", int(sale_id))
             if not sale:
@@ -291,7 +274,23 @@ class SaleOrderBudget(http.Controller):
             sale_order = sale_order[0]
 
             sale_order["order_line"] = sale.order_line.read(FIELD_ORDER_LINE)
+            
+            for order_line in sale_order["order_line"]:
+                product_qty = request.env["product.template"].search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
+                order_line["qty_available"] = product_qty
+            
+            if tax_included:
+                for line in sale_order["order_line"]:
+                    description_tax = _("Tax no Selected")
+                    value_tax = 0
+                    if line["tax_id"][0]:
+                        tax = request.env["account.tax"].search([("id","=", line["tax_id"][0])])
+                        value_tax = tax.amount
+                        description_tax = tax.description
+                    line["tax_id"].append(description_tax)
+                    line["tax_id"].append(value_tax)
             data.update({"data": sale_order})
+
             return data
         except Exception as e:
             data.update({"status": 409, "msg": _("There was an error handling the request"), "error": str(e)})
@@ -309,96 +308,73 @@ class SaleOrderBudget(http.Controller):
         for key, value in kwargs.items():
             if value == type(str):
                 kwargs[key] = int(value)
-        validation_errors = utils.ValidateRequest.require([
-            ["sale_order"],
-        ], kwargs)
         
         data = {"status": 200, "msg": _("Success")}
 
-        if any(validation_errors):
-            return utils.ValidateRequest.json(validation_errors)
+        sale_orders = kwargs.get("sale_orders", [])
+        
+        for sale_order in sale_orders:
+            sale_order = sale_order["sale_order_id"]
+            if utils.product_duplicate(sale_order):
+                data.update({"status": 400, "msg": _("There are duplicated products.")})
+                return data
+            tax_included = kwargs.get("tax_included", False)
+            sale_order["tax_included"] = tax_included
+            sale_id = sale_order.pop("id", False)
 
-        sale_order = kwargs.get("sale_order")
+            request.update_env(user=request.session.uid)
 
-        if utils.product_duplicate(sale_order):
-            data.update({"status": 400, "msg": _("There are duplicated products.")})
-            return data
-        tax_included = kwargs.get("tax_included", False)
-        sale_order["tax_included"] = tax_included
-        sale_id = sale_order.pop("id", False)
+            if sale_id:
+                try:
+                    new_lines = []
+                    products_ids_order = []
+                    sale = utils.browse_model_data("sale.order", sale_id)
 
-        request.update_env(user=request.session.uid)
+                    if sale and sale_order.get("order_line", False):
+                        products_ids_order = sale.order_line.mapped("product_id").ids
+                        lines = sale_order.get("order_line")
 
-        if sale_id:
-            try:
-                new_lines = []
-                products_ids_order = []
-                sale = utils.browse_model_data("sale.order", sale_id)
-
-                if sale and sale_order.get("order_line", False):
-                    products_ids_order = sale.order_line.mapped("product_id").ids
-                    lines = sale_order.get("order_line")
-
-                    def product_id_exist(line):
-                        product_id = line.get("product_id")
-                        if product_id not in products_ids_order:
-                            return True
-                        return False
-                    
-                    # success_all, msg = self.check_lines_validations(lines)
-
-                    # if not success_all:
-                    #     sale_json = sale.read(FIELDNAMES)
-                    #     sale_json = utils.convert_field_string(sale_json, PARSE_FIELDS)
-                    #     sale_json = utils.get_order_line(sale_json, FIELD_ORDER_LINE)
-                    #     data.update({"status": 400, "msg": msg, "data": sale_json})
-
-                    #     return data
-
-                    new_lines = [line for line in lines if line.get("product_id")]
-                    new_lines = list(filter(product_id_exist, new_lines))
-                    
-                    if not len(new_lines):
-                        sale_json = sale.read(FIELDNAMES)
-                        sale_json = utils.convert_field_string(sale_json, PARSE_FIELDS)
-                        sale_json = utils.get_order_line(sale_json, FIELD_ORDER_LINE)
-                        data.update({"status": 200, "msg": "msg", "data": sale_json})
-                        return data
-                    
-                    write_lines = utils.set_order_line(sale_order, tax_included)
-                    
-                    if write_lines:
-                        sale_order["order_line"] = write_lines
-                        sale.write(sale_order)
-                        sale_json = sale.read(FIELDNAMES)
-                        if sale_json:
+                        def product_id_exist(line):
+                            product_id = line.get("product_id")
+                            return product_id not in products_ids_order
+                        
+                        new_lines = [line for line in lines if line.get("product_id")]
+                        new_lines = list(filter(product_id_exist, new_lines))
+                        
+                        if not len(new_lines):
+                            sale_json = sale.read(FIELDNAMES)
                             sale_json = utils.convert_field_string(sale_json, PARSE_FIELDS)
                             sale_json = utils.get_order_line(sale_json, FIELD_ORDER_LINE)
-                            data.update({"data": sale_json})
-                            return data
-                    else:
-                        data.update(
-                            {
-                                "status": 400,
-                                "msg": _("There was an error adding lines to the sale order."),
-                            }
-                        )
-                        return data
-            except Exception as e:
-                data.update({"status": 400, "msg": str(e)})
-                return data
+                            data.update({"status": 200, "msg": "msg", "data": sale_json})
+                        
+                        write_lines = utils.set_order_line(sale_order, tax_included)
+                        
+                        if write_lines:
+                            sale_order["order_line"] = write_lines
+                            sale.write(sale_order)
+                            sale_json = sale.read(FIELDNAMES)
+                            if sale_json:
+                                sale_json = utils.convert_field_string(sale_json, PARSE_FIELDS)
+                                sale_json = utils.get_order_line(sale_json, FIELD_ORDER_LINE)
+                                data.update({"data": sale_json})
+                        else:
+                            data.update(
+                                {
+                                    "status": 400,
+                                    "msg": _("There was an error adding lines to the sale order."),
+                                }
+                            )
+                except Exception as e:
+                    data.update({"status": 400, "msg": str(e)})
+                    return data
+        return data
 
     @http.route("/budget/delete_line", type="json", auth="public", methods=["POST"], sitemap=False)
     def delete_order_line(self, sale_order_id, line_id, uid=False):
         data = {"status": 200, "msg": _("Success")}
         domain = [("id", "=", int(sale_order_id))]
         sale = utils.search_model_data("sale.order", domain).exists()
-        # uid = int(uid)
-        # if uid:
-        #     request.uid = uid
-        #     can_access, msg = utils.check_access(uid)
-        #     if not can_access:
-        #         return {"status": 401, "msg": msg}
+        
         if sale and sale.state in SALE_STATES:
             try:
                 domain = [("id", "=", int(line_id)), ("order_id", "=", sale.id)]
@@ -412,6 +388,39 @@ class SaleOrderBudget(http.Controller):
                 "data": None,
                 "message": _("An already processed quotation can't be modified."),
             }
+        return data
+    
+
+    @http.route(
+            '/budget/update_pricelist', type="json", auth="public", website=False, sitemap=False
+    )
+    def update_pricelist(self, budget=False, fee=False, **kw):
+        data = {"status": 200, "msg": _("Success")}
+        
+        if not budget:
+            data.update(
+                {"status": 204, "msg": _("No Found Budget"),  "data": False}
+            )
+            return json.dumps(data)
+        
+        try:
+            sale_id = int(budget)
+            sale_order = request.env["sale.order"].sudo().search([("id", "=", sale_id)])
+            sale_order.update({
+                "pricelist_id": int(fee)
+            })
+            sale_order.action_update_prices()
+            sale = utils.browse_model_data("sale.order", sale_id)
+            sale_json = sale.read(FIELDNAMES)
+            if sale_json:
+                sale_json = utils.convert_field_string(sale_json, PARSE_FIELDS)
+                sale_json = utils.get_order_line(sale_json, FIELD_ORDER_LINE)
+                data.update({"data": sale_json})
+
+        except Exception as e:
+            data.update({"status": 400, "msg": str(e)})
+            return data
+
         return data
 
     def check_lines_validations(self, lines):
