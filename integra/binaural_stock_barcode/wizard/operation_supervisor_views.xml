@@ -15,7 +15,7 @@
                 <field name="company_id" invisible="1"/>
                 <field name="stock_picking_type_ids" widget="One2many" mode="tree,kaban" nolabel="1">
                     <tree editable="bottom" create="0" delete="0">
-                        <field name="name" readonly="1"/>
+                        <field name="type_steps" />
                         <field name="supervisor_required_to_edit" />
                         <field name="supervisor_required_for_incomplete_qty" />
                     </tree>
