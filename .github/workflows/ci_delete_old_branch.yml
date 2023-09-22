@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: game8inc/cull@v1
+    - uses: game8inc/cull@v1.0.0
       with:
         repo-token: ${{ secrets.YOUR_GITHUB_TOKEN }}
         dry-run: 'true'
