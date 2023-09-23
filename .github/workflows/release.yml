@@ -39,10 +39,12 @@ jobs:
           "https://api.github.com/repos/binaural-dev/integra/forks" \
           | jq -r '.[] | .full_name' \
           | tee $GITHUB_WORKSPACE/forks.txt
+        cat $GITHUB_WORKSPACE/forks.txt
 
     - name: Create PRs to Projects
       run: |
         # Itera sobre la lista de proyectos destino
+        cat $GITHUB_WORKSPACE/forks.txt
         while IFS= read -r project; do
           echo "Creating PR to $project"
           # Crea un pull request desde release-16 en binaural-dev/integra hacia staging en el proyecto destino
