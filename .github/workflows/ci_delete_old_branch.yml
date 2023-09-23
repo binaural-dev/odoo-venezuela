@@ -21,7 +21,7 @@ jobs:
           last_commit_age_days: 15          
 
           # Disable dry run and actually get stuff deleted
-          #dry_run: no
+          dry_run: yes
 
       - name: Get output
         run: "echo 'Deleted branches: ${{ steps.delete_stuff.outputs.deleted_branches }}'"
