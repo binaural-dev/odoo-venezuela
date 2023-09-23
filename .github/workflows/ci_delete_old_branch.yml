@@ -3,7 +3,7 @@ name: Delete abandoned branches
 on:
   # Run daily at midnight
   schedule:
-    - cron: "35 16 * * *"
+    - cron: "0 0 * * *"
 
   # Allow workflow to be manually run from the GitHub UI
   workflow_dispatch:
@@ -11,17 +11,17 @@ on:
 jobs:
   cleanup_old_branches:
     runs-on: ubuntu-latest
-    name: Borrando ramas viejas
+    name: Delete old branch
     steps:
-      - name: Ejecucion de borrado
+      - name: Borrando ramas
         uses: phpdocker-io/github-actions-delete-abandoned-branches@v2.0.3
         id: delete_stuff
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          last_commit_age_days: 15          
+          last_commit_age_days: 10          
 
           # Disable dry run and actually get stuff deleted
-          dry_run: yes
+          dry_run: no
 
       - name: Get output
         run: "echo 'Deleted branches: ${{ steps.delete_stuff.outputs.deleted_branches }}'"
