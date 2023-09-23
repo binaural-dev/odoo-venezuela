@@ -120,8 +120,8 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
                     CASE WHEN {report_in_foreign_currency}
                     THEN (
                         SUM(ROUND(account_move_line.foreign_balance, currency_table.precision))
-                        - COALESCE(SUM(ROUND(part_debit.amount * part_debit.foreign_inverse_rate, currency_table.precision)), 0)
-                        + COALESCE(SUM(ROUND(part_credit.amount * part_credit.foreign_inverse_rate, currency_table.precision)), 0)
+                        - COALESCE(SUM(ROUND(part_debit.foreign_amount, currency_table.precision)), 0)
+                        + COALESCE(SUM(ROUND(part_credit.foreign_amount, currency_table.precision)), 0)
                     )
                     ELSE (
                         SUM(ROUND(account_move_line.balance * currency_table.rate, currency_table.precision))
@@ -162,7 +162,7 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
             LEFT JOIN LATERAL (
                 SELECT 
                     SUM(part.amount) AS amount,
-                    account_move_line.foreign_inverse_rate AS foreign_inverse_rate,
+                    SUM(part.amount * part.debit_move_foreign_inverse_rate) AS foreign_amount,
                     part.debit_move_id
                 FROM account_partial_reconcile part
                 WHERE part.max_date <= %s
@@ -172,7 +172,7 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
             LEFT JOIN LATERAL (
                 SELECT
                     SUM(part.amount) AS amount,
-                    account_move_line.foreign_inverse_rate AS foreign_inverse_rate,
+                    SUM(part.amount * part.credit_move_foreign_inverse_rate) AS foreign_amount,
                     part.credit_move_id
                 FROM account_partial_reconcile part
                 WHERE part.max_date <= %s

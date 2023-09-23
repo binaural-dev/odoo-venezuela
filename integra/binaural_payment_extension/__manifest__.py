@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "16.17",
+    "version": "16.17.2",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -22,6 +22,7 @@
     # always loaded
     "data": [
         "security/ir.model.access.csv",
+        "security/ir_rule.xml",
         "data/sequence_data.xml",
         "data/type_person_data.xml",
         "data/account_withholding_type_data.xml",
