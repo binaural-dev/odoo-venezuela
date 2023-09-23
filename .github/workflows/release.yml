@@ -38,7 +38,7 @@ jobs:
         curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           "https://api.github.com/repos/binaural-dev/integra/forks" \
           | jq -r '.[] | .full_name' \
-          | tee forks.txt
+          | tee $GITHUB_WORKSPACE/forks.txt
 
     - name: Create PRs to Projects
       run: |
@@ -50,6 +50,6 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -d '{"title": "Merge release-16 into staging", "head": "binaural-dev:integra/release-16", "base": "staging"}' \
             "https://api.github.com/repos/$project/pulls"
-        done < forks.txt
+        done < $GITHUB_WORKSPACE/forks.txt
         echo "Done"
 
