@@ -36,10 +36,10 @@ jobs:
       run: |
         # Obtiene la lista de proyectos destino (forks de integra) usando la API de GitHub
         curl google.com
-        curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/binaural-dev/integra/forks"
+        curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/binaural-dev/integra/forks
         jq -r '.[] | .full_name'
         curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/binaural-dev/integra/forks" \
+          https://api.github.com/repos/binaural-dev/integra/forks \
           | jq -r '.[] | .full_name' \
           | tee forks.txt
         cat forks.txt
