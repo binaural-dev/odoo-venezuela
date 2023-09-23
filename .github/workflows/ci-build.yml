@@ -1,11 +1,13 @@
 name: Build docker image
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened, reopened]
     branches:
       - 'release*'
       - 'staging*'
+      - 'master'      
 
 jobs:
   build:
