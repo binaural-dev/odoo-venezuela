@@ -27,9 +27,7 @@ jobs:
   create_pull_request:
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
+    permissions: read-all      
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -38,7 +36,7 @@ jobs:
       id: list_forks
       run: |
         # Obtiene la lista de proyectos destino (forks de integra) usando la API de GitHub
-        curl -v -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/binaural-dev/integra/forks
+        curl -v -s "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/binaural-dev/integra/forks
         jq -r '.[] | .full_name'
         curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           https://api.github.com/repos/binaural-dev/integra/forks \
