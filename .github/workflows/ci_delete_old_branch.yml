@@ -2,7 +2,7 @@ name: Auto-delete abandoned branches every morning.
 
 on:
   schedule:
-    - cron: "30 1 * * *"
+    - cron: "0 15 * * *"
 
 permissions:
   contents: write
@@ -14,7 +14,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: game8inc/cull@v1.0.0
       with:
-        repo-token: ${{ secrets.YOUR_GITHUB_TOKEN }}
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
         dry-run: 'true'
         older-than: '10'
         max-deletion-per-day: '5'
