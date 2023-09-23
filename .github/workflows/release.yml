@@ -29,22 +29,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: List forked repositories
       id: list_forks
       run: |
         # Obtiene la lista de proyectos destino (forks de integra) usando la API de GitHub
+        curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/binaural-dev/integra/forks"
+        jq -r '.[] | .full_name'
         curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           "https://api.github.com/repos/binaural-dev/integra/forks" \
           | jq -r '.[] | .full_name' \
-          | tee $GITHUB_WORKSPACE/forks.txt
-        cat $GITHUB_WORKSPACE/forks.txt
+          | tee forks.txt
+        cat forks.txt
 
     - name: Create PRs to Projects
       run: |
         # Itera sobre la lista de proyectos destino
-        cat $GITHUB_WORKSPACE/forks.txt
+        cat forks.txt
         while IFS= read -r project; do
           echo "Creating PR to $project"
           # Crea un pull request desde release-16 en binaural-dev/integra hacia staging en el proyecto destino
@@ -52,6 +54,6 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -d '{"title": "Merge release-16 into staging", "head": "binaural-dev:integra/release-16", "base": "staging"}' \
             "https://api.github.com/repos/$project/pulls"
-        done < $GITHUB_WORKSPACE/forks.txt
+        done < forks.txt
         echo "Done"
 
