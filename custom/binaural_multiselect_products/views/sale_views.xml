@@ -5,7 +5,7 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="fl_so_po_multi_products.sale_order_view_multi_product_selection_inherit"/>
         <field name="arch" type="xml">
-            <xpath expr="//button[@name='%(act_open_select_products_view)d']" position="replace">
+            <xpath expr="//button[contains(@context, 'default_flag_order')]" position="replace">
                 <button name="select_product_view" type="object" string="Select Products"
                     context="{'default_flag_order': 'so'}" attrs="{'invisible': [('state', '!=', 'draft')]}"
                     class="btn-primary mb-3"/>
