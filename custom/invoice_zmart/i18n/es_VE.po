@@ -90,7 +90,7 @@ msgstr "No se puede imprimir una factura con un diario no fiscal"
 #: code:addons/invoice_zmart/models/account_move.py:0
 #, python-format
 msgid "Cannot print an sale note with a fiscal journal"
-msgstr "No se puede imprimir una nota de entrega con un diario no fiscal"
+msgstr "No se puede imprimir una nota de entrega con un diario fiscal"
 
 #. module: invoice_zmart
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.template_invoice_delivery_note_bs
