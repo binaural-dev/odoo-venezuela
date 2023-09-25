@@ -34,13 +34,16 @@ odoo.define("binaural_pos.PartnerListScreen", function(require) {
       async createPartner() {
         this.env.services.ui.block()
         try {
-          let data = await this.env.services.rpc({
-            model: 'res.partner',
-            method: 'get_default_name_by_vat_param',
-            args: [[], "V", this.state.query],
-          });
-          if (data === "Esta cédula de identidad no se encuentra inscrito en el Registro Electoral.") {
-            data = "N/D"
+          let data = ""
+          if(!!this.env.pos.config.pos_search_cne){
+            data = await this.env.services.rpc({
+              model: 'res.partner',
+              method: 'get_default_name_by_vat_param',
+              args: [[], "V", this.state.query],
+            });
+            if (data === "Esta cédula de identidad no se encuentra inscrito en el Registro Electoral.") {
+              data = "N/D"
+            }
           }
           // initialize the edit screen with default details about country & state
           this.state.editModeProps.partner = {
