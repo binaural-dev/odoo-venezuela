@@ -5,6 +5,7 @@
     <field name="model">product.product</field>
     <field name="inherit_id" ref="product.product_product_tree_view" />
     <field name="arch" type="xml">
+
       <xpath expr="//header/button[@name='action_open_label_layout']" position="after">
         <button 
           name="set_products_selected" 
@@ -14,6 +15,11 @@
           invisible="not context.get('default_is_trigger_from_multiselect',False)"
         />
       </xpath>
+
+      <xpath expr="//header/button[@name='action_open_label_layout']" position="attributes">
+        <attribute name="invisible">context.get('default_is_trigger_from_multiselect',False)</attribute>
+      </xpath>
+
     </field>
   </record>
 </odoo>
