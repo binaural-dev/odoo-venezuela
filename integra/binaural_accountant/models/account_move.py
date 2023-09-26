@@ -324,7 +324,10 @@ class AccountMove(models.Model):
                         )
                     continue
 
-                if len(line_foreign_currency_id) == len(self.line_ids):
+                if (
+                    len(line_foreign_currency_id) == len(self.line_ids)
+                    and line.amount_currency != 0
+                ):
                     if line.amount_currency > 0:
                         line.foreign_debit = abs(line.amount_currency)
 
@@ -334,15 +337,6 @@ class AccountMove(models.Model):
                     continue
 
                 line_name = line.name or False
-
-                if line.currency_id == self.env.company.currency_foreign_id:
-                    line.foreign_debit = (
-                        abs(line.amount_currency) if line.amount_currency > 0 else 0
-                    )
-                    line.foreign_credit = (
-                        abs(line.amount_currency) if line.amount_currency < 0 else 0
-                    )
-                    continue
 
                 lines_with_same_tax = self.line_ids.filtered(
                     lambda l: l.tax_ids and l.tax_ids.description == line_name
