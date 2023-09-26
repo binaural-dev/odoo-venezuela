@@ -251,10 +251,10 @@ class AccountMove(models.Model):
         currency of the company, the currency amount will be the one used to set the foreign debit
         or foreign credit on the corresponding line.
 
-        And if there are two lines and one of them is in foreign currency, the amount placed in 
+        And if there are two lines and one of them is in foreign currency, the amount placed in
         amount in currency will be placed in both corresponding lines in foreign debit and credit.
 
-        If all the lines are made in the alternate currency, it will take the amount in amount in 
+        If all the lines are made in the alternate currency, it will take the amount in amount in
         currency
 
         If the adjustment is placed, it overwrites both lines so that they are the same amount
@@ -305,7 +305,10 @@ class AccountMove(models.Model):
                     and line_foreign_currency_id[0].id != line.id
                 ):
                     line_foreign_id = line_foreign_currency_id[0]
-                    if (line_foreign_id.foreign_debit_adjustment + line_foreign_id.foreign_credit_adjustment) != 0:
+                    if (
+                        line_foreign_id.foreign_debit_adjustment
+                        + line_foreign_id.foreign_credit_adjustment
+                    ) != 0:
                         line.foreign_debit = line_foreign_id.foreign_credit_adjustment
                         line.foreign_credit = line_foreign_id.foreign_debit_adjustment
                     else:
@@ -321,7 +324,10 @@ class AccountMove(models.Model):
                         )
                     continue
 
-                if len(line_foreign_currency_id) == len(self.line_ids):
+                if (
+                    len(line_foreign_currency_id) == len(self.line_ids)
+                    and line.amount_currency != 0
+                ):
                     if line.amount_currency > 0:
                         line.foreign_debit = abs(line.amount_currency)
 
@@ -331,15 +337,6 @@ class AccountMove(models.Model):
                     continue
 
                 line_name = line.name or False
-
-                if line.currency_id == self.env.company.currency_foreign_id:
-                    line.foreign_debit = (
-                        abs(line.amount_currency) if line.amount_currency > 0 else 0
-                    )
-                    line.foreign_credit = (
-                        abs(line.amount_currency) if line.amount_currency < 0 else 0
-                    )
-                    continue
 
                 lines_with_same_tax = self.line_ids.filtered(
                     lambda l: l.tax_ids and l.tax_ids.description == line_name
