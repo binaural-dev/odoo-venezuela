@@ -77,7 +77,7 @@
                 <span class="text-bold font-80">
                     Total in 
                     <t t-out="receipt.currency.name + ' ' + env.pos.format_currency(receipt.total_with_tax)"/>
-                    (Exempt <t t-out="receipt.total_without_tax"/>).
+                    (Exempt <t t-out="env.pos.format_currency_no_symbol(receipt.total_without_tax, 'Tasa', currency)"/>).
                     Calculated using rate <t t-out="format_currency()"/> By <t t-out="receipt.currency.symbol"/>
                 </span>
             </div>
@@ -141,7 +141,7 @@
             <t t-foreach="receipt.tax_details" t-as="tax" t-key="tax.name">
                 <div class="flex">
                     <span class="text-bold">Total <t t-out="tax.name"/> <t t-out="currency.symbol"/></span>
-                    <span><t t-out="get_taxed_products_total(tax.tax)"/></span>
+                    <span><t t-out="env.pos.format_currency_no_symbol(get_taxed_products_total(tax.tax), 'Tasa', currency)"/></span>
                 </div>
                 <div class="flex">
                     <span class="text-bold"><t t-out="tax.name"/> <t t-out="currency.symbol"/></span>

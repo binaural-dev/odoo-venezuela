@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Point of Sale",
-    "version": "16.0.0.1.1",
+    "version": "16.0.0.1.2",
     "depends": ["binaural_pos", "point_of_sale"],
     "data": [],
     "assets": {
