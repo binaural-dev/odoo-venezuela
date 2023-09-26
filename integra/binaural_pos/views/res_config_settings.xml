@@ -20,6 +20,17 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_search_cne"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_search_cne"/>
+                                <div class="text-muted">
+                                    Search clients by vat number in CNE database
+                                </div>
+                            </div>
+                        </div>
                         <div class="col-12 col-lg-6 o_setting_box" id="tax_inside_setting" groups="base.group_no_one">
                             <div class="o_setting_left_pane">
                                 <field name="pos_tax_inside"/>

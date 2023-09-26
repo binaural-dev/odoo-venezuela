@@ -6,6 +6,7 @@
         <field name="arch" type="xml">
 	    <field name="salvage_value" position="after">
 		<field name="foreign_rate"/>
+        <field name="foreign_inverse_rate" readonly="1"/>
 		<field name="foreign_inverse_rate" groups="base.group_no_one"/>
 	    </field>
 	</field>
