@@ -100,8 +100,13 @@ class AccountMove(models.Model):
     def _post(self, soft=True):
         res = super()._post(soft)
         for move in res:
+            if move.journal_id.fiscal and not move.correlative:
+                move.correlative = move.get_sequence(move.journal_id.fiscal)
+                continue
+
             if move.is_valid_to_sequence():
                 move.correlative = move.get_sequence(move.journal_id.fiscal)
+                continue
 
     @api.model
     def is_valid_to_sequence(self) -> bool:
@@ -148,10 +153,3 @@ class AccountMove(models.Model):
                 }
             )
         return correlative.next_by_id(correlative.id)
-
-    def action_post(self):
-        res = super().action_post()
-        for move in self:
-            if move.journal_id.fiscal and not move.correlative:
-                move.correlative = move.get_sequence(move.journal_id.fiscal)
-        return res
