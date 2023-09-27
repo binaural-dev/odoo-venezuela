@@ -7,8 +7,8 @@
         <field name="arch" type="xml">
             <button name="action_cancel" position="after">
                 <button name="button_sale_order" string="Imprimir Presupuesto/Pedido" type="object" class="oe_highlight"/>
+                <button name="button_sale_order_note" string="Imprimir Presupuesto/Pedido Format2" type="object" class="oe_highlight"/>
                 <button name="button_invoice_sale_note_rma" string="Imprimir Nota de Entrega RMA" type="object" class="oe_highlight" groups="sale_zmart.group_sale_note_rma" attrs="{'invisible': [('invoice_status', '!=', 'invoiced')]}"/>
-            
             </button>
             <field name="partner_shipping_id" position="after">
                 <field name="discount_4"/>
