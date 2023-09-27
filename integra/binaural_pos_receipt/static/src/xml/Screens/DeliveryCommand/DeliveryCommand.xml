@@ -72,12 +72,18 @@
                 <t t-call="CommandTotalLines"/>
             </div>
 
+            <div class="pos-receipt-center-align">--------------------------------</div>
+
+            <div class="flex">
+                <div class="text-bold">Total Productos: <t t-out="order.get_qty_products()"/></div>
+            </div>
+
             <div t-if="is_foreign_currency" class="pos-footer">
                 <div>================================</div>
                 <span class="text-bold font-80">
                     Total in 
                     <t t-out="receipt.currency.name + ' ' + env.pos.format_currency(receipt.total_with_tax)"/>
-                    (Exempt <t t-out="env.pos.format_currency_no_symbol(receipt.total_without_tax, 'Tasa', currency)"/>).
+                    (BI <t t-out="env.pos.format_currency_no_symbol(receipt.total_without_tax, 'Product Price', currency)"/>).
                     Calculated using rate <t t-out="format_currency()"/> By <t t-out="receipt.currency.symbol"/>
                 </span>
             </div>
@@ -101,10 +107,10 @@
 
                 <div t-if="is_foreign_currency" class="price_display">
                     <t t-set="foreign_product_price" t-value="get_orderline(line.product_name).get_display_foreign_price()"/>
-                    <t t-out="env.pos.format_currency_no_symbol(foreign_product_price, 'Tasa', currency)" />
+                    <t t-out="env.pos.format_currency_no_symbol(foreign_product_price, 'Product Price', currency)" />
                 </div>
                 <div t-else="" class="price_display">
-                    <t t-out="env.pos.format_currency_no_symbol(line.price_display, 'Tasa', currency)" />
+                    <t t-out="env.pos.format_currency_no_symbol(line.price_display, 'Product Price', currency)" />
                 </div>
             </div>
         </t>
@@ -114,17 +120,17 @@
         <t t-if="is_foreign_currency">
             <div class="flex">
                 <span class="text-bold">Subtotal <t t-out="currency.symbol"/></span>
-                <span><t t-out="order.get_foreign_total_without_tax()"/></span>
+                <span><t t-out="env.pos.format_currency_no_symbol(order.get_foreign_total_without_tax(), 'Product Price', currency)"/></span>
             </div>
             <t t-foreach="foreign_tax_details" t-as="tax" t-key="tax.name">
                 <div class="flex">
                     <span class="text-bold">Total <t t-out="tax.name"/> <t t-out="currency.symbol"/></span>
-                    <span><t t-out="get_taxed_products_total(tax.tax)"/></span>
+                    <span><t t-out="env.pos.format_currency_no_symbol(get_taxed_products_total(tax.tax), 'Product Price', currency)"/></span>
                 </div>
                 <div class="flex">
                     <!-- <t t-set="amount_rounded" t-value="round_pr(tax.amount * currency.rate, currency.rounding)"/> -->
                     <span class="text-bold"><t t-out="tax.name"/> <t t-out="currency.symbol"/></span>
-                    <span><t t-out="env.pos.format_currency_no_symbol(tax.amount, 'Tasa', currency)"/></span>
+                    <span><t t-out="env.pos.format_currency_no_symbol(tax.amount, 'Product Price', currency)"/></span>
                     <!-- <span><t t-out="round_pr(tax.amount * currency.rate, currency.rounding)"/></span> -->
                 </div>
             </t>
@@ -136,21 +142,21 @@
         <t t-else="">
             <div class="flex">
                 <span class="text-bold">Subtotal <t t-out="currency.symbol"/></span>
-                <span><t t-out="env.pos.format_currency_no_symbol(receipt.total_without_tax, 'Tasa', currency)"/></span>
+                <span><t t-out="env.pos.format_currency_no_symbol(receipt.total_without_tax, 'Product Price', currency)"/></span>
             </div>
             <t t-foreach="receipt.tax_details" t-as="tax" t-key="tax.name">
                 <div class="flex">
                     <span class="text-bold">Total <t t-out="tax.name"/> <t t-out="currency.symbol"/></span>
-                    <span><t t-out="env.pos.format_currency_no_symbol(get_taxed_products_total(tax.tax), 'Tasa', currency)"/></span>
+                    <span><t t-out="env.pos.format_currency_no_symbol(get_taxed_products_total(tax.tax), 'Product Price', currency)"/></span>
                 </div>
                 <div class="flex">
                     <span class="text-bold"><t t-out="tax.name"/> <t t-out="currency.symbol"/></span>
-                    <span><t t-out="env.pos.format_currency_no_symbol(tax.amount, 'Tasa', currency)"/></span>
+                    <span><t t-out="env.pos.format_currency_no_symbol(tax.amount, 'Product Price', currency)"/></span>
                 </div>
             </t>
             <div class="flex">
                 <span class="text-bold">Total <t t-out="currency.symbol"/></span>
-                <span><t t-out="env.pos.format_currency_no_symbol(receipt.total_with_tax, 'Tasa', currency)"/></span>
+                <span><t t-out="env.pos.format_currency_no_symbol(receipt.total_with_tax, 'Product Price', currency)"/></span>
             </div>
         </t>
     </t>
