@@ -100,13 +100,8 @@ class AccountMove(models.Model):
     def _post(self, soft=True):
         res = super()._post(soft)
         for move in res:
-            if move.journal_id.fiscal and not move.correlative:
-                move.correlative = move.get_sequence(move.journal_id.fiscal)
-                continue
-
             if move.is_valid_to_sequence():
                 move.correlative = move.get_sequence(move.journal_id.fiscal)
-                continue
 
     @api.model
     def is_valid_to_sequence(self) -> bool:
@@ -119,8 +114,8 @@ class AccountMove(models.Model):
             sequence number or not.
         """
 
-        return self.move_type in ["out_invoice", "out_refund"] and not self.correlative
-
+        return self.journal_id.fiscal and not self.correlative
+    
     @api.model
     def get_sequence(self, is_fiscal=False):
         """Allow the invoice to have both a generic sequence
