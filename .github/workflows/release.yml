@@ -40,20 +40,21 @@ jobs:
         -H "X-GitHub-Api-Version: 2022-11-28" \
         https://api.github.com/repos/binaural-dev/integra/forks \
           | jq -r '.[] | .full_name' \
-          | tee forks.txt
-        cat forks.txt
+          | tee forks.txt      
 
     - name: Create PRs to Projects      
       run: |
-        # Itera sobre la lista de proyectos destino
-        cat forks.txt
-        while IFS= read -r project; do
-          echo "Creating PR to $project"
+        # Itera sobre la lista de proyectos destino        
+        #while IFS= read -r project; do
+        #  echo "Creating PR to $project"
           # Crea un pull request desde release-16 en binaural-dev/integra hacia staging en el proyecto destino
           curl -X POST \
             -H "Authorization: token ${{ secrets.KEY_DEPLOY }}" \
-            -d '{"title": "Merge release-16 into staging", "head": "binaural-dev:integra/release-16", "base": "staging"}' \
-            "https://api.github.com/repos/$project/pulls"
-        done < forks.txt
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -d '{"title": "Merge release-16 into staging", "body": "Cambios de integra a manuelgc1201/integra", \
+            "head": "release-16", "head_repo": "binaural-dev/integra" , "base": "staging"}' \
+            "https://api.github.com/repos/manuelgc1201/integra/pulls"
+        #done < forks.txt
         echo "Done"
 
