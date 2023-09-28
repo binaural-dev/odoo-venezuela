@@ -8,16 +8,6 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-SPLIT_METHOD = [
-    ("equal", "Equal"),
-    ("by_quantity", "By Quantity"),
-    ("by_current_cost_price", "By Current Cost"),
-    ("by_weight", "By Weight"),
-    ("by_volume", "By Volume"),
-    ("by_mix", "By mix"),
-]
-
-
 class StockLandedCost(models.Model):
     _inherit = "stock.landed.cost"
 

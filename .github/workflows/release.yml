@@ -22,3 +22,27 @@ jobs:
           body: ${{ steps.tag_version.outputs.changelog }}
           generateReleaseNotes: true
         if: ${{ steps.tag_version.outputs.new_tag }}
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: List forked repositories
+        id: list_forks
+        run: |
+          # Obtiene la lista de proyectos destino (forks de integra) usando la API de GitHub
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/binaural-dev/integra/forks" \
+            | jq -r '.[] | .full_name' \
+            | tee forks.txt
+
+      - name: Create PRs to Projects
+        run: |
+          # Itera sobre la lista de proyectos destino
+          while IFS= read -r project; do
+            # Crea un pull request desde release-16 a staging-16 en el proyecto destino
+            gh pr create --base "staging" --head "release-16" --title "Merge release-16 into staging" --body "Automated PR creation from integra" --repo "$project"
+          done < forks.txt
+

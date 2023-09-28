@@ -101,18 +101,18 @@
                                 <div style="display: flex; align-items: center;margin-top:-100px">
                                     <div style="display: inline-block;font-size:14px" class="align-right">
                                         <div>
-                                            <table style="width:100%; ;border: 1px solid white">
+                                            <table style="width:100%;border: 1px solid white; ">
                                                 <tr>
-                                                    <th style=";font-weight:normal;font-size:14px;padding-bottom:5px">Nota de Entrega:</th>
-                                                    <th style=";font-weight:normal;font-size:14px;padding-bottom:5px"><span style="margin-left:3px" t-field="invoice.name"/></th>
+                                                    <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px">Nota de Entrega:</th>
+                                                    <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px"><span t-field="invoice.name"/></th>
                                                 </tr>
                                                 <tr>
-                                                    <th style=";font-weight:normal;font-size:14px;padding-bottom:5px">Fecha Emisión:</th>
-                                                    <th style=";font-weight:normal;font-size:14px;padding-bottom:5px"><span style="margin-right:63px" t-field="invoice.invoice_date"/></th>
+                                                    <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px">Fecha Emisión:</th>
+                                                    <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px"><span t-field="invoice.invoice_date"/></th>
                                                 </tr>
                                                 <tr>
-                                                    <th style="font-weight:normal;font-size:14px;padding-bottom:5px">Fecha Entrega:</th>
-                                                    <th style="font-weight:normal;font-size:14px;padding-bottom:5px"><span style="margin-right:63px" t-field="invoice.invoice_reception_date"/></th>
+                                                    <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px">Fecha Entrega:</th>
+                                                    <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px"><span t-field="invoice.invoice_reception_date"/></th>
                                                 </tr>
                                             </table>
                                         </div>
@@ -172,9 +172,6 @@
                                         <th style="width:60px;text-align:center;border-left:1px solid white;text-align:center;">Cant.</th>
                                         <th style="width:40px;text-align:center;border-left:1px solid white;text-align:center;">Unidad</th>
                                         <th style="width:90px;text-align:center;border-left:1px solid white;text-align:center;">Precio Unitario</th>
-                                        <th name="th_price_unit" t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}" style="border-left:1px solid white">
-                                            <span>Desc.%</span>
-                                        </th>
                                         <th style="width:90px;text-align:center;border-left:1px solid white;border-right:1px solid white;text-align:center;">Neto</th>
                                     </tr>
                                     <tbody style="border: 1px solid white">
@@ -221,10 +218,7 @@
                                                     <span t-field="line.product_uom_id"/>
                                                 </td>
                                                 <td style="width:120px;text-align:center;">
-                                                    $<span t-esc="'{0:,.2f}'.format(float(line.price_unit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
-                                                </td>
-                                                <td style="width:70px;" t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
-                                                    <span class="text-nowrap" t-field="line.discount"/>
+                                                    $<span t-esc="'{0:,.2f}'.format(float(line.price_unit - (line.price_unit * (line.discount / 100)))).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
                                                 </td>
                                                 <t t-set="price_total" t-value="line.price_total"/>
                                                 <td class="td_right"
