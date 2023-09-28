@@ -5,6 +5,7 @@ on:
     types: [opened, reopened]
     branches:
     - "release*"
+    - "update*"
 
 jobs:
   generate_module_readme:
