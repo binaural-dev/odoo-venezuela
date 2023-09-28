@@ -7,9 +7,20 @@
                 <a t-attf-href="/shop"  class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
                     Products
                 </a>
+                <t t-set="payment_count" t-value="request.env['payment.mobile'].search_count([
+                    ('company_id', '=', request.env.company.id),
+                    ('seller_id', '=', request.env.user.employee_id.id),
+                    ('seller_id_user', '=', user_id.id)
+                ])"/>
+                <a t-attf-href="/payment_list"  class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+                    Payments
+                    <span class="badge text-bg-secondary rounded-pill" 
+                    t-out="payment_count"/>
+                </a>
             </t>
         </xpath>
     </template>
+
     
     <template id="portal_layout" inherit_id="portal.portal_layout">
             <xpath expr="//t/div[2]//t//div[2]"  position="replace">

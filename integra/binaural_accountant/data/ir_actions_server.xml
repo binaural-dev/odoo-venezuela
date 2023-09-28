@@ -13,5 +13,17 @@
             </field>
         </record>
 
+        <record model="ir.actions.server" id="recompute_foreign_debit_and_credit_of_journal_entries">
+            <field name="name">Recompute foreign debit and credit of journal entries</field>
+            <field name="model_id" ref="model_account_move"/>
+            <field name="binding_model_id" ref="model_account_move" />
+            <field name="state">code</field>
+            <field name="code">
+                if records:
+		    for record in records:
+		        record.compute_line_ids_foreign_debit_and_credit()
+            </field>
+        </record>
+
 	</data>
 </odoo>

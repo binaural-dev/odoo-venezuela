@@ -10,6 +10,138 @@
             <xpath expr="//field[@name='main_warehouse_id']" position="attributes">
                 <attribute name="required">1</attribute>
             </xpath>
+
+        </field>
+    </record>
+
+    <record id="binaural_movil_app_res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">binaural.movil.app.res.config.settings.view.form</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="100"/>
+        <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//div[@name='Binaural_warehouse_settings']" position="after">
+                <h2>APP Settings</h2>
+                <div class="row mt16 o_settings_container" >
+                    <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="o_setting_left_pane">
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <span>Search products by</span>
+                            <div class="text-muted">
+                                Allows sellers to view the types of products that are selected
+                            </div>
+                            <group colspan="4" col="4">
+                                <field name="product_type_consu"/>
+                                <field name="product_type_service"/>
+                                <field name="product_type_product"/>
+                            </group>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_retentions_settings">
+                        <div class="o_setting_right_pane">
+                            <label for="retentions_draft_or_published"/>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="retentions_draft_or_published" class="o_light_label" widget="radio" options="{'horizontal': true}"/>
+                                </div>
+                            </div>
+                            <br/>
+                            <label for="order_payment"/>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="order_payment" class="o_light_label" widget="radio" options="{'horizontal': true}"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt16 o_settings_container">
+                    <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="o_setting_left_pane">
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="process_payments_invoices"/>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="process_payments_invoices" class="o_light_label" widget="radio" options="{'horizontal': true}"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="o_setting_left_pane">
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <span>Default shop catalog view mode</span>
+                            <div class="text-muted">
+                                Set default shop catalog view mode
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="shop_catalog_view_mode" class="o_light_label" widget="radio" options="{'horizontal': true}" required="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt16 o_settings_container">
+                    <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="o_setting_left_pane">
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="payment_methods_in_app"/>
+                            <div class="text-muted">
+                                Set the payment journals allowed for the seller app
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="payment_methods_in_app" options="{'no_create': True, 'no_edit': True}" widget="many2many_tags" domain="[('type', 'in', ('cash','bank'))]" required="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_retentions_settings">
+                        <div class="o_setting_right_pane">
+                            <span>Customer billing journals</span>
+                            <div class="text-muted">
+                                Set the default journals for
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <label for="dairy_fiscal"/><span>: </span>
+                                    <field name="dairy_fiscal" options="{'no_create': True, 'no_edit': True}" domain="[('type', '=', 'sale'),('fiscal', '=', True)]" required="1"/>
+                                </div>
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <label for="dairy_no_fiscal"/><span>: </span>
+                                    <field name="dairy_no_fiscal" options="{'no_create': True, 'no_edit': True}" domain="[('type', '=', 'sale'),('fiscal', '=', False)]" required="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt16 o_settings_container">
+                    <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="o_setting_left_pane">
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="app_sales_diaries"/>
+                            <div class="text-muted">
+                                Set the sale journals allowed for the seller app
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="app_sales_diaries"  widget="many2many_tags" options="{'no_create': True, 'no_edit': True}" domain="[('type', '=', 'sale')]" required="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+
         </field>
     </record>
 </odoo>
