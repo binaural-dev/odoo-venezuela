@@ -10,11 +10,33 @@
             
             <xpath expr="//div[@name='binaural_rate_settings']" position="after">
                 <h2>Seller Settings</h2>
-                <div class="row mt16 o_settings_container" name="Binaural_seller_settings">
-                    <div class="o_setting_right_pane">
-                        <group colspan="4" col="4">
-                            <field name="initial_seller"/>
-                        </group>
+                <div class="row mt16 o_settings_container">
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane">
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="initial_seller"/>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="initial_seller"  domain="[('is_seller','=', True)]" required="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="multiple_sellers"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="multiple_sellers"/>
+                            <div class="text-muted">
+                                Allow the client to have several sellers associated with it
+                            </div>
+                        </div>
                     </div>
                 </div>
             </xpath>

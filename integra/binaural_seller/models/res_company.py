@@ -5,3 +5,5 @@ class ResCompany(models.Model):
     _inherit = "res.company"
 
     initial_seller = fields.Many2one('hr.employee')
+
+    multiple_sellers = fields.Boolean()
