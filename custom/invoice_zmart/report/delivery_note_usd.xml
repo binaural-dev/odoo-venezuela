@@ -77,12 +77,12 @@
                             </style>
                             <section id="segmento_1" style="padding: 10px;height: 100px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
                                 <div style="display: flex; align-items: center;width:60%;height:115px;border: 1px solid black; border-radius: 10px">
-                                    <div style="margin-top:-20px"><img t-if="invoice.company_id.logo"
+                                    <div style="margin-top:-4px;margin-left:6px"><img t-if="invoice.company_id.logo"
                                         t-att-src="image_data_uri(invoice.company_id.logo)"
-                                        height="140"
+                                        height="110"
                                         width="140"
                                         class="mr-3 mt-1" style="display: inline-block; vertical-align: middle"/></div>
-                                    <div style="display: inline-block;vertical-align: middle;width:50%;margin-left:10px;font-size:14px;margin-top:-150px;margin-left:150px">
+                                    <div style="display: inline-block;vertical-align: middle;width:50%;font-size:14px;margin-top:-130px;margin-left:160px">
                                         <div class="col-8">
                                             <div style="padding-bottom:5px">
                                                 <span style="padding-bottom:5px" t-field="invoice.company_id"/>
