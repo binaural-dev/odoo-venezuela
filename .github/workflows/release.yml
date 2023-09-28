@@ -5,27 +5,27 @@ on:
     branches:
       - release-16
 jobs:
-  # build:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Bump version and push tag
-  #       id: tag_version
-  #       uses: mathieudutour/github-tag-action@v6.0
-  #       with:
-  #         github_token: ${{ secrets.GITHUB_TOKEN }}
-  #         default_bump: false
-  #     - name: Create a GitHub release
-  #       uses: ncipollo/release-action@v1
-  #       with:
-  #         tag: ${{ steps.tag_version.outputs.new_tag }}
-  #         name: Release ${{ steps.tag_version.outputs.new_tag }}
-  #         body: ${{ steps.tag_version.outputs.changelog }}
-  #         generateReleaseNotes: true
-  #       if: ${{ steps.tag_version.outputs.new_tag }}
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: false
+      - name: Create a GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+          generateReleaseNotes: true
+        if: ${{ steps.tag_version.outputs.new_tag }}
 
   create_pull_request:
-    # needs: build
+    needs: build
     runs-on: ubuntu-latest
     permissions: read-all      
     steps:
@@ -45,15 +45,16 @@ jobs:
     - name: Create PRs to Projects      
       run: |
         # Itera sobre la lista de proyectos destino        
-        #while IFS= read -r project; do
-        #  echo "Creating PR to $project"
+        while IFS= read -r project; do
+          echo "Creating PR to $project"
           # Crea un pull request desde release-16 en binaural-dev/integra hacia staging en el proyecto destino
           curl -X POST \
             -H "Authorization: token ${{ secrets.KEY_DEPLOY }}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            -d '{"title": "Merge release-16 into staging", "body": "Cambios de integra a manuelgc1201/integra", "head": "release-16", "head_repo": "binaural-dev/integra" , "base": "staging"}' \
-            "https://api.github.com/repos/manuelgc1201/integra/pulls"
-        #done < forks.txt
+            -d '{"title": "Merge release-16 into staging", "body": "Cambios de integra a $project", "head": "release-16", "head_repo": "binaural-dev/integra" , "base": "staging"}' \
+            "https://api.github.com/repos/$project/pulls"
+          echo "Creado PR a $project"
+        done < forks.txt
         echo "Done"
 
