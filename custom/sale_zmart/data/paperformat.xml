@@ -10,8 +10,8 @@
             <field name="orientation">Portrait</field>
             <field name="margin_top">6</field>
             <field name="margin_bottom">0</field>
-            <field name="margin_left">3</field>
-            <field name="margin_right">1</field>
+            <field name="margin_left">0</field>
+            <field name="margin_right">0</field>
         </record>
     </data>
 </odoo>
