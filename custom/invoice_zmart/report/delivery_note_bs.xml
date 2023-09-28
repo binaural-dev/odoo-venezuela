@@ -109,13 +109,15 @@
                                 </div>
                                 <div style="display: flex; align-items: center;margin-top:-100px;">
                                     <div style="display: inline-block;" class="align-right">
-                                        <div>
-                                            <span style="font-size:14px;margin-left:-210px">Condic. Pago:</span>
-                                            <span style="font-size:14px" t-field="invoice.invoice_payment_term_id"/>
-                                        </div>
-                                        <div>
-                                            <span style="font-size:14px;margin-left:-210px"> Vendedor: </span>
-                                            <span style="font-size:14px" t-field="invoice.invoice_user_id"/>
+                                        <div style="padding:5px">
+                                            <div>
+                                                <span style="font-size:14px;margin-left:-190px">Condic. Pago:</span>
+                                                <span style="font-size:14px" t-field="invoice.invoice_payment_term_id"/>
+                                            </div>
+                                            <div>
+                                                <span style="font-size:14px;margin-left:-190px"> Vendedor: </span>
+                                                <span style="font-size:14px" t-field="invoice.invoice_user_id"/>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
