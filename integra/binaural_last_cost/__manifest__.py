@@ -7,11 +7,12 @@
     "author": "Binaural C.A.",
     "website": "https://binauraldev.com",
     "category": "Technical",
-    "version": "0.1.1",
-    "depends": ["product", "purchase"],
+    "version": "16.2",
+    "depends": ["product", "purchase", "stock_account", "stock"],
     "data": [
         "views/product_pricelist_views.xml",
         "views/product_views.xml",
         "views/purchase_views.xml",
+        "views/product_product.xml",   
     ],
 }

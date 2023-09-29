@@ -12,40 +12,62 @@ _logger = logging.getLogger(__name__)
 FIELDNAMES = [
     "id",
     "name",
+    "type",
     "display_name",
     "qty_available",
+    "quantity",
     "list_price",
     "default_code",
     "barcode",
     "brand_id",
     "taxes_id",
-    # "sales_policy",
-    # "available_qty",
+    "packaged_product",
+    "packaging_ids",
+    "uom_id",
+    "type",
     "product_template_attribute_value_ids",
 ]
 VARIANT_TAG_FIELDS = ["id", "name"]
-FIELDFILTERS = ["id", "search_name", "brand_id", "available_qty"]
+FIELDFILTERS = ["id", "search_name", "brand_id", "available_qty", "quantity",]
+FIELDITEMS = ["id", "product_tmpl_id", "pricelist_id", "fixed_price", "min_quantity", "compute_price", "applied_on"]
 
 
 class ProductProductBudget(http.Controller):
     @http.route(
         '/budget/product', type="json", auth="public", website=False, sitemap=False
     )
-    def get_product_product(self, limit=0, offset=0, uid=False, **kw):
+    def get_product_product(self, fee=False, limit=0, offset=0, uid=False, **kw):
+        """
+        This function is used to consult the products that are available 
+        when creating the quote by the seller, it consults the types of
+          products that are available due to the configuration
+
+        Args:
+            fee (int, ): is the rate selected by the seller. Defaults to False.
+
+        Returns:
+            dic: product search results
+        """
         data = {"status": 200, "msg": _("Success")}
         name_search = kw.get("product")
-        company_id = request.env.user.company_id.id
+        company_id = request.env.user.company_id
+        
+        product_type = [('consu', company_id.product_type_consu),
+                ('service', company_id.product_type_service),
+                ('product', company_id.product_type_product)]
+
+        product_type = [ptype[0] for ptype in filter(lambda x: x[1], product_type)]
+
         domain = [
             ("active", "=", True), 
             ("sale_ok", "=", True), 
-            ("type", "=", "product"), 
-            ("qty_available", ">", 0)
+            ("type", "in", product_type),
             ]
         
         res_company = request.env["res.company"].sudo().search([])
         
         if len(res_company) > 1:
-            domain = expression.AND([domain, [("company_id", "=", company_id)]])
+            domain = expression.AND([domain, [("company_id", "=", company_id.id)]])
         
         if name_search:
             search = utils.search_name("product.product", name_search, domain)
@@ -55,7 +77,56 @@ class ProductProductBudget(http.Controller):
         product_ids = utils.get_model_data(
             "product.product", domain, FIELDNAMES, int(limit), int(offset)
         )
+
         product_ids = self.get_variant_tags(product_ids)
+        result = list()
+
+        if 'product' in product_type:
+            product_product = product_ids.copy()
+            product_consu_service = product_ids.copy()
+            product_product = list(filter(lambda product: (product.get('type') == "product" and product.get('quantity') > 0) , product_ids))
+            product_consu_service = list(filter(lambda product: product.get('type') in ['consu', 'service'], product_ids))
+
+            if len(product_product) > 0:
+                result.append(product_product)
+
+            if len(product_consu_service)> 0:
+                result.append(product_consu_service)
+
+            product_ids = result
+
+        products_without_pricelist = []
+
+        type_mapping = {
+            "service": _("Service"),
+            "consu": _("Consumable"),
+            "product": "product"
+        }
+
+        products_without_pricelist = []
+        for product_id in product_ids:
+            for product in product_id:
+                product["msg_price"] = False
+                product_type = type_mapping.get(product["type"], product["type"])
+                product["type"] = product_type
+                products_without_pricelist.append(product["id"])
+
+        domain_price = [("product_tmpl_id", "in", products_without_pricelist), ("pricelist_id", "=", fee)]
+
+        if len(res_company) > 1:
+            domain_price = expression.AND([domain_price, [("company_id", "=", company_id.id)]])
+
+        products_pricelist_ids = request.env["product.pricelist.item"].search_read(domain_price, FIELDITEMS)
+        company_user = request.env.company
+        for product_id in product_ids:
+            for product in product_id:
+                if product["packaged_product"] and company_user.group_stock_packaging:
+                    line_qty_pack = request.env["product.packaging"].search([("id","=", product["packaging_ids"][0])]).qty
+                    product["packaging_ids"].append(line_qty_pack)
+                for product_price in products_pricelist_ids:
+                    if product_price['product_tmpl_id'][0] == product['id']:
+                        product["msg_price"] = _("Different price/s due to rate conditions")
+
         all_product_count = utils.get_model_count("product.product", domain)
         product_count = len(product_ids)
         if not product_count:
@@ -64,8 +135,13 @@ class ProductProductBudget(http.Controller):
             )
             return json.dumps(data)
 
-        product_ids = self.get_url_image_product(product_ids)
-        data.update({"data": product_ids, "count": product_count, "total_count": all_product_count})
+        product_ids = self.get_url_image_product(result)
+        data.update({
+            "data": product_ids, 
+            "count": product_count, 
+            "total_count": all_product_count,
+            "stock_packaging": company_user.group_stock_packaging,
+            })
 
         return json.dumps(data)
 
@@ -98,20 +174,16 @@ class ProductProductBudget(http.Controller):
         url = request.env["ir.config_parameter"].sudo().get_param("web.base.url")
         products = []
         for product in product_ids:
-            rec = utils.browse_model_data("product.product", product.get("id"))
-            sha = hashlib.sha512(str(getattr(rec, "__last_update")).encode("utf-8")).hexdigest()[:7]
-            product_cpy = product.copy()
-            product_id = str(product.get("id"))
-            url_img = f"/web/image/product.product/{product_id}/image_1024?unique={sha}"
-            url_complete = urls.url_join(url, url_img)
-            product_cpy.update({"image": url_complete})
-            products.append(product_cpy)
+            for value in product:
+                rec = utils.browse_model_data("product.product", value.get("id"))
+                sha = hashlib.sha512(str(getattr(rec, "__last_update")).encode("utf-8")).hexdigest()[:7]
+                product_cpy = value.copy()
+                product_id = str(value.get("id"))
+                url_img = f"/web/image/product.product/{product_id}/image_1024?unique={sha}"
+                url_complete = urls.url_join(url, url_img)
+                product_cpy.update({"image": url_complete})
+                products.append(product_cpy)
 
         return products
 
-
-# filters = ["name"]
-# search_by_attribute = [["product_template_attribute_value_ids.name", "in", kwargs.get(FIELDFILTERS[1])]]
-# search_domains = [utils.get_search_domain(filterKey, kwargs.get(FIELDFILTERS[1])) for filterKey in filters]
-# search_domains = expression.OR(search_domains)
-# domain = expression.AND([domain, search_domains])
+    

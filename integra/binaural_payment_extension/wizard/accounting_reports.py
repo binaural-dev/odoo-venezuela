@@ -90,7 +90,8 @@ class WizardAccountingReports(models.TransientModel):
             (field_date, "<=", self.date_to),
             ("type", "in", move_type),
             ("type_retention", "=", "iva"),
-            ("state", "=", "emitted")
+            ("state", "=", "emitted"),
+            ("company_id", "=", self.company_id.id),
         ]
         return domain
 

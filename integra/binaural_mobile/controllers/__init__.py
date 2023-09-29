@@ -5,5 +5,8 @@ from . import product_pricelist_budget
 from . import product_brand_budget
 from . import sale_order_budget
 from . import utils
-from . import report
 from . import website_sale
+from . import payments_portal
+from . import account_move_payments
+from . import account_payment_payments
+from . import portal
