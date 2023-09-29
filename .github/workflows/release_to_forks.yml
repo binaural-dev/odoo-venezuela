@@ -1,4 +1,4 @@
-name: tag
+name: release_to_projects
 on:
   workflow_dispatch:
 jobs:
