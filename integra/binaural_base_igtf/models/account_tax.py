@@ -37,6 +37,7 @@ class AccountTax(models.Model):
 
         apply_igtf = False
         invoice = self.env["account.move"]
+        order = self.env["sale.order"]
         type_model = ""
         base_igtf = 0
         is_igtf_suggested = False
@@ -45,9 +46,17 @@ class AccountTax(models.Model):
             type_model = base_line["record"]._name
             if base_line["record"]._name == "account.move.line":
                 invoice = base_line["record"].move_id
+            if base_line["record"]._name == "sale.order.line":
+                order = base_line["record"].order_id
 
         foreign_currency = self.env.company.currency_foreign_id
-        rate = invoice.foreign_inverse_rate
+        rate = 0
+
+        if type_model == "account.move.line":
+            rate = invoice.foreign_inverse_rate
+        if type_model == "sale.order.line":
+            rate = order.foreign_inverse_rate
+
         float_igtf_percentage = (
             self.env.company.igtf_percentage if not invoice.is_two_percentage else 2
         )
