@@ -11,7 +11,8 @@
             <t t-if="totals.igtf.apply_igtf &amp;&amp; !totals.igtf.is_igtf_suggested">
                 <tr>
                     <td class="o_td_label">
-                        <label class="o_form_label o_tax_total_label">BI IGTF</label>
+                        <label class="o_form_label o_tax_total_label">
+                                BI IGTF</label>
                     </td>
                     <td>
                         <span class="o_tax_group_amount_value">
@@ -49,6 +50,22 @@
                     <td>
                         <span class="o_tax_group_amount_value">
                             <t t-out="totals.igtf.formatted_foreign_igtf_base_amount"/>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="o_td_label">
+                        <label class="o_form_label o_tax_total_label" >
+                            <t t-if="totals.igtf.is_igtf_suggested">
+                                (Suggested)
+                            </t>
+                            IGTF <t t-esc="totals.igtf.name"/>
+                        </label>
+                    </td>
+                    <td>
+                        <t t-log="totals"/>
+                        <span class="o_tax_group_amount_value">
+                            <t t-out="totals.igtf.formatted_foreign_igtf_amount"/>
                         </span>
                     </td>
                 </tr>
