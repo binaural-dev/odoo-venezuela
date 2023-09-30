@@ -44,14 +44,17 @@ odoo.define("binaural_pos.PartnerDetailsEdit", function(require) {
       }
 
       async searchRif(rif) {
-        let data = await this.env.services.rpc({
-          model: 'res.partner',
-          method: 'get_default_name_by_vat_param',
-          args: [[], "V", rif],
-        });
+        let data = ""
+        if(!!this.env.pos.config.pos_search_cne){
+          data = await this.env.services.rpc({
+            model: 'res.partner',
+            method: 'get_default_name_by_vat_param',
+            args: [[], "V", rif],
+          });
 
-        if (data == "Esta cédula de identidad no se encuentra inscrito en el Registro Electoral.") {
-          data = "N/D"
+          if (data == "Esta cédula de identidad no se encuentra inscrito en el Registro Electoral.") {
+            data = "N/D"
+          }
         }
         return data
       }

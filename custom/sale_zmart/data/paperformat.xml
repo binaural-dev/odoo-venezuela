@@ -6,13 +6,13 @@
             <field name="name">Etiqueta</field>
             <field name="default" eval="True"/>
             <field name="format">custom</field>
-            <field name="page_height">65</field>
-            <field name="page_width">45</field>
+            <field name="page_height">150</field>
+            <field name="page_width">100</field>
             <field name="orientation">Portrait</field>
             <field name="margin_top">6</field>
             <field name="margin_bottom">0</field>
-            <field name="margin_left">3</field>
-            <field name="margin_right">1</field>
+            <field name="margin_left">0</field>
+            <field name="margin_right">0</field>
         </record>
 
         <record id="paperformat_note" model="report.paperformat">
