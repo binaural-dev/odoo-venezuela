@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_rma_note" model="ir.actions.report">
+            <field name="name">RMA Note</field>
+            <field name="model">rma</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">report_rma_zmart.template_rma_note</field>
+            <field name="report_file">report_rma_zmart.template_rma_note</field>
+            <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
+            <field name="paperformat_id" ref="report_rma_zmart.paperformat_note_rma"/>
+            <field name="binding_model_id" eval="False"/>
+            <field name="binding_type">report</field>
+            <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
+        </record>
+        <template id="template_rma_note">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.basic_layout">
+                <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)" />
+                <main>
+                    <style>
+                        thead > tr{
+                            margin-bottom: 3px;
+                        }
+                        th{
+                            vertical-align: middle;
+                        }
+                        th{
+                            font-size:12px;
+                            padding-bottom:5px;
+                        }
+                        td{
+                            font-size:12px;
+                            width: 25%;
+                            padding:0px 5px;
+                        }
+                        .col-xs-7,
+                        .col-xs-4{
+                            padding:0px !important;
+                        }
+
+                        .col-xs-4 span
+                        ,.col-xs-8 span {
+                            font-size:14px;
+                        }
+                        .td_right{
+                            padding:0px 10px;
+                        }
+                        .class_number td{
+                            font-size:11px;
+                            width: 15%;
+                            padding:0px 0px;
+                        }
+                        .row_1 > tr > td > span{
+                            font-size:11px;
+                        }
+                        .align-right {
+                            float: right;
+                        }
+                    </style>
+                    <section id="segmento_1" style="padding: 10px;height: 100px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center;width:60%;height:115px;border: 1px solid black; border-radius: 10px">
+                            <div style="margin-top:-2px;margin-left:6px"><img t-if="doc.company_id.logo"
+                                t-att-src="image_data_uri(doc.company_id.logo)"
+                                height="110"
+                                width="140"
+                                class="mr-3 mt-1" style="display: inline-block; vertical-align: middle"/></div>
+                            <div style="display: inline-block;vertical-align: middle;width:50%;font-size:14px;margin-top:-130px;margin-left:160px">
+                                <div class="col-8">
+                                    <div style="padding-bottom:10px">
+                                        <span style="padding-bottom:5px" t-field="doc.company_id"/>
+                                    </div>
+                                    <div style="padding-bottom:10px">
+                                        <span style="margin-right:3px;">R.I.F:</span>
+                                        <span style="padding-left:10px" t-field="doc.company_id.vat"/>
+                                    </div>
+                                    <div>
+                                        <span style="margin-right:3px;margin-right:3px">N.I.T:</span>
+                                        <span style="padding-left:10px" t-field="doc.company_id.nit"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center;margin-top:-100px">
+                            <div style="display: inline-block;font-size:14px" class="align-right">
+                                <div>
+                                    <table style="width:100%;border: 1px solid white">
+                                        <tr>
+                                            <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px">Nota de Entrega:</th>
+                                            <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px"><span t-field="doc.name"/>
+                                        </th>
+                                        </tr>
+                                        <tr>
+                                            <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px">Fecha Emisión:</th>
+                                            <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px">
+                                                <t t-set="formatted_date" t-value="doc.date.strftime('%d/%m/%Y')"/>
+                                                <span t-esc="formatted_date"/>
+                                            </th>
+                                        </tr>
+                                        <tr>
+                                            <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px">Fecha Entrega:</th>
+                                            <th style="text-align: left; font-weight:normal;font-size:14px;padding-bottom:5px"><span t-field="doc.deadline"/></th>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <hr style="border: none; visibility: hidden;" />
+                    <section id="segmento_2" style="border: 1px solid black; padding: 10px; border-radius: 10px;font-size:12px">
+                        <div style="display: flex; align-items: center;width:60%;height:100px;padding-top:10px;padding-top:10px">
+                        </div>
+                        <div style="display: flex; align-items: center;margin-top:-100px;">
+                            <div style="display: inline-block;" class="align-right">
+                                <div style="padding:5px">
+                                    <div>
+                                        <span style="font-size:14px;margin-left:-190px"> Vendedor: </span>
+                                        <span style="font-size:14px" t-field="doc.user_id"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <table style="text-align:left;border: 1px solid white;border-right: 1px solid gray;">
+                                <tr>
+                                    <th style="font-weight:normal;font-size:14px"><div style="display:inline;">Cliente:</div><span style="margin-left:20px" t-field="doc.partner_id"/></th>
+                                </tr>
+                                <tr>
+                                    <th style=";font-weight:normal;font-size:14px">
+                                        <div style="display:inline;">R.I.F.:</div>
+                                        <span style="margin-left:35px" t-field="doc.partner_id.prefix_vat"/>-
+                                        <span style="margin-right:30px" t-field="doc.partner_id.vat"/>N.I.T.:
+                                        <span style="margin-left:3px" t-field="doc.partner_id.nit"/>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th style="width:700px;font-weight:normal;font-size:14px;padding-right:40px">
+                                        <div style="display:inline;">Dirección:</div>
+                                        <span style="margin-left:3px;text-transform: lowercase" t-out="doc.partner_id.contact_address_complete"/>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th style="font-weight:normal;font-size:14px">Teléfonos:<span style="margin-left:3px" t-out="doc.partner_id.phone"/></th>
+                                </tr>
+                            </table>
+                        </div>
+                    </section>
+                    <hr style="border: none; visibility: hidden;" />
+                    <section id="segmento_3" style="font-size:10px !important;">
+                        <table name="table_product" style="height:20px;">
+                            <tr style="border-bottom: 2px solid black;height:30px;border-top: 2px solid black;height:30px;font-size:12px;">
+                                <th style="width:120px;text-align:center;border-left:1px solid white;text-align:center;">Código</th>
+                                <th style="width:440px;text-align:left;border-left:1px solid white;padding-left: 10px;text-align:center;">Descripción</th>
+                                <th style="width:90px;text-align:center;border-left:1px solid white;text-align:center;">Alm.</th>
+                                <th style="width:60px;text-align:center;border-left:1px solid white;text-align:center;">Cant.</th>
+                                <th style="width:40px;text-align:center;border-left:1px solid white;text-align:center;">Unidad</th>
+                            </tr>
+                            <tbody style="border: 1px solid white;">
+                                <tr style="height:25px">
+                                    <t>
+                                        <td style="width:170px;text-align:center;">
+                                            <span t-field="doc.product_id.default_code"/>
+                                        </td>
+                                        <td style="width:390px;text-align:left;">
+                                            <span t-field="doc.product_id.name"/>
+                                        </td>
+                                        <td style="width:390px;text-align:center;">
+                                            <span t-field="doc.location_id.name"/>
+                                        </td>
+                                        <td style="width:110px;text-align:center;">
+                                            <span t-esc="doc.product_uom_qty" t-options='{"widget": "float", "precision": 2}'/>
+                                        </td>
+                                        <td style="width:110px;text-align:center;">
+                                            <span t-field="doc.product_uom.name"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <hr style="border: none; visibility: hidden;" />
+                        <hr style="border: 1px solid black"/>
+                        <div style="font-size:12px">
+                            <span style="float: left; margin-right: 5px;">Descripción</span>
+                            <span style="overflow: hidden; display: inline-block;" t-field="doc.description"/>
+                        </div>
+                    </section>
+                </main>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>
