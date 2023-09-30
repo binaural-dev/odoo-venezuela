@@ -4,7 +4,7 @@ from odoo import api, fields, models
 class StockPicking(models.Model):
     _inherit = "stock.picking"
 
-    number_of_boxes = fields.Integer(default=0)
+    package_qty = fields.Integer(default=0)
     is_out = fields.Boolean(compute="_compute_is_out")
 
     def _compute_is_out(self):

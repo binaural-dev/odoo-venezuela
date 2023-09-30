@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="is_out" invisible="1"/>
-                <field name="number_of_boxes" attrs="{'invisible': [('is_out','!=',True)]}"/>
+                <field name="package_qty" attrs="{'invisible': [('is_out','!=',True)]}"/>
             </xpath>
         </field>
     </record>
@@ -17,7 +17,7 @@
         <field name="inherit_id" ref="stock.vpicktree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='origin']" position="after">
-                <field name="number_of_boxes"/>
+                <field name="package_qty"/>
             </xpath>
         </field>
     </record>

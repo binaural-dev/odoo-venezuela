@@ -111,8 +111,8 @@ msgid "Main Warehouse"
 msgstr "Almacén Principal"
 
 #. module: binaural_stock
-#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__number_of_boxes
-msgid "Number Of Boxes"
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__package_qty
+msgid "Package Qty"
 msgstr "Número de Cajas"
 
 #. module: binaural_stock
