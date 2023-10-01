@@ -17,10 +17,11 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <button name="button_draft" position="after">
-                <button name="button_free_form" string="Imprimir Factura Bs" type="object" class="oe_highlight" attrs="{'invisible': [('state', '!=', 'posted')]}"/>
-                <button name="button_free_form_usd" string="Imprimir Factura $" type="object" class="oe_highlight" groups="invoice_zmart.group_invoice" attrs="{'invisible': [('state', '!=', 'posted')]}"/>
-                <button name="button_invoice_sale_note" string="Imprimir Nota de Entrega $" type="object" class="oe_highlight" groups="invoice_zmart.group_sale_note" attrs="{'invisible': [('state', '!=', 'posted')]}"/>
-                <button name="button_invoice_sale_note_bs" string="Imprimir Nota de Entrega Bs" type="object" class="oe_highlight" attrs="{'invisible': [('state', '!=', 'posted')]}"/>
+                <button name="button_digital_invoice" string="Factura Digital" type="object" class="oe_highlight"/>
+                <button name="button_free_form" string="Imprimir Factura Bs" type="object" class="oe_highlight"/>
+                <button name="button_free_form_usd" string="Imprimir Factura $" type="object" class="oe_highlight"  groups="invoice_zmart.group_invoice"/>
+                <button name="button_invoice_sale_note" string="Imprimir Nota de Entrega $" type="object" class="oe_highlight" groups="invoice_zmart.group_sale_note"/>
+                <button name="button_invoice_sale_note_bs" string="Imprimir Nota de Entrega Bs" type="object" class="oe_highlight"/>
             </button>
             <xpath expr="//field[@name='payment_reference']" position="after">
                 <field name="printed" readonly="true"/>

@@ -18,6 +18,9 @@ class AccountInvoice(models.Model):
             else:
                 move.invoice_type = ""
 
+    def button_digital_invoice(self):
+        return self.env.ref("invoice_zmart.action_digital_invoice").report_action(self)
+
     def button_free_form(self):
         if self.journal_id.fiscal:
             self.write({"printed": True})
