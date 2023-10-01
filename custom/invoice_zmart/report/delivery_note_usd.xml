@@ -55,7 +55,6 @@
                                 .col-xs-4{
                                     padding:0px !important;
                                 }
-
                                 .col-xs-4 span
                                 ,.col-xs-8 span {
                                     font-size:14px;
@@ -138,7 +137,7 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <table style="text-align:left;border: 1px solid white;border-right: 1px solid gray;">
+                                    <table style="text-align:left;border: 1px solid white;border-right: 1px solid gray">
                                         <tr>
                                             <th style="font-weight:normal;font-size:14px"><div style="display:inline;">Cliente:</div><span style="margin-left:25px" t-field="invoice.partner_id"/></th>
                                         </tr>
