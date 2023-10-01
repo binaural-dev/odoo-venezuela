@@ -53,20 +53,6 @@
                         .align-right {
                             float: right;
                         }
-                        .container {
-                        position: relative;
-                        }
-                        .bordered-div {
-                        position: absolute;
-                        margin-top: -237px;
-                        margin-left: 68%;
-                        transform: translate(-50%, -50%);
-                        border-right: 1px solid black;
-                        border-top: none;
-                        border-bottom: none;
-                        border-left: none; 
-                        height: 142px;
-                        }
                     </style>
                     <section id="segmento_1" style="padding: 10px;height: 100px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center;width:60%;height:115px;border: 1px solid black; border-radius: 10px">
@@ -114,18 +100,6 @@
                     </section>
                     <hr style="border: none; visibility: hidden;" />
                     <section id="segmento_2" style="border: 1px solid black; padding: 10px; border-radius: 10px;font-size:12px">
-                        <div style="display: flex; align-items: center;width:60%;height:100px;padding-top:10px;padding-top:10px">
-                        </div>
-                        <div style="display: flex; align-items: center;margin-top:-100px;">
-                            <div style="display: inline-block;" class="align-right">
-                                <div style="padding:5px">
-                                    <div style="font-size:15px">
-                                        <span style="margin-left:-190px"> Vendedor: </span>
-                                        <!-- <span style="font-size:14px" t-field="o.user_id"/> -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                         <div>
                             <table style="text-align:left;border: 1px solid white">
                                 <tr>
@@ -149,7 +123,14 @@
                                     </th>
                                 </tr>
                                 <tr>
-                                    <th style="font-weight:normal;font-size:15px">Teléfonos:<span style="margin-left:3px" t-out="o.partner_id.phone"/></th>
+                                    <th style="font-weight:normal;font-size:15px">Teléfonos:
+                                        <span style="margin-left:3px" t-out="o.partner_id.phone"/>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th style="font-weight:normal;font-size:15px;padding-top:5px">Vendedor:
+                                        <span style="margin-left:3px" t-out="o.user_sale.name"/>
+                                    </th>
                                 </tr>
                             </table>
                         </div>
@@ -186,10 +167,6 @@
                                 </tr>
                             </tbody>
                         </table>
-                        <div class="centered-div">
-                            <div class="bordered-div">
-                            </div>
-                        </div>
                         <hr style="border: none; visibility: hidden;" />
                         <hr style="border: 1px solid black"/>
                         <div style="font-size:15px">
