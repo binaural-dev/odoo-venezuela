@@ -6,7 +6,8 @@
         <field name="inherit_id" ref="rma.rma_view_form" />
         <field name="arch" type="xml">
             <button name="action_preview" position="after">
-                <button name="button_rma_note" string="Imprimir Nota de entrega RMA" type="object" class="oe_highlight" attrs="{'invisible': [('state', '==', 'draft')]}"/>
+                <field name="is_action_replace_executed" invisible="1"/>
+                <button name="button_rma_note" string="Imprimir Nota de entrega RMA" type="object" class="oe_highlight" attrs="{'invisible': [('is_action_replace_executed', '!=', True)]}"/>
             </button>
         </field>
     </record>
