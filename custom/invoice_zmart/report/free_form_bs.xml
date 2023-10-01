@@ -49,7 +49,7 @@
                                                 <th name="th_description" class="text-start"><span>Código</span></th>
                                                 <th style="width:600px" name="th_description" class="text-start"><span>Descripción</span></th>
                                                 <th name="th_quantity" class="text-end"><span>Cantidad</span></th>
-                                                <th name="th_quantity" class="text-end"><span>Unid</span></th>
+                                                <th name="th_quantity" class="text-center"><span>Unid</span></th>
                                                 <th name="th_priceunit" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>Precio U</span></th>
                                                 <th name="th_taxes" t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>IVA</span></th>
                                                 <th name="th_subtotal" class="text-end">

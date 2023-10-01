@@ -73,20 +73,6 @@
                                 .align-right {
                                     float: right;
                                 }
-                                .container {
-                                position: relative;
-                                }
-                                .bordered-div {
-                                position: absolute;
-                                margin-top: -347px;
-                                margin-left: 68%;
-                                transform: translate(-50%, -50%);
-                                border-right: 1px solid black;
-                                border-top: none;
-                                border-bottom: none;
-                                border-left: none; 
-                                height: 149px;
-                                }
                             </style>
                             <section id="segmento_1" style="padding: 10px;height: 100px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
                                 <div style="display: flex; align-items: center;width:60%;height:115px;border: 1px solid black; border-radius: 10px">
@@ -151,7 +137,7 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <table style="text-align:left;border: 1px solid white">
+                                    <table style="text-align:left;border: 1px solid white;border-right: 1px solid gray">
                                         <tr>
                                             <th style="font-weight:normal;font-size:14px"><div style="display:inline;">Cliente:</div><span style="margin-left:25px" t-field="invoice.partner_id"/></th>
                                         </tr>
@@ -389,10 +375,6 @@
                                     </div>
                                 </div>
                             </section>
-                            <div class="centered-div">
-                                <div class="bordered-div">
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </t>
