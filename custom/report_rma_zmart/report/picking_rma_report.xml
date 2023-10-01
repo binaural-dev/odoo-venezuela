@@ -1,22 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
     <data>
-        <record id="action_rma_note" model="ir.actions.report">
-            <field name="name">RMA Note</field>
-            <field name="model">rma</field>
+        <record id="action_print_picking_rma" model="ir.actions.report">
+            <field name="name">Print RMA Order</field>
+            <field name="model">stock.picking</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">report_rma_zmart.template_rma_note</field>
-            <field name="report_file">report_rma_zmart.template_rma_note</field>
+            <field name="report_name">report_rma_zmart.report_rma_picking</field>
+            <field name="report_file">report_rma_zmart.report_rma_picking</field>
             <field name="print_report_name">'RMA Order - %s - %s' % (object.partner_id.name or '', object.name)</field>
             <field name="paperformat_id" ref="report_rma_zmart.paperformat_note_rma"/>
             <field name="binding_model_id" eval="False"/>
             <field name="binding_type">report</field>
         </record>
-        <template id="template_rma_note">
-            <t t-foreach="docs" t-as="doc">
-                <t t-call="web.basic_layout">
-                <t t-set="doc" t-value="doc.with_context(lang=doc.partner_id.lang)" />
-                <main>
+        <template id="report_rma_picking">
+                <t t-call="web.html_container">
+                    <t t-foreach="docs" t-as="o">
+                        <t t-call="web.basic_layout">
+                            <main>
                     <style>
                         thead > tr{
                             margin-bottom: 3px;
@@ -42,8 +42,13 @@
                         .td_right{
                             padding:0px 10px;
                         }
+                        .class_number td{
+                            font-size:12px;
+                            width: 15%;
+                            padding:0px 0px;
+                        }
                         .row_1 > tr > td > span{
-                            font-size:11px;
+                            font-size:12px;
                         }
                         .align-right {
                             float: right;
@@ -53,35 +58,35 @@
                         }
                         .bordered-div {
                         position: absolute;
-                        margin-top: -243px;
+                        margin-top: -237px;
                         margin-left: 68%;
                         transform: translate(-50%, -50%);
                         border-right: 1px solid black;
                         border-top: none;
                         border-bottom: none;
                         border-left: none; 
-                        height: 148px;
+                        height: 142px;
                         }
                     </style>
                     <section id="segmento_1" style="padding: 10px;height: 100px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center;width:60%;height:115px;border: 1px solid black; border-radius: 10px">
-                            <div style="margin-top:-2px;margin-left:6px"><img t-if="doc.company_id.logo"
-                                t-att-src="image_data_uri(doc.company_id.logo)"
+                            <div style="margin-top:-2px;margin-left:6px"><img t-if="o.company_id.logo"
+                                t-att-src="image_data_uri(o.company_id.logo)"
                                 height="110"
                                 width="140"
                                 class="mr-3 mt-1" style="display: inline-block; vertical-align: middle"/></div>
                             <div style="display: inline-block;vertical-align: middle;width:50%;font-size:15px;margin-top:-130px;margin-left:160px">
                                 <div class="col-8">
                                     <div style="padding-bottom:10px">
-                                        <span style="padding-bottom:5px" t-field="doc.company_id"/>
+                                        <span style="padding-bottom:5px" t-field="o.company_id"/>
                                     </div>
                                     <div style="padding-bottom:10px">
                                         <span style="margin-right:3px;">R.I.F:</span>
-                                        <span style="padding-left:10px" t-field="doc.company_id.vat"/>
+                                        <span style="padding-left:10px" t-field="o.company_id.vat"/>
                                     </div>
                                     <div>
                                         <span style="margin-right:3px;margin-right:3px">N.I.T:</span>
-                                        <span style="padding-left:10px" t-field="doc.company_id.nit"/>
+                                        <span style="padding-left:10px" t-field="o.company_id.nit"/>
                                     </div>
                                 </div>
                             </div>
@@ -92,19 +97,15 @@
                                     <table style="width:100%;border: 1px solid white">
                                         <tr>
                                             <th style="text-align: left; font-weight:normal;padding-bottom:5px">Nota de Entrega:</th>
-                                            <th style="text-align: left; font-weight:normal;padding-bottom:5px"><span t-field="doc.name"/>
+                                            <th style="text-align: left; font-weight:normal;padding-bottom:5px"><span t-field="o.origin"/>
                                         </th>
                                         </tr>
                                         <tr>
                                             <th style="text-align: left; font-weight:normal;padding-bottom:5px">Fecha Emisión:</th>
                                             <th style="text-align: left; font-weight:normal;padding-bottom:5px">
-                                                <t t-set="formatted_date" t-value="doc.date.strftime('%d/%m/%Y')"/>
+                                                <t t-set="formatted_date" t-value="o.date.strftime('%d/%m/%Y')"/>
                                                 <span t-esc="formatted_date"/>
                                             </th>
-                                        </tr>
-                                        <tr>
-                                            <th style="text-align: left; font-weight:normal;padding-bottom:5px">Fecha Entrega:</th>
-                                            <th style="text-align: left; font-weight:normal;padding-bottom:5px"><span t-field="doc.deadline"/></th>
                                         </tr>
                                     </table>
                                 </div>
@@ -117,10 +118,10 @@
                         </div>
                         <div style="display: flex; align-items: center;margin-top:-100px;">
                             <div style="display: inline-block;" class="align-right">
-                                <div style="padding:5px;">
-                                    <div style="font-size:15px;">
+                                <div style="padding:5px">
+                                    <div style="font-size:15px">
                                         <span style="margin-left:-190px"> Vendedor: </span>
-                                        <span t-field="doc.user_id"/>
+                                        <!-- <span style="font-size:14px" t-field="o.user_id"/> -->
                                     </div>
                                 </div>
                             </div>
@@ -128,35 +129,33 @@
                         <div>
                             <table style="text-align:left;border: 1px solid white">
                                 <tr>
-                                    <th style="font-weight:normal;font-size:15px;">
+                                    <th style="font-weight:normal;font-size:15px">
                                         <div style="display:inline;">Cliente:</div>
-                                        <span style="margin-left:20px" t-field="doc.partner_id"/>
+                                        <span style="margin-left:20px" t-field="o.partner_id"/>
                                     </th>
                                 </tr>
                                 <tr>
-                                    <th style="font-weight:normal;font-size:15px;">
+                                    <th style=";font-weight:normal;font-size:15px">
                                         <div style="display:inline;">R.I.F.:</div>
-                                        <span style="margin-left:35px" t-field="doc.partner_id.prefix_vat"/>-
-                                        <span style="margin-right:30px" t-field="doc.partner_id.vat"/>N.I.T.:
-                                        <span style="margin-left:3px" t-field="doc.partner_id.nit"/>
+                                        <span style="margin-left:35px" t-field="o.partner_id.prefix_vat"/>-
+                                        <span style="margin-right:30px" t-field="o.partner_id.vat"/>N.I.T.:
+                                        <span style="margin-left:3px" t-field="o.partner_id.nit"/>
                                     </th>
                                 </tr>
                                 <tr>
                                     <th style="width:700px;font-weight:normal;font-size:15px;padding-right:40px">
                                         <div style="display:inline;">Dirección:</div>
-                                        <span style="margin-left:3px;text-transform: lowercase" t-out="doc.partner_id.contact_address_complete"/>
+                                        <span style="margin-left:3px;text-transform: lowercase" t-out="o.partner_id.contact_address_complete"/>
                                     </th>
                                 </tr>
                                 <tr>
-                                    <th style="font-weight:normal;font-size:15px">Teléfonos:
-                                        <span style="margin-left:3px" t-out="doc.partner_id.phone"/>
-                                    </th>
+                                    <th style="font-weight:normal;font-size:15px">Teléfonos:<span style="margin-left:3px" t-out="o.partner_id.phone"/></th>
                                 </tr>
                             </table>
                         </div>
                     </section>
                     <hr style="border: none; visibility: hidden;" />
-                    <section id="segmento_3" style="font-size:10px !important;">
+                    <section id="segmento_3" style="font-size:11px !important;">
                         <table name="table_product" style="height:20px;">
                             <tr style="border-bottom: 2px solid black;height:30px;border-top: 2px solid black;height:30px;font-size:12px;">
                                 <th style="width:120px;text-align:center;border-left:1px solid white;text-align:center;">Código</th>
@@ -169,19 +168,19 @@
                                 <tr style="height:25px">
                                     <t>
                                         <td style="width:120px;text-align:center;">
-                                            <span t-field="doc.product_id.default_code"/>
+                                            <span t-field="o.product_id.default_code"/>
                                         </td>
                                         <td style="width:700px;text-align:left;">
-                                            <span t-field="doc.product_id.name"/>
+                                            <span t-field="o.product_id.name"/>
                                         </td>
                                         <td style="width:100px;text-align:center;">
-                                            <span t-field="doc.location_id.name"/>
+                                            <span t-field="o.move_line_ids_without_package.location_dest_id.name"/>
                                         </td>
                                         <td style="width:100px;text-align:center;">
-                                            <span t-esc="doc.product_uom_qty" t-options='{"widget": "float", "precision": 2}'/>
+                                            <span t-esc="o.move_line_ids_without_package.qty_done" t-options='{"widget": "float", "precision": 2}'/>
                                         </td>
                                         <td style="width:100px;text-align:center;">
-                                            <span t-field="doc.product_uom.name"/>
+                                            <span t-field="o.move_line_ids_without_package.product_uom_id"/>
                                         </td>
                                     </t>
                                 </tr>
@@ -193,14 +192,15 @@
                         </div>
                         <hr style="border: none; visibility: hidden;" />
                         <hr style="border: 1px solid black"/>
-                        <div style="font-size:12px">
+                        <div style="font-size:15px">
                             <span style="float: left; margin-right: 5px;">Descripción</span>
-                            <span style="overflow: hidden; display: inline-block;" t-field="doc.description"/>
+                            <span style="overflow: hidden; display: inline-block;" t-field="o.note"/>
                         </div>
                     </section>
                 </main>
+                        </t>
+                    </t>
                 </t>
-            </t>
         </template>
     </data>
 </odoo>
