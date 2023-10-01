@@ -1,37 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data>
-        <record id="action_invoice_free_form_usd" model="ir.actions.report">
-            <field name="name">Free form usd</field>
-            <field name="model">account.move</field>
-            <field name="report_type">qweb-pdf</field>
-            <field name="report_name">invoice_zmart.template_invoice_free_form_usd</field>
-            <field name="report_file">invoice_zmart.template_invoice_free_form_usd</field>
-            <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
-            <field name="paperformat_id" ref="invoice_zmart.paperformat_invoice"/>
-            <field name="binding_model_id" eval="False"/>
-            <field name="binding_type">report</field>
-            <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
-        </record>
-        <template id="template_invoice_free_form_usd">
-            <t t-call="web.html_container">
-                <t t-call="web.basic_layout">
-                    <t t-foreach="docs" t-as="o">
-                    <div>
+    <record id="action_digital_invoice" model="ir.actions.report">
+        <field name="name">Digital Invoice</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">invoice_zmart.template_digital_invoice</field>
+        <field name="report_file">invoice_zmart.template_digital_invoice</field>
+        <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
+        <field name="paperformat_id" ref="invoice_zmart.paperformat_note"/>
+        <field name="binding_model_id" eval="False"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
+    </record>
+
+    <template id="template_digital_invoice">
+        <t t-call="web.html_container">
+            <t t-call="web.basic_layout">
+                <t t-foreach="docs" t-as="o">
+                    <div class="container">
                         <t t-set="lang" t-value="o.partner_id.lang"/>
                         <t t-set="o" t-value="o.with_context(lang=lang)" />
                         <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
-                        <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/> <!-- So that it appears in the footer of the report instead of the company VAT if it's set -->
-                            <section id="segmento_1" style="display: flex; flex-direction: row; justify-content: flex-end; align-items: center;font-size:14px">
-                                <div style="margin-left: 800px;">
-                                    <div style="font-size:15px">
-                                        <div>Factura:<span t-field="o.name"/></div>
-                                        <div>Fecha de Emision:<span t-field="o.invoice_date"/></div>
-                                        <div>Cond. Pago:<span t-field="o.invoice_payment_term_id"/></div>
+                        <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/>
+                        <div class="row">
+                            <div class="col-5">
+                                <div>
+                                    <img t-if="o.company_id.logo"
+                                        t-att-src="image_data_uri(o.company_id.logo)"
+                                        height="120"
+                                        width="400"
+                                        class="mt-1 border-1 border-dark"/>
+                                </div>
+                                <div style="text-align: center">
+                                    <span style="font-size: 12px;">
+                                        <t t-out="o.company_id.company_details"/>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                            </div>
+                            <div class="col-3" style="text-align: center;">
+                                <h5><b>Nº DE CONTROL <span style="color: red"><t t-out="o.correlative" /></span></b></h5>
+                                <p>RIF: <t t-out="o.company_id.vat"/></p>
+                                <h5><b>FORMA LIBRE</b></h5>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <span>Factura:</span>
+                                        <br/>
+                                        <span>Fecha Emisión:</span>
+                                        <br/>
+                                        <span>Condic. pago:</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <span><t t-out="o.name"/></span>
+                                        <br/>
+                                        <span><t t-out="o.invoice_date"/></span>
+                                        <br/>
+                                        <span><t t-out="o.name"/></span>
                                     </div>
                                 </div>
-                            </section>
-                            <section id="segmento_1" style="display: flex; flex-direction: row;font-size:15px">
+                            </div>
+                        </div>
+                        <!-- HEADER -->
+                        <section id="segmento_1" style="display: flex; flex-direction: row;font-size:15px">
                                 <hr style="border: none; visibility: hidden;"/>
                                 <div style="margin-bottom: 5px;margin-top:10px">Cliente: <span t-field="o.partner_id.name"/></div>
                                 <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.prefix_vat"/>-<span t-field="o.partner_id.vat"/></div>
@@ -41,15 +72,15 @@
                                 <div style="margin-bottom: 5px;">Vendedor: <span t-field="o.invoice_user_id"/></div>
                             </section>
                             <div class="mt-5">
-                            <div class="page">
+                                <div class="page">
                                 <t t-set="display_discount" t-value="any(l.discount for l in o.invoice_line_ids)"/>
                                     <table class="table table-sm o_main_table table-borderless" name="invoice_line_table" style="font-size:15px;margin-top:-40px">
                                         <thead>
                                             <tr class="border-bottom border-dark" style="border-top: 1px solid black;">
-                                                <th name="th_description" class="text-start"><span>Código</span></th>
+                                                <th name="th_description" style="white-space: nowrap" class="text-start"><span>Código</span></th>
                                                 <th style="width:600px" name="th_description" class="text-start"><span>Descripción</span></th>
                                                 <th name="th_quantity" class="text-end"><span>Cantidad</span></th>
-                                                <th name="th_quantity" class="text-center"><span>Unid</span></th>
+                                                <th name="th_quantity" class="text-end"><span>Unid</span></th>
                                                 <th name="th_priceunit" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>Precio U</span></th>
                                                 <th name="th_taxes" t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>IVA</span></th>
                                                 <th name="th_subtotal" class="text-end">
@@ -61,9 +92,7 @@
                                         <tbody class="invoice_tbody">
                                             <t t-set="current_subtotal" t-value="0"/>
                                             <t t-set="lines" t-value="o.invoice_line_ids.sorted(key=lambda l: (-l.sequence, l.date, l.move_name, -l.id), reverse=True)"/>
-
                                             <t t-foreach="lines" t-as="line">
-
                                                 <t t-if="base_vef">
                                                     <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
                                                     <t t-set="current_subtotal" t-value="current_subtotal + line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
@@ -72,7 +101,6 @@
                                                     <t t-set="current_subtotal" t-value="current_subtotal + line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
                                                     <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
                                                 </t>
-
                                                 <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
                                                     <t t-if="line.display_type == 'product'" name="account_invoice_line_accountable">
                                                         <td>
@@ -88,7 +116,7 @@
                                                         </td>  
                                                         <td t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                                             <t>
-                                                                <span class="text-nowrap" t-esc="'{0:,.2f}'.format((line.price_unit - (line.price_unit * (line.discount / 100)))).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                                <span class="text-nowrap" t-esc="'{0:,.2f}'.format(float(line.foreign_price - (line.foreign_price * (line.discount / 100)))).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
                                                             </t>
                                                         </td>
                                                         <td t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
@@ -96,8 +124,8 @@
                                                         </td>
                                                         <td class="text-end o_price_total">
                                                             <t>
-                                                                <span class="text-nowrap" t-field="line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
-                                                                <span class="text-nowrap" t-field="line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
+                                                                <span class="text-nowrap" t-field="line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                                                <span class="text-nowrap" t-field="line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
                                                             </t>
                                                         </td>
                                                     </t>
@@ -140,33 +168,33 @@
                                 </p>
                             </div>
                             </div>
-                            <div style="position: absolute;
-                                bottom: -1255px;
-                                right: 0;">
-                                    <div class="clearfix mb-4">
-                                        <div id="total" class="row">
-                                            <div t-attf-class="#{'col-7' if report_type != 'html' else 'col-sm-7 col-md-6'} ms-auto">
-                                                <table class="table  table-borderless" style="page-break-inside: avoid;font-size:14px">
-                                                    <!--Tax totals-->
-                                                    <t t-set="tax_totals" t-value="o.tax_totals"/>
-                                                    <t>
-                                                        <t t-set="base_vef" t-value="o.currency_id.id == %(base.USD)s"/>
-                                                        <t t-set="str_tax" t-value="'subtotals' if base_vef else 'foreign_subtotals'"/>
-                                                        <t t-foreach="tax_totals[str_tax]" t-as="subtotal">
-                                                            <tr class="border-black o_subtotal">
-                                                                <td style="width:400px"><strong t-esc="subtotal['name']"/></td>
-                                                                <td></td>
-                                                                <td></td>
-                                                                <td class="text-end">
-                                                                    <span
+                            <div class="row" style="margin-top:545px !important;">
+                                <div class="col-4">
+                                </div>
+                                <div class="clearfix col-8 mb-4">
+                                    <div id="total" class="row">
+                                        <div t-attf-class="ms-auto">
+                                            <table class="table  table-borderless" style="page-break-inside: avoid;font-size:14px">
+                                                <!--Tax totals-->
+                                                <t t-set="tax_totals" t-value="o.tax_totals"/>
+                                                <t>
+                                                    <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
+                                                    <t t-set="str_tax" t-value="'subtotals' if base_vef else 'foreign_subtotals'"/>
+                                                    <t t-foreach="tax_totals[str_tax]" t-as="subtotal">
+                                                        <tr class="border-black o_subtotal">
+                                                            <td style="width:400px"><strong t-esc="subtotal['name']"/></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td class="text-end">
+                                                                <span
                                                                     t-att-class="oe_subtotal_footer_separator"
-                                                                    t-esc="o.get_total_amount_excluding_taxes()[0]"
-                                                                    />
-                                                                </td>
-                                                            </tr>
-                                                            <t t-set="subtotal_to_show" t-value="subtotal['name']"/>
+                                                                    t-esc="o.get_total_amount_excluding_taxes()[1]"
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                        <t t-set="subtotal_to_show" t-value="subtotal['name']"/>
                                                         <t>
-                                                            <t t-set="base_vef" t-value="o.currency_id.id == %(base.USD)s"/>
+                                                            <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
                                                             <t t-set="str_tax" t-value="'groups_by_subtotal' if base_vef else 'groups_by_foreign_subtotal'"/>
                                                             <t t-foreach="tax_totals[str_tax][subtotal_to_show]" t-as="amount_by_group">
                                                                 <t t-if="amount_by_group['tax_group_id'] in [1, 2]">
@@ -181,15 +209,13 @@
                                                                             <td></td>
                                                                             <td></td>
                                                                             <td class="text-end o_price_total">
-                                                                                <span class="text-nowrap" t-esc="o.get_total_amount_including_taxes()[0]"/>
+                                                                                <span class="text-nowrap" t-esc="o.get_total_amount_including_taxes()[1]"/>
                                                                             </td>
                                                                         </t>
                                                                         <t t-else="">
                                                                             <td>
                                                                                 <span class="text-nowrap" t-esc="amount_by_group['tax_group_name']"/>
                                                                             </td>
-                                                                            <td></td>
-                                                                            <td></td>
                                                                             <td class="text-end o_price_total" style="margin-left:5px"> 
                                                                                 <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_amount']"/>
                                                                             </td>
@@ -197,7 +223,7 @@
                                                                     </tr>
                                                                 </t>
                                                             </t>
-                                                            <t t-set="str_tax" t-value="'groups_by_subtotal' if base_vef else 'groups_by_subtotal'"/>
+                                                            <t t-set="str_tax" t-value="'groups_by_subtotal' if base_vef else 'groups_by_foreign_subtotal'"/>
                                                             <t t-foreach="tax_totals[str_tax][subtotal_to_show]" t-as="amount_by_group">
                                                                 <t t-if="amount_by_group['tax_group_id'] not in [1, 2]">
                                                                     <tr>
@@ -218,6 +244,8 @@
                                                                             <td>
                                                                                 <span class="text-nowrap" t-esc="amount_by_group['tax_group_name']"/>
                                                                             </td>
+                                                                            <td></td>
+                                                                            <td></td>
                                                                             <td class="text-end o_price_total" style="margin-left:5px"> 
                                                                                 <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_amount']"/>
                                                                             </td>
@@ -225,98 +253,86 @@
                                                                     </tr>
                                                                 </t>
                                                             </t>
+                                                        <t t-if="o.default_is_igtf">
+                                                        <tr>
+                                                            <th colspan="2"><strong>IGTF Sugerido</strong></th>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Dolares tasa bcv (<span t-out="o.foreign_rate"/>):</strong></td>
+                                                            <td></td>
+                                                            <td></td>
+                                                            <td style="padding-left:270px"><span  t-out="o.tax_totals['formatted_amount_total']"/></td>
+                                                            
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>IGTF Percibido (3%)</strong></td>
+                                                            <td><strong>Base </strong></td>
+                                                            <td><span t-out="tax_totals['igtf']['formatted_igtf_base_amount']"/></td>
+                                                            <td class="text-end">
+                                                                <t t-out="tax_totals['igtf']['formatted_foreign_igtf_amount']" /> 
+                                                                o
+                                                                <t t-out="tax_totals['igtf']['formatted_igtf_amount']" /> 
+                                                            </td>
+                                                            </tr>
+                                                    </t>
                                                         </t>
-                                                            <t>
-                                                                
-                                                                <t t-if="o.bi_igtf > 0">
-                                                                            <tr>
-                                                                                <th colspan="2"><strong>IGTF Percibido</strong></th>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>Dolares tasa bcv (<span t-out="o.foreign_rate"/>):</strong></td>
-                                                                                <td style="width:100px"><strong>Base $</strong></td>
-                                                                                <td>
-                                                                                    <div style="width:100px;text-align:right">
-                                                                                        <span style="display: inline;" t-out="o.currency_id.symbol"/>
-                                                                                        <span style="display: inline;" t-out="o.bi_igtf"/>
-                                                                                    </div>
-                                                                                </td>
-                                                                                <td>
-                                                                                    <div style="width:100px;text-align:right">
-                                                                                        <span style="display: inline;" t-out="o.currency_id.symbol"/>
-                                                                                        <span style="display: inline;" t-out="o.bi_igtf"/>
-                                                                                    </div>
-                                                                                </td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <t t-if="o.move_type == 'out_invoice'">
-                                                                                <td><strong>IGTF Percibido (3%)</strong></td>
-                                                                                </t>
-                                                                                <t t-else="">
-                                                                                <td><strong>IGTF Percibido (2%)</strong></td>
-                                                                                </t>
-                                                                                <td><strong>Base $</strong></td>
-                                                                                <td>
-                                                                                    <div style="width:100px;text-align:right">
-                                                                                        <span style="display: inline;" t-out="o.currency_id.symbol"/>
-                                                                                        <span style="display: inline;" t-out="o.amount_to_pay_igtf"/>
-                                                                                    </div>
-                                                                                </td>
-                                                                                <td class="text-end">
-                                                                                    <div style="width:100px;text-align:right">
-                                                                                        <span style="display: inline;" t-out="o.currency_id.symbol"/>
-                                                                                        <span style="display: inline;" t-out="o.amount_to_pay_igtf"/>
-                                                                                    </div>
-                                                                                </td>
-                                                                            </tr>
-                                                                        </t>
-                                                            </t>
-                                                        </t>
-                                                        <t t-set="has_rounding" t-value="'formatted_amount_total_rounded' in tax_totals"/>
-                                                            <tr class="border-black o_total">
-                                                                <t t-if="has_rounding"><td>Total en USD</td></t>
-                                                                <t t-else=""><td><strong>Total en USD</strong></td></t>
-                                                                <td></td>
-                                                                <td></td>
-                                                                <td class="text-end">
+                                                    </t>
+                                                <t t-set="has_rounding" t-value="'formatted_amount_total_rounded' in tax_totals"/>
+                                                    <tr class="border-black o_total">
+                                                        <t t-if="has_rounding"><td>Total en Bs</td></t>
+                                                        <t t-else=""><td><strong>Total en Bs</strong></td></t>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td class="text-end">
                                                                     <t>
-                                                                        <t t-set="amount_total" t-value="tax_totals['amount_total']"/>
-                                                                        <t t-set="valor_extra" t-value="float(o.amount_to_pay_igtf)"/>
-                                                                        <t t-if="o.bi_igtf > 0">
-                                                                            <span style="display: inline;" t-out="o.currency_id.symbol"/>
-                                                                            <span style="display: inline;" t-esc="'{0:,.2f}'.format(amount_total + valor_extra)"/>
-                                                                        </t>
-                                                                        <t t-else="">
-                                                                            <span style="display: inline;" t-out="o.currency_id.symbol"/>
-                                                                            <span style="display: inline;" t-esc="'{0:,.2f}'.format(amount_total)"/>
-                                                                        </t> 
+                                                                    <t t-set="cleaned_amount_total" t-value="tax_totals['foreign_amount_total']"/>
+                                                                    <t t-set="foreign_amount_total" t-value="float(cleaned_amount_total)"/> 
+                                                                    <t t-set="value_3" t-value="(((o.bi_igtf * o.foreign_rate)/100)*3)"/>
+                                                                    <t t-set="value_2" t-value="(((o.bi_igtf * o.foreign_rate)/100)*2)"/>
+                                                                    <t t-if="o.bi_igtf > 0 and o.move_type == 'out_invoice'">
+                                                                        <span t-esc="str(round(foreign_amount_total + value_3, 2)).replace('.', ',')"/>
+                                                                        <span t-out="o.foreign_currency_id.symbol"/>
+                                                                    </t>
+                                                                    <t t-elif="o.bi_igtf > 0 and o.move_type == 'in_invoice'">
+                                                                            <span t-esc="str(round(foreign_amount_total + value_2, 2))"/>
+                                                                            <span t-out="o.foreign_currency_id.symbol"/>
+                                                                    </t>
+                                                                    <t t-else="">
+                                                                        <span t-esc="'{0:,.2f}'.format(foreign_amount_total)"/>
+                                                                        <span t-out="o.foreign_currency_id.symbol"/>
+                                                                    </t>
                                                                     </t>
                                                                 </td>
-                                                            </tr>
-                                                            <tr t-if="has_rounding">
-                                                                <td><strong>Total Rounded</strong></td>
-                                                                <td class="text-end">
-                                                                    <span t-esc="tax_totals['formatted_amount_total_rounded']"/>
-                                                                </td>
-                                                            </tr>
+                                                        
+                                                    </tr>
+                                                <tr class="border-black o_total">
+                                                    <t t-if="has_rounding"><td>Total + IGTF en $</td></t>
+                                                    <t t-else=""><td><strong>Total + IGTF en $</strong></td></t>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td class="text-end">
+                                                        <t>
+                                                           <span t-esc="tax_totals['formatted_amount_total_igtf']"/>
                                                         </t>
-                                                </table>
-                                            </div>
+                                                    </td>
+                                                </tr>
+                                                    <tr t-if="has_rounding">
+                                                        <td><strong>Total Rounded</strong></td>
+                                                        <td class="text-end">
+                                                            <span t-esc="tax_totals['foreign_formatted_amount_total']"/>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </table>
                                         </div>
                                     </div>
-                                    <div id="contenedor" class="clearfix">
-                                        <div id="principal" style='width:40%;margin-top:-120px;color:#FFFFFF'>
-                                            <p>TRANSFERIR A LAS CUENTAS CORRIENTES BANESCO
-                                                                0134-0335-00-3351-0608-52/ MERCANTIL 0105-0699-92-1699-1732-30 / PROVINCIAL
-                                                                0108-0027-79-0100-8966-61
-                                                                *LA GARANTÍA DE LOS PRODUCTOS COMPATIBLES SERÁ PRESTADA
-                                                                DIRECTAMENTE POR ZMART PLUS CORP, C.A.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                    </t>
+                        </div>
+                    </div>
+                            <div style="text-align:center;">
+                            Copia Fiel de la Original sin Derecho a Crédito Fiscal
+                            </div>
                 </t>
             </t>
-        </template>
-    </data>
+        </t>
+    </template>
 </odoo>

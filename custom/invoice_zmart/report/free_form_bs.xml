@@ -159,7 +159,6 @@
                                                                     t-att-class="oe_subtotal_footer_separator"
                                                                     t-esc="o.get_total_amount_excluding_taxes()[1]"
                                                                 />
-                                                                <span style="display: inline;" t-out="o.foreign_currency_id.symbol"/>
                                                             </td>
                                                         </tr>
                                                         <t t-set="subtotal_to_show" t-value="subtotal['name']"/>
@@ -180,7 +179,6 @@
                                                                             <td></td>
                                                                             <td class="text-end o_price_total">
                                                                                 <span class="text-nowrap" t-esc="o.get_total_amount_including_taxes()[1]"/>
-                                                                                <span style="display: inline;" t-out="o.foreign_currency_id.symbol"/>
                                                                             </td>
                                                                         </t>
                                                                         <t t-else="">
