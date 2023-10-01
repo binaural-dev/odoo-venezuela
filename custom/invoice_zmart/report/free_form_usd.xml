@@ -158,7 +158,6 @@
                                                                 <td></td>
                                                                 <td></td>
                                                                 <td class="text-end">
-                                                                    <span style="display: inline;" t-out="o.currency_id.symbol"/>
                                                                     <span
                                                                     t-att-class="oe_subtotal_footer_separator"
                                                                     t-esc="o.get_total_amount_excluding_taxes()[0]"
@@ -182,7 +181,6 @@
                                                                             <td></td>
                                                                             <td></td>
                                                                             <td class="text-end o_price_total">
-                                                                                <span style="display: inline;" t-out="o.currency_id.symbol"/>
                                                                                 <span class="text-nowrap" t-esc="o.get_total_amount_including_taxes()[0]"/>
                                                                             </td>
                                                                         </t>
