@@ -1,7 +1,7 @@
 {
     "name": "Zmart Reporte RMA",
     "summary": "Modulo para imprimir el reporte rma",
-    "version": "16.0.0.1",
+    "version": "16.0.0.2",
     "category": "RMA",
     "author": "BinauraDev",
     "license": "AGPL-3",
