@@ -26,6 +26,7 @@ parroquias. 
         'views/purchase_form_inh_brand.xml',
         'views/sale_form_inh_brand.xml',
         'views/stock_picking_brand.xml',
+        'views/sale_report_view.xml',
         'reports/report_purchase.xml',
         'reports/report_purchase_order.xml',
         'reports/report_sale.xml',
