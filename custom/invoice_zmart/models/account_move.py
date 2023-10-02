@@ -36,11 +36,13 @@ class AccountInvoice(models.Model):
 
     def button_invoice_sale_note(self):
         if not self.journal_id.fiscal:
+            self.write({"printed": True})
             return self.env.ref("invoice_zmart.action_invoice_sale_note_usd").report_action(self)
         raise ValidationError(_( 'Cannot print an sale note with a fiscal journal'))
     
     def button_invoice_sale_note_bs(self):
         if not self.journal_id.fiscal:
+            self.write({"printed": True})
             return self.env.ref("invoice_zmart.action_invoice_sale_note_bs").report_action(self)
         raise ValidationError(_( 'Cannot print an sale note with a fiscal journal'))
     
