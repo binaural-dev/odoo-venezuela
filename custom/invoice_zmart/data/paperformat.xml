@@ -14,6 +14,7 @@
             <field name="header_spacing">3</field>
             <field name="dpi">110</field>
         </record>
+
         <record id="paperformat_note" model="report.paperformat">
             <field name="name">Free Form Paperformat</field>
             <field name="default" eval="True"/>

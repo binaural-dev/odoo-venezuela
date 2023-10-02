@@ -73,11 +73,15 @@ class SaleOrderZmart(models.Model):
     def button_invoice_sale_note_rma(self):
         return self.env.ref('sale_zmart.action_invoice_sale_note_rma').report_action(self)
     
+    def button_invoice_sale_order_note(self):
+        return self.env.ref('sale_zmart.action_invoice_sale_order_note_usd').report_action(self)
+    
+    
     def send_cancel_warning_email(self):
         current_time = datetime.now()
         orders_to_notify = self.search([
             ('state', '=', 'sale'), 
-            ('invoice_status', '!=', 'invoiced'), 
+            ('invoice_status', '!=', 'invoiced'),
             ('confirmation_date', '<', datetime.now() - timedelta(minutes=5)),
             ('notification_email_sent', '=', False)])
         for order in orders_to_notify:
@@ -92,10 +96,14 @@ class SaleOrderZmart(models.Model):
         if not template:
             raise UserError('Email template not found')
         template.send_mail(self.id, force_send=True)
-    
+
     def button_sale_order(self):
         return self.env.ref('sale.action_report_saleorder').report_action(self)
-    
+
+    def button_sale_order_note(self):
+        return self.env.ref('sale_zmart.action_report_sale_order_usd').report_action(self)
+        # return self.env.ref('sale.action_report_saleorder').report_action(self)
+
     def action_open_delivery_wizard(self):
         super().action_open_delivery_wizard()
         view_id = self.env.ref('delivery.choose_delivery_carrier_view_form').id
