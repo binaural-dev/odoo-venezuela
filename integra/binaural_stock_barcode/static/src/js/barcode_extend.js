@@ -58,6 +58,9 @@ export default class BinauralMainComponent extends MainComponent {
   }
 
   async validate(ev) {
+    if (!this.env.model.config.supervisor_required_for_incomplete_qty) {
+      return await super.validate(...arguments)
+    }
     this.ShowSupervisorPopup(this)
     this.state.EditLineArgs = ev;
     this.state.type_supervisor = "validate"
