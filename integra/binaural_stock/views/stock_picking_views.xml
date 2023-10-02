@@ -20,6 +20,22 @@
                     <field name="outs_count" widget="statinfo" string="OUTS"/>
                 </button>
             </xpath>
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="type_delivery_step" invisible="1"/>
+                <field name="package_qty" attrs="{'invisible': [('type_delivery_step','!=','out')]}"/>
+            </xpath>
         </field>
     </record>
+
+    <record id="vpicktree" model="ir.ui.view">
+        <field name="name">stock.picking.tree</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="package_qty"/>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>

@@ -7,7 +7,7 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <field name="invoice_user_id" position="after">
-                <field name="seller_id" />
+                <field name="seller_id" domain="[('is_seller','=', True)]" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
             </field>
         </field>
     </record>

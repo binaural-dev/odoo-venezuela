@@ -114,8 +114,8 @@ class AccountMove(models.Model):
             sequence number or not.
         """
 
-        return self.move_type in ["out_invoice", "out_refund"] and not self.correlative
-
+        return self.journal_id.fiscal and not self.correlative
+    
     @api.model
     def get_sequence(self, is_fiscal=False):
         """Allow the invoice to have both a generic sequence
@@ -138,7 +138,7 @@ class AccountMove(models.Model):
                 raise UserError(_("The sale's series sequence must be in the selected journal."))
             return correlative.next_by_id(correlative.id)
 
-        correlative = sequence.search([("code", "=", "invoice.correlative")])
+        correlative = sequence.search([("code", "=", "invoice.correlative"),("company_id", "=", self.env.company.id)])
         if not correlative:
             correlative = sequence.create(
                 {

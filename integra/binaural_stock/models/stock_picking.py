@@ -4,6 +4,8 @@ from odoo import _, api, fields, models
 class StockPicking(models.Model):
     _inherit = "stock.picking"
 
+    package_qty = fields.Integer(default=0)
+
     def _get_action_picking_delivery_type(self, picking_type):
         # action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
         pickings = self.search(
@@ -85,3 +87,4 @@ class StockPicking(models.Model):
     def _compute_type_delivery_step(self):
         for record in self:
             record.type_delivery_step = record.picking_type_id._get_type_steps()
+
