@@ -1,0 +1,409 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+
+  <data>
+
+
+    <template id="template_sale_order_delivery_note_usd">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="invoice">
+                <div class="article" style="" t-att-data-oe-model="invoice and invoice._name" t-att-data-oe-id="invoice and invoice.id" t-att-data-oe-lang="invoice and invoice.env.context.get('lang')">
+                    <link rel="stylesheet" type="text/css" href="/web/static/lib/bootstrap/dist/css/bootstrap.css"/>
+                    <div class="page">
+                        <style>
+                            thead > tr{
+                                margin-bottom: 3px;
+                            }
+                            th{
+                                vertical-align: middle;
+                            }
+                            th{
+                                font-size:12px;
+                                padding-bottom:5px;
+                            }
+                            td{
+                                font-size:12px;
+                                width: 25%;
+                                padding:0px 5px;
+                            }
+                            .col-xs-7,
+                            .col-xs-4{
+                                padding:0px !important;
+                            }
+
+                            .col-xs-4 span
+                            ,.col-xs-8 span {
+                                font-size:14px;
+                            }
+                            .td_right{
+                                padding:0px 10px;
+                            }
+                            .class_number td{
+                                font-size:11px;
+                                width: 15%;
+                                padding:0px 0px;
+                            }
+                            .row_1 > tr > td > span{
+                                font-size:11px;
+                            }
+                            .align-right {
+                                float: right;
+                            }
+
+                            .font-h1 {
+                                font-size: 18px;
+                                font-weight: 600;
+                            }
+
+                            .bordered {
+                                border: 1px solid black;
+                                border-radius: 10px;
+                            }
+
+                            .segmento_4 table tr td {
+                                font-weight: bold;
+                            }
+
+                        </style>
+                        <section id="segmento_1" style="height: 100px;">
+                            <div class="col-7" style="height:115px; border: 1px solid black; border-radius: 10px">
+                                <div style="margin-left:10px">
+                                    <img
+                                        t-if="invoice.company_id.logo"
+                                        t-att-src="image_data_uri(invoice.company_id.logo)"
+                                        height="100"
+                                        width="100"
+                                        class="mr-3 mt-1" 
+                                        style="display: inline-block; vertical-align: middle; max-width:100px !important; max-height:100px !important;"
+                                    />
+                                </div>
+                                <div style="display: inline-block;vertical-align: middle;font-size:14px;margin-top:-110px;margin-left:120px">
+                                    <div class="col-11">
+                                        <div ><span t-field="invoice.name"/>
+                                            <span t-field="invoice.company_id"/>
+                                        </div>
+                                        <div>
+                                            <span style="margin-right:3px;">R.I.F.:</span>
+                                            <span t-field="invoice.company_id.vat"/>
+                                        </div>
+                                        <div style="text-transform: capitalize !important;">
+                                            <span style="margin-right:3px;">Dirección:</span>
+                                            <span t-field="invoice.company_id.street"/>
+                                        </div>
+                                        <div>
+                                            <span style="margin-right:3px;margin-right:3px">Teléfonos:</span>
+                                            <span t-field="invoice.company_id.phone"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top:-120px;">
+                                <div style="display: inline-block;font-size:14px" class="align-right">
+                                    <div>
+                                        <h1 class="font-h1" style="paddding: 0px; margin: 0px;text-align: center;position:relative; bottom:-5px;">COTIZACIÓN</h1>
+
+                                        <table style="width:100%;border: 1px solid white;">
+                                            <tr style="padding:0;">
+                                                <th style="text-align: left; font-weight:normal;font-size:14px;padding-right:20px;">Fecha de impresión: </th>
+                                                <th style="text-align: right; font-weight:normal;font-size:14px;margin:0px;"><span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>   </th>
+                                            </tr>
+                                            <tr style="padding:0;">
+                                                <th style="text-align: left; font-weight:normal;font-size:14px;padding-right:20px;">Hora de impresión:</th>
+                                                <th style="text-align: right; font-weight:normal;font-size:14px;margin:0px;"><span t-esc="context_timestamp(datetime.datetime.now()).strftime('%I:%M:%S %P')"/>   </th>
+                                            </tr>
+                                            <tr style="padding:0;">
+                                                <th style="text-align: left; font-weight:normal;font-size:14px;padding-right:20px;">Fecha Emisión:</th>
+                                                <th style="text-align: right; font-weight:normal;font-size:14px;margin:0px;">
+                                                    <span t-field="invoice.date_order" t-options='{"widget": "date","format": "dd/MM/yyyy"}'/>
+                                                </th>
+                                            </tr>
+                                        </table>
+
+                                        <div style="height: 26px;border: 1px solid black; border-radius: 10px; padding: 0px 5px;">
+
+                                            <table style="width:325px;border: 1px solid white;">
+                                                <tr style="padding:0px;margin-top:-10px;">
+                                                    <td class="font-h1" style="text-align:left;">
+                                                        <strong>Pedido Número:</strong>
+                                                    </td>
+                                                    <td class="font-h1" style="text-align:right;">
+                                                        <strong><span t-field="invoice.name" /></strong>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <!-- <span style="text-align:left;"></span>
+                                            <span style="text-align:right;"><strong><span t-field="invoice.name" /></strong></span> -->
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <hr style="border: none; visibility: hidden;" />
+                        <section id="segmento_2" style="border: 1px solid black; border-right: 0px solid black; padding: 10px; border-radius: 10px;font-size:12px">
+                            <div style="display: flex; align-items: center;width:60%;height:100px;padding-top:10px;padding-top:10px">
+                            </div>
+                            <div style="display: flex; align-items: center;margin-top:-100px;">
+                                <div style="display: inline-block;" class="align-right">
+                                    <div style="padding:5px">
+                                        <div>
+                                            <span style="font-size:14px;margin-left:-200px">Correo del Comprador:</span>
+                                            <span style="font-size:14px" t-field="invoice.partner_id.email"/>
+                                        </div>
+                                        <!-- <div>
+                                            <span style="font-size:14px;margin-left:-210px"> FAX: </span>
+                                            <span style="font-size:14px" t-field="invoice.user_id"/>
+                                        </div> -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <table style="text-align:left;border: 0px solid white;border-right: 0px solid gray;">
+                                    <tr style="border:0px solid white;">
+                                        <th style="font-weight:normal;font-size:14px;border:0px solid white;"><div style="display:inline;">Cliente:</div><strong><span style="margin-left:25px" t-field="invoice.partner_id.vat"/>   <span style="margin-left:25px" t-field="invoice.partner_id"/></strong></th>
+                                    </tr>
+                                    <tr style="border:0px solid white;">
+                                        <th style="font-weight:normal;font-size:14px;border:0px solid white;">
+                                            <div style="display:inline;">R.I.F.:</div>
+                                            <span style="margin-left:35px" t-field="invoice.partner_id.prefix_vat"/>-
+                                            <span style="margin-right:30px" t-field="invoice.partner_id.vat"/>
+                                            <span style="margin-left:3px" t-field="invoice.partner_id.nit"/>
+                                        </th>
+                                    </tr>
+                                    <tr style="border:0px solid white;">
+                                        <th style="width:700px;font-weight:normal;font-size:14px;padding-right:40px;border:0px solid white;">
+                                            <div style="display:inline;">Dirección: </div>
+                                                <span style="margin-left:3px;text-transform: capitalize" t-out="invoice.partner_id.contact_address_complete"/>.
+                                        </th>
+                                    </tr>
+                                    <tr style="border:0px solid white;">
+                                        <th style="font-weight:normal;font-size:14px;border:0px solid white;">Teléfonos: <span style="margin-left:3px" t-out="invoice.partner_id.phone"/></th>
+                                    </tr>
+                                </table>
+
+                                <!-- <div>
+                                    min-width:500px;
+                                </div> -->
+
+                            </div>
+                        </section>
+                        <hr style="border: none; visibility: hidden;"/>
+                        <section id="segmento_3" style="font-size:10px !important;border:0;">
+                            <t t-set="display_discount" t-value="any(l.discount for l in invoice.order_line)"/>
+                            <table name="table_product" style="border:0px!important;">
+                                <tr style="border: 1px solid black; border-left:1px solid white!important; border-right:1px solid white!important; height:30px; padding: 10px;">
+                                    <th style="text-align:center;border:0px;text-align:left;">Código</th>
+                                    <th style="min-width:400px;text-align:left;border:0px;text-align:left;">Producto</th>
+                                    <!-- <th style="min-width:400px;text-align:left;border:0px;text-align:left;">Descripción</th> -->
+                                    <th style="text-align:center;border:0px;text-align:center;">Cant.</th>
+                                    <th style="text-align:center;border:0px;text-align:center;min-width:90px;">Precio Unit.</th>
+                                    <th style="text-align:center;border:0px;text-align:center;min-width:90px;">% Desc.</th>
+                                    <th style="text-align:center;border:0px;text-align:center;min-width:90px;">Precio Unit. Con Desc.</th>
+                                    <th style="text-align:center;border:0px;text-align:center;min-width:90px;">Total</th>
+                                </tr>
+                                <tbody style="border: 1px solid white">
+                                    <t t-set="base_sin_descuento" t-value="0.00"/>
+                                    <t t-set="base_16" t-value="0.00"/>
+                                    <t t-set="iva_16" t-value="0.00"/>
+                                    <t t-set="base_8" t-value="0.00"/>
+                                    <t t-set="iva_8" t-value="0.00"/>
+                                    <t t-set="discount_total_amount" t-value="0"/>
+                                    <t t-foreach="invoice.order_line" t-as="line">
+                                        <tr style="height:25px">
+                                            <t t-set="base_sin_descuento"
+                                                t-value="base_sin_descuento + (line.product_uom_qty * line.foreign_price)"/>
+                                            <t t-if="len(line.tax_id) > 0">
+                                                <t t-if="line.tax_id[0].amount == 8">
+                                                    <t t-set="base_8" t-value="base_8 + (line.foreign_subtotal)"/>
+                                                    <t t-set="iva_8"
+                                                        t-value="iva_8 + (line.tax_id[0].amount/100) * (line.foreign_subtotal)"/>
+                                                </t>
+                                                <t t-if="line.tax_id[0].amount == 16"> 
+                                                    <t t-set="base_16"
+                                                        t-value="base_16 + (line.foreign_subtotal)"/>
+                                                    <t t-set="iva_16"
+                                                        t-value="iva_16 +(line.tax_id[0].amount/100) * (line.foreign_subtotal)"/>
+                                                </t>
+                                            </t>
+                                            <!-- <t t-if="True">
+                                                <td></td>
+                                                <td style="width:410px;text-align:left;">
+                                                    <span t-field="line.name"/>
+                                                </td>
+                                            </t>
+                                            <t t-else="">
+                                                <td style="width:170px;text-align:center;">
+                                                </td>
+                                                <td style="width:390px;text-align:left;">
+                                                    <span t-esc="line.product_id.name"/>
+                                                </td>
+                                            </t> -->
+                                            <td style="text-align:left;">
+                                                <span t-field="line.product_id.default_code"/>
+                                            </td>
+
+                                            <td style="text-align:left;">
+                                               <span t-field="line.product_id.name"/>
+                                            </td>
+
+                                            <td style="text-align:center;">
+                                                <span t-esc="line.product_uom_qty" t-options='{"widget": "float", "precision": 2}'/>
+                                            </td>
+                                            <td style="text-align:center;">
+                                                $<span t-esc="'{0:,.2f}'.format(float(line.price_unit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                            </td>
+                                            <td style="text-align:center;">
+                                                <span t-field="line.discount"/>
+                                            </td>
+
+                                            <t t-set="discount_total_amount" t-value="float(discount_total_amount + line.price_unit * (line.discount / 100))"/>
+                                            <td style="text-align:center;padding:10px;">
+                                                $<span t-esc="'{0:,.2f}'.format(float(line.price_unit - (line.price_unit * (line.discount / 100)))).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                            </td>
+                                            <t t-set="price_total" t-value="line.price_total"/>
+                                            <td class="td_right"
+                                                style="text-align:right">
+                                                $<span t-esc="'{0:,.2f}'.format(float(price_total)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </section>
+                        <div style="border: none;border-top: 1px solid #000;margin: 20px 0;"></div>
+                        <div style="width:100%;margin-top:20px"></div>
+                        <section id="segmento_4" class="row" style="100%">
+
+
+                                <div class="col-7 bordered">
+                                    <table class="table table-borderless" style="font-size:13px; border:0px;">
+                                        <tr>
+                                            <th style="text-align:left"><strong>IGTF Percibido</strong></th>
+                                            
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Dolares tasa bcv (<span t-out="'{0:,.2f}'.format(invoice.foreign_rate).replace('.', ',')"/>):</strong></td>
+                                            <td style="text-align:center"><strong>Base VEF: <![CDATA[&nbsp;]]> <span t-out="invoice.tax_totals['igtf']['formatted_foreign_igtf_base_amount']"/></strong></td>
+                                            <td style="text-align:right">
+                                                <!-- <span t-out="'{0:,.2f}'.format(invoice.bi_igtf).replace('.', ',')"/> -->
+                                                <strong><span t-out="invoice.tax_totals['igtf']['formatted_igtf_amount']"/></strong>
+                                            </td>
+                                            
+                                        </tr>
+
+                                        <tr>
+                                            <td><strong>IGTF Percibido (3%)</strong></td>
+                                            <td style="text-align:center"><strong>Base $: <![CDATA[&nbsp;]]> <span t-out="invoice.tax_totals['igtf']['formatted_igtf_base_amount']"/></strong></td>
+                                            <td style="text-align:right">
+                                                <strong>
+                                                    <span t-out="invoice.tax_totals['igtf']['formatted_foreign_igtf_amount']"/>
+                                                </strong>
+                                                <!-- <span t-out="'{0:,.2f}'.format(invoice.bi_igtf).replace('.', ',')"/> -->
+                                                <!-- <t t-out="invoice.tax_totals['igtf']['formatted_foreign_igtf_amount']" />
+                                                o
+                                                <t t-esc="dict(invoice.tax_totals['igtf'])" /> 
+                                                o
+                                                <span t-esc="invoice.tax_totals['formatted_amount_total_igtf']"/>
+                                                o
+                                                <span t-esc="invoice.tax_totals['foreign_formatted_amount_total']"/> -->
+                                            </td>
+                                            
+                                        </tr>
+
+                                        <tr>
+                                            <td><strong>TOTAL:</strong></td>
+                                            <td style="text-align:center"></td>
+                                            <td style="text-align:right">
+                                                <strong>
+                                                <t t-esc="invoice.tax_totals['formatted_amount_total_igtf']" />
+                                                </strong>
+                                            </td>
+                                            
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-1"></div>
+                                <div class="col-4 bordered">
+                                    <table class="table table-borderless" style="font-size:13px; border:0px;">
+                                        <!--Tax totals-->
+                                        <t t-set="tax_totals" t-value="invoice.tax_totals"/>
+                                        <t>
+                                            <t t-set="base_vef" t-value="invoice.currency_id.id == %(base.USD)s"/>
+                                            <t t-set="str_tax" t-value="'subtotals' if base_vef else 'foreign_subtotals'"/>
+                                            <t t-foreach="tax_totals[str_tax]" t-as="subtotal">
+                                                <tr class=" o_subtotal">
+                                                    <td ><strong t-esc="subtotal['name']"/></td>
+                                                    <td class="text-end">
+                                                        <strong>
+                                                            <span
+                                                                
+                                                                t-esc="subtotal['formatted_amount']"
+                                                            />
+                                                        </strong>
+                                                    </td>
+                                                </tr>
+                                                <t t-set="subtotal_to_show" t-value="subtotal['name']"/>
+                                                <t>
+                                                    <t t-set="base_usd" t-value="invoice.currency_id.id == %(base.USD)s"/>
+                                                    <t t-set="str_tax" t-value="'groups_by_subtotal' if base_usd else 'groups_by_subtotal'"/>
+                                                    <t t-foreach="tax_totals[str_tax][subtotal_to_show]" t-as="amount_by_group">
+                                                        <tr>
+                                                            
+                                                            <td >
+                                                                <strong><span t-esc="amount_by_group['tax_group_name']"/>:</strong>
+                                                                <!-- <span class="text-nowrap"> on
+                                                                </span> -->
+                                                            </td>
+                                                            <td class="text-end o_price_total">
+                                                                <strong>
+                                                                <t t-if="amount_by_group['tax_group_amount'] > 0" t-esc="amount_by_group['formatted_tax_group_amount']"/>
+                                                                <t t-else="" t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
+                                                                </strong>
+                                                            </td>
+                                                        
+                                                        </tr>
+                                                    </t>
+                                                </t>
+                                            </t>
+
+                                            <tr >
+                                                <td><strong>Descuento:</strong></td>
+                                                <td class="text-end">
+                                                    <strong>$<span t-esc="discount_total_amount" t-options='{"widget": "float", "precision": 2}'/></strong>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td><strong>Total USD</strong></td>
+                                                <td class="text-end">
+                                                    <strong><span t-esc="tax_totals['formatted_amount_total']"/></strong>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </table>
+                                </div>
+     
+                        </section>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_sale_order_usd" model="ir.actions.report">
+        <field name="name">Print Quote/Order</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sale_zmart.template_sale_order_delivery_note_usd</field>
+        <field name="report_file">sale_zmart.template_sale_order_delivery_note_usd</field>
+        <field name="attachment">(object.state == 'posted') and ((object.name or 'ORDER').replace('/','_') + '.pdf')</field>
+        <field name="paperformat_id" ref="sale_zmart.paperformat_note"/>
+        <field name="binding_model_id" eval="False"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'ORDER').replace('/','_') + '.pdf')</field>
+    </record>
+
+
+  </data>
+  
+</odoo>
