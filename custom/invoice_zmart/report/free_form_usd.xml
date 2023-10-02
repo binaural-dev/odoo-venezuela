@@ -191,7 +191,7 @@
                                                                             <td></td>
                                                                             <td></td>
                                                                             <td class="text-end o_price_total" style="margin-left:5px"> 
-                                                                                <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_amount']"/>
+                                                                                <span class="text-nowrap" t-esc="o.get_total_amount_including_taxes()[0]"/>
                                                                             </td>
                                                                         </t>
                                                                     </tr>
