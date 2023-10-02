@@ -1,5 +1,6 @@
 from odoo import models, fields, api,_
 from odoo.exceptions import ValidationError
+from odoo.tools.misc import formatLang
 
 
 class AccountInvoice(models.Model):
@@ -17,6 +18,9 @@ class AccountInvoice(models.Model):
                 move.invoice_type = "Nota de Entrega"
             else:
                 move.invoice_type = ""
+
+    def button_digital_invoice(self):
+        return self.env.ref("invoice_zmart.action_digital_invoice").report_action(self)
 
     def button_free_form(self):
         if self.journal_id.fiscal:
@@ -59,6 +63,11 @@ class AccountInvoice(models.Model):
             total_amount_local += sum(products.mapped('price_subtotal'))
             total_amount_foreign += sum(products.mapped('foreign_subtotal'))
 
+        total_amount_local = formatLang(self.env, total_amount_local, currency_obj=self.currency_id)
+        total_amount_foreign = formatLang(
+            self.env, total_amount_foreign, currency_obj=self.foreign_currency_id
+        )
+
         return total_amount_local, total_amount_foreign
     
     def get_total_amount_including_taxes(self):
@@ -70,4 +79,9 @@ class AccountInvoice(models.Model):
             products = invoice.invoice_line_ids.filtered(lambda line: any(tax in line.tax_ids.ids for tax in included_tax_ids))
             total_amount_local += sum(products.mapped('price_subtotal'))
             total_amount_foreign += sum(products.mapped('foreign_subtotal'))
+
+        total_amount_local = formatLang(self.env, total_amount_local, currency_obj=self.currency_id)
+        total_amount_foreign = formatLang(
+            self.env, total_amount_foreign, currency_obj=self.foreign_currency_id
+        )
         return total_amount_local, total_amount_foreign
