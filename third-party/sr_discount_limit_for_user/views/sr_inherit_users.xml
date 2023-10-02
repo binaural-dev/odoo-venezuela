@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<odoo>
+	<record model="ir.ui.view"
+		id="view_users_form_extends_to_add_discount_limit">
+		<field name="name">view.users.form.extends.to.add.discount.limit
+		</field>
+		<field name="model">res.users</field>
+		<field name="inherit_id" ref="base.view_users_form" />
+		<field name="arch" type="xml">
+			<xpath
+				expr="//page[@name='preferences']/group[@name='messaging']"
+				position="before">
+				<group string="Discount Limit" colspan="1" col="2">
+					<label for="discount_limit" />
+					<div class="o_row" style="width: 100px !important;">
+						<field name="discount_limit"/>
+						<span>%</span>
+					</div>
+				</group>
+			</xpath>
+		</field>
+	</record>
+
+</odoo>
