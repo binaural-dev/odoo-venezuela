@@ -193,8 +193,8 @@
                             <table name="table_product" style="border:0px!important;">
                                 <tr style="border: 1px solid black; border-left:1px solid white!important; border-right:1px solid white!important; height:30px; padding: 10px;">
                                     <th style="text-align:center;border:0px;text-align:left;">Código</th>
-                                    <th style="min-width:400px;text-align:left;border:0px;text-align:left;">Modelo</th>
-                                    <th style="min-width:400px;text-align:left;border:0px;text-align:left;">Descripción</th>
+                                    <th style="min-width:400px;text-align:left;border:0px;text-align:left;">Producto</th>
+                                    <!-- <th style="min-width:400px;text-align:left;border:0px;text-align:left;">Descripción</th> -->
                                     <th style="text-align:center;border:0px;text-align:center;">Cant.</th>
                                     <th style="text-align:center;border:0px;text-align:center;min-width:90px;">Precio Unit.</th>
                                     <th style="text-align:center;border:0px;text-align:center;min-width:90px;">% Desc.</th>
@@ -243,12 +243,7 @@
                                             </td>
 
                                             <td style="text-align:left;">
-                                               <span t-field="line.product_template_id"/>
-                                            </td>
-
-                                            <td style="text-align:left;">
-                                                <!-- <span t-field="line.product_id.description_sale"/> -->
-                                                <span t-field="line.product_id.name"/>
+                                               <span t-field="line.product_id.name"/>
                                             </td>
 
                                             <td style="text-align:center;">
