@@ -10,3 +10,15 @@ class HrEmployee(models.Model):
     supervisor_barcode_password = fields.Char(
         related="user_id.supervisor_barcode_password", readonly=False
     )
+    pick_ids = fields.One2many(
+        "stock.picking", "picker_id", domain=[("operation_state", "=", "ready")]
+    )
+
+    def available_to_assing_picking(self):
+        """
+        This function checks if the picker is available to be assigned a pick, checking if it is
+        not in a pick in progress
+        """
+        if len(self.pick_ids.filtered(lambda x: x.operation_state in ["ready", "in_process"])) == 0:
+            return True
+        return False

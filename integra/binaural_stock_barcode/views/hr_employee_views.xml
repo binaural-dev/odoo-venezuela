@@ -10,6 +10,19 @@
                 <field name="supervisor_barcode_password" 
                     attrs="{'invisible': [('role_picking','!=', 'supervisor')]}"/>
             </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Pick Information" attrs="{'invisible': [('role_picking','!=', 'picker')]}">
+                    <field 
+                        name="pick_ids" 
+                        editable="bottom" 
+                        domain="[('operation_state','!=','ready')]">
+                        <tree>
+                            <field name="operation_state"/>
+                            <field name="name"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
         </field>
     </record>
 </odoo>

@@ -12,7 +12,7 @@ const { useState, onWillStart } = owl;
 export default class BinauralMainComponent extends MainComponent {
   setup() {
     super.setup();
-    this.state = useState({ displaySupervisorCheck: false, EditLineArgs: [] });
+    this.state = useState({ displaySupervisorCheck: false, EditLineArgs: [], type_supervisor: false });
     onWillStart(async () => {
       this.env.model.on('check-supervisor', this, this.openclose)
     });
@@ -29,8 +29,15 @@ export default class BinauralMainComponent extends MainComponent {
     }
   }
 
-  openclose(){
-    super._onEditLine(this.state.EditLineArgs)
+  async openclose() {
+    if (this.state.type_supervisor == "validate") {
+      this.state.EditLineArgs.stopPropagation();
+      await this.env.model.validate();
+    }
+    if (this.state.type_supervisor == "edit") {
+      super._onEditLine(this.state.EditLineArgs)
+    }
+
   }
 
   get displaySupervisorChecker() {
@@ -42,16 +49,25 @@ export default class BinauralMainComponent extends MainComponent {
   }
 
   async _onEditLine(ev) {
-    if(!this.env.model.config.supervisor_required_to_edit){
+    if (!this.env.model.config.supervisor_required_to_edit) {
       return await super._onEditLine(...arguments)
     }
     this.ShowSupervisorPopup(this);
     this.state.EditLineArgs = ev;
+    this.state.type_supervisor = "edit"
   }
+
+  async validate(ev) {
+    this.ShowSupervisorPopup(this)
+    this.state.EditLineArgs = ev;
+    this.state.type_supervisor = "validate"
+  }
+
   async ShowSupervisorPopup(self) {
     this.state.displaySupervisorCheck = true;
     this.env.model.displaySupervisorCheck();
   }
+
 }
 
 BinauralMainComponent.components = {

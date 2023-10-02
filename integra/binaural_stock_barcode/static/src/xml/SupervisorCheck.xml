@@ -10,7 +10,7 @@
                         </option>
                     </t>
                 </select>
-                <input type="password" class="o_input" t-ref="password" />
+                <input type="password" class="o_input" t-ref="password" t-on-keyup="onEnter" />
                 <div class="buttons-container" >
                     <button class="btn btn-danger o_save button-all-space" t-on-click="cancelSupervisor">Cancel</button>
                     <button class="btn btn-primary o_save button-all-space" t-on-click="checkSupervisor">Check</button>
@@ -22,7 +22,7 @@
     <t t-name="MainComponent" t-inherit="stock_barcode.MainComponent" t-inherit-mode="extension" owl="1">
         <xpath expr="//div[@class='o_barcode_header']" position="inside">
             <t t-if='displaySupervisorChecker'>
-                <SupervisorCheck setDisplay="(val) => this.setDisplaySupervisorChecker(val)"/>
+                <SupervisorCheck component="this" type="this.state.type_supervisor" setDisplay="(val) => this.setDisplaySupervisorChecker(val)"/>
             </t>
         </xpath>
     </t>
