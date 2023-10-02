@@ -60,6 +60,10 @@
                                 border-radius: 10px;
                             }
 
+                            .segmento_4 table tr td {
+                                font-weight: bold;
+                            }
+
                         </style>
                         <section id="segmento_1" style="height: 100px;">
                             <div class="col-7" style="height:115px; border: 1px solid black; border-radius: 10px">
@@ -99,25 +103,37 @@
                                         <h1 class="font-h1" style="paddding: 0px; margin: 0px;text-align: center;">COTIZACIÓN</h1>
 
                                         <table style="width:100%;border: 1px solid white;">
-                                            <tr>
+                                            <tr style="padding:0;">
                                                 <th style="text-align: left; font-weight:normal;font-size:14px;padding-right:20px;">Fecha de impresión: </th>
-                                                <th style="text-align: left; font-weight:normal;font-size:14px;margin:0px;"><span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>   </th>
+                                                <th style="text-align: right; font-weight:normal;font-size:14px;margin:0px;"><span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>   </th>
                                             </tr>
-                                            <tr>
+                                            <tr style="padding:0;">
                                                 <th style="text-align: left; font-weight:normal;font-size:14px;padding-right:20px;">Hora de impresión:</th>
-                                                <th style="text-align: left; font-weight:normal;font-size:14px;margin:0px;"><span t-esc="context_timestamp(datetime.datetime.now()).strftime('%I:%M:%S %P')"/>   </th>
+                                                <th style="text-align: right; font-weight:normal;font-size:14px;margin:0px;"><span t-esc="context_timestamp(datetime.datetime.now()).strftime('%I:%M:%S %P')"/>   </th>
                                             </tr>
-                                            <tr>
+                                            <tr style="padding:0;">
                                                 <th style="text-align: left; font-weight:normal;font-size:14px;padding-right:20px;">Fecha Emisión:</th>
-                                                <th style="text-align: left; font-weight:normal;font-size:14px;margin:0px;">
+                                                <th style="text-align: right; font-weight:normal;font-size:14px;margin:0px;">
                                                     <span t-field="invoice.date_order" t-options='{"widget": "date","format": "dd/MM/yyyy"}'/>
                                                 </th>
                                             </tr>
                                         </table>
 
-                                        <!-- <div>
-                                            <p>Pedido Número: <span t-field="invoice.name" /></p>
-                                        </div> -->
+                                        <div style="height: 26px;border: 1px solid black; border-radius: 10px; padding: 0px 5px;">
+
+                                            <table style="width:325px;border: 1px solid white;">
+                                                <tr style="padding:0px;margin-top:-10px;">
+                                                    <td class="font-h1" style="text-align:left;font-size: 18px;">
+                                                        <strong>Pedido Número:</strong>
+                                                    </td>
+                                                    <td class="font-h1" style="text-align:right;font-size: 18px;">
+                                                        <strong><span t-field="invoice.name" /></strong>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <!-- <span style="text-align:left;"></span>
+                                            <span style="text-align:right;"><strong><span t-field="invoice.name" /></strong></span> -->
+                                        </div>
 
                                     </div>
                                 </div>
@@ -272,20 +288,29 @@
                                         </tr>
                                         <tr>
                                             <td><strong>Dolares tasa bcv (<span t-out="'{0:,.2f}'.format(invoice.foreign_rate).replace('.', ',')"/>):</strong></td>
-                                            <td style="text-align:center"><strong>Base VEF: <![CDATA[&nbsp;]]> 32,22</strong></td>
+                                            <td style="text-align:center"><strong>Base VEF: <![CDATA[&nbsp;]]> <span t-out="invoice.tax_totals['igtf']['formatted_foreign_igtf_base_amount']"/></strong></td>
                                             <td style="text-align:right">
                                                 <!-- <span t-out="'{0:,.2f}'.format(invoice.bi_igtf).replace('.', ',')"/> -->
-                                                2000
+                                                <strong><span t-out="invoice.tax_totals['igtf']['formatted_igtf_amount']"/></strong>
                                             </td>
                                             
                                         </tr>
 
                                         <tr>
                                             <td><strong>IGTF Percibido (3%)</strong></td>
-                                            <td style="text-align:center"><strong>Base $: <![CDATA[&nbsp;]]> 32,22</strong></td>
+                                            <td style="text-align:center"><strong>Base $: <![CDATA[&nbsp;]]> <span t-out="invoice.tax_totals['igtf']['formatted_igtf_base_amount']"/></strong></td>
                                             <td style="text-align:right">
+                                                <strong>
+                                                    <span t-out="invoice.tax_totals['igtf']['formatted_foreign_igtf_amount']"/>
+                                                </strong>
                                                 <!-- <span t-out="'{0:,.2f}'.format(invoice.bi_igtf).replace('.', ',')"/> -->
-                                                2000
+                                                <!-- <t t-out="invoice.tax_totals['igtf']['formatted_foreign_igtf_amount']" />
+                                                o
+                                                <t t-esc="dict(invoice.tax_totals['igtf'])" /> 
+                                                o
+                                                <span t-esc="invoice.tax_totals['formatted_amount_total_igtf']"/>
+                                                o
+                                                <span t-esc="invoice.tax_totals['foreign_formatted_amount_total']"/> -->
                                             </td>
                                             
                                         </tr>
@@ -294,7 +319,9 @@
                                             <td><strong>TOTAL:</strong></td>
                                             <td style="text-align:center"></td>
                                             <td style="text-align:right">
-                                                2000
+                                                <strong>
+                                                <t t-esc="invoice.tax_totals['formatted_amount_total_igtf']" />
+                                                </strong>
                                             </td>
                                             
                                         </tr>
@@ -312,10 +339,12 @@
                                                 <tr class=" o_subtotal">
                                                     <td ><strong t-esc="subtotal['name']"/></td>
                                                     <td class="text-end">
-                                                        <span
-                                                            
-                                                            t-esc="subtotal['formatted_amount']"
-                                                        />
+                                                        <strong>
+                                                            <span
+                                                                
+                                                                t-esc="subtotal['formatted_amount']"
+                                                            />
+                                                        </strong>
                                                     </td>
                                                 </tr>
                                                 <t t-set="subtotal_to_show" t-value="subtotal['name']"/>
@@ -326,13 +355,15 @@
                                                         <tr>
                                                             
                                                             <td >
-                                                                <span t-esc="amount_by_group['tax_group_name']"/>:
+                                                                <strong><span t-esc="amount_by_group['tax_group_name']"/>:</strong>
                                                                 <!-- <span class="text-nowrap"> on
                                                                 </span> -->
                                                             </td>
                                                             <td class="text-end o_price_total">
+                                                                <strong>
                                                                 <t t-if="amount_by_group['tax_group_amount'] > 0" t-esc="amount_by_group['formatted_tax_group_amount']"/>
                                                                 <t t-else="" t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
+                                                                </strong>
                                                             </td>
                                                         
                                                         </tr>
@@ -341,16 +372,16 @@
                                             </t>
 
                                             <tr >
-                                                <td>Descuento:</td>
+                                                <td><strong>Descuento:</strong></td>
                                                 <td class="text-end">
-                                                    $<span t-esc="discount_total_amount" t-options='{"widget": "float", "precision": 2}'/>
+                                                    <strong>$<span t-esc="discount_total_amount" t-options='{"widget": "float", "precision": 2}'/></strong>
                                                 </td>
                                             </tr>
 
                                             <tr>
                                                 <td><strong>Total USD</strong></td>
                                                 <td class="text-end">
-                                                    <span t-esc="tax_totals['formatted_amount_total']"/>
+                                                    <strong><span t-esc="tax_totals['formatted_amount_total']"/></strong>
                                                 </td>
                                             </tr>
                                         </t>
