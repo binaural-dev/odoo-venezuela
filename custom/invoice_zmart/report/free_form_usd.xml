@@ -138,9 +138,7 @@
                                 </p>
                             </div>
                             </div>
-                            <div style="position: absolute;
-                                bottom: -1385px;
-                                right: 0;">
+                            <div style="position: absolute;bottom: -1285px;margin-left:200px">
                                     <div class="clearfix mb-4">
                                         <div id="total" class="row">
                                             <div t-attf-class="#{'col-7' if report_type != 'html' else 'col-sm-7 col-md-6'} ms-auto">
@@ -335,15 +333,6 @@
                                                     </t>
                                                 </table>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div id="contenedor" class="clearfix">
-                                        <div id="principal" style='color:#FFFFFF'>
-                                            <p>TRANSFERIR A LAS CUENTAS CORRIENTES BANESCO
-                                                                0134-0335-00-3351-0608-52/ MERCANTIL 0105-0699-92-1699-1732-30 / PROVINCIAL
-                                                                0108-0027-79-0100-8966-61
-                                                                *LA GARANTÍA DE LOS PRODUCTOS COMPATIBLES SERÁ PRESTADA
-                                                                DIRECTAMENTE POR ZMART PLUS CORP, C.A.</p>
                                         </div>
                                     </div>
                                 </div>
