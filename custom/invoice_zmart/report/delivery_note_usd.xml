@@ -109,7 +109,7 @@
                                             <div>Fecha de Emision:
                                                 <span style="margin-left:3px" t-field="invoice.invoice_date"/>
                                             </div>
-                                            <div>Fecha de entrega:
+                                            <div style="padding-top:6px">Fecha de entrega:
                                                 <span style="margin-left:3px" t-field="invoice.invoice_reception_date"/>
                                             </div>
                                         </div>
