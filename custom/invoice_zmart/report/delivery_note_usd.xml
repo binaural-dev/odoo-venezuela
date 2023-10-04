@@ -123,12 +123,12 @@
                                 <div style="display: flex; align-items: center;margin-top:-100px;">
                                     <div style="display: inline-block;" class="align-right">
                                         <div style="padding:5px">
-                                            <div style="font-size:17px">
-                                                <span style="margin-left:-170px">Condic. Pago:</span>
-                                                <span t-field="invoice.invoice_payment_term_id"/>
+                                            <div style="font-size:16px;width:100px; white-space: nowrap; text-align: left;">
+                                                <span style="margin-left:-185px">Condic. Pago:</span>
+                                                <span t-field="invoice.invoice_payment_term_id" style="display: inline;"></span>
                                             </div>
-                                            <div style="font-size:17px">
-                                                <span style="margin-left:-170px"> Vendedor: </span>
+                                            <div style="font-size:16px">
+                                                <span style="margin-left:-185px"> Vendedor: </span>
                                                 <span t-field="invoice.invoice_user_id"/>
                                             </div>
                                         </div>
