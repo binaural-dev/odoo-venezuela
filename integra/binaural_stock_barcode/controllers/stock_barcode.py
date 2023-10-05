@@ -32,8 +32,11 @@ class StockBarcodeControllerInherit(StockBarcodeController):
             ret_open_cart_picking = self._try_open_cart_picking(barcode)
             if ret_open_cart_picking:
                 return ret_open_cart_picking
-            elif barcode.startswith(cart_rule[0].get("pattern","818")):
-                return {'warning': _('No cart corresponding to barcode %(barcode)s') % {'barcode': barcode}}
+            elif barcode.startswith(cart_rule[0].get("pattern", "818")):
+                return {
+                    "warning": _("No cart corresponding to barcode %(barcode)s")
+                    % {"barcode": barcode}
+                }
 
         return res
 
@@ -83,4 +86,4 @@ class StockBarcodeControllerInherit(StockBarcodeController):
 
             return {"action": picking_id.action_open_picking_client_action()}
 
-        return False
+        return {"warning": _("You do not currently have a pick assigned")}
