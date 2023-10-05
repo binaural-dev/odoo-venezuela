@@ -64,10 +64,12 @@ class StockPicking(models.Model):
 
     def button_validate(self):
         res = super().button_validate()
-        user = self.env["res.users"].browse(self._context.get("uid", 1))
-        self.env["stock.picking.time"].create(
-            {"pick_id": self.id, "employee_id": user.employee_id.id, "type": "end"}
-        )
+        for record in self:
+            if res == True:
+                user = record.env["res.users"].browse(record._context.get("uid", 1))
+                record.env["stock.picking.time"].create(
+                    {"pick_id": record.id, "employee_id": user.employee_id.id, "type": "end"}
+                )
         return res
 
     @api.depends("operation_start_date", "operation_pause_date", "operation_end_date", "state")
@@ -92,17 +94,13 @@ class StockPicking(models.Model):
                 picking.operation_state = "cancel"
                 return
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            picking_type = vals.get("picking_type_id", False)
-            if (
-                picking_type
-                and self.env["stock.picking.type"].browse(picking_type)._get_type_steps() == "pick"
-            ):
-                vals.update({"picker_id": self.get_available_picker()})
-        res = super().create(vals_list)
-        return res
+    def action_confirm(self):
+        res = super().action_confirm()
+        for record in self:
+            if record.type_delivery_step == "pick":
+                record.picker_id = record.get_available_picker()
+        return res 
+
 
     def get_available_picker(self):
         picker_ids = self.env["hr.employee"].search([("role_picking", "=", "picker")])

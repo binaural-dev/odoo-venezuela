@@ -58,7 +58,8 @@ export default class BinauralMainComponent extends MainComponent {
   }
 
   async validate(ev) {
-    if (!this.env.model.config.supervisor_required_for_incomplete_qty) {
+    if (!this.env.model.config.supervisor_required_for_incomplete_qty
+      || !!this.highlightValidateButton) {
       return await super.validate(...arguments)
     }
     this.ShowSupervisorPopup(this)

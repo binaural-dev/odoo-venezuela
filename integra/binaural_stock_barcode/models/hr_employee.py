@@ -11,7 +11,7 @@ class HrEmployee(models.Model):
         related="user_id.supervisor_barcode_password", readonly=False
     )
     pick_ids = fields.One2many(
-        "stock.picking", "picker_id", domain=[("operation_state", "=", "ready")]
+        "stock.picking", "picker_id", domain=[("operation_state", "in", ["ready","in_process","paused"])]
     )
 
     def available_to_assing_picking(self):
