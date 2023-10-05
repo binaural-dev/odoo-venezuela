@@ -66,8 +66,8 @@
 		    sum="Total Foreign Credit"
 		    readonly="1"
 		/>
-		<field name="foreign_credit_adjustment" optional="hide"/>
 		<field name="foreign_debit_adjustment" optional="hide"/>
+		<field name="foreign_credit_adjustment" optional="hide"/>
                 <field name="foreign_balance" optional="hide" groups="base.group_no_one"/>
 
                 <field name="foreign_rate" optional="hide" groups="base.group_no_one"/>
