@@ -252,12 +252,22 @@
                                                                     </tr>
                                                                     <tr>
                                                                         <td>
-                                                                            <strong>Dolares tasa bcv (<span t-out="o.foreign_rate"/>):</strong>
+                                                                            <t t-if="tax_totals['igtf']['is_igtf_suggested'] != True">
+                                                                                <strong>Dolares tasa bcv (<span t-out="o.foreign_rate"/>):</strong>
+                                                                            </t>
+                                                                            <t t-else="">
+                                                                                <strong>Dolares tasa bcv ( ):</strong>
+                                                                            </t>
                                                                         </td>
                                                                         <td></td>
                                                                         <td></td>
                                                                         <td style="padding-left:270px">
-                                                                            <span t-out="o.tax_totals['formatted_amount_total']"/>
+                                                                            <t t-if="tax_totals['igtf']['is_igtf_suggested'] != True">
+                                                                                <span t-out="o.tax_totals['formatted_amount_total']"/>
+                                                                            </t>
+                                                                            <t t-else="">
+                                                                                <span>$0,00</span>
+                                                                            </t>
                                                                         </td>
                                                                     </tr>
                                                                     <tr>
