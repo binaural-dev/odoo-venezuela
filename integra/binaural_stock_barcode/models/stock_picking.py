@@ -30,6 +30,7 @@ class StockPicking(models.Model):
         store=True,
         copy=False,
     )
+    total_time_elapsed = fields.Float(string="Total time elapsed", compute="_compute_time_elapsed")
 
     def set_supervisor_to_edit(self, supervisor_id):
         user_id = self.env["res.users"].sudo().browse(supervisor_id)
@@ -59,8 +60,9 @@ class StockPicking(models.Model):
             record.operation_end_date = end_time
 
             if record.operation_start_date and record.operation_end_date:
-                time_elapsed = record.operation_end_date - record.operation_start_date
-                _logger.info(time_elapsed)
+                record.total_time_elapsed = (record.operation_end_date - record.operation_start_date).total_seconds() / 60
+            else: 
+                record.total_time_elapsed = False
 
     def button_validate(self):
         res = super().button_validate()
