@@ -35,11 +35,12 @@ class AccountTax(models.Model):
         """
         res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
 
+        invoice = False 
+        order = False 
         apply_igtf = False
-        invoice = self.env["account.move"]
-        order = self.env["sale.order"]
         type_model = ""
         base_igtf = 0
+        foreign_base_igtf = 0
         is_igtf_suggested = False
 
         for base_line in base_lines:
@@ -65,21 +66,27 @@ class AccountTax(models.Model):
         if type_model == "account.move.line" and self.env.company.show_igtf_suggested_account_move:
             is_igtf_suggested = True
             base_igtf = res.get("amount_total", 0)
+            foreign_base_igtf = res.get("foreign_amount_total", 0)
         if type_model == "sale.order.line" and self.env.company.show_igtf_suggested_sale_order:
             is_igtf_suggested = True
             base_igtf = res.get("amount_total", 0)
+            foreign_base_igtf = res.get("foreign_amount_total", 0)
 
         if invoice.bi_igtf:
             is_igtf_suggested = False
             base_igtf = invoice.bi_igtf
+            foreign_base_igtf = invoice.bi_igtf * rate
+            if invoice.bi_igtf == res.get("amount_total"):
+                foreign_base_igtf = res.get("foreign_amount_total")
 
         igtf_base_amount = float_round(base_igtf or 0, precision_rounding=currency.rounding)
+        igtf_foreign_base_amount = float_round(foreign_base_igtf or 0, precision_rounding=foreign_currency.rounding)
 
         if float_is_zero(igtf_base_amount, precision_rounding=currency.rounding) == False:
             apply_igtf = True
 
         foreign_igtf_base_amount = float_round(
-            igtf_base_amount * rate, precision_rounding=foreign_currency.rounding
+            igtf_foreign_base_amount, precision_rounding=foreign_currency.rounding
         )
 
         igtf_amount = float_round(

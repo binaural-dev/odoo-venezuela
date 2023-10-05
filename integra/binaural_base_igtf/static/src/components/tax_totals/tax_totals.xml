@@ -37,7 +37,7 @@
         </xpath>
 
         <xpath expr="//tbody" position="inside">
-            <t t-if="totals.igtf.apply_igtf">
+            <t t-if="totals.igtf.apply_igtf &amp;&amp; !!totals.igtf.is_igtf_suggested">
                 <tr>
                     <td class="o_td_label">
                         <label class="o_form_label o_tax_total_label">
