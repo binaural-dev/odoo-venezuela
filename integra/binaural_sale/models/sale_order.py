@@ -227,7 +227,9 @@ class SaleOrder(models.Model):
             )
 
             for line in _move_lines:
+                line_qty = line.quantity
                 line.sudo().write({"move_id": move.id})
+                line.sudo().write({"quantity": line_qty})
 
             move.message_post_with_view(
                 "mail.message_origin_link",
@@ -237,6 +239,8 @@ class SaleOrder(models.Model):
             invoices |= move
 
         self._update_invoices_rate()
+        for invoice in invoices:
+            invoice.compute_line_ids_foreign_debit_and_credit()
         return invoices
 
     def _update_invoices_rate(self):
@@ -261,12 +265,14 @@ class SaleOrder(models.Model):
         try:
             sale_order_id = int(str(self.id)[6:])
             sale_order = self.env["sale.order"].browse(sale_order_id)
-                    
+
             sale_order._recompute_prices()
-            sale_order.message_post(body=_(
-                "Product prices have been recomputed according to pricelist %s.",
-                self.pricelist_id._get_html_link()
-            ))
-            
+            sale_order.message_post(
+                body=_(
+                    "Product prices have been recomputed according to pricelist %s.",
+                    self.pricelist_id._get_html_link(),
+                )
+            )
+
         except:
             self._recompute_prices()
