@@ -40,3 +40,8 @@ class ResCompany(models.Model):
         string="Journal for Customer Municipal Retentions",
         domain="[('fiscal', '=', True)]",
     )
+
+    condition_withholding_id = fields.Many2one(
+        "account.withholding.type",
+        string="The condition of this taxpayer requires the withholding of",
+    )

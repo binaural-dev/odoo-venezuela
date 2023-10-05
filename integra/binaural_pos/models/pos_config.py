@@ -27,6 +27,7 @@ class PosConfig(models.Model):
     pos_show_just_products_with_available_qty = fields.Boolean(
         related="company_id.pos_show_just_products_with_available_qty"
     )
+    pos_search_cne = fields.Boolean(related="company_id.pos_search_cne")
     amount_to_zero = fields.Boolean("Amount to zero")
 
     @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")
