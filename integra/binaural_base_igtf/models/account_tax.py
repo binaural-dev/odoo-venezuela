@@ -35,8 +35,8 @@ class AccountTax(models.Model):
         """
         res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
 
-        invoice = False 
-        order = False 
+        invoice = self.env["account.move"] 
+        order = False
         apply_igtf = False
         type_model = ""
         base_igtf = 0
