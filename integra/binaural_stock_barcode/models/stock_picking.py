@@ -6,8 +6,11 @@ _logger = logging.getLogger(__name__)
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
+    _order = "create_date desc"
 
-    picker_id = fields.Many2one("hr.employee", string="Picker")
+    picker_id = fields.Many2one(
+        "hr.employee", string="Picker", domain=[("role_picking", "=", "picker")]
+    )
     picking_time_ids = fields.One2many("stock.picking.time", "pick_id")
     cart_id = fields.Many2one("stock.picking.cart", string="Cart")
 
@@ -31,10 +34,18 @@ class StockPicking(models.Model):
         copy=False,
     )
     total_time_elapsed = fields.Float(string="Total time elapsed", compute="_compute_time_elapsed")
+    total_lines = fields.Integer(compute="_compute_total_lines")
+
+    @api.depends("move_line_ids_without_package")
+    def _compute_total_lines(self):
+        for picking_report in self:
+            picking_report.total_lines = len(
+                [line for line in picking_report.mapped("move_line_ids_without_package")]
+            )
 
     def set_supervisor_to_edit(self, supervisor_id):
         user_id = self.env["res.users"].sudo().browse(supervisor_id)
-        self.supervisor_approve_to_edit_id = user_id.employee_id 
+        self.supervisor_approve_to_edit_id = user_id.employee_id
 
     def set_supervisor_for_incomplete_qty(self, supervisor_id):
         user_id = self.env["res.users"].sudo().browse(supervisor_id)
@@ -60,8 +71,10 @@ class StockPicking(models.Model):
             record.operation_end_date = end_time
 
             if record.operation_start_date and record.operation_end_date:
-                record.total_time_elapsed = (record.operation_end_date - record.operation_start_date).total_seconds() / 60
-            else: 
+                record.total_time_elapsed = (
+                    record.operation_end_date - record.operation_start_date
+                ).total_seconds() / 60
+            else:
                 record.total_time_elapsed = False
 
     def button_validate(self):
@@ -72,6 +85,22 @@ class StockPicking(models.Model):
                 record.env["stock.picking.time"].create(
                     {"pick_id": record.id, "employee_id": user.employee_id.id, "type": "end"}
                 )
+
+                if record.type_delivery_step == "out":
+                    record.cart_id.pick_id = False
+                    record.cart_id.out_id = False
+                    record.cart_id.pack_id = False
+
+                    new_pick = self.search([("picker_id", "=", False)], limit=1)
+                    if new_pick:
+                        new_pick.picker_id = record.picker_id.id
+
+                    order = self.env["sale.order"].search([("name", "=", record.origin)])
+                    wizard = self.env["sale.advance.payment.inv"].create(
+                        {"sale_order_ids": order.ids, "advance_payment_method": "delivered"}
+                    )
+                    wizard._create_invoices(wizard.sale_order_ids)
+
         return res
 
     @api.depends("operation_start_date", "operation_pause_date", "operation_end_date", "state")
@@ -101,8 +130,7 @@ class StockPicking(models.Model):
         for record in self:
             if record.type_delivery_step == "pick":
                 record.picker_id = record.get_available_picker()
-        return res 
-
+        return res
 
     def get_available_picker(self):
         picker_ids = self.env["hr.employee"].search([("role_picking", "=", "picker")])

@@ -70,6 +70,9 @@ class StockBarcodeControllerInherit(StockBarcodeController):
                     "type": "start",
                 }
             )
+            cart_picking.out_id.write(
+                {"cart_id": cart_picking.id, "picker_id": user_id.employee_id.id}
+            )
             return {"action": cart_picking.out_id.action_open_picking_client_action()}
 
         picking_id = user_id.employee_id.pick_ids.filtered(
@@ -83,6 +86,7 @@ class StockBarcodeControllerInherit(StockBarcodeController):
             request.env["stock.picking.time"].create(
                 {"pick_id": picking_id.id, "employee_id": user_id.employee_id.id, "type": "start"}
             )
+            picking_id.write({"cart_id": cart_picking.id})
 
             return {"action": picking_id.action_open_picking_client_action()}
 

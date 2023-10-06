@@ -7,6 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="picker_id" attrs="{'invisible': [('type_delivery_step','!=','pick')]}"/>
+                <field name="cart_id"/>
                 <field name="operation_start_date"/>
                 <field name="operation_pause_date"/>
                 <field name="operation_end_date"/>
@@ -74,6 +75,41 @@
         <field name="domain">['&amp;',('state', 'in', ['confirmed','assigned']), ('type_delivery_step', '=','pick')]</field>
         <field name="help">Select stock pickings with status "waiting"</field>
     </record>
+
+    <record id="view_tree_stock_picking_tree_operation" model="ir.ui.view">
+        <field name="name">stock.picking.tree.waiting</field>
+        <field name="model">stock.picking</field>
+        <field name="arch" type="xml">
+            <tree create="0" string="Operation Report">
+                <field name="picker_id"/>
+                <field name="name"/>
+                <field name="cart_id"/>
+                <field name="operation_state" 
+                    widget="badge" 
+                    decoration-bf="True" 
+                    decoration-warning="operation_state == 'in_process'" 
+                    decoration-success="operation_state == 'finished'" />
+                <field name="operation_start_date"/>
+                <field name="operation_end_date"/>
+                <field name="total_time_elapsed"/>
+                <field name="total_lines"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_stock_picking_tree_operation" model="ir.actions.act_window">
+        <field name="name">Operation Report</field>
+        <field name="res_model">stock.picking</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="binaural_stock_barcode.view_tree_stock_picking_tree_operation"/>
+        <field name="domain">['&amp;',('state', 'in', ['done']),('type_delivery_step','in', ['pick','pack','out'])]</field>
+    </record>
+
+    <menuitem 
+        id="menu_picking_operation" 
+        name="Operation Report" 
+        parent="stock.menu_stock_warehouse_mgmt"
+        action="view_stock_picking_tree_operation"/>
 
     <menuitem 
         id="menu_picking_waiting" 
