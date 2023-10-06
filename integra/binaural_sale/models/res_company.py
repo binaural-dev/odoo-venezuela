@@ -10,3 +10,9 @@ class ResCompany(models.Model):
             " Else it will take the rate of the date when it is created."
         )
     )
+    update_sale_order_rate_using_date_order = fields.Boolean(
+        help=(
+            "When checked, the rate of the sale order will be updated using the date order whenever"
+            " it changes. Else, when the rate is already set, it will not be updated."
+        )
+    )

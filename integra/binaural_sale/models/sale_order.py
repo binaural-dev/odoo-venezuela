@@ -1,6 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from lxml import etree
+from odoo.tools.float_utils import float_is_zero
 
 
 class SaleOrder(models.Model):
@@ -168,7 +169,13 @@ class SaleOrder(models.Model):
         model.
         """
         Rate = self.env["res.currency.rate"]
+        # If the user doesn't want to update the foreign rate using the date order, then don't
+        # compute the rate when it is not zero.
         for sale in self:
+            if not self.env.company.update_sale_order_rate_using_date_order and not float_is_zero(
+                sale.foreign_rate, precision_rounding=self.env.company.currency_id.rounding
+            ):
+                continue
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id, sale.date_order.date() or fields.Date.today()
             )
