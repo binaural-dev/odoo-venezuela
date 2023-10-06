@@ -99,8 +99,12 @@
                                             <span style="font-family: Arial" t-out="o.partner_id.vat"/>
                                         </div>
                                         <div>
-                                            <span style="margin-right: 1px;font-family: Arial"><strong>Contacto:</strong></span>
-                                            <span style="font-family: Arial" t-out="o.partner_id.child_ids.name"/>
+                                            <span style="margin-right: 1px; font-family: Arial;"><strong>Contacto:</strong></span>
+                                            <t t-set="child_count" t-value="len(o.partner_id.child_ids)"/>
+                                            <t t-foreach="o.partner_id.child_ids" t-as="child">
+                                                <span style="font-family: Arial;" t-esc="child.name"/>
+                                                <t t-if="not child and child_count > 1">, </t>
+                                            </t>
                                         </div>
                                         <div>
                                             <span style="margin-right: 1px;font-family: Arial"><strong>TLF:</strong></span>
