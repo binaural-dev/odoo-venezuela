@@ -33,6 +33,7 @@ Este añade los siguientes campos:
 * Monto total en moneda alterna
 * Tasa de moneda alterna
 * Recibo/Factura
+* Se refleja la cantidad de productos a ordenar
 
 ##Pagos (pos.payment)
 
