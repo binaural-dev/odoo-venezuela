@@ -78,7 +78,7 @@
                                     />
                                 </div>
                                 <div style="display: inline-block;vertical-align: middle;font-size:14px;margin-top:-110px;margin-left:120px">
-                                    <div class="col-11">
+                                    <div class="col-12">
                                         <div ><span t-field="invoice.name"/>
                                             <span t-field="invoice.company_id"/>
                                         </div>
@@ -88,7 +88,7 @@
                                         </div>
                                         <div style="text-transform: capitalize !important;">
                                             <span style="margin-right:3px;">Dirección:</span>
-                                            <span t-field="invoice.company_id.street"/>
+                                            <span t-esc="invoice.company_id.street.capitalize()"/>
                                         </div>
                                         <div>
                                             <span style="margin-right:3px;margin-right:3px">Teléfonos:</span>
@@ -140,20 +140,30 @@
                             </div>
                         </section>
                         <hr style="border: none; visibility: hidden;" />
-                        <section id="segmento_2" style="border: 1px solid black; border-right: 0px solid black; padding: 10px; border-radius: 10px;font-size:12px">
+                        <section id="segmento_2" style="border: 1px solid black; border-right: 0px solid black; padding: 10px; border-radius: 10px;font-size:12px;max-width:99.4% !important;min-height:90px;">
                             <div style="display: flex; align-items: center;width:60%;height:100px;padding-top:10px;padding-top:10px">
                             </div>
                             <div style="display: flex; align-items: center;margin-top:-100px;">
                                 <div style="display: inline-block;" class="align-right">
                                     <div style="padding:5px">
+
                                         <div>
-                                            <span style="font-size:14px;margin-left:-200px">Correo del Comprador:</span>
-                                            <span style="font-size:14px" t-field="invoice.partner_id.email"/>
+                                            <span style="font-weight:normal !important;font-size:14px;margin-left:-200px">R.I.F.:</span>
+                                            <span style="font-weight:normal !important;font-size:14px" t-esc="invoice.partner_id.prefix_vat"/>-
+                                            <span style="font-weight:normal !important;font-size:14px" t-esc="invoice.partner_id.vat"/>
+                                            <span style="font-weight:normal !important;font-size:14px" t-esc="invoice.partner_id.nit"/>
                                         </div>
-                                        <!-- <div>
-                                            <span style="font-size:14px;margin-left:-210px"> FAX: </span>
-                                            <span style="font-size:14px" t-field="invoice.user_id"/>
-                                        </div> -->
+
+                                        <div>
+                                            <span style="font-weight:normal !important;font-size:14px;margin-left:-200px">Correo del Comprador:</span>
+                                            <span style="font-weight:normal !important;font-size:14px" t-esc="invoice.partner_id.email"/>
+                                        </div>
+
+                                        <div>
+                                            <span style="font-weight:normal !important;font-size:14px;margin-left:-200px">Teléfonos:</span>
+                                            <span style="font-weight:normal !important;font-size:14px" t-esc="invoice.partner_id.phone"/>
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
@@ -162,23 +172,23 @@
                                     <tr style="border:0px solid white;">
                                         <th style="font-weight:normal;font-size:14px;border:0px solid white;"><div style="display:inline;">Cliente:</div><strong><span style="margin-left:25px" t-field="invoice.partner_id.vat"/>   <span style="margin-left:25px" t-field="invoice.partner_id"/></strong></th>
                                     </tr>
-                                    <tr style="border:0px solid white;">
+                                    <!-- <tr style="border:0px solid white;">
                                         <th style="font-weight:normal;font-size:14px;border:0px solid white;">
                                             <div style="display:inline;">R.I.F.:</div>
                                             <span style="margin-left:35px" t-field="invoice.partner_id.prefix_vat"/>-
                                             <span style="margin-right:30px" t-field="invoice.partner_id.vat"/>
                                             <span style="margin-left:3px" t-field="invoice.partner_id.nit"/>
                                         </th>
-                                    </tr>
+                                    </tr> -->
                                     <tr style="border:0px solid white;">
                                         <th style="width:700px;font-weight:normal;font-size:14px;padding-right:40px;border:0px solid white;">
                                             <div style="display:inline;">Dirección: </div>
-                                                <span style="margin-left:3px;text-transform: capitalize" t-out="invoice.partner_id.contact_address_complete"/>.
+                                                <span style="margin-left:3px;" t-out="invoice.partner_id.contact_address_complete.capitalize()"/>.
                                         </th>
                                     </tr>
-                                    <tr style="border:0px solid white;">
+                                    <!-- <tr style="border:0px solid white;">
                                         <th style="font-weight:normal;font-size:14px;border:0px solid white;">Teléfonos: <span style="margin-left:3px" t-out="invoice.partner_id.phone"/></th>
-                                    </tr>
+                                    </tr> -->
                                 </table>
 
                                 <!-- <div>
@@ -396,11 +406,11 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">sale_zmart.template_sale_order_delivery_note_usd</field>
         <field name="report_file">sale_zmart.template_sale_order_delivery_note_usd</field>
-        <field name="attachment">(object.state == 'posted') and ((object.name or 'ORDER').replace('/','_') + '.pdf')</field>
+        <field name="attachment">object.name</field>
         <field name="paperformat_id" ref="sale_zmart.paperformat_note"/>
         <field name="binding_model_id" eval="False"/>
         <field name="binding_type">report</field>
-        <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'ORDER').replace('/','_') + '.pdf')</field>
+        <field name="print_report_name">object.name</field>
     </record>
 
 
