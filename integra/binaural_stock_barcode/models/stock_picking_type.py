@@ -17,3 +17,8 @@ class StockPickingType(models.Model):
         res["supervisor_required_to_edit"] = self.supervisor_required_to_edit
         res["supervisor_required_for_incomplete_qty"] = self.supervisor_required_for_incomplete_qty
         return res
+
+    def _get_fields_stock_barcode(self):
+        res = super()._get_fields_stock_barcode()
+        res.append("type_steps")
+        return res

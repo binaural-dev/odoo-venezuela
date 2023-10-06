@@ -168,9 +168,11 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
 
     // Updates or creates a line based on barcode data.
     if (currentLine) { // If line found, can it be incremented ?
+      if(this.record.picking_type_id.type_steps == "pick"){
+        let remainingQtyTemp = currentLine.reserved_uom_qty - currentLine.qty_done;
+        barcodeData.quantity = remainingQtyTemp || 1;
+      }
       let exceedingQuantity = 0;
-      let remainingQtyTemp = currentLine.reserved_uom_qty - currentLine.qty_done;
-      barcodeData.quantity = remainingQtyTemp || 1;
       if (product.tracking !== 'serial' && barcodeData.uom && barcodeData.uom.category_id == currentLine.product_uom_id.category_id) {
         // convert to current line's uom
         barcodeData.quantity = (barcodeData.quantity / barcodeData.uom.factor) * currentLine.product_uom_id.factor;
