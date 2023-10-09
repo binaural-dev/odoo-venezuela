@@ -20,18 +20,6 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
     for (const id of picking.move_ids) {
       const smlData = this.cache.getRecord('stock.move', id);
       if (!products.includes(smlData.product_id)) {
-
-        // smlData.dummy_id = smlData.dummy_id && Number(smlData.dummy_id);
-        // smlData.virtual_id = smlData.dummy_id || previousVirtualId || this._uniqueVirtualId;
-        // smlData.product_id = this.cache.getRecord('product.product', smlData.product_id);
-        // smlData.product_uom_id = this.cache.getRecord('uom.uom', smlData.product_uom_id);
-        // smlData.location_id = this.cache.getRecord('stock.location', smlData.location_id);
-        // smlData.location_dest_id = this.cache.getRecord('stock.location', smlData.location_dest_id);
-        // smlData.lot_id = smlData.lot_id && this.cache.getRecord('stock.lot', smlData.lot_id);
-        // smlData.owner_id = smlData.owner_id && this.cache.getRecord('res.partner', smlData.owner_id);
-        // smlData.package_id = smlData.package_id && this.cache.getRecord('stock.quant.package', smlData.package_id);
-        // smlData.product_packaging_id = smlData.product_packaging_id && this.cache.getRecord('product.packaging', smlData.product_packaging_id);
-        //
         let base = { "dummy_id": false, "virual_id": false, "package_id": false }
         smlData.product_id = this.cache.getRecord('product.product', smlData.product_id);
         smlData.location_id = this.cache.getRecord('stock.location', smlData.location_id);
