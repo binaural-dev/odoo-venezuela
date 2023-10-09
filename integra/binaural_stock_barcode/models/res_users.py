@@ -22,6 +22,4 @@ class ResUsers(models.Model):
         """
         Validate if the password is correct for the supervisor
         """
-        if self.supervisor_barcode_password == password:
-            return True
-        return False
+        return self.supervisor_barcode_password == password
