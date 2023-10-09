@@ -80,7 +80,7 @@ class SaleOrder(models.Model):
                 if (spick.move_line_ids):
                     _logger.info(spick.move_line_ids)
                     if (len(spick.move_line_ids)>=1):
-                        stock_picking_set_quantitites(picking=spick)
+                        stock_picking_set_quantities(picking=spick)
                         #_logger.info("validating")
                         try:
                             spick.button_validate()

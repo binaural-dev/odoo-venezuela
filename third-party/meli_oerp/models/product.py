@@ -815,6 +815,10 @@ class product_product(models.Model):
         if not ("product.image" in self.env):
             return {}
 
+        if not ("mercadolibre.image" in self.env):
+            return {}
+
+        banner_images = config and "mercadolibre_banner" in config and config.mercadolibre_banner and "images_id" in config.mercadolibre_banner and config.mercadolibre_banner.images_id
         has_variations = rjson and "variations" in rjson and len(rjson["variations"])>1
 
         try:
@@ -866,7 +870,16 @@ class product_product(models.Model):
                     #_logger.info(pimg_fields)
 
                     #for variant images:
+                    is_in_banner_images = False
+                    for img in banner_images:
+                        if img.meli_imagen_bytes == pic["meli_imagen_bytes"] and img.meli_imagen_size == pic["size"]:
+                            is_in_banner_images = True
+                        if img.meli_imagen_id == pic["id"]:
+                            is_in_banner_images = True
 
+                    if is_in_banner_images:
+                        #jump next picture
+                        continue;
 
                     if (variant_image_ids(product)):
                         #_logger.info("has variant image ids")
@@ -1456,9 +1469,12 @@ class product_product(models.Model):
             if (len(des)>0):
                 desplain = des
 
+            #publication specific banner
             mlbanner = product.meli_mercadolibre_banner or product_template.meli_mercadolibre_banner
+            #configuration banner
             mlbanner = mlbanner or (config and config.mercadolibre_banner)
             if (mlbanner):
+                #get the text, not the header nor the footer
                 desplain = mlbanner.get_from_ml_description(desplain)
 
 
@@ -1539,6 +1555,7 @@ class product_product(models.Model):
         tmpl_fields = {
           'name': meli_fields["name"],
           'description_sale': desplain,
+          #'company_id': company.id,
           #'name': str(rjson['id']),
           #'lst_price': ml_price_convert,
           'meli_title': meli_fields["meli_title"],
@@ -1751,8 +1768,8 @@ class product_product(models.Model):
 
                         if ("barcode" in variation):
                             try:
-                                bcodes = self.env["product.product"].search([('barcode','=',variation["barcode"]),('active','=',True)])
-                                bcodes_archived = self.env["product.product"].search([('barcode','=',variation["barcode"]),('active','=',False)])
+                                bcodes = self.env["product.product"].sudo().search([('barcode','=',variation["barcode"]),('active','=',True)])
+                                bcodes_archived = self.env["product.product"].sudo().search([('barcode','=',variation["barcode"]),('active','=',False)])
 
                                 if not bcodes and bcodes_archived:
                                     _logger.error("Error barcode already defined! In archived product variant!!"+str(variation["barcode"]))
@@ -1785,8 +1802,8 @@ class product_product(models.Model):
 
                         if ("barcode" in variation):
                             try:
-                                bcodes = self.env["product.product"].search([('barcode','=',variation["barcode"]),('active','=',True)])
-                                bcodes_archived = self.env["product.product"].search([('barcode','=',variation["barcode"]),('active','=',False)])
+                                bcodes = self.env["product.product"].sudo().search([('barcode','=',variation["barcode"]),('active','=',True)])
+                                bcodes_archived = self.env["product.product"].sudo().search([('barcode','=',variation["barcode"]),('active','=',False)])
 
                                 if not bcodes and bcodes_archived:
                                     _logger.error("Error barcode already defined! In archived product variant!!"+str(variation["barcode"]))
@@ -1829,8 +1846,8 @@ class product_product(models.Model):
 
             if barcode and not product.barcode:
                 try:
-                    bcodes = self.env["product.product"].search([('barcode','=',barcode)])
-                    bcodes_archived = self.env["product.product"].search([('barcode','=',barcode),('active','=',False)])
+                    bcodes = self.env["product.product"].sudo().search([('barcode','=',barcode)])
+                    bcodes_archived = self.env["product.product"].sudo().search([('barcode','=',barcode),('active','=',False)])
 
                     if not bcodes and bcodes_archived:
                         _logger.error("Error barcode already defined! In archived product variant!! "+str(barcode))
@@ -2190,7 +2207,9 @@ class product_product(models.Model):
         product_obj = self.env['product.product']
         product = self
 
-        if variant_image_ids(product)==None and template_image_ids(product)==None:
+        banner_images = config and "mercadolibre_banner" in config and config.mercadolibre_banner and "images_id" in config.mercadolibre_banner and config.mercadolibre_banner.images_id
+
+        if (not banner_images and variant_image_ids(product)==None and template_image_ids(product)==None):
             return { 'error': 'product_meli_upload_multi_images error no images to upload', 'status': 'error', 'message': 'no images to upload' }
 
         image_ids = []
@@ -2216,6 +2235,13 @@ class product_product(models.Model):
                 _logger.info("Upload multi image tpl: "+str(imix))
                 product_image = tpl_image_ids[imix]
                 image_ids+= product._meli_upload_image( product_image, meli=meli, config=config )
+
+        product.write( { "meli_multi_imagen_id": "%s" % (image_ids) } )
+
+        if banner_images:
+            for img in config.mercadolibre_banner.images_id:
+                _logger.info("img: " + str(img))
+                image_ids+= product._meli_upload_image( img, meli=meli, config=config )
 
         product.write( { "meli_multi_imagen_id": "%s" % (image_ids) } )
 
@@ -3061,7 +3087,8 @@ class product_product(models.Model):
 
         #publicando multiples imagenes
         multi_images_ids = {}
-        if (variant_image_ids(product) or template_image_ids(product)):
+        banner_images = config and "mercadolibre_banner" in config and config.mercadolibre_banner and "images_id" in config.mercadolibre_banner and config.mercadolibre_banner.images_id
+        if (variant_image_ids(product) or template_image_ids(product) or banner_images):
             multi_images_ids = product.product_meli_upload_multi_images(meli=meli,config=config)
             _logger.info(multi_images_ids)
             if 'status' in multi_images_ids:
@@ -3770,7 +3797,7 @@ class product_product(models.Model):
     #post only fields
     meli_post_required = fields.Boolean(string='Publicable', help='Este producto es publicable en Mercado Libre')
     meli_id = fields.Char(string='ML Id', help='Id del item asignado por Meli', size=256, index=True)
-    meli_description_banner_id = fields.Many2one("mercadolibre.banner","Banner")
+    #meli_description_banner_id = fields.Many2one("mercadolibre.banner",string="Description Banner")
     meli_buying_mode = fields.Selection(string='Método',help='Método de compra',selection=[("buy_it_now","Compre ahora"),("classified","Clasificado")])
     meli_price_fixed = fields.Boolean(string='Price is fixed')
     meli_available_quantity = fields.Integer(string='Cantidades', help='Cantidad disponible a publicar en ML')
@@ -3817,7 +3844,8 @@ class product_product(models.Model):
     meli_stock_update = fields.Datetime(string="Stock Update",help="Ultima actualizacion de stock de Odoo a ML",index=True)
     def _meli_stock_moves_update( self ):
         for var in self:
-            var.meli_stock_moves_update = (var.stock_move_ids and var.stock_move_ids.sorted(lambda o: o.create_date, reverse=True)[0].create_date) or False
+            _st_mv_ids = var.stock_move_ids and var.stock_move_ids.filtered(lambda x: x.create_date )
+            var.meli_stock_moves_update = (_st_mv_ids and _st_mv_ids.sorted(lambda o: o.create_date, reverse=True)[0].create_date) or False
 
     def process_meli_stock_moves_update( self ):
         for var in self:
