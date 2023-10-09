@@ -36,7 +36,7 @@
                                 <div style="margin-bottom: 5px;margin-top:10px">Cliente: <span t-field="o.partner_id.name"/></div>
                                 <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.prefix_vat"/>-<span t-field="o.partner_id.vat"/></div>
                                 <div style="margin-bottom: 5px;">Correo del Comprador: <span t-field="o.partner_id.email"/></div>
-                                <div style="margin-bottom: 5px;">Dirección: <span t-field="o.partner_id.contact_address_complete"/></div>
+                                <div style="margin-bottom: 5px;">Dirección: <span style="text-transform: uppercase" t-field="o.partner_id.contact_address_complete"/></div>
                                 <div style="margin-bottom: 5px;">Teléfonos: <span t-field="o.partner_id.phone"/></div>
                                 <div style="margin-bottom: 5px;">Vendedor: <span t-field="o.invoice_user_id"/></div>
                             </section>
@@ -259,8 +259,17 @@
                                                                                 <strong>Dolares tasa bcv ( ):</strong>
                                                                             </t>
                                                                         </td>
-                                                                        <td></td>
-                                                                        <td></td>
+                                                                        <td>
+                                                                            <strong>Base</strong>
+                                                                        </td>
+                                                                        <td>
+                                                                            <t t-if="tax_totals['igtf']['is_igtf_suggested'] != True">
+                                                                                <span t-out="tax_totals['formatted_amount_total']"/>
+                                                                            </t>
+                                                                            <t t-else="">
+                                                                                <span>$0,00</span>
+                                                                            </t>
+                                                                        </td>
                                                                         <td style="padding-left:270px">
                                                                             <t t-if="tax_totals['igtf']['is_igtf_suggested'] != True">
                                                                                 <span t-out="o.tax_totals['formatted_amount_total']"/>
@@ -282,7 +291,7 @@
                                                                         </td>
                                                                         <td>
                                                                             <t t-if="tax_totals['igtf']['is_igtf_suggested'] != True">
-                                                                                <span t-out="tax_totals['igtf']['formatted_igtf_base_amount']"/>
+                                                                                <span t-out="tax_totals['igtf']['formatted_igtf_amount']"/>
                                                                             </t>
                                                                             <t t-else="">
                                                                                 <span>$0,00</span>
@@ -374,8 +383,12 @@
                                                                     <td>
                                                                         <strong>Dolares tasa bcv (<span t-out="o.foreign_rate"/>):</strong>
                                                                     </td>
-                                                                    <td></td>
-                                                                    <td></td>
+                                                                    <td>
+                                                                        <strong>Base</strong>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span t-out="tax_totals['formatted_amount_total']"/>
+                                                                    </td>
                                                                     <td style="padding-left:270px">
                                                                         <span  t-out="o.tax_totals['formatted_amount_total']"/>
                                                                     </td>
@@ -394,7 +407,7 @@
                                                                     </td>
                                                                     <td>
                                                                         <t>
-                                                                            <span t-out="tax_totals['formatted_amount_total']"/>
+                                                                            <span t-out="tax_totals['igtf']['formatted_igtf_amount']"/>
                                                                         </t>
                                                                     </td>
                                                                     <td class="text-end">
