@@ -53,23 +53,20 @@ class StockPicking(models.Model):
     packs_count = fields.Integer(compute="_compute_stock_pickings_by_origin")
     outs_count = fields.Integer(compute="_compute_stock_pickings_by_origin")
 
+    def _get_picks(self):
+        return self.search(["&", ("origin", "=", self.origin), ("type_delivery_step", "=", "pick")])
+
+    def _get_packs(self):
+        return self.search(["&", ("origin", "=", self.origin), ("type_delivery_step", "=", "pack")])
+
+    def _get_outs(self):
+        return self.search(["&", ("origin", "=", self.origin), ("type_delivery_step", "=", "out")])
+
     def _compute_stock_pickings_by_origin(self):
         for record in self:
-            record.picks_count = len(
-                record.search(
-                    ["&", ("origin", "=", self.origin), ("type_delivery_step", "=", "pick")]
-                )
-            )
-            record.packs_count = len(
-                record.search(
-                    ["&", ("origin", "=", self.origin), ("type_delivery_step", "=", "pack")]
-                )
-            )
-            record.outs_count = len(
-                record.search(
-                    ["&", ("origin", "=", self.origin), ("type_delivery_step", "=", "out")]
-                )
-            )
+            record.picks_count = len(record._get_picks())
+            record.packs_count = len(record._get_packs())
+            record.outs_count = len(record._get_outs())
 
     type_delivery_step = fields.Selection(
         [
@@ -87,4 +84,3 @@ class StockPicking(models.Model):
     def _compute_type_delivery_step(self):
         for record in self:
             record.type_delivery_step = record.picking_type_id._get_type_steps()
-
