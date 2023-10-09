@@ -67,7 +67,7 @@
                                 <div style="margin-bottom: 5px;margin-top:10px">Cliente: <span t-field="o.partner_id.name"/></div>
                                 <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.prefix_vat"/>-<span t-field="o.partner_id.vat"/></div>
                                 <div style="margin-bottom: 5px;">Correo del Comprador: <span t-field="o.partner_id.email"/></div>
-                                <div style="margin-bottom: 5px;">Dirección: <span style="text-transform: lowercase" t-field="o.partner_id.contact_address_complete"/></div>
+                                <div style="margin-bottom: 5px;">Dirección: <span t-field="o.partner_id.contact_address_complete"/></div>
                                 <div style="margin-bottom: 5px;">Teléfonos: <span t-field="o.partner_id.phone"/></div>
                                 <div style="margin-bottom: 5px;">Vendedor: <span t-field="o.invoice_user_id"/></div>
                             </section>
@@ -201,10 +201,12 @@
                                                                     <tr>
                                                                         <t t-if="tax_totals['display_tax_base']">
                                                                             <td style="width:400px">
-                                                                                <span t-esc="amount_by_group['tax_group_name']"/>
-                                                                                <span class="text-nowrap"> on
-                                                                                    <t t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
-                                                                                </span>
+                                                                                <strong>
+                                                                                    <span t-esc="amount_by_group['tax_group_name']"/>
+                                                                                    <span class="text-nowrap"> on
+                                                                                        <t t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
+                                                                                    </span>
+                                                                                </strong>
                                                                             </td>
                                                                             <td></td>
                                                                             <td></td>
@@ -214,10 +216,14 @@
                                                                         </t>
                                                                         <t t-else="">
                                                                             <td>
-                                                                                <span class="text-nowrap" t-esc="amount_by_group['tax_group_name']"/>
+                                                                                <strong>
+                                                                                    <span class="text-nowrap" t-esc="amount_by_group['tax_group_name']"/>
+                                                                                </strong>
                                                                             </td>
-                                                                            <td class="text-end o_price_total" style="margin-left:5px"> 
-                                                                                <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_amount']"/>
+                                                                            <td></td>
+                                                                            <td></td>
+                                                                            <td class="text-end o_price_total"> 
+                                                                                <span class="text-nowrap" t-esc="o.get_total_amount_including_taxes()[1]"/>
                                                                             </td>
                                                                         </t>
                                                                     </tr>
@@ -229,10 +235,12 @@
                                                                     <tr>
                                                                         <t t-if="tax_totals['display_tax_base']">
                                                                             <td style="width:400px">
-                                                                                <span t-esc="amount_by_group['tax_group_name']"/>
-                                                                                <span class="text-nowrap"> on
-                                                                                    <t t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
-                                                                                </span>
+                                                                                <strong>
+                                                                                    <span t-esc="amount_by_group['tax_group_name']"/>
+                                                                                    <span class="text-nowrap"> on
+                                                                                        <t t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
+                                                                                    </span>
+                                                                                </strong>
                                                                             </td>
                                                                             <td></td>
                                                                             <td></td>
@@ -242,7 +250,9 @@
                                                                         </t>
                                                                         <t t-else="">
                                                                             <td>
-                                                                                <span class="text-nowrap" t-esc="amount_by_group['tax_group_name']"/>
+                                                                                <strong>
+                                                                                    <span class="text-nowrap" t-esc="amount_by_group['tax_group_name']"/>
+                                                                                </strong>
                                                                             </td>
                                                                             <td></td>
                                                                             <td></td>
