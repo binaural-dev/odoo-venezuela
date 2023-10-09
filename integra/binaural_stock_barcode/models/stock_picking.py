@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.tools import html2plaintext, is_html_empty
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -16,6 +17,10 @@ class StockPicking(models.Model):
 
     supervisor_approve_to_edit_id = fields.Many2one("hr.employee", readonly=False)
     supervisor_approve_for_incomplete_qty_id = fields.Many2one("hr.employee", readonly=False)
+
+    pick_move_line_ids = fields.One2many(
+        "stock.move.line", "picking_id", "Operations", compute="_compute_pick_move_line_ids"
+    )
 
     operation_start_date = fields.Datetime(compute="_compute_time_elapsed")
     operation_pause_date = fields.Datetime(compute="_compute_time_elapsed")
@@ -138,3 +143,84 @@ class StockPicking(models.Model):
             if picker.available_to_assing_picking():
                 return picker.id
         return False
+
+    @api.depends("origin")
+    def _compute_pick_move_line_ids(self):
+        for record in self:
+            pick_id = record._get_picks()
+            record.pick_move_line_ids =  pick_id.move_line_ids
+
+    def _get_fields_stock_barcode(self):
+        res = super()._get_fields_stock_barcode()
+        res.append("move_ids")
+        res.append("pick_move_line_ids")
+        res.append("picks_count")
+        return res
+
+    def _get_stock_barcode_data(self):
+        """
+        This function was overwritten to be able to add products that were not in stock.move.line 
+        but are in stock.move
+
+        This function also adds the stock.move model to the list of records
+        """
+        
+        # Avoid to get the products full name because code and name are separate in the barcode app.
+        self = self.with_context(display_default_code=False)
+        move_lines = self.move_line_ids
+        lots = move_lines.lot_id
+        owners = move_lines.owner_id
+        # Fetch all implied products in `self` and adds last used products to avoid additional rpc.
+        products = move_lines.product_id
+        for move in self.move_ids:
+            products |= move.product_id
+        packagings = products.packaging_ids
+
+        uoms = products.uom_id | move_lines.product_uom_id
+        # If UoM setting is active, fetch all UoM's data.
+        if self.env.user.has_group('uom.group_uom'):
+            uoms |= self.env['uom.uom'].search([])
+
+        # Fetch `stock.location`
+        source_locations = self.env['stock.location'].search([('id', 'child_of', self.location_id.ids)])
+        destination_locations = self.env['stock.location'].search([('id', 'child_of', self.location_dest_id.ids)])
+        locations = move_lines.location_id | move_lines.location_dest_id | source_locations | destination_locations
+
+        # Fetch `stock.quant.package` and `stock.package.type` if group_tracking_lot.
+        packages = self.env['stock.quant.package']
+        package_types = self.env['stock.package.type']
+        if self.env.user.has_group('stock.group_tracking_lot'):
+            packages |= move_lines.package_id | move_lines.result_package_id
+            packages |= self.env['stock.quant.package'].with_context(pack_locs=destination_locations.ids)._get_usable_packages()
+            package_types = package_types.search([])
+
+        data = {
+            "records": {
+                "stock.picking": self.read(self._get_fields_stock_barcode(), load=False),
+                "stock.picking.type": self.picking_type_id.read(self.picking_type_id._get_fields_stock_barcode(), load=False),
+                "stock.move.line": move_lines.read(move_lines._get_fields_stock_barcode(), load=False),
+                "stock.move": self.move_ids.read(self.move_ids._get_fields_stock_barcode(), load=False),
+                # `self` can be a record set (e.g.: a picking batch), set only the first partner in the context.
+                "product.product": products.with_context(partner_id=self[:1].partner_id.id).read(products._get_fields_stock_barcode(), load=False),
+                "product.packaging": packagings.read(packagings._get_fields_stock_barcode(), load=False),
+                "res.partner": owners.read(owners._get_fields_stock_barcode(), load=False),
+                "stock.location": locations.read(locations._get_fields_stock_barcode(), load=False),
+                "stock.package.type": package_types.read(package_types._get_fields_stock_barcode(), False),
+                "stock.quant.package": packages.read(packages._get_fields_stock_barcode(), load=False),
+                "stock.lot": lots.read(lots._get_fields_stock_barcode(), load=False),
+                "uom.uom": uoms.read(uoms._get_fields_stock_barcode(), load=False),
+            },
+            "nomenclature_id": [self.env.company.nomenclature_id.id],
+            "source_location_ids": source_locations.ids,
+            "destination_locations_ids": destination_locations.ids,
+        }
+        # Extracts pickings' note if it's empty HTML.
+        for picking in data['records']['stock.picking']:
+            picking['note'] = False if is_html_empty(picking['note']) else html2plaintext(picking['note'])
+
+        data['config'] = self.picking_type_id._get_barcode_config()
+        data['line_view_id'] = self.env.ref('stock_barcode.stock_move_line_product_selector').id
+        data['form_view_id'] = self.env.ref('stock_barcode.stock_picking_barcode').id
+        data['package_view_id'] = self.env.ref('stock_barcode.stock_quant_barcode_kanban').id
+        return data
+

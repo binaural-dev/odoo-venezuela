@@ -7,6 +7,49 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
   constructor(params) {
     super(...arguments);
   }
+
+  _createLinesState() {
+    const lines = [];
+    const picking = this.cache.getRecord(this.params.model, this.params.id);
+    if (picking.picks_count == 0) {
+      return super._createLinesState();
+    }
+    let res = super._createLinesState();
+    let products = res.map((line) => line.product_id.id)
+
+    for (const id of picking.move_ids) {
+      const smlData = this.cache.getRecord('stock.move', id);
+      if (!products.includes(smlData.product_id)) {
+
+        // smlData.dummy_id = smlData.dummy_id && Number(smlData.dummy_id);
+        // smlData.virtual_id = smlData.dummy_id || previousVirtualId || this._uniqueVirtualId;
+        // smlData.product_id = this.cache.getRecord('product.product', smlData.product_id);
+        // smlData.product_uom_id = this.cache.getRecord('uom.uom', smlData.product_uom_id);
+        // smlData.location_id = this.cache.getRecord('stock.location', smlData.location_id);
+        // smlData.location_dest_id = this.cache.getRecord('stock.location', smlData.location_dest_id);
+        // smlData.lot_id = smlData.lot_id && this.cache.getRecord('stock.lot', smlData.lot_id);
+        // smlData.owner_id = smlData.owner_id && this.cache.getRecord('res.partner', smlData.owner_id);
+        // smlData.package_id = smlData.package_id && this.cache.getRecord('stock.quant.package', smlData.package_id);
+        // smlData.product_packaging_id = smlData.product_packaging_id && this.cache.getRecord('product.packaging', smlData.product_packaging_id);
+        //
+        let base = { "dummy_id": false, "virual_id": false, "package_id": false }
+        smlData.product_id = this.cache.getRecord('product.product', smlData.product_id);
+        smlData.location_id = this.cache.getRecord('stock.location', smlData.location_id);
+        smlData.fake_line = true;
+        smlData.qty_done = 0;
+        let newLine = Object.assign(base, smlData)
+        res.push(newLine);
+      }
+    }
+
+    for (const line of res) {
+      if (!line.fake_line) {
+        line.fake_line = false;
+      }
+    }
+    return res
+  }
+
   async _processBarcode(barcode) {
     let barcodeData = {};
     let currentLine = false;
@@ -168,7 +211,13 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
 
     // Updates or creates a line based on barcode data.
     if (currentLine) { // If line found, can it be incremented ?
-      if(this.record.picking_type_id.type_steps == "pick"){
+      if (currentLine.fake_line) {
+        return this.notification.add(
+          _t("The product you are trying to scan does not have reserved quantities"),
+          { type: 'danger' }
+        );
+      }
+      if (this.record.picking_type_id.type_steps == "pick") {
         let remainingQtyTemp = currentLine.reserved_uom_qty - currentLine.qty_done;
         barcodeData.quantity = remainingQtyTemp || 1;
       }

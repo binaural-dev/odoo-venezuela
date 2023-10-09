@@ -7,6 +7,7 @@ class StockPickingCart(models.Model):
     _name = "stock.picking.cart"
     _check_company_auto = True
     _description = "Stock Picking Cart"
+    _barcode_field = "barcode"
 
     def _default_barcode(self):
         return self.generate_random_barcode()

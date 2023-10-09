@@ -16,6 +16,7 @@
         "views/hr_employee_views.xml",
         "views/stock_picking_type_views.xml",
         "views/stock_picking_cart_views.xml",
+        "views/stock_move_line_views.xml",
         "wizard/operation_supervisor_views.xml",
     ],
     "assets": {

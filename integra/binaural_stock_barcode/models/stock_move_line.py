@@ -1,0 +1,27 @@
+from odoo import _, api, fields, models
+
+import logging
+
+_logger = logging.getLogger()
+
+
+class StockMoveLine(models.Model):
+    _inherit = "stock.move.line"
+
+    demanded_qty = fields.Float(compute="_compute_demand_quantities")
+
+    @api.depends("move_id")
+    def _compute_demand_quantities(self):
+        for move_line in self:
+            product = move_line.product_id
+            # Busca los moves del picking, esperando que formen parte de la misma ubicacion, y asgina
+            # la suma total de las cantidades en demanda de los 'moves' que se generen durante la operacion.
+            picking_moves = move_line.picking_id.move_ids_without_package.filtered(
+                lambda move: product.id == move.product_id.id
+            )
+            move_line.demanded_qty = float(sum([move.product_uom_qty for move in picking_moves]))
+
+    def _get_fields_stock_barcode(self):
+        res = super()._get_fields_stock_barcode()
+        res.append("demanded_qty")
+        return res
