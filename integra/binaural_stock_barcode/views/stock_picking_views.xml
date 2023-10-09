@@ -86,9 +86,8 @@
                 <field name="cart_id"/>
                 <field name="operation_state" 
                     widget="badge" 
-                    decoration-bf="True" 
-                    decoration-warning="operation_state == 'in_process'" 
-                    decoration-success="operation_state == 'finished'" />
+                    decoration-warning="operation_state=='in_process'" 
+                    decoration-success="operation_state=='finished'" />
                 <field name="operation_start_date"/>
                 <field name="operation_end_date"/>
                 <field name="total_time_elapsed"/>
@@ -102,13 +101,13 @@
         <field name="res_model">stock.picking</field>
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="binaural_stock_barcode.view_tree_stock_picking_tree_operation"/>
-        <field name="domain">['&amp;',('state', 'in', ['done']),('type_delivery_step','in', ['pick','pack','out'])]</field>
+        <field name="domain">['&amp;',('operation_state', 'in', ['paused','in_process','finished']),('type_delivery_step','in', ['pick','pack','out'])]</field>
     </record>
 
     <menuitem 
         id="menu_picking_operation" 
         name="Operation Report" 
-        parent="stock.menu_stock_warehouse_mgmt"
+        parent="stock.menu_warehouse_report"
         action="view_stock_picking_tree_operation"/>
 
     <menuitem 
