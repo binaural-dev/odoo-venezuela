@@ -67,7 +67,7 @@
                                 <div style="margin-bottom: 5px;margin-top:10px">Cliente: <span t-field="o.partner_id.name"/></div>
                                 <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.prefix_vat"/>-<span t-field="o.partner_id.vat"/></div>
                                 <div style="margin-bottom: 5px;">Correo del Comprador: <span t-field="o.partner_id.email"/></div>
-                                <div style="margin-bottom: 5px;">Dirección: <span style="text-transform: lowercase" t-field="o.partner_id.contact_address_complete"/></div>
+                                <div style="margin-bottom: 5px;">Dirección: <span t-field="o.partner_id.contact_address_complete"/></div>
                                 <div style="margin-bottom: 5px;">Teléfonos: <span t-field="o.partner_id.phone"/></div>
                                 <div style="margin-bottom: 5px;">Vendedor: <span t-field="o.invoice_user_id"/></div>
                             </section>
