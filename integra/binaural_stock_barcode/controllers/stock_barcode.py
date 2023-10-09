@@ -53,41 +53,89 @@ class StockBarcodeControllerInherit(StockBarcodeController):
             return False
 
         user_id = request.env["res.users"].browse(request.context.get("uid", 1))
+        employee_id = user_id.employee_id
+        role_picking = user_id.role_picking
 
-        if cart_picking.pick_id and cart_picking.pick_id.state != "done":
-            return {"action": cart_picking.pick_id.action_open_picking_client_action()}
+        model_stock_picking = request.env["stock.picking"]
+
+        if role_picking == "picker":
+            if not self.is_cart_available_to_assign(cart_picking):
+                return {
+                    "warning": _(
+                        "You cannot assign the pick to this cart because there is an OUT in process"
+                    )
+                }
+            if cart_picking.pick_id and cart_picking.pick_id.state != "done":
+                return self._open_stock_picking(cart_picking.pick_id)
+
+            picking_id = self.get_pick_assigned(employee_id)
+
+            if picking_id:
+                out_id = model_stock_picking.search(
+                    ["&", ("origin", "=", picking_id.origin), ("type_delivery_step", "=", "out")]
+                )
+                picking_id.write({"cart_id": cart_picking.id})
+                cart_picking.write({"pick_id": picking_id.id, "out_id": out_id.id})
+
+                self.start_time_operation(picking_id, employee_id)
+                return self._open_stock_picking(picking_id)
+
+            return {"warning": _("You do not currently have a pick assigned")}
+
+        if role_picking == "out":
+            if cart_picking.pick_id and cart_picking.pick_id.state != "done":
+                return {
+                    "warning": _(
+                        "You cannot take a cart if the picker has not finished his operation"
+                    )
+                }
+
+            if self.is_cart_available_open_out(cart_picking):
+                self.start_time_operation(cart_picking.out_id, employee_id)
+                cart_picking.out_id.write({"cart_id": cart_picking.id, "picker_id": employee_id.id})
+                return self._open_stock_picking(cart_picking.out_id)
+
+            return {"warning": _("This cart does not have any OUT assigned")}
+
+        return {
+            "warning": _(
+                "Your user is not configured with any role to be able to take an operation"
+            )
+        }
+
+    def is_cart_available_open_out(self, cart):
+        if (
+            cart.pick_id
+            and cart.out_id
+            and cart.pick_id.state == "done"
+            and cart.out_id.state != "done"
+        ):
+            return True
+        return False
+
+    def is_cart_available_to_assign(self, cart):
+        if not cart.pick_id and not cart.out_id:
+            return True
 
         if (
-            cart_picking.pick_id
-            and cart_picking.out_id
-            and cart_picking.pick_id.state == "done"
-            and cart_picking.out_id.state != "done"
+            cart.pick_id
+            and cart.pick_id.state != "done"
+            and cart.out_id
+            and cart.out_id.state != "done"
         ):
-            request.env["stock.picking.time"].create(
-                {
-                    "pick_id": cart_picking.out_id.id,
-                    "employee_id": user_id.employee_id.id,
-                    "type": "start",
-                }
-            )
-            cart_picking.out_id.write(
-                {"cart_id": cart_picking.id, "picker_id": user_id.employee_id.id}
-            )
-            return {"action": cart_picking.out_id.action_open_picking_client_action()}
+            return True
 
-        picking_id = user_id.employee_id.pick_ids.filtered(
-            lambda x: x.operation_state in ["ready", "in_process"]
+        return False
+
+    def _open_stock_picking(self, stock_picking):
+        return {"action": stock_picking.action_open_picking_client_action()}
+
+    def start_time_operation(self, picking_id, employee_id):
+        model_stock_picking_time = request.env["stock.picking.time"]
+        model_stock_picking_time.create(
+            {"pick_id": picking_id.id, "employee_id": employee_id.id, "type": "start"}
         )
-        if picking_id:
-            out_id = request.env["stock.picking"].search(
-                ["&", ("origin", "=", picking_id.origin), ("type_delivery_step", "=", "out")]
-            )
-            cart_picking.write({"pick_id": picking_id.id, "out_id": out_id.id})
-            request.env["stock.picking.time"].create(
-                {"pick_id": picking_id.id, "employee_id": user_id.employee_id.id, "type": "start"}
-            )
-            picking_id.write({"cart_id": cart_picking.id})
+        return model_stock_picking_time
 
-            return {"action": picking_id.action_open_picking_client_action()}
-
-        return {"warning": _("You do not currently have a pick assigned")}
+    def get_pick_assigned(self, employee_id):
+        return employee_id.pick_ids.filtered(lambda x: x.operation_state in ["ready", "in_process"])
