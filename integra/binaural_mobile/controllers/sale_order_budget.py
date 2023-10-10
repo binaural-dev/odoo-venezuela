@@ -134,6 +134,17 @@ class SaleOrderBudget(http.Controller):
                     if not success:
                         data.update({"status": 400, "msg": msg})
                         return data
+                    if sale.company_id.account_use_credit_limit and sale.partner_id.use_partner_credit_limit_order:
+                        total_pay = sale.partner_id.credit + sale.amount_total
+                        if total_pay > sale.partner_id.credit_limit:
+                            data.update(
+                                {
+                                    "status": 400, 
+                                    "msg": (_("La cuenta %s es de %s mas %s en presupuesto da un total de %s superando el limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el limite de crédito del cliente.",
+                                            sale.partner_id.property_account_receivable_id.display_name, sale.partner_id.credit_limit, sale.amount_total, total_pay, sale.partner_id.credit_limit)
+                                    )
+                                }
+                            )
                     sale.action_confirm()
                     sale._create_analytic_account()
                 elif confirm == "cancel":

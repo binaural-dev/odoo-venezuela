@@ -1,3 +1,5 @@
+import json
+
 from odoo import models, _
 
 
@@ -13,5 +15,7 @@ class ResPartner(models.Model):
         if not is_usd:
             return res
         res["name"] = _("Partner Ledger USD")
-        res["context"]["usd_report"] = is_usd
+        context = json.loads(res["context"].replace("'", '"'))
+        context["usd_report"] = is_usd
+        res["context"] = json.dumps(context)
         return res
