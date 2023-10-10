@@ -138,7 +138,7 @@
                                         </tr>
                                         <tr>
                                             <th style="width:700px;font-weight:normal;font-size:17px;padding-right:40px">
-                                                <div style="display:inline;">Dirección</div>
+                                                <div style="text-transform: uppercase;display:inline;">Dirección</div>
                                                 <span style="margin-left:3px" t-out="invoice.partner_id.contact_address_complete"/>
                                             </th>
                                         </tr>
