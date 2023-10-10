@@ -46,7 +46,7 @@
                                     <table class="table table-sm o_main_table table-borderless" name="invoice_line_table" style="font-size:17px;margin-top:-40px">
                                         <thead>
                                             <tr class="border-bottom border-dark" style="border-top: 1px solid black;">
-                                                <th style="width:300px" name="th_description" class="text-start"><span>Código</span></th>
+                                                <th style="width:260px" name="th_description" class="text-start"><span>Código</span></th>
                                                 <th style="width:600px" name="th_description" class="text-start"><span>Descripción</span></th>
                                                 <th style="width:90px" name="th_quantity" class="text-center"><span>Cant.</span></th>
                                                 <th style="width:90px" name="th_quantity" class="text-center"><span>Und.</span></th>
@@ -73,7 +73,7 @@
                                                 <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
                                                     <t t-if="line.display_type == 'product'" name="account_invoice_line_accountable">
                                                         <td>
-                                                            <span t-esc="line.product_id.default_code[:20]"/>
+                                                            <span t-esc="line.product_id.default_code[:17]"/>
                                                         </td>
                                                         <td name="account_invoice_line_name">
                                                             <span t-esc="line.product_id.name[:43]"/>
