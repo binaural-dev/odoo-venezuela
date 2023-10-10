@@ -1,10 +1,6 @@
 from odoo import fields, models, api, _
 from odoo.exceptions import UserError
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -14,7 +10,7 @@ class AccountMove(models.Model):
         string="Seller",
         tracking=True,
         store=True,
-        help="Partner's seller reference."
+        help="Partner's seller reference.",
     )
 
     @api.model_create_multi
@@ -22,13 +18,44 @@ class AccountMove(models.Model):
         invoices = super().create(vals_list)
         for invoice in invoices:
             if invoice.invoice_origin:
-                sale_order = self.env["sale.order"].search([("name", "=", invoice.invoice_origin)])
+                sale_order = self.env["sale.order"].search(
+                    [
+                        ("name", "=", invoice.invoice_origin),
+                        ("company_id", "=", self.env.company.id),
+                    ]
+                )
                 invoice.seller_id = sale_order.seller_id.id
         return invoices
-    
+
     def action_post(self):
         res = super().action_post()
+        multiple_seller_config = self.env.company.multiple_sellers
         for invoice in self:
             if not invoice.seller_id:
-                raise UserError(_("The invoice must have a seller assigned"))
+                if len(invoice.partner_id.seller_ids) == 1:
+                    invoice.seller_id = invoice.partner_id.seller_ids[0]
+                if len(invoice.partner_id.seller_ids) > 1:
+                    if not multiple_seller_config:
+                        raise UserError(
+                            _(
+                                "This client has several sellers assigned to him, configure a single seller in his contact form"
+                            )
+                        )
+                    else:
+                        seller_name = ""
+                        for seller in invoice.partner_id.seller_ids:
+                            seller_name += seller.name + ", "
+                        raise UserError(
+                            _(
+                                "El contacto seleccionado posee estos Vendedores: %s. Debe elegir uno.",
+                                seller_name,
+                            )
+                        )
         return res
+
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        self.seller_id = (
+            self.partner_id.seller_ids[0] if len(self.partner_id.seller_ids) == 1 else False
+        )
+
