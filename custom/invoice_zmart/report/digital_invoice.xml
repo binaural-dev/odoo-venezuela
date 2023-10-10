@@ -454,10 +454,11 @@
                                                 <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
                                                     <t t-if="line.display_type == 'product'" name="account_invoice_line_accountable">
                                                         <td>
-                                                            <span t-field="line.product_id.default_code"/>
+                                                            <span t-esc="line.product_id.default_code[:16]"/>
                                                         </td>
                                                         <td name="account_invoice_line_name">
-                                                            <span t-field="line.product_id.name" t-options="{'widget': 'text'}"/></td>
+                                                            <span t-esc="line.product_id.name[:40]"/>
+                                                        </td>
                                                         <td class="text-end">
                                                             <span t-field="line.quantity"/>
                                                         </td>
