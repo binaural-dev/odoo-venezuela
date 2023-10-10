@@ -102,20 +102,24 @@ class AccountMove(models.Model):
         for move in res:
             if move.is_valid_to_sequence():
                 move.correlative = move.get_sequence(move.journal_id.fiscal)
+        return res
 
     @api.model
     def is_valid_to_sequence(self) -> bool:
-        """Check if the invoice satisfy the conditions to
+        """
+        Check if the invoice satisfies the conditions to
         associate a new sequence number.
 
-        Returns
-        -------
+        Returns:
             True or False whether the invoice already has a
             sequence number or not.
         """
+        journal_fiscal = self.journal_id.fiscal
+        journal_type = self.journal_id.type == 'sale'
+        is_valid = journal_fiscal and not self.correlative and journal_type
+        
+        return is_valid
 
-        return self.journal_id.fiscal and not self.correlative
-    
     @api.model
     def get_sequence(self, is_fiscal=False):
         """Allow the invoice to have both a generic sequence

@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230919\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230925\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-26 15:37+0000\n"
-"PO-Revision-Date: 2023-09-26 15:37+0000\n"
+"POT-Creation-Date: 2023-09-26 20:47+0000\n"
+"PO-Revision-Date: 2023-09-26 20:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -20,6 +20,11 @@ msgstr ""
 #: model:ir.model.constraint,message:binaural_accountant.constraint_account_move_unique_name_ve
 msgid "Another entry with the same name already exists."
 msgstr "Ya existe un asiento con el mismo nombre."
+
+#. module: binaural_accountant
+#: model:ir.model,name:binaural_accountant.model_res_partner
+msgid "Contact"
+msgstr "Contacto"
 
 #. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__financial_document
@@ -204,6 +209,26 @@ msgid "Journal Item"
 msgstr "Apunte contable"
 
 #. module: binaural_accountant
+#. odoo-python
+#: code:addons/binaural_accountant/models/account_move.py:0
+#, python-format
+msgid ""
+"La cuenta %s es de %s mas %s en factura da un total de %s superando el "
+"limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con "
+"el administrador para aumentar el limite de crédito del cliente."
+msgstr ""
+
+#. module: binaural_accountant
+#. odoo-python
+#: code:addons/binaural_accountant/models/sale_order.py:0
+#, python-format
+msgid ""
+"La cuenta %s es de %s mas %s en presupuesto da un total de %s superando el "
+"limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con "
+"el administrador para aumentar el limite de crédito del cliente."
+msgstr ""
+
+#. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__manually_set_rate
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_move__manually_set_rate
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__manually_set_rate
@@ -214,6 +239,12 @@ msgstr "Tasa manual"
 #: model:ir.model,name:binaural_accountant.model_account_partial_reconcile
 msgid "Partial Reconcile"
 msgstr "Conciliación parcial"
+
+#. module: binaural_accountant
+#: model:ir.model.fields,field_description:binaural_accountant.field_res_partner__use_partner_credit_limit_order
+#: model:ir.model.fields,field_description:binaural_accountant.field_res_users__use_partner_credit_limit_order
+msgid "Partner Order Limit"
+msgstr "Limite para la venta (Presupuesto)"
 
 #. module: binaural_accountant
 #: model:ir.model,name:binaural_accountant.model_account_payment
@@ -252,6 +283,11 @@ msgstr "Recalcular debito y credito alterno de apuntes contables"
 #: model:ir.model,name:binaural_accountant.model_account_payment_register
 msgid "Register Payment"
 msgstr "Registrar pago"
+
+#. module: binaural_accountant
+#: model:ir.model,name:binaural_accountant.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
 
 #. module: binaural_accountant
 #: model:ir.actions.server,name:binaural_accountant.set_rate_payments_zero
