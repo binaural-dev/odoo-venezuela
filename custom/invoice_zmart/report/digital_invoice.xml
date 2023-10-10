@@ -61,114 +61,7 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- HEADER -->
-                        <section id="segmento_1" style="display: flex; flex-direction: row;font-size:15px">
-                                <hr style="border: none; visibility: hidden;"/>
-                                <div style="margin-bottom: 5px;margin-top:10px">Cliente: <span t-field="o.partner_id.name"/></div>
-                                <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.prefix_vat"/>-<span t-field="o.partner_id.vat"/></div>
-                                <div style="margin-bottom: 5px;">Correo del Comprador: <span t-field="o.partner_id.email"/></div>
-                                <div style="margin-bottom: 5px;">Dirección: <span style="text-transform: uppercase" t-field="o.partner_id.contact_address_complete"/></div>
-                                <div style="margin-bottom: 5px;">Teléfonos: <span t-field="o.partner_id.phone"/></div>
-                                <div style="margin-bottom: 5px;">Vendedor: <span t-field="o.invoice_user_id"/></div>
-                            </section>
-                            <div class="mt-5">
-                                <div class="page">
-                                <t t-set="display_discount" t-value="any(l.discount for l in o.invoice_line_ids)"/>
-                                    <table class="table table-sm o_main_table table-borderless" name="invoice_line_table" style="font-size:15px;margin-top:-40px">
-                                        <thead>
-                                            <tr class="border-bottom border-dark" style="border-top: 1px solid black;">
-                                                <th name="th_description" style="width:100px;" class="text-start"><span>Código</span></th>
-                                                <th style="width:600px" name="th_description" class="text-start"><span>Descripción</span></th>
-                                                <th name="th_quantity" class="text-end"><span>Cantidad</span></th>
-                                                <th name="th_quantity" class="text-end"><span>Unid</span></th>
-                                                <th name="th_priceunit" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>Precio U</span></th>
-                                                <th name="th_taxes" t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>IVA</span></th>
-                                                <th name="th_subtotal" class="text-end">
-                                                    <span groups="account.group_show_line_subtotals_tax_excluded">Monto</span>
-                                                    <span groups="account.group_show_line_subtotals_tax_included">Precio Total</span>
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="invoice_tbody">
-                                            <t t-set="current_subtotal" t-value="0"/>
-                                            <t t-set="lines" t-value="o.invoice_line_ids.sorted(key=lambda l: (-l.sequence, l.date, l.move_name, -l.id), reverse=True)"/>
-                                            <t t-foreach="lines" t-as="line">
-                                                <t t-if="base_vef">
-                                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
-                                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
-                                                </t>
-                                                <t t-else="">
-                                                    <t t-set="current_subtotal" t-value="current_subtotal + line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
-                                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
-                                                </t>
-                                                <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
-                                                    <t t-if="line.display_type == 'product'" name="account_invoice_line_accountable">
-                                                        <td>
-                                                            <span t-field="line.product_id.default_code"/>
-                                                        </td>
-                                                        <td name="account_invoice_line_name">
-                                                            <span t-field="line.product_id.name" t-options="{'widget': 'text'}"/></td>
-                                                        <td class="text-end">
-                                                            <span t-field="line.quantity"/>
-                                                        </td>
-                                                        <td class="text-end">
-                                                            <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
-                                                        </td>  
-                                                        <td t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
-                                                            <t>
-                                                                <span class="text-nowrap" t-esc="'{0:,.2f}'.format(float(line.foreign_price - (line.foreign_price * (line.discount / 100)))).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
-                                                            </t>
-                                                        </td>
-                                                        <td t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
-                                                            <span t-esc="', '.join(map(lambda x: ( str(x.description)), line.tax_ids))" id="line_tax_ids"/>
-                                                        </td>
-                                                        <td class="text-end o_price_total">
-                                                            <t>
-                                                                <span class="text-nowrap" t-field="line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
-                                                                <span class="text-nowrap" t-field="line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
-                                                            </t>
-                                                        </td>
-                                                    </t>
-                                                    <t t-if="line.display_type == 'line_section'">
-                                                        <td colspan="99">
-                                                            <span t-field="line.name" t-options="{'widget': 'text'}"/>
-                                                        </td>
-                                                        <t t-set="current_section" t-value="line"/>
-                                                        <t t-set="current_subtotal" t-value="0"/>
-                                                    </t>
-                                                    <t t-if="line.display_type == 'line_note'">
-                                                        <td colspan="99">
-                                                            <span t-field="line.name" t-options="{'widget': 'text'}"/>
-                                                        </td>
-                                                    </t>
-                                                </tr>
-                                                <t t-if="current_section and (line_last or lines[line_index+1].display_type == 'line_section')">
-                                                    <tr class="is-subtotal text-end">
-                                                        <td colspan="99">
-                                                            <strong class="mr16">Subtotal</strong>
-                                                            <span
-                                                                t-esc="current_subtotal"
-                                                                t-options='{"widget": "monetary", "display_currency": %(base.VEF)s}'
-                                                            />
-                                                        </td>
-                                                    </tr>
-                                                </t>
-                                            </t>
-                                        </tbody>
-                                    </table>
-                                </div>   
-                                <div t-if="not is_html_empty(o.narration)" name="comment">
-                                    <span t-field="o.narration"/>
-                                </div>
-                                <p t-if="not is_html_empty(o.fiscal_position_id.note)" name="note">
-                                    <span t-field="o.fiscal_position_id.note"/>
-                                </p>
-                                <p t-if="o.invoice_incoterm_id" name="incoterm">
-                                    <strong>Incoterm: </strong><span t-field="o.invoice_incoterm_id.code"/> - <span t-field="o.invoice_incoterm_id.name"/>
-                                </p>
-                            </div>
-                            </div>
-                            <div class="row" style="margin-top:545px !important;">
+                        <div class="row" style="margin-top:1000px !important;position: absolute; width: 100%;padding-right: 45px">
                                 <div class="col-4">
                                 </div>
                                 <div class="clearfix col-8 mb-4">
@@ -512,10 +405,118 @@
                                             </table>
                                         </div>
                                     </div>
+                                                        <div style="text-align:center;">
+                            Copia Fiel de la Original sin Derecho a Crédito Fiscal
+                            </div>
                         </div>
                     </div>
-                            <div style="text-align:center;">
-                            Copia Fiel de la Original sin Derecho a Crédito Fiscal
+
+                        <!-- HEADER -->
+                        <section id="segmento_1" style="display: flex; flex-direction: row;font-size:15px">
+                                <hr style="border: none; visibility: hidden;"/>
+                                <div style="margin-bottom: 5px;margin-top:10px">Cliente: <span t-field="o.partner_id.name"/></div>
+                                <div style="margin-bottom: 5px;">R.I.F.: <span t-field="o.partner_id.prefix_vat"/>-<span t-field="o.partner_id.vat"/></div>
+                                <div style="margin-bottom: 5px;">Correo del Comprador: <span t-field="o.partner_id.email"/></div>
+                                <div style="margin-bottom: 5px;">Dirección: <span style="text-transform: uppercase" t-field="o.partner_id.contact_address_complete"/></div>
+                                <div style="margin-bottom: 5px;">Teléfonos: <span t-field="o.partner_id.phone"/></div>
+                                <div style="margin-bottom: 5px;">Vendedor: <span t-field="o.invoice_user_id"/></div>
+                            </section>
+                            <div class="mt-5">
+                                <div class="page">
+                                <t t-set="display_discount" t-value="any(l.discount for l in o.invoice_line_ids)"/>
+                                    <table class="table table-sm o_main_table table-borderless" name="invoice_line_table" style="font-size:15px;margin-top:-40px">
+                                        <thead>
+                                            <tr class="border-bottom border-dark" style="border-top: 1px solid black;">
+                                                <th name="th_description" style="width:100px;" class="text-start"><span>Código</span></th>
+                                                <th style="width:600px" name="th_description" class="text-start"><span>Descripción</span></th>
+                                                <th name="th_quantity" class="text-end"><span>Cantidad</span></th>
+                                                <th name="th_quantity" class="text-end"><span>Unid</span></th>
+                                                <th name="th_priceunit" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>Precio U</span></th>
+                                                <th name="th_taxes" t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>IVA</span></th>
+                                                <th name="th_subtotal" class="text-end">
+                                                    <span groups="account.group_show_line_subtotals_tax_excluded">Monto</span>
+                                                    <span groups="account.group_show_line_subtotals_tax_included">Precio Total</span>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="invoice_tbody">
+                                            <t t-set="current_subtotal" t-value="0"/>
+                                            <t t-set="lines" t-value="o.invoice_line_ids.sorted(key=lambda l: (-l.sequence, l.date, l.move_name, -l.id), reverse=True)"/>
+                                            <t t-foreach="lines" t-as="line">
+                                                <t t-if="base_vef">
+                                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_total" groups="account.group_show_line_subtotals_tax_included"/>
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-set="current_subtotal" t-value="current_subtotal + line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                                    <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
+                                                </t>
+                                                <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
+                                                    <t t-if="line.display_type == 'product'" name="account_invoice_line_accountable">
+                                                        <td>
+                                                            <span t-field="line.product_id.default_code"/>
+                                                        </td>
+                                                        <td name="account_invoice_line_name">
+                                                            <span t-field="line.product_id.name" t-options="{'widget': 'text'}"/></td>
+                                                        <td class="text-end">
+                                                            <span t-field="line.quantity"/>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
+                                                        </td>  
+                                                        <td t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
+                                                            <t>
+                                                                <span class="text-nowrap" t-esc="'{0:,.2f}'.format(float(line.foreign_price - (line.foreign_price * (line.discount / 100)))).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                            </t>
+                                                        </td>
+                                                        <td t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
+                                                            <span t-esc="', '.join(map(lambda x: ( str(x.description)), line.tax_ids))" id="line_tax_ids"/>
+                                                        </td>
+                                                        <td class="text-end o_price_total">
+                                                            <t>
+                                                                <span class="text-nowrap" t-field="line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
+                                                                <span class="text-nowrap" t-field="line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
+                                                            </t>
+                                                        </td>
+                                                    </t>
+                                                    <t t-if="line.display_type == 'line_section'">
+                                                        <td colspan="99">
+                                                            <span t-field="line.name" t-options="{'widget': 'text'}"/>
+                                                        </td>
+                                                        <t t-set="current_section" t-value="line"/>
+                                                        <t t-set="current_subtotal" t-value="0"/>
+                                                    </t>
+                                                    <t t-if="line.display_type == 'line_note'">
+                                                        <td colspan="99">
+                                                            <span t-field="line.name" t-options="{'widget': 'text'}"/>
+                                                        </td>
+                                                    </t>
+                                                </tr>
+                                                <t t-if="current_section and (line_last or lines[line_index+1].display_type == 'line_section')">
+                                                    <tr class="is-subtotal text-end">
+                                                        <td colspan="99">
+                                                            <strong class="mr16">Subtotal</strong>
+                                                            <span
+                                                                t-esc="current_subtotal"
+                                                                t-options='{"widget": "monetary", "display_currency": %(base.VEF)s}'
+                                                            />
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </t>
+                                        </tbody>
+                                    </table>
+                                </div>   
+                                <div t-if="not is_html_empty(o.narration)" name="comment">
+                                    <span t-field="o.narration"/>
+                                </div>
+                                <p t-if="not is_html_empty(o.fiscal_position_id.note)" name="note">
+                                    <span t-field="o.fiscal_position_id.note"/>
+                                </p>
+                                <p t-if="o.invoice_incoterm_id" name="incoterm">
+                                    <strong>Incoterm: </strong><span t-field="o.invoice_incoterm_id.code"/> - <span t-field="o.invoice_incoterm_id.name"/>
+                                </p>
+                            </div>
                             </div>
                 </t>
             </t>
