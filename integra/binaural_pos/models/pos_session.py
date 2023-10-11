@@ -58,7 +58,7 @@ class PosSession(models.Model):
                 params["search_params"]["fields"]
             )
 
-        products = self._filter_products(products)
+        products = self._sort_available_products(products)
         self._process_pos_ui_product_product(products)
         return products
 
@@ -74,21 +74,16 @@ class PosSession(models.Model):
             .with_context(active_test=False)
             .search_read(**params["search_params"])
         )
-        products = self._filter_products(products)
+        products = self._sort_available_products(products)
         if len(products) > 0:
             self._process_pos_ui_product_product(products)
         return products
 
-    def _filter_products(self, products):
+    def _sort_available_products(self, products):
         if not self.env.company.pos_show_just_products_with_available_qty:
             return products
 
-        filter_products = []
-        for product in products:
-            if product["qty_available"] > 0:
-                filter_products.append(product)
-
-        return filter_products
+        return sorted(products, key=lambda x: x["qty_available"],reverse=True)
 
     def _get_pos_ui_res_currency(self, params):
         """
