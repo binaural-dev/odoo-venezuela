@@ -21,7 +21,7 @@ class AccountMove(models.Model):
     def create(self, vals_list):
         invoices = super().create(vals_list)
         for invoice in invoices:
-            if invoice.invoice_origin:
+            if invoice.invoice_origin and invoice.move_type == "out_invoice":
                 sale_order = self.env["sale.order"].search([("name", "=", invoice.invoice_origin)])
                 invoice.seller_id = sale_order.seller_id.id
         return invoices
@@ -29,6 +29,6 @@ class AccountMove(models.Model):
     def action_post(self):
         res = super().action_post()
         for invoice in self:
-            if not invoice.seller_id:
+            if not invoice.seller_id and invoice.move_type == "out_invoice":
                 raise UserError(_("The invoice must have a seller assigned"))
         return res
