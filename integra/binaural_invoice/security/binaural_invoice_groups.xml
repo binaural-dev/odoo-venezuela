@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <data>
+    <data noupdate="1">
 
         <record id="group_sales_invoicing_series" model="res.groups">
             <field name="name">Series Invoicing Group</field>
