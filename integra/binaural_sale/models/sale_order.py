@@ -240,6 +240,13 @@ class SaleOrder(models.Model):
 
         self._update_invoices_rate()
         for invoice in invoices:
+            first_invoice_line = invoice.invoice_line_ids[0]
+            first_invoice_line_data = first_invoice_line.read([])[0]
+            for key, value in first_invoice_line_data.items():
+                if isinstance(value, tuple):
+                    first_invoice_line_data[key] = value[0]
+            first_invoice_line.unlink()
+            self.env["account.move.line"].create(first_invoice_line_data)
             invoice.compute_line_ids_foreign_debit_and_credit()
         return invoices
 

@@ -14,6 +14,15 @@
             <field name="padding">5</field>
             <field name="active">False</field>
         </record>
+
+        <record model="ir.rule" id="invoice_correlative_rule">
+            <field name="name">Restricted Record: multi-company sequence</field>
+            <field name="model_id" ref="base.model_ir_sequence"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">
+                [('company_id', 'in', company_ids)]
+            </field>
+        </record>
     </data>
 
 </odoo>
