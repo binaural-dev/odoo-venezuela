@@ -12,11 +12,9 @@ class StockValuationAdjustmentLines(models.Model):
     def default_is_stock_advance(self):
         return self.env.company.check_advance_stock or False
 
-    additional_landed_cost = fields.Monetary(
-        'Additional Landed Cost Und')
+    additional_landed_cost = fields.Monetary("Additional Landed Cost Und")
 
-    former_cost = fields.Monetary(
-        'Subtotal')
+    former_cost = fields.Monetary("Subtotal")
 
     foreign_currency_id = fields.Many2one(related="cost_id.foreign_currency_id", store=True)
     foreign_rate = fields.Float(related="cost_id.foreign_rate", store=True)
@@ -61,7 +59,7 @@ class StockValuationAdjustmentLines(models.Model):
         "Foreign Unit Cost",
         digits="Tasa",
         currency_field="foreign_currency_id",
-        compute="_compute_foreign_unit_cost"
+        compute="_compute_foreign_unit_cost",
     )
 
     unit_cost = fields.Monetary("Unit cost", compute="_compute_unit_cost")
@@ -81,14 +79,14 @@ class StockValuationAdjustmentLines(models.Model):
         compute="_compute_update_latest_standard_price", store=True
     )
 
-    @api.depends('former_cost', 'additional_landed_cost')
+    @api.depends("former_cost", "additional_landed_cost")
     def _compute_final_cost(self):
         for line in self:
             if not line.cost_line_id.split_method == "by_percentage":
                 line.final_cost = line.former_cost + line.additional_landed_cost
             line.final_cost = (line.additional_landed_cost * line.quantity) + line.former_cost
 
-    @api.depends("former_cost","quantity")
+    @api.depends("former_cost", "quantity")
     def _compute_unit_cost(self):
         for line in self:
             line.unit_cost = line.former_cost / line.quantity
@@ -142,7 +140,6 @@ class StockValuationAdjustmentLines(models.Model):
                     [("product_id", "=", line.product_id.id), ("cost_id", "=", line.cost_id.id)]
                 )
                 for cost in additional_values:
-
                     original_value = cost.unit_cost
                 last_cost = sum(split.additional_landed_cost for split in additional_values)
             line.last_cost = last_cost + original_value
