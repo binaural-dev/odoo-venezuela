@@ -9,7 +9,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.0.0.7",
+    "version": "16.2",
     "depends": ["stock","binaural_tax", "binaural_rate"],
     "data": [
         # 'security/ir.model.access.csv',
@@ -20,5 +20,6 @@
         "views/res_config_settings_views.xml",
         "views/stock_quant_views.xml",
         "views/stock_move_line_views.xml",
+        "views/stock_picking_views.xml",
     ],
 }

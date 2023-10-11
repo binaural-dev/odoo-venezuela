@@ -45,3 +45,10 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.journal_igtf_expense",
         readonly=False,
     )
+
+    show_igtf_suggested_account_move = fields.Boolean(
+        related="company_id.show_igtf_suggested_account_move", readonly=False
+    )
+    show_igtf_suggested_sale_order = fields.Boolean(
+        related="company_id.show_igtf_suggested_sale_order", readonly=False
+    )
