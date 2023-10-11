@@ -17,7 +17,7 @@ class AccountMove(models.Model):
     def create(self, vals_list):
         invoices = super().create(vals_list)
         for invoice in invoices:
-            if invoice.invoice_origin:
+            if invoice.invoice_origin and invoice.move_type == "out_invoice":
                 sale_order = self.env["sale.order"].search(
                     [
                         ("name", "=", invoice.invoice_origin),
@@ -31,7 +31,7 @@ class AccountMove(models.Model):
         res = super().action_post()
         multiple_seller_config = self.env.company.multiple_sellers
         for invoice in self:
-            if not invoice.seller_id:
+            if not invoice.seller_id and invoice.move_type == "out_invoice":
                 if len(invoice.partner_id.seller_ids) == 1:
                     invoice.seller_id = invoice.partner_id.seller_ids[0]
                 if len(invoice.partner_id.seller_ids) > 1:
