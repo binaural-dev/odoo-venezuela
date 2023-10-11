@@ -188,7 +188,7 @@
                                                                         </td>
                                                                         <td>
                                                                             <t t-if="tax_totals['igtf']['is_igtf_suggested'] != True">
-                                                                                <span t-out="tax_totals['formatted_amount_total']"/>
+                                                                                <span t-out="o.tax_totals['igtf']['formatted_igtf_base_amount']"/>
                                                                             </t>
                                                                             <t t-else="">
                                                                                 <span>$0,00</span>
@@ -196,7 +196,7 @@
                                                                         </td>
                                                                         <td style="padding-left:270px">
                                                                             <t t-if="tax_totals['igtf']['is_igtf_suggested'] != True">
-                                                                                <span  t-out="o.tax_totals['foreign_formatted_amount_total']"/>
+                                                                                <span  t-out="o.tax_totals['igtf']['formatted_foreign_igtf_base_amount']"/>
                                                                             </t>
                                                                             <t t-else="">
                                                                                 <span>0,00Bs</span>
