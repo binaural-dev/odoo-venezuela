@@ -1,6 +1,6 @@
 {
     "name": "MercadoLibre Accounting / Mercado Libre Publisher Extension",
-    'version': '16.0.23.7',
+    'version': '16.0.23.10',
     'author': 'Moldeo Interactive',
     'website': 'https://www.moldeointeractive.com',
     'category': 'Sale',
@@ -18,7 +18,7 @@
         'security/ir.model.access.csv',
         'views/meli_view.xml',
         'views/company_view.xml',
-        'wizard/mercadolibre_public_invoice.xml'
+        #'wizard/mercadolibre_public_invoice.xml'
     ],
     'demo': [
     ],
