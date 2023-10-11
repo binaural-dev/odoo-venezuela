@@ -94,21 +94,51 @@ class StockLandedCost(models.Model):
         amount = 0
         for picking in self.picking_ids:
             for purchase in picking.purchase_id:
-                amount += purchase.amount_total
+                if purchase.id != purchase.id:
+                    amount += purchase.amount_total
+                amount = purchase.amount_total
+ 
         return amount
 
+    # def get_valuation_lines(self):
+    #     """
+    #     This method is inherited, thats add a new value in valuation lines, this value is used in the new split method (By percentage).
+    #     """
+    #     res = super().get_valuation_lines()
+    #     update_list = []
+    #     if self.is_stock_advance:
+    #         for move, res_el in zip(self.picking_ids.purchase_id.order_line, res):
+    #             copy = res_el.copy()
+    #             copy.update({"price_unit": move.price_subtotal})
+    #             update_list.append(copy)
+
+    #     _logger.warning("a ver el update list")
+    #     _logger.warning(update_list)
+    #     return update_list
+
     def get_valuation_lines(self):
-        """
-        This method is inherited, thats add a new value in valuation lines, this value is used in the new split method (By percentage).
-        """
-        res = super().get_valuation_lines()
-        update_list = []
-        if self.is_stock_advance:
-            for move, res_el in zip(self.picking_ids.purchase_id.order_line, res):
-                copy = res_el.copy()
-                copy.update({"price_unit": move.price_subtotal})
-                update_list.append(copy)
-        return update_list
+        self.ensure_one()
+        lines = []
+
+        for move in self._get_targeted_move_ids():
+            # it doesn't make sense to make a landed cost for a product that isn't set as being valuated in real time at real cost
+            if move.product_id.cost_method not in ('fifo', 'average') or move.state == 'cancel' or not move.product_qty:
+                continue
+            vals = {
+                'product_id': move.product_id.id,
+                'move_id': move.id,
+                'quantity': move.product_qty,
+                'former_cost': sum(move.stock_valuation_layer_ids.mapped('value')),
+                'weight': move.product_id.weight * move.product_qty,
+                'volume': move.product_id.volume * move.product_qty,
+                'price_unit': move.purchase_line_id.price_subtotal
+            }
+            lines.append(vals)
+
+        if not lines:
+            target_model_descriptions = dict(self._fields['target_model']._description_selection(self.env))
+            raise UserError(_("You cannot apply landed costs on the chosen %s(s). Landed costs can only be applied for products with FIFO or average costing method.", target_model_descriptions[self.target_model]))
+        return lines
 
     def compute_landed_cost(self):
         """This method compute all prices based on split method.
@@ -163,9 +193,18 @@ class StockLandedCost(models.Model):
                             value = valuation.former_cost * per_unit
                         # OVERRIDE
                         elif line.split_method == "by_percentage":
+                            _logger.warning("PRICE UNIT ")
+                            _logger.warning(valuation.price_unit)
 
+                            _logger.warning("AVER EL PRECIO TOTAL DEL PURCHASEEE")
+                            _logger.warning(self._assign_picking_percentage())
                             per_unit = valuation.price_unit / self._assign_picking_percentage()
                             valuation.cost_percentage = per_unit * 100
+
+                            _logger.warning("VALUATIONNNNNN")
+                            _logger.warning(per_unit * 100  )
+                            
+
                             valuation.total_amount_cost = ((per_unit * 100) / 100) * line.price_unit
                           
                             value_percentage = (

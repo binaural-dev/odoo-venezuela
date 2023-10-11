@@ -25,7 +25,7 @@ class StockValuationAdjustmentLines(models.Model):
     foreign_former_cost = fields.Monetary(
         "Foreign former cost",
         digits="Tasa",
-        compute="_compute_foreign_former_cost",
+        # compute="_compute_foreign_former_cost",
         currency_field="foreign_currency_id",
         store=True,
     )
@@ -33,19 +33,20 @@ class StockValuationAdjustmentLines(models.Model):
     foreign_final_cost = fields.Monetary(
         "Foreign Final Cost",
         digits="Tasa",
-        compute="_compute_foreign_final_cost",
+        # compute="_compute_foreign_final_cost",
         currency_field="foreign_currency_id",
         store=True,
     )
 
     foreign_split_value = fields.Monetary(
-        digits="Tasa", currency_field="foreign_currency_id", compute="_compute_foreign_split_value"
+        digits="Tasa", currency_field="foreign_currency_id", 
+        # compute="_compute_foreign_split_value"
     )
 
     foreign_additional_landed_cost = fields.Monetary(
         "Foreign Additional landed cost",
         digits="Tasa",
-        compute="_compute_foreign_additional_landed_cost",
+        # compute="_compute_foreign_additional_landed_cost",
         currency_field="foreign_currency_id",
         store=True,
     )
@@ -54,31 +55,40 @@ class StockValuationAdjustmentLines(models.Model):
         "Foreign Last Cost",
         digits="Tasa",
         currency_field="foreign_currency_id",
-        compute="_compute_foreign_last_cost",
+        # compute="_compute_foreign_last_cost",
     )
 
     foreign_unit_cost = fields.Monetary(
         "Foreign Unit Cost",
         digits="Tasa",
         currency_field="foreign_currency_id",
-        compute="_compute_foreign_unit_cost"
+        # compute="_compute_foreign_unit_cost"
     )
 
-    unit_cost = fields.Monetary("Unit cost", compute="_compute_unit_cost")
+    unit_cost = fields.Monetary("Unit cost", 
+    # compute="_compute_unit_cost"
+    )
     total_amount_cost = fields.Monetary("Total amount cost")
-    last_cost = fields.Monetary("Last cost", compute="_compute_last_cost", store=True)
+    last_cost = fields.Monetary("Last cost", 
+    # compute="_compute_last_cost", 
+    store=True)
     is_stock_advance = fields.Boolean(string="Is stock Advance", default=default_is_stock_advance)
     cost_percentage = fields.Float("Cost percentage %", default=0)
     price_unit = fields.Monetary("Cost Total With Tax", default=0)
-    latest_standard_price = fields.Monetary(compute="_compute_latest_standard_price", store=True)
+    latest_standard_price = fields.Monetary(
+        compute="_compute_latest_standard_price", 
+        store=True)
     update_latest_standard_price = fields.Boolean(
         related="product_id.product_tmpl_id.update_last_cost", readonly=False
     )
 
-    split_value = fields.Monetary(compute="_compute_split_value", store=True)
+    split_value = fields.Monetary(
+        # compute="_compute_split_value", 
+        store=True)
 
     latest_standard_price_updated = fields.Monetary(
-        compute="_compute_update_latest_standard_price", store=True
+        # compute="_compute_update_latest_standard_price", 
+        store=True
     )
 
     @api.depends('former_cost', 'additional_landed_cost')
