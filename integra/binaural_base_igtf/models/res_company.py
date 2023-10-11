@@ -26,3 +26,6 @@ class ResCompany(models.Model):
         store=True,
     )
     journal_igtf_expense = fields.Many2one("account.journal", string="Journal IGTF Expense")
+
+    show_igtf_suggested_account_move = fields.Boolean(default=False)
+    show_igtf_suggested_sale_order = fields.Boolean(default=False)

@@ -85,8 +85,10 @@ class MercadoLibreConnectionConfiguration(models.Model):
     mercadolibre_cron_get_orders_shipment_client = fields.Boolean(string='Importar clientes',help='Cron Get Orders Shipment Client')
     mercadolibre_cron_get_questions = fields.Boolean(string='Importar preguntas',help='Cron Get Questions')
     mercadolibre_cron_get_update_products = fields.Boolean(string='Actualizar productos en Odoo',help='Cron Update Products already imported')
+
     mercadolibre_cron_post_update_products = fields.Boolean(string='Actualizar productos en ML',help='Cron Update Posted Products, Product Templates or Variants with Meli Publication field checked')
     mercadolibre_cron_post_update_stock = fields.Boolean(string='Publicar Stock',help='Cron Post Updated Stock')
+    mercadolibre_shipment_print_guide = fields.Boolean(string='Imprimir etiquetas',help='Imprimir etiquetas')
     mercadolibre_cron_post_update_price = fields.Boolean(string='Publicar Precio',help='Cron Post Updated Price')
     mercadolibre_create_website_categories = fields.Boolean(string='Crear categorías',help='Create Website eCommerce Categories from imported products ML categories')
     mercadolibre_pricelist = fields.Many2one( "product.pricelist", "Product Pricelist default", help="Select price list for ML product"
@@ -207,6 +209,8 @@ class MercadoLibreConnectionConfiguration(models.Model):
 
     mercadolibre_payment_term = fields.Many2one("account.payment.term",string="Payment Term", required=True)
 
+    mercadolibre_banner = fields.Many2one("mercadolibre.banner",string="Plantilla Descriptiva")
+
     ## STOCK Configuration
 
     mercadolibre_stock_warehouse = fields.Many2one("stock.warehouse", string="Stock Warehouse Default", help="Almacen predeterminado", required=True)
@@ -238,7 +242,12 @@ class MercadoLibreConnectionConfiguration(models.Model):
 
 
     #TODO: activate
-    mercadolibre_stock_virtual_available = fields.Selection([("virtual","Virtual (quantity-reserved)"),("theoretical","En mano (quantity)")],
+    mercadolibre_stock_virtual_available = fields.Selection(selection=[
+                                                                            ("virtual","Planificado (virtual_available)"),
+                                                                            ("theoretical","En mano (quantity)"),
+                                                                            ("qty_reserved","Cantidad menos reservado (quantity - reserved)"),
+                                                                            ("virtual_absoluto","Planificado (no suma negativos)"),
+                                                                ],
                                                             default='virtual',
                                                             required=True)
 

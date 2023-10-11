@@ -17,6 +17,13 @@ odoo.define("binaural_pos.OrderState", function(require) {
         this.toggle_receipt_invoice(always_invoice)
         this.lock_toggle_receipt_invoice = false
       }
+      get_qty_products(){
+        let qty = 0
+        this.get_orderlines().forEach((line) => {
+          qty += line.quantity
+        })
+        return qty
+      }
       get_orderlines() {
         if(!this.cid || !this.pos.get_order()){
           return this.orderlines
