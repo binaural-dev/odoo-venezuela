@@ -68,7 +68,7 @@ class MercadoLibreMaestro(models.Model):
     connection_account = fields.Many2one("mercadolibre.account",string="Account")
     company_id = fields.Many2one("res.company",related="connection_account.company_id",string="Company")
 
-    name = fields.Char(string="Name",index=True)
+    name = fields.Char(string="Name",required=True, index=True)
     description = fields.Char(string="Description",index=True)
 
     brand = fields.Char(string="Brand", index=True)
@@ -123,6 +123,7 @@ class MercadoLibreMaestro(models.Model):
     skus = fields.Char(string="Skus",index=True)
     stock = fields.Float(string="Stock",index=True)
     meli_id = fields.Char(string="Meli Id", index=True)
+    meli_id_variation = fields.Char(string="Meli Id Variation", index=True)
 
     is_valid = fields.Boolean(string="Validez",default=False,index=True)
 
@@ -150,6 +151,7 @@ class MercadoLibreMaestro(models.Model):
             #p.is_valid = (p.barcode and p.barcodes and p.barcode in p.barcodes)
             p.is_valid = True
             p.is_valid = p.is_valid and (p.sku and p.skus and p.sku in p.skus)
+            _logger.info("is_valid:"+str(p.is_valid)+" sku <"+str(p.sku)+"> skus <"+str(p.skus)+">")
             p.status = ( (p.is_valid == False and 'invalid') or
                          (p.is_valid and p.is_master and not p.is_combo and 'master_base') or
                          (p.is_valid and p.is_master and p.is_combo and 'master_combo') or
@@ -157,10 +159,41 @@ class MercadoLibreMaestro(models.Model):
                          (p.is_valid and not p.is_master and p.is_combo and 'clone_combo') )
             p.is_sku_odoo = p.sku and self.env["product.product"].search([('default_code','=ilike',p.sku)],limit=1)
             p.is_barcode_odoo = p.barcode and self.env["product.product"].search([('barcode','=ilike',p.barcode)],limit=1)
+            is_combo_valid = p.is_combo
+            #Ya no pedimos el barcode para combos... solo sku... and p.barcode
+            #ningun componente tiene el mismo barcode que el producto
+            is_combo_valid = is_combo_valid and (p.barcode0 and p.barcode0 != p.barcode and p.quantity0>0 or not p.barcode0)
+            is_combo_valid = is_combo_valid and (p.barcode1 and p.barcode1 != p.barcode and p.quantity1>0 or not p.barcode1)
+            is_combo_valid = is_combo_valid and (p.barcode2 and p.barcode2 != p.barcode and p.quantity2>0 or not p.barcode2)
+            is_combo_valid = is_combo_valid and (p.barcode3 and p.barcode3 != p.barcode and p.quantity3>0 or not p.barcode3)
+            is_combo_valid = is_combo_valid and (p.barcode4 and p.barcode4 != p.barcode and p.quantity4>0 or not p.barcode4)
+            is_combo_valid = is_combo_valid and (p.barcode5 and p.barcode5 != p.barcode and p.quantity5>0 or not p.barcode5)
+            is_combo_valid = is_combo_valid and (p.barcode6 and p.barcode6 != p.barcode and p.quantity6>0 or not p.barcode6)
+            is_combo_valid = is_combo_valid and (p.barcode7 and p.barcode7 != p.barcode and p.quantity7>0 or not p.barcode7)
+            is_combo_valid = is_combo_valid and (p.barcode8 and p.barcode8 != p.barcode and p.quantity8>0 or not p.barcode8)
+            is_combo_valid = is_combo_valid and (p.barcode9 and p.barcode9 != p.barcode and p.quantity9>0 or not p.barcode9)
+            is_combo_valid = is_combo_valid and (p.barcode10 and p.barcode10 != p.barcode and p.quantity10>0 or not p.barcode10)
+            is_combo_valid = is_combo_valid or not p.is_combo
+
+            p.is_valid = p.is_valid and is_combo_valid
+            #lista de materiales
+            p.is_barcode0_odoo = p.barcode0 and self.env["product.product"].search([('barcode','=ilike',p.barcode0)],limit=1)
+            p.is_barcode1_odoo = p.barcode1 and self.env["product.product"].search([('barcode','=ilike',p.barcode1)],limit=1)
+            p.is_barcode2_odoo = p.barcode2 and self.env["product.product"].search([('barcode','=ilike',p.barcode2)],limit=1)
+            p.is_barcode3_odoo = p.barcode3 and self.env["product.product"].search([('barcode','=ilike',p.barcode3)],limit=1)
+            p.is_barcode4_odoo = p.barcode4 and self.env["product.product"].search([('barcode','=ilike',p.barcode4)],limit=1)
+            p.is_barcode5_odoo = p.barcode5 and self.env["product.product"].search([('barcode','=ilike',p.barcode5)],limit=1)
+            p.is_barcode6_odoo = p.barcode6 and self.env["product.product"].search([('barcode','=ilike',p.barcode6)],limit=1)
+            p.is_barcode7_odoo = p.barcode7 and self.env["product.product"].search([('barcode','=ilike',p.barcode7)],limit=1)
+            p.is_barcode8_odoo = p.barcode8 and self.env["product.product"].search([('barcode','=ilike',p.barcode8)],limit=1)
+            p.is_barcode9_odoo = p.barcode9 and self.env["product.product"].search([('barcode','=ilike',p.barcode9)],limit=1)
+            p.is_barcode10_odoo = p.barcode10 and self.env["product.product"].search([('barcode','=ilike',p.barcode10)],limit=1)
 
 
         for p in self:
             p.is_it_master()
+            p._is_bom_created()
+            p._is_bom_valid()
 
     status = fields.Selection( [('invalid','Invalido'),
                                     ('master_base','Maestro Base'),
@@ -208,6 +241,46 @@ class MercadoLibreMaestro(models.Model):
 
                     #siempre que tenga SKUS y BARCODES para cada variante:
                     pbmax.is_master = True
+            elif p.sku:
+                #first: no combos
+                pbases = pobj.search([('sku','=',p.sku),('is_combo','=',False)])
+                if pbases:
+                    max = 0
+                    pbmax = None
+                    for pb in pbases:
+                        pbmax = (not pbmax and pb) or pbmax
+                        #selecciona como master la publicacion con mas combinaciones de variantes en ML
+                        if (pb.meli_id_variations_number>max):
+                            max = pb.meli_id_variations_number
+                            pbmax = pb
+                        pb.is_master = False
+
+
+                    #siempre que tenga SKUS y BARCODES para cada variante:
+                    pbmax.is_master = True
+
+            p._is_sku_valid()
+
+            if not p.barcode and p.is_combo and p.sku and p.is_sku_valid and p.barcodes and p.is_combo_valid:
+                #no necesita barcode este combo?
+                #si tiene barcodes definidos en ML al menos tendremos una LM valido
+                #revisar si hay un combo maestro con la misma lista de materiales exacta
+
+                #POR AHORA LO CREAMOS
+                pbasecombs = pobj.search([('sku','=ilike',p.sku),('is_combo','=',True)])
+                if pbasecombs:
+                    max = 0
+                    pbmax = None
+                    for pb in pbasecombs:
+                        pbmax = (not pbmax and pb) or pbmax
+                        #selecciona como master la publicacion con mas combinaciones de variantes en ML
+                        if (pb.meli_id_variations_number>max):
+                            max = pb.meli_id_variations_number
+                            pbmax = pb
+                        pb.is_master = False
+                    #
+                    pbmax.is_master = True
+
 
             p._is_sku_valid()
 
@@ -215,6 +288,7 @@ class MercadoLibreMaestro(models.Model):
     meli_id_variations_number = fields.Float(string="Number", compute=calculate_variations, store=True, default=0)
 
     is_combo = fields.Boolean(string="Combo/Kit",index=True)
+    is_combo_valid = fields.Boolean(string="Combo Valido",help="El barcode del producto/publicacion no puede ser un componente, o sea existir en uno de los barcode[0-10] ",index=True)
     is_master = fields.Boolean(string="Master",index=True)
 
     def _is_sku_valid(self):
@@ -230,6 +304,18 @@ class MercadoLibreMaestro(models.Model):
     is_sku_odoo = fields.Boolean(string="Is Sku Odoo",index=True)
     is_barcode_odoo = fields.Boolean(string="Is Barcode Odoo",index=True)
     is_meli_odoo = fields.Boolean(string="Is Meli Id in Odoo",index=True)
+
+    is_barcode0_odoo = fields.Boolean(string="Is Barcode0 Odoo",default=False,index=True)
+    is_barcode1_odoo = fields.Boolean(string="Is Barcode1 Odoo",default=False,index=True)
+    is_barcode2_odoo = fields.Boolean(string="Is Barcode2 Odoo",default=False,index=True)
+    is_barcode3_odoo = fields.Boolean(string="Is Barcode3 Odoo",default=False,index=True)
+    is_barcode4_odoo = fields.Boolean(string="Is Barcode4 Odoo",default=False,index=True)
+    is_barcode5_odoo = fields.Boolean(string="Is Barcode5 Odoo",default=False,index=True)
+    is_barcode6_odoo = fields.Boolean(string="Is Barcode6 Odoo",default=False,index=True)
+    is_barcode7_odoo = fields.Boolean(string="Is Barcode7 Odoo",default=False,index=True)
+    is_barcode8_odoo = fields.Boolean(string="Is Barcode8 Odoo",default=False,index=True)
+    is_barcode9_odoo = fields.Boolean(string="Is Barcode9 Odoo",default=False,index=True)
+    is_barcode10_odoo = fields.Boolean(string="Is Barcode10 Odoo",default=False,index=True)
 
 
     #@api.model
@@ -247,6 +333,362 @@ class MercadoLibreMaestro(models.Model):
         if (Maestro):
             Maestro.calculate_variations()
         return Maestro
+
+    def _is_bom_created(self):
+
+        bom = self.env["mrp.bom"]
+        bom_l = self.env["mrp.bom.line"]
+
+        for mas in self:
+
+            mas.is_bom_created = False
+
+            product_id = mas.barcode and self.env["product.product"].search([('barcode','=ilike',mas.barcode),('company_id','=',mas.company_id.id)])
+
+            if not product_id:
+                _logger.info("barcode not founded for base product, search sku")
+                product_id = mas.sku and self.env["product.product"].search([('default_code','=ilike',mas.sku),('company_id','=',mas.company_id.id)])
+
+            if (not product_id):
+                _logger.info("default_code or barcode not founded for base product")
+                continue;
+
+            if (not mas.is_combo):
+                continue;
+
+            bom_obj = bom.search([('product_tmpl_id','=',product_id.product_tmpl_id.id),('product_id','=',product_id.id)])
+
+            if not bom_obj:
+                continue;
+
+            mas.is_bom_created = True
+
+
+    is_bom_created = fields.Boolean(string="Is LDM/Bom Created",compute=_is_bom_created,default=False,store=True,index=True)
+
+    def _is_bom_valid(self):
+
+        bom = self.env["mrp.bom"]
+        bom_l = self.env["mrp.bom.line"]
+
+        for mas in self:
+
+            mas.is_bom_valid = False
+
+            product_id = mas.barcode and self.env["product.product"].search([('barcode','=ilike',mas.barcode),('company_id','=',mas.company_id.id)])
+
+            if not product_id:
+                _logger.info("barcode not founded for base product, search sku")
+                product_id = mas.sku and self.env["product.product"].search([('default_code','=ilike',mas.sku),('company_id','=',mas.company_id.id)])
+
+            if (not product_id):
+                _logger.info("default_code or barcode not founded for base product")
+                continue;
+
+            if (not mas.is_combo):
+                continue;
+
+            bom_obj = bom.search([('product_tmpl_id','=',product_id.product_tmpl_id.id),('product_id','=',product_id.id)])
+
+            if not bom_obj:
+                continue;
+
+            #search for same product target bom as component product
+            bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_id.id)])
+
+            if bom_obj_l:
+                mas.is_bom_valid = False
+                continue;
+
+            mas.is_bom_valid = True
+
+    is_bom_valid = fields.Boolean(string="Is LDM/Bom Valid",compute=_is_bom_valid,default=False,store=True,index=True)
+
+    def _product_by_sku(self):
+        for mas in self:
+            mas.product_by_sku = None
+            mas.product_by_sku = self.env["product.product"].search([('default_code','=ilike', mas.sku)], limit=1)
+
+    product_by_sku = fields.Many2one("product.product",string="Product por Sku",compute=_product_by_sku)
+    product_template_by_sku = fields.Many2one("product.template",string="Product template por Sku",related="product_by_sku.product_tmpl_id")
+
+    def create_bom( self, product_id=None ):
+
+        bom = self.env["mrp.bom"]
+        bom_l = self.env["mrp.bom.line"]
+
+        for mas in self:
+            if (product_id==None):
+                product_id = mas.barcode and self.env["product.product"].search([('barcode','=ilike',mas.barcode),('company_id','=',mas.company_id.id)])
+                if not product_id:
+                    _logger.info("barcode not founded for base product, search sku")
+                    product_id = mas.sku and self.env["product.product"].search([('default_code','=ilike',mas.sku),('company_id','=',mas.company_id.id)])
+
+            if (not product_id):
+                _logger.info("default_code or barcode not founded for base product")
+                continue;
+
+            if (not mas.is_combo):
+                continue;
+
+            uomobj = self.env[uom_model]
+            uomcatobj = self.env["uom.category"]
+            product_uom_id = uomobj.search([('name','=ilike','Uni%')],limit=1)
+            product_uom_category_id = uomcatobj.search([('name','=ilike','Uni%')],limit=1)
+            if not product_uom_id:
+                _logger.info("no product_uom_id")
+                continue;
+            if not product_uom_category_id:
+                _logger.info("no product_uom_category_id")
+                continue;
+
+            bom_rec =  {
+                'product_tmpl_id': product_id.product_tmpl_id.id,
+                'product_id': product_id.id,
+                "type": "phantom",
+                "product_qty": 1,
+                "product_uom_id": product_uom_id.id,
+                "product_uom_category_id": product_uom_category_id.id
+            }
+            _logger.info("sku: "+str(mas.sku))
+            _logger.info("barcode: "+str(mas.barcode))
+            _logger.info("bom_rec: "+str(bom_rec))
+            bom_obj = bom.search([('product_tmpl_id','=',product_id.product_tmpl_id.id),('product_id','=',product_id.id)])
+            if not bom_obj:
+                bom_obj = bom.create(bom_rec)
+
+            if not bom_obj:
+                continue;
+
+
+            if (mas.barcode0 and mas.quantity0>0):
+
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode0)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode0))
+                        continue;
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity0
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+                else:
+                    _logger.info("Not found! "+str(mas.barcode0))
+
+            if (mas.barcode1 and mas.quantity1>0):
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode1)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode1))
+                        continue;
+
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity1
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+                else:
+                    _logger.info("Not found! "+str(mas.barcode1))
+
+            if (mas.barcode2 and mas.quantity2>0):
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode2)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode2))
+                        continue;
+
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity2
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+                else:
+                    _logger.info("Not found! "+str(mas.barcode2))
+
+            if (mas.barcode3 and mas.quantity3>0):
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode3)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode3))
+                        continue;
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity3
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+                else:
+                    _logger.info("Not found! "+str(mas.barcode3))
+
+            if (mas.barcode4 and mas.quantity4>0):
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode4)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode4))
+                        continue;
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity4
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+
+            if (mas.barcode5 and mas.quantity5>0):
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode5)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode5))
+                        continue;
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity5
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+
+
+            if (mas.barcode6 and mas.quantity6>0):
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode6)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode6))
+                        continue;
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity6
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+
+
+
+            if (mas.barcode7 and mas.quantity7>0):
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode7)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode7))
+                        continue;
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity7
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+
+
+            if (mas.barcode8 and mas.quantity8>0):
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode8)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode8))
+                        continue;
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity8
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+
+
+            if (mas.barcode9 and mas.quantity9>0):
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode9)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode9))
+                        continue;
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity9
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+
+
+            if (mas.barcode10 and mas.quantity10>0):
+                product_bom_id = product_id.search([('barcode','=ilike',mas.barcode10)])
+                if product_bom_id:
+                    if (product_bom_id.id==product_id.id):
+                        _logger.info("Error! component is also the product! "+str(mas.barcode10))
+                        continue;
+                    bom_obj_l = bom_l.search([('bom_id','=',bom_obj.id),('product_id','=',product_bom_id.id)])
+
+                    bomline_fields = {
+                        'bom_id': bom_obj.id,
+                        'product_id': product_bom_id.id,
+                        'product_uom_id': product_uom_id.id,
+                        'product_qty': mas.quantity10
+                    }
+                    if (bom_obj_l):
+                        bom_obj_l.write(bomline_fields)
+                    else:
+                        bom_l.create( bomline_fields )
+
+        self._is_bom_created()
+        self._is_bom_valid()
 
 class MercadoLibreConnectionAccount(models.Model):
 
@@ -559,9 +1001,12 @@ class MercadoLibreConnectionAccount(models.Model):
             rjson['seller_sku'] = seller_sku
 
         #we have description
-        if rjson and 'descriptions' in rjson and rjson['descriptions']:
+        #if rjson and 'descriptions' in rjson and rjson['descriptions']:
+        if rjson and 'descriptions' in rjson and not rjson['descriptions']:
             dresponse = meli.get("/items/"+str(meli_id)+"/description", {'access_token':meli.access_token })
             djson = dresponse.json()
+            des = ""
+            desplain = ""
             if 'text' in djson:
                des = djson['text']
             if 'plain_text' in djson:
@@ -659,6 +1104,45 @@ class MercadoLibreConnectionAccount(models.Model):
 
         return seller_sku
 
+    def fetch_meli_barcode(self, meli_id = None, meli_id_variation = None, meli = None, rjson = None ):
+
+        account = self
+        barcode = None
+
+        if not meli:
+            meli = self.env['meli.util'].get_new_instance( account.company_id, account )
+
+        if not meli_id or not meli:
+            return None
+
+        #search full item data from ML
+        rjson = rjson or account.fetch_meli_product( meli_id = meli_id, meli=meli )
+        rjson_has_variations = rjson and "variations" in rjson and len(rjson["variations"])
+
+        if ( account.configuration.mercadolibre_import_search_sku ):
+
+            #its a single product item with seller_custom_field defined or seller_sku
+            barcode = ('barcode' in rjson and rjson['barcode'])
+
+            if (rjson_has_variations):
+                vindex = -1
+                v_barcode = []
+                for var in rjson['variations']:
+                    vindex = vindex+1
+                    if not meli_id_variation:
+                        #return all skus
+                        if ("barcode" in var):
+                            v_barcode.append(var["barcode"])
+
+                    if meli_id_variation and "id" in var and str(var["id"]) == str(meli_id_variation):
+                        #check match, return sku if founded
+                        v_barcode = ('barcode' in var and var['barcode'])
+                        break;
+
+                barcode = v_barcode or barcode
+
+        return barcode
+
     def set_meli_sku( self, seller_sku=None ):
         if (seller_sku):
             posting_id = self.env['product.product'].search([('default_code','=ilike',seller_sku)])
@@ -683,6 +1167,7 @@ class MercadoLibreConnectionAccount(models.Model):
         account = self
         old_posting_id = None #product search by model.meli_id
         sku_product_id = None #product search by sku
+        barcode_product_id = None #product search by barcode
         ml_bind_product_id = None #product search by account binding and model.conn_id/conn_variation_id
 
         rjson = rjson or account.fetch_meli_product( meli_id = item_id, meli=meli )
@@ -747,6 +1232,39 @@ class MercadoLibreConnectionAccount(models.Model):
 
                 else:
                     _logger.info("NO seller_sku (warning!!!! must define a seller sku in ML, or activate mercadolibre_import_search_sku)")
+
+                _logger.info("Deep search of the product! : fetch barcode: ")
+                barcode = barcode or self.fetch_meli_barcode(meli_id=meli_id, meli_id_variation = meli_id_variation, meli=meli, rjson=rjson)
+                if barcode:
+                    _logger.info("barcode(s) fetched: ["+str(barcode)+"]")
+
+                    if type(barcode) in (tuple, list):
+                        barcode_product_ids = False
+                        for bcode in barcode:
+                            _logger.info("barcode search: ["+str(bcode)+"]")
+                            barcode_product_id = self.env['product.product'].search([ ('barcode','=ilike',bcode) ])
+                            _logger.info("barcode found: "+str(barcode_product_id))
+                            if barcode_product_ids and barcode_product_id:
+                                barcode_product_ids+= barcode_product_id
+                            elif barcode_product_id:
+                                barcode_product_ids = barcode_product_id
+                        barcode_product_id = barcode_product_ids and barcode_product_ids[0]
+                    else:
+                        _logger.info("barcode search: ["+str(barcode)+"]")
+                        barcode_product_id = self.env['product.product'].search([ ('barcode','=ilike',barcode) ])
+                    #sku_product_id = self.env['product.product'].search([ '|', ('default_code','=',seller_sku), ('barcode','=',seller_sku) ])
+
+                        if barcode_product_id and len(barcode_product_id)>1:
+                            #DUPLICATES SKUS ???
+                            #take the first one and report the problem?
+                            #sku_product_id = sku_product_id[0]
+                            barcode_product_id = None
+
+                    _logger.info("barcode(s) fetched: barcode_product_id: "+str(barcode_product_id))
+
+                else:
+                    _logger.info("NO barcode (warning!!!! must define a seller barcode in ML, or activate mercadolibre_import_search_sku)")
+
             else:
                 #bind! update bind!
                 #old_posting_id.mercadolibre_bind_to( account, )
@@ -756,7 +1274,9 @@ class MercadoLibreConnectionAccount(models.Model):
         #_logger.info("new_posting_tpl_id: "+str(new_posting_tpl_id))
 
         #prioritize binding (so we do not duplicate article nor binded)
-        product_id = (ml_bind_product_id and ml_bind_product_id.product_id) or old_posting_id or sku_product_id
+        product_id = (ml_bind_product_id and ml_bind_product_id.product_id) or old_posting_id or sku_product_id or barcode_product_id
+
+        _logger.info("search result: product_id, ml_bind_product_id: "+str(product_id)+", "+str(ml_bind_product_id))
 
         return product_id, ml_bind_product_id
 
@@ -787,6 +1307,12 @@ class MercadoLibreConnectionAccount(models.Model):
 
 
         return ml_bind_product_id
+
+    def create_meli_product_boms( self, meli_id, product_template ):
+
+
+
+        return True
 
     #create missing product
     def create_meli_product( self, meli_id = None, meli=None, rjson=None ):
@@ -1132,6 +1658,126 @@ class MercadoLibreConnectionAccount(models.Model):
         return meli_ids_maestros
 
 
+    def record_maestro_review( self, meli_id, meli = None, rjson = None ):
+        recorded = None
+        maestros = self.env["mercadolibre.product.maestro"]
+        domainaccount = [('connection_account','=',self.id)]
+
+        _logger.info("record_maestro_review: "+str(meli_id))
+
+        if (not rjson):
+            _logger.error("Error rjson none")
+
+        if (rjson):
+            _logger.info("checking rjson! ")
+            #recs = maestros.search([('meli_id','=',meli_id)])
+            #if not recs:
+            if ("variations" in rjson and rjson["variations"]):
+                _logger.info("checking variations! "+str(rjson["variations"]))
+                for var in rjson["variations"]:
+                    if ( ("seller_sku" in var and var["seller_sku"]) or ("barcode" in var and var["barcode"]) ):
+                        _logger.info("checking variations ! seller_sku: "+str(var))
+                        ssku = ("seller_sku" in var and var["seller_sku"]) and (var["seller_sku"])
+                        record = {
+                            "connection_account": self.id,
+                            "name":  rjson["title"]+str(" <C>"),
+                            "meli_id": meli_id,
+                            "meli_id_variation": var["id"],
+                            "sku": ssku,
+                            "barcode": ("barcode" in var and var["barcode"]) or None
+                        }
+                        rec = maestros.search( [('meli_id','=ilike',record["meli_id"]),('meli_id_variation','=ilike',record["meli_id_variation"])], limit=1)
+                        if rec:
+                            _logger.info("Founded! "+str(rec.connection_account))
+                            record["name"] = rec.name
+                            if (str(rec.sku)!=str(record["sku"]) or
+                                str(rec.barcode)!=str(record["barcode"])):
+                                _logger.info("Error no coinciden sku o barcode con la publicacion...")
+                                _logger.info(record)
+                            else:
+                                record["sku"] = rec.sku
+                                record["barcode"] = rec.barcode
+                                rec.write(record)
+                        else:
+                            rec = maestros.search( [('meli_id','=ilike',record["meli_id"]),'|',('sku','=ilike',record["sku"]),('barcode','=ilike',record["barcode"])], limit=1)
+                            if not rec:
+                                _logger.info("Creating! ")
+                                recorded = maestros.create( record )
+                            else:
+                                _logger.info("Founded! "+str(rec.connection_account))
+                                record["name"] = rec.name
+                                if (str(rec.sku)!=str(record["sku"]) or
+                                    str(rec.barcode)!=str(record["barcode"])):
+                                    _logger.info("Error no coinciden sku o barcode con la publicacion...")
+                                    _logger.info(record)
+                                else:
+                                    record["sku"] = rec.sku
+                                    record["barcode"] = rec.barcode
+                                    rec.write(record)
+                    else:
+                        _logger.info("checking variations ! no seller_sku: "+str(var))
+                        record = {
+                            "connection_account": self.id,
+                            "name":  rjson["title"]+str(" <C><I>"),
+                            "meli_id": meli_id,
+                            "meli_id_variation": var["id"],
+                            "sku": "--SIN SKU--",
+                            "barcode": "--SIN BARCODE--",
+                            #"barcode": ("barcode" in var and var["barcode"]) or None
+                        }
+                        _logger.info("checking variations ! no seller_sku: "+str(rec))
+                        rec = maestros.search( [('meli_id','=ilike',record["meli_id"]),('meli_id_variation','=ilike',record["meli_id_variation"])], limit=1)
+                        if not rec:
+                            _logger.info("Creating! ")
+                            recorded = maestros.create( record )
+                        else:
+                            _logger.info("Founded! "+str(rec.connection_account))
+
+                _logger.info("checking variations! ended")
+            else:
+                _logger.info("checking single variant! ")
+                if ("seller_sku" in rjson and rjson["seller_sku"] or ("barcode" in rjson and rjson["barcode"]) ):
+                    seller_sku = "seller_sku" in rjson and rjson["seller_sku"]
+                    barcode =  ("barcode" in rjson and rjson["barcode"])
+                    record = {
+                        "connection_account": self.id,
+                        "name":  rjson["title"]+str(" <C>"),
+                        "meli_id": meli_id,
+                        "meli_id_variation": None,
+                        "sku": seller_sku,
+                        "barcode": barcode
+                    }
+                    rec = maestros.search( [('meli_id','=ilike',record["meli_id"]),'|',('sku','=ilike',record["sku"]),('barcode','=ilike',record["barcode"])], limit=1)
+                    if not rec:
+                        _logger.info("Creating! ")
+                        recorded = maestros.create( record )
+                    else:
+                        _logger.info("Founded! "+str(rec.connection_account))
+                else:
+                    record = {
+                        "connection_account": self.id,
+                        "name":  rjson["title"]+str(" <C><I>"),
+                        "meli_id": meli_id,
+                        "meli_id_variation": None,
+                        "sku": "--SIN SKU--",
+                        "barcode": "--SIN BARCODE--"
+                    }
+                    rec = maestros.search( [('meli_id','=ilike',record["meli_id"]),'|',('sku','=ilike',record["sku"]),('barcode','=ilike',record["barcode"])], limit=1)
+                    if not rec:
+                        _logger.info("Creating! ")
+                        recorded = maestros.create( record )
+                    else:
+                        _logger.info("Founded! "+str(rec.connection_account))
+        #self._cr.commit()
+
+        return recorded
+
+    def get_maestro( self, meli_id, meli = None, rjson = None  ):
+        mas = None
+        maestros = self.env["mercadolibre.product.maestro"]
+        mas = maestros.search( [('meli_id','=',meli_id),('is_master','=',True)], limit=1 )
+        return mas
+
     #list all meli ids in odoo from this account, that are not in parameter filter_ids...
     def list_meli_ids( self, filter_ids=None ):
         meli_ids = []
@@ -1214,7 +1860,8 @@ class MercadoLibreConnectionAccount(models.Model):
 
         #check
         meli_ids_maestros_checked = []
-        if (meli_ids_maestros and len(meli_ids_maestros)):
+        meli_ids_maestros_active = meli_ids_maestros and len(meli_ids_maestros)
+        if (meli_ids_maestros_active):
             #nos aseguramos procesar en orden las publicaciones de los maestros:
             for mid in meli_ids_maestros:
                 if mid in meli_ids:
@@ -1227,6 +1874,7 @@ class MercadoLibreConnectionAccount(models.Model):
 
             meli_ids = meli_ids_maestros_checked
         _logger.info("meli_ids_maestros_checked "+str(meli_ids_maestros_checked and len(meli_ids_maestros_checked) or 0)+" > "+str(meli_ids_maestros_checked))
+        _logger.info("meli_ids_maestros_active "+str(meli_ids_maestros_active))
 
         #download?
         totalmax = len(meli_ids)
@@ -1263,6 +1911,7 @@ class MercadoLibreConnectionAccount(models.Model):
 
         if binding_meli_ids and (not batch_processing_unit or batch_processing_unit==0):
             #assigning missing meli ids, shapes, and colors
+            _logger.info( "results, not batch_processing_unit, assigning binding_meli_ids: "+str(binding_meli_ids))
             results = binding_meli_ids
 
         totalmax = len(results)
@@ -1279,13 +1928,13 @@ class MercadoLibreConnectionAccount(models.Model):
             try:
                 _logger.info("results: "+str(results))
                 for item_id in results:
-                    _logger.info("item_id: "+str(item_id))
+                    #_logger.info("item_id: "+str(item_id))
                     iitem+= 1
                     icommit+= 1
                     if (icommit>=micom):
                         self._cr.commit()
                         icommit = 0
-                    _logger.info( item_id + "("+str(iitem)+"/"+str(totalmax)+")" )
+                    _logger.info( item_id + " >>>> ("+str(iitem)+"/"+str(totalmax)+")" )
 
                     #check first if we have variations...
                     #we have a meli_id > an item w/wout variations >
@@ -1363,6 +2012,7 @@ class MercadoLibreConnectionAccount(models.Model):
                                     pvbind = product.mercadolibre_bind_to( account=account, meli_id = item_id, meli=meli, rjson=rjson, bind_only=bind_only )
                             else:
                                 pvbind = product_id[0].mercadolibre_bind_to( account=account, meli_id = item_id, meli=meli, rjson=rjson, bind_only=bind_only)
+
                         else:
                             missing.append({
                                             'name': rjson['title'],
@@ -1378,12 +2028,48 @@ class MercadoLibreConnectionAccount(models.Model):
                         #if binding_id:
                         #    product_id[0].mercadolibre_bind_to( account=account, meli_id = item_id)
                     #elif (not company.mercadolibre_import_search_sku):
+
+                        _logger.info("Product "+str(product_id))
+                        _logger.info("Binding "+str(binding_id))
+
+                        if (meli_ids_maestros_active):
+                            if (item_id in meli_ids_maestros):
+                                _logger.info("Product is in maestro already as a publication but checking if its complete: "+str(item_id) )
+                                account.record_maestro_review( meli_id = item_id, meli=meli, rjson=rjson )
+                            else:
+                                _logger.info("Product is NOT in maestro already, register it: "+str(item_id) )
+                                #product_id, binding_id
+                                account.record_maestro_review( meli_id = item_id, meli=meli, rjson=rjson )
+
                     else:
                         if (official_store_id and "official_store_id" in rjson and str(official_store_id)!=str(rjson["official_store_id"])):
                             continue;
                         #idcreated = self.pool.get('product.product').create(cr,uid,{ 'name': rjson3['title'], 'meli_id': rjson3['id'] })
                         try:
-                            account.create_meli_product( meli_id = item_id, meli=meli, rjson=rjson )
+                            #solo crear productos si esta en el maestro
+                            if (meli_ids_maestros_active):
+                                if (item_id in meli_ids_maestros):
+                                    #busca el que es is_master true
+                                    el_maestro = account.get_maestro(item_id)
+                                    _logger.info("el_maestro: "+str(el_maestro))
+                                    _logger.info("el_maestro meli_id: "+str(item_id))
+                                    _logger.info("el_maestro.is_master: "+str(el_maestro.is_master))
+                                    _logger.info("el_maestro.is_valid: "+str(el_maestro.is_valid))
+
+                                    if (el_maestro and el_maestro.is_master and el_maestro.is_valid):
+                                        _logger.info("creando: "+str(el_maestro))
+                                        account.create_meli_product( meli_id = item_id, meli=meli, rjson=rjson )
+                                    else:
+                                        _logger.info("no se pudo crear")
+                                        #porque?
+
+
+                                else:
+                                    _logger.info("Meli Id not in maestro, record it: "+str(item_id))
+                                    account.record_maestro_review( meli_id = item_id, meli=meli, rjson=rjson )
+                            else:
+                                _logger.info("Creating meli product (no maestros yet)")
+                                account.create_meli_product( meli_id = item_id, meli=meli, rjson=rjson )
                         except Exception as e:
                             _logger.error("product_meli_get_products create_meli_product Exception!")
                             _logger.error(e, exc_info=True)
@@ -1473,7 +2159,15 @@ class MercadoLibreConnectionAccount(models.Model):
                 product_bind_ids_status_to_update_ids = product_bind_ids_status_to_update.mapped("id")
 
             #query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.stock_update IS NULL""" % (account.id)
-            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.meli_stock_status = 'update'""" % (account.id)
+            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active
+            FROM   mercadolibre_product as melip, product_product as pp
+            WHERE
+            melip.product_id=pp.id
+            AND pp.active IS TRUE
+            AND melip.connection_account=%i
+            AND melip.meli_id!=''
+            AND NOT melip.meli_id IS NULL
+            AND melip.meli_stock_status = 'update'""" % (account.id)
             cr = self._cr
             respquery = cr.execute(query)
             results = cr.fetchall()
@@ -1482,13 +2176,42 @@ class MercadoLibreConnectionAccount(models.Model):
             _logger.info("query: "+str(query)+" results update null:"+str(results))
 
             #query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.stock_update IS NOT NULL""" % (account.id)
-            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.meli_stock_status != 'update' AND melip.meli_stock_status != 'updated' AND melip.meli_stock_status != 'revision_fullfilment' AND melip.meli_stock_status != 'revision_error' AND melip.meli_stock_status != 'revision_unmoved'""" % (account.id)
+            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active
+            FROM   mercadolibre_product as melip, product_product as pp
+            WHERE
+            melip.product_id=pp.id
+            AND pp.active IS TRUE
+            AND melip.connection_account=%i
+            AND melip.meli_id!=''
+            AND NOT melip.meli_id IS NULL
+            AND melip.meli_stock_status != 'update'
+            AND melip.meli_stock_status != 'updated'
+            AND melip.meli_stock_status != 'revision_fullfilment'
+            AND melip.meli_stock_status != 'revision_error'
+            AND melip.meli_stock_status != 'revision_unmoved'""" % (account.id)
+            #query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.meli_stock_status != 'update' AND melip.meli_stock_status != 'updated'""" % (account.id)
             cr = self._cr
             respquery = cr.execute(query)
             results = cr.fetchall()
             product_bind_ids_not_null = results
 
             _logger.info("query: "+str(query)+" results update not null:"+str(results))
+
+            query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active
+            FROM   mercadolibre_product as melip, product_product as pp
+            WHERE
+            melip.product_id=pp.id
+            AND pp.active IS TRUE
+            AND melip.connection_account=%i
+            AND melip.meli_id!=''
+            AND NOT melip.meli_id IS NULL
+            AND melip.meli_stock_status IS NULL""" % (account.id)
+            #query = """SELECT melip.id, melip.connection_account, melip.meli_id, melip.stock_update, pp.active  FROM   mercadolibre_product as melip, product_product as pp WHERE melip.product_id=pp.id AND pp.active IS TRUE AND melip.connection_account=%i AND melip.meli_id!='' AND NOT melip.meli_id IS NULL AND melip.meli_stock_status != 'update' AND melip.meli_stock_status != 'updated'""" % (account.id)
+            cr = self._cr
+            respquery = cr.execute(query)
+            results = cr.fetchall()
+            product_bind_ids_not_null+= results
+            _logger.info("query: "+str(query)+" results null:"+str(results))
 
             #return {}
             """

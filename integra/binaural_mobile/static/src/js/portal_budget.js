@@ -622,9 +622,13 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 "sale_id" : parseInt(id_order),
                 "confirm" : confirm
             })
-            const { status, data } = budget;
+            const { status, data, msg} = budget;
             const is400 = status === 400;
-            if (is400) return
+            if (is400) {
+                $("#error_msg").text(msg)
+                $("#error_confirm_cancel").modal('show')
+                return
+            }
             $(".confirm-btn").hide()
             $(".cancel-btn").hide()
             if(confirm == "confirm"){
