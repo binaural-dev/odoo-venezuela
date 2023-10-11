@@ -708,7 +708,7 @@ class mercadolibre_orders(models.Model):
                     'seller_custom_field': oitem.seller_custom_field,
                 },
                 "unit_price": oitem.full_unit_price,
-                #"currency_id": oitem.currency_id,
+                # "currency_id": oitem.currency_id,
                 "currency_id": 'USD',
                 'quantity': oitem.quantity,
 
@@ -718,7 +718,7 @@ class mercadolibre_orders(models.Model):
             "id": self.order_id,
             "status": self.status,
             "status_detail": self.status_detail,
-            #"total_amount": self.total_amount,
+            # "total_amount": self.total_amount,
             "total_amount": sum_amount,
             "paid_amount": self.paid_amount,
             "coupon_amount": self.coupon_amount,
