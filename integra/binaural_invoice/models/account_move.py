@@ -114,8 +114,8 @@ class AccountMove(models.Model):
             sequence number or not.
         """
 
-        return self.move_type in ["out_invoice", "out_refund"] and not self.correlative
-
+        return self.journal_id.fiscal and not self.correlative
+    
     @api.model
     def get_sequence(self, is_fiscal=False):
         """Allow the invoice to have both a generic sequence
@@ -148,10 +148,3 @@ class AccountMove(models.Model):
                 }
             )
         return correlative.next_by_id(correlative.id)
-
-    def action_post(self):
-        res = super().action_post()
-        for move in self:
-            if move.journal_id.fiscal and not move.correlative:
-                move.correlative = move.get_sequence(move.journal_id.fiscal)
-        return res
