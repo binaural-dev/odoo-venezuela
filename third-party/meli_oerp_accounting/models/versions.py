@@ -5,7 +5,9 @@ invoice_origin = "invoice_origin"
 report_invoices = "account.account_invoices"
 #report_invoices = "l10n_ar_report_fe.account_fe_invoices"
 #report_invoices = "l10n_ar_electronic_invoice_report.action_electronic_invoice"
+report_invoices_name = "" 
 #report_invoices_name = "l10n_ar_electronic_invoice_report.report_electronic_invoice_copy_1_copy_1" 
+report_invoices_id = False
 #report_invoices_id = 1517
 posted_statuses = ['posted']
 def report_render( template, res_ids=None, data=None):
