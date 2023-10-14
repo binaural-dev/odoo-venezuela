@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230810\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230915\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-23 20:01+0000\n"
-"PO-Revision-Date: 2023-08-23 20:01+0000\n"
+"POT-Creation-Date: 2023-10-09 20:03+0000\n"
+"PO-Revision-Date: 2023-10-09 20:03+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -142,7 +142,7 @@ msgstr "Commando"
 #: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
 #, python-format
 msgid "Connection to printer failed"
-msgstr "Conexion a la impresora fallò"
+msgstr "Conexión a la impresora falló"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_port__create_uid
@@ -198,7 +198,7 @@ msgstr ""
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_tax__fiscal_code
 msgid "Fiscal Code"
-msgstr "Codigo en Maquina fiscal"
+msgstr "Código en Maquina fiscal"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_bank_statement_line__iot_mf
@@ -211,7 +211,7 @@ msgstr "Maquina fiscal"
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_box__fiscal_port_ids
 msgid "Fiscal Port"
-msgstr "Puero Serial (Fiscal)"
+msgstr "Puerto Serial (Fiscal)"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_port__name
@@ -275,7 +275,7 @@ msgstr "Obtener Status 1"
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_box__has_fiscal_machine
 msgid "Has Fiscal Machine"
-msgstr "Tiene maquina fiscal? (Windows)"
+msgstr "¿Tiene maquina fiscal? (Windows)"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_port__id
@@ -285,7 +285,7 @@ msgstr ""
 #. module: binaural_iot_mf
 #: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
 msgid "ID Payment Method"
-msgstr "Id del metodo de pago"
+msgstr "Id del método de pago"
 
 #. module: binaural_iot_mf
 #: model:ir.model,name:binaural_iot_mf.model_iot_device
@@ -316,7 +316,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_move__is_credit
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_payment__is_credit
 msgid "Is Credit"
-msgstr "Es a Credito"
+msgstr "Es a Crédito"
 
 #. module: binaural_iot_mf
 #: model:ir.model,name:binaural_iot_mf.model_account_journal
@@ -426,12 +426,12 @@ msgstr "Numero"
 #. module: binaural_iot_mf
 #: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
 msgid "Number from"
-msgstr "Numero Desde"
+msgstr "Número Desde"
 
 #. module: binaural_iot_mf
 #: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
 msgid "Number to"
-msgstr "Numero Hasta"
+msgstr "Número Hasta"
 
 #. module: binaural_iot_mf
 #. odoo-javascript
@@ -452,36 +452,36 @@ msgstr "IMPRIMIR NOTA DE CREDITO FISCAL"
 #: code:addons/binaural_iot_mf/static/src/js/action_mf.js:0
 #, python-format
 msgid "PROGRAMACION"
-msgstr "Programacion"
+msgstr "Programación"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_journal__payment_method
 msgid "Payment Method"
-msgstr "Metodo de pago"
+msgstr "Método de pago"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__payment_method_name
 msgid "Payment Method Name"
-msgstr "Nombre del metodo de pago"
+msgstr "Nombre del método de pago"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__payment_methods
 msgid "Payment Methods"
-msgstr "Metodos de pago"
+msgstr "Métodos de pago"
 
 #. module: binaural_iot_mf
 #. odoo-python
 #: code:addons/binaural_iot_mf/models/iot_device.py:0
 #, python-format
 msgid "Payment method id is empty"
-msgstr "El id del metodo de pago esta vacio"
+msgstr "El id del método de pago esta vacio"
 
 #. module: binaural_iot_mf
 #. odoo-python
 #: code:addons/binaural_iot_mf/models/iot_device.py:0
 #, python-format
 msgid "Payment method name is empty"
-msgstr "El nombre del metodo de pago esta vacio"
+msgstr "El nombre del método de pago esta vacío"
 
 #. module: binaural_iot_mf
 #. odoo-javascript
@@ -495,7 +495,7 @@ msgstr "Imprimir Factura"
 #: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
 #, python-format
 msgid "Print Refund"
-msgstr "Imprimir Nota de credito"
+msgstr "Imprimir Nota de crédito"
 
 #. module: binaural_iot_mf
 #: model_terms:ir.ui.view,arch_db:binaural_iot_mf.iot_device_view_form
@@ -514,12 +514,12 @@ msgstr "Imprimir Resumen"
 #: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
 #, python-format
 msgid "Programming"
-msgstr "Programacion"
+msgstr "Programación"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_box__ip_public
 msgid "Public IP Address"
-msgstr "Ip Publica"
+msgstr "Ip Pública"
 
 #. module: binaural_iot_mf
 #. odoo-javascript
@@ -555,7 +555,7 @@ msgstr "El rango hasta es mayor que el rango desde"
 #: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__reprint_type_date__rc
 #: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__reprint_type_number__rc
 msgid "Refund"
-msgstr "Nota de credito"
+msgstr "Nota de crédito"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__reprint_type_date__rx
@@ -574,7 +574,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_move__mf_reportz
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_payment__mf_reportz
 msgid "Report number Z"
-msgstr "Numero de reporte Z"
+msgstr "Número de reporte Z"
 
 #. module: binaural_iot_mf
 #. odoo-javascript
@@ -630,17 +630,17 @@ msgstr "Reimprimir Rango hasta Numero"
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__reprint_type
 msgid "Reprint Type"
-msgstr "Tipo de Reimpresion"
+msgstr "Tipo de Reimpresión"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__reprint_type_date
 msgid "Reprint Type Date"
-msgstr "Tipo de Reimpresion Fecha"
+msgstr "Tipo de Reimpresión Fecha"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__reprint_type_number
 msgid "Reprint Type Number"
-msgstr "Tipo de Reimpresion"
+msgstr "Tipo de Reimpresión"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__resume_range_from
@@ -688,7 +688,7 @@ msgstr "Enviar comando a la maquina fiscal"
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_move__mf_invoice_number
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_payment__mf_invoice_number
 msgid "Sequence number"
-msgstr "Numero de secuencia"
+msgstr "Número de secuencia"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__serial_machine
@@ -700,14 +700,14 @@ msgstr "Serial de la maquina fiscal"
 #: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
 #, python-format
 msgid "Set Payment Method"
-msgstr "Establecer metodo de pago"
+msgstr "Establecer método de pago"
 
 #. module: binaural_iot_mf
 #. odoo-javascript
 #: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
 #, python-format
 msgid "Successfully sent to printer!"
-msgstr "Enviado exitosamente a la impresora!"
+msgstr "¡Enviado exitosamente a la impresora!"
 
 #. module: binaural_iot_mf
 #: model:ir.model,name:binaural_iot_mf.model_account_tax
@@ -726,14 +726,14 @@ msgstr "Imprimir Test"
 #: code:addons/binaural_iot_mf/models/iot_device.py:0
 #, python-format
 msgid "The command is empty"
-msgstr "El comando esta vacio"
+msgstr "El comando esta vacío"
 
 #. module: binaural_iot_mf
 #. odoo-python
 #: code:addons/binaural_iot_mf/models/account_move.py:0
 #, python-format
 msgid "The credit note must be made in the same fiscal machine"
-msgstr "La nota de credito debe ser realizada en la misma maquina fiscal"
+msgstr "La nota de crédito debe ser realizada en la misma maquina fiscal"
 
 #. module: binaural_iot_mf
 #. odoo-python
@@ -741,7 +741,7 @@ msgstr "La nota de credito debe ser realizada en la misma maquina fiscal"
 #, python-format
 msgid "The credit note must be made on the same day"
 msgstr ""
-"No puede emitir una Nota de credito por Maquina fiscal con una fecha "
+"No puede emitir una Nota de crédito por Maquina fiscal con una fecha "
 "distinta a la de hoy, por favor edite la fecha de la factura, la tasa y "
 "verifique montos en  Bs"
 
