@@ -23,6 +23,10 @@ odoo.define("binaural_pos.OrderWidget", function(require) {
         return `$ ${amount}`
       }
 
+      get product_qty() {
+        return this.env.pos.get_order().get_qty_products()
+      }
+
     }
 
   Registries.Component.extend(OrderWidget, BinauralOrderWidget)

@@ -16,7 +16,7 @@
               </xpath>
             </field>
       </record>
-      
+
       <record id="view_product_template_binding_post" model="ir.ui.view">
             <field name="name">Post Binding to Mercado Libre</field>
             <field name="model">mercadolibre.product.template.binding.post</field>
@@ -24,7 +24,7 @@
             <field name="arch" type="xml">
               <xpath expr="//button[@name='product_template_post']" position="attributes">
                 <attribute name="title" >Publicar/Actualizar Publicacion en Mercado Libre</attribute>
-              </xpath>              
+              </xpath>
             </field>
       </record>
 
@@ -193,7 +193,7 @@
               </form>
             </field>
       </record>
-      
+
       <record id="view_mercadolibre_product_maestro_update" model="ir.ui.view">
             <field name="name">Actualizar Datos Producto Maestro</field>
             <field name="model">mercadolibre.product.maestro.update</field>
@@ -222,7 +222,7 @@
           <field name="view_mode">form</field>
           <field name="target">new</field>
       </record>
-      
+
       <!-- Action wizard - Add to Connector: MercadoLibre-->
       <record id="action_product_template_add_to_mercadolibre" model="ir.actions.act_window">
           <field name="name">Add Product To MercadoLibre / Bind</field>
@@ -374,9 +374,9 @@
               view_mode="form"
               binding_views="list,form"
               target="new"/-->
-              
-        
-        
+
+
+
         <!-- FIX VARIANT ATTRIBUTES -->
         <!-- View wizard FORM  - Variant Fix -->
         <!--record id="view_mercadolibre_variant_fixer_wiz" model="ir.ui.view">
@@ -421,7 +421,7 @@
                 <field name="view_mode">form</field>
                 <field name="target">new</field>
           </record>
-          
+
           <record id="action_product_template_binding_post" model="ir.actions.act_window">
               <field name="name">Publicar/Actualizar Publicacion en ML</field>
               <field name="type">ir.actions.act_window</field>

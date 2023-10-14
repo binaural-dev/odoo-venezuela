@@ -48,6 +48,10 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 				let lines = order.get_orderlines();
 				let pos_config = self.env.pos.config;				
 				let call_super = true;
+        if(order.is_refund){
+					return super._onClickPay();
+        }
+
 				let prod_used_qty = {};
                 var order_t = _t('Deny Order')
                 var is_out = _t(' is out of stock.');
