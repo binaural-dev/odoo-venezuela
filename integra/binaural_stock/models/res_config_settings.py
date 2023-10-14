@@ -14,4 +14,3 @@ class ResConfigSettings(models.TransientModel):
     main_warehouse_id = fields.Many2one(
         "stock.warehouse", related="company_id.main_warehouse_id", readonly=False
     )
-    not_allow_sell_products = fields.Boolean(related='company_id.not_allow_sell_products', readonly=False)
