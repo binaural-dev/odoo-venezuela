@@ -87,4 +87,3 @@ en la lista por si se activa el empaquetado en la ficha del producto
 * Se Visualizan los presupuestos, facturas y pagos hechos por el vendedor de la sesión
 
 ----------------------------------------
-
