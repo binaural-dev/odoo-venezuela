@@ -76,6 +76,28 @@
         <field name="help">Select stock pickings with status "waiting"</field>
     </record>
 
+    <record id="view_tree_stock_picking_hr_employee_tree_waiting" model="ir.ui.view">
+        <field name="name">hr.employee.picking.tree.waiting</field>
+        <field name="model">hr.employee</field>
+        <field name="arch" type="xml">
+            <tree create="0" editable="bottom" string="Stock Picking (Waiting)">
+                <field name="name"/>
+                <field name="cart_active_id"/>
+                <field name="active_pick_id"/>
+                <field name="pending_pick_id" domain="[('operation_state', '=', 'ready')]" />
+                <field name="pick_ids"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_stock_picking_hr_employee_tree_waiting" model="ir.actions.act_window">
+        <field name="name">Pick Assignation</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="binaural_stock_barcode.view_tree_stock_picking_hr_employee_tree_waiting"/>
+        <field name="domain">[('role_picking','=','picker')]</field>
+    </record>
+
     <record id="view_tree_stock_picking_tree_operation" model="ir.ui.view">
         <field name="name">stock.picking.tree.waiting</field>
         <field name="model">stock.picking</field>
@@ -115,5 +137,11 @@
         name="Pick Assignation" 
         parent="stock.menu_stock_warehouse_mgmt"
         action="view_stock_picking_tree_waiting"/>
+
+    <menuitem 
+        id="menu_picking_waiting_hr_employee" 
+        name="Pick Assignation (Employee)" 
+        parent="stock.menu_stock_warehouse_mgmt"
+        action="view_stock_picking_hr_employee_tree_waiting"/>
 
 </odoo>
