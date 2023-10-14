@@ -92,14 +92,22 @@ class StockPicking(models.Model):
                     {"pick_id": record.id, "employee_id": user.employee_id.id, "type": "end"}
                 )
 
+                if record.type_delivery_step == "pick":
+                    new_pick = self.search(
+                        [
+                            ("operation_state", "=", "ready"),
+                            ("type_delivery_step", "=", "pick"),
+                            ("picker_id", "=", False),
+                        ],
+                        limit=1,
+                    )
+                    if new_pick:
+                        new_pick.picker_id = record.picker_id
+
                 if record.type_delivery_step == "out":
                     record.cart_id.pick_id = False
                     record.cart_id.out_id = False
                     record.cart_id.pack_id = False
-
-                    new_pick = self.search([("picker_id", "=", False)], limit=1)
-                    if new_pick:
-                        new_pick.picker_id = record.picker_id.id
 
                     order = self.env["sale.order"].search([("name", "=", record.origin)])
                     wizard = self.env["sale.advance.payment.inv"].create(

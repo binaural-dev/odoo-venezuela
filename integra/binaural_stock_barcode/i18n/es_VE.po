@@ -291,9 +291,13 @@ msgstr "Informacion del PICK"
 
 #. module: binaural_stock_barcode
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_stock_picking__picker_id
-#: model:ir.model.fields.selection,name:binaural_stock_barcode.selection__res_users__role_picking__picker
 msgid "Picker"
 msgstr "Responsable"
+
+#. module: binaural_stock_barcode
+#: model:ir.model.fields.selection,name:binaural_stock_barcode.selection__res_users__role_picking__picker
+msgid "Picker"
+msgstr "Pickeador"
 
 #. module: binaural_stock_barcode
 #: model:ir.model.fields.selection,name:binaural_stock_barcode.selection__barcode_rule__type__cart

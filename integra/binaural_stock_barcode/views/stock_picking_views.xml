@@ -84,7 +84,7 @@
                 <field name="name"/>
                 <field name="cart_active_id"/>
                 <field name="active_pick_id"/>
-                <field name="pending_pick_id" domain="[('operation_state', '=', 'ready')]" />
+                <field name="pending_pick_id" domain="[('type_delivery_step','=','pick'),('operation_state', '=', 'ready')]" />
                 <field name="pick_ids"/>
             </tree>
         </field>

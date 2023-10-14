@@ -71,6 +71,9 @@ class StockBarcodeControllerInherit(StockBarcodeController):
             picking_id = self.get_pick_assigned(employee_id)
 
             if picking_id:
+                if picking_id.cart_id:
+                    return {"warning": _("The pick is already assigned to another cart")}
+
                 out_id = model_stock_picking.search(
                     ["&", ("origin", "=", picking_id.origin), ("type_delivery_step", "=", "out")]
                 )
