@@ -32,3 +32,8 @@ class StockPickingCart(models.Model):
 
     def set_new_barcode(self):
         self.barcode = self.generate_random_barcode()
+
+    def clear_cart(self):
+        self.pick_id = False
+        self.pack_id = False
+        self.out_id = False

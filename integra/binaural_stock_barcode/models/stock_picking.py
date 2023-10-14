@@ -1,5 +1,6 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
 from odoo.tools import html2plaintext, is_html_empty
+from odoo.tools.float_utils import float_compare
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -105,7 +106,6 @@ class StockPicking(models.Model):
                         {"sale_order_ids": order.ids, "advance_payment_method": "delivered"}
                     )
                     wizard._create_invoices(wizard.sale_order_ids)
-
         return res
 
     @api.depends("operation_start_date", "operation_pause_date", "operation_end_date", "state")
@@ -148,7 +148,7 @@ class StockPicking(models.Model):
     def _compute_pick_move_line_ids(self):
         for record in self:
             pick_id = record._get_picks()
-            record.pick_move_line_ids =  pick_id.move_line_ids
+            record.pick_move_line_ids = pick_id.move_line_ids
 
     def _get_fields_stock_barcode(self):
         res = super()._get_fields_stock_barcode()
@@ -159,12 +159,12 @@ class StockPicking(models.Model):
 
     def _get_stock_barcode_data(self):
         """
-        This function was overwritten to be able to add products that were not in stock.move.line 
+        This function was overwritten to be able to add products that were not in stock.move.line
         but are in stock.move
 
         This function also adds the stock.move model to the list of records
         """
-        
+
         # Avoid to get the products full name because code and name are separate in the barcode app.
         self = self.with_context(display_default_code=False)
         move_lines = self.move_line_ids
@@ -178,35 +178,62 @@ class StockPicking(models.Model):
 
         uoms = products.uom_id | move_lines.product_uom_id
         # If UoM setting is active, fetch all UoM's data.
-        if self.env.user.has_group('uom.group_uom'):
-            uoms |= self.env['uom.uom'].search([])
+        if self.env.user.has_group("uom.group_uom"):
+            uoms |= self.env["uom.uom"].search([])
 
         # Fetch `stock.location`
-        source_locations = self.env['stock.location'].search([('id', 'child_of', self.location_id.ids)])
-        destination_locations = self.env['stock.location'].search([('id', 'child_of', self.location_dest_id.ids)])
-        locations = move_lines.location_id | move_lines.location_dest_id | source_locations | destination_locations
+        source_locations = self.env["stock.location"].search(
+            [("id", "child_of", self.location_id.ids)]
+        )
+        destination_locations = self.env["stock.location"].search(
+            [("id", "child_of", self.location_dest_id.ids)]
+        )
+        locations = (
+            move_lines.location_id
+            | move_lines.location_dest_id
+            | source_locations
+            | destination_locations
+        )
 
         # Fetch `stock.quant.package` and `stock.package.type` if group_tracking_lot.
-        packages = self.env['stock.quant.package']
-        package_types = self.env['stock.package.type']
-        if self.env.user.has_group('stock.group_tracking_lot'):
+        packages = self.env["stock.quant.package"]
+        package_types = self.env["stock.package.type"]
+        if self.env.user.has_group("stock.group_tracking_lot"):
             packages |= move_lines.package_id | move_lines.result_package_id
-            packages |= self.env['stock.quant.package'].with_context(pack_locs=destination_locations.ids)._get_usable_packages()
+            packages |= (
+                self.env["stock.quant.package"]
+                .with_context(pack_locs=destination_locations.ids)
+                ._get_usable_packages()
+            )
             package_types = package_types.search([])
 
         data = {
             "records": {
                 "stock.picking": self.read(self._get_fields_stock_barcode(), load=False),
-                "stock.picking.type": self.picking_type_id.read(self.picking_type_id._get_fields_stock_barcode(), load=False),
-                "stock.move.line": move_lines.read(move_lines._get_fields_stock_barcode(), load=False),
-                "stock.move": self.move_ids.read(self.move_ids._get_fields_stock_barcode(), load=False),
+                "stock.picking.type": self.picking_type_id.read(
+                    self.picking_type_id._get_fields_stock_barcode(), load=False
+                ),
+                "stock.move.line": move_lines.read(
+                    move_lines._get_fields_stock_barcode(), load=False
+                ),
+                "stock.move": self.move_ids.read(
+                    self.move_ids._get_fields_stock_barcode(), load=False
+                ),
                 # `self` can be a record set (e.g.: a picking batch), set only the first partner in the context.
-                "product.product": products.with_context(partner_id=self[:1].partner_id.id).read(products._get_fields_stock_barcode(), load=False),
-                "product.packaging": packagings.read(packagings._get_fields_stock_barcode(), load=False),
+                "product.product": products.with_context(partner_id=self[:1].partner_id.id).read(
+                    products._get_fields_stock_barcode(), load=False
+                ),
+                "product.packaging": packagings.read(
+                    packagings._get_fields_stock_barcode(), load=False
+                ),
                 "res.partner": owners.read(owners._get_fields_stock_barcode(), load=False),
                 "stock.location": locations.read(locations._get_fields_stock_barcode(), load=False),
-                "stock.package.type": package_types.read(package_types._get_fields_stock_barcode(), False),
-                "stock.quant.package": packages.read(packages._get_fields_stock_barcode(), load=False),
+                "stock.package.type": package_types.read(
+                    package_types._get_fields_stock_barcode(), False
+                ),
+                "stock.quant.package": packages.read(
+                    packages._get_fields_stock_barcode(), load=False
+                ),
                 "stock.lot": lots.read(lots._get_fields_stock_barcode(), load=False),
                 "uom.uom": uoms.read(uoms._get_fields_stock_barcode(), load=False),
             },
@@ -215,12 +242,85 @@ class StockPicking(models.Model):
             "destination_locations_ids": destination_locations.ids,
         }
         # Extracts pickings' note if it's empty HTML.
-        for picking in data['records']['stock.picking']:
-            picking['note'] = False if is_html_empty(picking['note']) else html2plaintext(picking['note'])
+        for picking in data["records"]["stock.picking"]:
+            picking["note"] = (
+                False if is_html_empty(picking["note"]) else html2plaintext(picking["note"])
+            )
 
-        data['config'] = self.picking_type_id._get_barcode_config()
-        data['line_view_id'] = self.env.ref('stock_barcode.stock_move_line_product_selector').id
-        data['form_view_id'] = self.env.ref('stock_barcode.stock_picking_barcode').id
-        data['package_view_id'] = self.env.ref('stock_barcode.stock_quant_barcode_kanban').id
+        data["config"] = self.picking_type_id._get_barcode_config()
+        data["line_view_id"] = self.env.ref("stock_barcode.stock_move_line_product_selector").id
+        data["form_view_id"] = self.env.ref("stock_barcode.stock_picking_barcode").id
+        data["package_view_id"] = self.env.ref("stock_barcode.stock_quant_barcode_kanban").id
         return data
 
+    def action_cancel(self):
+        res = super().action_cancel()
+        if res:
+            for record in self:
+                record.picker_id = False
+                record.cart_id.clear_cart()
+        return res
+
+    def _check_incomplete(self):
+        prec = self.env["decimal.precision"].precision_get("Product Unit of Measure")
+        backorder_pickings = self.browse()
+        for picking in self:
+            quantity_todo = {}
+            quantity_done = {}
+            for move in picking.move_ids.filtered(lambda m: m.state != "cancel"):
+                quantity_todo.setdefault(move.product_id.id, 0)
+                quantity_done.setdefault(move.product_id.id, 0)
+                quantity_todo[move.product_id.id] += move.product_uom._compute_quantity(
+                    move.product_uom_qty, move.product_id.uom_id, rounding_method="HALF-UP"
+                )
+                quantity_done[move.product_id.id] += move.product_uom._compute_quantity(
+                    move.quantity_done, move.product_id.uom_id, rounding_method="HALF-UP"
+                )
+            # FIXME: the next block doesn't seem nor should be used.
+            for ops in picking.mapped("move_line_ids").filtered(
+                lambda x: x.package_id and not x.product_id and not x.move_id
+            ):
+                for quant in ops.package_id.quant_ids:
+                    quantity_done.setdefault(quant.product_id.id, 0)
+                    quantity_done[quant.product_id.id] += quant.qty
+            for pack in picking.mapped("move_line_ids").filtered(
+                lambda x: x.product_id and not x.move_id
+            ):
+                quantity_done.setdefault(pack.product_id.id, 0)
+                quantity_done[pack.product_id.id] += pack.product_uom_id._compute_quantity(
+                    pack.qty_done, pack.product_id.uom_id
+                )
+            if any(
+                float_compare(
+                    quantity_done[x],
+                    quantity_todo.get(x, 0),
+                    precision_digits=prec,
+                )
+                == -1
+                for x in quantity_done
+            ):
+                backorder_pickings |= picking
+        return backorder_pickings
+
+    def _pre_action_done_hook(self):
+        pickings_incomplete = self._check_incomplete()
+        if (
+            pickings_incomplete
+            and pickings_incomplete.type_delivery_step == "out"
+            and not self.env.context.get("skip_incomplete_qty")
+        ):
+            return pickings_incomplete._action_picking_incomplete_wizard()
+        return super()._pre_action_done_hook()
+
+    def _action_picking_incomplete_wizard(self):
+        view = self.env.ref("binaural_stock_barcode.stock_picking_incomplete_form_wizard")
+        return {
+            "name": _("Validate Incomplete"),
+            "type": "ir.actions.act_window",
+            "view_mode": "form",
+            "res_model": "stock.picking.incomplete",
+            "views": [(view.id, "form")],
+            "view_id": view.id,
+            "target": "new",
+            "context": dict(self.env.context, default_pick_id=self.id),
+        }
