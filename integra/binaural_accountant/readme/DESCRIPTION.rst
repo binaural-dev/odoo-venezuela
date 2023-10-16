@@ -69,7 +69,8 @@ También se agregaron al wizard de pagos los siguientes campos:
 * Tasa Inversa.
 
 
-## Validaciones
+Validaciones
+""""""""""""
 
 * Los asientos contables ahora son únicos por número de secuencia, contacto, estado y diario.
 
