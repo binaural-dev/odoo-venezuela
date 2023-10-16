@@ -12,6 +12,7 @@
     "depends": ["base", "account_accountant"],
     # always loaded
     "data": [
+        "security/security_group.xml",
         "views/account_journal.xml",
         "views/account_move.xml",
     ],
