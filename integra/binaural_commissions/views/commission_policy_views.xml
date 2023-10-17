@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<record id="commission_policy_tree_view" model="ir.ui.view">
+    <field name="name">commission.policy.tree.view</field>
+        <field name="model">commission.policy</field>
+        <field name="arch" type="xml">
+            <tree string="Commission Policy">
+                <field name="display_name"/>
+                <field name="policy_type" widget="badge" decoration-primary="policy_type=='client'"
+                       decoration-success="policy_type=='product'" decoration-warning="policy_type=='all'"/>
+                <field name="commission_line_ids"/>
+            </tree>
+        </field>
+</record>
+
+<record id="commission_policy_form_view" model="ir.ui.view">
+    <field name="name">commission.policy.form.view</field>
+    <field name="model">commission.policy</field>
+    <field name="arch" type="xml">
+        <form>
+            <sheet>
+                <div class="oe_title oe_edit_only">
+                    <label for="name"/>
+                    <h1 class="oe_edit_only">
+                        <field name="name"/>
+                    </h1>
+                </div>
+                <div class="oe_title oe_read_only">
+                    <h1 class="">
+                        <field name="display_name"/>
+                    </h1>
+                </div>
+                <group>
+                    <group>
+                        <field name="policy_type"/>
+                        <field name="is_report_range" />
+                    </group>
+                    <group>
+                        <field name="product_commission_type" widget="radio" options="{'horizontal': true}"
+                               attrs="{'invisible': [('policy_type', '!=', 'product')]}"/>
+                        <field name="products_id" widget="many2many_tags"
+                               attrs="{'invisible': [('product_commission_type', '!=', 'product')], 'required': [('product_commission_type', '=', 'product')]}"/>
+                        <field name="brands_id" widget="many2many_tags"
+                               attrs="{'invisible': [('product_commission_type', '!=', 'brand')], 'required': [('product_commission_type', '=', 'brand')]}"/>
+                        <field name="categories_id" widget="many2many_tags"
+                               attrs="{'invisible': [('product_commission_type', '!=', 'category')], 'required': [('product_commission_type', '=', 'category')]}"/>
+                    </group>
+                </group>
+                <notebook>
+                    <page string="Commissions Range">
+                        <field name="commission_line_ids"/>
+                    </page>
+                    <page string="Products"
+                          attrs="{'invisible': [('product_commission_type', 'in', ['product', False])]}">
+			<field name="product_ids"/>
+                    </page>
+		    <page string="Clients"
+			  attrs="{'invisible': [('policy_type', '!=', 'client')]}">
+			<field name="clients_id"/>
+		    </page>
+                </notebook>
+            </sheet>
+        </form>
+    </field>
+</record>
+
+<record id="commission_policy_action" model="ir.actions.act_window">
+    <field name="name">Commission Policy</field>
+    <field name="res_model">commission.policy</field>
+    <field name="view_mode">tree,form</field>
+    <field name="help" type="html">
+        <p class="o_view_nocontent_smiling_face">
+            Create a new commission policy!
+        </p>
+    </field>
+</record>
+</odoo>
