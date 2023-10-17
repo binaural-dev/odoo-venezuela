@@ -3,17 +3,69 @@
 <odoo>
     <data>
 
-        <record model="res.groups" id="group_fiscal_inspection" >
-            <field name="name">Contabilidad / Inspeccion Fiscal</field>
+<!-- Se crea un permniso para ver todo lo que conlleve Diario Fiscal
+Este permiso solo se puede usar por si solo, si se agregan otros permisos
+Dejara de funcionar  -->
+
+
+        <record model="res.groups" id="group_can_see_fiscal">
+            <field name="name">Inspeccion Fiscal / Ver Fiscal</field>
+            <field name="category_id" ref="base.module_category_accounting"/>
         </record>
 
+        <!-- <record model="res.groups" id="group_cannot_see_fiscal">
+            <field name="name">Inspeccion Fiscal / No puede ver fiscal</field>
+            <field name="category_id" ref="base.module_category_accounting"/>
+        </record>
+
+        <record id="access_fiscal_inspection_all" model="ir.rule">
+            <field name="name">Fiscal Inspection Access Rights</field>
+            <field name="model_id" ref="model_account_move"/>
+            <field name="domain_force">[('journal_id.fiscal', '=', False)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal.group_cannot_see_fiscal'))]"/> -->
+        <!-- </record> -->
+
+<!-- Ver Asientos Contables que tenga Diario Fiscal -->
 
         <record id="access_fiscal_inspection_res_partner" model="ir.rule">
             <field name="name">Fiscal Inspection Access Rights</field>
             <field name="model_id" ref="model_account_move"/>
-            <field name="domain_force">[('journal_id.fiscal', '=', False)]</field>
-            <field name="groups" eval="[(4, ref('binaural_fiscal.group_fiscal_inspection'))]"/>
+            <field name="domain_force">[('journal_id.fiscal', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal.group_can_see_fiscal'))]"/>
         </record>
+
+<!-- Ver Apuntes Contables con Diario Fiscal  -->
+
+        <record id="access_fiscal_inspection_line" model="ir.rule">
+            <field name="name">Fiscal Inspection Line Access Rights</field>
+            <field name="model_id" ref="account.model_account_move_line"/>
+            <field name="domain_force">[('journal_id.fiscal', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal.group_can_see_fiscal'))]"/>
+        </record>
+
+<!-- Mostrar pagos de clientes y proveedores con diario fiscal -->
+
+        <record id="access_fiscal_payment" model="ir.rule">
+            <field name="name">Fiscal Payments</field>
+            <field name="model_id" ref="account.model_account_payment"/>
+            <field name="domain_force">[('journal_id.fiscal', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal.group_can_see_fiscal'))]"/>
+        </record>
+
+<!-- Listado de Diarios Fiscales -->
+
+        <record id="access_fiscal_journals" model="ir.rule">
+            <field name="name">Fiscal Journals</field>
+            <field name="model_id" ref="account.model_account_journal"/>
+            <field name="domain_force">[('fiscal', '=', True)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal.group_can_see_fiscal'))]"/>
+        </record>
+
+<!-- No mostrar en la ficha de Diarios el campo es fiscal, esta en la vista de Binaural Fiscal-->
+
+
+
+
 
 
 
