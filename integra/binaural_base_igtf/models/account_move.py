@@ -49,3 +49,12 @@ class AccountMove(models.Model):
     )
     def _compute_tax_totals(self):
         return super()._compute_tax_totals()
+
+    def button_draft(self):
+        """
+        When the user click on the button draft, we need to delete the igtf
+        """
+        for record in self:
+            record.bi_igtf = 0
+            record.is_two_percentage = False
+        return super().button_draft()
