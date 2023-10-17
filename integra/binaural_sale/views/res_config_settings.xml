@@ -18,9 +18,11 @@
                             <div class="text-muted">
                                 Check this if you want the rate of the invoice to be taken from its
                                 sale order. Else it will take the rate of the date when it is created.
-                            </div>
-                            <group colspan="4" col="4">
-                                    <field name="not_allow_sell_products" />
+                            </div> 
+                        </div>
+                        <div class="o_setting_right_pane">
+                                <group colspan="4" col="4">
+                                        <field name="not_allow_sell_products" />
                                 </group>
                                 <div class="text-muted">
                                     If you have more than the quantity on stock dont allow sell.
