@@ -139,10 +139,14 @@ class StockValuationAdjustmentLines(models.Model):
                 additional_values = line.search(
                     [("product_id", "=", line.product_id.id), ("cost_id", "=", line.cost_id.id)]
                 )
+                _logger.warning("ADITIONAL VALUEEEES %s", additional_values.cost_id.name)
                 for cost in additional_values:
                     original_value = cost.unit_cost
                 last_cost = sum(split.additional_landed_cost for split in additional_values)
-            line.last_cost = line.final_cost
+
+                _logger.warning("LAST COSTTTTTT %s", last_cost)
+                
+            line.last_cost =  original_value + last_cost 
 
     @api.depends("product_id")
     def _compute_latest_standard_price(self):
