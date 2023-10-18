@@ -31,7 +31,7 @@
             </xpath>
             <xpath expr="//page[@name='valuation_adjustments']/field/tree/field[@name='additional_landed_cost']" position="after">
                 <field name="final_cost"/>
-                <field name="last_cost" />
+                <field name="last_cost" optional="1"/>
                 <field name="latest_standard_price" optional="1"/>
                 <field name="update_latest_standard_price" optional="1"/> 
             </xpath>
@@ -51,7 +51,7 @@
                             <field name="cost_percentage" optional="show" />
                             <field name="foreign_additional_landed_cost"/>
                             <field name="foreign_final_cost" readonly="1"/>
-                            <field name="foreign_last_cost" />
+                            <field name="foreign_last_cost" optional="1"/>
                         </tree>
                     </field>
                 </page>
