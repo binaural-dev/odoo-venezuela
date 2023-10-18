@@ -41,6 +41,7 @@
 				    name="move_id"
 				    domain="[('id', 'in', parent.allowed_lines_move_ids)]"
 				/>
+                                <field name="company_id" optional="hide"/>
                                 <field name="payment_concept_id" force_save="1"/>
                                 <field name="is_retention_client" invisible="1"/>
                                 <field 

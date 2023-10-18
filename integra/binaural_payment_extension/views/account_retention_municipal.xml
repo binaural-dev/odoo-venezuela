@@ -44,6 +44,7 @@
 					name="move_id"
 				    	domain="[('id', 'in', parent.allowed_lines_move_ids)]"
 				    />
+					<field name="company_id" optional="hide"/>
 				    <field name="economic_activity_id"/>
 				    <field
 					name="aliquot"
@@ -154,6 +155,7 @@
 	                <field name="partner_id"/>
 	                <field name="date"/>
 	                <field name="date_accounting"/>
+					<field name="company_id" optional="hide"/>
 	                <field name="state"/>
                 </tree>
             </field>
