@@ -40,7 +40,7 @@
 
                                     <field name="name"/>
 				    <field name="move_id"/>
-					<field name="company_id" optional="hide" groups="base.group_multi_company" invisible="1"/>
+					<field name="company_id" optional="hide" groups="base.group_multi_company"/>
                                     <field name="aliquot"/>
 				    <field name="related_percentage_tax_base" optional="hide"/>
 				    <!-- Amounts -->
@@ -168,7 +168,7 @@
 	                <field name="date"/>
 	                <field name="date_accounting"/>
 	                <!-- <field name="total_tax_ret" string="Monto Retenido" widget="monetary" options="{'currency_field': 'company_currency_id'}"/> -->
-					<field name="company_id" optional="hide" groups="base.group_multi_company" invisible="1"/>
+					<field name="company_id" optional="hide" groups="base.group_multi_company"/>
 	                <field name="state"/>
                 </tree>
             </field>

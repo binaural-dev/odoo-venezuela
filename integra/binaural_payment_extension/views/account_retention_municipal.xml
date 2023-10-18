@@ -44,7 +44,7 @@
 					name="move_id"
 				    	domain="[('id', 'in', parent.allowed_lines_move_ids)]"
 				    />
-					<field name="company_id" optional="hide" groups="base.group_multi_company" invisible="1"/>
+					<field name="company_id" optional="hide" groups="base.group_multi_company"/>
 				    <field name="economic_activity_id"/>
 				    <field
 					name="aliquot"
@@ -155,7 +155,7 @@
 	                <field name="partner_id"/>
 	                <field name="date"/>
 	                <field name="date_accounting"/>
-					<field name="company_id" optional="hide" groups="base.group_multi_company" invisible="1"/>
+					<field name="company_id" optional="hide" groups="base.group_multi_company"/>
 	                <field name="state"/>
                 </tree>
             </field>
