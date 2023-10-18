@@ -5,8 +5,8 @@
             <field name="name">control number</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">ir.sequence</field>
-            <field name="view_mode">form</field>
-            <field name="res_id" ref="invoice_correlative"/>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('code', '=','invoice.correlative')]</field>
         </record>
         
         <menuitem 
