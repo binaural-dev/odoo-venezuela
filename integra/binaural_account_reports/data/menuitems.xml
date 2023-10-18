@@ -69,12 +69,14 @@
         id="menu_action_account_report_aged_receivable_usd"
         name="Aged Receivable USD"
         action="action_account_report_ar_usd"
+        groups="binaural_fiscal.group_can_see_fiscal"
 	parent="account_reports.account_reports_partners_reports_menu"
     />
     <menuitem
         id="menu_action_account_report_aged_payable_usd"
         name="Aged Payable USD"
         action="action_account_report_ap_usd"
+        groups="binaural_fiscal.group_can_see_fiscal"
 	parent="account_reports.account_reports_partners_reports_menu"
     />
     <menuitem
