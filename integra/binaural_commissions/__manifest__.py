@@ -17,6 +17,7 @@
         "views/commission_policy_views.xml",
         "views/commission_policy_line_views.xml",
         "views/menuitems.xml",
+        "views/res_config_settings.xml"
     ],
     "application": False,
 }

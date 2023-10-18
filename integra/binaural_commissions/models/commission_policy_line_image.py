@@ -3,6 +3,7 @@ from odoo import api, fields, models, _
 
 class CommissionPolicyLineImage(models.Model):
     _name = "commission.policy.line.image"
+    _description = "Commission Policy Line Image"
 
     date_from = fields.Integer(required=True, default=1)
     date_to = fields.Integer(required=True)
