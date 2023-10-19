@@ -427,7 +427,7 @@
                                     <table class="table table-sm o_main_table table-borderless" name="invoice_line_table" style="font-size:15px;margin-top:-40px">
                                         <thead>
                                             <tr class="border-bottom border-dark" style="border-top: 1px solid black;">
-                                                <th name="th_description" style="width:100px;" class="text-start"><span>Código</span></th>
+                                                <th name="th_description" style="width:250px;" class="text-start"><span>Código</span></th>
                                                 <th style="width:600px" name="th_description" class="text-start"><span>Descripción</span></th>
                                                 <th name="th_quantity" class="text-end"><span>Cantidad</span></th>
                                                 <th name="th_quantity" class="text-end"><span>Unid</span></th>
