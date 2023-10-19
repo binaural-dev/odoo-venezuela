@@ -82,10 +82,10 @@
                                         <div ><span t-field="invoice.name"/>
                                             <span t-field="invoice.company_id"/>
                                         </div>
-                                        <!-- <div>
+                                        <div>
                                             <span style="margin-right:3px;">R.I.F.:</span>
                                             <span t-field="invoice.company_id.vat"/>
-                                        </div> -->
+                                        </div>
                                         <div style="text-transform: capitalize !important;">
                                             <span style="margin-right:3px;">Dirección:</span>
                                             <span  style="text-transform:capitalize;" t-esc="invoice.company_id.street.capitalize()"/>
