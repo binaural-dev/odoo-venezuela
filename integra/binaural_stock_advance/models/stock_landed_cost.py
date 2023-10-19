@@ -61,7 +61,7 @@ class StockLandedCost(models.Model):
         string="Transfers",
         copy=False,
         states={"done": [("readonly", True)]},
-        domain=[("picking_type_code", "=", "incoming")],
+        domain=[("picking_type_code", "=", "incoming"),("purchase_id", "!=", False)],
     )
 
     @api.depends("date")

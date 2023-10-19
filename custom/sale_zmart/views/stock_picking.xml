@@ -1,5 +1,16 @@
 <odoo>
     <data>
+        <record id="view_picking_form_inherited_zmart_binaural" model="ir.ui.view">
+            <field name="name">stock.picking.form.zmart</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="binaural_stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='package_qty']" position="replace">
+                    <field name="package_qty" attrs="{'invisible': [('sequence_code', '!=', 'PACK'), ('sequence_code', '!=', 'OUT')], 'readonly': [('sequence_code', '!=', 'PACK')]}"/>
+                </xpath>
+            </field>
+        </record>
+
         <record id="view_picking_form_inherited_zmart" model="ir.ui.view">
             <field name="name">stock.picking.form.zmart</field>
             <field name="model">stock.picking</field>
@@ -7,7 +18,6 @@
             <field name="arch" type="xml">
                 <field name="origin" position="after">
                     <field name="guide" attrs="{'invisible': [('sequence_code', '!=', 'PACK'), ('sequence_code', '!=', 'OUT')], 'readonly': [('sequence_code', '!=', 'PACK')]}"/>
-                    <field name="package_qty" attrs="{'invisible': [('sequence_code', '!=', 'PACK'), ('sequence_code', '!=', 'OUT')], 'readonly': [('sequence_code', '!=', 'PACK')]}"/>
                 </field>
                 <field name="user_id" position="replace">
                     <field name="user_pick_id" attrs="{'invisible': [('sequence_code', '!=', 'PICK')], 'readonly': [('user_pick_id', '!=', False)]}"/>
