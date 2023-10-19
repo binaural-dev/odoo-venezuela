@@ -88,7 +88,7 @@
                                         </div> -->
                                         <div style="text-transform: capitalize !important;">
                                             <span style="margin-right:3px;">Dirección:</span>
-                                            <span t-esc="invoice.company_id.street.capitalize()"/>
+                                            <span  style="text-transform:capitalize;" t-esc="invoice.company_id.street.capitalize()"/>
                                         </div>
                                         <div>
                                             <span style="margin-right:3px;margin-right:3px">Teléfonos:</span>
@@ -182,7 +182,7 @@
                                     <tr style="border:0px solid white;">
                                         <th style="width:700px;font-weight:normal;font-size:14px;padding-right:40px;border:0px solid white;">
                                             <div style="display:inline;">Dirección: </div>
-                                                <span style="margin-left:3px;" t-out="invoice.partner_id.contact_address_complete.capitalize()"/>.
+                                            <span style="margin-left:3px;text-transform:capitalize;" t-out="invoice.partner_id.contact_address_complete.capitalize()"/>.
                                         </th>
                                     </tr>
                                     <!-- <tr style="border:0px solid white;">
