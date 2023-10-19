@@ -205,7 +205,7 @@ class SaleOrder(models.Model):
         invoice_vals = self._prepare_invoice()
 
         if group % 1 != 0:
-            group = int(group) + 1
+            group = group + 1
 
         if group == 1:
             res = super()._create_invoices(grouped, final, date)
@@ -217,7 +217,7 @@ class SaleOrder(models.Model):
         invoices |= res
         _move_lines = self.env["account.move.line"]
 
-        for i in range(group - len(res)):
+        for i in range(int(group) - len(res)):
             _move_lines = res.invoice_line_ids[limit : limit + limit]
             move = (
                 self.env["account.move"]
