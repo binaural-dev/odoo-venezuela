@@ -15,7 +15,7 @@
                 <field name="picking_ids" widget="many2many_tags" 
                                         options="{'no_create_edit': True}" attrs="{'invisible': [('target_model', '!=', 'picking')]}"
                                         domain="[('company_id', '=', company_id), ('move_ids.stock_valuation_layer_ids', '!=', False),
-                                                ('picking_type_code', '=', 'incoming')]"/>
+                                                ('picking_type_code', '=', 'incoming'), ('purchase_id', '!=', False)]"/>
                     
             </field>
              <xpath expr="//page[@name='valuation_adjustments']/field/tree/field[@name='former_cost']" position="before">
