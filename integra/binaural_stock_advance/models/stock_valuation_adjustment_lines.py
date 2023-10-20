@@ -79,6 +79,12 @@ class StockValuationAdjustmentLines(models.Model):
         compute="_compute_update_latest_standard_price", store=True
     )
 
+    cost_cif = fields.Float("Cost CIF", compute="_compute_cost_cif")
+
+    percentage_tariff_code = fields.Float("Percentage Tariff", compute="_compute_percentage_tariff")
+
+    tariff_value = fields.Float("Tariff Value", default=0)
+
     @api.depends("former_cost", "additional_landed_cost")
     def _compute_final_cost(self):
         for line in self:
@@ -90,6 +96,30 @@ class StockValuationAdjustmentLines(models.Model):
     def _compute_unit_cost(self):
         for line in self:
             line.unit_cost = line.former_cost / line.quantity
+
+
+    @api.depends("product_id")
+    def _compute_percentage_tariff(self):
+        for line in self:
+            line.percentage_tariff_code = line.product_id.percentage_tariff_code
+
+    @api.depends("unit_cost", "cost_line_id", "additional_landed_cost")
+    def _compute_cost_cif(self):
+        for line in self:
+            last_cost = 0
+            original_value = line.unit_cost
+            if line.cost_line_id.product_id:
+                apply_cif_cost = self.env.company.service_products_ids
+                for product in apply_cif_cost:
+                    if line.cost_line_id.product_id == product:
+                        additional_values = line.search(
+                            [("product_id", "=", line.product_id.id), ("cost_id", "=", line.cost_id.id)]
+                        )
+                        for cost in additional_values:
+                            original_value = cost.unit_cost
+                        last_cost = sum(split.additional_landed_cost for split in additional_values)
+                line.cost_cif = original_value + last_cost 
+    
 
     # FOREIGN FIELDS
 
