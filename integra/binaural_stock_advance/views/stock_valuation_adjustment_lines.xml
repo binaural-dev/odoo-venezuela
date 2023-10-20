@@ -17,7 +17,7 @@
                 <field name="cost_percentage" optional="show" />
                 <field name="additional_landed_cost"/>
                 <field name="final_cost" readonly="1"/>
-                <field name="last_cost" />
+                <field name="last_cost"/>
                 <field name="total_amount_cost" />
             </tree>
         </field>
