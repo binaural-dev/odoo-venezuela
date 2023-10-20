@@ -15,7 +15,6 @@
 								<div class="oe_title">
 									<h1><field name="name"/></h1>
 								</div>
-                <group>
                   <div class="btn-group oe_button_box" name="button_box_mel" style="width: auto;">
 
                     <button name='meli_login' type="object"
@@ -87,7 +86,6 @@
   										class="oe_stat_button"
   										icon="fa-refresh"/-->
   								</div>
-                </group>
                 <notebook>
                   <page string="Credentials">
                     <group>
@@ -234,7 +232,6 @@
 								<div class="oe_title">
 									<h1><field name="name"/></h1>
 								</div>
-                <group>
                   <div class="oe_button_box" name="button_box_mel" style="width: auto;">
                     <button name='copy_from_company' type="object"
   											string="Copiar de Cia"
@@ -242,14 +239,13 @@
   											class="oe_stat_button"
   											icon="fa-user-circle"/>
                   </div>
+                <group name="accounts" string="Account">
+                  <field name="connection_account"/>
                 </group>
-                <group name="accounts" string="Accounts">
-                  <group>
-                    <field name="accounts"/>
-                    <field name="connection_account"/>
-                    <field name="company_id"/>
-                    <field name="mode" />
-                  </group>
+                <field name="accounts"/>
+                <group name="accounts_detail" string="Account Detail">
+                  <field name="company_id"/>
+                  <field name="mode" />
                 </group>
                 <group string="Configuración básica" col="2">
                   <group>
@@ -265,6 +261,7 @@
                   <group>
                     <field name="mercadolibre_warranty" invisible="0"/>
                     <field name="mercadolibre_listing_type" invisible="0"/>
+                    <field name="mercadolibre_banner" invisible="0"/>
                     <field name="mercadolibre_seller_user" invisible="0"/>
                     <field name="mercadolibre_seller_team" invisible="0"/>
                     <field name="mercadolibre_attributes" invisible="0"/>
@@ -406,6 +403,7 @@
                 </group>
                 <group>
                   <group>
+                    <field name="mercadolibre_shipment_print_guide" invisible="0"/>
                     <field name="mercadolibre_post_invoice" invisible="0"/>
                     <field name="mercadolibre_post_invoice_dont_send" invisible="0"/>
                   </group>
