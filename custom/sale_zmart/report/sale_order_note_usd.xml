@@ -86,7 +86,7 @@
                                 
                                 <div style="display: inline-block;vertical-align: middle;font-size:14px;margin-left:5px;">
                                     <div class="col-12">
-                                        <div ><span t-field="invoice.name"/>
+                                        <div >
                                             <span t-field="invoice.company_id"/>
                                         </div>
                                         <div>
