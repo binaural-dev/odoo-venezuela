@@ -6,8 +6,15 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sale/Sale",
-    "version": "16.0.0.7",
-    "depends": ["sale", "invoice_zmart", "binaural_stock"],
+    "version": "16.0.0.6",
+    "depends": [
+        "binaural_sale",
+        "invoice_zmart",
+        "binaural_tax",
+        "contact_zmart",
+        "product_zmart",
+        "binaural_stock"
+    ],
     "data": [
         "data/res_group.xml",
         "data/paperformat.xml",
