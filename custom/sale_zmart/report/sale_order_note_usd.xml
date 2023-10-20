@@ -81,7 +81,7 @@
                                     t-att-src="image_data_uri(invoice.company_id.logo)"
                                     height="60"
                                     width="60"
-                                    style="display: inline-block; vertical-align: middle; max-width:100px !important; max-height:100px !important;"
+                                    style="display: inline-block; vertical-align: middle; max-width:100px !important; max-height:100px !important;object-fit:contain;"
                                 />
                                 
                                 <div style="display: inline-block;vertical-align: middle;font-size:14px;margin-left:5px;">
@@ -132,28 +132,28 @@
                             </div>
                         </section>
                         <hr style="border: none; visibility: hidden;" />
-                        <section id="segmento_2" style="border: 1px solid black; border-right: 0px solid black; padding: 10px; border-radius: 10px;font-size:12px;max-width:99.4% !important;min-height:90px;">
+                        <section id="segmento_2" style="border: 1px solid black; border-right: 0px solid black; padding: 10px; border-radius: 10px;max-width:99.4% !important;min-height:90px;">
                             <div style="display: flex; align-items: center;width:60%;height:100px;padding-top:10px;padding-top:10px">
                             </div>
                             <div style="display: flex; align-items: center;margin-top:-100px;">
                                 <div style="display: inline-block;" class="align-right">
-                                    <div style="padding:5px">
+                                    <div>
 
                                         <div>
-                                            <span style="font-weight:normal !important;font-size:14px;margin-left:-200px">R.I.F.:</span>
-                                            <span style="font-weight:normal !important;font-size:14px" t-esc="invoice.partner_id.prefix_vat"/>-
-                                            <span style="font-weight:normal !important;font-size:14px" t-esc="invoice.partner_id.vat"/>
-                                            <span style="font-weight:normal !important;font-size:14px" t-esc="invoice.partner_id.nit"/>
+                                            <span style="font-weight:200 !important;font-size:14px !important;margin-left:-200px">Cédula/RIF:</span>
+                                            <span style="font-weight:200 !important;font-size:14px !important;" t-esc="invoice.partner_id.prefix_vat"/>-
+                                            <span style="font-weight:200 !important;font-size:14px !important;" t-esc="invoice.partner_id.vat"/>
+                                            <span style="font-weight:200 !important;font-size:14px !important;" t-esc="invoice.partner_id.nit"/>
                                         </div>
 
                                         <div>
-                                            <span style="font-weight:normal !important;font-size:14px;margin-left:-200px">Correo del Comprador:</span>
-                                            <span style="font-weight:normal !important;font-size:14px" t-esc="invoice.partner_id.email"/>
+                                            <span style="font-weight:200 !important;font-size:14px !important;margin-left:-200px">Correo del Comprador:</span>
+                                            <span style="font-weight:200 !important;font-size:14px !important;" t-esc="invoice.partner_id.email"/>
                                         </div>
 
                                         <div>
-                                            <span style="font-weight:normal !important;font-size:14px;margin-left:-200px">Teléfonos:</span>
-                                            <span style="font-weight:normal !important;font-size:14px" t-esc="invoice.partner_id.phone"/>
+                                            <span style="font-weight:200 !important;font-size:14px !important;margin-left:-200px">Teléfonos:</span>
+                                            <span style="font-weight:200 !important;font-size:14px !important;" t-esc="invoice.partner_id.phone"/>
                                         </div>
 
                                     </div>
@@ -162,30 +162,17 @@
                             <div>
                                 <table style="text-align:left;border: 0px solid white;border-right: 0px solid gray;">
                                     <tr style="border:0px solid white;">
-                                        <th style="font-weight:normal;font-size:14px;border:0px solid white;"><div style="display:inline;">Cliente:</div><strong><span style="margin-left:25px" t-field="invoice.partner_id.vat"/>   <span style="margin-left:25px" t-field="invoice.partner_id"/></strong></th>
+                                        <th style="font-weight:normal;font-size:14px;border:0px solid white;"><div style="display:inline;">Cliente:</div><span style="margin-left:25px" t-field="invoice.partner_id.vat"/>   <span style="margin-left:25px" t-field="invoice.partner_id"/></th>
                                     </tr>
-                                    <!-- <tr style="border:0px solid white;">
-                                        <th style="font-weight:normal;font-size:14px;border:0px solid white;">
-                                            <div style="display:inline;">R.I.F.:</div>
-                                            <span style="margin-left:35px" t-field="invoice.partner_id.prefix_vat"/>-
-                                            <span style="margin-right:30px" t-field="invoice.partner_id.vat"/>
-                                            <span style="margin-left:3px" t-field="invoice.partner_id.nit"/>
-                                        </th>
-                                    </tr> -->
+                                    
                                     <tr style="border:0px solid white;">
                                         <th style="width:700px;font-weight:normal;font-size:14px;padding-right:40px;border:0px solid white;">
                                             <div style="display:inline;">Dirección: </div>
                                             <span style="margin-left:3px;text-transform:capitalize;" t-out="invoice.partner_id.contact_address_complete.capitalize()"/>.
                                         </th>
                                     </tr>
-                                    <!-- <tr style="border:0px solid white;">
-                                        <th style="font-weight:normal;font-size:14px;border:0px solid white;">Teléfonos: <span style="margin-left:3px" t-out="invoice.partner_id.phone"/></th>
-                                    </tr> -->
+              
                                 </table>
-
-                                <!-- <div>
-                                    min-width:500px;
-                                </div> -->
 
                             </div>
                         </section>
@@ -412,7 +399,7 @@
                                                 <strong>$<span t-esc="discount_total_amount" t-options='{"widget": "float", "precision": 2}'/></strong> 
                                             </td>
                                             <td class="text-end amount_col">
-                                                <strong><span t-esc="foreign_currency_symbol" /> <span t-esc="foreign_discount_total_amount"/></strong> 
+                                                <strong><span t-esc="foreign_discount_total_amount"/> <span t-esc="foreign_currency_symbol" /> </strong> 
                                             </td>
                                         </tr>
 
