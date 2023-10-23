@@ -10,3 +10,7 @@ class ResCompany(models.Model):
             " Else it will take the rate of the date when it is created."
         )
     )
+    not_allow_sell_products = fields.Boolean(
+        "Dont allow sell products without quantity", default=False
+    )
+

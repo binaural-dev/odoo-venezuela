@@ -12,6 +12,10 @@ class StockValuationAdjustmentLines(models.Model):
     def default_is_stock_advance(self):
         return self.env.company.check_advance_stock or False
 
+    additional_landed_cost = fields.Monetary("Additional Landed Cost Und")
+
+    former_cost = fields.Monetary("Subtotal")
+
     foreign_currency_id = fields.Many2one(related="cost_id.foreign_currency_id", store=True)
     foreign_rate = fields.Float(related="cost_id.foreign_rate", store=True)
     foreign_inverse_rate = fields.Float(related="cost_id.foreign_inverse_rate", store=True)
@@ -55,14 +59,14 @@ class StockValuationAdjustmentLines(models.Model):
         "Foreign Unit Cost",
         digits="Tasa",
         currency_field="foreign_currency_id",
-        compute="_compute_foreign_unit_cost"
+        compute="_compute_foreign_unit_cost",
     )
 
     unit_cost = fields.Monetary("Unit cost", compute="_compute_unit_cost")
     total_amount_cost = fields.Monetary("Total amount cost")
     last_cost = fields.Monetary("Last cost", compute="_compute_last_cost", store=True)
     is_stock_advance = fields.Boolean(string="Is stock Advance", default=default_is_stock_advance)
-    cost_percentage = fields.Float("Cost percentage", default=0)
+    cost_percentage = fields.Float("Cost percentage %", default=0)
     price_unit = fields.Monetary("Cost Total With Tax", default=0)
     latest_standard_price = fields.Monetary(compute="_compute_latest_standard_price", store=True)
     update_latest_standard_price = fields.Boolean(
@@ -75,8 +79,14 @@ class StockValuationAdjustmentLines(models.Model):
         compute="_compute_update_latest_standard_price", store=True
     )
 
+    @api.depends("former_cost", "additional_landed_cost")
+    def _compute_final_cost(self):
+        for line in self:
+            if not line.cost_line_id.split_method == "by_percentage":
+                line.final_cost = line.former_cost + line.additional_landed_cost
+            line.final_cost = (line.additional_landed_cost * line.quantity) + line.former_cost
 
-    @api.depends("former_cost","quantity")
+    @api.depends("former_cost", "quantity")
     def _compute_unit_cost(self):
         for line in self:
             line.unit_cost = line.former_cost / line.quantity
@@ -130,10 +140,10 @@ class StockValuationAdjustmentLines(models.Model):
                     [("product_id", "=", line.product_id.id), ("cost_id", "=", line.cost_id.id)]
                 )
                 for cost in additional_values:
-
                     original_value = cost.unit_cost
                 last_cost = sum(split.additional_landed_cost for split in additional_values)
-            line.last_cost = last_cost + original_value
+                
+            line.last_cost =  original_value + last_cost 
 
     @api.depends("product_id")
     def _compute_latest_standard_price(self):

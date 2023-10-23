@@ -7,13 +7,11 @@ Este añade los siguientes campos:
 
 ##Configuraciones:
 
-* Usar la tasa de la orden de compra en la factura (si quiere que la factura utilice la 
-tasa de su orden de compra. De lo contrario utilizará la tasa del día en el que sea creada.)
+* Usar la tasa de la orden de compra en la factura (si quiere que la factura utilice la  tasa de su orden de compra. De lo contrario utilizará la tasa del día en el que sea creada.)
 
 ## Validaciones
 
-* Al crear la factura verificara si es una compra o no, tambien revisara que si cada linea de 
-compra tiene un solo impuesto aplicado y si tiene algun diario aplicado
+* Al crear la factura verificara si es una compra o no, tambien revisara que si cada linea de  compra tiene un solo impuesto aplicado y si tiene algun diario aplicado
 
 ##Linea de orden de compra (purchase.order.line)
 
