@@ -62,6 +62,12 @@ class StockValuationAdjustmentLines(models.Model):
         compute="_compute_foreign_unit_cost",
     )
 
+    foreign_cost_cif = fields.Float("Foreign Cost Cif", compute="_compute_foreign_cost_cif")
+
+    foreign_tariff_value = fields.Float("Tariff Value", compute="_compute_foreign_tariff_value")
+
+     
+
     unit_cost = fields.Monetary("Unit cost", compute="_compute_unit_cost")
     total_amount_cost = fields.Monetary("Total amount cost")
     last_cost = fields.Monetary("Last cost", compute="_compute_last_cost", store=True)
@@ -83,7 +89,7 @@ class StockValuationAdjustmentLines(models.Model):
 
     percentage_tariff_code = fields.Float("Percentage Tariff", compute="_compute_percentage_tariff")
 
-    tariff_value = fields.Float("Tariff Value", default=0)
+    tariff_value = fields.Float("Tariff Value", compute="_compute_tariff_value")
 
     @api.depends("former_cost", "additional_landed_cost")
     def _compute_final_cost(self):
@@ -106,6 +112,7 @@ class StockValuationAdjustmentLines(models.Model):
     @api.depends("unit_cost", "cost_line_id", "additional_landed_cost")
     def _compute_cost_cif(self):
         for line in self:
+            line.cost_cif = 0
             last_cost = 0
             original_value = line.unit_cost
             if line.cost_line_id.product_id:
@@ -119,11 +126,29 @@ class StockValuationAdjustmentLines(models.Model):
                             original_value = cost.unit_cost
                         last_cost = sum(split.additional_landed_cost for split in additional_values)
                 line.cost_cif = original_value + last_cost 
-    
+
+    @api.depends("cost_cif")
+    def _compute_tariff_value(self):
+        apply_cif_cost = self.env.company.service_products_ids
+        for line in self:
+            line.tariff_value = 0
+            for product in apply_cif_cost:
+                if line.cost_line_id.product_id == product:
+                    line.tariff_value = (line.cost_cif * line.percentage_tariff_code) / 100
 
     # FOREIGN FIELDS
 
-    @api.depends("unit_cost")
+    @api.depends("cost_cif", "foreign_inverse_rate")
+    def _compute_foreign_cost_cif(self):
+        for line in self:
+            line.foreign_cost_cif = line.cost_cif * line.foreign_inverse_rate
+
+    @api.depends("tariff_value", "foreign_inverse_rate")
+    def _compute_foreign_tariff_value(self):
+        for line in self:
+            line.foreign_tariff_value = line.tariff_value * line.foreign_inverse_rate
+
+    @api.depends("unit_cost", "foreign_inverse_rate")
     def _compute_foreign_unit_cost(self):
         for line in self:
             line.foreign_unit_cost = line.unit_cost * line.foreign_inverse_rate

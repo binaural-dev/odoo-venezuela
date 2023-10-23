@@ -52,6 +52,9 @@
                             <field name="foreign_currency_id" invisible="1"/>
                             <field name="foreign_former_cost" readonly="1"/>
                             <field name="cost_percentage" optional="show" />
+                            <field name="foreign_cost_cif"/>
+                            <field name="percentage_tariff_code"/>
+                            <field name="tariff_value" />
                             <field name="foreign_additional_landed_cost"/>
                             <field name="foreign_final_cost" readonly="1"/>
                             <field name="foreign_last_cost"/>
