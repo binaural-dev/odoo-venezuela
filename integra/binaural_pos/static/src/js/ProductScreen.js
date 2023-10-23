@@ -58,6 +58,11 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 				if(pos_config.amount_to_zero){
 					$.each(lines, function( i, line ){
 						let prd = line.product;
+            if(this.pos.config.module_pos_discount 
+              && this.pos.config.discount_product_id
+              && this.pos.config.discount_product_id[0] == prd.product_tmpl_id){
+              return
+            }
 						if (prd.type == 'product'){
 							if(prd.id in prod_used_qty){
 								let old_qty = prod_used_qty[prd.id][1];
