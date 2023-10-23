@@ -74,32 +74,34 @@
 
                         </style>
                         <section id="segmento_1" class="row">
-                            <div class="col-7" style=" border: 1px solid black; border-radius: 10px; padding: 5px;">
+                            <div class="col-7">
                                
-                                <img
-                                    t-if="invoice.company_id.logo"
-                                    t-att-src="image_data_uri(invoice.company_id.logo)"
-                                    height="60"
-                                    width="60"
-                                    style="display: inline-block; vertical-align: middle; max-width:100px !important; max-height:100px !important;object-fit:contain;"
-                                />
-                                
-                                <div style="display: inline-block;vertical-align: middle;font-size:14px;margin-left:5px;">
-                                    <div class="col-12">
-                                        <div >
-                                            <span t-field="invoice.company_id"/>
-                                        </div>
-                                        <div>
-                                            <span style="margin-right:3px;">R.I.F.:</span>
-                                            <span t-field="invoice.company_id.vat"/>
-                                        </div>
-                                        <div style="text-transform: capitalize !important;">
-                                            <span style="margin-right:3px;">Dirección:</span>
-                                            <span  style="text-transform:capitalize;" t-esc="invoice.company_id.street.capitalize()"/>
-                                        </div>
-                                        <div>
-                                            <span style="margin-right:3px;margin-right:3px">Teléfonos:</span>
-                                            <span t-field="invoice.company_id.phone"/>
+                                <div style=" border: 1px solid black; border-radius: 10px; padding: 15px 10px;">
+                                    <img
+                                        t-if="invoice.company_id.logo"
+                                        t-att-src="image_data_uri(invoice.company_id.logo)"
+                                        height="60"
+                                        width="60"
+                                        style="display: inline-block; vertical-align: middle; object-fit:contain;"
+                                    />
+                                    
+                                    <div style="display: inline-block;vertical-align: middle;font-size:14px;margin-left:5px;">
+                                        <div class="col-12">
+                                            <div >
+                                                <span t-field="invoice.company_id"/>
+                                            </div>
+                                            <div>
+                                                <span style="margin-right:3px;">R.I.F.:</span>
+                                                <span t-field="invoice.company_id.vat"/>
+                                            </div>
+                                            <div style="text-transform: capitalize !important;">
+                                                <span style="margin-right:3px;">Dirección:</span>
+                                                <span  style="text-transform:capitalize;" t-esc="invoice.company_id.street.capitalize()"/>
+                                            </div>
+                                            <div>
+                                                <span style="margin-right:3px;margin-right:3px">Teléfonos:</span>
+                                                <span t-field="invoice.company_id.phone"/>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -126,6 +128,21 @@
                                                 </th>
                                             </tr>
                                         </table>
+
+                                        <div style="height: 26px;border: 1px solid black; border-radius: 10px; padding: 0px 5px;">
+
+                                            <table style="width:325px;border: 1px solid white;">
+                                                <tr style="padding:0px;margin-top:-10px;">
+                                                    <td class="font-h1" style="text-align:left;font-size: 18px;">
+                                                        <strong>Pedido Número:</strong>
+                                                    </td>
+                                                    <td class="font-h1" style="text-align:right;font-size: 18px;">
+                                                        <strong><span t-field="invoice.name" /></strong>
+                                                    </td>
+                                                </tr>
+                                            </table>
+
+                                        </div>
 
                                     </div>
                                 
