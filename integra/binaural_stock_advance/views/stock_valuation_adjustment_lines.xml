@@ -15,7 +15,10 @@
                 <field name="unit_cost" readonly="1"/>
                 <field name="former_cost" readonly="1"/>
                 <field name="cost_percentage" optional="show" />
-                <field name="additional_landed_cost"/>
+                <field name="cost_cif" readonly="1"/>
+                <field name="percentage_tariff_code" readonly="1"/>
+                <field name="tariff_value" readonly="1"/>
+                <field name="additional_landed_cost" readonly="1"/>
                 <field name="final_cost" readonly="1"/>
                 <field name="last_cost"/>
                 <field name="total_amount_cost" />
