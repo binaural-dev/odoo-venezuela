@@ -11,6 +11,17 @@
             </xpath>
         </field>
     </record>
+    <record id="view_out_invoice_tree_zmart" model="ir.ui.view">
+        <field name="name">account.move.tree.in.invoicezmart</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_in_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree[1]/field[@name='activity_ids']" position="after">
+                <field name="printed"/>
+                <field name="invoice_type"/>
+            </xpath>
+        </field>
+    </record>
     <record id="account_move_form_zmart" model="ir.ui.view">
         <field name="name">account.move.form.zmart</field>
         <field name="model">account.move</field>

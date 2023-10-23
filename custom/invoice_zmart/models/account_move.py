@@ -12,14 +12,15 @@ class AccountInvoice(models.Model):
     @api.depends("journal_id", "fiscal")
     def _compute_invoice_type(self):
         for move in self:
-            if move.journal_id.type == "sale" and move.journal_id.fiscal:
+            if move.journal_id.type in ['sale','purchase'] and move.journal_id.fiscal:
                 move.invoice_type = "Factura"
-            elif move.journal_id.type == "sale" and not move.journal_id.fiscal:
+            elif move.journal_id.type in ['sale','purchase'] and not move.journal_id.fiscal:
                 move.invoice_type = "Nota de Entrega"
             else:
                 move.invoice_type = ""
 
     def button_digital_invoice(self):
+        self.write({"printed": True})
         return self.env.ref("invoice_zmart.action_digital_invoice").report_action(self)
 
     def button_free_form(self):
