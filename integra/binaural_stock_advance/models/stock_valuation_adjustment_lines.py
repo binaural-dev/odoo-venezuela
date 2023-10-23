@@ -97,6 +97,8 @@ class StockValuationAdjustmentLines(models.Model):
             if not line.cost_line_id.split_method == "by_percentage":
                 line.final_cost = line.former_cost + line.additional_landed_cost
             line.final_cost = (line.additional_landed_cost * line.quantity) + line.former_cost
+            if line.tariff_value:
+                line.final_cost += (line.tariff_value * line.quantity )
 
     @api.depends("former_cost", "quantity")
     def _compute_unit_cost(self):
@@ -125,7 +127,8 @@ class StockValuationAdjustmentLines(models.Model):
                         for cost in additional_values:
                             original_value = cost.unit_cost
                         last_cost = sum(split.additional_landed_cost for split in additional_values)
-                line.cost_cif = original_value + last_cost 
+                line.cost_cif = original_value + last_cost
+                
 
     @api.depends("cost_cif")
     def _compute_tariff_value(self):
@@ -135,6 +138,7 @@ class StockValuationAdjustmentLines(models.Model):
             for product in apply_cif_cost:
                 if line.cost_line_id.product_id == product:
                     line.tariff_value = (line.cost_cif * line.percentage_tariff_code) / 100
+                  
 
     # FOREIGN FIELDS
 
@@ -198,7 +202,18 @@ class StockValuationAdjustmentLines(models.Model):
                     original_value = cost.unit_cost
                 last_cost = sum(split.additional_landed_cost for split in additional_values)
                 
-            line.last_cost =  original_value + last_cost 
+                line.last_cost =  original_value + last_cost
+
+                if self.env.company.use_fee_percentage:
+                    apply_cif_cost = self.env.company.service_products_ids
+                    for product in apply_cif_cost:
+                        if line.cost_line_id.product_id == product:
+                            for cost in additional_values:
+                                original_value = cost.unit_cost
+                                tariff_value = sum(split.tariff_value for split in additional_values)
+
+                                line.last_cost += tariff_value
+                
 
     @api.depends("product_id")
     def _compute_latest_standard_price(self):
