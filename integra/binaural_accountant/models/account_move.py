@@ -532,13 +532,37 @@ class AccountMove(models.Model):
         res["context"]["default_foreign_inverse_rate"] = self[0].foreign_inverse_rate
         return res
 
+    def action_update_account_id(self):
+        """
+        Action to update account lines if product dont have account and category dont have account
+        this method update account if change de journal_id.
+        """
+        for move in self:
+            for line in move.line_ids:
+                if line.tax_ids:
+                    if (
+                        not line.product_id.categ_id.property_account_income_categ_id
+                        and not line.product_id.property_account_income_id
+                    ):
+                        line.account_id = move.journal_id.default_account_id
+
     def action_post(self):
         res = super().action_post()
         for invoice in self:
-            if invoice.company_id.account_use_credit_limit and invoice.partner_id.use_partner_credit_limit:
+            if (
+                invoice.company_id.account_use_credit_limit
+                and invoice.partner_id.use_partner_credit_limit
+            ):
                 total_pay = invoice.partner_id.credit + invoice.amount_residual
                 if total_pay > invoice.partner_id.credit_limit:
-                    raise ValidationError(_("La cuenta %s es de %s mas %s en factura da un total de %s superando el limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el limite de crédito del cliente.",
-                                            invoice.partner_id.property_account_receivable_id.display_name, invoice.partner_id.credit_limit, invoice.amount_residual, total_pay, invoice.partner_id.credit_limit)
-                                        )
+                    raise ValidationError(
+                        _(
+                            "La cuenta %s es de %s mas %s en factura da un total de %s superando el limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el limite de crédito del cliente.",
+                            invoice.partner_id.property_account_receivable_id.display_name,
+                            invoice.partner_id.credit_limit,
+                            invoice.amount_residual,
+                            total_pay,
+                            invoice.partner_id.credit_limit,
+                        )
+                    )
         return res
