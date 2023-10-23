@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230925\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230810\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-26 20:47+0000\n"
-"PO-Revision-Date: 2023-09-26 20:47+0000\n"
+"POT-Creation-Date: 2023-10-11 20:19+0000\n"
+"PO-Revision-Date: 2023-10-11 20:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -229,6 +229,13 @@ msgid ""
 msgstr ""
 
 #. module: binaural_accountant
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__last_foreign_rate
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_move__last_foreign_rate
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__last_foreign_rate
+msgid "Last Foreign Rate"
+msgstr "Ultima tasa"
+
+#. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__manually_set_rate
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_move__manually_set_rate
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__manually_set_rate
@@ -293,6 +300,14 @@ msgstr "Pedido de venta"
 #: model:ir.actions.server,name:binaural_accountant.set_rate_payments_zero
 msgid "Set rate in payments with amount 0"
 msgstr "Actualizar Tasa"
+
+#. module: binaural_accountant
+#. odoo-python
+#: code:addons/binaural_accountant/models/account_move.py:0
+#: code:addons/binaural_accountant/models/account_move.py:0
+#, python-format
+msgid "The rate has been updated from %(last_rate)s to %(rate)s "
+msgstr "La tasa ha sido actualizada de: %(last_rate)s a una tasa personalizada: %(rate)s"
 
 #. module: binaural_accountant
 #: model:ir.model.fields,help:binaural_accountant.field_account_payment_register__foreign_rate

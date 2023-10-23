@@ -48,6 +48,9 @@ class SaleOrder(models.Model):
         readonly=False,
     )
 
+    last_foreign_rate = fields.Float(copy=False)
+    manually_set_rate = fields.Boolean(default=False)
+
     total_taxed = fields.Many2one(
         "account.tax",
         help="Total Taxed of the invoice",
@@ -169,6 +172,8 @@ class SaleOrder(models.Model):
         """
         Rate = self.env["res.currency.rate"]
         for sale in self:
+            if sale.manually_set_rate:
+                continue
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id, sale.date_order.date() or fields.Date.today()
             )
@@ -190,6 +195,7 @@ class SaleOrder(models.Model):
                 if sale.foreign_currency_id.id == base_usd_id
                 else sale.foreign_rate
             )
+            sale.manually_set_rate = True
 
     def _create_invoices(self, grouped=False, final=False, date=None):
         """
@@ -263,6 +269,41 @@ class SaleOrder(models.Model):
                     "foreign_inverse_rate": sale.foreign_inverse_rate,
                 }
             )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        for sale in res:
+            Rate = self.env["res.currency.rate"]
+            rate_values = Rate.compute_rate(
+                sale.foreign_currency_id.id, sale.date_order or fields.Date.today()
+            )
+            last_foreign_rate = rate_values.get("foreign_rate", 0)
+            if sale.manually_set_rate and sale.foreign_rate != last_foreign_rate:
+                sale.message_post(
+                    body=_(
+                        "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    )
+                    % ({"rate": sale.foreign_rate, "last_rate": last_foreign_rate})
+                )
+        return res
+
+    def write(self, vals):
+        if vals.get("foreign_rate", False):
+            vals.update({"last_foreign_rate": self.foreign_rate})
+        res = super().write(vals)
+        if (
+            vals.get("foreign_rate", False)
+            and self.manually_set_rate
+            and self.foreign_rate != self.last_foreign_rate
+        ):
+            self.message_post(
+                body=_(
+                    "The rate has been updated from %(last_rate)s to %(rate)s ",
+                )
+                % ({"rate": self.foreign_rate, "last_rate": self.last_foreign_rate})
+            )
+        return res
 
     @api.onchange("pricelist_id")
     def _onchange_pricelist_id(self):
