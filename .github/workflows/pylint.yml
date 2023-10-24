@@ -5,6 +5,7 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.repository == 'binaural-dev/integra'
     strategy:
       matrix:
         python-version: ["3.10"]

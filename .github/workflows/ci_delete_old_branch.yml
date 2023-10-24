@@ -11,6 +11,7 @@ on:
 jobs:
   cleanup_old_branches:
     runs-on: ubuntu-latest
+    if: github.repository == 'binaural-dev/integra'
     name: Delete old branch
     steps:
       - name: Borrando ramas
