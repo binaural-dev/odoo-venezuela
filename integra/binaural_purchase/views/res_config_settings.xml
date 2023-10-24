@@ -20,6 +20,18 @@
                             </div>
                 	</div>
 		    </div>
+                    <div class="row mt16 o_settings_container" name="binaural_sale_settings_2">
+                        <div class="o_setting_right_pane">
+                            <group colspan="4" col="4">
+				<field name="update_purchase_order_rate_using_date_order"/>
+                            </group>
+                            <div class="text-muted">
+				When checked, the rate of the purchase order will be updated using
+				the date order whenever it changes. Else, when the rate is already
+				set, it will not be updated.
+                            </div>
+                	</div>
+		    </div>
                 </xpath>
             </field>
         </record>

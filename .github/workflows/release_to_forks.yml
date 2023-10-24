@@ -5,6 +5,7 @@ jobs:
 
   create_pull_request:    
     runs-on: ubuntu-latest
+    if: github.repository == 'binaural-dev/integra'
     permissions: read-all      
     steps:
     - name: Checkout
