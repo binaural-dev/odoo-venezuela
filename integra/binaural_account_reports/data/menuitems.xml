@@ -39,7 +39,7 @@
 	id="menu_action_account_report_result_statement_usd"
 	name="Result Statement USD"
 	action="action_account_report_rs_usd"
-    groups="binaural_fiscal.group_can_see_fiscal"
+    groups="binaural_fiscal.group_cannot_see_fiscal"
 	parent="account.account_reports_legal_statements_menu"
     />
 
@@ -54,7 +54,7 @@
 	id="menu_action_account_report_financial_situation_statement_usd"
 	name="Financial situation statement USD"
 	action="action_account_report_fs_usd"
-    groups="binaural_fiscal.group_can_see_fiscal"
+    groups="binaural_fiscal.group_cannot_see_fiscal"
 	parent="account.account_reports_legal_statements_menu"
     />
 
@@ -62,28 +62,28 @@
         id="menu_action_account_report_general_ledger_usd"
         name="General Ledger USD"
         action="action_account_report_general_ledger_usd"
-        groups="binaural_fiscal.group_can_see_fiscal"
+        groups="binaural_fiscal.group_cannot_see_fiscal"
 	parent="account_reports.account_reports_audit_reports_menu"
     />
     <menuitem
         id="menu_action_account_report_aged_receivable_usd"
         name="Aged Receivable USD"
         action="action_account_report_ar_usd"
-        groups="binaural_fiscal.group_can_see_fiscal"
+        groups="binaural_fiscal.group_cannot_see_fiscal"
 	parent="account_reports.account_reports_partners_reports_menu"
     />
     <menuitem
         id="menu_action_account_report_aged_payable_usd"
         name="Aged Payable USD"
         action="action_account_report_ap_usd"
-        groups="binaural_fiscal.group_can_see_fiscal"
+        groups="binaural_fiscal.group_cannot_see_fiscal"
 	parent="account_reports.account_reports_partners_reports_menu"
     />
     <menuitem
         id="menu_action_account_report_partner_ledger_usd"
         name="Partner Ledger USD"
         action="action_account_report_partner_ledger_usd"
-        groups="binaural_fiscal.group_can_see_fiscal"
+        groups="binaural_fiscal.group_cannot_see_fiscal"
 	parent="account_reports.account_reports_partners_reports_menu"
     />
 

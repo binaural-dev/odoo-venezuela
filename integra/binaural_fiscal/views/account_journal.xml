@@ -9,7 +9,9 @@
             <field name="inherit_id" ref="account.view_account_journal_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='type']" position="after">
-                    <field name="fiscal" groups="binaural_fiscal.group_can_see_fiscal" />
+                    <field name="fiscal" 
+                    
+                    />
                 </xpath>
             </field>
         </record>        

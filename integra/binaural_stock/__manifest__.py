@@ -12,7 +12,7 @@
     "version": "16.2",
     "depends": ["stock","binaural_tax", "binaural_rate"],
     "data": [
-        # 'security/ir.model.access.csv',
+        'security/ir.model.access.csv',
         "security/security_binaural_stock.xml",
         "security/binaural_stock_groups.xml",
         "views/product_category_views.xml",
