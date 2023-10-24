@@ -7,7 +7,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    if: ${{ github.repository != 'binaural-dev/integra'}}
+    if: github.repository != 'binaural-dev/integra'
     steps:
       - name: Sync fork
         uses: actions/github-script@v6
