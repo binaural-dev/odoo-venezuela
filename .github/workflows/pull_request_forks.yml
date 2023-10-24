@@ -1,0 +1,99 @@
+name: Create Pull Request from Release
+on:
+  schedule:
+    - cron: '0 12 * * 2,4'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    if: github.repository != 'binaural-dev/integra'
+    steps:
+      - name: Sync fork
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.KEY_DEPLOY }}
+          script: |
+            let response = await github.rest.pulls.list({
+              owner: context.repo.owner, 
+              repo: context.repo.repo
+            });
+
+            let {data: listPulls} = response;
+
+            let pullRequest = false;
+
+            listPulls.forEach((pull) => {
+              if(pull.title.startsWith("REL")){
+                pullRequest = pull
+              }
+            });
+
+            if (pullRequest == false){
+              
+              let pullRequestResponse = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head_repo: "binaural-dev/integra",
+                head: "release-16",
+                base: "staging",
+                title: "REL: Release (Integra) -> staging",
+                body: "",
+              })
+              pullRequest = pullRequestResponse.data
+            }
+
+            let commitsResponse = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullRequest.number,
+            });
+
+            let { data : commits} = commitsResponse
+
+            let messageList = []
+
+            messageList = await commits.map((el) => {
+              if(el.commit.message.startsWith("Merge")){
+                return ""
+              }
+              return `${el.commit.author.name} (${el.commit.author.date}): ${el.commit.message}`
+            })
+
+            let message = await messageList.join("\n\n")
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullRequest.number,
+              body: message,
+            });
+
+            try{
+
+              let merge = await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullRequest.number, 
+              })
+
+            }catch(error){
+
+              let listTeamResponse = await github.rest.teams.listMembersInOrg({
+                org: "binaural-dev",
+                team_slug: "aprobadores",
+              });
+
+              let {data: listTeam} = listTeamResponse;
+
+              let newList = listTeam.map((el) => el.login).filter(el => el.login != context.actor)
+
+              github.rest.pulls.requestReviewers({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullRequest.number, 
+                reviewers: newList,
+              })
+
+            }
+
