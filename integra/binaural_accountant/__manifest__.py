@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.1.3",
+    "version": "16.3.0",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -25,6 +25,7 @@
         "views/account_move.xml",
         "views/account_move_line.xml",
         "views/account_payment.xml",
+        "views/res_partner.xml",
         "wizard/account_payment_register.xml",
     ],
     "images": ["static/description/icon.png"],

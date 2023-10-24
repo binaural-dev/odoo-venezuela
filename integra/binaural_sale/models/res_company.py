@@ -16,3 +16,7 @@ class ResCompany(models.Model):
             " it changes. Else, when the rate is already set, it will not be updated."
         )
     )
+    not_allow_sell_products = fields.Boolean(
+        "Dont allow sell products without quantity", default=False
+    )
+

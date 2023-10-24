@@ -212,7 +212,7 @@ class SaleOrder(models.Model):
         invoice_vals = self._prepare_invoice()
 
         if group % 1 != 0:
-            group = int(group) + 1
+            group = group + 1
 
         if group == 1:
             res = super()._create_invoices(grouped, final, date)
@@ -224,7 +224,7 @@ class SaleOrder(models.Model):
         invoices |= res
         _move_lines = self.env["account.move.line"]
 
-        for i in range(group - len(res)):
+        for i in range(int(group) - len(res)):
             _move_lines = res.invoice_line_ids[limit : limit + limit]
             move = (
                 self.env["account.move"]
@@ -247,6 +247,13 @@ class SaleOrder(models.Model):
 
         self._update_invoices_rate()
         for invoice in invoices:
+            first_invoice_line = invoice.invoice_line_ids[0]
+            first_invoice_line_data = first_invoice_line.read([])[0]
+            for key, value in first_invoice_line_data.items():
+                if isinstance(value, tuple):
+                    first_invoice_line_data[key] = value[0]
+            first_invoice_line.unlink()
+            self.env["account.move.line"].create(first_invoice_line_data)
             invoice.compute_line_ids_foreign_debit_and_credit()
         return invoices
 
@@ -283,3 +290,12 @@ class SaleOrder(models.Model):
 
         except:
             self._recompute_prices()
+
+    def action_confirm(self):
+        if self.env.company.not_allow_sell_products:
+            for order in self:
+                for line in order.order_line:
+                    if line.product_id.detailed_type == "product" and line.product_id.qty_available < line.product_uom_qty:
+                        raise ValidationError(_('Does not have enough units available for the product %s. Only has %s units of the %s demanded.' ) % (line.product_id.name, line.product_id.qty_available, line.product_uom_qty))
+        
+        return super().action_confirm()

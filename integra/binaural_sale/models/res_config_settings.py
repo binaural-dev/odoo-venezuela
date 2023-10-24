@@ -20,3 +20,5 @@ class ResConfigSettings(models.TransientModel):
         ),
         readonly=False,
     )
+    not_allow_sell_products = fields.Boolean(related='company_id.not_allow_sell_products', readonly=False)
+
