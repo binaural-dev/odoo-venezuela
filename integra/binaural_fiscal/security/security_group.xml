@@ -58,7 +58,7 @@ Dejara de funcionar  -->
             <field name="name">Fiscal Journals</field>
             <field name="model_id" ref="account.model_account_journal"/>
             <field name="domain_force">[('fiscal','!=', False)]</field>
-            <!-- <field name="groups" eval="[(4, ref('account.model_account_journal'))]"/> -->
+            <field name="groups" eval="[(4, ref('account.model_account_journal'))]"/>
         </record>
 
 <!-- Listado de no Diarios Fiscales -->
@@ -67,7 +67,7 @@ Dejara de funcionar  -->
             <field name="name">No Fiscal Journals</field>
             <field name="model_id" ref="account.model_account_journal"/>
             <field name="domain_force">[('fiscal','!=', True)]</field>
-            <!-- <field name="groups" eval="[(4, ref('account.model_account_journal'))]"/> -->
+            <field name="groups" eval="[(4, ref('account.model_account_journal'))]"/>
         </record>
 
 
