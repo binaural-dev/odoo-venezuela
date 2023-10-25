@@ -9,10 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository != 'binaural-dev/integra'
     steps:
+      - name: Obtener token de instalación de GitHub App
+        id: get_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
       - name: Sync fork
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.KEY_DEPLOY }}
+          github-token: ${{ steps.get_token.outputs.token }}
           script: |
             let response = await github.rest.pulls.list({
               owner: context.repo.owner, 
