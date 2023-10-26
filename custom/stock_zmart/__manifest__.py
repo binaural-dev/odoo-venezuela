@@ -9,13 +9,16 @@
     "version": "16.0.0.3",
     "depends": [
         "binaural_sale",
+        "binaural_stock",
         "delivery",
     ],
     "data": [
+        "security/ir.model.access.csv",
         "data/paperformat.xml",
         "report/picking_order_report.xml",
         "report/report_albaran.xml",
         "views/stock_picking.xml",
+        "views/res_config_settings_views.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
