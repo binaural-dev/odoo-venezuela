@@ -10,8 +10,6 @@
                     <button string="Imprimir" type="object" name="do_print_picking" invisible="1"/>
                     <xpath expr="//button[@name='action_sale_quotations_new']" position="replace"/>
                 </xpath>
-                <xpath expr="//button[@name='344']" position="replace">
-                </xpath>
             </field>
         </record>
     </data>
