@@ -101,8 +101,9 @@ class PosSession(models.Model):
         return res
 
     def is_user_authorized(self):
-        return self.env.user.authorized_discount_pos
-
+        is_group = self.env.user.has_group('binaural_pos.group_authorized_discount_pos')
+        return is_group
+    
     def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
         # OVERWRITE
         # Inside this method the payment session is created, here set de foreign_rate because lines dont have foreign debit and credit

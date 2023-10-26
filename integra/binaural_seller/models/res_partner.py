@@ -10,9 +10,6 @@ class ResPartnerInherit(models.Model):
 
     seller_id = fields.Many2one(
         "hr.employee",
-        string="Seller",
-        tracking=True,
-        help="Seller associated with the partner.",
     )
 
     seller_ids = fields.Many2many(
@@ -20,7 +17,8 @@ class ResPartnerInherit(models.Model):
         string="Sellers",
         tracking=True,
         help="Sellers associated with the partner.",
-        default=lambda self: self.env.company.initial_seller
+        default=lambda self: self.env.company.initial_seller,
+        domain=[("is_seller", "=", True)]
     )
 
     @api.model
