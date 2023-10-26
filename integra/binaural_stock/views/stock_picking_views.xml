@@ -11,7 +11,7 @@
             </xpath>
 
             <xpath expr="//form/header/button[7]" position="replace">
-                <button name="%(action_report_delivery)d" string="Print" attrs="{'invisible': [('state', '!=', 'done')]}" 
+                <button name="%(stock.action_report_delivery)d" string="Print" attrs="{'invisible': [('state', '!=', 'done')]}" 
                 type="action" groups="!binaural_stock.group_hide_print_button_for_inventory_transfers" data-hotkey="o"/>
                 <!-- base.group_user -->
             </xpath>
