@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Stock/Stock",
-    "version": "16.0.0.2",
+    "version": "16.0.0.3",
     "depends": [
         "binaural_sale",
         "delivery",
