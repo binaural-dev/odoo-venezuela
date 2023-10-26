@@ -1,4 +1,4 @@
-from odoo import models, fields, api,_
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools.misc import formatLang
 
@@ -8,6 +8,11 @@ class AccountInvoice(models.Model):
 
     printed = fields.Boolean(default=False)
     invoice_type = fields.Char(compute="_compute_invoice_type", store=True, read0nly=True)
+
+    @api.depends('move_type')
+    def _compute_journal_id(self):
+        pass
+        
 
     @api.depends("journal_id", "fiscal")
     def _compute_invoice_type(self):
