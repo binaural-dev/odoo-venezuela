@@ -18,6 +18,16 @@ Dejara de funcionar  -->
             <field name="category_id" ref="base.module_category_accounting"/>
         </record>
 
+<!-- GRUPO DE PRUEBA -->
+        <!-- <record model="res.groups" id="group_financial_document_test">
+            <field name="name">Test Documento Financiero</field>
+            <field name="category_id" ref="base.module_category_accounting"/>
+        </record> -->
+
+
+
+
+
         <!-- <record id="access_fiscal_inspection_all" model="ir.rule">
             <field name="name">Fiscal Inspection Access Rights</field>
             <field name="model_id" ref="model_account_move"/>
@@ -25,14 +35,33 @@ Dejara de funcionar  -->
             <field name="groups" eval="[(4, ref('binaural_fiscal.group_cannot_see_fiscal'))]"/>
         </record> -->
 
-<!-- Ver Asientos Contables que tenga tengan Diario Fiscal -->
+<!-- PRUEBA -->
 
-        <!-- <record id="access_fiscal_inspection_res_partner" model="ir.rule">
+        <!-- <record id="access_document_test" model="ir.rule">
+            <field name="name">test_financial_document</field>
+            <field name="model_id" ref="binaural_accountant.model_account_move"/>
+            <field name="domain_force">[('financial_document', '=',True)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal.group_financial_document_test'))]"/>
+        </record> -->
+
+
+<!-- Ver Asientos Contables que tenga Diario Fiscal -->
+
+        <record id="access_fiscal_inspection_res_partner" model="ir.rule">
             <field name="name">Fiscal Inspection Access Rights</field>
             <field name="model_id" ref="account.model_account_move"/>
             <field name="domain_force">[('journal_id.fiscal', '=', True)]</field>
             <field name="groups" eval="[(4, ref('binaural_fiscal.group_can_see_fiscal'))]"/>
-        </record> -->
+        </record>
+
+<!-- Ver Asientos Contables que no tengan Diario Fiscal -->
+
+        <record id="access_no_fiscal_inspection_res_partner" model="ir.rule">
+            <field name="name">No Fiscal Inspection Access Rights</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="domain_force">[('journal_id.fiscal', '=', False)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal.group_cannot_see_fiscal'))]"/>
+        </record>
 
 <!-- Ver Apuntes Contables que tengan Diario Fiscal  -->
 
@@ -46,7 +75,7 @@ Dejara de funcionar  -->
 <!-- Mostrar pagos de clientes y proveedores que tengan diario fiscal -->
 
         <record id="access_fiscal_payment" model="ir.rule">
-            <field name="name"> No Fiscal Payments</field>
+            <field name="name"> Fiscal Payments</field>
             <field name="model_id" ref="account.model_account_payment"/>
             <field name="domain_force">[('journal_id.fiscal', '=', True)]</field>
             <field name="groups" eval="[(4, ref('binaural_fiscal.group_can_see_fiscal'))]"/>
@@ -58,17 +87,17 @@ Dejara de funcionar  -->
             <field name="name">Fiscal Journals</field>
             <field name="model_id" ref="account.model_account_journal"/>
             <field name="domain_force">[('fiscal','!=', False)]</field>
-            <field name="groups" eval="[(4, ref('account.model_account_journal'))]"/>
+            <field name="groups" eval="[(4, ref('binaural_fiscal.group_can_see_fiscal'))]"/>
         </record>
 
 <!-- Listado de no Diarios Fiscales -->
 
-    <record id="access_no_fiscal_journals" model="ir.rule">
+        <!-- <record id="access_no_fiscal_journals" model="ir.rule">
             <field name="name">No Fiscal Journals</field>
             <field name="model_id" ref="account.model_account_journal"/>
             <field name="domain_force">[('fiscal','!=', True)]</field>
             <field name="groups" eval="[(4, ref('account.model_account_journal'))]"/>
-        </record>
+        </record> -->
 
 
 
