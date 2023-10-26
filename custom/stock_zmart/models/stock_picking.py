@@ -9,6 +9,8 @@ class StockPicking(models.Model):
 
     shipping_weight = fields.Float(store=True, readonly=False)
     weight = fields.Float(store=True, readonly=False)
+    warehouse_operator_id = fields.Many2one("stock.warehouse.operator")
+
 
     def write(self, vals):
         res = super().write(vals)
