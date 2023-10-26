@@ -30,7 +30,7 @@ Este añade los siguientes campos:
 * Mostrar cantidades disponibles en stock
 * Mostrar solamente los productos disponibles: Eliminar automáticamente los productos sin disponibilidad del POS
 * Cantidad en 0 : No permitir ventas si no hay disponibilidad suficiente
-* (res.users) permitir descuentos
+* (res.group) permitir descuentos
 * (res.group) Grupo para administrar cantidades en POS
 * (res.group) Grupo para Cambiar el precio en POS
 
