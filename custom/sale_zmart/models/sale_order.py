@@ -1,7 +1,9 @@
-from datetime import datetime,timedelta
-from odoo import api, fields, models,_
-from odoo.exceptions import UserError
 import logging
+from datetime import datetime, timedelta
+
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
+
 _logger = logging.getLogger(__name__)
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
@@ -11,9 +13,8 @@ class SaleOrderZmart(models.Model):
             ("withdrawal", "withdrawal"),
             ("shipment", "shipment"),
         ],
-        default = "withdrawal",
-        store = True,
-        required = True
+        # default = "",
+        copy=False
     )
     shipping_mean = fields.Selection(
         [
@@ -27,8 +28,8 @@ class SaleOrderZmart(models.Model):
             ("pedidos", "Pedidos Ya"),
             ("yummy", "Yummy"),
         ],
-        default = "",
-        store = True
+        # default = "",
+        copy=False
     )
     priority_sale = fields.Selection(
         [
@@ -36,9 +37,8 @@ class SaleOrderZmart(models.Model):
             ("medium", "Medium"),
             ("low", "Low"),
         ],
-        default = "low",
-        store = True,
-        required = True
+        # default = "",
+        copy=False
     )
     printed = fields.Boolean(
         related = 'invoice_ids.printed'
