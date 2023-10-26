@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_binaural_club_socios" model="ir.ui.view">
+            <field name="name">res.config.settings.binaural.club.socios</field>
+            <field name="model">res.config.settings</field>
+            <field name="priority" eval="100"/>
+            <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='binaural_rate_settings']" position="after">
+                    <h2>Partner Club Config</h2>
+                    <div class="row mt16 o_settings_container" name="binaural_club_socios_settings">
+                        <div class="o_setting_right_pane">
+                            <group colspan="4" col="4">
+                                <field name="date_end" />
+                                <field name="deadline_amount" />
+                            </group>
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+</odoo>

@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="binaural_club_socios_form_res_partner" model="ir.ui.view">
+        <field name="name">binaural_club_socios_form_res_partner</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <field name="type" position="before">
+	            <field name="supplier_rank" invisible="1"/>
+	            <field name="customer_rank" invisible="1"/>
+
+                <field name="action_number_id" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+	            <field name="type_relation"/>
+                <field name="state_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+                <field name="state_partner" string="Estado del socio"/>
+                <field name="can_access_club" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
+                    <!--campo fecha fin de suspension-->
+                <field name="end_date_suspend" attrs="{'invisible':['|',('supplier_rank','>', 0),('can_access_club','=',True)]}"/>
+
+                <field name="is_solvent" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
+            </field>
+            <!--Boton de add en contacto y direcciones-->
+            <xpath expr="//notebook/page/field[@name='child_ids']" position="attributes">
+                <attribute name="attrs">{'invisible': ['|',('id','=',False),('customer_rank','=',0)]}
+                </attribute>
+	            <attribute name="context">
+		            {'default_parent_id': active_id, 'default_street': street, 'default_street2': street2,
+		            'default_city': city, 'default_state_id': state_id, 'default_zip': zip,
+		            'default_country_id': country_id,
+		            'default_lang': lang,'default_user_id': user_id,'default_end_date_partner':end_date_partner,'default_start_date':start_date}
+	            </attribute>
+            </xpath>
+
+             <!--Agregar campo otro doc de identificacion-->
+            <field name="vat" position="after">
+                <field name="other_doc_id" placeholder="Otro Documento de Identificación"/>
+            </field>
+
+
+                <!--ocultar campos que no se usaran-->
+            <field name="website" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+            <field name="function" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+
+             <!--Otros campos de socios-->
+                <field name="title" position="after">
+                    <field name="start_date" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
+
+                    <field name="end_date_partner" attrs="{'invisible':['|',('supplier_rank','>', 0),('parent_id','!=',False)]}" />
+                    <field name="alerted_end_date_partner" />
+
+                    <field name="birthday" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
+                    <label for="age" string="Edad (años)" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
+                    <field name="age" readonly="1" force_save="1" nolabel="1" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
+                    <field name="office_phone" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+                    <field name="mobile_phone_two" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
+                    <field name="aditional_email" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
+                    <field name="type_of_member" readonly="1" force_save="1" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+
+
+                    <field name="business_name_usufruct"  attrs="{'invisible':['|',('is_company','=', False),('supplier_rank','>', 0)]}"/>
+                    <div id="vat_u" class="" attrs="{'invisible':['|',('is_company','=', False),('supplier_rank','>', 0)]}">
+                        <field name="prefix_vat_usufruct"/>
+                        <field name="vat_usufruct"/>
+                    </div>
+
+                    <field name="address_usufruct" attrs="{'invisible':['|',('is_company','=', False),('supplier_rank','>', 0)]}"/>
+                </field>
+
+                <!--ocultar campo titulo-->
+                <field name="title" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </field>
+                <!--campos relacionados al asociado familiar-->
+                <field name="type" position="before">
+                    <field name="associate_parent" attrs="{'invisible':['|',('supplier_rank','>', 0),('type_of_member','!=','extention')]}"/>
+                    <field name="associate_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('type_of_member','!=','extention')]}"/>
+                </field>
+                <!--Otros datos-->
+                <page name="internal_notes" position="before">
+                    <page string="Otros Datos" name="another_info_country">
+                        <group>
+                            <group string="" name="" >
+                                <field name="member_company" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+                                <field name="member_profession" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}" options="{'no_create': True, 'no_create_edit':True}"/>
+                                <field name="member_gender" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
+                                <field name="member_marital" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
+
+                            </group>
+                            <group string="" name="">
+                                <field name="member_contact_name" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+                                <field name="member_contact_phone" string="Teléfono de contacto" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+                                <field name="member_contact_email" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+                            </group>
+
+                        </group>
+                    </page>
+                </page>
+                <!--pagina de asociados-->
+                <page name="internal_notes" position="after">
+                    <page string="Asociados Familiar" name="page_associates">
+                       <field name="associate_childs"  readonly="1" force_save="1"/>
+                    </page>
+                </page>
+
+                <!--Carga familiar-->
+                <xpath expr="//notebook/page/field[@name='child_ids']/form//field[@name='name']" position="before">
+                    <field name="image_1920" widget="image" class="oe_avatar" options='{"preview_image": "image_medium","size": [90, 90]}'/>
+                    <field name="supplier_rank" invisible="1"/>
+	                <field name="customer_rank" invisible="1"/>
+	                <label id="vat" for="vat" string="Rif"/>
+	                <div id="vat" class="">
+	                    <field name="prefix_vat"/>
+	                    <field name="vat"/>
+	                </div>
+                </xpath>
+                <xpath expr="//notebook/page/field[@name='child_ids']/form//field[@name='name']" position="after">
+
+                    <field name="birthday" attrs="{'invisible' : [('type', '!=', 'contact')]}"/>
+                    <label for="age_c" string="Edad (años)" attrs="{'invisible' : [('type', '!=', 'contact')]}"/>
+                    <field id="age_c" name="age" readonly="1" force_save="1" nolabel="1" attrs="{'invisible' : [('type', '!=', 'contact')]}"/>
+
+                    <field name="member_gender" attrs="{'invisible' : [('type', '!=', 'contact')]}" />
+
+                    <field name="type_relation"  attrs="{'invisible' : [('type', '!=', 'contact')]}" />
+                </xpath>
+
+                <!--heredar kanban de contacto y direcciones-->
+                <xpath expr="//notebook/page/field[@name='child_ids']/kanban//div[@class='oe_kanban_details']" position="inside">
+                    <field name="type_relation" />
+                </xpath>
+	            <xpath expr="//notebook/page/field[@name='child_ids']/kanban//div[@class='oe_kanban_details']" position="before">
+                    <div id="vat" class="">
+	                    <field name="prefix_vat"/>
+	                    <field name="vat"/>
+	                </div>
+                </xpath>
+
+	            <xpath expr="//notebook/page/field[@name='child_ids']/kanban//div[@class='oe_kanban_details']" position="replace">
+                    <div class="oe_kanban_details" style="padding-left: 72px;">
+                        <field name="name"/>
+		                    <div id="vat" class="">
+		                    <field name="prefix_vat"/>
+		                    <field name="vat"/>
+		                </div>
+                        <div t-if="record.function.raw_value"><field name="function"/></div>
+                        <div t-if="record.email.raw_value"><field name="email" widget="email"/></div>
+                        <div t-if="record.type.raw_value != 'contact'">
+                            <div>
+                                <field name="zip"/>
+                                <field name="city"/>
+                            </div>
+                            <field t-if="record.state_id.raw_value" name="state_id"/>
+                            <field name="country_id"/>
+                        </div>
+                        <div t-if="record.phone.raw_value">Phone: <t t-esc="record.phone.value"/></div>
+                        <div t-if="record.mobile.raw_value">Mobile: <t t-esc="record.mobile.value"/></div>
+	                    <field name="type_relation" />
+                    </div>
+                </xpath>
+
+
+                <xpath expr="//notebook/page/field[@name='child_ids']/form//field[@name='mobile']" position="after">
+
+                    <field name="mobile_phone_two" attrs="{'invisible' : ['|',('type', '!=', 'contact'),('type_relation','!=','wife')]}" /><!--estos 2 si es esposa verificar que salgan los normales primero-->
+                    <field name="aditional_email" attrs="{'invisible' : ['|',('type', '!=', 'contact'),('type_relation','!=','wife')]}"/>
+
+                    <field name="family_reference" attrs="{'invisible' : [('type', '!=', 'contact')]}"/>
+
+                    <field name="state_partner" attrs="{'invisible' : [('type', '!=', 'contact')]}"/>
+
+                    <field name="start_date"  attrs="{'invisible' : [('type', '!=', 'contact')]}"/>
+                    <field name="end_date_family" attrs="{'invisible' : ['|',('type', '!=', 'contact'),('type_relation','!=','children')]}" readonly="1" force_save="1"/>
+
+
+                    <field name="end_date_partner" attrs="{'invisible':[('supplier_rank','>', 0)]}" />
+
+                    <field name="can_access_club" attrs="{'invisible' : [('type', '!=', 'contact')]}"/>
+
+                </xpath>
+
+                <!--agregar botones de operaciones en la carga familiar-->
+                <xpath expr="//notebook/page/field[@name='child_ids']/form//field[@name='parent_id']" position="before">
+                    <header style="padding-left:0 !important;" attrs="{'invisible': ['|',('supplier_rank','>', 0),('type','!=','contact')]}"><!--Si no tiene padre es porque el es el padre (socio,asociado)-->
+                        <button name="action_suspend_partner" string="Suspender" type="object" attrs="{'invisible': [('can_access_club','=', False)]}"></button >
+                        <button name="action_remove_suspend_partner" string="Remover suspension" type="object" attrs="{'invisible': [('can_access_club','=', True)]}"></button >
+                    </header>
+                </xpath>
+
+                <!--Ocultar campos no usados en el contacto-->
+                <xpath expr="//notebook/page/field[@name='child_ids']/form//field[@name='title']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+	            <xpath expr="//notebook/page/field[@name='child_ids']/form//field[@name='business_name']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+                <xpath expr="//notebook/page/field[@name='child_ids']/form//field[@name='function']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+
+
+                <!--agregar botones de operaciones en el socio-->
+                <xpath expr="//form//sheet" position="before">
+                    <header attrs="{'invisible': ['|',('customer_rank','=',0),('supplier_rank','>', 0)]}"><!--Si no tiene padre es porque el es el padre (socio,asociado)-->
+                        <!--boton traspaso de accion-->
+                        <button name="action_transfer" string="Transferir acción" type="object" confirm="¿Esta seguro de transferir la acción?" ></button >
+                        <!--boton aprobar socio tenedor-->
+                        <button name="action_approve_vote" confirm="¿Esta seguro de aprobar el proceso de Votación?" string="Aprobar Proceso de Votación" type="object" attrs="{'invisible': [('state_partner','!=', 'holder')]}"></button >
+                        <!--boton establecer prorroga a socio-->
+                        <button name="action_establish_extension"  string="Establecer Prorroga" type="object" attrs="{'invisible': [('end_date_partner','=', False)]}"></button >
+                        <!--botones suspender y remover suspension-->
+                        <button name="action_suspend_partner" string="Suspender" type="object" attrs="{'invisible': [('can_access_club','=', False)]}"></button >
+                        <button name="action_remove_suspend_partner" string="Remover suspension" type="object" attrs="{'invisible': [('can_access_club','=', True)]}"></button >
+                    </header>
+                </xpath>
+
+        </field>
+    </record>
+
+    <!--Agregar campos en listado de socios-->
+	    <record id="view_partner_action_tree_inherited" model="ir.ui.view">
+            <field name="name">Accion de socio</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_tree"/>
+            <field name="arch" type="xml">
+                <field name="display_name" position="after">
+                    <field name="action_number"/>
+
+                    <field name="state_partner" />
+                    <field name="state_action" />
+
+                    <field name="member_profession" />
+                    <field name="member_company" />
+                    <field name="business_name_usufruct" />
+                </field>
+            </field>
+        </record>
+        <!--agregar campos a buscador (filtros)-->
+	    <record id="view_partner_action_search_inherited" model="ir.ui.view">
+            <field name="name">Accion de socio</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_res_partner_filter"/>
+            <field name="arch" type="xml">
+                <field name="parent_id" position="after">
+	                <field name="action_number" string="Número de Acción" filter_domain="['|','|', ('action_number','=',self),('parent_id.action_number','=',self),('associate_action.number','=',self) ]"/>
+
+                    <field name="state_action" string="Estado de la Acción"/>
+                    <separator/>
+                    <filter string="Acción Activa" name="active_action" domain="[('active','=',True), ('state_action', '=', 'active')]"/>
+                    <filter string="Acción Especial" name="special_action" domain="[('active','=',True), ('state_action', '=', 'special')]"/>
+                    <filter string="Acción Honorario" name="honorary_action" domain="[('active','=',True), ('state_action', '=', 'honorary')]"/>
+                    <filter string="Acción Tesorería" name="treasury_action" domain="[('active','=',True), ('state_action', '=', 'treasury')]"/>
+                    <separator/>
+                    <filter string="Socios Activos" name="active_country" domain="[('active','=',True), ('state_partner', '=', 'active')]"/>
+                    <filter string="Socios Inactivos" name="inactive_country" domain="[('active','=',True), ('state_partner', '=', 'inactive')]"/>
+                    <filter string="Socios Suspendidos" name="discontinued_country" domain="[('active','=',True), ('can_access_club', '=', False)]"/><!--('state_partner', '=', 'discontinued')-->
+                    <filter string="Socios Fallecidos" name="deceased_country" domain="[('active','=',True), ('state_partner', '=', 'deceased')]"/>
+                    <filter string="Socios Tenedores" name="holder_country" domain="[('active','=',True), ('state_partner', '=', 'holder')]"/>
+
+                </field>
+            </field>
+        </record>
+
+</odoo>
