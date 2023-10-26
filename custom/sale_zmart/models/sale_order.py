@@ -13,7 +13,6 @@ class SaleOrderZmart(models.Model):
             ("withdrawal", "withdrawal"),
             ("shipment", "shipment"),
         ],
-        # default = "",
         copy=False
     )
     shipping_mean = fields.Selection(
@@ -28,7 +27,6 @@ class SaleOrderZmart(models.Model):
             ("pedidos", "Pedidos Ya"),
             ("yummy", "Yummy"),
         ],
-        # default = "",
         copy=False
     )
     priority_sale = fields.Selection(
@@ -37,7 +35,6 @@ class SaleOrderZmart(models.Model):
             ("medium", "Medium"),
             ("low", "Low"),
         ],
-        # default = "",
         copy=False
     )
     printed = fields.Boolean(
