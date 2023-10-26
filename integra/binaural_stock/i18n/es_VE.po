@@ -38,7 +38,7 @@ msgstr "Un empaque ya usa el código de barras"
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "All"
-msgstr ""
+msgstr "Todos"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
