@@ -10,49 +10,32 @@
                 <field name="package_qty" attrs="{'invisible': [('is_out','!=',True)]}"/>
             </xpath>
 
-            <xpath expr="//form/header/button[7]" position="replace">
-                <button name="%(action_report_delivery)d" string="Print" attrs="{'invisible': [('state', '!=', 'done')]}" 
-                type="action" groups="!binaural_stock.group_hide_print_button_for_inventory_transfers" data-hotkey="o"/>
-                <!-- base.group_user -->
+            <xpath expr="//form/header/button[@name='%(stock.action_report_delivery)d']" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_print_button_for_inventory_transfers</attribute>
             </xpath>
 
-            <xpath expr="//button[@name='do_unreserve']" position="replace">
-                <button name="do_unreserve" string="Unreserve" groups="!binaural_stock.group_hide_override_button_for_inventory_transfers" 
-                type="object" attrs="{'invisible': ['|', '|', '|', ('picking_type_code', '=', 'incoming'), ('immediate_transfer', '=', True), '&amp;', ('state', '!=', 'assigned'), ('move_type', '!=', 'one'), '&amp;', ('state', 'not in', ('assigned', 'confirmed')), ('move_type', '=', 'one')]}" 
-                data-hotkey="w"/>
-                <!-- base.group_user -->
+            <xpath expr="//button[@name='do_unreserve']" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_override_button_for_inventory_transfers</attribute>
             </xpath>
 
-            <xpath expr="//button[@name='button_validate'][2]" position="replace">
-                <button name="button_validate" attrs="{'invisible': ['|', ('state', 'not in', ('waiting', 'confirmed')), ('show_validate', '=', False)]}" 
-                string="Validatz" type="object" groups="!binaural_stock.group_hide_validate_inventory_transfers_button" class="o_btn_validate" data-hotkey="v"/>
-                <!-- stock.group_stock_user -->
+            <xpath expr="//button[@name='button_validate'][2]" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_validate_inventory_transfers_button</attribute>
             </xpath>
 
-            <xpath expr="//button[@name='button_validate'][1]" position="replace">
-                <button name="button_validate" attrs="{'invisible': ['|', ('state', 'in', ('waiting','confirmed')), ('show_validate', '=', False)]}" 
-                string="Validatx" type="object" class="oe_highlight" groups="!binaural_stock.group_hide_validate_inventory_transfers_button" data-hotkey="v"/>
-                <!-- stock.group_stock_user -->
+            <xpath expr="//button[@name='button_validate'][1]" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_validate_inventory_transfers_button</attribute>
             </xpath>
 
-            <xpath expr="//button[@name='action_cancel'][1]" position="replace">
-                <button name="action_cancel" attrs="{'invisible': [('state', 'not in', ('assigned', 'confirmed', 'draft', 'waiting'))]}" 
-                string="Cancel" groups="!binaural_stock.group_hide_cancel_button_from_inventory_transfers" type="object" data-hotkey="z"/>
-                <!-- base.group_user -->
+            <xpath expr="//button[@name='action_cancel'][1]" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_cancel_button_from_inventory_transfers</attribute>
             </xpath>
 
-            <xpath expr="//button[@name='action_toggle_is_locked'][2]" position="replace">
-                <button name="action_toggle_is_locked" attrs="{'invisible': [('is_locked', '=', True)]}" 
-                string="Lock" groups="!binaural_stock.group_hide_unlock_lock_button_for_inventory_transfers" type="object" data-hotkey="l"/>
-                <!-- stock.group_stock_manager -->
+            <xpath expr="//button[@name='action_toggle_is_locked'][2]" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_unlock_lock_button_for_inventory_transfers</attribute>
             </xpath>
 
-            <xpath expr="//button[@name='action_toggle_is_locked'][1]" position="replace">
-                <button name="action_toggle_is_locked" attrs="{'invisible': ['|', ('state', 'in', ('draft','cancel')), ('is_locked', '=', False)]}"
-                string="Unlock" groups="!binaural_stock.group_hide_unlock_lock_button_for_inventory_transfers" type="object" 
-                help="If the picking is unlocked you can edit initial demand (for a draft picking) or done quantities (for a done picking)."
-                data-hotkey="l"/>
-                <!-- stock.group_stock_manager -->
+            <xpath expr="//button[@name='action_toggle_is_locked'][1]" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_unlock_lock_button_for_inventory_transfers</attribute>
             </xpath>
             
         </field>
