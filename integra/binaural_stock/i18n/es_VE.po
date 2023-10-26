@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20231023\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 18:33+0000\n"
-"PO-Revision-Date: 2023-10-26 18:33+0000\n"
+"POT-Creation-Date: 2023-10-26 20:32+0000\n"
+"PO-Revision-Date: 2023-10-26 20:32+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -38,7 +38,7 @@ msgstr "Un empaque ya usa el código de barras"
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "All"
-msgstr "Todos"
+msgstr ""
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
@@ -83,11 +83,6 @@ msgstr ""
 "Código de barra(s) ya ha sido asignado:\n"
 "\n"
 "%s"
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Cancel"
-msgstr "Cancelar"
 
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_res_company
@@ -157,21 +152,13 @@ msgstr "Ocultar Botón Imprimir de las Transferencias de Inventario"
 #. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_hide_unlock_lock_button_for_inventory_transfers
 msgid "Hide Unlock/Lock Button for Inventory Transfers"
-msgstr "Ocultar Botón Bloquear/Desbloquear de las Transferencias de Inventario"
+msgstr ""
+"Ocultar Botón Bloquear/Desbloquear de las Transferencias de Inventario"
 
 #. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_hide_validate_inventory_transfers_button
 msgid "Hide Validate Inventory Transfers Button"
 msgstr "Ocultar Botón Validar de las Transferencias de Inventario"
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid ""
-"If the picking is unlocked you can edit initial demand (for a draft picking)"
-" or done quantities (for a done picking)."
-msgstr ""
-"Si la selección se desbloquea, puede editar la demanda inicial (para una selección de borrador) "
-"O cantidades hechas (para una recolección)."
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
@@ -189,11 +176,6 @@ msgid "Is Out"
 msgstr ""
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Lock"
-msgstr "Bloquear"
-
-#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__main_warehouse_id
 #: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__main_warehouse_id
 msgid "Main Warehouse"
@@ -207,7 +189,7 @@ msgstr ""
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__package_qty
 msgid "Package Quantity"
-msgstr "Cantidad de paquetes"
+msgstr ""
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_kanban_view
@@ -250,7 +232,7 @@ msgstr "Cantidad"
 #. module: binaural_stock
 #: model:ir.model.fields,help:binaural_stock.field_stock_picking__package_qty
 msgid "Quantity of packages used in the picking"
-msgstr "Cantidad de paquetes utilizados en la selección"
+msgstr ""
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -326,11 +308,6 @@ msgid "Ultimo Costo"
 msgstr ""
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Unlock"
-msgstr "Desbloquear"
-
-#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__use_main_warehouse
 #: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__use_main_warehouse
 msgid "Use Main Warehouse"
@@ -345,16 +322,6 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "VALOR DEL INVENTARIO A PARTIR DE UNA FECHA"
 msgstr ""
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Validatx"
-msgstr "Validar"
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Validatz"
-msgstr "Validar"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_product_product__value_total_cost
