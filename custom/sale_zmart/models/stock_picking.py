@@ -65,6 +65,30 @@ class StockPicking(models.Model):
         related = "sale_id.priority_sale",
         store = True
     )
+    document_type_invoice = fields.Selection(
+        [("invoice", "Invoice"), ("delivery_note", "Delivery Note")],
+        string="Document Type",
+        compute="_compute_document_type",
+        default=False,
+    )
+    document_number_invoice = fields.Char(compute="_compute_document_type")
+    
+    @api.depends("origin")
+    def _compute_document_type(self):
+        for record in self:
+            order_id = self.env["sale.order"].search([("name", "=", record.origin)])
+            journal_type = False
+            invoices = []
+            for invoice in order_id.invoice_ids.filtered(lambda x: x.state == "posted"):
+                if invoice.journal_id.fiscal:
+                    journal_type = "invoice"
+                else:
+                    journal_type = "delivery_note"
+
+                invoices.append(invoice.name)
+
+            record.document_type_invoice = journal_type
+            record.document_number_invoice = ", ".join(invoices) if len(invoices) != 0 else False
     
     def get_user_domain(self):
         return [('id', '=', self.env.user.id)]

@@ -46,6 +46,8 @@
                     <field name="priority_sale" optional="hide"/>
                     <field name="shipping_type" optional="hide"/>
                     <field name="shipping_mean" optional="hide"/>
+                    <field name="document_type_invoice"/>
+                    <field name="document_number_invoice"/>
                 </field>
             </field>
         </record>
