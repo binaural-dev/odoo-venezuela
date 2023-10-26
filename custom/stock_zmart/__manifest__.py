@@ -9,6 +9,7 @@
     "version": "16.0.0.2",
     "depends": [
         "binaural_sale",
+        "delivery",
     ],
     "data": [
         "data/paperformat.xml",

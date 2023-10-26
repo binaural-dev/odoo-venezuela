@@ -69,6 +69,15 @@ class SaleOrderZmart(models.Model):
     notification_email_sent = fields.Boolean(
         default=False
     )
+    shipping_weight = fields.Char(compute="_compute_shipping_weight")
+
+    @api.depends("order_line")
+    def _compute_shipping_weight(self):
+        for record in self:
+            weight = 0
+            for line in record.order_line:
+                weight += line.product_id.weight * line.product_uom_qty
+            record.shipping_weight = f"{weight} {record.env.ref('uom.product_uom_kgm').name}"
     
     def button_invoice_sale_note_rma(self):
         return self.env.ref('sale_zmart.action_invoice_sale_note_rma').report_action(self)
