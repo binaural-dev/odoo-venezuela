@@ -50,7 +50,6 @@ class SaleOrderZmart(models.Model):
             ("free", "Free"),
             ("collect_at_destination", "Collect at Destination"),
         ],
-        default = "free",
         store = True
     )
     product_id = fields.Many2one(
