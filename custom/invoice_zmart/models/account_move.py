@@ -9,11 +9,6 @@ class AccountInvoice(models.Model):
     printed = fields.Boolean(default=False)
     invoice_type = fields.Char(compute="_compute_invoice_type", store=True, read0nly=True)
 
-    @api.depends('move_type')
-    def _compute_journal_id(self):
-        pass
-        
-
     @api.depends("journal_id", "fiscal")
     def _compute_invoice_type(self):
         for move in self:
