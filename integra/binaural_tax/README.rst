@@ -1,6 +1,6 @@
-===============
-Binaural Fiscal
-===============
+=================
+Binaural Impuesto
+=================
 
 .. 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -14,16 +14,22 @@ Binaural Fiscal
 
 |badge1|
 
-El módulo Binaural Fiscal es un módulo técnico que depende de varios de los módulos personalizados por Binaural. 
-Se encarga de discernir transacciones para saber si son fiscales.
+#Binaural Impuestos
 
-Los modulos que dependen de este modulo tecnico son:
+Este modulo se encarga de ejecutar la función que prepara el total de los impuestos y así calcular los impuestos en la moneda foranea.
 
-* Binaural Contabilidad
-* Binaural IGTF
-* Binaural  Retenciones
-* Binaural Anticipos
-* Binaural Anticipos IGTF
+Este añade los siguientes campos:
+
+##Configuraciones:
+
+* Instalacion de modulo IGTF
+* Impuesto único
+* Alicuota general de ventas
+* Alicuota reducida de ventas
+* Alicuota extendida de ventas
+* Alicuota general de compras
+* Alicuota reducida de compras
+* Alicuota extendida de compras
 
 
 **Tabla de Contenidos**
