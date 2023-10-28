@@ -1,6 +1,6 @@
-===============
-Binaural Fiscal
-===============
+========================
+Binaural Tasa Inventario
+========================
 
 .. 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -14,16 +14,16 @@ Binaural Fiscal
 
 |badge1|
 
-El módulo Binaural Fiscal es un módulo técnico que depende de varios de los módulos personalizados por Binaural. 
-Se encarga de discernir transacciones para saber si son fiscales.
+#Binaural Tasa de Inventario
 
-Los modulos que dependen de este modulo tecnico son:
+Este modulo se encarga de agregar el monto foraneo en los picking de Inventario.
 
-* Binaural Contabilidad
-* Binaural IGTF
-* Binaural  Retenciones
-* Binaural Anticipos
-* Binaural Anticipos IGTF
+Este añade los siguientes campos:
+
+##Picking de inventario(stock.picking)
+
+* Moneda alterna
+* Monto de moneda alterna
 
 
 **Tabla de Contenidos**

@@ -1,7 +1,6 @@
 #Binaural Impuestos
 
-Este modulo se encarga de ejecutar la función que prepara el total de los impuestos y así 
-calcular los impuestos en la moneda foranea.
+Este modulo se encarga de ejecutar la función que prepara el total de los impuestos y así calcular los impuestos en la moneda foranea.
 
 Este añade los siguientes campos:
 
