@@ -10,7 +10,20 @@ class StockPicking(models.Model):
     shipping_weight = fields.Float(store=True, readonly=False)
     weight = fields.Float(store=True, readonly=False)
     warehouse_operator_id = fields.Many2one("stock.warehouse.operator")
+    guide_sequence_id = fields.Many2one(
+        'ir.sequence',
+        default=lambda self: self.env.ref("stock_zmart.sequence_guide_number").id
+    )
+    guide = fields.Char(copy=False)
 
+    def button_validate(self):
+
+        super().button_validate()
+
+        if not self.guide:
+            if self.shipping_type == 'shipment' and self.sequence_code == 'PACK':
+                guide_sequence = self.guide_sequence_id._next()
+                self.update({'guide': guide_sequence})
 
     def write(self, vals):
         res = super().write(vals)
