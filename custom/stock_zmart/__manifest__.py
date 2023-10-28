@@ -15,10 +15,13 @@
     "data": [
         "security/ir.model.access.csv",
         "data/paperformat.xml",
+        "data/ir_sequence.xml",
+        "views/ir_sequence.xml",
         "report/picking_order_report.xml",
         "report/report_albaran.xml",
         "views/stock_picking.xml",
         "views/res_config_settings_views.xml",
+        "views/menu.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
