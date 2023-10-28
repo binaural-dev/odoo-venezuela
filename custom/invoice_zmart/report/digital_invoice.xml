@@ -24,14 +24,16 @@
                         <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/>
                         <div class="row">
                             <div class="col-5">
-                                <div>
-                                    <img t-if="o.company_id.logo"
+                                <div style="text-align:center">
+                                    <img
+                                        t-if="o.company_id.logo"
                                         t-att-src="image_data_uri(o.company_id.logo)"
-                                        height="120"
-                                        width="400"
-                                        class="mt-1 border-1 border-dark"/>
+                                        height="90"
+                                        width="90"
+                                        style="display: inline-block; vertical-align: middle; object-fit:contain;"
+                                    />
                                 </div>
-                                <div style="text-align: center">
+                                <div style="text-align: center;margin-top:10px">
                                     <span style="font-size: 12px;">
                                         <t t-out="o.company_id.company_details"/>
                                     </span>

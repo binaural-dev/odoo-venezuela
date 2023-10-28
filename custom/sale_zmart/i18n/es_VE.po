@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230508\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230928\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-21 12:56+0000\n"
-"PO-Revision-Date: 2023-06-21 12:56+0000\n"
+"POT-Creation-Date: 2023-10-26 14:50+0000\n"
+"PO-Revision-Date: 2023-10-26 14:50+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,84 +16,348 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "% Desc."
+msgstr ""
+
+#. module: sale_zmart
 #: model:ir.actions.report,print_report_name:sale_zmart.action_print_label
 msgid ""
 "'Picking Operations - %s - %s' % (object.partner_id.name or '', object.name)"
 msgstr ""
 
 #. module: sale_zmart
-#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span style=\"flex: 1 1 100%;\"><strong>Observaciones: </strong></span>"
+#: model:ir.actions.report,print_report_name:sale_zmart.action_invoice_sale_note_rma
+msgid ""
+"(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + "
+"'.pdf')"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "<span style=\"font-size:14px;margin-right:18px\"> Vendedor: </span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid ""
+"<span style=\"font-weight:normal !important;font-size:14px "
+"!important;margin-left:-200px\">Correo del Comprador:</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid ""
+"<span style=\"font-weight:normal !important;font-size:14px "
+"!important;margin-left:-200px\">Teléfonos:</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid ""
+"<span style=\"font-weight:normal !important;font-size:14px "
+"!important;margin-left:-200px;\">Cédula/RIF:</span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>CLIENTE:  </strong></span>"
+msgid ""
+"<span style=\"margin-right: 1px; font-family: "
+"Arial;\"><strong>Contacto:</strong></span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>Ciudad:</strong></span>"
+msgid ""
+"<span style=\"margin-right: 1px; font-family: "
+"Arial;\"><strong>Dirección:</strong></span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>Contacto:</strong></span>"
+msgid ""
+"<span style=\"margin-right: 1px;font-family: Arial\"><strong>CLIENTE:  "
+"</strong></span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>Cédula/RIF:</strong></span>"
+msgid ""
+"<span style=\"margin-right: 1px;font-family: "
+"Arial\"><strong>Ciudad:</strong></span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>DESTINATARIO:</strong></span>"
+msgid ""
+"<span style=\"margin-right: 1px;font-family: "
+"Arial\"><strong>Cédula/RIF:</strong></span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>DOC DE VENTA:</strong></span>"
+msgid ""
+"<span style=\"margin-right: 1px;font-family: Arial\"><strong>DOC DE "
+"VENTA:</strong></span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>Dirección:</strong></span>"
+msgid ""
+"<span style=\"margin-right: 1px;font-family: Arial\"><strong>ESTADO:  "
+"</strong></span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>EMISOR:</strong></span>"
+msgid ""
+"<span style=\"margin-right: 1px;font-family: "
+"Arial\"><strong>Estado:</strong></span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>ESTADO:  </strong></span>"
+msgid ""
+"<span style=\"margin-right: 1px;font-family: Arial\"><strong>Nombre/Razón "
+"Social:</strong></span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>Estado:</strong></span>"
+msgid ""
+"<span style=\"margin-right: 1px;font-family: "
+"Arial\"><strong>TLF:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "<span style=\"margin-right:3px\">N.I.T:</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "<span style=\"margin-right:3px\">R.I.F:</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "<span style=\"margin-right:3px;\">Dirección:</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "<span style=\"margin-right:3px;\">R.I.F.:</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "<span style=\"margin-right:3px;margin-right:3px\">Teléfonos:</span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>Nombre/Razón Social:</strong></span>"
+msgid "<span>DOM</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "<span>Descripcion:&amp;nbsp;</span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<span><strong>TLF:</strong></span>"
+msgid "<span>EXP</span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<strong>N° GUÍA:</strong>"
+msgid "<span>Fecha:</span>"
 msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "<strong>PESO: </strong>"
+msgid "<span>Hora:</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span>LIB</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span>MRW</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span>PRG</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span>PYA</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span>Pick:</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span>TEA</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span>Vent:</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span>Verificado:</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span>YUM</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<span>ZOO</span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<strong style=\"font-family: Arial\">N° GUÍA:</strong>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<strong style=\"font-family: Arial\">PESO:</strong>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<strong>DESTINATARIO:</strong>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "<strong>Descuento:</strong>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "<strong>IGTF Sugerido (3%):</strong>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "<strong>Observaciones: </strong>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "<strong>Pedido Número:</strong>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "<strong>Total USD</strong>"
+msgstr ""
+
+#. module: sale_zmart
+#: model:mail.template,body_html:sale_zmart.cancel_warning_email_template
+msgid ""
+"<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"padding-top: 16px; background-color: #FFFFFF; font-family:Verdana, Arial,sans-serif; color: #454748; width: 100%; border-collapse:separate;\"><tr><td align=\"center\">\n"
+"            <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"padding: 16px; background-color: #FFFFFF; color: #454748; border-collapse:separate;\">\n"
+"            <tbody>\n"
+"                <!-- HEADER -->\n"
+"                <tr>\n"
+"                    <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                        <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: #FFFFFF; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                            <tr><td valign=\"middle\">\n"
+"                                <h1 style=\"text-align: center; color: #FFFFFF\"><img t-if=\"object.company_id.logo\" t-att-src=\"image_data_uri(object.company_id.logo)\" height=\"60\" width=\"590\" class=\"mr-3 mt-1\" style=\"display: inline-block; vertical-align: middle;\"></h1>\n"
+"                            </td></tr>\n"
+"                            <tr><td colspan=\"2\" style=\"text-align:center;\">\n"
+"                            <hr width=\"100%\" style=\"background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin: 16px 0px 16px 0px;\">\n"
+"                            </td></tr>\n"
+"                        </table>\n"
+"                    </td>\n"
+"                </tr>\n"
+"                <!-- CONTENT -->\n"
+"                <tr>\n"
+"                    <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                        <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                            <tr><td valign=\"top\" style=\"font-size: 13px;\">\n"
+"                                <div>\n"
+"                                    <br><br>\n"
+"                                    <label>Hola estimado <strong><t t-out=\"object.partner_id.name\"></t></strong></label>\n"
+"                                </div>\n"
+"                                <div>\n"
+"                                    <br><br>\n"
+"                                    <label>Le recordamos que la cotización del presupuesto <strong><t t-out=\"object.name\"></t></strong>\n"
+"                                    aún no ha sido confirmada, en caso de no obtener respuesta dentro de las proximas 8 horas, \n"
+"                                    la misma sera cancelada, le sugerimos contactar a la brevedad posible a su ejecutivo de ventas.</label><br><br>\n"
+"                                    <br><br>\n"
+"                                </div>\n"
+"                            </td></tr>\n"
+"                            <tr><td style=\"text-align:center;\">\n"
+"                            <hr width=\"100%\" style=\"background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin: 16px 0px 16px 0px;\">\n"
+"                            </td></tr>\n"
+"                        </table>\n"
+"                    </td>\n"
+"                </tr>\n"
+"                <!-- FOOTER -->\n"
+"                <tr>\n"
+"                    <td align=\"center\" style=\"min-width: 590px;\">\n"
+"                        <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: white; font-size: 11px; padding: 0px 8px 0px 8px; border-collapse:separate;\">\n"
+"                            <tr><td valign=\"middle\" align=\"left\">\n"
+"                                <t t-out=\"object.company_id.name\"></t>\n"
+"                            </td></tr>\n"
+"                            <tr><td valign=\"middle\" align=\"left\" style=\"opacity: 0.7;\">\n"
+"                                <t t-out=\"object.company_id.phone\"></t>\n"
+"                                <t t-if=\"object.company_id.email\">\n"
+"                                    | <a t-attf-href=\"'mailto:%s' % {{ object.company_id.email }}\" style=\"text-decoration:none; color: #454748;\"><t t-out=\"object.company_id.email or ''\">info@yourcompany.com</t></a>\n"
+"                                </t>\n"
+"                            </td></tr>\n"
+"                        </table>\n"
+"                    </td>\n"
+"                </tr>\n"
+"            </tbody>\n"
+"            </table>\n"
+"            </td></tr>\n"
+"            <!-- POWERED BY -->\n"
+"            <tr><td align=\"center\" style=\"min-width: 590px;\">\n"
+"                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"590\" style=\"min-width: 590px; background-color: #F1F1F1; color: #454748; padding: 8px; border-collapse:separate;\">\n"
+"                <tr><td style=\"text-align: center; font-size: 13px;\">\n"
+"                    Enviado por <a target=\"_blank\" style=\"color: #875A7B;\"><strong><t t-out=\"object.company_id.name\"></t></strong></a>\n"
+"                </td></tr>\n"
+"                </table>\n"
+"            </td></tr>\n"
+"            </table>\n"
+"\n"
+"        "
+msgstr ""
+
+#. module: sale_zmart
+#. odoo-python
+#: code:addons/sale_zmart/models/sale_order.py:0
+#, python-format
+msgid "Add a shipping method"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Alm"
+msgstr ""
+
+#. module: sale_zmart
+#: model:mail.template,name:sale_zmart.cancel_warning_email_template
+msgid "Aviso de cancelacion "
 msgstr ""
 
 #. module: sale_zmart
@@ -102,24 +366,63 @@ msgid "BULTOS:"
 msgstr ""
 
 #. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "COTIZACIÓN"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.actions.server,name:sale_zmart.cancel_sale_ir_actions_server
+#: model:ir.cron,cron_name:sale_zmart.cancel_sale
+msgid "Cancel sale order"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Cant."
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Cliente"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Cliente:"
+msgstr ""
+
+#. module: sale_zmart
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_method__collect_at_destination
 msgid "Collect at Destination"
 msgstr "Cobro en Destino"
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_name_company
-#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_name_company
-msgid "Company"
-msgstr "Empresa de Transporte"
+#: model:ir.model,name:sale_zmart.model_res_company
+msgid "Companies"
+msgstr "compañías"
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__create_uid
-msgid "Created by"
+#: model:ir.model.fields,field_description:sale_zmart.field_res_company__logo_2
+msgid "Company Logo"
 msgstr ""
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__create_date
-msgid "Created on"
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid ""
+"Condic. Pago:\n"
+"                                                    <span style=\"font-size:14px\"/>"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__confirmation_date
+msgid "Confirmation Date"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Código"
 msgstr ""
 
 #. module: sale_zmart
@@ -128,18 +431,73 @@ msgid "Código QR"
 msgstr ""
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__display_name
-msgid "Display Name"
+#: model:ir.actions.report,name:sale_zmart.action_invoice_sale_note_rma
+#: model:ir.model.fields.selection,name:sale_zmart.selection__stock_picking__document_type_invoice__delivery_note
+msgid "Delivery Note"
+msgstr "Nota de Entrega"
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Descripción"
 msgstr ""
 
 #. module: sale_zmart
-#: model:ir.model,name:sale_zmart.model_mail_template
-msgid "Email Templates"
-msgstr "Plantillas de correo electrónico"
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Dirección"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Dirección:"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__discount_4
+msgid "Discount 4"
+msgstr "Descuento 4%"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__document_number_invoice
+msgid "Document Number Invoice"
+msgstr "Nro de Documento"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__document_type_invoice
+msgid "Document Type"
+msgstr "Tipo de Documento"
+
+#. module: sale_zmart
+#. odoo-python
+#: code:addons/sale_zmart/models/sale_order.py:0
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_mean__domesa
+#, python-format
+msgid "Domesa"
+msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "Fecha:"
+msgid "EMISOR:"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Fax:"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Fecha Emisión:"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Fecha Entrega:"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Fecha de impresión:"
 msgstr ""
 
 #. module: sale_zmart
@@ -158,8 +516,13 @@ msgid "High"
 msgstr "Alta"
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__id
-msgid "ID"
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Hora de impresión:"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.view_sale_order_form_zmart
+msgid "Imprimir Nota de Entrega RMA"
 msgstr ""
 
 #. module: sale_zmart
@@ -173,18 +536,26 @@ msgid "Imprimir etiqueta"
 msgstr ""
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_company____last_update
-msgid "Last Modified on"
+#: model:ir.model.fields.selection,name:sale_zmart.selection__stock_picking__document_type_invoice__invoice
+msgid "Invoice"
+msgstr "Factura"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__invoice_type
+msgid "Invoice Type"
+msgstr "Tipo de documento"
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid "Kg"
 msgstr ""
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__write_uid
-msgid "Last Updated by"
-msgstr ""
-
-#. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__write_date
-msgid "Last Updated on"
+#. odoo-python
+#: code:addons/sale_zmart/models/sale_order.py:0
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_mean__liberty_express
+#, python-format
+msgid "Liberty Express"
 msgstr ""
 
 #. module: sale_zmart
@@ -193,14 +564,37 @@ msgid "Low"
 msgstr "Baja"
 
 #. module: sale_zmart
+#. odoo-python
+#: code:addons/sale_zmart/models/sale_order.py:0
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_mean__mrw
+#, python-format
+msgid "MRW"
+msgstr ""
+
+#. module: sale_zmart
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__priority_sale__medium
 msgid "Medium"
 msgstr "Media"
 
 #. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_company__name
-msgid "Name"
-msgstr "Nombre"
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Modelo"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "N.I.T.:"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Nota de Entrega:"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__notification_email_sent
+msgid "Notification Email Sent"
+msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
@@ -210,11 +604,34 @@ msgstr ""
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__package_qty
 msgid "Package Quantity"
-msgstr "N° de Cajas"
+msgstr ""
 
 #. module: sale_zmart
-#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "Pick:"
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__packing_factor
+msgid "Packing Factor"
+msgstr ""
+
+#. module: sale_zmart
+#: model:mail.template,subject:sale_zmart.cancel_warning_email_template
+msgid "Pedido a cancelar {{ object.name }}"
+msgstr ""
+
+#. module: sale_zmart
+#. odoo-python
+#: code:addons/sale_zmart/models/sale_order.py:0
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_mean__pedidos
+#, python-format
+msgid "Pedidos Ya"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Precio Unit."
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Precio Unit. Con Desc."
 msgstr ""
 
 #. module: sale_zmart
@@ -225,6 +642,11 @@ msgstr "Prepagado"
 #. module: sale_zmart
 #: model:ir.actions.report,name:sale_zmart.action_print_label
 msgid "Print Label"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.actions.report,name:sale_zmart.action_report_sale_order_usd
+msgid "Print Quote/Order"
 msgstr ""
 
 #. module: sale_zmart
@@ -244,14 +666,30 @@ msgid "Product"
 msgstr ""
 
 #. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Producto"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Página:"
+msgstr ""
+
+#. module: sale_zmart
 #: model:ir.model.fields,help:sale_zmart.field_stock_picking__package_qty
 msgid "Quantity of packages used in the picking"
-msgstr "N° de Cajas"
+msgstr ""
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "R.I.F:"
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "R.I.F.:"
 msgstr ""
+
+#. module: sale_zmart
+#: model:res.groups,name:sale_zmart.group_sale_note_rma
+msgid "Sale Note RMA"
+msgstr "Nota de entrega RMA"
 
 #. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_sale_order
@@ -259,14 +697,27 @@ msgid "Sales Order"
 msgstr "Pedido de venta"
 
 #. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_sale
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_vend_id
 msgid "Salesperson"
+msgstr "Vendedor"
+
+#. module: sale_zmart
+#: model:ir.actions.server,name:sale_zmart.send_email_ir_actions_server
+#: model:ir.cron,cron_name:sale_zmart.send_email
+msgid "Send Cancel Warning Emails"
 msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__sequence_code
 msgid "Sequence Prefix"
 msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_mean
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_mean
+msgid "Shipping Mean"
+msgstr "Medio de Envío:"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_method
@@ -280,6 +731,11 @@ msgid "Shipping Type"
 msgstr "Tipo de entrega"
 
 #. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_weight
+msgid "Shipping Weight"
+msgstr "Peso de Envio"
+
+#. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_type
 msgid "Shipping type"
 msgstr "Tipo de entrega"
@@ -290,9 +746,37 @@ msgid "TLF:"
 msgstr ""
 
 #. module: sale_zmart
+#. odoo-python
+#: code:addons/sale_zmart/models/sale_order.py:0
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_mean__tealca
+#, python-format
+msgid "Tealca"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Teléfonos:"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
+msgid "Total"
+msgstr ""
+
+#. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_stock_picking
 msgid "Transfer"
 msgstr "Transferir"
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Transporte:"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
+msgid "Unidad"
+msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__unlock_date
@@ -315,13 +799,35 @@ msgid "User Pick"
 msgstr "Pick"
 
 #. module: sale_zmart
-#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "Vent:"
+#. odoo-python
+#: code:addons/sale_zmart/models/sale_order.py:0
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_mean__yummy
+#, python-format
+msgid "Yummy"
 msgstr ""
 
 #. module: sale_zmart
-#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid "Verificado:"
+#. odoo-python
+#: code:addons/sale_zmart/models/sale_order.py:0
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_mean__zmart_express
+#, python-format
+msgid "Zmart Express"
+msgstr ""
+
+#. module: sale_zmart
+#. odoo-python
+#: code:addons/sale_zmart/models/sale_order.py:0
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_mean__zmart_programado
+#, python-format
+msgid "Zmart Programado"
+msgstr ""
+
+#. module: sale_zmart
+#. odoo-python
+#: code:addons/sale_zmart/models/sale_order.py:0
+#: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_mean__zoom
+#, python-format
+msgid "Zoom"
 msgstr ""
 
 #. module: sale_zmart
@@ -330,8 +836,8 @@ msgid "de"
 msgstr ""
 
 #. module: sale_zmart
-#: model:ir.model,name:sale_zmart.model_sale_company
-msgid "sale.company"
+#: model:ir.actions.report,print_report_name:sale_zmart.action_report_sale_order_usd
+msgid "object.name"
 msgstr ""
 
 #. module: sale_zmart
@@ -343,34 +849,3 @@ msgstr "Envío"
 #: model:ir.model.fields.selection,name:sale_zmart.selection__sale_order__shipping_type__withdrawal
 msgid "withdrawal"
 msgstr "Retiro"
-
-#. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_mean
-#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_mean
-msgid "Shipping Mean"
-msgstr "Medio de Envío"
-
-#. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_id
-msgid "Responsible"
-msgstr "Vendedor"
-
-#. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__user_sale
-msgid "Salesperson"
-msgstr "Vendedor"
-
-#. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__discount_4
-msgid "Discount 4"
-msgstr "Descuento 4%"
-
-#. module: sale_zmart
-#: model:res.groups,name:sale_zmart.group_sale_note_rma
-msgid "Sale Note RMA"
-msgstr "Nota de entrega RMA"
-
-#. module: sale_zmart
-#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__invoice_type
-msgid "Invoice Type"
-msgstr "Tipo de documento"

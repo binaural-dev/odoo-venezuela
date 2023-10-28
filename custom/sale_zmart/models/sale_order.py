@@ -1,7 +1,9 @@
-from datetime import datetime,timedelta
-from odoo import api, fields, models,_
-from odoo.exceptions import UserError
 import logging
+from datetime import datetime, timedelta
+
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
+
 _logger = logging.getLogger(__name__)
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
@@ -11,9 +13,7 @@ class SaleOrderZmart(models.Model):
             ("withdrawal", "withdrawal"),
             ("shipment", "shipment"),
         ],
-        default = "withdrawal",
-        store = True,
-        required = True
+        copy=False
     )
     shipping_mean = fields.Selection(
         [
@@ -27,8 +27,7 @@ class SaleOrderZmart(models.Model):
             ("pedidos", "Pedidos Ya"),
             ("yummy", "Yummy"),
         ],
-        default = "",
-        store = True
+        copy=False
     )
     priority_sale = fields.Selection(
         [
@@ -36,9 +35,7 @@ class SaleOrderZmart(models.Model):
             ("medium", "Medium"),
             ("low", "Low"),
         ],
-        default = "low",
-        store = True,
-        required = True
+        copy=False
     )
     printed = fields.Boolean(
         related = 'invoice_ids.printed'
@@ -53,7 +50,6 @@ class SaleOrderZmart(models.Model):
             ("free", "Free"),
             ("collect_at_destination", "Collect at Destination"),
         ],
-        default = "free",
         store = True
     )
     product_id = fields.Many2one(
@@ -69,6 +65,15 @@ class SaleOrderZmart(models.Model):
     notification_email_sent = fields.Boolean(
         default=False
     )
+    shipping_weight = fields.Char(compute="_compute_shipping_weight")
+
+    @api.depends("order_line")
+    def _compute_shipping_weight(self):
+        for record in self:
+            weight = 0
+            for line in record.order_line:
+                weight += line.product_id.weight * line.product_uom_qty
+            record.shipping_weight = f"{weight} {record.env.ref('uom.product_uom_kgm').name}"
     
     def button_invoice_sale_note_rma(self):
         return self.env.ref('sale_zmart.action_invoice_sale_note_rma').report_action(self)

@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230810\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231006\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-10-11 20:21+0000\n"
 "PO-Revision-Date: 2023-10-11 20:21+0000\n"
@@ -254,6 +254,12 @@ msgid "Total Taxed of the order"
 msgstr "Total gravado de la orden"
 
 #. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_res_company__update_purchase_order_rate_using_date_order
+#: model:ir.model.fields,field_description:binaural_purchase.field_res_config_settings__update_purchase_order_rate_using_date_order
+msgid "Update Purchase Order Rate Using Date Order"
+msgstr "Actualizar la tasa de la orden de compra usando la fecha"
+
+#. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_res_company__use_invoice_rate_from_purchase_order
 #: model:ir.model.fields,field_description:binaural_purchase.field_res_config_settings__use_invoice_rate_from_purchase_order
 msgid "Use Invoice Rate From Purchase Order"
@@ -268,3 +274,26 @@ msgstr "Identificación"
 #: model:ir.model.fields,help:binaural_purchase.field_purchase_order__vat
 msgid "VAT of the partner"
 msgstr "Identificación"
+
+#. module: binaural_purchase
+#: model_terms:ir.ui.view,arch_db:binaural_purchase.res_config_settings_binaural_purchase
+msgid ""
+"When checked, the rate of the purchase order will be updated using\n"
+"\t\t\t\tthe date order whenever it changes. Else, when the rate is already\n"
+"\t\t\t\tset, it will not be updated."
+msgstr ""
+"Al marcar esta opción, la tasa de la orden de compra se actualizará\n"
+"\t\t\t\tusando la fecha de la orden de compra cada vez que cambie. De lo\n"
+"\t\t\t\tcontrario, cuando la tasa ya está establecida, no se actualizará."
+
+#. module: binaural_purchase
+#: model:ir.model.fields,help:binaural_purchase.field_res_company__update_purchase_order_rate_using_date_order
+#: model:ir.model.fields,help:binaural_purchase.field_res_config_settings__update_purchase_order_rate_using_date_order
+msgid ""
+"When checked, the rate of the purchase order will be updated using the date "
+"order whenever it changes. Else, when the rate is already set, it will not "
+"be updated."
+msgstr ""
+"Al marcar esta opción, la tasa de la orden de compra se actualizará usando "
+"la fecha de la orden de compra cada vez que cambie. De lo contrario, cuando "
+"la tasa ya está establecida, no se actualizará."

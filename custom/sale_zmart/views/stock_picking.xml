@@ -18,6 +18,8 @@
             <field name="arch" type="xml">
                 <field name="origin" position="after">
                     <field name="guide" attrs="{'invisible': [('sequence_code', '!=', 'PACK'), ('sequence_code', '!=', 'OUT')], 'readonly': [('sequence_code', '!=', 'PACK')]}"/>
+                    <field name="document_type_invoice"/>
+                    <field name="document_number_invoice"/>
                 </field>
                 <field name="user_id" position="replace">
                     <field name="user_pick_id" attrs="{'invisible': [('sequence_code', '!=', 'PICK')], 'readonly': [('user_pick_id', '!=', False)]}"/>
@@ -46,6 +48,8 @@
                     <field name="priority_sale" optional="hide"/>
                     <field name="shipping_type" optional="hide"/>
                     <field name="shipping_mean" optional="hide"/>
+                    <field name="document_type_invoice"/>
+                    <field name="document_number_invoice"/>
                 </field>
             </field>
         </record>
