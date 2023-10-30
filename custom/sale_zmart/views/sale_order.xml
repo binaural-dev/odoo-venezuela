@@ -17,8 +17,8 @@
                 <field name="invoice_type" invisible="1"/>
                 <field name="priority_sale" required="1"/>
                 <field name="shipping_type" required="1"/>
-                <field name="shipping_mean" attrs="{'required': [('shipping_type', '==', 'shipment')]}" />
-                <field name="shipping_method" attrs="{'invisible': [('shipping_type', '==', 'withdrawal')]}"/>
+                <field name="shipping_mean" attrs="{'invisible': [('shipping_type', '=', 'withdrawal')], 'required': [('shipping_type', '=', 'shipment')]}" />
+                <field name="shipping_method" attrs="{'invisible': [('shipping_type', '=', 'withdrawal')], 'required': [('shipping_type', '=', 'shipment')]}"/>
                 <field name="shipping_weight" />
             </xpath>
             
