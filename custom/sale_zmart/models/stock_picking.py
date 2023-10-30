@@ -76,7 +76,7 @@ class StockPicking(models.Model):
     @api.depends("origin")
     def _compute_document_type(self):
         for record in self:
-            order_id = self.env["sale.order"].search([("name", "=", record.origin)])
+            order_id = self.env["sale.order"].sudo().search([("name", "=", record.origin)])
             journal_type = False
             invoices = []
             for invoice in order_id.invoice_ids.filtered(lambda x: x.state == "posted"):
