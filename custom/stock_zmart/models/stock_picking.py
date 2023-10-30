@@ -12,8 +12,9 @@ class StockPicking(models.Model):
     warehouse_operator_id = fields.Many2one("stock.warehouse.operator")
     guide_sequence_id = fields.Many2one(
         'ir.sequence',
-        default=lambda self: self.env.ref("stock_zmart.sequence_guide_number").id
+        default=lambda self: self.env.ref("stock_zmart.sequence_stock_number_guide").id
     )
+    guide_sequence = fields.Char(copy=False)
     guide = fields.Char(copy=False)
     origin_sale_id = fields.Many2one("sale.order", compute="_compute_origin_sale_id")
 
@@ -34,7 +35,10 @@ class StockPicking(models.Model):
         if not self.guide:
             if self.shipping_type == 'shipment' and self.sequence_code == 'PACK':
                 guide_sequence = self.guide_sequence_id._next()
-                self.update({'guide': guide_sequence})
+                self.update({
+                    'guide_sequence': guide_sequence,
+                    'guide': guide_sequence
+                })
 
     def write(self, vals):
         res = super().write(vals)

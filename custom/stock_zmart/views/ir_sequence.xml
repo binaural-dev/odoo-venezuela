@@ -5,6 +5,6 @@
     <field name="type">ir.actions.act_window</field>
     <field name="res_model">ir.sequence</field>
     <field name="view_mode">form</field>
-    <field name="res_id" ref="sequence_guide_number"/>
+    <field name="res_id" ref="stock_zmart.sequence_stock_number_guide"/>
   </record>
 </odoo>

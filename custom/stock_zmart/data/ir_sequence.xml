@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <data>
-    <record id="sequence_guide_number" model="ir.sequence">
+  <data noupdate="1">
+    <record id="sequence_stock_number_guide" model="ir.sequence" forcecreate="True">
       <field name="name">Sequencia de Inventario Número de Guía</field>
       <field name="code">stock.sequence.number.guide</field>
       <field name="padding">8</field>
       <field name="prefix">%(y)s/%(month)s/</field>
+      <field name="company_id" eval="False"/>
     </record>
   </data>
 </odoo>
