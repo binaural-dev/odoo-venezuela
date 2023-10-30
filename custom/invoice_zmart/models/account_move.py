@@ -88,3 +88,28 @@ class AccountInvoice(models.Model):
             self.env, total_amount_foreign, currency_obj=self.foreign_currency_id
         )
         return total_amount_local, total_amount_foreign
+
+
+    def call_confirmation_wizard(self):
+
+        return {
+            'name': _('Confirmation'),
+            'type': 'ir.actions.act_window',
+            'view_type': 'form',
+            'view_mode': 'form',
+            'res_model': 'wizard.confirm.account.move',
+            'view_id': self.env.ref("invoice_zmart.view_confirm_account_move_form").id,
+            'target': 'new',
+            'context': {
+                'default_account_move_id': self.id,
+                'default_journal_id': self.journal_id.id,
+            }
+        }
+
+    def action_post(self):
+        do_original_method = self.env.context.get('do_original_method', False)
+
+        if do_original_method:
+            return super().action_post()
+
+        return self.call_confirmation_wizard()

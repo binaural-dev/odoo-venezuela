@@ -8,7 +8,7 @@
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
     'category': 'Invoice',
-    'version': '16.0.0.33',
+    'version': '16.0.0.34',
     'depends': ['binaural_invoice', 'binaural_base_igtf'],
     'data': [
         'data/paperformat.xml',
@@ -21,6 +21,7 @@
         'report/free_form_usd.xml',
         'views/account_move.xml',
         'views/account_payment.xml',
+        'wizard/wizard_confirm_account_move_view.xml',
         
     ],
     'images': ['static/description/icon.png'],
