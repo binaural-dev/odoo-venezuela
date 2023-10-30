@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <record id="ir_sequence_form_guide_number" model="ir.actions.act_window">
+    <field name="name">Sequencia de Inventario Número de Guía</field>
+    <field name="type">ir.actions.act_window</field>
+    <field name="res_model">ir.sequence</field>
+    <field name="view_mode">form</field>
+    <field name="res_id" ref="sequence_guide_number"/>
+  </record>
+</odoo>
