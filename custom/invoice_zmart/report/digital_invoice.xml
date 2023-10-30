@@ -50,6 +50,8 @@
                                         <span>Fecha Emisión:</span>
                                         <br/>
                                         <span>Condic. pago:</span>
+                                        <br/>
+                                        <span>Número Pedido:</span>
                                     </div>
                                     <div class="col-6">
                                         <span><t t-out="o.name"/></span>
@@ -57,6 +59,8 @@
                                         <span><t t-out="o.invoice_date"/></span>
                                         <br/>
                                         <span><t t-out="o.name"/></span>
+                                        <br/>
+                                        <span><t t-out="o.invoice_origin"/></span>
                                     </div>
                                 </div>
                             </div>
