@@ -11,6 +11,17 @@ class StockPicking(models.Model):
     weight = fields.Float(store=True, readonly=False)
     warehouse_operator_id = fields.Many2one("stock.warehouse.operator")
 
+    origin_sale_id = fields.Many2one("sale.order", compute="_compute_origin_sale_id")
+
+    @api.depends("origin")
+    def _compute_origin_sale_id(self):
+        for record in self:
+            if record.origin:
+                sale_id = self.env["sale.order"].sudo().search([("name", "=", record.origin)])
+                if not sale_id:
+                    record.origin_sale_id = False
+                    continue
+                record.origin_sale_id = sale_id
 
     def write(self, vals):
         res = super().write(vals)
