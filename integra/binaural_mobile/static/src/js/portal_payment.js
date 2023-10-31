@@ -56,7 +56,7 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
 
                             ret.push({
                                 id: client.id,
-                                text: client.name,
+                                text: client.display_name,
                                 isNew: false,
                             });
                             self.partners.push(client); 
