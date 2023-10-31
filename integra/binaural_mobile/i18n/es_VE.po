@@ -1969,7 +1969,7 @@ msgstr "Venta de producto por empaquetado"
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.product_template_form_view_inherit_binaural
 msgid "Sales APP"
-msgstr ""
+msgstr "App de ventas"
 
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_sale_order__journal_id
@@ -2216,7 +2216,7 @@ msgstr "Hay productos duplicados."
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.payments_list_portal
 msgid "There are no payments made to the company."
-msgstr "No se realizaron pagos a la empresa."
+msgstr "Actualmente no tiene pagos en su cuenta."
 
 #. module: binaural_mobile
 #. odoo-python
