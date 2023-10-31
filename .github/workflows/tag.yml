@@ -6,6 +6,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.repository == 'binaural-dev/integra'
     steps:
       - uses: actions/checkout@v2
       - name: Bump version and push tag
