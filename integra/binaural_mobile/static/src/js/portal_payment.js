@@ -522,7 +522,7 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
             const decimal = +$("#decimal").val()
             const decimal_places_foreign = +$("#currency_foreign_id").val()
             const currency_foreign_rate = +$("#currency_foreign_rate").val()
-            const amount_to_pay = +$("#amount_total_pay").val() + +$("#total_retention").val()
+            const amount_to_pay = +$("#amount_total_pay").val()
             const total_payment =  +$('#total_payment').val()
             const remainingAmount = (amount_to_pay - total_payment).toFixed(decimal)
             const remainingAmountForeign = +(remainingAmount * currency_foreign_rate).toFixed(decimal_places_foreign)
