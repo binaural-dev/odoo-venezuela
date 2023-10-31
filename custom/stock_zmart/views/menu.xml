@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+  <menuitem
+    id="menu_ir_sequence_form_guide_number"
+    name="Seq. Inventario Número de Guía"
+    groups="base.group_no_one"
+    sequence="100"
+    parent="stock.menu_delivery"
+    action="ir_sequence_form_guide_number"
+	/>
+
+</odoo>
