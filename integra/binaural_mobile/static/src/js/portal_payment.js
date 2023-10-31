@@ -492,6 +492,7 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
 
         CalculateTotal: function() {
             let decimal_number = +$("#decimal").val()
+
             let tableBody = $('#pay_methods');
             let totalPayment = 0;
 
@@ -611,8 +612,8 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
                 let retention_vef = parseFloat(amount_retention_vef.value)
                 let total_retention_vef = +$("#total_retention_vef").val()
                 total_retention_vef += retention_vef
-                $("#total_retention_vef").val(total_retention_vef.toFixed(decimal))
-                $("#total_retention_l_vef").text(total_retention_vef.toFixed(decimal).replace('.', ','))
+                $("#total_retention_vef").val(total_retention_vef.toFixed(decimal_places_foreign))
+                $("#total_retention_l_vef").text(total_retention_vef.toFixed(decimal_places_foreign).replace('.', ','))
             }
 
             this.validate_payment_method_invoices()
