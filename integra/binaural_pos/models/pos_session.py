@@ -46,6 +46,7 @@ class PosSession(models.Model):
         params = super()._loader_params_product_product()
         params["search_params"]["fields"].append("free_qty")
         params["search_params"]["fields"].append("qty_available")
+        params["search_params"]["fields"].append("detailed_type")
         return params
 
     def _get_pos_ui_product_product(self, params):
@@ -101,8 +102,9 @@ class PosSession(models.Model):
         return res
 
     def is_user_authorized(self):
-        return self.env.user.authorized_discount_pos
-
+        is_group = self.env.user.has_group('binaural_pos.group_authorized_discount_pos')
+        return is_group
+    
     def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
         # OVERWRITE
         # Inside this method the payment session is created, here set de foreign_rate because lines dont have foreign debit and credit
