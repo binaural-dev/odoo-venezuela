@@ -17,10 +17,10 @@
             <t t-if="request.env.user.employee_id.is_seller">
                 <thead>
                     <tr class="active">
-                        <th>Quotation #</th>
+                        <th>Number</th>
                         <th class="text-end">Customer</th>
                         <th class="text-end">Date</th>
-                        <th class="text-end">Total</th>
+                        <th class="text-end">Total.</th>
                     </tr>
                 </thead>
             </t>
@@ -31,7 +31,7 @@
                         <th class="text-end">Quotation Date</th>
                         <th class="text-end">Valid Until</th>
                         <th class="text-center"/>
-                        <th class="text-end">Total</th>
+                        <th class="text-end">Total.</th>
                     </tr>
                 </thead>
             </t>            
@@ -87,12 +87,12 @@
                 <thead>
                     <tr class="active">
                         <th>
-                            <span class='d-none d-md-inline'>Sales Order #</span>
-                            <span class='d-block d-md-none'>Ref.</span>
+                            <span class='d-none d-md-inline'>Number</span>
+                            <span class='d-block d-md-none'>Num.</span>
                         </th>
                         <th class="text-center">Customer</th>
-                        <th class="text-end">Order Date</th>
-                        <th class="text-end">Total</th>
+                        <th class="text-end">Date</th>
+                        <th class="text-end">Total.</th>
                     </tr>
                 </thead>
             </t>
@@ -103,9 +103,9 @@
                             <span class='d-none d-md-inline'>Sales Order #</span>
                             <span class='d-block d-md-none'>Ref.</span>
                         </th>
-                        <th class="text-end">Order Date</th>
+                        <th class="text-end">Date</th>
                         <th class="text-center"/>
-                        <th class="text-end">Total</th>
+                        <th class="text-end">Total.</th>
                     </tr>
                 </thead>
             </t>  
