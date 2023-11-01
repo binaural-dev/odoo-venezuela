@@ -145,7 +145,7 @@
                                 <div style="margin-top:4px;font-size:16px">
                                     <div style="width:100%;margin-top:10px">
                                         <span style="margin-right: 1px;font-family: Arial"><strong>DOC DE VENTA:</strong></span>
-                                        <span style="font-family: Arial" t-out="o.origin "/>
+                                        <span style="font-family: Arial" t-out="o.sale_id.name "/>
                                     </div>
                                     <div style="width:100%">
                                         <span style="margin-right: 1px;font-family: Arial"><strong>CLIENTE:  </strong></span>
