@@ -43,7 +43,7 @@
             <t t-if="request.env.user.employee_id.is_seller">
                 <tr>
                     <td><a t-attf-href="/budget-{{quotation.id}}"><t t-out="quotation.name"/></a></td>
-                    <td class="text-end"><span t-field="quotation.partner_id.name"/></td>
+                    <td class="text-end"><span t-field="quotation.partner_id.display_name"/></td>
                     <td class="text-end">
                         <span t-field="quotation.create_date" t-options="{'widget': 'date'}"/>&amp;nbsp;
                         <span class='d-none d-md-inline'/>
@@ -118,7 +118,7 @@
                 <tr>
                     <td><a t-attf-href="/budget-{{order.id}}"><t t-out="order.name"/></a></td>
                     <td class="text-center">
-                        <span t-field="order.partner_id.name"/>
+                        <span t-field="order.partner_id.display_name"/>
                     </td>
                     <td class="text-end">
                         <span t-field="order.date_order" t-options="{'widget': 'date'}"/>&amp;nbsp;
