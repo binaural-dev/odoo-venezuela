@@ -126,10 +126,10 @@
                                 </div>
                                <div style="overflow: auto;border-bottom: 1px solid black;font-size: 110%">
                                     <div style="float: left; width: 50%;">
-                                        <div style="text-align: center; padding: 1px; font-family: Arial;">
-                                            <div style="margin-top:4px;margin-left:-14px">
+                                        <div style="text-align: left; padding: 1px; font-family: Arial;">
+                                            <div style="margin-top:4px;">
                                                 <strong style="font-family: Arial">N° GUÍA:</strong>
-                                                <strong><span style="margin-right: 5px;font-family: Arial" t-field="o.guide"></span></strong>
+                                                <strong><span style="margin-right: 5px;font-family: Arial; font-size:13px;" t-field="o.guide"></span></strong>
                                             </div>
                                         </div>
                                     </div>

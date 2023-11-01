@@ -5,6 +5,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
+
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
     
@@ -50,7 +51,7 @@ class SaleOrderZmart(models.Model):
             ("free", "Free"),
             ("collect_at_destination", "Collect at Destination"),
         ],
-        store = True
+        default=None
     )
     product_id = fields.Many2one(
         'product.template',
