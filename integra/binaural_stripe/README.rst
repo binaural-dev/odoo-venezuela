@@ -1,6 +1,6 @@
-=======================
-Binaural POS Descuentos
-=======================
+===============
+Binaural Stripe
+===============
 
 .. 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -8,18 +8,18 @@ Binaural POS Descuentos
    !! changes will be overwritten.                   !!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-.. |badge1| image:: https://img.shields.io/badge/licence-LGPL--3-blue.png
-    :target: http://www.gnu.org/licenses/lgpl-3.0-standalone.html
-    :alt: License: LGPL-3
-
-|badge1|
-
-#Binaural POS Descuentos
-
-Este modulo se encarga de hacer el calculo del descuento con la moneda alterna en el POS.
 
 
 
+#Binaural Stripe
+
+Este modulo se encarga de hacer bypass de stripe para funcionar en Venezuela.
+
+Este añade los siguientes campos:
+
+##Configuraciones:
+
+* Ahora el módulo de pago Stripe en Odoo incluirá el país 'VE' como uno de los países soportados por Stripe, lo que permitirá realizar pagos a través de Stripe desde Venezuela.
 
 
 **Tabla de Contenidos**
@@ -33,7 +33,7 @@ Créditos
 Autor/es
 ~~~~~~~~
 
-* Binaural.dev
+* Binaural C.A.
 
 Mantenedor/es
 ~~~~~~~~~~~~~
