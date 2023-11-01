@@ -112,7 +112,7 @@ class AccountPaymentPayments(http.Controller):
                             total_residual = payment.amount_residual
 
                             if total_residual < 0 and invoice.amount_residual != 0:
-                                (payment + invoice).reconcile(from_app=True)
+                                (payment + invoice).sudo().reconcile(from_app=True)
                                 advance_pays += payment.move_id.payment_id
 
                 if payments:
@@ -331,11 +331,7 @@ class AccountPaymentPayments(http.Controller):
                 total_residual += payment.amount_residual
 
             if total_residual < 0:
-                _logger.warning("CONCILIAR AQUI")
                 (pays + invoice).sudo().reconcile(from_app=True)
-                _logger.warning("CONCILIADO")
-
-        _logger.warning("TODO CONCILIADOOOOO")
 
         return pays_registered, payments_igtf
 
