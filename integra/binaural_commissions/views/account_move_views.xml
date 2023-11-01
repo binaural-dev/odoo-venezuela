@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<record id="commission_sale_invoice_filter" model="ir.ui.view">
+    <field name="name">commission.sale.invoice.filter</field>
+    <field name="mode">primary</field>
+    <field name="model">account.move</field>
+    <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+    <field name="arch" type="xml">
+        <xpath expr="//filter[@name='duedate']" position='after'>
+            <separator/>
+            <filter name="group_seller_id" string="Seller" context="{'group_by':'seller_id'}"/>
+            <separator/>
+        </xpath>
+    </field>
+</record>
+
+
+<record id="commission_sale_invoices_tree_view" model="ir.ui.view">
+    <field name="name">commission.sale.invoices.tree</field>
+    <field name="model">account.move</field>
+    <field name="inherit_id" ref="account.view_invoice_tree"/>
+    <field name="mode">primary</field>
+    <field name="arch" type="xml">
+	
+	<tree position="attributes">
+	    <attribute name="create">false</attribute>
+	</tree>
+
+        <xpath expr="//field[@name='name']" position="after">
+            <field name="invoice_origin" invisible="1"/>
+            <field name="commission_invoice" widget="tagged" string="Commission Invoice"/>
+        </xpath>
+
+        <xpath expr="//field[@name='state']" position="attributes">
+            <field name="optional">1</field>
+        </xpath>
+
+        <xpath expr="//field[@name='amount_total_signed']" position="before">
+            <button name="show_invoice_resume" icon="fa-list" string="Commissions" type="object"/> 
+            <field name="total_commission" widget="monetary"/>
+            <field name="commission_discount"/>
+            <!-- <field name="discount_invoice" widget="many2many_tags" string="Credit Notes"/> -->
+        </xpath>
+
+        <xpath expr="//field[@name='invoice_date']" position="after">
+	    <field name="seller_id"/>
+            <field name="last_payment_date"/>
+            <field name="collection_days" string="Días de cobro"/>
+            <field name="invoice_payment_term_id" invisible="1"/>
+        </xpath>
+
+        <xpath expr="//field[@name='amount_total_signed']" position="after">
+            <field name="commission_payment_state" widget="badge" decoration-muted="commission_payment_state == 'not_paid'"
+                   decoration-success="commission_payment_state == 'paid'" decoration-info="commission_payment_state == 'process'"
+                   optional="show" string="Payment State (Commission)"/>
+        </xpath>
+
+        <xpath expr="//field[@name='payment_state']" position="attributes">
+            <attribute name="string">Payment State (Client Invoice)</attribute>
+        </xpath>
+
+        <xpath expr="//field[@name='invoice_date_due']" position="attributes">
+            <attribute name="invisible">1</attribute>
+        </xpath>
+        <xpath expr="//field[@name='activity_ids']" position="attributes">
+            <attribute name="invisible">1</attribute>
+        </xpath>
+        <xpath expr="//field[@name='amount_untaxed_signed']" position="attributes">
+            <attribute name="invisible">0</attribute>
+        </xpath>
+        <xpath expr="//field[@name='company_id']" position="attributes">
+            <attribute name="invisible">1</attribute>
+        </xpath>
+    </field>
+</record>
+
+
+<record id="commission_sale_invoices_action" model="ir.actions.act_window">
+    <field name="name">Sale Invoices Per Seller</field>
+    <field name="res_model">account.move</field>
+    <field name="view_mode">tree</field>
+    <field name="view_id" ref="commission_sale_invoices_tree_view"/>
+    <field name="search_view_id" ref="commission_sale_invoice_filter"/>
+    <field name="context">{"search_default_group_seller_id": 1}</field>
+    <field name="domain">
+	[
+	    ("move_type", "=", "out_invoice"),
+	    ("payment_state", "in", ("paid", "in_payment")),
+	    ("seller_id", "!=", False)
+	]
+    </field>
+	    <!-- ("date_reception", "!=", False) -->
+    <field name="help" type="html">
+        <p class="o_view_nocontent_smiling_face">
+            There are no applicable invoices for commissions payment!
+        </p>
+    </field>
+</record>
+
+</odoo>

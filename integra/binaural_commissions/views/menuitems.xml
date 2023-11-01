@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-<menuitem id="account_commission" parent="account.menu_finance_configuration" name="Commissions">
+
+<menuitem id="account_commission" parent="account_accountant.menu_accounting" name="Commissions" sequence="3">
+    <menuitem id="account_commission_sale_invoices" action="commission_sale_invoices_action"/>
+</menuitem>
+
+<menuitem id="account_commission_configuration" parent="account.menu_finance_configuration" name="Commissions">
     <menuitem id="account_commission_policy" action="commission_policy_action"/>
 </menuitem>
+
 </odoo>

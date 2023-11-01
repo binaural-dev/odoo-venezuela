@@ -10,14 +10,22 @@
     "category": "Expense/Payroll",
     "version": "16.0",
     # any module necessary for this one to work correctly
-    "depends": ["account", "binaural_brand", "binaural_sale"],
+    "depends": [
+        "account",
+        "binaural_accountant",
+        "binaural_brand",
+        "binaural_sale",
+        "binaural_seller",
+        "binaural_invoice",
+    ],
     # always loaded
     "data": [
         "security/ir.model.access.csv",
-        "views/commission_policy_views.xml",
+        "views/account_move_views.xml",
         "views/commission_policy_line_views.xml",
+        "views/commission_policy_views.xml",
+        "views/res_config_settings.xml",
         "views/menuitems.xml",
-        "views/res_config_settings.xml"
     ],
     "application": False,
 }
