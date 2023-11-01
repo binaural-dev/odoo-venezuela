@@ -325,14 +325,17 @@ class AccountPaymentPayments(http.Controller):
         pays = pays_registered.mapped("move_id.line_ids").filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
         )
-
         for invoice in invoices:
             total_residual = 0
             for payment in pays:
                 total_residual += payment.amount_residual
 
             if total_residual < 0:
-                (pays + invoice).reconcile(from_app=True)
+                _logger.warning("CONCILIAR AQUI")
+                (pays + invoice).sudo().reconcile(from_app=True)
+                _logger.warning("CONCILIADO")
+
+        _logger.warning("TODO CONCILIADOOOOO")
 
         return pays_registered, payments_igtf
 
