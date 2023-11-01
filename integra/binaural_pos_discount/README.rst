@@ -18,6 +18,10 @@ Binaural POS Descuentos
 
 Este modulo se encarga de hacer el calculo del descuento con la moneda base en el POS.
 
+
+
+
+
 **Tabla de Contenidos**
 
 .. contents::
@@ -30,11 +34,6 @@ Autor/es
 ~~~~~~~~
 
 * Binaural.dev
-
-Contribuidores
-~~~~~~~~~~~~~~
-
-* Ana Calles <ana@binauraldev.com>
 
 Mantenedor/es
 ~~~~~~~~~~~~~

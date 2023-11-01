@@ -369,33 +369,13 @@ ul.auto-toc {
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
 <p><a class="reference external" href="http://www.gnu.org/licenses/lgpl-3.0-standalone.html"><img alt="License: LGPL-3" src="https://img.shields.io/badge/licence-LGPL--3-blue.png" /></a></p>
 <p>#Binaural POS Descuentos</p>
-<p>Este modulo se encarga de la creacion del boton de descuento en el POS. Se define un nuevo botón de descuento que reemplaza los descuentos existentes en las líneas de la orden de venta con un descuento personalizado
-basado en el porcentaje proporcionado.</p>
-<p>Este añade los siguientes campos:</p>
-<p>##Configuraciones:</p>
-<ul class="simple">
-<li>Se configura el Boton Descuento para almacenar el precio alterno al momento de hacer descuentos. Donde busca la orden de venta actual en el punto de venta y el producto de descuento configurado en la instancia de Odoo.</li>
-<li>Se eliminan los descuentos existentes en las líneas de la orden de venta que corresponden al producto de descuento.</li>
-<li>Se agrupan las líneas de la orden de venta por grupo de impuestos. Para cada grupo de impuestos, se calcula el monto base para aplicar el descuento. También se calcula el monto base en moneda extranjera si corresponde.</li>
-<li>Se soporta el caso de uso de productos con más de un impuesto.</li>
-<li>Se añade el precio establecido manualmente para evitar el recálculo al cambiar de cliente.</li>
-</ul>
-<p>## Validaciones</p>
-<ul class="simple">
-<li>Se calcula el descuento como un porcentaje del monto base y se verifica si es negativo. Si lo ses, agrega una línea de producto de descuento si el descuento es menor que cero.</li>
-</ul>
-<hr class="docutils" />
-<p>#Interfaz de POS</p>
-<ul class="simple">
-<li>Boton Descuento que almacena el precio alterno al momento de hacer descuentos.</li>
-</ul>
+<p>Este modulo se encarga de hacer el calculo del descuento con la moneda base en el POS.</p>
 <p><strong>Tabla de Contenidos</strong></p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><a class="reference internal" href="#creditos" id="id1">Créditos</a><ul>
 <li><a class="reference internal" href="#autor-es" id="id2">Autor/es</a></li>
-<li><a class="reference internal" href="#contribuidores" id="id3">Contribuidores</a></li>
-<li><a class="reference internal" href="#mantenedor-es" id="id4">Mantenedor/es</a></li>
+<li><a class="reference internal" href="#mantenedor-es" id="id3">Mantenedor/es</a></li>
 </ul>
 </li>
 </ul>
@@ -408,14 +388,8 @@ basado en el porcentaje proporcionado.</p>
 <li>Binaural.dev</li>
 </ul>
 </div>
-<div class="section" id="contribuidores">
-<h2><a class="toc-backref" href="#id3">Contribuidores</a></h2>
-<ul class="simple">
-<li>Ana Calles &lt;<a class="reference external" href="mailto:ana&#64;binauraldev.com">ana&#64;binauraldev.com</a>&gt;</li>
-</ul>
-</div>
 <div class="section" id="mantenedor-es">
-<h2><a class="toc-backref" href="#id4">Mantenedor/es</a></h2>
+<h2><a class="toc-backref" href="#id3">Mantenedor/es</a></h2>
 <p>Este módulo es mantenido por Binaural.</p>
 <a class="reference external image-reference" href="https://binauraldev.com/"><img alt="Binaural dev" src="https://binauraldev.com/wp-content/uploads/2022/01/logo-binaural.png" /></a>
 </div>
