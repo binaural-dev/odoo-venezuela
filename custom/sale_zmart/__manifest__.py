@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sale/Sale",
-    "version": "16.0.0.11",
+    "version": "16.0.0.14",
     "depends": [
         "binaural_sale",
         "invoice_zmart",
