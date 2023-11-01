@@ -48,13 +48,18 @@ class AccountInvoice(models.Model):
         raise ValidationError(_( 'Cannot print an sale note with a fiscal journal'))
     
     def action_post(self):
-        res = super().action_post()
-        if not self.journal_id.fiscal:
-            self.state =  'draft'
-            for line in self.invoice_line_ids:
-                line.tax_ids = False
-            self.state =  'posted'
-        return res
+        do_original_method = self.env.context.get('do_original_method', False)
+
+        if do_original_method:
+            res = super().action_post()
+            if not self.journal_id.fiscal:
+                self.state =  'draft'
+                for line in self.invoice_line_ids:
+                    line.tax_ids = False
+                self.state =  'posted'
+            return res
+
+        return self.call_confirmation_wizard()
     
     def get_total_amount_excluding_taxes(self):
         excluded_tax_ids = [1, 2]
@@ -106,10 +111,3 @@ class AccountInvoice(models.Model):
             }
         }
 
-    def action_post(self):
-        do_original_method = self.env.context.get('do_original_method', False)
-
-        if do_original_method:
-            return super().action_post()
-
-        return self.call_confirmation_wizard()
