@@ -7,8 +7,8 @@
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
     'category': 'Contacts/Contacts',
-    'version': '16.0',
-    'depends': ['binaural_contact'],
+    'version': '16.1',
+    'depends': ['binaural_contact', 'binaural_payment_extension', 'binaural_tax_payer'],
     'data': [
         'security/ir.model.access.csv',
         'views/res_partner.xml',
