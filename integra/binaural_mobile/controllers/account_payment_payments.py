@@ -97,7 +97,6 @@ class AccountPaymentPayments(http.Controller):
                     invoices = data_invoices.mapped("line_ids").filtered(
                         lambda l: l.account_id.account_type == "asset_receivable"
                     )
-
                     domain_customer = [
                         ("partner_id", "=", int(partner_id)),
                         ("account_id", "=", advance_customer_id.id),
@@ -110,7 +109,6 @@ class AccountPaymentPayments(http.Controller):
                         total_residual = 0
                         for payment in advance_lines:
                             total_residual = payment.amount_residual
-
                             if total_residual < 0 and invoice.amount_residual != 0:
                                 (payment + invoice).sudo().reconcile(from_app=True)
                                 advance_pays += payment.move_id.payment_id
@@ -144,7 +142,7 @@ class AccountPaymentPayments(http.Controller):
                                 )
                                 reconcile = request.env["account.partial.reconcile"].search(domain)
                                 for invoice_ids in reconcile:
-                                    invoice_id = invoice_ids.debit_move_id.move_id.id
+                                    invoice_id = invoice_ids.debit_move_id.move_id
                                     if line_id:
                                         pays_app_lines += self.create_line_app(
                                             pay_r, invoice_id, company, advance_customer_id
