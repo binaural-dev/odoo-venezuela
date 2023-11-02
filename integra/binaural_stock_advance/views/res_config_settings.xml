@@ -13,6 +13,10 @@
                         <div class="o_setting_right_pane">
                             <group colspan="4" col="4">
                                 <field name="check_advance_stock" />
+                                <field name="use_fee_percentage" />
+                                <field name="apply_fob" attrs="{'invisible':[('use_fee_percentage', '=', False)]}" />
+                                <field name="apply_cif" attrs="{'invisible':[('use_fee_percentage', '=', False)]}" />
+                                <field name="service_products_ids" widget="many2many_tags" attrs="{'invisible':[('apply_cif', '=', False)]}"/>
                             </group>
                         </div>
                     </div>
