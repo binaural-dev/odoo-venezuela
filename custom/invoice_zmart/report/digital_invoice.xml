@@ -60,7 +60,7 @@
                                         <br/>
                                         <span><t t-out="o.invoice_date"/></span>
                                         <br/>
-                                        <span><t t-out="o.name"/></span>
+                                        <span><t t-out="o.invoice_payment_term_id.name"/></span>
                                         <br/>
                                         <span><t t-out="o.invoice_origin"/></span>
                                     </div>

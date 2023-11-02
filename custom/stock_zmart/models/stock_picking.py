@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import api, fields, models
 
 
 class StockPicking(models.Model):
@@ -10,7 +10,7 @@ class StockPicking(models.Model):
     shipping_weight = fields.Float(store=True, readonly=False)
     weight = fields.Float(store=True, readonly=False)
     warehouse_operator_id = fields.Many2one("stock.warehouse.operator")
-
+    guide = fields.Char(copy=False)
     origin_sale_id = fields.Many2one("sale.order", compute="_compute_origin_sale_id")
 
     @api.depends("origin")
@@ -22,6 +22,22 @@ class StockPicking(models.Model):
                     record.origin_sale_id = False
                     continue
                 record.origin_sale_id = sale_id
+
+    def button_validate(self):
+
+        super().button_validate()
+
+        if not self.guide:
+            if self.shipping_type == 'shipment' and self.sequence_code == 'PACK':
+                guide_sequence_id = self.env.ref("stock_zmart.sequence_stock_number_guide")
+
+                if not guide_sequence_id:
+                    return
+
+                guide_sequence = guide_sequence_id._next()
+                self.update({
+                    'guide': guide_sequence
+                })
 
     def write(self, vals):
         res = super().write(vals)

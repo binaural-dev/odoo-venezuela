@@ -21,6 +21,7 @@
         'report/free_form_usd.xml',
         'views/account_move.xml',
         'views/account_payment.xml',
+        'wizard/wizard_confirm_account_move_view.xml',
         
     ],
     'images': ['static/description/icon.png'],

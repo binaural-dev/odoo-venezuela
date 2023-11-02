@@ -48,13 +48,18 @@ class AccountInvoice(models.Model):
         raise ValidationError(_( 'Cannot print an sale note with a fiscal journal'))
     
     def action_post(self):
-        res = super().action_post()
-        if not self.journal_id.fiscal:
-            self.state =  'draft'
-            for line in self.invoice_line_ids:
-                line.tax_ids = False
-            self.state =  'posted'
-        return res
+        do_original_method = self.env.context.get('do_original_method', False)
+
+        if do_original_method:
+            res = super().action_post()
+            if not self.journal_id.fiscal:
+                self.state =  'draft'
+                for line in self.invoice_line_ids:
+                    line.tax_ids = False
+                self.state =  'posted'
+            return res
+
+        return self.call_confirmation_wizard()
     
     def get_total_amount_excluding_taxes(self):
         excluded_tax_ids = [1, 2]
@@ -88,3 +93,21 @@ class AccountInvoice(models.Model):
             self.env, total_amount_foreign, currency_obj=self.foreign_currency_id
         )
         return total_amount_local, total_amount_foreign
+
+
+    def call_confirmation_wizard(self):
+
+        return {
+            'name': _('Confirmation'),
+            'type': 'ir.actions.act_window',
+            'view_type': 'form',
+            'view_mode': 'form',
+            'res_model': 'wizard.confirm.account.move',
+            'view_id': self.env.ref("invoice_zmart.view_confirm_account_move_form").id,
+            'target': 'new',
+            'context': {
+                'default_account_move_id': self.id,
+                'default_journal_id': self.journal_id.id,
+            }
+        }
+

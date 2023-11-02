@@ -46,6 +46,7 @@ class PosSession(models.Model):
         params = super()._loader_params_product_product()
         params["search_params"]["fields"].append("free_qty")
         params["search_params"]["fields"].append("qty_available")
+        params["search_params"]["fields"].append("detailed_type")
         return params
 
     def _get_pos_ui_product_product(self, params):

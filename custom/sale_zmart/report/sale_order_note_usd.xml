@@ -3,7 +3,6 @@
 
   <data>
 
-
     <template id="template_sale_order_delivery_note_usd">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="invoice">
@@ -328,17 +327,12 @@
 
                                                 <td class="text-end amount_col">
                                                     <strong>
-                                                        <span
-                                                            t-esc="subtotal['formatted_amount']"
-                                                        />
+                                                        <span t-out="invoice.get_total_amount_excluding_taxes()[0]"/>
                                                     </strong> 
                                                 </td>
-
                                                 <td class="text-end amount_col">
                                                     <strong>
-                                                        <span
-                                                            t-esc="foreign_subtotal['formatted_amount']"
-                                                        />
+                                                        <span t-out="invoice.get_total_amount_excluding_taxes()[1]"/>
                                                     </strong> 
                                                     
                                                 </td>
@@ -449,20 +443,6 @@
             </t>
         </t>
     </template>
-
-    <record id="action_report_sale_order_usd" model="ir.actions.report">
-        <field name="name">Print Quote/Order</field>
-        <field name="model">sale.order</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">sale_zmart.template_sale_order_delivery_note_usd</field>
-        <field name="report_file">sale_zmart.template_sale_order_delivery_note_usd</field>
-        <field name="attachment">object.name</field>
-        <field name="paperformat_id" ref="sale_zmart.paperformat_note"/>
-        <field name="binding_model_id" eval="False"/>
-        <field name="binding_type">report</field>
-        <field name="print_report_name">object.name</field>
-    </record>
-
 
   </data>
   

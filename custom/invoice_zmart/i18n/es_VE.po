@@ -303,6 +303,16 @@ msgid "Access Groups"
 msgstr "Grupos de acceso"
 
 #. module: invoice_zmart
+#: model:ir.model.fields,field_description:invoice_zmart.field_wizard_confirm_account_move__account_move_id
+msgid "Account Move"
+msgstr ""
+
+#. module: invoice_zmart
+#: model_terms:ir.ui.view,arch_db:invoice_zmart.view_confirm_account_move_form
+msgid "Action Confirm"
+msgstr "Accion de confirmación"
+
+#. module: invoice_zmart
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.template_invoice_delivery_note_bs
 msgid "Bs.F"
 msgstr ""
@@ -311,6 +321,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:invoice_zmart.field_res_groups__sale_note
 msgid "Can see sale note"
 msgstr ""
+
+#. module: invoice_zmart
+#: model_terms:ir.ui.view,arch_db:invoice_zmart.view_confirm_account_move_form
+msgid "Cancel"
+msgstr "Cancelar"
 
 #. module: invoice_zmart
 #. odoo-python
@@ -350,6 +365,28 @@ msgid "Cond. Pago:"
 msgstr ""
 
 #. module: invoice_zmart
+#: model_terms:ir.ui.view,arch_db:invoice_zmart.view_confirm_account_move_form
+msgid "Confirm"
+msgstr "Confirmar"
+
+#. module: invoice_zmart
+#: model:ir.model,name:invoice_zmart.model_wizard_confirm_account_move
+msgid "Confirm Wizard"
+msgstr "Wizard de confirmación"
+
+#. module: invoice_zmart
+#: model_terms:ir.ui.view,arch_db:invoice_zmart.view_confirm_account_move_form
+msgid "Confirmas el uso del diario:"
+msgstr ""
+
+#. module: invoice_zmart
+#. odoo-python
+#: code:addons/invoice_zmart/models/account_move.py:0
+#, python-format
+msgid "Confirmation"
+msgstr "Confirmación"
+
+#. module: invoice_zmart
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.template_digital_invoice
 msgid "Copia Fiel de la Original sin Derecho a Crédito Fiscal"
 msgstr ""
@@ -359,6 +396,16 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.template_invoice_free_form_bs
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.template_invoice_free_form_usd
 msgid "Correo del Comprador:"
+msgstr ""
+
+#. module: invoice_zmart
+#: model:ir.model.fields,field_description:invoice_zmart.field_wizard_confirm_account_move__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: invoice_zmart
+#: model:ir.model.fields,field_description:invoice_zmart.field_wizard_confirm_account_move__create_date
+msgid "Created on"
 msgstr ""
 
 #. module: invoice_zmart
@@ -410,6 +457,11 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.template_invoice_free_form_usd
 msgid "Dirección:"
 msgstr ""
+
+#. module: invoice_zmart
+#: model:ir.model.fields,field_description:invoice_zmart.field_wizard_confirm_account_move__display_name
+msgid "Display Name"
+msgstr "Nombre"
 
 #. module: invoice_zmart
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.template_invoice_delivery_note_bs
@@ -466,6 +518,11 @@ msgid "Free form usd"
 msgstr ""
 
 #. module: invoice_zmart
+#: model:ir.model.fields,field_description:invoice_zmart.field_wizard_confirm_account_move__id
+msgid "ID"
+msgstr ""
+
+#. module: invoice_zmart
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.account_move_form_zmart
 msgid "Imprimir Factura $"
 msgstr ""
@@ -498,9 +555,29 @@ msgid "Invoice Type"
 msgstr "Tipo de documento"
 
 #. module: invoice_zmart
+#: model:ir.model.fields,field_description:invoice_zmart.field_wizard_confirm_account_move__journal_id
+msgid "Journal"
+msgstr "Diario"
+
+#. module: invoice_zmart
 #: model:ir.model,name:invoice_zmart.model_account_move
 msgid "Journal Entry"
 msgstr "Asiento contable"
+
+#. module: invoice_zmart
+#: model:ir.model.fields,field_description:invoice_zmart.field_wizard_confirm_account_move____last_update
+msgid "Last Modified on"
+msgstr ""
+
+#. module: invoice_zmart
+#: model:ir.model.fields,field_description:invoice_zmart.field_wizard_confirm_account_move__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: invoice_zmart
+#: model:ir.model.fields,field_description:invoice_zmart.field_wizard_confirm_account_move__write_date
+msgid "Last Updated on"
+msgstr ""
 
 #. module: invoice_zmart
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.template_invoice_delivery_note_bs
@@ -672,6 +749,11 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.template_invoice_free_form_bs
 #: model_terms:ir.ui.view,arch_db:invoice_zmart.template_invoice_free_form_usd
 msgid "Vendedor:"
+msgstr ""
+
+#. module: invoice_zmart
+#: model_terms:ir.ui.view,arch_db:invoice_zmart.view_confirm_account_move_form
+msgid "en la factura."
 msgstr ""
 
 #. module: invoice_zmart

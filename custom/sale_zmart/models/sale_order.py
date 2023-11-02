@@ -1,10 +1,10 @@
-import logging
 from datetime import datetime, timedelta
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools.misc import formatLang
 
-_logger = logging.getLogger(__name__)
+
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
     
@@ -50,7 +50,7 @@ class SaleOrderZmart(models.Model):
             ("free", "Free"),
             ("collect_at_destination", "Collect at Destination"),
         ],
-        store = True
+        default=None
     )
     product_id = fields.Many2one(
         'product.template',
@@ -165,3 +165,19 @@ class SaleOrderZmart(models.Model):
                 'order_id': order.id,
             })
             cancel_wizard.with_context(active_ids=order.ids).action_cancel()
+
+    def get_total_amount_excluding_taxes(self):
+        excluded_tax_ids = [1, 2]
+        total_amount_local = 0.0
+        total_amount_foreign = 0.0
+
+        for order in self:
+            products = order.order_line.filtered(lambda line: not any(tax in line.tax_id.ids for tax in excluded_tax_ids))
+            total_amount_local += sum(products.mapped('price_subtotal'))
+            total_amount_foreign += sum(products.mapped('foreign_subtotal'))
+
+        total_amount_local = formatLang(self.env, total_amount_local, currency_obj=self.currency_id)
+        total_amount_foreign = formatLang(
+            self.env, total_amount_foreign, currency_obj=self.foreign_currency_id
+        )
+        return total_amount_local, total_amount_foreign

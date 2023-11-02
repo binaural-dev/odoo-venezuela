@@ -126,10 +126,10 @@
                                 </div>
                                <div style="overflow: auto;border-bottom: 1px solid black;font-size: 110%">
                                     <div style="float: left; width: 50%;">
-                                        <div style="text-align: center; padding: 1px; font-family: Arial;">
-                                            <div style="margin-top:4px;margin-left:-14px">
+                                        <div style="text-align: left; padding: 1px; font-family: Arial;">
+                                            <div style="margin-top:4px;">
                                                 <strong style="font-family: Arial">N° GUÍA:</strong>
-                                                <strong><span style="margin-right: 5px;font-family: Arial" t-field="o.guide"></span></strong>
+                                                <strong><span style="margin-right: 5px;font-family: Arial; font-size:13px;" t-field="o.guide"></span></strong>
                                             </div>
                                         </div>
                                     </div>
@@ -142,18 +142,19 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div style="margin-top:4px;font-size:16px">
+                                <div style="margin-top:4px;">
                                     <div style="width:100%;margin-top:10px">
-                                        <span style="margin-right: 1px;font-family: Arial"><strong>DOC DE VENTA:</strong></span>
-                                        <span style="font-family: Arial" t-field="o.origin"/>
+                                        <span style="margin-right: 1px;font-family: Arial;font-size:16px;"><strong>DOC DE VENTA:</strong></span>
+                                        <t t-set="invoice_name_list" t-value="', '.join(o.sale_id.invoice_ids.filtered(lambda x: x.state == 'posted').mapped('name'))"/>
+                                        <span style="font-family: Arial;font-size: 13px !important;" t-out="invoice_name_list"/>
                                     </div>
                                     <div style="width:100%">
-                                        <span style="margin-right: 1px;font-family: Arial"><strong>CLIENTE:  </strong></span>
-                                        <span style="font-family: Arial" t-field="o.partner_id.name" />
+                                        <span style="margin-right: 1px;font-family: Arial;font-size:16px;"><strong>CLIENTE:  </strong></span>
+                                        <span style="font-family: Arial;font-size:16px;" t-field="o.partner_id.name" />
                                     </div>
                                     <div style="width:100%">
-                                        <span style="margin-right: 1px;font-family: Arial"><strong>ESTADO:  </strong></span>
-                                        <span style="font-family: Arial" t-field="o.partner_id.state_id.name" />
+                                        <span style="margin-right: 1px;font-family: Arial;font-size:16px;"><strong>ESTADO:  </strong></span>
+                                        <span style="font-family: Arial;font-size:16px;" t-field="o.partner_id.state_id.name" />
                                     </div>
                                 </div>
                                 <div>
