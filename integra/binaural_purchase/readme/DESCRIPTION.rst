@@ -1,7 +1,6 @@
 #Binaural Compras
 
-Este modulo se encarga de realizar los calculos y guardar los montos en la moneda alterna 
-registrada en las compras asi como tambien validaciones.
+Este modulo se encarga de realizar los calculos y guardar los montos en la moneda alterna registrada en las compras asi como tambien validaciones.
 
 Este añade los siguientes campos:
 

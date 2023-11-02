@@ -29,6 +29,7 @@ FIELDPARTNER = [
     "seller_id",
     "total_due",
     "withholding_type_id",
+    "display_name",
 ]
 FIELDNAMES = [
     "id",
@@ -81,9 +82,11 @@ class AccountMovePayments(http.Controller):
         advance_customer_id = request.env.company.advance_customer_account_id.id
         
         for partner in partners:
-            domain_customer = [("partner_id", "=", partner.get("id")),
+            domain_customer = [
+                            ("partner_id", "=", partner.get("id")),
                             ("account_id", "=", advance_customer_id),
-                            ("move_id.state", "=", "posted")]
+                            ("move_id.state", "=", "posted")
+                        ]
 
             advance_lines = request.env["account.move.line"].search(domain_customer)
 

@@ -51,7 +51,10 @@
                                 <span><strong>Total Facturado:</strong><t t-out="o.reversed_entry_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/></span>
                                 <br/>
                             </t>
+                            <p><strong>Nro de Pedido:</strong><t t-out="o.invoice_origin"/></p>
                             <p><strong>Fecha:</strong> <t t-out="o.invoice_date.strftime('%d/%m/%Y')"/></p>
+                            
+                        
                         </div>
                     </div>
 

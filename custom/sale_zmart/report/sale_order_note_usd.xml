@@ -327,17 +327,12 @@
 
                                                 <td class="text-end amount_col">
                                                     <strong>
-                                                        <span
-                                                            t-esc="subtotal['formatted_amount']"
-                                                        />
+                                                        <span t-out="invoice.get_total_amount_excluding_taxes()[0]"/>
                                                     </strong> 
                                                 </td>
-
                                                 <td class="text-end amount_col">
                                                     <strong>
-                                                        <span
-                                                            t-esc="foreign_subtotal['formatted_amount']"
-                                                        />
+                                                        <span t-out="invoice.get_total_amount_excluding_taxes()[1]"/>
                                                     </strong> 
                                                     
                                                 </td>
