@@ -138,7 +138,7 @@
                                         </tr>
                                         <tr>
                                             <th style="width:700px;font-weight:normal;font-size:17px;padding-right:40px">
-                                                <div style="text-transform: uppercase;display:inline;">Dirección</div>
+                                                <div style="display:inline;">Dirección:</div>
                                                 <span style="margin-left:3px" t-out="invoice.partner_id.contact_address_complete"/>
                                             </th>
                                         </tr>
@@ -171,7 +171,8 @@
                                         <t t-set="iva_16" t-value="0.00"/>
                                         <t t-set="base_8" t-value="0.00"/>
                                         <t t-set="iva_8" t-value="0.00"/>
-                                        <t t-foreach="invoice.invoice_line_ids" t-as="line">
+                                        <t t-set="lines" t-value="invoice.invoice_line_ids.sorted(key=lambda l: (-l.sequence, l.date, l.move_name, -l.id), reverse=True)"/>
+                                        <t t-foreach="lines" t-as="line">
                                             <tr style="height:25px">
                                                 <t t-set="base_sin_descuento"
                                                     t-value="base_sin_descuento + (line.quantity * line.foreign_price)"/>
