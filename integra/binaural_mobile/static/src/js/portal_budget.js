@@ -56,7 +56,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
                             ret.push({
                                 id: client.id,
-                                text: client.name,
+                                text: client.display_name,
                                 isNew: false,
                             });
                             self.partners.push(client); 
@@ -252,7 +252,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                         multiplesLabel = packaged_product ? `<label class="form-text">Solo multiplos de ${packagingQty}</label><input type='hidden' id='product_qty_pack' value='${packagingQty}'/><br/>`: ``;
                     }
 
-                    if(type == "Servicio" || type == "Consumible" || type == "consu" || type || "service"){
+                    if(type != "product"){
                         quantity = 999
                     }
 

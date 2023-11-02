@@ -112,7 +112,7 @@ class AccountPaymentPayments(http.Controller):
                             total_residual = payment.amount_residual
 
                             if total_residual < 0 and invoice.amount_residual != 0:
-                                (payment + invoice).reconcile(from_app=True)
+                                (payment + invoice).sudo().reconcile(from_app=True)
                                 advance_pays += payment.move_id.payment_id
 
                 if payments:
@@ -325,14 +325,13 @@ class AccountPaymentPayments(http.Controller):
         pays = pays_registered.mapped("move_id.line_ids").filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
         )
-
         for invoice in invoices:
             total_residual = 0
             for payment in pays:
                 total_residual += payment.amount_residual
 
             if total_residual < 0:
-                (pays + invoice).reconcile(from_app=True)
+                (pays + invoice).sudo().reconcile(from_app=True)
 
         return pays_registered, payments_igtf
 
