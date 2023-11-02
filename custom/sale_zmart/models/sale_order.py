@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.misc import formatLang
+
 
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
