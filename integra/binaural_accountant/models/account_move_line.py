@@ -116,6 +116,31 @@ class AccountMoveLine(models.Model):
                 line.foreign_balance = 0.0
             line.foreign_balance = line.foreign_debit - line.foreign_credit
 
+    @api.depends("foreign_rate", "balance")
+    def _compute_amount_currency(self):
+        for line in self:
+            if line.amount_currency is False:
+                line.amount_currency = line.currency_id.round(line.balance * line.foreign_rate)
+            if line.currency_id == line.company_id.currency_id:
+                line.amount_currency = line.balance
+
+    @api.onchange("amount_currency", "currency_id")
+    def _inverse_amount_currency(self):
+        for line in self:
+            if (
+                line.currency_id == line.company_id.currency_id
+                and line.balance != line.amount_currency
+            ):
+                line.balance = line.amount_currency
+            elif (
+                line.currency_id != line.company_id.currency_id
+                and not line.move_id.is_invoice(True)
+                and not self.env.is_protected(self._fields["balance"], line)
+            ):
+                line.balance = line.company_id.currency_id.round(
+                    line.amount_currency / line.foreign_rate
+                )
+
     def _prepare_analytic_distribution_line(
         self, distribution, account_id, distribution_on_each_plan
     ):
