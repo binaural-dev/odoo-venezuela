@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.misc import formatLang
+
 
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
@@ -106,14 +108,6 @@ class SaleOrderZmart(models.Model):
     def button_sale_order_note(self):
         return self.env.ref('sale_zmart.action_report_sale_order_usd').report_action(self)
         # return self.env.ref('sale.action_report_saleorder').report_action(self)
-
-    def button_format_sale_note(self):
-        sale_order_ids = self.env.context.get('active_ids', [])
-        return self.env.ref("sale_zmart.action_report_sale_order_usd").report_action(docids=sale_order_ids)
-
-    def button_format_sale_note_bs(self):
-        sale_order_ids = self.env.context.get('active_ids', [])
-        return self.env.ref("sale_zmart.action_report_sale_order_bs").report_action(docids=sale_order_ids)
 
     def action_open_delivery_wizard(self):
         super().action_open_delivery_wizard()

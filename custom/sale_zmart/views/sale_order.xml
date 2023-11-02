@@ -29,14 +29,6 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree" />
         <field name="arch" type="xml">
-
-            <xpath expr="//field[1]" position="before">
-                <header>
-                    <button name="button_format_sale_note" string="Imprimir Nota de Entrega $" type="object" class="oe_highlight" />
-                    <button name="button_format_sale_note_bs" string="Imprimir Nota de Entrega Bs" type="object" class="oe_highlight" />
-                </header>
-            </xpath>
-
             <xpath expr="//field[@name='user_id']" position="before">
                 <field name="priority_sale"/>
                 <field name="shipping_type"/>

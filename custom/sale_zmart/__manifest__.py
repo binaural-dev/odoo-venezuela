@@ -24,7 +24,6 @@
         "report/report_sale.xml",
         "report/stock_report_view.xml",
         "report/sale_order_note_usd.xml",
-        "report/sale_order_note_bs.xml",
         "views/sale_order.xml",
         "views/stock_picking.xml",
         "views/res_company.xml",
