@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230928\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230606\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 21:34+0000\n"
-"PO-Revision-Date: 2023-10-26 21:34+0000\n"
+"POT-Creation-Date: 2023-11-02 22:44+0000\n"
+"PO-Revision-Date: 2023-11-02 22:44+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -61,7 +61,7 @@ msgstr ""
 #. module: stock_zmart
 #: model:ir.model,name:stock_zmart.model_res_company
 msgid "Companies"
-msgstr "compañías"
+msgstr "Compañías"
 
 #. module: stock_zmart
 #: model:ir.model.fields,field_description:stock_zmart.field_stock_warehouse_operator__company_id
@@ -90,8 +90,23 @@ msgstr ""
 
 #. module: stock_zmart
 #: model_terms:ir.ui.view,arch_db:stock_zmart.report_albaran_zmart
+msgid "FAC:"
+msgstr ""
+
+#. module: stock_zmart
+#: model_terms:ir.ui.view,arch_db:stock_zmart.report_albaran_zmart
+msgid "Fecha Solicitud:"
+msgstr ""
+
+#. module: stock_zmart
+#: model_terms:ir.ui.view,arch_db:stock_zmart.report_albaran_zmart
 msgid "From"
 msgstr ""
+
+#. module: stock_zmart
+#: model:ir.model.fields,field_description:stock_zmart.field_stock_picking__guide
+msgid "Guide"
+msgstr "N° de Guia"
 
 #. module: stock_zmart
 #: model:ir.model.fields,field_description:stock_zmart.field_stock_warehouse_operator__id
@@ -119,6 +134,11 @@ msgid "Last Updated on"
 msgstr ""
 
 #. module: stock_zmart
+#: model_terms:ir.ui.view,arch_db:stock_zmart.report_albaran_zmart
+msgid "N/E:"
+msgstr ""
+
+#. module: stock_zmart
 #: model:ir.model.fields,field_description:stock_zmart.field_stock_warehouse_operator__name
 msgid "Name"
 msgstr ""
@@ -131,6 +151,11 @@ msgstr ""
 #. module: stock_zmart
 #: model_terms:ir.ui.view,arch_db:stock_zmart.res_config_settings_view_form_binaural_stock
 msgid "Operadores de Almacén"
+msgstr ""
+
+#. module: stock_zmart
+#: model:ir.model.fields,field_description:stock_zmart.field_stock_picking__origin_sale_id
+msgid "Origin Sale"
 msgstr ""
 
 #. module: stock_zmart
@@ -152,6 +177,16 @@ msgstr ""
 #. module: stock_zmart
 #: model_terms:ir.ui.view,arch_db:stock_zmart.report_albaran_zmart
 msgid "Prioridad:"
+msgstr ""
+
+#. module: stock_zmart
+#: model:ir.ui.menu,name:stock_zmart.menu_ir_sequence_form_guide_number
+msgid "Seq. Inventario Número de Guía"
+msgstr ""
+
+#. module: stock_zmart
+#: model:ir.actions.act_window,name:stock_zmart.ir_sequence_form_guide_number
+msgid "Sequencia de Inventario Número de Guía"
 msgstr ""
 
 #. module: stock_zmart
@@ -185,7 +220,7 @@ msgstr "Total del peso de los productos en la orden de entrega."
 #. module: stock_zmart
 #: model:ir.model,name:stock_zmart.model_stock_picking
 msgid "Transfer"
-msgstr "Transferir"
+msgstr "Albarán"
 
 #. module: stock_zmart
 #: model:ir.model.fields,field_description:stock_zmart.field_res_company__warehouse_operator_ids
