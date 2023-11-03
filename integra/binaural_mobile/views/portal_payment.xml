@@ -28,7 +28,7 @@
                 <t t-if="payments" t-call="portal.portal_table">
                     <thead>
                         <tr class="active">
-                            <th>Payment Date</th>
+                            <th>Date</th>
                             <th>Customer</th>
                             <th class="text-end">Amount</th>
                         </tr>
