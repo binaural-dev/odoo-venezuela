@@ -5,7 +5,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.6.11",
+    "version": "16.6.12",
     "category": "Hr/Invoicing/Account",
     "depends": [
         "account",
@@ -14,6 +14,9 @@
         "binaural_rate",
     ],
     "data": [
+        "data/res_partner.xml",
+        "data/res_users.xml",
+        "data/hr_employee.xml",
         "views/account_move.xml",
         "views/res_partner.xml",
         "views/res_config_settings.xml",

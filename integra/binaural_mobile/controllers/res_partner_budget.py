@@ -27,6 +27,7 @@ FIELDNAMES = [
     "child_ids",
     "active",
     "seller_id",
+    "display_name",
 ]
 CHILDFIELDNAMES = ["street", "id", "type"]
 CHILD_TYPES = ["invoice", "delivery"]

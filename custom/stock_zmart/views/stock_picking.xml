@@ -18,6 +18,9 @@
                     <attribute name="attrs">{'required': [('state', '=', 'assigned')]}</attribute>
                 </field>
     
+                <xpath expr="//page[@name='extra']/group//group[@name='carrier_data']/div[@name='tracking']//field[@name='carrier_tracking_ref']" position="attributes">
+                    <attribute name="string">Guía de Proveedor</attribute>
+                </xpath>
             </field>
         </record>
     </data>
