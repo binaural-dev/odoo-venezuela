@@ -13,6 +13,11 @@
                 <xpath expr="//field[@name='origin']" position="after">
                     <field name="warehouse_operator_id"/>
                 </xpath>
+
+                <field name="warehouse_operator_id" position="attributes">
+                    <attribute name="attrs">{'required': [('state', '=', 'assigned')]}</attribute>
+                </field>
+    
             </field>
         </record>
     </data>
