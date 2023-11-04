@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-	<record id="view_res_users_form_inherit" model="ir.ui.view">
-		<field name="name">res.users.form.inherit</field>
+	<record id="view_res_users_form_inherit_binaural" model="ir.ui.view">
+		<field name="name">res.users.form.inherit.binaural</field>
 		<field name="model">res.users</field>
 		<field name="inherit_id" ref="base.view_users_form"/>
 		<field name="arch" type="xml">
-			<xpath expr="//sheet/notebook/page[@name='access_rights']" position="inside">
-				<group string="">
-					<field name="authorized_discount_pos"/>
-				</group>
+			<xpath expr="//div[hasclass('oe_title')]//field[@name='partner_id']" position="after">
+					<!-- <field name="authorized_discount_pos"/> -->
 			</xpath>
 		</field>
 	</record>
-</odoo>
