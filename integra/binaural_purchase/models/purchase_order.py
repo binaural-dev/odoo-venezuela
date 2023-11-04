@@ -1,6 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from lxml import etree
+from odoo.tools.float_utils import float_is_zero
 
 
 class PurchaseOrder(models.Model):
@@ -87,7 +88,11 @@ class PurchaseOrder(models.Model):
     def _check_taxes_id(self):
         for order in self:
             for line in order.order_line:
-                if len(line.taxes_id) != 1 and not line.display_type and self.env.company.unique_tax:
+                if (
+                    len(line.taxes_id) != 1
+                    and not line.display_type
+                    and self.env.company.unique_tax
+                ):
                     raise ValidationError(_("All products must contain only one tax."))
 
     @api.depends("tax_totals")
@@ -191,7 +196,7 @@ class PurchaseOrder(models.Model):
         """
         self._compute_rate()
 
-    @api.depends("date_order")
+    @api.depends("date_order", "date_approve")
     def _compute_rate(self):
         """
         Compute the rate of the purchase order using the compute_rate method of the
@@ -199,6 +204,13 @@ class PurchaseOrder(models.Model):
         """
         Rate = self.env["res.currency.rate"]
         for purchase in self:
+            if (
+                not self.env.company.update_purchase_order_rate_using_date_order
+                and not float_is_zero(
+                    purchase.foreign_rate, precision_rounding=self.env.company.currency_id.rounding
+                )
+            ):
+                continue
             date_order = (
                 purchase.date_approve.date()
                 if purchase.date_approve

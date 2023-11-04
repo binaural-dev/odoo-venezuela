@@ -8,7 +8,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock / Inventory",
-    "version": "16.3",
+    "version": "16.4",
     "depends": ["stock", "sale_stock", "purchase_stock", "binaural_sale", "binaural_purchase"],
     "data": [
         # 'security/ir.model.access.csv',
