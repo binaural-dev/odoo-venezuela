@@ -3,6 +3,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import index_exists, drop_index
 from lxml import etree
 from collections import defaultdict
+from odoo.tools.misc import formatLang
 
 import logging
 
@@ -89,6 +90,36 @@ class AccountMove(models.Model):
             "Another entry with the same name already exists.",
         ),
     ]
+
+    detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
+
+    @api.depends("invoice_line_ids")
+    def _compute_detailed_amounts(self):
+        for record in self:
+            discount_amount = 0
+            total = 0
+            for line in record.invoice_line_ids:
+                subtotal = line.price_unit * line.quantity
+                amount_taxed = 0
+                if line.tax_ids:
+                    amount_taxed = subtotal * (line.tax_ids.amount / 100)
+                total += subtotal + amount_taxed
+
+                if line.discount > 0:
+                    discount_amount += subtotal - line.price_subtotal
+
+            record.detailed_amounts = dict(
+                {
+                    "gross_amount": total,
+                    "discount_amount": discount_amount,
+                    "formatted_gross_amount": formatLang(
+                        self.env, total, currency_obj=self.currency_id
+                    ),
+                    "formatted_discount_amount": formatLang(
+                        self.env, discount_amount, currency_obj=self.currency_id
+                    ),
+                }
+            )
 
     def _auto_init(self):
         res = super()._auto_init()

@@ -16,6 +16,7 @@
 
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="vat"/>
+                <field name="detailed_amounts"/>
             </xpath>
 
             <xpath expr="//notebook" position="inside">

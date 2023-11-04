@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_account_invoices_details_report" model="ir.actions.report">
+        <field name="name">Sale Details</field>
+        <field name="model">account.invoices.details</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">binaural_accountant.report_account_invoices_details</field>
+    </record>
+
+    <template id="report_account_invoices_details">
+        <t t-set="company" t-value="env.company"/>
+        <t t-call="web.html_container">
+        <t t-call="web.basic_layout">
+            <div class="text-center">
+                <h2 t-out="company.name"/>
+                <p t-out="company.vat" />
+                <p>Sales Report</p>
+                <span>From <t t-out="str(date_from)"/> to <t t-out="str(date_to)"/></span>
+            </div>
+            <br/>
+            <br/>
+            <div name="date_now">
+                <p>Date of issue: <t t-out="str(date_now)"/></p>
+            </div>
+            <hr/>
+            <t t-foreach="journal_ids" t-as="journal">
+                <t t-set="journal_id" t-value="str(journal['id'])"/>
+                <div name="journal">
+                    <b t-out="journal['name']"/>
+                </div>
+                <hr/>
+                <t t-foreach="invoice_move_type" t-as="move_type">
+                    <t t-set="move_type_id" t-value="move_type['type']"/>
+                    <t t-if="invoices[journal_id][move_type_id]">
+                        <div name="invoices_journal">
+                            <b t-out="move_type['name']"/>
+                        </div>
+                        <hr/>
+                        <div class="row">
+                            <div class="col-3">
+                                <p>
+                                N Document
+                                </p>
+                            </div>
+                            <div class="col-3 text-center">
+                                <p>
+                                Gross amount 
+                                </p>
+                            </div>
+                            <div class="col-3 text-center">
+                                <p>
+                                Discount
+                                </p>
+                            </div>
+                            <div class="col-3 text-center">
+                                <p>
+                                Net Amount
+                                </p>
+                            </div>
+                        </div>
+                        <t t-foreach="payment_term_ids" t-as="term_id">
+                            <t t-set="term" t-value="str(term_id['id'])"/>
+                            <t t-if="invoices[journal_id][move_type_id][term]">
+                                <div class="payment_deadline">
+                                    <p t-out="term_id['name']"/>
+                                </div>
+                                <hr/>
+
+                                <t t-foreach="invoices[journal_id][move_type_id][term]" t-as="invoice">
+                                    <div class="row">
+                                        <div class="col-3">
+                                            <p t-out="invoice.name"></p>
+                                        </div>
+                                        <div class="col-3 text-center">
+                                            <p t-out="invoice.detailed_amounts['formatted_gross_amount']"/>
+                                        </div>
+                                        <div class="col-3 text-center">
+                                            <p t-out="invoice.detailed_amounts['formatted_discount_amount']"/>
+                                        </div>
+                                        <div class="col-3 text-center">
+                                            <p t-out="invoice.tax_totals['formatted_amount_total']"></p>
+                                        </div>
+                                    </div>
+                                </t>
+                                <div class="row">
+                                    <t t-set="totals_term" t-value="invoices[journal_id][move_type_id]['totals_'+term]"/>
+                                    <div class="col-3">
+                                        <strong>
+                                                Total <t t-out="term_id['name']"/> 
+                                        </strong>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <strong t-out="totals_term['formatted_gross_amount']"></strong>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <strong t-out="totals_term['formatted_discount_amount']"></strong>
+                                    </div>
+                                    <div class="col-3 text-center">
+                                        <strong t-out="totals_term['formatted_total_amount']"></strong>
+                                    </div>
+                                </div>
+                                <hr/>
+
+                            </t>
+                        </t>
+                        <div class="row">
+                            <t t-set="totals_move_type" t-value="invoices[journal_id]['totals_' + move_type_id]"/>
+                            <div class="col-3">
+                                <strong>Total <t t-out="move_type['name']"/></strong>
+                            </div>
+                            <div class="col-3 text-center">
+                                <strong t-out="totals_move_type['formatted_gross_amount']"></strong>
+                            </div>
+                            <div class="col-3 text-center">
+                                <strong t-out="totals_move_type['formatted_discount_amount']"></strong>
+                            </div>
+                            <div class="col-3 text-center">
+                                <strong t-out="totals_move_type['formatted_total_amount']"></strong>
+                            </div>
+                        </div>
+                        <hr/>
+                    </t>
+                </t>
+            </t>
+            <div>
+                <strong>Payments</strong>
+            </div>
+            <hr/>
+            <div class="row">
+                <div class="col-2">
+                    <p>
+                    N Document
+                    </p>
+                </div>
+                <div class="col-2 text-center">
+                    <p>
+                        Client 
+                    </p>
+                </div>
+                <div class="col-2 text-center">
+                    <p>
+                        Payment 
+                    </p>
+                </div>
+                <div class="col-1 text-center">
+                    <p>
+                        Date
+                    </p>
+                </div>
+                <div class="col-2 text-center">
+                    <p>
+                        USD Amount
+                    </p>
+                </div>
+                <div class="col-1 text-center">
+                    <p>
+                        Rate
+                    </p>
+                </div>
+                <div class="col-2 text-center">
+                    <p>
+                        BS Amount
+                    </p>
+                </div>
+            </div>
+            <hr/>
+            <t t-foreach="p_payment_term_ids" t-as="term_id">
+                <t t-set="term" t-value="str(term_id['id'])"/>
+                <t t-if="payments[term]">
+                    <div class="payment_deadline">
+                        <p t-out="term_id['name']"/>
+                    </div>
+                    <hr/>
+                    <t t-foreach="p_journals_ids" t-as="journal_id">
+                        <t t-set="journal" t-value="str(journal_id['id'])"/>
+                        <t t-if="payments[term][journal]">
+                            <div class="payment_journal">
+                                <p t-out="journal_id['name']"/>
+                            </div>
+                            <hr/>
+                            <t t-foreach="payments[term][journal]" t-as="obj">
+                                <t t-set="i" t-value="obj['invoice']"/>
+                                <t t-set="p" t-value="obj['payment']"/>
+                                <div class="row">
+                                    <div class="col-2">
+                                        <p><t t-out="i.name"/></p>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <p><t t-out="i.partner_id.name"/></p>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <p><t t-out="p.name"/></p>
+                                    </div>
+                                    <div class="col-1 text-center">
+                                        <p><t t-out="p.date"/></p>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <t t-if="p.currency_id.id == %(base.USD)d">
+                                            <p><t t-out="p.amount"/></p>
+                                        </t>
+                                        <t t-else="">
+                                            <p><t t-out="p.move_id.line_ids[0].debit"/></p>
+                                        </t>
+                                    </div>
+                                    <div class="col-1 text-center">
+                                        <p><t t-out="p.foreign_rate"/></p>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <t t-if="p.currency_id.id != %(base.USD)d">
+                                            <p><t t-out="p.amount"/></p>
+                                        </t>
+                                        <t t-else="">
+                                            <p><t t-out="p.amount * p.foreign_rate"/></p>
+                                        </t>
+                                    </div>
+                                </div>
+                            </t>
+                        </t>
+                    </t>
+                </t>
+            </t>
+        </t>
+        </t>
+    </template>
+</odoo>
