@@ -5,8 +5,7 @@
 	    <article class="product" tabindex="0" t-on-keypress="spaceClickProduct"
                  t-on-click="() => this.trigger('click-product', props.product)"
                  t-att-data-product-id="props.product.id"
-		 t-attf-aria-labelledby="article_product_{{props.product.id}}"
-		 t-if="!show_just_products_with_available_qty || (show_just_products_with_available_qty &amp;&amp; free_qty &gt; 0)">
+		 t-attf-aria-labelledby="article_product_{{props.product.id}}">
                 <t t-if="props.product.image_128">
                     <div class="product-img">
                         <img t-att-src="imageUrl" t-att-alt="props.product.display_name" />
