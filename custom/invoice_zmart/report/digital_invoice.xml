@@ -24,19 +24,30 @@
                         <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/>
                         <div class="row">
                             <div class="col-5">
-                                <div style="text-align:center">
-                                    <img
-                                        t-if="o.company_id.logo"
-                                        t-att-src="image_data_uri(o.company_id.logo)"
-                                        height="90"
-                                        width="90"
-                                        style="display: inline-block; vertical-align: middle; object-fit:contain;"
-                                    />
-                                </div>
-                                <div style="text-align: center;margin-top:10px">
-                                    <span style="font-size: 12px;">
-                                        <t t-out="o.company_id.company_details"/>
-                                    </span>
+                                <div class="row">
+                                    <div class="col-auto" style="min-width: 100px;">
+                                        <img
+                                            t-if="o.company_id.logo"
+                                            t-att-src="image_data_uri(o.company_id.logo)"
+                                            height="90"
+                                            width="90"
+                                            style="display: inline-block; vertical-align: middle; object-fit:contain;"
+                                        />
+                                    </div>
+                                    <div style="text-align: left;display: inline-block;" class="col-7">
+
+                                        <span style="font-size: 12px;">
+                                            <t t-out="o.company_id.name"/>
+                                        </span>
+                                        <br />
+                                        <span style="font-size: 12px;">
+                                            RIF: <t t-out="o.company_id.vat"/>
+                                        </span>
+                                        <br />
+                                        <span style="font-size: 12px;">
+                                            Dirección: <t t-out="o.company_id.street"/>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-4">
