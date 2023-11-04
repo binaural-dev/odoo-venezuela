@@ -38,21 +38,34 @@
                                                 <span t-out="o.document_number_invoice"/></th>
                                         </tr>
                                     </table>
+
                                     <table style="width:700px; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
                                         <tr>
                                             <th style="font-weight:normal; text-align: left;">T/Entrega: <span t-field="o.shipping_type"/></th>
                                         </tr>
                                     </table>
+
+                                    <table style="width:700px; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;" t-if="o.shipping_type == 'shipment'">
+                                        <tr>
+                                            <th style="font-weight:normal; text-align: left;">Medio de Envío: <span t-field="o.shipping_mean"/></th>
+                                        </tr>
+                                        <tr>
+                                            <th style="font-weight:normal; text-align: left;">Métodos de Envío: <span t-field="o.shipping_method"/></th>
+                                        </tr>
+                                    </table>
+
                                     <table style="width:700px; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
                                         <tr>
                                             <th style="font-weight:normal; text-align: left;">Prioridad: <span t-field="o.priority_sale"/></th>
                                         </tr>
                                     </table>
+
                                     <table style="width:60%; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
                                         <tr>
-                                            <th style="font-weight:normal; border: 1px solid white;text-align: left">Cliente: <span style="text-align: left" t-field="o.partner_id.name"/></th>
+                                            <th style="font-weight:normal; border: 1px solid white;text-align: left">Cliente: <span style="text-align: left" t-field="o.sale_id.partner_id"/></th>
                                         </tr>
                                     </table>
+
                                     <table t-if="o.origin_sale_id" style="width:60%; border: 2px solid #fff; border-collapse: collapse; line-height: 1.4;">
                                         <tr>
                                             <th style="font-weight:normal; border: 1px solid white;text-align: left">Fecha Solicitud: <span style="text-align: left" t-field="o.origin_sale_id.date_order"/></th>
