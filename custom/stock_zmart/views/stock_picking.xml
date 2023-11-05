@@ -1,0 +1,27 @@
+<odoo>
+    <data>
+        <record id="view_picking_form_inherited_zmart" model="ir.ui.view">
+            <field name="name">stock.picking.form.zmart</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//button[@name='button_scrap']" position="before">
+                    <button string="Picking Order" type="object" name="print_operation_albaran"  attrs="{'invisible': [('sequence_code', '!=', 'PICK')]}"/>
+                    <button string="Imprimir" type="object" name="do_print_picking" invisible="1"/>
+                    <xpath expr="//button[@name='action_sale_quotations_new']" position="replace"/>
+                </xpath>
+                <xpath expr="//field[@name='origin']" position="after">
+                    <field name="warehouse_operator_id"/>
+                </xpath>
+
+                <field name="warehouse_operator_id" position="attributes">
+                    <attribute name="attrs">{'required': [('state', '=', 'assigned')]}</attribute>
+                </field>
+    
+                <xpath expr="//page[@name='extra']/group//group[@name='carrier_data']/div[@name='tracking']//field[@name='carrier_tracking_ref']" position="attributes">
+                    <attribute name="string">Guía de Proveedor</attribute>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

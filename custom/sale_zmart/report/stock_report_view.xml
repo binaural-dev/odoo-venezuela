@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="action_print_label" model="ir.actions.report">
+            <field name="name">Print Label</field>
+            <field name="model">stock.picking</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">sale_zmart.report_print_label</field>
+            <field name="report_file">sale_zmart.report_print_label</field>
+            <field name="print_report_name">'Picking Operations - %s - %s' % (object.partner_id.name or '', object.name)</field>
+            <field name="paperformat_id" ref="sale_zmart.paperformat_custom"/>
+            <field name="binding_model_id" eval="False"/>
+            <field name="binding_type">report</field>
+        </record>
+        
+        <template id="report_print_label">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-foreach="range(int(o.package_qty))" t-as="i">
+                        <t t-call="web.basic_layout">
+                            <style>
+                                section {
+                                    border: 1px solid black;
+                                    border-radius: 5px;
+                                    margin-top: 0px;
+                                    padding-left: 10px;
+                                    padding-right: 10px;
+                                    height:15cm;
+                                    margin-left:-20px;
+                                    
+                                }
+                                table td, table th {
+                                    border: 1px solid white;
+                                    line-height: 1.1;
+                                }
+                                .container {
+                                    position: relative;
+                                    width:375px;
+                                }
+                                .box {
+                                    position: absolute;
+                                    height: 85px;
+                                    border-bottom: 1px solid black;
+                                    box-sizing: border-box;
+                                    
+                                }
+                                .box:first-child {
+                                    left: 0;
+                                    border-right: 1px solid black;
+                                    right: 50%;
+                                    margin-left: -20px;
+                                }
+                                .box:last-child {
+                                    right: 0;
+                                    left: 50%;
+                                }
+                            </style>
+                            <div class="container">
+                                <div class="box"></div>
+                                <div class="box"></div>
+                            </div>
+                            <section id="segmento_1" style="font-size: 0.8em; line-height: 0.8em; width: 10.5cm;height:16cm;">
+                                <div style="display: inline-block; text-align: center; width: 100%;margin-top:-10px">
+                                    <img t-if="o.company_id.logo_2"
+                                        t-att-src="image_data_uri(o.company_id.logo_2)"
+                                        height="60"
+                                        width="165"
+                                        class="mr-3 mt-1" style="display: inline-block; vertical-align: middle;padding-right:5px;padding-top:5px"/>
+                                    <div style="display: inline-block; vertical-align: middle; width: 50%">
+                                        <div class="col-8">
+                                            <table style="display: inline-block; vertical-align: middle;width:150%;margin-top:13px;margin-left:18px">
+                                                <tr style="text-align:left;padding-left:5px;font-family: Arial">
+                                                    <th style="text-align:left;padding-left:5px;font-weight: Bold;">EMISOR:</th>
+                                                </tr>
+                                                <tr style="text-align:left;font-family: Arial">
+                                                    <th style="text-align:left;padding-left:5px;font-weight: normal"><span t-field="o.company_id"/></th>
+                                                </tr>
+                                                <tr style="text-align:left;font-family: Arial">
+                                                    <th style="width:80%;padding-left:5px;font-weight: normal">R.I.F.:<span t-field="o.company_id.vat"/></th>
+                                                </tr>
+                                                <tr style="text-align:left;font-family: Arial">
+                                                    <th style="width:80%;padding-left:5px;font-weight: normal">TLF:<span t-field="o.company_id.phone"/></th>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; flex-wrap: wrap;border-bottom: 1px solid black;">
+                                    <div style="flex: 1 1 100%; margin-bottom: 0.5em;font-size: 10px">
+                                        <div style="font-family: Arial;margin-top:15px"><strong>DESTINATARIO:</strong></div>
+                                        <div>  
+                                            <span style="margin-right: 1px;font-family: Arial"><strong>Nombre/Razón Social:</strong></span>
+                                            <span style="font-family: Arial" t-out="o.partner_id.name"/>
+                                        </div>
+                                        <div>
+                                            <span style="margin-right: 1px;font-family: Arial"><strong>Cédula/RIF:</strong></span>
+                                            <span style="font-family: Arial" t-out="o.partner_id.prefix_vat"/>
+                                            <span style="font-family: Arial" t-out="o.partner_id.vat"/>
+                                        </div>
+                                        <div>
+                                            <span style="margin-right: 1px; font-family: Arial;"><strong>Contacto:</strong></span>
+                                            <t t-set="child_count" t-value="len(o.partner_id.child_ids)"/>
+                                            <t t-foreach="o.partner_id.child_ids" t-as="child">
+                                                <span style="font-family: Arial;" t-esc="child.name"/>
+                                                <t t-if="not child and child_count > 1">, </t>
+                                            </t>
+                                        </div>
+                                        <div>
+                                            <span style="margin-right: 1px;font-family: Arial"><strong>TLF:</strong></span>
+                                            <span style="font-family: Arial" t-out="o.partner_id.phone"/>
+                                        </div>
+                                        <div>
+                                            <span style="margin-right: 1px;font-family: Arial"><strong>Ciudad:</strong></span>
+                                            <span style="font-family: Arial" t-out="o.partner_id.city_id.name"/>
+                                        </div>
+                                        <div>
+                                            <span style="margin-right: 1px;font-family: Arial"><strong>Estado:</strong></span>
+                                            <span style="font-family: Arial" t-out="o.partner_id.state_id.name"/>
+                                        </div>
+                                        <div style="text-align: justify;">
+                                            <span style="margin-right: 1px; font-family: Arial;"><strong>Dirección:</strong></span>
+                                            <span style="font-family: Arial;" t-out="o.partner_id.contact_address_complete"/>
+                                        </div>
+                                    </div>
+                                </div>
+                               <div style="overflow: auto;border-bottom: 1px solid black;font-size: 110%">
+                                    <div style="float: left; width: 50%;">
+                                        <div style="text-align: left; padding: 1px; font-family: Arial;">
+                                            <div style="margin-top:4px;">
+                                                <strong style="font-family: Arial">N° GUÍA:</strong>
+                                                <strong><span style="margin-right: 5px;font-family: Arial; font-size:13px;" t-field="o.guide"></span></strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="float: left; width: 50%;">
+                                        <div style="text-align: center; padding: 1px; font-family: Arial;">
+                                            <div style="margin-top:4px">
+                                                <strong style="font-family: Arial">PESO:</strong>
+                                                <strong><span style="font-family: Arial" t-out="o.shipping_weight"></span>Kg</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="margin-top:4px;">
+                                    <div style="width:100%;margin-top:10px">
+                                        <span style="margin-right: 1px;font-family: Arial;font-size:16px;"><strong>DOC DE VENTA:</strong></span>
+                                        <t t-set="invoice_name_list" t-value="', '.join(o.sale_id.invoice_ids.filtered(lambda x: x.state == 'posted').mapped('name'))"/>
+                                        <span style="font-family: Arial;font-size: 13px !important;" t-out="invoice_name_list"/>
+                                    </div>
+                                    <div style="width:100%">
+                                        <span style="margin-right: 1px;font-family: Arial;font-size:16px;"><strong>CLIENTE:  </strong></span>
+                                        <span style="font-family: Arial;font-size:16px;" t-field="o.partner_id.name" />
+                                    </div>
+                                    <div style="width:100%">
+                                        <span style="margin-right: 1px;font-family: Arial;font-size:16px;"><strong>ESTADO:  </strong></span>
+                                        <span style="font-family: Arial;font-size:16px;" t-field="o.partner_id.state_id.name" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="float: left; width: 55%;">
+                                        <div style="display: flex; flex-wrap: wrap; margin-top: 70px;">
+                                            <div style="display: flex; align-items: center;margin-left:10px">
+                                                <div style="flex: 1 1 100%; display: flex; justify-content: center;">
+                                                    <span style="font-family:Arial;font-weight:bold;font-size:16px">BULTOS: <t t-out="i+1"/> de <t t-out="o.package_qty"/></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style="display: inline-block; vertical-align: middle;font-size:8px;border-top: 1px solid black">
+                                            <div style="float: left;margin-top:2px">
+                                                <div style="text-align:left;">
+                                                    <span>Fecha:</span>
+                                                    <span t-out="o.date.strftime('%d/%m/%Y')"/>
+                                                </div>
+                                                <div style="text-align:left;">
+                                                    <span>Hora:</span>
+                                                    <span t-out="o.date.strftime('%H:%M:%S')"/>
+                                                </div>
+                                                <div style="text-align:left;">
+                                                    <span >Vent:</span>
+                                                    <span t-out="o.user_vend_id.name" style="padding-right:10px"></span>
+                                                </div>
+                                            </div>
+                                            <div style="float: left">
+                                                <div style="text-align:left;margin-top:2px">
+                                                    <span>Pick:</span>
+                                                    <span t-out="o.user_pick_id.name"/>
+                                                </div>
+                                                <div style="text-align:left">
+                                                    <span>Pack:
+                                                    <span t-out="o.user_pack_id.name"></span></span>
+                                                </div>
+                                                <div style="text-align:left">
+                                                
+                                                    <span>Verificado:</span>
+                                                    <span t-out="o.user_out_id.name"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style="flex: 1 1 100%;font-size:8px;margin-top:2px"><strong>Observaciones: </strong></div>
+                                        <span style="flex: 1 1 100%;font-size:8px" t-out="o.note"/>
+                                    </div>
+                                    
+                                    <div style="float: left; width: 45%">
+                                            <div style="width: 100px; height: 100px; border: 1px dashed black; padding-top: 22px; margin-left: 20px; text-align: center;font-size:20px;font-weight:bold">
+                                                <t t-if="o.shipping_mean == 'zmart_express'">
+                                                    <span>EXP</span>
+                                                </t>
+                                                <t t-if="o.shipping_mean == 'zmart_programado'">
+                                                    <span>PRG</span>
+                                                </t>
+                                                <t t-if="o.shipping_mean == 'liberty_express'">
+                                                    <span>LIB</span>
+                                                </t>
+                                                <t t-if="o.shipping_mean == 'mrw'">
+                                                    <span>MRW</span>
+                                                </t>
+                                                <t t-if="o.shipping_mean == 'tealca'">
+                                                    <span>TEA</span>
+                                                </t>
+                                                <t t-if="o.shipping_mean == 'zoom'">
+                                                    <span>ZOO</span>
+                                                </t>
+                                                <t t-if="o.shipping_mean == 'domesa'">
+                                                    <span>DOM</span>
+                                                </t>
+                                                <t t-if="o.shipping_mean == 'pedidos'">
+                                                    <span>PYA</span>
+                                                </t>
+                                                <t t-if="o.shipping_mean == 'yummy'">
+                                                    <span>YUM</span>
+                                                </t>
+                                            </div>
+                                            <img t-if="o.qr_code" t-att-src="'data:image/png;base64,' + o.qr_code.decode('utf-8')" style="max-width: 132px; max-height: 132;margin-left:7px"/>
+                                        </div>
+                                </div>
+                            </section>
+                        </t>
+                    </t>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>

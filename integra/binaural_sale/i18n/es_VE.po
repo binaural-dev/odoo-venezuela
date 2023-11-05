@@ -163,6 +163,16 @@ msgid "Foreign inverse rate"
 msgstr "Tasa inversa alterna"
 
 #. module: binaural_sale
+#: model:ir.model.fields,field_description:binaural_sale.field_sale_order__last_foreign_rate
+msgid "Last Foreign Rate"
+msgstr "Ultima tasa"
+
+#. module: binaural_sale
+#: model:ir.model.fields,field_description:binaural_sale.field_sale_order__manually_set_rate
+msgid "Manually Set Rate"
+msgstr "Tasa Actualizada manualmente"
+
+#. module: binaural_sale
 #: model_terms:ir.ui.view,arch_db:binaural_sale.res_config_settings_binaural_sale
 msgid "If you have more than the quantity on stock dont allow sell."
 msgstr "Si usted tiene más de la cantidad en stock no permiten vender."
@@ -231,6 +241,16 @@ msgstr "Línea pedido de venta"
 #: model:res.groups,name:binaural_sale.group_view_pricelist_items
 msgid "See Pricelist Items"
 msgstr "Ver Normas de Precio"
+
+#. module: binaural_sale
+#. odoo-python
+#: code:addons/binaural_sale/models/sale_order.py:0
+#: code:addons/binaural_sale/models/sale_order.py:0
+#, python-format
+msgid "The rate has been updated from %(last_rate)s to %(rate)s "
+msgstr ""
+"La tasa ha sido actualizada de: %(last_rate)s a una tasa personalizada: "
+"%(rate)s"
 
 #. module: binaural_sale
 #: model:ir.model.fields,help:binaural_sale.field_sale_order__foreign_rate

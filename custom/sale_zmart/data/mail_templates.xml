@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cancel_warning_email_template" model="mail.template">
+        <field name="name">Aviso de cancelacion </field>
+        <field name="model_id" ref="sale_zmart.model_sale_order"/>
+        <field name="email_from">yeison@binauraldev.com</field>
+        <field name="email_to">yeisonasuaje2010@gmail.com</field>
+        <field name="reply_to">yeison@binauraldev.com</field>
+        <field name="subject">Pedido a cancelar {{ object.name }}</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="body_html" type="html">
+
+            <table border="0" cellpadding="0" cellspacing="0" style="padding-top: 16px; background-color: #FFFFFF; font-family:Verdana, Arial,sans-serif; color: #454748; width: 100%; border-collapse:separate;"><tr><td align="center">
+            <table border="0" cellpadding="0" cellspacing="0" width="590" style="padding: 16px; background-color: #FFFFFF; color: #454748; border-collapse:separate;">
+            <tbody>
+                <!-- HEADER -->
+                <tr>
+                    <td align="center" style="min-width: 590px;">
+                        <table border="0" cellpadding="0" cellspacing="0" width="590" style="min-width: 590px; background-color: #FFFFFF; padding: 0px 8px 0px 8px; border-collapse:separate;">
+                            <tr><td valign="middle">
+                                <h1 style="text-align: center; color: #FFFFFF"><img t-if="object.company_id.logo"
+                                        t-att-src="image_data_uri(object.company_id.logo)"
+                                        height="60"
+                                        width="590"
+                                        class="mr-3 mt-1" style="display: inline-block; vertical-align: middle;"/></h1>
+                            </td></tr>
+                            <tr><td colspan="2" style="text-align:center;">
+                            <hr width="100%" style="background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin: 16px 0px 16px 0px;"/>
+                            </td></tr>
+                        </table>
+                    </td>
+                </tr>
+                <!-- CONTENT -->
+                <tr>
+                    <td align="center" style="min-width: 590px;">
+                        <table border="0" cellpadding="0" cellspacing="0" width="590" style="min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;">
+                            <tr><td valign="top" style="font-size: 13px;">
+                                <div>
+                                    <br/><br/>
+                                    <label>Hola estimado <strong><t t-out="object.partner_id.name"/></strong></label>
+                                </div>
+                                <div>
+                                    <br/><br/>
+                                    <label>Le recordamos que la cotización del presupuesto <strong><t t-out="object.name"/></strong>
+                                    aún no ha sido confirmada, en caso de no obtener respuesta dentro de las proximas 8 horas, 
+                                    la misma sera cancelada, le sugerimos contactar a la brevedad posible a su ejecutivo de ventas.</label><br/><br/>
+                                    <br/><br/>
+                                </div>
+                            </td></tr>
+                            <tr><td style="text-align:center;">
+                            <hr width="100%" style="background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin: 16px 0px 16px 0px;"/>
+                            </td></tr>
+                        </table>
+                    </td>
+                </tr>
+                <!-- FOOTER -->
+                <tr>
+                    <td align="center" style="min-width: 590px;">
+                        <table border="0" cellpadding="0" cellspacing="0" width="590" style="min-width: 590px; background-color: white; font-size: 11px; padding: 0px 8px 0px 8px; border-collapse:separate;">
+                            <tr><td valign="middle" align="left">
+                                <t t-out="object.company_id.name"/>
+                            </td></tr>
+                            <tr><td valign="middle" align="left" style="opacity: 0.7;">
+                                <t t-out="object.company_id.phone"/>
+                                <t t-if="object.company_id.email">
+                                    | <a t-attf-href="'mailto:%s' % {{ object.company_id.email }}" style="text-decoration:none; color: #454748;"><t t-out="object.company_id.email or ''">info@yourcompany.com</t></a>
+                                </t>
+                            </td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </tbody>
+            </table>
+            </td></tr>
+            <!-- POWERED BY -->
+            <tr><td align="center" style="min-width: 590px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="590" style="min-width: 590px; background-color: #F1F1F1; color: #454748; padding: 8px; border-collapse:separate;">
+                <tr><td style="text-align: center; font-size: 13px;">
+                    Enviado por <a target="_blank" style="color: #875A7B;"><strong><t t-out="object.company_id.name"/></strong></a>
+                </td></tr>
+                </table>
+            </td></tr>
+            </table>
+
+        </field>
+    </record>
+</odoo>

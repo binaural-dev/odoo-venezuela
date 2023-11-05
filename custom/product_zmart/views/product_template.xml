@@ -1,0 +1,81 @@
+<odoo>
+    <data>
+        <record id="product_template_form_zmart" model="ir.ui.view">
+            <field name="name">product.template.form.zmart</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                <field name="categ_id" position="after">
+                    <field name="model_product"/>
+                    <field name='no_has_discount' attrs="{'invisible':[('detailed_type', '!=', 'service')]}"/>
+                </field>
+                <xpath expr="//sheet/notebook/page[@name='inventory']/group/group[@name='group_lots_and_weight']" position="inside">
+                    <field name="packaging_type"/>
+                    <field name="sales_units_pieces"/>
+                    <field name="quantity_units_per_master_box"/>
+                    <field name="quantity_of_inner_per_master"/>
+                    <label for="sales_unit_gross_weight" attrs="{'invisible':[('product_variant_count', '>', 1), ('is_product_variant', '=', False)]}"/>
+                    <div class="o_row" name="sales_unit_gross_weight" attrs="{'invisible':[('product_variant_count', '>', 1), ('is_product_variant', '=', False)]}">
+                        <field name="sales_unit_gross_weight" string="sales unit gross weight" class="oe_inline"/>
+                        <label for="unit_of_measurement_unit_sale"/>
+                        <field name="unit_of_measurement_unit_sale"/>
+                    </div>
+                    <label for="gross_weight_inner_box" attrs="{'invisible':[('product_variant_count', '>', 1), ('is_product_variant', '=', False)]}"/>
+                    <div class="o_row" name="gross_weight_inner_box" attrs="{'invisible':[('product_variant_count', '>', 1), ('is_product_variant', '=', False)]}">
+                        <field name="gross_weight_inner_box" string="Gross Weight Inner Box" class="oe_inline"/>
+                        <label for="unit_of_measurement_inner_box"/>
+                        <field name="unit_of_measurement_inner_box"/>
+                    </div>
+                    <label for="gross_weight_master_carton" attrs="{'invisible':[('product_variant_count', '>', 1), ('is_product_variant', '=', False)]}"/>
+                    <div class="o_row" name="gross_weight_master_carton" attrs="{'invisible':[('product_variant_count', '>', 1), ('is_product_variant', '=', False)]}">
+                        <field name="gross_weight_master_carton" string="Gross Weight Master carton" class="oe_inline"/>
+                        <label for="unit_of_meassure_master_carton"/>
+                        <field name="unit_of_meassure_master_carton"/>
+                    </div>
+                    <field name="master_box_volume" string="Master Box Volume" class="oe_inline"/>
+                 </xpath>
+                 <xpath expr="//sheet/notebook/page[@name='inventory']/group/group[@name='group_lots_and_weight']" position="after">
+                    <group string="dimension box">
+                        <field name="long_unit"/>
+                        <field name="wide_unit"/>
+                        <field name="high_unit"/>
+                    </group>
+                    <group string="dimension units">
+                        <field name="long_bulk"/>
+                        <field name="wide_bulk"/>
+                        <field name="high_bulk"/>
+                    </group>
+                </xpath>
+                 <xpath expr="//sheet/notebook/page[@name='general_information']" position="after">
+                        <page string="Additional Information" name="additional_information">
+                            
+                                <group name="group_general">
+                                    <group>
+                                        <field name="oem" />
+                                        <field name="oem_code" readonly="true" />
+                                        <field name="zmart_code"/>
+                                        <field name="serie"/>
+                                        <field name="volume_ml"/>
+                                        <field name="product_color"/>
+                                        <field name="performance_pages"/>
+                                    </group>
+                                    <group>
+                                        <field name="compatibility"/>
+                                        <field name="warranty"/>
+                                        <field name="specification"/>
+                                        <label for="tariff_code"/>
+                                        <div class="o_row" name="tariff_code">
+                                            <field name="tariff_code" class="oe_inline"/>
+                                            <label for="percentage_tariff_code"/>
+                                            <field name="percentage_tariff_code"/>
+                                        </div>
+                                        <field name="barcode_inner_box"/>
+                                        <field name="barcode_master_box"/>
+                                    </group>
+                                </group>
+                        </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
