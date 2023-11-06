@@ -216,6 +216,31 @@
                                     </div>
                                 </div>
                             </t>
+                        <div class="row">
+                            <div class="col-2">
+                                <strong>Total <t t-out="journal_id['name']"/> </strong>
+                            </div>
+                            <div class="col-2 text-center">
+                                <p></p>
+                            </div>
+                            <div class="col-2 text-center">
+                                <p></p>
+                            </div>
+                            <div class="col-1 text-center">
+                                <p></p>
+                            </div>
+                            <div class="col-2 text-center">
+                                <strong t-out="payments[term]['totals_'+journal]['amount']"/>
+                            </div>
+                            <div class="col-1 text-center">
+                                <p>
+                                </p>
+                            </div>
+                            <div class="col-2 text-center">
+                                <strong t-out="payments[term]['totals_'+journal]['foreign_amount']" />
+                            </div>
+                        </div>
+                        <hr/>
                         </t>
                     </t>
                 </t>

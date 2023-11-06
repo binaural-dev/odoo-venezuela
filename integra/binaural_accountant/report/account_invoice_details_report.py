@@ -7,6 +7,8 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+p_initial_amounts = {"amount": 0, "foreign_amount": 0}
+
 initial_amounts = {
     "gross_amount": 0,
     "discount_amount": 0,
@@ -35,7 +37,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             ("company_id", "=", wizard.company_id.id),
             ("date", ">=", wizard.date_from),
             ("date", "<=", wizard.date_to),
-            ("reconciled_invoice_ids", "!=", False)
+            ("reconciled_invoice_ids", "!=", False),
         ]
 
     @api.model
@@ -72,19 +74,27 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
                 if journal_id not in [x["id"] for x in p_journals]:
                     p_journals.append(self.new_journal(payment))
 
-                if not payments[term_id].get(journal_id,False):
+                if not payments[term_id].get(journal_id, False):
                     payments[term_id][journal_id] = [{"invoice": p_invoice, "payment": payment}]
                 else:
                     payments[term_id][journal_id].append({"invoice": p_invoice, "payment": payment})
 
-        _logger.info("Payment %s:",payments)
+                if not invoices[term_id].get("totals_" + journal_id, False):
+                    journal_totals = p_initial_amounts
+                else:
+                    journal_totals = payments[term_id]["totals_" + journal_id]
+
+                payments[term_id]["totals_" + journal_id] = self.p_get_new_values(
+                    journal_totals, payment
+                )
+
+        _logger.info("Payment %s:", payments)
 
         for invoice in invoice_ids:
             journal_id = str(invoice.journal_id.id)
 
-            if journal_id not in [x["id"]for x in journals]:
+            if journal_id not in [x["id"] for x in journals]:
                 journals.append(self.new_journal(invoice))
-
 
             if not invoices[journal_id].get(invoice.move_type, False):
                 invoices[journal_id][invoice.move_type] = defaultdict(lambda: dict())
@@ -95,11 +105,10 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
                 else "cash"
             )
 
-
             if term_id not in [x["id"] for x in payment_terms]:
                 payment_terms.append(self.new_payment_term(invoice))
 
-            if not invoices[journal_id][invoice.move_type].get(term_id,False):
+            if not invoices[journal_id][invoice.move_type].get(term_id, False):
                 invoices[journal_id][invoice.move_type][term_id] = invoice
 
             invoices[journal_id][invoice.move_type][term_id] |= invoice
@@ -137,6 +146,16 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         }
 
         return data
+
+    def p_get_new_values(self, totals, payment):
+        if payment.currency_id.id == self.env.ref("base.USD"):
+            amount = totals["amount"] + payment.amount
+            foreign_amount = totals["foreign_amount"] + payment.amount * payment.foreign_rate
+        else:
+            amount = totals["amount"] + payment.move_id.line_ids[0].debit
+            foreign_amount = totals["foreign_amount"] + payment.amount
+
+        return {"amount": amount, "foreign_amount": foreign_amount}
 
     def get_new_values(self, totals, invoice):
         gross_amount = totals["gross_amount"] + invoice.detailed_amounts["gross_amount"]
