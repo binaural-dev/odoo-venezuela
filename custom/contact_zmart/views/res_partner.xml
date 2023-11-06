@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='vat']" position="after">
-                <field name="nit" required="1" />
+                <field name="nit" required="0" />
             </xpath>
 
             <field name="vat" position="attributes">
