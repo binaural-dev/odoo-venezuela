@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="account_invoices_details_view" model="ir.ui.view">
+    <record id="account_invoices_details_views" model="ir.ui.view">
         <field name="name">account.invoices.details.view</field>
         <field name="model">account.invoices.details</field>
         <field name="arch" type="xml">
@@ -25,7 +25,7 @@
         <field name="res_model">account.invoices.details</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
-        <field name="view_id" ref="account_invoices_details_view"/>
+        <field name="view_id" ref="binaural_accountant.account_invoices_details_views"/>
     </record>
 
     <menuitem action="action_account_invoices_details" id="account_report_sale_menu" parent="account.menu_finance_reports" sequence="5"/>
