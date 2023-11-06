@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_action_partner,Acciones de socios,model_action_partner,,1,1,1,1
+access_action_partner_previous,Acciones de socios,model_action_partner_previous,,1,1,1,1
+access_partner_professions,Profesiones,model_partner_professions,,1,1,1,1
+access_partner_config,Partner Config,model_partner_config,,1,1,1,1
