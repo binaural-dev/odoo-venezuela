@@ -24,7 +24,7 @@ class ResPartner(models.Model):
         ('special', 'Special'),
         ('honorary', 'Honorary'),
         ('treasury', 'Treasury'),
-    ], 'Action State', store=True,track_visibility='onchange')
+    ], 'Action State', related="action_number.state", store=True,track_visibility='onchange')
 
     state_partner = fields.Selection([
         ('active', 'Active'),

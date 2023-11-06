@@ -9,7 +9,7 @@
             <field name="type" position="after">
 	            <field name="supplier_rank" invisible="1"/>
 	            <field name="customer_rank" invisible="1"/>
-                <label for="action_number" />
+                <label for="action_number" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="action_number" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
 
 	            <label for="type_relation" />
@@ -165,6 +165,24 @@
                 </xpath>
         </field>
     </record>
+
+    <record id="binaural_club_socios_view_partner_action_tree" model="ir.ui.view">
+            <field name="name">binaural.club.socios.view.partner.action.tree</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_tree"/>
+            <field name="arch" type="xml">
+                <field name="display_name" position="after">
+                    <field name="action_number"/>
+
+                    <field name="state_partner" />
+                    <field name="state_action" />
+
+                    <field name="member_profession" />
+                    <field name="member_company" />
+                    <field name="business_name_usufruct" />
+                </field>
+            </field>
+        </record>
 
 </odoo>
 
