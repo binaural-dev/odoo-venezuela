@@ -3,6 +3,7 @@
     <record id="account_invoices_details_views" model="ir.ui.view">
         <field name="name">account.invoices.details.view</field>
         <field name="model">account.invoices.details</field>
+        <field name="type">form</field>
         <field name="arch" type="xml">
             <form string="Sales Details">
                 <sheet>
