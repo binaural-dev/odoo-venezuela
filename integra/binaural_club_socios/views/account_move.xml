@@ -15,16 +15,16 @@
             </field>
         </record>
 
-	    <!-- <record id="binaural_club_socios_view_account_move_tree" model="ir.ui.view">
+	    <record id="binaural_club_socios_view_account_move_tree" model="ir.ui.view">
             <field name="name">binaural.club.socios.view.account.move.tree</field>
             <field name="model">account.move</field>
             <field name="inherit_id" ref="account.view_invoice_tree"/>
             <field name="arch" type="xml">
-                <field name="partner_id" position="after">
+                <field name="invoice_partner_display_name" position="after">
 	                <field name="action_number" />
                 </field>
             </field>
-        </record> -->
+        </record>
 
 	    <record id="binaural_club_socios_view_account_move_search" model="ir.ui.view">
             <field name="name">binaural.club.socios.view.account.move.search</field>

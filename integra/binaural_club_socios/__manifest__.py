@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "1.0",
+    "version": "1.1",
     "depends": [
         "base",
         "binaural_rate",
@@ -25,6 +25,7 @@
         "views/partner_config.xml",
         "views/account_payment.xml",
         "views/account_move.xml",
+        "wizard/status_action_batch.xml"
 
     ],
 }

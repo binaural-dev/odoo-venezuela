@@ -30,16 +30,14 @@
                         </group>
 	                    <notebook>
                             <page string="Previous Partners">
-                                <group>
-	                                <field name="partners_previous_ids" nolabel="1">
-			                            <tree editable="bottom">
-			                                <field name="name"/>
-                                            <field name="identification"/>
-			                                <field name="date_start"/>
-                                            <field name="date_end"/>
-			                            </tree>
-			                        </field>
-	                            </group>
+	                            <field name="partners_previous_ids" nolabel="1">
+			                        <tree editable="bottom">
+			                            <field name="name"/>
+                                        <field name="identification"/>
+			                            <field name="date_start"/>
+                                        <field name="date_end"/>
+			                        </tree>
+			                    </field>
                             </page>
                         </notebook>
                     </sheet>
