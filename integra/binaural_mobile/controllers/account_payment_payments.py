@@ -226,7 +226,6 @@ class AccountPaymentPayments(http.Controller):
                         }
                     )
                 )
-
                 invoice_retention = data_invoice.filtered(
                     lambda i: not any(
                         i.retention_iva_line_ids.filtered(lambda l: l.state in ("draft", "emitted"))
@@ -259,6 +258,8 @@ class AccountPaymentPayments(http.Controller):
                         pays_retention_registered += retention
 
                     retentions += register_retention
+                else:
+                    register_retention.sudo().unlink()
 
         return retentions, pays_retention_registered
 
