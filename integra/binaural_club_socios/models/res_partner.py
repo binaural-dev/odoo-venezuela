@@ -5,11 +5,16 @@ _logger = logging.getLogger()
 class ResPartner(models.Model):
     _inherit = "res.partner"
 
-    action_number_id = fields.Many2one(
-        string='Related Action',
-        comodel_name='action.partner',
-        related='parent_id.action_number'    
-    )
+    def actions_active(self):
+        actions = []
+        partner_action = self.env['res.partner'].search([('action_number', '!=', False)])
+        for x in partner_action:
+            actions.append(x.action_number.number)
+        return [('number', 'not in', actions)]#tesoreria es disponible para asignar
+
+
+    action_number = fields.Many2one('action.partner', string='Action Number')
+    action_number_related = fields.Many2one('action.partner', string='Action related')
     
     is_solvent_related = fields.Boolean(string='Is solvent?')
 
@@ -19,7 +24,7 @@ class ResPartner(models.Model):
         ('special', 'Special'),
         ('honorary', 'Honorary'),
         ('treasury', 'Treasury'),
-    ], 'Action State', related="action_number_id.state", store=True,track_visibility='onchange')
+    ], 'Action State', store=True,track_visibility='onchange')
 
     state_partner = fields.Selection([
         ('active', 'Active'),
@@ -41,7 +46,7 @@ class ResPartner(models.Model):
     member_type  = fields.Selection([
         ('action', 'Action'),
         ('extension', 'Extension')
-    ], string='Member Type',related="action_number_id.type_action", track_visibility='onchange')
+    ], string='Member Type', track_visibility='onchange')
     
     business_name_usufruct = fields.Char(string='Business name usufruct',track_visibility='onchange')
     prefix_vat_usufruct = fields.Selection([
@@ -62,7 +67,7 @@ class ResPartner(models.Model):
         ('male', 'Male'),
         ('female', 'Female'),
         ('other', 'Other')
-    ], default="male",string="Sexo",track_visibility='onchange')
+    ], default="male",string="Sex",track_visibility='onchange')
     member_marital = fields.Selection([
         ('single', 'Single'),
         ('married', 'Married'),
@@ -95,7 +100,7 @@ class ResPartner(models.Model):
     #asociado familiar
     associate_parent = fields.Many2one('res.partner', string='Associate parent',track_visibility='onchange')
     associate_action = fields.Many2one('action.partner', string='Associate action',related="associate_parent.action_number",track_visibility='onchange')
-    associate_childs = fields.One2many('res.partner', 'associate_parent', string='Associate Childs', domain=[('active', '=', True)],track_visibility='onchange')
+    associate_childs = fields.One2many('res.partner', 'parent_id', string='Associate Childs', domain=[('active', '=', True)],track_visibility='onchange')
     #campos referentes a la suspensión
     reason = fields.Text(string='Reason')
     end_date_suspend = fields.Date(string='End date suspend')

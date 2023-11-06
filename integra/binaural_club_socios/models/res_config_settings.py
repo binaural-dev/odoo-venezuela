@@ -10,8 +10,10 @@ class ResConfigSettings(models.TransientModel):
     date_end = fields.Date(
         string="deadline end of installment amount",
         help="deadline end of installment amount",
-        related='company_id.date_end',
-        readonly=False
+        related="company_id.date_end",
+        readonly=False,
     )
 
-    deadline_amount = fields.Float("Deadline Amount", related='company_id.deadline_amount', readonly=False)
+    deadline_amount = fields.Float(
+        "Deadline Amount", related="company_id.deadline_amount", readonly=False, default=0
+    )

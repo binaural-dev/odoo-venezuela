@@ -4,3 +4,7 @@ from . import res_config_settings
 from . import partner_profession
 from . import action_partner
 from . import action_partner_previous
+from . import res_partner
+from . import account_move
+from . import account_move_line
+from . import account_payment

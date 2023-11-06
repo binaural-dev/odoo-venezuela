@@ -12,7 +12,3 @@ class PartnerProfessions(models.Model):
     ]
     name = fields.Char(string='Name')
     active = fields.Boolean(string='Active',default=True)
-
-    # @api.onchange('name')
-    # def upper_name(self):
-    #     return validations.case_upper(self.name, "name")

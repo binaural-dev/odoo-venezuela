@@ -28,7 +28,7 @@ class PartnerConfig(models.Model):
 
     out_email_alert_associates = fields.Char(
         string="Outgoing mail for partner alert"
-    )  # preguntar si es el mosimo subject de los demas
+    )
 
     expiration_alert_subject = fields.Char(string="Expiration Alert Mail Subject")
     expiration_alert_body = fields.Html(

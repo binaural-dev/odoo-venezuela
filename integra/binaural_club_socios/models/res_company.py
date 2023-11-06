@@ -12,4 +12,6 @@ class ResConfigSettings(models.Model):
         help="deadline end of installment amount"
     )
 
-    deadline_amount = fields.Float("Deadline Amount", required=True)
+    deadline_amount = fields.Float("Deadline Amount")
+
+    
