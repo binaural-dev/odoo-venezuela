@@ -4,6 +4,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.misc import formatLang
 
+
 class SaleOrderZmart(models.Model):
     _inherit = "sale.order"
     
@@ -72,6 +73,8 @@ class SaleOrderZmart(models.Model):
             weight = 0
             for line in record.order_line:
                 weight += line.product_id.weight * line.product_uom_qty
+
+            weight = weight * 0.1 + weight
             record.shipping_weight = f"{weight} {record.env.ref('uom.product_uom_kgm').name}"
     
     def button_invoice_sale_note_rma(self):

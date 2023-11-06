@@ -15,7 +15,9 @@ Campos agregados a modelos existentes
 
   * series_correlative_sequence_id: Número de control para series.
 
-* Compañía (res.company) / Configuraciones (res.config.settings).
+Configuraciones
+"""""""""""""""
+* Compañía (res.company).
 
   * max_product_invoice: Cantidad máxima de productos en la factura.
   * group_sales_invoicing_series: Grupo para series de ventas.
