@@ -20,12 +20,14 @@
     ],
     # always loaded
     "data": [
+        "data/product_data.xml",
         "security/ir.model.access.csv",
         "views/account_move_views.xml",
         "views/commission_policy_line_views.xml",
         "views/commission_policy_views.xml",
         "views/res_config_settings.xml",
         "views/menuitems.xml",
+        "views/res_config_settings.xml"
     ],
     "application": False,
 }

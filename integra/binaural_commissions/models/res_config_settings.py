@@ -5,7 +5,12 @@ class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
     commission_product_id = fields.Many2one(
-        "product.product", related="company_id.commission_product_id", readonly=False
+        "product.product",
+        related="company_id.commission_product_id",
+        readonly=False,
+        default=lambda self: self.env["ir.model.data"]._xmlid_to_res_id(
+            "binaural_commissions.product_product_commission_payment"
+        ),
     )
     commission_journal_id = fields.Many2one(
         "account.journal", related="company_id.commission_journal_id", readonly=False
