@@ -21,6 +21,10 @@
                 <xpath expr="//page[@name='extra']/group//group[@name='carrier_data']/div[@name='tracking']//field[@name='carrier_tracking_ref']" position="attributes">
                     <attribute name="string">Guía de Proveedor</attribute>
                 </xpath>
+
+                <field name="partner_id" position="attributes">
+                    <attribute name="options">{'no_create': True}</attribute>
+                </field>
             </field>
         </record>
     </data>
