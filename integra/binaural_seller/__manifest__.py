@@ -5,13 +5,14 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.6.12",
+    "version": "16.6.13",
     "category": "Hr/Invoicing/Account",
     "depends": [
         "account",
         "contacts",
         "hr",
         "binaural_rate",
+        "binaural_sale",
     ],
     "data": [
         "data/res_partner.xml",
