@@ -258,7 +258,7 @@ class AccountMovePayments(http.Controller):
 
         data.update(
             {
-                "data": currency_company.rate
+                "data": [currency_company.rate,currency_company.inverse_company_rate]
             }
         )
 
