@@ -18,6 +18,10 @@
                 <field name="state_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <label for="state_partner" />
                 <field name="state_partner" />
+                <label for="associate_parent" />
+                <field name="associate_parent" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>
+                <label for="associate_action" />
+                <field name="associate_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>
                 <label for="can_access_club" />
                 <field name="can_access_club" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
                     <!--campo fecha fin de suspension-->
@@ -28,7 +32,7 @@
                 <field name="is_solvent" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
             </field>
             <!--Boton de add en contacto y direcciones-->
-            <!-- <xpath expr="//notebook/page/field[@name='child_ids']" position="attributes">
+            <xpath expr="//notebook/page/field[@name='child_ids']" position="attributes">
                 <attribute name="attrs">{'invisible': ['|',('id','=',False),('customer_rank','=',0)]}
                 </attribute>
 	            <attribute name="context">
@@ -37,7 +41,7 @@
 		            'default_country_id': country_id,
 		            'default_lang': lang,'default_user_id': user_id,'default_end_date_partner':end_date_partner,'default_start_date':start_date}
 	            </attribute>
-            </xpath> -->
+            </xpath>
 
             <field name="title" position="after">
                     <field name="start_date" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
@@ -76,12 +80,6 @@
             <field name="function" position="attributes">
                 <attribute name="invisible">1</attribute>
             </field>
-
-                <field name="type" position="before">
-                    <field name="parent_id" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>
-                    <field name="associate_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>
-                </field>
-
         
                 <page name="internal_notes" position="before">
                     <page string="Otros Datos" name="another_info_country">

@@ -802,7 +802,7 @@ msgstr "Icono para indicar una actividad de excepción."
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__identification
 msgid "Identification"
-msgstr ""
+msgstr "Identificación"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__message_needaction

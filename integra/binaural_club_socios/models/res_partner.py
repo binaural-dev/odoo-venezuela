@@ -48,7 +48,7 @@ class ResPartner(models.Model):
     member_type  = fields.Selection([
         ('action', 'Action'),
         ('extension', 'Extension')
-    ], string='Member Type', track_visibility='onchange')
+    ], string='Member Type', related="action_number.type_action", track_visibility='onchange')
     
     business_name_usufruct = fields.Char(string='Business name usufruct',track_visibility='onchange')
     prefix_vat_usufruct = fields.Selection([
