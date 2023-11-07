@@ -1,4 +1,6 @@
 from odoo import models, api, exceptions, fields, _
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import logging
 _logger = logging.getLogger()
 
@@ -118,3 +120,28 @@ class ResPartner(models.Model):
     #campos referentes a remover suspension
     user_remove_suspend = fields.Many2one('res.users',string='User remove suspend')
     date_remove_suspend  = fields.Date(string='Date remove suspend')
+
+    @api.onchange('birthday')
+    def _onchange_birthday(self):
+        self._calculate_partner_birthday()
+
+    def _calculate_partner_birthday(self):
+        if self.birthday:
+            edad = relativedelta(datetime.now(),self.birthday)
+            self.age = edad.years
+            if self.type == 'contact' and self.type_relation == 'children':
+                #es una carga familiar y es hijo calcular vencimiento
+                config = self.env['partner.config'].sudo().search([('active','=',True)],limit=1)
+                if not config:
+                    raise exceptions.UserError(_("No partner configuration registered please contact your system administrator."))
+                self.end_date_family = self.birthday + relativedelta(years=config.age_limit_for_associated_children)
+
+
+    @api.onchange('start_date')
+    def _onchange_start_date(self):
+        if self.start_date:
+            config = self.env['partner.config'].sudo().search([('active','=',True)],limit=1)
+            if not config:
+                raise exceptions.UserError("No hay configuración de socios registrada por favor contacte al administrador del sistema")
+            self.end_date_partner = self.start_date + relativedelta(years=config.years_of_membership)
+
