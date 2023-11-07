@@ -1,6 +1,7 @@
 from odoo import models, api, exceptions, fields, _
-# from . import validations
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class PartnerProfessions(models.Model):
     _name = 'partner.professions'
@@ -12,3 +13,10 @@ class PartnerProfessions(models.Model):
     ]
     name = fields.Char(string='Name')
     active = fields.Boolean(string='Active',default=True)
+
+
+
+    @api.onchange('name')
+    def upper_name(self):
+        if self.name:
+            self.name = self.name.upper()
