@@ -1,0 +1,13 @@
+TAG #0000: binaural_
+
+Problema: 
+
+Solucion:
+
+Tarea:
+
+# project.task
+#https://binaural.odoo.com/web#id= [ID] &cids=2&menu_id=255&action=341&model=project.task&view_type=form
+
+# helpdesk.ticket
+#https://binaural.odoo.com/web#id= [ID] &menu_id=293&cids=2&action=386&model=helpdesk.ticket&view_type=form

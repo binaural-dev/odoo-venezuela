@@ -1,20 +1,27 @@
-name: Auto-delete abandoned branches every morning.
+name: Delete abandoned branches
 
 on:
+  # Run daily at midnight
   schedule:
-    - cron: "30 1 * * *"
+    - cron: "0 0 * * *"
 
-permissions:
-  contents: write
+  # Allow workflow to be manually run from the GitHub UI
+  workflow_dispatch:
 
 jobs:
-  stale:
+  cleanup_old_branches:
     runs-on: ubuntu-latest
+    name: Delete old branch
     steps:
-    - uses: actions/checkout@v3
-    - uses: game8inc/cull@v1
-      with:
-        repo-token: ${{ secrets.YOUR_GITHUB_TOKEN }}
-        dry-run: 'true'
-        older-than: '10'
-        max-deletion-per-day: '5'
+      - name: Borrando ramas
+        uses: phpdocker-io/github-actions-delete-abandoned-branches@v2.0.3
+        id: delete_stuff
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          last_commit_age_days: 10          
+
+          # Disable dry run and actually get stuff deleted
+          dry_run: no
+
+      - name: Get output
+        run: "echo 'Deleted branches: ${{ steps.delete_stuff.outputs.deleted_branches }}'"

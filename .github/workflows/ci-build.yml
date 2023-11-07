@@ -1,14 +1,18 @@
 name: Build docker image
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened, reopened]
     branches:
+      - 'release*'
+      - 'staging*'
       - 'master'      
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.repository == 'binaural-dev/integra'
     permissions:
       contents: read
       packages: write
@@ -53,6 +57,7 @@ jobs:
 
   odoo-test:
     runs-on: ubuntu-latest
+    if: github.repository == 'binaural-dev/integra'
     needs: build
     strategy:
       fail-fast: false
@@ -85,6 +90,7 @@ jobs:
           --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /mnt/test/run.sh -m "${{ github.event.pull_request.title }}" -r odoo
   odoo-pytest:
     runs-on: ubuntu-latest
+    if: github.repository == 'binaural-dev/integra'
     needs: build
     strategy:
       fail-fast: false
@@ -119,6 +125,7 @@ jobs:
           --network=host -e PGHOST=localhost ghcr.io/${{ github.repository }}/${{ matrix.image_name }}:latest /mnt/test/run.sh -m "${{ github.event.pull_request.title }}" -r pytest
   odoo-coverage:
     runs-on: ubuntu-latest
+    if: github.repository == 'binaural-dev/integra'
     needs: build
     strategy:
       fail-fast: false

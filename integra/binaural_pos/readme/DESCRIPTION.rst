@@ -8,13 +8,17 @@ Este añade los siguientes campos:
 ##Configuraciones:
 
 * Impuestos incluidos (No alternar impuestos entre facturas/recibos)
-* Siempre recibo (colocar facturas/recibos por defecto)
+* Facturar siempre : Seleccionar por defecto facturas o recibos para generar asientos contables
 * Mostrar cantidades disponibles en stock
-* Ocultar productos sin stock
-* No poder facturar productos sin stock
-* (res.users) permitir descuentos
+* Mostrar solamente los productos disponibles: Eliminar automáticamente los productos sin disponibilidad del POS
+* Cantidad en 0 : No permitir ventas si no hay disponibilidad suficiente
+* (res.group) permitir descuentos
 * (res.group) Grupo para administrar cantidades en POS
 * (res.group) Grupo para Cambiar el precio en POS
+
+## Validaciones
+
+* Editar el estatus de los asientos contables asociados al POS (Punto de Venta) si la sesiona la que corresponde esta abierta
 
 ##Terminal de Punto de venta (pos.config)
 
@@ -29,6 +33,7 @@ Este añade los siguientes campos:
 * Monto total en moneda alterna
 * Tasa de moneda alterna
 * Recibo/Factura
+* Se refleja la cantidad de productos a ordenar
 
 ##Pagos (pos.payment)
 

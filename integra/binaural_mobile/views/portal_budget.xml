@@ -75,7 +75,7 @@
                         <label class="col-sm-2 form-text">Client</label>
                         <div class="col-sm-4 ">
                             <t t-if="budget">
-                                <input type="text" class="form-control" t-att-value="budget.partner_id.name" disabled="disabled"/>
+                                <input type="text" class="form-control" t-att-value="budget.partner_id.display_name" disabled="disabled"/>
                                 <input type="hidden" id='client' class="d-none" t-att-value="budget.partner_id.id" />
                             </t>
                             <t t-else="">
@@ -467,6 +467,24 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="modal fade" id="error_confirm_cancel" tabindex="-1" aria-labelledby="errorQtyLabel"  aria-modal="true" role="dialog">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-danger" role="alert">
+                                        <label id="error_msg"/>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </form>
             </div>
         </t>

@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230725\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230810\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-02 23:33+0000\n"
-"PO-Revision-Date: 2023-08-02 23:33+0000\n"
+"POT-Creation-Date: 2023-10-30 18:56+0000\n"
+"PO-Revision-Date: 2023-10-30 18:56+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -66,6 +66,11 @@ msgid "Amount total"
 msgstr "Monto Total"
 
 #. module: binaural_pos
+#: model:res.groups,name:binaural_pos.group_authorized_discount_pos
+msgid "Authorized discount pos"
+msgstr "Descuento autorizado pos"
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/xml/ProductItem.xml:0
 #, python-format
@@ -96,8 +101,8 @@ msgstr "Cambiar cantidad en orden de POS"
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Change state to draft in account moves from POS"
 msgstr ""
-"Editar el estatus de los asientos contables asociados al POS (Punto de Venta) si la sesion"
-"a la que corresponde esta abierta"
+"Editar el estatus de los asientos contables asociados al POS (Punto de "
+"Venta) si la sesiona la que corresponde esta abierta"
 
 #. module: binaural_pos
 #. odoo-python
@@ -136,8 +141,7 @@ msgstr "Moneda alterna para la compañía"
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Default journal to receipt account moves"
-msgstr ""
-"Diario contable por defecto para generar recibos como asientos contables"
+msgstr "Diario contable por defecto para generar recibos de ventas"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -218,6 +222,7 @@ msgstr "Moneda alterna"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_order__foreign_currency_rate
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_order_line__foreign_currency_rate
 msgid "Foreign Currency Rate"
 msgstr "Tasa alterna"
 
@@ -225,6 +230,11 @@ msgstr "Tasa alterna"
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_config__foreign_inverse_rate
 msgid "Foreign Inverse Rate"
 msgstr "Tasa alterna inversa"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_order_line__foreign_price
+msgid "Foreign Price"
+msgstr "Precio alterno"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_config__foreign_rate
@@ -251,6 +261,11 @@ msgstr "Monto Alterno"
 #, python-format
 msgid "Foreign Total Due"
 msgstr "Adeudado alterno"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+msgid "Foreign Total:"
+msgstr "Total Alterno:"
 
 #. module: binaural_pos
 #. odoo-javascript
@@ -283,6 +298,11 @@ msgstr "Factura"
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_method__is_foreign_currency
 msgid "Is Foreign Currency"
 msgstr "Es moneda alterna"
+
+#. module: binaural_pos
+#: model:ir.model,name:binaural_pos.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -332,8 +352,8 @@ msgstr "Metodo de pago"
 #. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/PaymentScreen.js:0
-#, python-format
 #: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
+#, python-format
 msgid "Payments"
 msgstr "Pagos"
 
@@ -348,7 +368,7 @@ msgstr ""
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Point of Sale"
-msgstr ""
+msgstr "Punto de Venta"
 
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_pos_config
@@ -359,6 +379,11 @@ msgstr "Configuración del TPV"
 #: model:ir.model,name:binaural_pos.model_report_point_of_sale_report_saledetails
 msgid "Point of Sale Details"
 msgstr "Detalles del Punto de Venta"
+
+#. module: binaural_pos
+#: model:ir.model,name:binaural_pos.model_pos_order_line
+msgid "Point of Sale Order Lines"
+msgstr "Líneas de pedido de Punto de Venta"
 
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_pos_order
@@ -385,6 +410,13 @@ msgstr "Sesión TPV"
 #: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_move_to_draft
 msgid "Pos Move To Draft"
 msgstr "Editar el estatus de los asientos contables"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_config__pos_search_cne
+#: model:ir.model.fields,field_description:binaural_pos.field_res_company__pos_search_cne
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_search_cne
+msgid "Pos Search Cne"
+msgstr "Busqueda de clientes en CNE"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_config__pos_show_free_qty
@@ -469,6 +501,13 @@ msgstr "Detalle de ventas"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "Search clients by vat number in CNE database"
+msgstr ""
+"Buscar clientes por el numero de cedula en la base de datos del CNE (Centro "
+"Nacional Electoral)"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Set default invoice or receipt with account moves"
 msgstr ""
 "Seleccionar por defecto facturas o recibos para generar asientos contables"
@@ -514,14 +553,21 @@ msgstr "La tarifa que siempre se mostrará al usuario."
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_order__to_receipt
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_order_line__to_receipt
 msgid "To Receipt"
 msgstr "Para recibo"
 
 #. module: binaural_pos
-#: model:ir.model.fields,field_description:binaural_pos.field_pos_order__foreign_amount_total
 #: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
 msgid "Total"
 msgstr ""
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/OrderWidget.xml:0
+#, python-format
+msgid "Total Products:"
+msgstr "Total de Productos:"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
@@ -548,15 +594,6 @@ msgid "Validate"
 msgstr "Validar"
 
 #. module: binaural_pos
-#. odoo-python
-#: code:addons/binaural_pos/models/account_move.py:0
-#, python-format
-msgid ""
-"You cannot modify a journal entry linked to a POS session that is still "
-"opened"
-msgstr "No puede modificar un asiento contable vinculado a una sesión de POS que aún está abierta"
-
-#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
 #, python-format
@@ -564,13 +601,19 @@ msgid "View Payments Origin"
 msgstr "Ver Pagos del Origen"
 
 #. module: binaural_pos
+#. odoo-python
+#: code:addons/binaural_pos/models/account_move.py:0
+#, python-format
+msgid ""
+"You cannot modify a journal entry linked to a POS session that is still "
+"opened"
+msgstr ""
+"No puede modificar un asiento contable vinculado a una sesión de POS que aún"
+" está abierta"
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
 #, python-format
 msgid "Zero Quantity Not allowed"
 msgstr "Cantidad 0 no esta permitido"
-
-#. module: binaural_pos
-#: model:ir.model.fields,field_description:binaural_pos.field_res_users__authorized_discount_pos
-msgid "authorized personnel to use discount in pos"
-msgstr "Personal autorizado para aplicar descuentos"

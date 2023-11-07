@@ -47,19 +47,22 @@ class ResCompany(models.Model):
                 _logger.info('get_connector_state for: ' +str(comp.name) + str(" >> ") + str(account.name))
                 account.get_connector_state()
 
-    def cron_meli_orders( self ):
+    def cron_meli_orders( self, account_id=None ):
         _logger.info("company cron_meli_orders need to check all accounts now")
-        company = self or self.env.user.company_id
+        company = self or self.env.user.company_ids or self.env.user.company_id
         for comp in company:
 
             for account in comp.mercadolibre_connections:
+
+                if account_id and account_id!=account.id:
+                    continue;
 
                 _logger.info('conr_meli_process for: ' +str(comp.name) + str(" >> ") + str(account.name))
                 account.cron_meli_orders()
 
     def meli_query_orders(self):
         _logger.info("meli_oerp_multiple >> meli_query_orders")
-        company = self or self.env.user.company_id
+        company = self or self.env.user.company_ids or self.env.user.company_id
         result = []
         for comp in company:
             res = {}
@@ -93,7 +96,7 @@ class ResCompany(models.Model):
 
     def cron_meli_process( self ):
         _logger.info("company cron_meli_process need to check all accounts now")
-        company = self or self.env.user.company_id
+        company = self or self.env.user.company_ids or self.env.user.company_id
         for comp in company:
 
             for account in comp.mercadolibre_connections:
@@ -103,7 +106,7 @@ class ResCompany(models.Model):
 
     def meli_query_products(self):
         _logger.info("meli_oerp_multiple >> meli_query_products")
-        company = self or self.env.user.company_id
+        company = self or self.env.user.company_ids or self.env.user.company_id
         for comp in company:
 
             for account in comp.mercadolibre_connections:
@@ -115,7 +118,7 @@ class ResCompany(models.Model):
 
     def cron_meli_process_internal_jobs(self):
         _logger.info("company cron_meli_process_internal_jobs")
-        company = self or self.env.user.company_id
+        company = self or self.env.user.company_ids or self.env.user.company_id
         for comp in company:
 
             for account in comp.mercadolibre_connections:
@@ -124,7 +127,7 @@ class ResCompany(models.Model):
                 account.cron_meli_process_internal_jobs()
 
 
-    def cron_meli_process_post_stock( self, meli=None ):
+    def cron_meli_process_post_stock( self, meli=None, account_id=None ):
 
         company = self or self.env.user.company_id
 
@@ -143,6 +146,10 @@ class ResCompany(models.Model):
         for comp in company_ids:
             _logger.info("cron_meli_process_post_stock > company "+str(comp))
             for account in comp.mercadolibre_connections:
+
+                if account_id and account_id!=account.id:
+                    continue;
+
                 _logger.info("cron_meli_process_post_stock > account "+str(account and account.name))
                 config = account.configuration
                 if (config.mercadolibre_cron_post_update_stock):
@@ -151,13 +158,17 @@ class ResCompany(models.Model):
 
 
 
-    def cron_meli_process_post_price( self, meli=None ):
+    def cron_meli_process_post_price( self, meli=None, account_id=None ):
 
-        company = self or self.env.user.company_id
+        company = self or self.env.user.company_ids or self.env.user.company_id
 
         for comp in company:
 
             for account in comp.mercadolibre_connections:
+
+                if account_id and account_id!=account.id:
+                    continue;
+
                 config = account.configuration
                 if (config.mercadolibre_cron_post_update_price):
                     _logger.info("config.mercadolibre_cron_post_update_price")
@@ -165,25 +176,31 @@ class ResCompany(models.Model):
 
 
 
-    def cron_meli_process_post_products( self, meli=None ):
+    def cron_meli_process_post_products( self, meli=None, account_id=None ):
 
-        company = self or self.env.user.company_id
+        company = self or self.env.user.company_ids or self.env.user.company_id
 
         for comp in company:
 
             for account in comp.mercadolibre_connections:
+
+                if account_id and account_id!=account.id:
+                    continue;
+
                 config = account.configuration
                 if (config.mercadolibre_cron_post_update_products or config.mercadolibre_cron_post_new_products):
                     _logger.info("config.mercadolibre_cron_post_update_products or config.mercadolibre_cron_post_new_products")
                     account.meli_update_remote_products(post_new=config.mercadolibre_cron_post_new_products)
 
-    def cron_meli_process_get_products( self, meli=None ):
+    def cron_meli_process_get_products( self, meli=None, account_id=None ):
 
-        company = self or self.env.user.company_id
+        company = self or self.env.user.company_ids or self.env.user.company_id
 
         for comp in company:
 
             for account in comp.mercadolibre_connections:
+                if account_id and account_id!=account.id:
+                    continue;                
                 config = account.configuration
                 if (config.mercadolibre_cron_get_update_products):
                     _logger.info("config.mercadolibre_cron_get_update_products")
