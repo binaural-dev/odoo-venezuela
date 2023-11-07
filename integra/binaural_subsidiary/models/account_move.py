@@ -10,7 +10,6 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
     
-    # subsidiary = fields.Char("Subsidiary", required=False)
     account_analytic_id = fields.Many2one("account.analytic.account", string="Analytic Account")
     
     
@@ -27,15 +26,5 @@ class AccountMove(models.Model):
                 )
                 invoice.account_analytic_id = sale_order.account_analytic_id
         return invoices
-    
-    
-    
-    
-    
-    # Relational
-    # partner_id = fields.Many2one("res.partner", string="Partner", required=True)
-    # property_id = fields.Many2one("estate.property", string="Property", required=True)
-    
-    
 
         
