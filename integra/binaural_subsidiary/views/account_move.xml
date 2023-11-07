@@ -11,13 +11,42 @@
                     <field name="subsidiary"/>
                 </xpath> -->
                 <xpath expr="//group[@id='header_right_group']/div[3]" position="after">
-                    <field name="account_analytic_id" attrs="{'invisible':[('move_type','not in',['out_refund','out_invoice','in_invoice', 'in_refund'])]}"/>
-                    
+                    <field name="account_analytic_id" attrs="{'invisible':[('move_type','not in',['out_refund','out_invoice','in_invoice', 'in_refund'])], 'readonly': [('invoice_origin', '!=', False)]}"/>
                 </xpath>
                 
+                <xpath expr="//notebook/page[2]//tree/field[@name='analytic_distribution']" position="after">
+                    <field name="account_analytic_id" optional="hide"/>
+                </xpath>
+
+
             </field>
         </record>
 
 
+        <record id="binaural_subsidiary_account_move_view_tree" model="ir.ui.view">
+            <field name="name">binaural.subsidiary.account.move.view.tree</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_invoice_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='amount_total_signed']" position="after">
+                <field name="account_analytic_id" optional="hide"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="binaural_subsidiary_account_move_view_search" model="ir.ui.view">
+        <field name="name">binaural.subsidiary.account.move.view.search</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <search>
+                <field name="account_analytic_id" string="Cuenta Analitica"/>
+                <group string="Group by">
+                    <filter name="account_analytic_id" string="Cuenta Analitica" context="{'group_by': 'account_analytic_id'}"/>
+                </group>
+                <filter name="account_analytic_id" string="Cuenta Analitica" domain="[('account_analytic_id', '!=' , False)]"/>
+            </search>
+        </field>
+    </record>
 
 </odoo>

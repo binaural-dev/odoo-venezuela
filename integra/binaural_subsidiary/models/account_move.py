@@ -14,22 +14,28 @@ class AccountMove(models.Model):
     account_analytic_id = fields.Many2one("account.analytic.account", string="Analytic Account")
     
     
-     # Relational
+    @api.model_create_multi
+    def create(self, vals_list):
+        invoices = super().create(vals_list)
+        for invoice in invoices:
+            if invoice.invoice_origin and invoice.move_type in ("out_invoice","out_refund","in_invoice", "in_refund"):
+                sale_order = self.env["sale.order"].search(
+                    [
+                        ("name", "=", invoice.invoice_origin),
+                        ("company_id", "=", self.env.company.id),
+                    ]
+                )
+                invoice.account_analytic_id = sale_order.account_analytic_id
+        return invoices
+    
+    
+    
+    
+    
+    # Relational
     # partner_id = fields.Many2one("res.partner", string="Partner", required=True)
     # property_id = fields.Many2one("estate.property", string="Property", required=True)
     
     
-    # For stat button:
-    
-    
-
-    # correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
-    # invoice_reception_date = fields.Date(
-    #     "Reception Date", help="Indicates when the invoice was received by the client/company"
-    # )
-    # last_payment_date = fields.Date(
-    #     compute="_compute_last_payment_date",
-    #     store=True
-    # )
 
         
