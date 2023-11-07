@@ -34,7 +34,7 @@
                 </div>
                 <div class="row mb-1">
                     <h4 class="col-sm-3" style="font-weight: lighter;">Client:</h4>
-                    <h6 class="col-sm-3" style="font-weight: bolder;" t-out="invoice.partner_id.name"/>
+                    <h6 class="col-sm-3" style="font-weight: bolder;" t-out="invoice.partner_id.display_name"/>
                     <h4 class="col-sm-3" style="font-weight: lighter;">Invoice number:</h4>
                     <h6 class="col-sm-3" style="font-weight: bolder;" t-out="invoice.name"/>
                 </div>

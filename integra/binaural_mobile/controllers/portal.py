@@ -1,12 +1,14 @@
 import logging
 
-from odoo import _, http
+from odoo import _, http, fields
 from odoo.http import request, route
 from odoo.osv import expression
 from odoo.addons.sale.controllers.portal import CustomerPortal
 from odoo.addons.portal.controllers.portal import pager as portal_pager
 from odoo.addons.account.controllers.portal import PortalAccount
 from collections import OrderedDict
+from dateutil.relativedelta import relativedelta
+from odoo.tools import date_utils
 
 _logger = logging.getLogger(__name__)
 
@@ -238,7 +240,7 @@ class PortalAccountInh(PortalAccount):
 
         searchbar_filters = self._get_account_searchbar_filters()
         if not filterby:
-            filterby = "all"
+            filterby = "a_all"
         domain += searchbar_filters[filterby]["domain"]
 
         if search and search_in:
@@ -318,3 +320,39 @@ class PortalAccountInh(PortalAccount):
             )
 
         return domain
+
+    def _get_account_searchbar_filters(self):
+        user_id = request.env.user
+
+        if user_id.employee_id.is_seller:
+            today = fields.Date.today()
+            quarter_start, quarter_end = date_utils.get_quarter(today)
+            quarter_start_2 , quarter_end_2 = date_utils.get_quarter(today + relativedelta(months=-4))
+            quarter_start_3 , quarter_end_3 = date_utils.get_quarter(today + relativedelta(months=-8))
+            quarter_start_4 , quarter_end_4 = date_utils.get_quarter(today + relativedelta(months=-12))
+            last_month = today+ relativedelta(months=-1)
+            last_2_month = today+ relativedelta(months=-2)
+            last_year = today + relativedelta(years=-1)
+            last_2_year = today + relativedelta(years=-2)
+
+            return {
+                'a_all': {'label': _('Todo'), 'domain': []},
+                'a_nopaid': {'label': _('No Paid'), 'domain': [("payment_state", "=", "not_paid")]},
+                'a_paid': {'label': _('Paid'), 'domain': [("payment_state", "=", "paid")]},
+                'a_partial': {'label': _('Partial'), 'domain': [("payment_state", "=", "partial")]},
+                'b_month': {'label': _('Este mes'), 'domain': [('create_date', '>=', date_utils.start_of(today, 'month')), ('create_date', '<=', date_utils.end_of(today, 'month'))]},
+                'b_month_2': {'label': _('Mes pasado'), 'domain': [('create_date', '>=', date_utils.start_of(last_month, 'month')), ('create_date', '<=', date_utils.end_of(last_month, 'month'))]},
+                'b_month_3': {'label': _('Mes antepasado'), 'domain': [('create_date', '>=', date_utils.start_of(last_2_month, 'month')), ('create_date', '<=', date_utils.end_of(last_2_month, 'month'))]},
+                'c_quarter': {'label': _('Q1'), 'domain': [('create_date', '>=', quarter_start), ('create_date', '<=', quarter_end)]},
+                'c_quarter_2': {'label': _('Q2'), 'domain': [('create_date', '>=', quarter_start_2), ('create_date', '<=', quarter_end_2)]},
+                'c_quarter_3': {'label': _('Q3'), 'domain': [('create_date', '>=', quarter_start_3), ('create_date', '<=', quarter_end_3)]},
+                'c_quarter_4': {'label': _('Q4'), 'domain': [('create_date', '>=', quarter_start_4), ('create_date', '<=', quarter_end_4)]},
+                'year': {'label': _('Este año'), 'domain': [('create_date', '>=', date_utils.start_of(today, 'year')), ('create_date', '<=', date_utils.end_of(today, 'year'))]},
+                'year_last': {'label': _('El año pasado'), 'domain': [('create_date', '>=', date_utils.start_of(last_year, 'year')), ('create_date', '<=', date_utils.end_of(last_year, 'year'))]},
+                'year_last_2': {'label': _('El año antepasado'), 'domain': [('create_date', '>=', date_utils.start_of(last_2_year, 'year')), ('create_date', '<=', date_utils.end_of(last_2_year, 'year'))]},
+            }
+        return {
+            'all': {'label': _('All'), 'domain': []},
+            'invoices': {'label': _('Invoices'), 'domain': [('move_type', 'in', ('out_invoice', 'out_refund'))]},
+            'bills': {'label': _('Bills'), 'domain': [('move_type', 'in', ('in_invoice', 'in_refund'))]},
+        }

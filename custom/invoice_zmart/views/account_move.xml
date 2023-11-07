@@ -40,6 +40,9 @@
             <xpath expr="//group[@id='header_right_group']/div[3]" position="after">
                 <field name="invoice_type"/>
             </xpath>
+            <field name="partner_id" position="attributes">
+                <attribute name="options">{'no_create': True}</attribute>
+            </field>
         </field>
     </record>
     <record id="view_account_invoice_filter_zmart" model="ir.ui.view">
