@@ -33,11 +33,11 @@
                 <t t-foreach="invoice_move_type" t-as="move_type">
                     <t t-set="move_type_id" t-value="move_type['type']"/>
                     <t t-if="invoices[journal_id][move_type_id]">
-                        <div name="invoices_journal">
+                        <div>
                             <b t-out="move_type['name']"/>
                         </div>
                         <hr/>
-                        <div class="row">
+                        <div name="header_invoices" class="row">
                             <div class="col-3">
                                 <p>
                                 N Document
@@ -68,7 +68,7 @@
                                 <hr/>
 
                                 <t t-foreach="invoices[journal_id][move_type_id][term]" t-as="invoice">
-                                    <div class="row">
+                                    <div class="row" name="item_invoice">
                                         <div class="col-3">
                                             <p t-out="invoice.name"></p>
                                         </div>
@@ -83,7 +83,7 @@
                                         </div>
                                     </div>
                                 </t>
-                                <div class="row">
+                                <div class="row" name="total_term_invoices">
                                     <t t-set="totals_term" t-value="invoices[journal_id][move_type_id]['totals_'+term]"/>
                                     <div class="col-3">
                                         <strong>
@@ -104,7 +104,7 @@
 
                             </t>
                         </t>
-                        <div class="row">
+                        <div class="row" name="total_journal_invoices">
                             <t t-set="totals_move_type" t-value="invoices[journal_id]['totals_' + move_type_id]"/>
                             <div class="col-3">
                                 <strong>Total <t t-out="move_type['name']"/></strong>
@@ -127,7 +127,7 @@
                 <strong>Payments</strong>
             </div>
             <hr/>
-            <div class="row">
+            <div name="header_payments" class="row">
                 <div class="col-2">
                     <p>
                     N Document
@@ -182,7 +182,7 @@
                             <t t-foreach="payments[term][journal]" t-as="obj">
                                 <t t-set="i" t-value="obj['invoice']"/>
                                 <t t-set="p" t-value="obj['payment']"/>
-                                <div class="row">
+                                <div class="row" name="item_payment">
                                     <div class="col-2">
                                         <p><t t-out="i.name"/></p>
                                     </div>
@@ -216,7 +216,7 @@
                                     </div>
                                 </div>
                             </t>
-                        <div class="row">
+                        <div class="row" name="total_term_payments">
                             <div class="col-2">
                                 <strong>Total <t t-out="journal_id['name']"/> </strong>
                             </div>
@@ -245,6 +245,31 @@
                     </t>
                 </t>
             </t>
+            <div class="row" name="total_global_payments">
+                <div class="col-2">
+                    <strong>Total charged</strong>
+                </div>
+                <div class="col-2 text-center">
+                    <p></p>
+                </div>
+                <div class="col-2 text-center">
+                    <p></p>
+                </div>
+                <div class="col-1 text-center">
+                    <p></p>
+                </div>
+                <div class="col-2 text-center">
+                    <strong t-out="payments['totals']['amount']" />
+                </div>
+                <div class="col-1 text-center">
+                    <p>
+                    </p>
+                </div>
+                <div class="col-2 text-center">
+                    <strong t-out="payments['totals']['amount']" />
+                </div>
+            </div>
+            <hr/>
         </t>
         </t>
     </template>

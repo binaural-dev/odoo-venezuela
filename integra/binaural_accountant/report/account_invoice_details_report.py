@@ -79,7 +79,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
                 else:
                     payments[term_id][journal_id].append({"invoice": p_invoice, "payment": payment})
 
-                if not invoices[term_id].get("totals_" + journal_id, False):
+                if not payments[term_id].get("totals_" + journal_id, False):
                     journal_totals = p_initial_amounts
                 else:
                     journal_totals = payments[term_id]["totals_" + journal_id]
@@ -88,7 +88,12 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
                     journal_totals, payment
                 )
 
-        _logger.info("Payment %s:", payments)
+                if not payments.get("totals", False):
+                    p_totals = p_initial_amounts
+                else:
+                    p_totals = payments["totals"]
+
+                payments["totals"] = self.p_get_new_values(p_totals, payment)
 
         for invoice in invoice_ids:
             journal_id = str(invoice.journal_id.id)
@@ -148,7 +153,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         return data
 
     def p_get_new_values(self, totals, payment):
-        if payment.currency_id.id == self.env.ref("base.USD"):
+        if payment.currency_id.id == self.env.ref("base.USD").id:
             amount = totals["amount"] + payment.amount
             foreign_amount = totals["foreign_amount"] + payment.amount * payment.foreign_rate
         else:
