@@ -241,13 +241,13 @@ msgstr "Asociados Familiar"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__associate_action
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__associate_action
 msgid "Associate action"
-msgstr "Número de Acción"
+msgstr "Número de Acción Padre"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__associate_parent
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__associate_parent
 msgid "Associate parent"
-msgstr "Número de Acción Padre"
+msgstr "Socio Padre"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__type_relation__associated
