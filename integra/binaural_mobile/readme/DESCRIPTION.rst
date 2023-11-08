@@ -1,7 +1,6 @@
 #Binaural Movil
 
-Este modulo se encarga de crearle espacios para la ventas de los vendedores, crear presupuestos, 
-procesar pagos a facturas y configuraciones para los vendedores asi como tambien validaciones.
+Este modulo se encarga de crearle espacios para la ventas de los vendedores, crear presupuestos, procesar pagos a facturas y configuraciones para los vendedores asi como tambien validaciones.
 
 Este añade los siguientes campos:
 
@@ -21,11 +20,9 @@ Este añade los siguientes campos:
 
 ## Validaciones
 
-* Cualquier pago que venga proveniente de la app se saltará la validación del no conciliar pagos con
-distintos diarios
+* Cualquier pago que venga proveniente de la app se saltará la validación del no conciliar pagos con distintos diarios
 * Productos que se le mostrarán al vendedor por configuración
-* Sí la configuración de empaquetado está activado, validará que cuando un producto tenga un empaquetado
-en la lista por si se activa el empaquetado en la ficha del producto 
+* Sí la configuración de empaquetado está activado, validará que cuando un producto tenga un empaquetado en la lista por si se activa el empaquetado en la ficha del producto 
 
 ##Pagos (account.payment)
 
@@ -82,8 +79,7 @@ en la lista por si se activa el empaquetado en la ficha del producto
 #Interfaz del vendedor
 
 * Se agrego desde el menu de portal que el vendedor pueda crear presupuestos y crear pagos a facturas
-* Se agrego que al vendedor le salgan disponibles a la vista los tipos de productos que estén configurados
-  en el sistema
+* Se agrego que al vendedor le salgan disponibles a la vista los tipos de productos que estén configurados en el sistema
 * Se Visualizan los presupuestos, facturas y pagos hechos por el vendedor de la sesión
 
 ----------------------------------------
