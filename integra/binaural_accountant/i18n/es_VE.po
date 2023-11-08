@@ -453,7 +453,7 @@ msgstr "Detalle de ventas"
 #: model:ir.ui.menu,name:binaural_accountant.account_report_sale_menu
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.account_invoices_details_views
 msgid "Sales Details"
-msgstr "Detale de ventas"
+msgstr "Detalle de ventas"
 
 #. module: binaural_accountant
 #: model:ir.model,name:binaural_accountant.model_sale_order
