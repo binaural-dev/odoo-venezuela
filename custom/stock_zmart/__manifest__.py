@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Stock/Stock",
-    "version": "16.0.0.7",
+    "version": "16.0.0.8",
     "depends": [
         "binaural_sale",
         "binaural_stock",
@@ -16,6 +16,7 @@
         "security/ir.model.access.csv",
         "data/paperformat.xml",
         "data/ir_sequence.xml",
+        "data/res_group.xml",
         "views/ir_sequence.xml",
         "report/picking_order_report.xml",
         "report/report_albaran.xml",
