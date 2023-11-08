@@ -37,6 +37,14 @@
             <xpath expr="//button[@name='action_toggle_is_locked'][1]" position="attributes">
                 <attribute name="groups">!binaural_stock.group_hide_unlock_lock_button_for_inventory_transfers</attribute>
             </xpath>
+
+            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d'][1]" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_return_inventory_transfers_button</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='button_scrap'][1]" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_discard_inventory_transfers_button</attribute>
+            </xpath>
             
         </field>
     </record>
