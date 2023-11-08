@@ -292,10 +292,17 @@ class SaleOrder(models.Model):
             self._recompute_prices()
 
     def action_confirm(self):
-        if self.env.company.not_allow_sell_products:
-            for order in self:
+
+        for order in self:
+            if self.env.company.not_allow_sell_products:
                 for line in order.order_line:
                     if line.product_id.detailed_type == "product" and line.product_id.qty_available < line.product_uom_qty:
                         raise ValidationError(_('Does not have enough units available for the product %s. Only has %s units of the %s demanded.' ) % (line.product_id.name, line.product_id.qty_available, line.product_uom_qty))
-        
+
+            if order.company_id.account_use_credit_limit and order.partner_id.use_partner_credit_limit_order:
+                total_pay = order.partner_id.credit + order.amount_total
+                if total_pay > order.partner_id.credit_limit:
+                    raise ValidationError(_("La cuenta %s es de %s mas %s en presupuesto da un total de %s superando el limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el limite de crédito del cliente.",
+                                            order.partner_id.property_account_receivable_id.display_name, order.partner_id.credit_limit, order.amount_total, total_pay, order.partner_id.credit_limit)
+                                        )
         return super().action_confirm()
