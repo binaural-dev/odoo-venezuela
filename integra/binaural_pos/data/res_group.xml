@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record model="res.groups" id="group_authorized_discount_pos">
+            <field name="name">Authorized discount pos</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+
+        </record>
+    </data>
+</odoo>
