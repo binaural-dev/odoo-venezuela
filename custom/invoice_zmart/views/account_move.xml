@@ -45,6 +45,10 @@
                 <attribute name="options">{'no_quick_create': True}</attribute>
             </field>
 
+            <field name="partner_id" position="after">
+                <field name="partner_street" />
+            </field>
+
         </field>
     </record>
     <record id="view_account_invoice_filter_zmart" model="ir.ui.view">

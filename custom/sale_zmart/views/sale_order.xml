@@ -24,6 +24,10 @@
             <field name="partner_id" position="attributes">
                 <attribute name="options">{'no_quick_create': True}</attribute>
             </field>
+
+            <field name="partner_id" position="after">
+                <field name="partner_street" />
+            </field>
         </field>
     </record>
     <record id="view_sale_order_tree_zmart" model="ir.ui.view">

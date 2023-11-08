@@ -1,7 +1,10 @@
 import base64
-import qrcode
 import io
-from odoo import models, fields,api
+
+import qrcode
+from odoo import api, fields, models
+
+
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
@@ -72,7 +75,8 @@ class StockPicking(models.Model):
         default=False,
     )
     document_number_invoice = fields.Char(compute="_compute_document_type")
-    
+    partner_street = fields.Char('Client Street', related="partner_id.street", readonly=True)
+
     @api.depends("origin")
     def _compute_document_type(self):
         for record in self:

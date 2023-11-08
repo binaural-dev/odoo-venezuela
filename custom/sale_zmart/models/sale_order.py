@@ -66,6 +66,7 @@ class SaleOrderZmart(models.Model):
         default=False
     )
     shipping_weight = fields.Char(compute="_compute_shipping_weight")
+    partner_street = fields.Char('Client Street', related="partner_id.street", readonly=True)
 
     @api.depends("order_line")
     def _compute_shipping_weight(self):
