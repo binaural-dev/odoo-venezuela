@@ -6,10 +6,11 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "16.7.3",
+    "version": "16.7.4",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
+        "account",
         "binaural_tax",
         "sale_management",
         "binaural_rate",
@@ -21,6 +22,7 @@
     "data": [
         "views/res_config_settings.xml",
         "views/sale_order.xml",
+        "views/res_partner.xml",
         "views/product_pricelist_item_views.xml",
     ],
     "images": ["static/description/icon.png"],
