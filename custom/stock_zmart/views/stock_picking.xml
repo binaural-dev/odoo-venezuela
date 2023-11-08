@@ -25,6 +25,7 @@
                 <field name="partner_id" position="attributes">
                     <attribute name="options">{'no_quick_create': True}</attribute>
                 </field>
+
             </field>
         </record>
     </data>

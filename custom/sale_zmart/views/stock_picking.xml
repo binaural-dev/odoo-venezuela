@@ -16,6 +16,7 @@
             <field name="model">stock.picking</field>
             <field name="inherit_id" ref="stock.view_picking_form"/>
             <field name="arch" type="xml">
+
                 <field name="origin" position="after">
                     <field name="guide" attrs="{'invisible': [('sequence_code', '!=', 'PACK'), ('sequence_code', '!=', 'OUT')], 'readonly': 1}"/>
                     <field name="document_type_invoice"/>
@@ -37,6 +38,11 @@
                     <field name="shipping_mean" attrs="{'invisible': [('sequence_code', '==', 'IN')]}"/>
                     <field name="shipping_method" attrs="{'invisible': [('shipping_type', '!=', 'shipment')]}"/>
                 </xpath>
+
+                <field name="partner_id" position="after">
+                    <field name="partner_street" />
+                </field>
+
             </field>
         </record>
         <record id="view_picking_sale_tree_inherit_zmart" model="ir.ui.view">

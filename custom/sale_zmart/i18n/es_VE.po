@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230928\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230606\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 14:50+0000\n"
-"PO-Revision-Date: 2023-10-26 14:50+0000\n"
+"POT-Creation-Date: 2023-11-08 22:22+0000\n"
+"PO-Revision-Date: 2023-11-08 22:22+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -76,13 +76,6 @@ msgstr ""
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
 msgid ""
-"<span style=\"margin-right: 1px;font-family: Arial\"><strong>CLIENTE:  "
-"</strong></span>"
-msgstr ""
-
-#. module: sale_zmart
-#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid ""
 "<span style=\"margin-right: 1px;font-family: "
 "Arial\"><strong>Ciudad:</strong></span>"
 msgstr ""
@@ -92,20 +85,6 @@ msgstr ""
 msgid ""
 "<span style=\"margin-right: 1px;font-family: "
 "Arial\"><strong>Cédula/RIF:</strong></span>"
-msgstr ""
-
-#. module: sale_zmart
-#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid ""
-"<span style=\"margin-right: 1px;font-family: Arial\"><strong>DOC DE "
-"VENTA:</strong></span>"
-msgstr ""
-
-#. module: sale_zmart
-#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
-msgid ""
-"<span style=\"margin-right: 1px;font-family: Arial\"><strong>ESTADO:  "
-"</strong></span>"
 msgstr ""
 
 #. module: sale_zmart
@@ -127,6 +106,27 @@ msgstr ""
 msgid ""
 "<span style=\"margin-right: 1px;font-family: "
 "Arial\"><strong>TLF:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid ""
+"<span style=\"margin-right: 1px;font-family: Arial;font-"
+"size:16px;\"><strong>CLIENTE:  </strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid ""
+"<span style=\"margin-right: 1px;font-family: Arial;font-"
+"size:16px;\"><strong>DOC DE VENTA:</strong></span>"
+msgstr ""
+
+#. module: sale_zmart
+#: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
+msgid ""
+"<span style=\"margin-right: 1px;font-family: Arial;font-"
+"size:16px;\"><strong>ESTADO:  </strong></span>"
 msgstr ""
 
 #. module: sale_zmart
@@ -383,6 +383,12 @@ msgid "Cant."
 msgstr ""
 
 #. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__partner_street
+#: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__partner_street
+msgid "Client Street"
+msgstr "Dirección de cliente"
+
+#. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
 msgid "Cliente"
 msgstr ""
@@ -400,7 +406,7 @@ msgstr "Cobro en Destino"
 #. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_res_company
 msgid "Companies"
-msgstr "compañías"
+msgstr "Compañías"
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_res_company__logo_2
@@ -766,7 +772,7 @@ msgstr ""
 #. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_stock_picking
 msgid "Transfer"
-msgstr "Transferir"
+msgstr "Albarán"
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
