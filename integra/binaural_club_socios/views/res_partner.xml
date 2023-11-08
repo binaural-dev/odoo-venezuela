@@ -6,31 +6,19 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <field name="type" position="after">
+            <xpath expr="//group/group/div" position="after">
 	            <field name="supplier_rank" invisible="1"/>
 	            <field name="customer_rank" invisible="1"/>
-                <label for="action_number" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="action_number" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
-
-	            <label for="type_relation" />
                 <field name="type_relation"/>
-                <label for="state_action" />
                 <field name="state_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
-                <label for="state_partner" />
                 <field name="state_partner" />
-                <label for="associate_parent" />
                 <field name="associate_parent" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>
-                <label for="associate_action" />
                 <field name="associate_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>
-                <label for="can_access_club" />
                 <field name="can_access_club" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
-                    <!--campo fecha fin de suspension-->
-                <label for="end_date_suspend" />
                 <field name="end_date_suspend" attrs="{'invisible':['|',('supplier_rank','>', 0),('can_access_club','=',True)]}"/>
-                
-                <label for="is_solvent" />
                 <field name="is_solvent" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
-            </field>
+            </xpath>
             <!--Boton de add en contacto y direcciones-->
             <xpath expr="//notebook/page/field[@name='child_ids']" position="attributes">
                 <attribute name="attrs">{'invisible': ['|',('id','=',False),('customer_rank','=',0)]}
@@ -68,9 +56,9 @@
             </field>
 
              <!--Agregar campo otro doc de identificacion-->
-            <field name="vat" position="after">
+            <!-- <field name="vat" position="after">
                 <field name="other_doc_id" placeholder="Otro Documento de Identificación"/>
-            </field>
+            </field> -->
 
 
                 <!--ocultar campos que no se usaran-->
@@ -78,6 +66,9 @@
                 <attribute name="invisible">1</attribute>
             </field>
             <field name="function" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+            <field name="title" position="attributes">
                 <attribute name="invisible">1</attribute>
             </field>
         
