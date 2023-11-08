@@ -16,6 +16,7 @@
         "security/ir.model.access.csv",
         "data/paperformat.xml",
         "data/ir_sequence.xml",
+        "data/res_group.xml",
         "views/ir_sequence.xml",
         "report/picking_order_report.xml",
         "report/report_albaran.xml",
