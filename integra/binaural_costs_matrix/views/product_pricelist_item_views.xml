@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="product_pricelist_item_tree_view" model="ir.ui.view">
+	<field name="name">product.pricelist.item.tree.costs.matrix</field>
+	<field name="model">product.pricelist.item</field>
+	<field name="inherit_id" ref="binaural_sale.product_pricelist_item_tree_view"/>
+	<field name="arch" type="xml">
+	    <field name="fixed_price" position="after">
+		<field name="purchase_price"/>
+		<field name="margin_percent" widget="percentage"/>
+		<field name="margin"/>
+		<field name="latest_standard_price"/>
+		<field name="latest_standard_price_margin_percent" widget="percentage"/>
+		<field name="latest_standard_price_margin"/>
+	    </field>
+	</field>
+    </record>
+
+    <record id="product_pricelist_item_view_search" model="ir.ui.view">
+	<field name="name">product.pricelist.item.view.costs.matrix</field>
+	<field name="model">product.pricelist.item</field>
+	<field name="inherit_id" ref="product.product_pricelist_item_view_search"/>
+	<field name="arch" type="xml">
+	    <field name="pricelist_id" position="after">
+		<field name="product_id"/>
+		<field name="brand_id"/>
+	    </field>
+	    <group position="inside">
+		<filter string="Brand" name="groupby_brand" domain="[]" context="{'group_by': 'brand_id'}"/>
+	    </group>
+	</field>
+    </record>
+</odoo>
+
