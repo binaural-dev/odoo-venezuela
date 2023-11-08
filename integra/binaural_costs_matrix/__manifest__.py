@@ -1,5 +1,5 @@
 {
-    "name": "Matriz de Costos",
+    "name": "Binaural Matriz de Costos",
     "summary": """Modulo para la gestion de la matriz de costos""",
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
