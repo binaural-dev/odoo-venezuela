@@ -8,6 +8,14 @@ class PartnerConfig(models.Model):
     _name = "partner.config"
     _rec_name = "company_id"
 
+    _sql_constraints = [
+        (
+            "code_company_uniq_debt",
+            "unique (company_id)",
+            "La configuración de miembro.",
+        ),
+    ]
+
     company_id = fields.Many2one(
         "res.company",
         string="Company",

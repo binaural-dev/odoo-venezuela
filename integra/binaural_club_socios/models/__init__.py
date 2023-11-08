@@ -1,6 +1,4 @@
-from . import res_company
 from . import partner_config
-from . import res_config_settings
 from . import partner_profession
 from . import action_partner
 from . import action_partner_previous
@@ -9,3 +7,4 @@ from . import account_move
 from . import account_move_line
 from . import account_payment
 from . import res_users
+from . import pending_debt_list
