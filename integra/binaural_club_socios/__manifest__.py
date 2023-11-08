@@ -17,7 +17,7 @@
     ],
     "data": [
         "security/ir.model.access.csv",
-        "views/res_config_settings.xml",
+        "security/security.xml",
         "views/action_partner.xml",
         "views/res_partner.xml",
         "views/partner_profession.xml",
@@ -25,6 +25,8 @@
         "views/partner_config.xml",
         "views/account_payment.xml",
         "views/account_move.xml",
+        "views/family_members.xml",
+        "views/pending_debt_list.xml",
         "wizard/status_action_batch.xml"
 
     ],

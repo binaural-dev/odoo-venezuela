@@ -4,6 +4,22 @@ class ActionPartnerPrevious(models.Model):
     _name = 'action.partner.previous'
     _description = 'Last action partners'
 
+    _sql_constraints = [
+        (
+            "code_company_uniq_debt",
+            "unique (company_id)",
+            "Debe pertenecer a la compañia.",
+        ),
+    ]
+
+    company_id = fields.Many2one(
+        "res.company",
+        string="Company",
+        required=True,
+        readonly=True,
+        default=lambda self: self.env.company,
+    )
+
     name = fields.Char('Name')
     identification = fields.Char('Identification')
     date_start = fields.Datetime('Start date')

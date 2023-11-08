@@ -9,8 +9,18 @@ class PartnerProfessions(models.Model):
     _rec_name = 'name'
 
     _sql_constraints = [
-	    ('name_uniq', 'unique(name)', 'The name of the profession is already registered!'),
+	    ('name_uniq', 'unique(name, company_id)', 'The name of the profession is already registered!'),
     ]
+
+
+    company_id = fields.Many2one(
+        "res.company",
+        string="Company",
+        required=True,
+        readonly=True,
+        default=lambda self: self.env.company,
+    )
+    
     name = fields.Char(string='Name')
     active = fields.Boolean(string='Active',default=True)
 
