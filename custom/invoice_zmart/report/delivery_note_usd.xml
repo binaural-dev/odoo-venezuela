@@ -16,6 +16,19 @@
             <field name="binding_model_id" eval="False"/>
         </record>
 
+        <record id="action_invoice_sale_note_usd_report" model="ir.actions.report">
+            <field name="name">Delivery Note $</field>
+            <field name="model">account.move</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">invoice_zmart.template_invoice_delivery_note_usd</field>
+            <field name="report_file">invoice_zmart.template_invoice_delivery_note_usd</field>
+            <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
+            <field name="paperformat_id" ref="invoice_zmart.paperformat_note"/>
+            <field name="binding_type">report</field>
+            <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
+            <field name="binding_model_id" ref="account.model_account_move"/>
+        </record>
+
         <record id="action_invoice_sale_note_usd" model="ir.actions.report">
             <field name="name">Delivery Note usd</field>
             <field name="model">account.move</field>
@@ -24,9 +37,9 @@
             <field name="report_file">invoice_zmart.template_invoice_delivery_note_usd</field>
             <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
             <field name="paperformat_id" ref="invoice_zmart.paperformat_note"/>
-            <field name="binding_model_id" eval="False"/>
             <field name="binding_type">report</field>
             <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
+            <field name="binding_model_id" eval="False"/>
         </record>
 
         <template id="template_invoice_delivery_note_usd">
@@ -150,7 +163,7 @@
                                         <tr>
                                             <th style="width:700px;font-weight:normal;font-size:17px;padding-right:40px">
                                                 <div style="display:inline;">Dirección:</div>
-                                                <span style="margin-left:3px" t-out="invoice.partner_id.contact_address_complete"/>
+                                                    <span style="margin-left:3px" t-out="invoice.partner_id.contact_address_complete"/>
                                             </th>
                                         </tr>
                                         <tr>

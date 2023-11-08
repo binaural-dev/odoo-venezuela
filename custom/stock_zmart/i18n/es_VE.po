@@ -29,6 +29,11 @@ msgid ""
 msgstr ""
 
 #. module: stock_zmart
+#: model_terms:ir.ui.view,arch_db:stock_zmart.report_picking
+msgid "<span><strong>Client/Company Name: </strong></span>"
+msgstr "<span><strong>Nombre/Razón Social: </strong></span>"
+
+#. module: stock_zmart
 #: model_terms:ir.ui.view,arch_db:stock_zmart.report_albaran_zmart
 msgid "<strong>Cantidad</strong>"
 msgstr ""
@@ -187,7 +192,7 @@ msgstr "Movimientos de Producto (Stock Move Line)"
 #. module: stock_zmart
 #: model:res.groups,name:stock_zmart.group_stock_picking_not_lower_qty_done
 msgid "Quantity Done Can't be lower than reserved"
-msgstr ""
+msgstr "La cantidad realizada no puede ser inferior a la reservada"
 
 #. module: stock_zmart
 #: model:ir.ui.menu,name:stock_zmart.menu_ir_sequence_form_guide_number

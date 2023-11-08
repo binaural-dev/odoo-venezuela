@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231023\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231030\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-23 18:59+0000\n"
-"PO-Revision-Date: 2023-10-23 18:59+0000\n"
+"POT-Creation-Date: 2023-11-03 19:35+0000\n"
+"PO-Revision-Date: 2023-11-03 19:35+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -38,11 +38,12 @@ msgstr "Contacto"
 #. module: binaural_seller
 #: model:ir.model.fields,field_description:binaural_seller.field_res_config_settings__initial_seller
 msgid "Default seller when creating contact"
-msgstr "Vendedor por defecto cuando se crea un contacto"
+msgstr "Vendedor predeterminado al crear un contacto"
 
 #. module: binaural_seller
 #. odoo-python
 #: code:addons/binaural_seller/models/account_move.py:0
+#: code:addons/binaural_seller/models/sale_order.py:0
 #, python-format
 msgid "El contacto seleccionado posee estos Vendedores: %s. Debe elegir uno."
 msgstr ""
@@ -55,10 +56,11 @@ msgstr "Empleado"
 #. module: binaural_seller
 #: model:ir.model.fields,field_description:binaural_seller.field_res_company__initial_seller
 msgid "Initial Seller"
-msgstr "Vendedor por efecto"
+msgstr "Vendedor inicial"
 
 #. module: binaural_seller
 #: model:ir.model.fields,field_description:binaural_seller.field_hr_employee__is_seller
+#: model:ir.model.fields,field_description:binaural_seller.field_hr_employee_public__is_seller
 msgid "Is a Seller"
 msgstr "Es un vendedor"
 
@@ -82,6 +84,11 @@ msgid "Partner's seller reference."
 msgstr "Referencia del vendedor del contacto."
 
 #. module: binaural_seller
+#: model:ir.model,name:binaural_seller.model_hr_employee_public
+msgid "Public Employee"
+msgstr "Empleado público"
+
+#. module: binaural_seller
 #: model:ir.model,name:binaural_seller.model_sale_order
 msgid "Sales Order"
 msgstr "Pedido de venta"
@@ -90,6 +97,8 @@ msgstr "Pedido de venta"
 #: model:ir.model.fields,field_description:binaural_seller.field_account_bank_statement_line__seller_id
 #: model:ir.model.fields,field_description:binaural_seller.field_account_move__seller_id
 #: model:ir.model.fields,field_description:binaural_seller.field_account_payment__seller_id
+#: model:ir.model.fields,field_description:binaural_seller.field_res_partner__seller_id
+#: model:ir.model.fields,field_description:binaural_seller.field_res_users__seller_id
 #: model:ir.model.fields,field_description:binaural_seller.field_sale_order__seller_id
 msgid "Seller"
 msgstr "Vendedor"
@@ -97,7 +106,7 @@ msgstr "Vendedor"
 #. module: binaural_seller
 #: model_terms:ir.ui.view,arch_db:binaural_seller.binaural_movil_seller_res_config_settings_view_form
 msgid "Seller Settings"
-msgstr "Configuración de Vendedor"
+msgstr "Configuración de Vendedores"
 
 #. module: binaural_seller
 #: model:ir.model.fields,field_description:binaural_seller.field_res_partner__seller_ids
@@ -116,6 +125,7 @@ msgstr "Vendedores asociados con el socio."
 #. odoo-python
 #: code:addons/binaural_seller/models/account_move.py:0
 #: code:addons/binaural_seller/models/res_partner.py:0
+#: code:addons/binaural_seller/models/sale_order.py:0
 #, python-format
 msgid "The customer must have at least one salesperson assigned"
 msgstr "El contacto debe tener al menos un vendedor asignado"
