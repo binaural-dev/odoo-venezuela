@@ -307,7 +307,6 @@ class AccountPaymentPayments(http.Controller):
                     ).id,
                     "foreign_rate": currency_id.company_rate,
                     "foreign_inverse_rate": currency_id.company_rate, 
-                    # if currency_id.currency_id.symbol == "$" else currency_id.inverse_company_rate,
                     "payment_from_app": True,
                 }
             )
