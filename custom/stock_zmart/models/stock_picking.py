@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class StockPicking(models.Model):
@@ -23,7 +24,23 @@ class StockPicking(models.Model):
                     continue
                 record.origin_sale_id = sale_id
 
+    def _check_valid_qty_done_move_line_ids_without_package(self):
+        for move_line_id in self.move_line_ids_without_package:
+
+            if move_line_id.qty_done > move_line_id.reserved_uom_qty:
+                raise UserError(_("You cannot validate quantities greater than those reserved"))
+
+            seq_code = move_line_id.picking_id.sequence_code
+            is_lower_than = move_line_id.qty_done < move_line_id.reserved_uom_qty
+            has_picking_group = self.env.user.has_group ('stock_zmart.group_stock_picking_not_lower_qty_done')
+
+            if seq_code in ['PICK', 'PACK'] and is_lower_than and has_picking_group:
+                raise UserError(_("You cannot validate quantities lower than those reserved or not has the right access group"))
+
+
     def button_validate(self):
+
+        self._check_valid_qty_done_move_line_ids_without_package()
 
         super().button_validate()
 
