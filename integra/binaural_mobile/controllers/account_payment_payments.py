@@ -306,7 +306,7 @@ class AccountPaymentPayments(http.Controller):
                         "account.account_payment_method_manual_in"
                     ).id,
                     "foreign_rate": currency_id.company_rate,
-                    "foreign_inverse_rate": currency_id.inverse_company_rate,
+                    "foreign_inverse_rate": currency_id.company_rate, 
                     "payment_from_app": True,
                 }
             )
