@@ -51,7 +51,7 @@ class ResPartnerInherit(models.Model):
         for partner in self:
             employee_seller = self.env["hr.employee"].search(
                 [
-                    ("company_id", "=", self.company_id.id), 
+                    ("company_id", "=", self.env.company.id), 
                     ("is_seller", "=", True)
                 ], limit=1
             )
