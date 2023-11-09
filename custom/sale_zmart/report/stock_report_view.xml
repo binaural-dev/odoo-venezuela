@@ -25,7 +25,7 @@
                                     margin-top: 0px;
                                     padding-left: 10px;
                                     padding-right: 10px;
-                                    height:15cm;
+                                    height:16cm;
                                     margin-left:-20px;
                                     
                                 }
@@ -59,10 +59,10 @@
                                 <div class="box"></div>
                                 <div class="box"></div>
                             </div> -->
-                            <section id="segmento_1" style="font-size: 0.8em; line-height: 0.8em; width: 10.5cm;height:16cm;">
+                            <section id="segmento_1" style="font-size: 0.8em; line-height: 0.8em; width: 10.5cm;height:17cm;">
                                 <!-- <div style="display: inline-block; text-align: center; width: 100%;margin-top:-10px"> -->
                                 <div class="row border-bottom border-dark py-2">
-                                    <div class="col-6" style="border-right: 1px solid black;">
+                                    <div class="col-3" style="border-right: 1px solid black;">
                                         <img 
                                         t-if="o.company_id.logo_2"
                                         t-att-src="image_data_uri(o.company_id.logo_2)"
@@ -71,24 +71,22 @@
                                         style="display: inline-block; vertical-align: middle;padding-right:5px; objet-fit:contain;"
                                         />
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-9">
                                         <div style="vertical-align: middle;">
-                                            <div class="col-8">
-                                                <table style="display: inline-block; vertical-align: middle;width:150%;">
-                                                    <tr style="text-align:left;font-family: Arial; padding-top:5px;">
-                                                        <th style="text-align:left;padding-left:8px;font-weight: Bold;">EMISOR:</th>
-                                                    </tr>
-                                                    <tr style="text-align:left;font-family: Arial">
-                                                        <th style="text-align:left;padding-left:8px;font-weight: normal"><span t-field="o.company_id"/></th>
-                                                    </tr>
-                                                    <tr style="text-align:left;font-family: Arial">
-                                                        <th style="padding-left:8px;font-weight: normal">R.I.F.:<span t-field="o.company_id.vat"/></th>
-                                                    </tr>
-                                                    <tr style="text-align:left;font-family: Arial">
-                                                        <th style="padding-left:8px;font-weight: normal">TLF:<span t-field="o.company_id.phone"/></th>
-                                                    </tr>
-                                                </table>
-                                            </div>
+                                            <table style="display: inline-block; vertical-align: middle;width:150%;">
+                                                <tr style="text-align:left;font-family: Arial; padding-top:5px;">
+                                                    <th style="text-align:left;padding-left:8px;font-weight: Bold;">EMISOR:</th>
+                                                </tr>
+                                                <tr style="text-align:left;font-family: Arial">
+                                                    <th style="text-align:left;padding-left:8px;font-weight: normal"><span t-field="o.company_id"/></th>
+                                                </tr>
+                                                <tr style="text-align:left;font-family: Arial">
+                                                    <th style="padding-left:8px;font-weight: normal">R.I.F.:<span t-field="o.company_id.vat"/></th>
+                                                </tr>
+                                                <tr style="text-align:left;font-family: Arial">
+                                                    <th style="padding-left:8px;font-weight: normal">TLF:<span t-field="o.company_id.phone"/></th>
+                                                </tr>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
