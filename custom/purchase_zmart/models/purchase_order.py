@@ -1,4 +1,8 @@
-from odoo import api, fields, models
+import logging
+
+from odoo import api, fields, models, tools
+
+_logger = logging.getLogger(__name__)
 
 class PurchaseOrderZmart(models.Model):
     _inherit = "purchase.order"
@@ -35,3 +39,4 @@ class PurchaseOrderZmart(models.Model):
     
     def button_report_purchase_quotation(self):
         return self.env.ref('purchase.report_purchase_quotation').report_action(self)
+
