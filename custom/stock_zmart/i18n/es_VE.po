@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230606\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-08 20:12+0000\n"
-"PO-Revision-Date: 2023-11-08 20:12+0000\n"
+"POT-Creation-Date: 2023-11-09 22:09+0000\n"
+"PO-Revision-Date: 2023-11-09 22:09+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -27,6 +27,11 @@ msgid ""
 "<i class=\"fa fa-exclamation-triangle\"/>\n"
 "                                    No se pudieron reservar todos los productos. Haga clic en el botón \"Comprobar disponibilidad\" para intentar reservar productos."
 msgstr ""
+
+#. module: stock_zmart
+#: model_terms:ir.ui.view,arch_db:stock_zmart.report_picking
+msgid "<span><strong>Client/Company Name: </strong></span>"
+msgstr "<span><strong>Nombre/Razón Social: </strong></span>"
 
 #. module: stock_zmart
 #: model_terms:ir.ui.view,arch_db:stock_zmart.report_albaran_zmart
@@ -109,6 +114,11 @@ msgid "Guide"
 msgstr "N° de Guia"
 
 #. module: stock_zmart
+#: model_terms:ir.ui.view,arch_db:stock_zmart.view_picking_form_inherited_zmart
+msgid "Guía de Proveedor"
+msgstr ""
+
+#. module: stock_zmart
 #: model:ir.model.fields,field_description:stock_zmart.field_stock_warehouse_operator__id
 msgid "ID"
 msgstr ""
@@ -131,6 +141,16 @@ msgstr ""
 #. module: stock_zmart
 #: model:ir.model.fields,field_description:stock_zmart.field_stock_warehouse_operator__write_date
 msgid "Last Updated on"
+msgstr ""
+
+#. module: stock_zmart
+#: model_terms:ir.ui.view,arch_db:stock_zmart.report_albaran_zmart
+msgid "Medio de Envío:"
+msgstr ""
+
+#. module: stock_zmart
+#: model_terms:ir.ui.view,arch_db:stock_zmart.report_albaran_zmart
+msgid "Métodos de Envío:"
 msgstr ""
 
 #. module: stock_zmart
@@ -180,14 +200,9 @@ msgid "Prioridad:"
 msgstr ""
 
 #. module: stock_zmart
-#: model:ir.model,name:stock_zmart.model_stock_move_line
-msgid "Product Moves (Stock Move Line)"
-msgstr "Movimientos de Producto (Stock Move Line)"
-
-#. module: stock_zmart
 #: model:res.groups,name:stock_zmart.group_stock_picking_not_lower_qty_done
 msgid "Quantity Done Can't be lower than reserved"
-msgstr ""
+msgstr "La cantidad realizada no puede ser inferior a la reservada"
 
 #. module: stock_zmart
 #: model:ir.ui.menu,name:stock_zmart.menu_ir_sequence_form_guide_number
@@ -221,15 +236,11 @@ msgid ""
 "shipping weight specified will default to their products' total weight. This"
 " is the weight used to compute the cost of the shipping."
 msgstr ""
-"El paquete no contiene el peso y nº de productos total. Los paquetes que no "
-"especifican el peso del envío se les pondrá por defecto el peso total de los"
-" productos. Este peso es el que se utiliza para calcular el costo del envío."
-" "
 
 #. module: stock_zmart
 #: model:ir.model.fields,help:stock_zmart.field_stock_picking__weight
 msgid "Total weight of the products in the picking."
-msgstr "Peso total de los productos en la recolección."
+msgstr ""
 
 #. module: stock_zmart
 #: model:ir.model,name:stock_zmart.model_stock_picking
@@ -246,12 +257,12 @@ msgstr "Operador de Almacén"
 #. module: stock_zmart
 #: model:ir.model.fields,field_description:stock_zmart.field_stock_picking__weight
 msgid "Weight"
-msgstr "Peso"
+msgstr ""
 
 #. module: stock_zmart
 #: model:ir.model.fields,field_description:stock_zmart.field_stock_picking__shipping_weight
 msgid "Weight for Shipping"
-msgstr "Peso para envío"
+msgstr ""
 
 #. module: stock_zmart
 #. odoo-python
@@ -265,6 +276,8 @@ msgstr "No se pueden validar cantidades superiores a las reservadas"
 #: code:addons/stock_zmart/models/stock_picking.py:0
 #, python-format
 msgid ""
+"You cannot validate quantities lower than those reserved or not has the "
+"right access group"
+msgstr ""
 "No se pueden validar cantidades inferiores a las reservadas o no tiene el "
 "grupo de acceso derecho"
-msgstr ""
