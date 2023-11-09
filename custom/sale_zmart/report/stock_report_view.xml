@@ -25,7 +25,7 @@
                                     margin-top: 0px;
                                     padding-left: 10px;
                                     padding-right: 10px;
-                                    height:15cm;
+                                    height:16cm;
                                     margin-left:-20px;
                                     
                                 }
@@ -59,7 +59,7 @@
                                 <div class="box"></div>
                                 <div class="box"></div>
                             </div> -->
-                            <section id="segmento_1" style="font-size: 0.8em; line-height: 0.8em; width: 10.5cm;height:16cm;">
+                            <section id="segmento_1" style="font-size: 0.8em; line-height: 0.8em; width: 10.5cm;height:17cm;">
                                 <!-- <div style="display: inline-block; text-align: center; width: 100%;margin-top:-10px"> -->
                                 <div class="row border-bottom border-dark py-2">
                                     <div class="col-3" style="border-right: 1px solid black;">
