@@ -75,7 +75,7 @@
                         <label class="col-sm-2 form-text">Client</label>
                         <div class="col-sm-4 ">
                             <t t-if="budget">
-                                <input type="text" class="form-control" t-att-value="budget.partner_id.name" disabled="disabled"/>
+                                <input type="text" class="form-control" t-att-value="budget.partner_id.display_name" disabled="disabled"/>
                                 <input type="hidden" id='client' class="d-none" t-att-value="budget.partner_id.id" />
                             </t>
                             <t t-else="">
@@ -124,7 +124,10 @@
                             <t t-else="">
                                 <select class="form-control address_selection cancel_confirmed_input" t-attf-data-address="delivery" id="project">
                                     <t t-if="budget">
-                                        <option t-att-value="budget.partner_shipping_id.id" t-out="budget.partner_shipping_id.name"/>
+                                        <t t-foreach="budget.partner_invoice_id.child_ids" t-as="budget_partner">
+                                            <option selected="1" t-if="budget.partner_shipping_id.id == budget_partner.id" t-att-value="budget_partner.id"> <t t-out="budget_partner.name" /></option>
+                                            <option t-if="budget.partner_shipping_id.id != budget_partner.id" t-att-value="budget_partner.id"> <t t-out="budget_partner.name" /></option>
+                                        </t>
                                     </t>
                                     <t t-else="">
                                         <option value="">Select a shipping address</option>

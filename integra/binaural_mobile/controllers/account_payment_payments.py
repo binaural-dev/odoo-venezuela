@@ -112,7 +112,7 @@ class AccountPaymentPayments(http.Controller):
                             total_residual = payment.amount_residual
 
                             if total_residual < 0 and invoice.amount_residual != 0:
-                                (payment + invoice).reconcile(from_app=True)
+                                (payment + invoice).sudo().reconcile(from_app=True)
                                 advance_pays += payment.move_id.payment_id
 
                 if payments:
@@ -226,7 +226,6 @@ class AccountPaymentPayments(http.Controller):
                         }
                     )
                 )
-
                 invoice_retention = data_invoice.filtered(
                     lambda i: not any(
                         i.retention_iva_line_ids.filtered(lambda l: l.state in ("draft", "emitted"))
@@ -259,6 +258,8 @@ class AccountPaymentPayments(http.Controller):
                         pays_retention_registered += retention
 
                     retentions += register_retention
+                else:
+                    register_retention.sudo().unlink()
 
         return retentions, pays_retention_registered
 
@@ -305,7 +306,7 @@ class AccountPaymentPayments(http.Controller):
                         "account.account_payment_method_manual_in"
                     ).id,
                     "foreign_rate": currency_id.company_rate,
-                    "foreign_inverse_rate": currency_id.inverse_company_rate,
+                    "foreign_inverse_rate": currency_id.company_rate, 
                     "payment_from_app": True,
                 }
             )
@@ -325,14 +326,13 @@ class AccountPaymentPayments(http.Controller):
         pays = pays_registered.mapped("move_id.line_ids").filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
         )
-
         for invoice in invoices:
             total_residual = 0
             for payment in pays:
                 total_residual += payment.amount_residual
 
             if total_residual < 0:
-                (pays + invoice).reconcile(from_app=True)
+                (pays + invoice).sudo().reconcile(from_app=True)
 
         return pays_registered, payments_igtf
 

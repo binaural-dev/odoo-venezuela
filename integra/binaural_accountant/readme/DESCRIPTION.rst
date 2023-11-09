@@ -26,7 +26,7 @@ Estos son:
   * Total Gravado.
 
   * Total Facturado Alterno.
-
+  * Tasa Actualizada Manualmente.
 * Apunte Contable.
 
   * Móneda Alterna.
@@ -74,3 +74,5 @@ Validaciones
 
 * Los asientos contables ahora son únicos por número de secuencia, contacto, estado y diario.
 
+Al momento de cambiar la tasa manualmente en la factura este manda un mensaje en el tracking para
+saber la tasa anterior y la nueva tasa colocada
