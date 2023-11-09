@@ -10,7 +10,6 @@
     # any module necessary for this one to work correctly
     "depends": [
         "base",
-        "account",
         "binaural_tax",
         "sale_management",
         "binaural_rate",
@@ -23,7 +22,6 @@
         "security/res_groups.xml",
         "views/res_config_settings.xml",
         "views/sale_order.xml",
-        "views/res_partner.xml",
         "views/product_pricelist_item_views.xml",
         "views/menuitems.xml",
     ],

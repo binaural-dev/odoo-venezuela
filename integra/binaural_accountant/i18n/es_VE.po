@@ -253,6 +253,12 @@ msgid "Partial Reconcile"
 msgstr "Conciliación parcial"
 
 #. module: binaural_accountant
+#: model:ir.model.fields,field_description:binaural_accountant.field_res_partner__use_partner_credit_limit_order
+#: model:ir.model.fields,field_description:binaural_accountant.field_res_users__use_partner_credit_limit_order
+msgid "Partner Order Limit"
+msgstr "Limite para la venta (Presupuesto)"
+
+#. module: binaural_accountant
 #: model:ir.model,name:binaural_accountant.model_account_payment
 msgid "Payments"
 msgstr "Pagos"
@@ -289,6 +295,11 @@ msgstr "Recalcular debito y credito alterno de apuntes contables"
 #: model:ir.model,name:binaural_accountant.model_account_payment_register
 msgid "Register Payment"
 msgstr "Registrar pago"
+
+#. module: binaural_accountant
+#: model:ir.model,name:binaural_accountant.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
 
 #. module: binaural_accountant
 #: model:ir.actions.server,name:binaural_accountant.set_rate_payments_zero
