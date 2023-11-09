@@ -16,6 +16,7 @@ initial_amounts = {
     "formatted_gross_amount": 0,
     "formatted_discount_amount": 0,
     "formatted_total_amount": 0,
+    "total_items": 0,
 }
 
 
@@ -80,12 +81,12 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
                     payments[term_id][journal_id].append({"invoice": p_invoice, "payment": payment})
 
                 if not payments[term_id].get("totals_" + journal_id, False):
-                    journal_totals = p_initial_amounts
+                    p_journal_totals = p_initial_amounts
                 else:
-                    journal_totals = payments[term_id]["totals_" + journal_id]
+                    p_journal_totals = payments[term_id]["totals_" + journal_id]
 
                 payments[term_id]["totals_" + journal_id] = self.p_get_new_values(
-                    journal_totals, payment
+                    p_journal_totals, payment
                 )
 
                 if not payments.get("totals", False):
@@ -136,6 +137,16 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
                 type_totals, invoice
             )
 
+            if not invoices.get("totals", False):
+                totals = initial_amounts
+            else:
+                totals = invoices["totals"]
+
+            invoices["totals"] = self.get_new_values(
+                totals, invoice
+            )
+
+
         data = {
             "date_from": wizard.date_from,
             "date_to": wizard.date_to,
@@ -163,9 +174,12 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         return {"amount": amount, "foreign_amount": foreign_amount}
 
     def get_new_values(self, totals, invoice):
-        gross_amount = totals["gross_amount"] + invoice.detailed_amounts["gross_amount"]
-        discount_amount = totals["discount_amount"] + invoice.detailed_amounts["discount_amount"]
-        total_amount = totals["total_amount"] + invoice.tax_totals["amount_total"]
+
+        multiply = 1 if invoice.move_type == "out_invoice" else -1
+        gross_amount = totals["gross_amount"] + invoice.detailed_amounts["gross_amount"] * multiply
+        discount_amount = totals["discount_amount"] + invoice.detailed_amounts["discount_amount"] * multiply
+        total_amount = totals["total_amount"] + invoice.tax_totals["amount_total"] * multiply
+        total_items = totals["total_items"] + 1
 
         return {
             "gross_amount": gross_amount,
@@ -180,6 +194,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             "formatted_total_amount": formatLang(
                 self.env, total_amount, currency_obj=invoice.currency_id
             ),
+            "total_items": total_items,
         }
 
     def new_payment_term(self, invoice):
