@@ -187,7 +187,7 @@ class ResPartner(models.Model):
             self.age = edad.years
             if self.type == "contact" and self.type_relation == "children":
                 # es una carga familiar y es hijo calcular vencimiento
-                config = self.env["partner.config"].sudo().search([("active", "=", True)], limit=1)
+                config = self.env["partner.config"].sudo().search([("active", "=", True),("company_id", "=", self.env.company.id)], limit=1)
                 if not config:
                     raise exceptions.UserError(
                         _(
@@ -201,10 +201,10 @@ class ResPartner(models.Model):
     @api.onchange("start_date")
     def _onchange_start_date(self):
         if self.start_date:
-            config = self.env["partner.config"].sudo().search([("active", "=", True)], limit=1)
+            config = self.env["partner.config"].sudo().search([("active", "=", True),("company_id", "=", self.env.company.id)], limit=1)
             if not config:
                 raise exceptions.UserError(
-                    "No hay configuración de socios registrada por favor contacte al administrador del sistema"
+                    "No partner configuration registered please contact your system administrator."
                 )
             self.end_date_partner = self.start_date + relativedelta(
                 years=config.years_of_membership
@@ -237,4 +237,42 @@ class ResPartner(models.Model):
                 "date_exec": fields.Date.today(),
             }
             self.env["action.partner.previous"].sudo().create(values_action)
+
+    @api.onchange('action_number')
+    def update_action_partner_and_contact(self):
+        for record in self:
+            if record.action_number:
+                if record.type not in ['contact']:
+                    record.write({'display_name': '%s - ' % str(record.action_number.number) + record.name})
+                else:
+                    for x in record.child_ids:
+                        search_ind_contact = x.display_name.find("-")
+                        search_ind = x.display_name.find(",")
+                        x.write({'display_name': x.display_name[:search_ind + 1] + '%s - ' % str(
+                            x.parent_id.action_number.number) + x.display_name[search_ind_contact + 1:]})
+
+    def name_get(self):
+        res = []
+        for partner in self:
+            name = partner.name or ''
+
+            if partner.company_name or partner.parent_id:
+                if not name and partner.type in ['invoice', 'delivery', 'other']:
+                    name = dict(self.fields_get(['type'])['type']['selection'])[partner.type]
+                if not partner.is_company:
+                    name = "%s, %s" % (partner.commercial_company_name or partner.parent_id.name, '%s - ' % str(partner.parent_id.action_number.number) + name)
+            if self._context.get('show_address_only'):
+                name = partner._display_address(without_company=True)
+            if self._context.get('show_address'):
+                name = name + "\n" + partner._display_address(without_company=True)
+            name = name.replace('\n\n', '\n')
+            name = name.replace('\n\n', '\n')
+            if self._context.get('show_email') and partner.email:
+                name = "%s <%s>" % (name, partner.email)
+            if self._context.get('html_format'):
+                name = name.replace('\n', '<br/>')
+            if partner.action_number:
+                name = "%s - %s" % (partner.action_number.number, name)
+            res.append((partner.id, name))
+        return res
 
