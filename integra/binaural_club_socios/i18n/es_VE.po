@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230925\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-08 14:22+0000\n"
-"PO-Revision-Date: 2023-11-08 14:22+0000\n"
+"POT-Creation-Date: 2023-11-09 13:23+0000\n"
+"PO-Revision-Date: 2023-11-09 13:23+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -73,8 +73,6 @@ msgid "Action Needed"
 msgstr "Acción requerida"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_account_bank_statement_line__action_number
-#: model:ir.model.fields,field_description:binaural_club_socios.field_account_move__action_number
 #: model:ir.model.fields,field_description:binaural_club_socios.field_account_move_line__action_number
 #: model:ir.model.fields,field_description:binaural_club_socios.field_account_payment__action_number
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__action_number
@@ -98,6 +96,11 @@ msgstr "Formulario de Acción de Socio"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__state_action
 msgid "Action State"
 msgstr "Estado de la Acción"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
+msgid "Action Transfer"
+msgstr "TRANSFERIR ACCIÓN"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__type_action
@@ -222,6 +225,20 @@ msgid "Amount"
 msgstr "Monto tope"
 
 #. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/models/res_partner.py:0
+#, python-format
+msgid "Archived partner %s on: %s, by action transfer"
+msgstr "Socio Archivado %s en %s, por transferencia de acción"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/models/res_partner.py:0
+#, python-format
+msgid "Archived partner:(%s)"
+msgstr "Socio archivado:(%s)"
+
+#. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_tree_view_associates
 msgid "Asociados"
 msgstr ""
@@ -241,13 +258,13 @@ msgstr "Asociados Familiar"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__associate_action
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__associate_action
 msgid "Associate action"
-msgstr "Número de Acción"
+msgstr "Número de Acción Padre"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__associate_parent
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__associate_parent
 msgid "Associate parent"
-msgstr "Número de Acción Padre"
+msgstr "Socio Padre"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__type_relation__associated
@@ -421,6 +438,7 @@ msgid "Companies that refers to partner"
 msgstr "Empresas que se refieren al partner"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__company_id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__company_id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__company_id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions__company_id
@@ -588,6 +606,11 @@ msgstr "Fecha en que se removio la suspensión"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__reminder_date_before_receipt
 msgid "Days Before Receipt"
 msgstr "Días antes de la recepción"
+
+#. module: binaural_club_socios
+#: model:ir.model.constraint,message:binaural_club_socios.constraint_action_partner_previous_code_company_uniq_debt
+msgid "Debe pertenecer a la compañia."
+msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__prev_state_partner__deceased
@@ -996,6 +1019,11 @@ msgid "La configuración de fecha tope ser unica."
 msgstr ""
 
 #. module: binaural_club_socios
+#: model:ir.model.constraint,message:binaural_club_socios.constraint_partner_config_code_company_uniq_debt
+msgid "La configuración de miembro."
+msgstr ""
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__lang
 msgid "Language"
 msgstr "Idioma"
@@ -1207,9 +1235,11 @@ msgid "Notes"
 msgstr "Notas"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_account_bank_statement_line__action_number
+#: model:ir.model.fields,field_description:binaural_club_socios.field_account_move__action_number
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__number
 msgid "Number"
-msgstr "Número"
+msgstr "Número de acción"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_needaction_counter
@@ -2058,3 +2088,8 @@ msgstr "Configuracion de socios"
 #: model:ir.model,name:binaural_club_socios.model_status_action_batch
 msgid "status.action.batch"
 msgstr "Estado de acciones en lote"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
+msgid "¿Esta seguro de transferir la acción?"
+msgstr ""

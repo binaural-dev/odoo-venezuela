@@ -5,7 +5,6 @@
         <field name="model">res.partner</field>
         <field name="arch" type="xml">
             <tree  string="Asociados" create="false">
-                <field name="associate_parent"/>
                 <field name="associate_action"/>
                 <field name="action_number"/>
                 <field name="name" />

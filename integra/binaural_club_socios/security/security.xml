@@ -37,4 +37,13 @@
 		</field>
 	</record>
 
+    <record model="ir.rule" id="record_restricted_company_rule__action_partner">
+		<field name="name">Restricted Record action partner: multi-company</field>
+		<field name="model_id" ref="binaural_club_socios.model_action_partner"/>
+		<field name="global" eval="True"/>
+		<field name="domain_force">
+				[('company_id', 'in', company_ids)]
+		</field>
+	</record>
+
 </odoo>

@@ -8,8 +8,15 @@ class ActionPartner(models.Model):
     _rec_name = 'number'
 
     _sql_constraints = [
-	    ('number_uniq', 'unique(number)', 'El número de acción ya se encuentra registrado!'),
+	    ('number_uniq', 'unique(number, company_id)', 'El número de acción ya se encuentra registrado!'),
     ]
+
+    company_id = fields.Many2one(
+        "res.company",
+        string="Company",
+        required=True,
+        default=lambda self: self.env.company,
+    )
 
     type_action = fields.Selection([
         ('action', 'Action'),

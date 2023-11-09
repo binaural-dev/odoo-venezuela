@@ -161,6 +161,21 @@
                     <attribute name="invisible">1</attribute>
                 </xpath>
 
+
+                <xpath expr="//form//sheet" position="before">
+                    <header attrs="{'invisible': ['|',('customer_rank','=',0),('supplier_rank','>', 0)]}"><!--Si no tiene padre es porque el es el padre (socio,asociado)-->
+                        <!--boton traspaso de accion-->
+                        <button name="action_transfer" string="Action Transfer" type="object" confirm="¿Esta seguro de transferir la acción?" ></button >
+                        <!--boton aprobar socio tenedor-->
+                        <!-- <button name="action_approve_vote" confirm="¿Esta seguro de aprobar el proceso de Votación?" string="Aprobar Proceso de Votación" type="object" attrs="{'invisible': [('state_partner','!=', 'holder')]}"></button > -->
+                        <!--boton establecer prorroga a socio-->
+                        <!-- <button name="action_establish_extension"  string="Establecer Prorroga" type="object" attrs="{'invisible': [('end_date_partner','=', False)]}"></button > -->
+                        <!--botones suspender y remover suspension-->
+                        <!-- <button name="action_suspend_partner" string="Suspender" type="object" attrs="{'invisible': [('can_access_club','=', False)]}"></button > -->
+                        <!-- <button name="action_remove_suspend_partner" string="Remover suspension" type="object" attrs="{'invisible': [('can_access_club','=', True)]}"></button > -->
+                    </header>
+                </xpath>
+
         </field>
     </record>
 
