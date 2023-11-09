@@ -1,6 +1,10 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import MissingError
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class ResPartner(models.Model):
     _inherit = "res.partner"
