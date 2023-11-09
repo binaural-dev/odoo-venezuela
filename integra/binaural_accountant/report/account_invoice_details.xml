@@ -30,12 +30,17 @@
                 <h2 t-out="company.name"/>
                 <p t-out="company.vat" />
                 <p>Sales Report</p>
-                <span>From <t t-out="str(date_from)"/> to <t t-out="str(date_to)"/></span>
+                <t t-if="date_from == date_to">
+                    <span><t t-out="str(date_from)"/></span>
+                </t>
+                <t t-else="">
+                    <span>From <t t-out="str(date_from)"/> to <t t-out="str(date_to)"/></span>
+                </t>
             </div>
             <br/>
             <br/>
             <div name="date_now" class="border-bottoms">
-                <p>Date of issue: <t t-out="str(date_now)"/></p>
+                <p>Date of issue: <t t-out="str(date_now.strftime('%d/%m/%Y, %H:%M:%S'))"/></p>
             </div>
             <t t-foreach="journal_ids" t-as="journal">
                 <t t-set="journal_id" t-value="str(journal['id'])"/>
@@ -131,7 +136,7 @@
                     </t>
                 </t>
             </t>
-            <div class="row border-bottoms spaces">
+            <div t-if="invoices.get('totals',False)" class="row border-bottoms spaces">
                 <div class="col-3">
                     <strong>Total Sales</strong>
                 </div>
@@ -234,7 +239,7 @@
                                     </div>
                                 </div>
                             </t>
-                        <div class="row" name="total_term_payments border-bottoms">
+                        <div class="row border-bottoms" name="total_term_payments">
                             <div class="col-2">
                                 <strong>Total <t t-out="journal_id['name']"/> </strong>
                             </div>
@@ -262,7 +267,7 @@
                     </t>
                 </t>
             </t>
-            <div t-if="payments['totals']" class="row border-bottoms" name="total_global_payments">
+            <div t-if="payments.get('totals',False)" class="row border-bottoms" name="total_global_payments">
                 <div class="col-2">
                     <strong>Total charged</strong>
                 </div>
@@ -283,7 +288,7 @@
                     </p>
                 </div>
                 <div class="col-2 text-center">
-                    <strong t-out="payments['totals']['amount']" />
+                    <strong t-out="payments['totals']['foreign_amount']" />
                 </div>
             </div>
         </t>

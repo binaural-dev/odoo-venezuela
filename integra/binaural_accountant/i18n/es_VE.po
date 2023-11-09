@@ -84,7 +84,7 @@ msgstr "Fecha de Fin"
 #. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
 msgid "Date of issue:"
-msgstr "Fecha de emisión"
+msgstr "Fecha de emisión: "
 
 #. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__detailed_amounts

@@ -43,8 +43,24 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
 
     @api.model
     def get_sale_details(self, wizard):
+        data = {
+            "date_from": wizard.date_from,
+            "date_to": wizard.date_to,
+            "date_now": datetime.now(),
+            "company_id": wizard.company_id,
+            "journal_ids": [],
+            "p_journals_ids": [],
+            "payment_term_ids":[] ,
+            "p_payment_term_ids": [],
+            "invoices": {},
+            "payments": {},
+            "invoice_move_type": [],
+        }
         invoice_ids = self.env["account.move"].search(self._get_domain_search_moves(wizard))
         payment_ids = self.env["account.payment"].search(self._get_domain_search_payment(wizard))
+
+        if not invoice_ids and not payment_ids:
+            return data
 
         invoices = defaultdict(lambda: dict())
         payments = defaultdict(lambda: dict())
@@ -176,9 +192,9 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
     def get_new_values(self, totals, invoice):
 
         multiply = 1 if invoice.move_type == "out_invoice" else -1
-        gross_amount = totals["gross_amount"] + invoice.detailed_amounts["gross_amount"] * multiply
-        discount_amount = totals["discount_amount"] + invoice.detailed_amounts["discount_amount"] * multiply
-        total_amount = totals["total_amount"] + invoice.tax_totals["amount_total"] * multiply
+        gross_amount = totals["gross_amount"] + (invoice.detailed_amounts["gross_amount"] * multiply)
+        discount_amount = totals["discount_amount"] + (invoice.detailed_amounts["discount_amount"] * multiply)
+        total_amount = totals["total_amount"] + (invoice.tax_totals["amount_total"] * multiply)
         total_items = totals["total_items"] + 1
 
         return {
