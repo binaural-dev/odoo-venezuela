@@ -224,7 +224,6 @@ class AccountPaymentPayments(http.Controller):
                         }
                     )
                 )
-
                 invoice_retention = data_invoice.filtered(
                     lambda i: not any(
                         i.retention_iva_line_ids.filtered(lambda l: l.state in ("draft", "emitted"))
@@ -257,6 +256,8 @@ class AccountPaymentPayments(http.Controller):
                         pays_retention_registered += retention
 
                     retentions += register_retention
+                else:
+                    register_retention.sudo().unlink()
 
         return retentions, pays_retention_registered
 
@@ -303,7 +304,7 @@ class AccountPaymentPayments(http.Controller):
                         "account.account_payment_method_manual_in"
                     ).id,
                     "foreign_rate": currency_id.company_rate,
-                    "foreign_inverse_rate": currency_id.inverse_company_rate,
+                    "foreign_inverse_rate": currency_id.company_rate, 
                     "payment_from_app": True,
                 }
             )

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+     <record id="group_view_pricelist_items" model="res.groups">
+        <field name="name">See Pricelist Items</field>
+        <field name="category_id" ref="base.module_category_sales"/>
+    </record>
+
+</odoo>
+

@@ -373,7 +373,7 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
             const is400 = status === 400;
             if(is400) return
 
-            $("#rate-day").val(data)
+            $("#rate-day").val(data[0] > data[1] ? data[0]: data[1])
         },
 
         Empty_inputs: function(){
