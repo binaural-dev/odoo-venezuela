@@ -9,7 +9,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "0.1",
+    "version": "0.2",
     "category": "Accountant",
     "depends": [
         "binaural_accountant",
