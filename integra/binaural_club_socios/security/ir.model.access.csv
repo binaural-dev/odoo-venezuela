@@ -5,3 +5,6 @@ access_partner_professions,Profesiones,model_partner_professions,,1,1,1,1
 access_partner_config,Partner Config,model_partner_config,,1,1,1,1
 access_action_action_status_batch,Action Status Lots,model_status_action_batch,,1,1,1,1
 access_pending_debt_list,Pending Debt List,model_pending_debt_list,,1,1,1,1
+access_establish_extension,Establish Extension,model_establish_extension,,1,1,1,1
+access_suspend_partner,Suspend Partner,model_suspend_partner,,1,1,1,1
+access_remove_suspend_partner,Remove Suspend Partner,model_remove_suspend_partner,,1,1,1,1
