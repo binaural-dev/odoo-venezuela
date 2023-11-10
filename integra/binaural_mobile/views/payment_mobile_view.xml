@@ -25,7 +25,7 @@
             <field name="arch" type="xml">
                 <form string="Paids">
                     <header>
-						<!-- <button string="Test Decimal" name="compute_test" type="object" class="oe_highlight"/> -->
+						<button string="Test Decimal" name="compute_test" type="object" class="oe_highlight"/>
 						<button string="Cancelar" name="cancel_payment" type="object" class="oe_highlight"  attrs="{'invisible':['|',('state','in',['cancel']),('verified_payment','=', True)]}"/>
 						<field name="state" widget="statusbar" statusbar_colors='{"draft":"red","process":"blue"}'/>
 					</header>
