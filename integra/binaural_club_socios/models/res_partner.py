@@ -151,7 +151,7 @@ class ResPartner(models.Model):
     )
     associate_childs = fields.One2many(
         "res.partner",
-        "parent_id",
+        "associate_parent",
         string="Associate Childs",
         domain=[("active", "=", True)],
         track_visibility="onchange",
@@ -187,7 +187,13 @@ class ResPartner(models.Model):
             self.age = edad.years
             if self.type == "contact" and self.type_relation == "children":
                 # es una carga familiar y es hijo calcular vencimiento
-                config = self.env["partner.config"].sudo().search([("active", "=", True),("company_id", "=", self.env.company.id)], limit=1)
+                config = (
+                    self.env["partner.config"]
+                    .sudo()
+                    .search(
+                        [("active", "=", True), ("company_id", "=", self.env.company.id)], limit=1
+                    )
+                )
                 if not config:
                     raise exceptions.UserError(
                         _(
@@ -201,7 +207,11 @@ class ResPartner(models.Model):
     @api.onchange("start_date")
     def _onchange_start_date(self):
         if self.start_date:
-            config = self.env["partner.config"].sudo().search([("active", "=", True),("company_id", "=", self.env.company.id)], limit=1)
+            config = (
+                self.env["partner.config"]
+                .sudo()
+                .search([("active", "=", True), ("company_id", "=", self.env.company.id)], limit=1)
+            )
             if not config:
                 raise exceptions.UserError(
                     "No partner configuration registered please contact your system administrator."
@@ -238,41 +248,140 @@ class ResPartner(models.Model):
             }
             self.env["action.partner.previous"].sudo().create(values_action)
 
-    @api.onchange('action_number')
+    def action_approve_vote(self):
+        for partner in self:
+            config = (
+                self.env["partner.config"]
+                .sudo()
+                .search([("active", "=", True), ("company_id", "=", self.env.company.id)], limit=1)
+            )
+            if not config:
+                raise exceptions.UserError(
+                    "No partner configuration registered please contact your system administrator."
+                )
+            end_date_partner = fields.Date.today() + relativedelta(
+                years=config.years_of_validity_member
+            )
+            partner.write(
+                {
+                    "state_partner": "active",
+                    "start_date": fields.Date.today(),
+                    "end_date_partner": end_date_partner,
+                }
+            )
+            partner.message_post(
+                subject=_("Voting process of:(%s)") % partner.name,
+                body=_("Voting process of %s approved the:: %s, by %s")
+                % (
+                    partner.name,
+                    fields.Date.today().strftime("%d/%m/%y"),
+                    self.env.user.name,
+                ),
+            )
+
+    def action_establish_extension(self):
+        try:
+            form_view_id = self.env.ref(
+                "binaural_club_socios.binaural_club_socios_form_establish_extension"
+            ).id
+        except Exception as e:
+            form_view_id = False
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Establish Extension: " + self.name,
+            "binding_view_types": "form",
+            "view_mode": "form",
+            "res_model": "establish.extension",
+            "views": [(form_view_id, "form")],
+            "view_id": form_view_id,
+            "target": "new",
+            "context": {
+                "default_partner_to_establish": self.id,
+            },
+        }
+
+    def action_suspend_partner(self):
+        try:
+            form_view_id = self.env.ref("binaural_club_socios.binaural_club_socios_form_suspend_partner").id
+        except Exception as e:
+            form_view_id = False
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Suspend: '+self.name,
+            'binding_view_types': 'form',
+            'view_mode': 'form',
+            'res_model': 'suspend.partner',
+            'views': [(form_view_id, 'form')],
+            'view_id': form_view_id,
+            'target' : 'new',
+            'context': {
+                'default_partner_to_suspend':self.id,
+            },
+        }
+
+    def action_remove_suspend_partner(self):
+        try:
+            form_view_id = self.env.ref("binaural_club_socios.binaural_club_socios_form_remove_suspend_partner").id
+        except Exception as e:
+            form_view_id = False
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Remover suspension de: '+self.name,
+            'binding_view_types': 'form',
+            'view_mode': 'form',
+            'res_model': 'remove.suspend.partner',
+            'views': [(form_view_id, 'form')],
+            'view_id': form_view_id,
+            'target' : 'new',
+            'context': {
+                'default_partner_to_remove_suspend':self.id,
+            },
+        }
+
+    @api.onchange("action_number")
     def update_action_partner_and_contact(self):
         for record in self:
             if record.action_number:
-                if record.type not in ['contact']:
-                    record.write({'display_name': '%s - ' % str(record.action_number.number) + record.name})
+                if record.type not in ["contact"]:
+                    record.write(
+                        {"display_name": "%s - " % str(record.action_number.number) + record.name}
+                    )
                 else:
                     for x in record.child_ids:
                         search_ind_contact = x.display_name.find("-")
                         search_ind = x.display_name.find(",")
-                        x.write({'display_name': x.display_name[:search_ind + 1] + '%s - ' % str(
-                            x.parent_id.action_number.number) + x.display_name[search_ind_contact + 1:]})
+                        x.write(
+                            {
+                                "display_name": x.display_name[: search_ind + 1]
+                                + "%s - " % str(x.parent_id.action_number.number)
+                                + x.display_name[search_ind_contact + 1 :]
+                            }
+                        )
 
     def name_get(self):
         res = []
         for partner in self:
-            name = partner.name or ''
+            name = partner.name or ""
 
             if partner.company_name or partner.parent_id:
-                if not name and partner.type in ['invoice', 'delivery', 'other']:
-                    name = dict(self.fields_get(['type'])['type']['selection'])[partner.type]
+                if not name and partner.type in ["invoice", "delivery", "other"]:
+                    name = dict(self.fields_get(["type"])["type"]["selection"])[partner.type]
                 if not partner.is_company:
-                    name = "%s, %s" % (partner.commercial_company_name or partner.parent_id.name, '%s - ' % str(partner.parent_id.action_number.number) + name)
-            if self._context.get('show_address_only'):
+                    name = "%s, %s" % (
+                        partner.commercial_company_name or partner.parent_id.name,
+                        "%s - " % str(partner.parent_id.action_number.number) + name,
+                    )
+            if self._context.get("show_address_only"):
                 name = partner._display_address(without_company=True)
-            if self._context.get('show_address'):
+            if self._context.get("show_address"):
                 name = name + "\n" + partner._display_address(without_company=True)
-            name = name.replace('\n\n', '\n')
-            name = name.replace('\n\n', '\n')
-            if self._context.get('show_email') and partner.email:
+            name = name.replace("\n\n", "\n")
+            name = name.replace("\n\n", "\n")
+            if self._context.get("show_email") and partner.email:
                 name = "%s <%s>" % (name, partner.email)
-            if self._context.get('html_format'):
-                name = name.replace('\n', '<br/>')
+            if self._context.get("html_format"):
+                name = name.replace("\n", "<br/>")
             if partner.action_number:
                 name = "%s - %s" % (partner.action_number.number, name)
             res.append((partner.id, name))
         return res
-

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230925\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-09 13:23+0000\n"
-"PO-Revision-Date: 2023-11-09 13:23+0000\n"
+"POT-Creation-Date: 2023-11-10 14:37+0000\n"
+"PO-Revision-Date: 2023-11-10 14:37+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -123,7 +123,7 @@ msgstr ""
 #: code:addons/binaural_club_socios/wizard/status_action_batch.py:0
 #, python-format
 msgid "Actions Required"
-msgstr ""
+msgstr "Acciones Obligatorias"
 
 #. module: binaural_club_socios
 #: model:ir.actions.act_window,name:binaural_club_socios.action_action_partner
@@ -225,6 +225,11 @@ msgid "Amount"
 msgstr "Monto tope"
 
 #. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
+msgid "Approve Voting Process"
+msgstr "Aprobar Proceso de Votación"
+
+#. module: binaural_club_socios
 #. odoo-python
 #: code:addons/binaural_club_socios/models/res_partner.py:0
 #, python-format
@@ -237,6 +242,16 @@ msgstr "Socio Archivado %s en %s, por transferencia de acción"
 #, python-format
 msgid "Archived partner:(%s)"
 msgstr "Socio archivado:(%s)"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_remove_suspend_partner
+msgid "Are you sure to remove the membership suspension?"
+msgstr "¿Esta seguro de remover la suspensión de socios?"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
+msgid "Are you sure you approve of the Voting process?"
+msgstr "¿Esta seguro de aprobar el proceso de Votación?""
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_tree_view_associates
@@ -379,6 +394,13 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__can_access_club
 msgid "Can access club"
 msgstr "Accesso al Club"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_establish_extension
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_remove_suspend_partner
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_suspend_partner
+msgid "Cancel"
+msgstr "Cancelar"
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_status_batch_wizard_action
@@ -528,20 +550,26 @@ msgstr ""
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__create_uid
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__create_uid
+#: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__create_uid
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__create_uid
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions__create_uid
 #: model:ir.model.fields,field_description:binaural_club_socios.field_pending_debt_list__create_uid
+#: model:ir.model.fields,field_description:binaural_club_socios.field_remove_suspend_partner__create_uid
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch__create_uid
+#: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__create_uid
 msgid "Created by"
 msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__create_date
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__create_date
+#: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__create_date
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__create_date
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions__create_date
 #: model:ir.model.fields,field_description:binaural_club_socios.field_pending_debt_list__create_date
+#: model:ir.model.fields,field_description:binaural_club_socios.field_remove_suspend_partner__create_date
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch__create_date
+#: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__create_date
 msgid "Created on"
 msgstr ""
 
@@ -559,6 +587,11 @@ msgstr "Límite de crédito específico para este socio."
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__currency_id
 msgid "Currency"
 msgstr "Moneda"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_stock_customer
+msgid "Customer Location"
+msgstr "Ubicación de cliente"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_payment_term_id
@@ -626,10 +659,13 @@ msgstr "Grado de confianza en este deudor"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__display_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__display_name
+#: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__display_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__display_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions__display_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_pending_debt_list__display_name
+#: model:ir.model.fields,field_description:binaural_club_socios.field_remove_suspend_partner__display_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch__display_name
+#: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__display_name
 msgid "Display Name"
 msgstr ""
 
@@ -705,8 +741,22 @@ msgstr "Fecha de vencimiento de socio"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__end_date_suspend
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__end_date_suspend
+#: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__end_date_suspend
 msgid "End date suspend"
 msgstr "Fecha final de suspensión"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_establish_extension
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
+msgid "Establish Extension"
+msgstr ""
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/establish_extension.py:0
+#, python-format
+msgid "Establish extension:(%s)"
+msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__expiration_alert_subject
@@ -739,6 +789,16 @@ msgid "Extension alert mailing body"
 msgstr ""
 
 #. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/establish_extension.py:0
+#, python-format
+msgid ""
+"Extension established for %s, new member end date: %s, by user  %s, for the "
+"reason: %s"
+msgstr "Prorroga establecida para %s, nueva fecha de fin del socio: %s, por el usuario %s, por el "
+"motivo: %s"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__action_partner__type_action__extention
 msgid "Extention"
 msgstr "Extension"
@@ -747,6 +807,16 @@ msgstr "Extension"
 #: model:ir.ui.menu,name:binaural_club_socios.menu_partnert_list
 msgid "Family and members list"
 msgstr "Listados de Socios y Familiares"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/suspend_partner.py:0
+#, python-format
+msgid ""
+"Family charge: %s suspended from: %s to: %s, by the user %s, for the reason:"
+" %s"
+msgstr "Carga familiar %s suspendido desde: %s hasta: %s, por el usuario %s, por el motivo:"
+" %s"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__family_reference
@@ -846,10 +916,13 @@ msgstr "Honorario"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__id
+#: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions__id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_pending_debt_list__id
+#: model:ir.model.fields,field_description:binaural_club_socios.field_remove_suspend_partner__id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch__id
+#: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__id
 msgid "ID"
 msgstr ""
 
@@ -1031,37 +1104,46 @@ msgstr "Idioma"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner____last_update
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous____last_update
+#: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension____last_update
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config____last_update
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions____last_update
 #: model:ir.model.fields,field_description:binaural_club_socios.field_pending_debt_list____last_update
+#: model:ir.model.fields,field_description:binaural_club_socios.field_remove_suspend_partner____last_update
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch____last_update
+#: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner____last_update
 msgid "Last Modified on"
 msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__write_uid
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__write_uid
+#: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__write_uid
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__write_uid
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions__write_uid
 #: model:ir.model.fields,field_description:binaural_club_socios.field_pending_debt_list__write_uid
+#: model:ir.model.fields,field_description:binaural_club_socios.field_remove_suspend_partner__write_uid
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch__write_uid
+#: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__write_uid
 msgid "Last Updated by"
 msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__write_date
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__write_date
+#: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__write_date
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__write_date
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions__write_date
 #: model:ir.model.fields,field_description:binaural_club_socios.field_pending_debt_list__write_date
+#: model:ir.model.fields,field_description:binaural_club_socios.field_remove_suspend_partner__write_date
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch__write_date
+#: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__write_date
 msgid "Last Updated on"
 msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model,name:binaural_club_socios.model_action_partner_previous
 msgid "Last action partners"
-msgstr ""
+msgstr "Acciones de socios anteriores"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__last_time_entries_checked
@@ -1160,6 +1242,11 @@ msgid "Message for Sales Order"
 msgstr "Mensaje para el pedido de venta"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__picking_warn_msg
+msgid "Message for Stock Picking"
+msgstr "Mensaje para recolección de stock"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_ids
 msgid "Messages"
 msgstr "Mensajes"
@@ -1185,6 +1272,11 @@ msgstr "Nombre"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch__status
 msgid "New State"
 msgstr "Nuevo Estado"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__new_end_date
+msgid "New end date"
+msgstr "Nueva fecha final"
 
 #. module: binaural_club_socios
 #. odoo-python
@@ -1291,6 +1383,11 @@ msgid "Office Phone"
 msgstr "Teléfono de oficina"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__on_time_rate
+msgid "On-Time Delivery Rate"
+msgstr "Tasa de entrega a tiempo"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__online_partner_information
 msgid "Online Partner Information"
 msgstr "Información en línea del socio "
@@ -1332,6 +1429,16 @@ msgid "Outgoing mail for partner alert"
 msgstr "Correo de salida para alerta de asociados"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,help:binaural_club_socios.field_res_users__on_time_rate
+msgid ""
+"Over the past x days; the number of products received on time divided by the"
+" number of ordered products.x is either the System Parameter "
+"purchase_stock.on_time_delivery_days or the default 365"
+msgstr ""
+"El número de productos recibidos a tiempo por el número de productos "
+"ordenados en los últimos 12 meses."
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__parent_name
 msgid "Parent name"
 msgstr "Nombre del padre"
@@ -1351,6 +1458,14 @@ msgstr "Padres"
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__type_relation__partner
 msgid "Partner"
 msgstr "Titular"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/suspend_partner.py:0
+#, python-format
+msgid ""
+"Partner %s suspended from: %s to: %s, by the user %s, for the reason: %s"
+msgstr "Socio %s suspendido desde: %s hasta: %s, por el usuario %s, por el motivo: %s"
 
 #. module: binaural_club_socios
 #: model:ir.model,name:binaural_club_socios.model_action_partner
@@ -1387,6 +1502,23 @@ msgstr "Límite para la empresa"
 #: model:ir.ui.menu,name:binaural_club_socios.partners_list
 msgid "Partner List"
 msgstr "Lista de Socios"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__partner_to_establish
+msgid "Partner to Stablish"
+msgstr "Socio a establecer prorroga"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
+#, python-format
+msgid "Partner to remove suspension is required"
+msgstr "Socio a remover suspensión es obligatorio"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__partner_to_suspend
+msgid "Partner to suspend"
+msgstr "Socio a suspender"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__same_company_registry_partner_id
@@ -1468,7 +1600,7 @@ msgstr "Prefijo Rif Usufructo"
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_view_form_action_partner
 msgid "Previous Partners"
-msgstr "Estado Anterior"
+msgstr "Socios Anteriores"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__prev_state_partner
@@ -1512,6 +1644,11 @@ msgid "Professions"
 msgstr "Profesión"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__purchase_line_ids
+msgid "Purchase Lines"
+msgstr "Líneas de compra"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__purchase_warn
 msgid "Purchase Order"
 msgstr "Pedido de compra"
@@ -1522,8 +1659,10 @@ msgid "Purchase Order Count"
 msgstr "Nº de pedidos de compra"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__reason
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__reason
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__reason
+#: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__reason
 msgid "Reason"
 msgstr "Motivo"
 
@@ -1551,6 +1690,16 @@ msgstr "Contacto relacionada"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__followup_reminder_type
 msgid "Reminders"
 msgstr "Recordatorios"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_remove_suspend_partner
+msgid "Remove suspension"
+msgstr "Remover suspensión"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
+msgid "Remover suspensión"
+msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__followup_responsible_id
@@ -1609,6 +1758,7 @@ msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__invoice_warn
+#: model:ir.model.fields,help:binaural_club_socios.field_res_users__picking_warn
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__purchase_warn
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__sale_warn
 msgid ""
@@ -1683,6 +1833,11 @@ msgid "Socio"
 msgstr ""
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_remove_suspend_partner__partner_to_remove_suspend
+msgid "Socio a remover suspensión"
+msgstr ""
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__partners_previous_ids
 msgid "Socios Anteriores"
 msgstr ""
@@ -1742,6 +1897,11 @@ msgstr ""
 "Planificada: futuras actividades."
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__picking_warn
+msgid "Stock Picking"
+msgstr "Albarán de stock"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__street
 msgid "Street"
 msgstr "Calle"
@@ -1760,6 +1920,68 @@ msgstr "Moneda de Proveedor"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__supplier_rank
 msgid "Supplier Rank"
 msgstr "Rango de proveedor"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_suspend_partner
+msgid "Suspend"
+msgstr "Suspender"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/suspend_partner.py:0
+#, python-format
+msgid "Suspended family charge:(%s)"
+msgstr "Suspensión de la carga familiar:(%s)"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/suspend_partner.py:0
+#, python-format
+msgid "Suspended partner:(%s)"
+msgstr "Socio suspendido:(%s)"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
+msgid "Suspender"
+msgstr ""
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
+#, python-format
+msgid "Suspension of the family charge %s removed on: %s, Automatically"
+msgstr "Suspensión de la carga familiar %s removida el: %s, por el usuario %s automáticamente"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
+#, python-format
+msgid "Suspension of the family charge %s removed on: %s, by user %s manually"
+msgstr "Suspensión de la carga familiar %s removida el: %s, por el usuario %s manualmente"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
+#, python-format
+msgid "Suspension of the partner %s removed on: %s, Automatically"
+msgstr "Suspensión del socio %s removida el: %s, Automáticamente"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
+#, python-format
+msgid "Suspension of the partner %s removed on: %s, by user %s manually"
+msgstr "Suspensión del socio %s removida el: %s, Manualmente"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
+#: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
+#: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
+#: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
+#, python-format
+msgid "Suspension removed:(%s)"
+msgstr "Suspensión removida:(%s)"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__category_id
@@ -1832,6 +2054,22 @@ msgid ""
 "The registry number of the company. Use it if it is different from the Tax "
 "ID. It must be unique across all partners of a same country"
 msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,help:binaural_club_socios.field_res_users__property_stock_customer
+msgid ""
+"The stock location used as destination when sending goods to this contact."
+msgstr ""
+"La ubicación de almacén utilizada como destino al enviar mercancías a este "
+"contacto."
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,help:binaural_club_socios.field_res_users__property_stock_supplier
+msgid ""
+"The stock location used as source when receiving goods from this contact."
+msgstr ""
+"La ubicación de almacén utilizada como origen al recibir productos de este "
+"contacto."
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__property_account_payable_id
@@ -2029,9 +2267,28 @@ msgid "Vat Usufruct"
 msgstr "RIF Usufruto"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_stock_supplier
+msgid "Vendor Location"
+msgstr "Ubicación de proveedor"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_supplier_payment_term_id
 msgid "Vendor Payment Terms"
 msgstr "Plazo de pago del proveedor"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/models/res_partner.py:0
+#, python-format
+msgid "Voting process of %s approved the:: %s, by %s"
+msgstr ""Proceso de votación de %s aprobada el: %s, por %s"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/models/res_partner.py:0
+#, python-format
+msgid "Voting process of:(%s)"
+msgstr "Proceso de votación de:(%s)"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website
@@ -2080,14 +2337,29 @@ msgid "Zip"
 msgstr "C.P."
 
 #. module: binaural_club_socios
+#: model:ir.model,name:binaural_club_socios.model_establish_extension
+msgid "establish.extension"
+msgstr ""
+
+#. module: binaural_club_socios
 #: model:ir.model,name:binaural_club_socios.model_partner_config
 msgid "partner.config"
 msgstr "Configuracion de socios"
 
 #. module: binaural_club_socios
+#: model:ir.model,name:binaural_club_socios.model_remove_suspend_partner
+msgid "remove.suspend.partner"
+msgstr ""
+
+#. module: binaural_club_socios
 #: model:ir.model,name:binaural_club_socios.model_status_action_batch
 msgid "status.action.batch"
 msgstr "Estado de acciones en lote"
+
+#. module: binaural_club_socios
+#: model:ir.model,name:binaural_club_socios.model_suspend_partner
+msgid "suspend.partner"
+msgstr ""
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
