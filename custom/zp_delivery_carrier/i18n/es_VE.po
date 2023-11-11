@@ -38,7 +38,7 @@ msgstr "¿Aplica cargo extra por Kg?"
 #. module: zp_delivery_carrier
 #: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_price_rule__kg_extra_charge_amount
 msgid "Extra charge amount per kg"
-msgstr "Kg divisor del cargo extra"
+msgstr "Importe del cargo extra por Kg"
 
 #. module: zp_delivery_carrier
 #: model_terms:ir.ui.view,arch_db:zp_delivery_carrier.view_delivery_price_rule_form
@@ -63,7 +63,7 @@ msgstr "Costo de Envío Alterno"
 #. module: zp_delivery_carrier
 #: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_price_rule__kg_extra_charge
 msgid "Kg extra charge amount"
-msgstr "Importe del cargo extra por Kg"
+msgstr "Kg divisor del cargo extra"
 
 #. module: zp_delivery_carrier
 #. odoo-python
