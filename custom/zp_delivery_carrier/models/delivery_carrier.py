@@ -1,6 +1,8 @@
 import logging
 
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
+from odoo.tools.safe_eval import safe_eval
 
 _logger = logging.getLogger(__name__)
 
@@ -67,67 +69,6 @@ class DeliveryCarrier(models.Model):
             rate = Rate.compute_rate(foreign_currency_id, date_rate)
             delivery.update(rate)
 
-    def get_order_weight(self, order):
-        for record in order:
-            weight = 0
-            for line in record.order_line:
-                weight += line.product_id.weight * line.product_uom_qty
-
-            weight = weight * 0.1 + weight
-            record.shipping_amount_weight = weight
-
-    def _get_additional_cost_per_kg(self, price, order):
-        order_weight = self.get_order_weight(order)
-        delivery_kg_extra_charge_divisor = self.company.delivery_kg_extra_charge_divisor
-        delivery_kg_extra_charge_amount = self.company.delivery_kg_extra_charge_amount
-
-        extra_cost_per_weight = int(order_weight / delivery_kg_extra_charge_divisor) * delivery_kg_extra_charge_amount
-
-        return price + extra_cost_per_weight
-
-    def pre_rate_shipment(self, order):
-        ''' Compute the price of the order shipment
-
-        :param order: record of sale.order
-        :return dict: {'success': boolean,
-                       'price': a float,
-                       'error_message': a string containing an error message,
-                       'warning_message': a string containing a warning message}
-                       # TODO maybe the currency code?
-        '''
-        self.ensure_one()
-
-        if hasattr(self, '%s_rate_shipment' % self.delivery_type):
-            res = getattr(self, '%s_rate_shipment' % self.delivery_type)(order)
-
-            _logger.warning('------pre_rate_shipment---------pre_rate_shipment------')
-            _logger.warning(res)
-            _logger.warning('---------------------')
-            # apply fiscal position
-            company = self.company_id or order.company_id or self.env.company
-            res['price'] = self.product_id._get_tax_included_unit_price(
-                company,
-                company.currency_id,
-                order.date_order,
-                'sale',
-                fiscal_position=order.fiscal_position_id,
-                product_price_unit=res['price'],
-                product_currency=company.currency_id
-            )
-            # apply margin on computed price
-            res['price'] = float(res['price']) * (1.0 + (self.margin / 100.0))
-
-            res['price'] = res['price']
-            # save the real price in case a free_over rule overide it to 0
-            res['carrier_price'] = self._get_additional_cost_per_kg(res['price'])
-            # free when order is large enough
-            amount_without_delivery = order._compute_amount_total_without_delivery()
-            if res['success'] and self.free_over and self._compute_currency(order, amount_without_delivery, 'pricelist_to_company') >= self.amount:
-                res['warning_message'] = _('The shipping is free since the order amount exceeds %.2f.') % (self.amount)
-                res['price'] = 0.0
-            return res
-
-
     def rate_shipment(self, order):
         ''' Compute the price of the order shipment
 
@@ -141,4 +82,39 @@ class DeliveryCarrier(models.Model):
         self.ensure_one()
         self._update_currency_date(order.date_order.date())
 
-        return self.pre_rate_shipment(order)
+        return super().rate_shipment(order)
+
+
+class DeliveryGrip(models.Model):
+    _inherit = "delivery.carrier"
+
+    def _get_extra_charge_per_kg(self, line, price, weight):
+        order_weight = weight * 0.1 + weight
+        kg_apply_extra = line.kg_apply_extra
+        kg_extra_charge = line.kg_extra_charge # self.delivery_kg_extra_charge
+        kg_extra_charge_amount = line.kg_extra_charge_amount # self.delivery_kg_extra_charge_amount
+        extra_price_per_weight = 0
+
+        if 0 in [kg_extra_charge, kg_extra_charge_amount] and kg_apply_extra:
+            return price
+
+        extra_price_per_weight = int(order_weight / kg_extra_charge) * kg_extra_charge_amount
+
+        return price + extra_price_per_weight
+
+    def _get_price_from_picking(self, total, weight, volume, quantity):
+        price = 0.0
+        criteria_found = False
+        price_dict = self._get_price_dict(total, weight, volume, quantity)
+        if self.free_over and total >= self.amount:
+            return 0
+        for line in self.price_rule_ids:
+            test = safe_eval(line.variable + line.operator + str(line.max_value), price_dict)
+            if test:
+                price = line.list_base_price + line.list_price * price_dict[line.variable_factor]
+                price = self._get_extra_charge_per_kg(line, price, weight)
+                criteria_found = True
+        if not criteria_found:
+            raise UserError(_("No price rule matching this order; delivery cost cannot be computed."))
+
+        return price

@@ -25,6 +25,28 @@
             <xpath expr="//field[@name='list_base_price']" position="attributes">
                 <attribute name="attrs">{'readonly': [('is_foreign_currency', '=', True)]}</attribute>
             </xpath>
+
+            <xpath expr="//group[2]" position="after">
+
+                <group name="kg_extra_charge_delivery">
+
+                    <field class="oe_inline" name="kg_apply_extra"/>
+
+                    <field 
+                        class="oe_inline"
+                        name="kg_extra_charge_amount" 
+                        attrs="{ 'invisible': [('kg_apply_extra', '!=', True)] }"
+                    />
+
+                    <field 
+                        class="oe_inline"
+                        name="kg_extra_charge" 
+                        attrs="{ 'invisible': [('kg_apply_extra', '!=', True)] }"
+                    />
+
+                </group>
+            </xpath>
+
         </field>
     </record>
 

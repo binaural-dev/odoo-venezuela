@@ -1,4 +1,5 @@
 import logging
+from email.policy import default
 
 from odoo import _, api, fields, models
 from odoo.tools.float_utils import float_is_zero
@@ -12,6 +13,20 @@ class PriceRule(models.Model):
     is_foreign_currency = fields.Boolean("Use Foreign Currency")
     foreign_list_base_price = fields.Float(digits="Product Price", required=True, default=1.0)
     list_base_price = fields.Float(compute="_compute_base_price", store=True)
+
+    kg_apply_extra = fields.Boolean(
+        string='Does apply extra charge per Kg?',
+        default=False
+    )
+    
+    kg_extra_charge = fields.Float(
+        'Kg Extra charge amount',
+        default=1
+    )
+
+    kg_extra_charge_amount = fields.Float(
+        'Extra charge amount per kg'
+    )
 
     def write(self, vals):
         if "foreign_list_base_price" in vals.keys():
