@@ -26,8 +26,6 @@ class PriceRule(models.Model):
 
     foreign_kg_extra_charge_amount = fields.Float(
         digits="Product Price",
-        compute="_onchange_foreign_kg_extra_charge_amount",
-        inverse="_onchange_kg_extra_charge_amount",
     )
 
     kg_extra_charge_amount = fields.Float(

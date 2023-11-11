@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Delivery / Stock",
-    "version": "16.0.0.0.2",
+    "version": "16.0.0.0.3",
     "depends": ["binaural_rate", "delivery"],
     "data": [
         # 'security/ir.model.access.csv',
