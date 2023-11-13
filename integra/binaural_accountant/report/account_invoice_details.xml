@@ -248,15 +248,15 @@
                                 <p><t t-out="p.name"/></p>
                             </div>
                             <div class="col-1 text-center">
-                                <p><t t-out="p.date"/></p>
+                                <p><t t-out="p.date.strftime('%d/%m/%Y')"/></p>
                             </div>
                             <div class="col-2 text-center">
                                 <t t-if="p.currency_id.id == %(base.USD)d">
-                                    <p><t t-out="p.amount * multiply"/></p>
+                                    <p><t t-out="self.format_monetary(p.amount * multiply,'base.USD')"/></p>
                                 </t>
                                 <t t-else="">
                                     <p>
-                                        <t t-out="p.asset_receivable_amount * multiply"/>
+                                        <t t-out="self.format_monetary(p.asset_receivable_amount * multiply,'base.USD')"/>
                                     </p>
                                 </t>
                             </div>
@@ -265,10 +265,10 @@
                             </div>
                             <div class="col-2 text-center">
                                 <t t-if="p.currency_id.id != %(base.USD)d">
-                                    <p><t t-out="p.amount * multiply"/></p>
+                                    <p><t t-out="self.format_monetary(p.amount * multiply,'base.VEF')"/></p>
                                 </t>
                                 <t t-else="">
-                                    <p><t t-out="(p.amount * p.foreign_rate) * multiply"/></p>
+                                    <p><t t-out="self.format_monetary((p.amount * p.foreign_rate) * multiply,'base.VEF')"/></p>
                                 </t>
                             </div>
                         </div>
@@ -287,14 +287,14 @@
                             <p></p>
                         </div>
                         <div class="col-2 text-center">
-                            <strong t-out="payments['totals_'+journal]['amount']"/>
+                            <strong t-out="payments['totals_'+journal]['formatted_amount']"/>
                         </div>
                         <div class="col-1 text-center">
                             <p>
                             </p>
                         </div>
                         <div class="col-2 text-center">
-                            <strong t-out="payments['totals_'+journal]['foreign_amount']" />
+                            <strong t-out="payments['totals_'+journal]['formatted_foreign_amount']" />
                         </div>
                     </div>
                 </t>
@@ -313,14 +313,14 @@
                     <p></p>
                 </div>
                 <div class="col-2 text-center">
-                    <strong t-out="payments['totals']['amount']" />
+                    <strong t-out="payments['totals']['formatted_amount']" />
                 </div>
                 <div class="col-1 text-center">
                     <p>
                     </p>
                 </div>
                 <div class="col-2 text-center">
-                    <strong t-out="payments['totals']['foreign_amount']" />
+                    <strong t-out="payments['totals']['formatted_foreign_amount']" />
                 </div>
             </div>
         </t>

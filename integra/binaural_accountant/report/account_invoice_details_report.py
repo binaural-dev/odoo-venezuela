@@ -162,9 +162,13 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             "payments": payments,
             "invoice_move_type": invoice_move_types,
             "show_documents": wizard.show_documents,
+            "self": self,
         }
 
         return data
+
+    def format_monetary(self, amount, currency):
+        return formatLang(self.env, amount, currency_obj=self.env.ref(currency))
 
     def p_get_new_values(self, totals, payment):
         multiply = 1 if payment.payment_type == "inbound" else -1
@@ -177,7 +181,14 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             amount = totals["amount"] + (payment.asset_receivable_amount * multiply)
             foreign_amount = totals["foreign_amount"] + (payment.amount * multiply)
 
-        return {"amount": amount, "foreign_amount": foreign_amount}
+        return {
+            "amount": amount,
+            "foreign_amount": foreign_amount,
+            "formatted_amount": formatLang(self.env, amount, currency_obj=self.env.ref("base.USD")),
+            "formatted_foreign_amount": formatLang(
+                self.env, foreign_amount, currency_obj=self.env.ref("base.VEF")
+            ),
+        }
 
     def get_new_values(self, totals, invoice):
         multiply = 1 if invoice.move_type == "out_invoice" else -1
@@ -191,7 +202,9 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             (invoice.detailed_amounts["gross_amount"] - invoice.detailed_amounts["discount_amount"])
             * multiply
         )
-        taxes_amount = totals["taxes_amount"] + (invoice.detailed_amounts["taxes_amount"] * multiply)
+        taxes_amount = totals["taxes_amount"] + (
+            invoice.detailed_amounts["taxes_amount"] * multiply
+        )
         total_amount = totals["total_amount"] + (invoice.tax_totals["amount_total"] * multiply)
         total_items = totals["total_items"] + 1
 
