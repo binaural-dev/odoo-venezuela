@@ -13,6 +13,10 @@ initial_amounts = {
     "gross_amount": 0,
     "discount_amount": 0,
     "total_amount": 0,
+    "taxes_amount": 0,
+    "gross_discount_amount": 0,
+    "formatted_gross_discount_amount": 0,
+    "formatted_taxes_amount": 0,
     "formatted_gross_amount": 0,
     "formatted_discount_amount": 0,
     "formatted_total_amount": 0,
@@ -38,7 +42,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             ("company_id", "=", wizard.company_id.id),
             ("date", ">=", wizard.date_from),
             ("date", "<=", wizard.date_to),
-            ("reconciled_invoice_ids", "!=", False),
+            # ("reconciled_invoice_ids", "!=", False),
         ]
 
     @api.model
@@ -50,7 +54,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             "company_id": wizard.company_id,
             "journal_ids": [],
             "p_journals_ids": [],
-            "payment_term_ids":[] ,
+            "payment_term_ids": [],
             "p_payment_term_ids": [],
             "invoices": {},
             "payments": {},
@@ -73,44 +77,30 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             {"name": _("Refund"), "type": "out_refund"},
         ]
 
-        p_payment_terms = [{"name": _("Instant payment"), "id": "cash"}]
-
         for payment in payment_ids:
-            for p_invoice in payment.reconciled_invoice_ids:
-                term_id = (
-                    str(p_invoice.invoice_payment_term_id.id)
-                    if p_invoice.invoice_payment_term_id
-                    else "cash"
-                )
+            journal_id = str(payment.journal_id.id)
 
-                journal_id = str(payment.journal_id.id)
+            if journal_id not in [x["id"] for x in p_journals]:
+                p_journals.append(self.new_journal(payment))
 
-                if term_id not in [x["id"] for x in p_payment_terms]:
-                    p_payment_terms.append(self.new_payment_term(p_invoice))
+            if not payments.get(journal_id, False):
+                payments[journal_id] = payment
+            else:
+                payments[journal_id] |= payment
 
-                if journal_id not in [x["id"] for x in p_journals]:
-                    p_journals.append(self.new_journal(payment))
+            if not payments.get("totals_" + journal_id, False):
+                p_journal_totals = p_initial_amounts
+            else:
+                p_journal_totals = payments["totals_" + journal_id]
 
-                if not payments[term_id].get(journal_id, False):
-                    payments[term_id][journal_id] = [{"invoice": p_invoice, "payment": payment}]
-                else:
-                    payments[term_id][journal_id].append({"invoice": p_invoice, "payment": payment})
+            payments["totals_" + journal_id] = self.p_get_new_values(p_journal_totals, payment)
 
-                if not payments[term_id].get("totals_" + journal_id, False):
-                    p_journal_totals = p_initial_amounts
-                else:
-                    p_journal_totals = payments[term_id]["totals_" + journal_id]
+            if not payments.get("totals", False):
+                p_totals = p_initial_amounts
+            else:
+                p_totals = payments["totals"]
 
-                payments[term_id]["totals_" + journal_id] = self.p_get_new_values(
-                    p_journal_totals, payment
-                )
-
-                if not payments.get("totals", False):
-                    p_totals = p_initial_amounts
-                else:
-                    p_totals = payments["totals"]
-
-                payments["totals"] = self.p_get_new_values(p_totals, payment)
+            payments["totals"] = self.p_get_new_values(p_totals, payment)
 
         for invoice in invoice_ids:
             journal_id = str(invoice.journal_id.id)
@@ -158,10 +148,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             else:
                 totals = invoices["totals"]
 
-            invoices["totals"] = self.get_new_values(
-                totals, invoice
-            )
-
+            invoices["totals"] = self.get_new_values(totals, invoice)
 
         data = {
             "date_from": wizard.date_from,
@@ -171,29 +158,39 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             "journal_ids": journals,
             "p_journals_ids": p_journals,
             "payment_term_ids": payment_terms,
-            "p_payment_term_ids": p_payment_terms,
             "invoices": invoices,
             "payments": payments,
             "invoice_move_type": invoice_move_types,
+            "show_documents": wizard.show_documents,
         }
 
         return data
 
     def p_get_new_values(self, totals, payment):
+        multiply = 1 if payment.payment_type == "inbound" else -1
         if payment.currency_id.id == self.env.ref("base.USD").id:
-            amount = totals["amount"] + payment.amount
-            foreign_amount = totals["foreign_amount"] + payment.amount * payment.foreign_rate
+            amount = totals["amount"] + (payment.amount * multiply)
+            foreign_amount = totals["foreign_amount"] + (
+                (payment.amount * payment.foreign_rate) * multiply
+            )
         else:
-            amount = totals["amount"] + payment.move_id.line_ids[0].debit
-            foreign_amount = totals["foreign_amount"] + payment.amount
+            amount = totals["amount"] + (payment.asset_receivable_amount * multiply)
+            foreign_amount = totals["foreign_amount"] + (payment.amount * multiply)
 
         return {"amount": amount, "foreign_amount": foreign_amount}
 
     def get_new_values(self, totals, invoice):
-
         multiply = 1 if invoice.move_type == "out_invoice" else -1
-        gross_amount = totals["gross_amount"] + (invoice.detailed_amounts["gross_amount"] * multiply)
-        discount_amount = totals["discount_amount"] + (invoice.detailed_amounts["discount_amount"] * multiply)
+        gross_amount = totals["gross_amount"] + (
+            invoice.detailed_amounts["gross_amount"] * multiply
+        )
+        discount_amount = totals["discount_amount"] + (
+            invoice.detailed_amounts["discount_amount"] * multiply
+        )
+        gross_discount_amount = totals["gross_discount_amount"] + (
+            invoice.price_subtotal * multiply
+        )
+        taxes_amount = totals["taxes_amount"] + (invoice.detailed_amounts["tax_amounts"] * multiply)
         total_amount = totals["total_amount"] + (invoice.tax_totals["amount_total"] * multiply)
         total_items = totals["total_items"] + 1
 
@@ -201,8 +198,16 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             "gross_amount": gross_amount,
             "discount_amount": discount_amount,
             "total_amount": total_amount,
+            "gross_discount_amount": gross_discount_amount,
+            "taxes_amount": taxes_amount,
             "formatted_gross_amount": formatLang(
                 self.env, gross_amount, currency_obj=invoice.currency_id
+            ),
+            "formatted_taxes_amount": formatLang(
+                self.env, taxes_amount, currency_obj=invoice.currency_id
+            ),
+            "formatted_gross_discount_amount": formatLang(
+                self.env, gross_discount_amount, currency_obj=invoice.currency_id
             ),
             "formatted_discount_amount": formatLang(
                 self.env, discount_amount, currency_obj=invoice.currency_id

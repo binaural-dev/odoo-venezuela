@@ -13,6 +13,7 @@ class InvoiceDetailsWizard(models.TransientModel):
     date_to = fields.Date(
         required=True, default=datetime.today().replace(day=1) + relativedelta(months=1, days=-1)
     )
+    show_documents = fields.Boolean(default=True)
 
     def action_print(self):
         return self.env.ref("binaural_accountant.report_account_invoices_details").report_action(

@@ -97,13 +97,14 @@ class AccountMove(models.Model):
     def _compute_detailed_amounts(self):
         for record in self:
             discount_amount = 0
+            amount_taxed = 0
             total = 0
             for line in record.invoice_line_ids:
                 subtotal = line.price_unit * line.quantity
                 amount_taxed = 0
                 if line.tax_ids:
                     amount_taxed = subtotal * (line.tax_ids.amount / 100)
-                total += subtotal + amount_taxed
+                total += subtotal
 
                 if line.discount > 0:
                     discount_amount += subtotal - line.price_subtotal
@@ -111,13 +112,18 @@ class AccountMove(models.Model):
             record.detailed_amounts = dict(
                 {
                     "gross_amount": total,
-                    "discount_amount": discount_amount,
                     "formatted_gross_amount": formatLang(
                         self.env, total, currency_obj=self.currency_id
                     ),
+                    "discount_amount": discount_amount,
                     "formatted_discount_amount": formatLang(
                         self.env, discount_amount, currency_obj=self.currency_id
                     ),
+                    "taxes_amount": amount_taxed,
+                    "formatted_taxes_amount": formatLang(
+                        self.env, amount_taxed, currency_obj=self.currency_id
+                    ),
+
                 }
             )
 

@@ -11,6 +11,7 @@
                         <group>
                             <field name="date_from" widget="date"/>
                             <field name="date_to" widget="date"/>
+                            <field name="show_documents"/>
                         </group>
                     </group>
                 </sheet>
