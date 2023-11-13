@@ -23,10 +23,12 @@
 	<field name="inherit_id" ref="product.product_pricelist_item_view_search"/>
 	<field name="arch" type="xml">
 	    <field name="pricelist_id" position="after">
-		<field name="product_id"/>
+		<field name="product_tmpl_id" filter_domain="['|', '|', '|', ('product_tmpl_id.default_code', 'ilike', self), ('product_tmpl_id.product_variant_ids.default_code', 'ilike', self),('product_tmpl_id.name', 'ilike', self), ('product_tmpl_id.barcode', 'ilike', self)]"/>
 		<field name="brand_id"/>
+		<field name="categ_id" filter_domain="['|', ('product_tmpl_id.categ_id', 'child_of', raw_value), ('product_tmpl_id.product_variant_ids.categ_id', 'child_of', raw_value)]"/>
 	    </field>
 	    <group position="inside">
+		<filter string="Category" name="groupby_category" domain="[]" context="{'group_by': 'categ_id'}"/>
 		<filter string="Brand" name="groupby_brand" domain="[]" context="{'group_by': 'brand_id'}"/>
 	    </group>
 	</field>

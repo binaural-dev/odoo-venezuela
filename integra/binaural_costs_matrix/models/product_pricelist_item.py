@@ -7,7 +7,7 @@ _logger = logging.getLogger(__name__)
 class ProductPricelistItem(models.Model):
     _inherit = "product.pricelist.item"
 
-    brand_id = fields.Many2one(related="product_id.brand_id", store=True)
+    brand_id = fields.Many2one(related="product_tmpl_id.brand_id", store=True)
 
     purchase_price = fields.Float(
         string="Cost",
@@ -41,6 +41,10 @@ class ProductPricelistItem(models.Model):
     latest_standard_price_margin_percent = fields.Float(
         "Latest Standard Price Margin (%)",
         compute="_compute_margin",
+        store=True,
+    )
+    categ_id = fields.Many2one(
+        related="product_tmpl_id.categ_id",
         store=True,
     )
 
