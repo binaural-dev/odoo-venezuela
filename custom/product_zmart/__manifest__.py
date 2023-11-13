@@ -8,7 +8,7 @@
     'website': "https://binauraldev.com/",
     'category': 'Products',
     'version': '16.0',
-    'depends': ['binaural_stock'],
+    'depends': ['binaural_stock','binaural_purchase'],
     'data': [
         'security/ir.model.access.csv',
         'views/product_template.xml',
