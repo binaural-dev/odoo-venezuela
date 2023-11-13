@@ -624,12 +624,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "values": self._determinate_resume_books(moves, "exempt_aliquot"),
             },
             {
-                "name": "Exportaciones Gravadas por Alícuota General",
+                "name": "Importaciones Gravadas por Alícuota General",
                 "format": "number",
                 "values": self._determinate_resume_books(moves),
             },
             {
-                "name": "Exportaciones Gravadas por Alícuota General más Adicional",
+                "name": "Importaciones Gravadas por Alícuota General más Adicional",
                 "format": "number",
                 "values": self._determinate_resume_books(moves),
             },
