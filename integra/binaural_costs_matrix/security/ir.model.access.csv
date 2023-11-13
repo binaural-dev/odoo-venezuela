@@ -1,2 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_binaural_costs_matrix_binaural_costs_matrix,binaural_costs_matrix.binaural_costs_matrix,model_binaural_costs_matrix_binaural_costs_matrix,base.group_user,1,1,1,1
