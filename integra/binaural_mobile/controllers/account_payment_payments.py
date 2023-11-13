@@ -157,7 +157,7 @@ class AccountPaymentPayments(http.Controller):
                                 reconcile = request.env["account.partial.reconcile"].search(domain)
                                 for invoice_ids in reconcile:
                                     invoice_id = invoice_ids.debit_move_id.move_id
-                                    if line_id:
+                                    if line_id and invoice == invoice_id:
                                         pays_app_lines += self.create_line_app(
                                             pay_r, invoice_id, company, advance_account_customer_ids
                                         )
