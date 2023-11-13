@@ -370,6 +370,13 @@ msgid "Last Updated on"
 msgstr ""
 
 #. module: binaural_accountant
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__last_foreign_rate
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_move__last_foreign_rate
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__last_foreign_rate
+msgid "Last Foreign Rate"
+msgstr "Ultima tasa"
+
+#. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__manually_set_rate
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_move__manually_set_rate
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__manually_set_rate
@@ -507,6 +514,14 @@ msgid ""
 msgstr ""
 "La cantidad expresada en una moneda alternativa si se trata de un asiento "
 "multi-divisa."
+
+#. module: binaural_accountant
+#. odoo-python
+#: code:addons/binaural_accountant/models/account_move.py:0
+#: code:addons/binaural_accountant/models/account_move.py:0
+#, python-format
+msgid "The rate has been updated from %(last_rate)s to %(rate)s "
+msgstr "La tasa ha sido actualizada de: %(last_rate)s a una tasa personalizada: %(rate)s"
 
 #. module: binaural_accountant
 #: model:ir.model.fields,help:binaural_accountant.field_account_payment_register__foreign_rate

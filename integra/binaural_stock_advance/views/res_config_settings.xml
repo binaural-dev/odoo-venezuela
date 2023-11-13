@@ -17,6 +17,8 @@
                                 <field name="apply_fob" attrs="{'invisible':[('use_fee_percentage', '=', False)]}" />
                                 <field name="apply_cif" attrs="{'invisible':[('use_fee_percentage', '=', False)]}" />
                                 <field name="service_products_ids" widget="many2many_tags" attrs="{'invisible':[('apply_cif', '=', False)]}"/>
+                                <field name="check_calculate_taking_order_quantities" attrs="{'invisible': [('check_calculate_based_total_purchase_amount', '=', True)]}"/>
+                                <field name="check_calculate_based_total_purchase_amount"  attrs="{'invisible': [('check_calculate_taking_order_quantities', '=', True)]}"/>
                             </group>
                         </div>
                     </div>
