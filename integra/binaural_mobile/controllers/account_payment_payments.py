@@ -60,9 +60,10 @@ class AccountPaymentPayments(http.Controller):
                 invoice_id = int(invoices[invoice]["idInvoice"])
                 invoices_id.append(invoice_id)
 
+            company = request.env.company
             order_options = {"0": "create_date asc", "1": "amount_residual desc"}
 
-            order_invoices = order_options.get(request.env.company.order_payment, "create_date asc")
+            order_invoices = order_options.get(company.order_payment, "create_date asc")
 
             data_invoices = (
                 request.env["account.move"]
@@ -71,7 +72,7 @@ class AccountPaymentPayments(http.Controller):
             )
 
             ctx = {"active_model": "account.move", "active_ids": data_invoices.ids}
-            company = request.env.company
+            
             try:
                 type_fiscal = (
                     request.env["account.journal"]
@@ -81,11 +82,23 @@ class AccountPaymentPayments(http.Controller):
                 )
                 seller_id = request.env.user.employee_id.id
                 payments_igtf = request.env["payment.mobile.igtf"]
-                pays_retention_registered = request.env["account.payment"]
-                advance_pays = request.env["account.payment"]
                 pays_registered = request.env["account.payment"]
-                advance_customer_id = request.env.company.advance_customer_account_id
+                pays_retention_registered = pays_registered
+                advance_pays = pays_registered
+                module_advance_payment = request.env["ir.module.module"].sudo().search(
+                    [
+                        ('name', "ilike", "binaural_advance_payment")
+                    ], limit=1
+                )
+                advance_payment_installed = True if module_advance_payment.state == "installed" else False
+                advance_account_customer_ids = False
+                if advance_payment_installed:
+                    advance_account_customer_ids = [
+                        company.advance_customer_account_id.id,
+                        company.customer_account_igtf_id.id,
+                    ]
 
+                # advance_customer_id = request.env.company.advance_customer_account_id
                 if type_fiscal:
                     retentions, pays_retention_registered = self.register_retentions(
                         data_invoices, partner_id, company, pays_retention_registered
@@ -94,24 +107,25 @@ class AccountPaymentPayments(http.Controller):
                 pays_app_register = request.env["payment.mobile"]
 
                 if use_credit:
-                    invoices = data_invoices.mapped("line_ids").filtered(
-                        lambda l: l.account_id.account_type == "asset_receivable"
-                    )
-                    domain_customer = [
-                        ("partner_id", "=", int(partner_id)),
-                        ("account_id", "=", advance_customer_id.id),
-                        ("move_id.state", "=", "posted"),
-                    ]
+                    if advance_payment_installed:    
+                        invoices = data_invoices.mapped("line_ids").filtered(
+                            lambda l: l.account_id.account_type == "asset_receivable"
+                        )
+                        domain_customer = [
+                            ("partner_id", "=", int(partner_id)),
+                            ("account_id", "in", advance_account_customer_ids),
+                            ("move_id.state", "=", "posted"),
+                        ]
 
-                    advance_lines = request.env["account.move.line"].search(domain_customer)
+                        advance_lines = request.env["account.move.line"].search(domain_customer)
 
-                    for invoice in invoices:
-                        total_residual = 0
-                        for payment in advance_lines:
-                            total_residual = payment.amount_residual
-                            if total_residual < 0 and invoice.amount_residual != 0:
-                                (payment + invoice).sudo().reconcile(from_app=True)
-                                advance_pays += payment.move_id.payment_id
+                        for invoice in invoices:
+                            total_residual = 0
+                            for payment in advance_lines:
+                                total_residual = payment.amount_residual
+                                if total_residual < 0 and invoice.amount_residual != 0:
+                                    (payment + invoice).sudo().reconcile(from_app=True)
+                                    advance_pays += payment.move_id.payment_id
 
                 if payments:
                     pays_registered, payments_igtf = self.register_payments(
@@ -128,7 +142,7 @@ class AccountPaymentPayments(http.Controller):
                     for invoice in data_invoices:
                         if invoice.id in pay_r.reconciled_invoice_ids.ids:
                             pays_app_lines += self.create_line_app(
-                                pay_r, invoice, company, advance_customer_id
+                                pay_r, invoice, company, advance_account_customer_ids
                             )
 
                         if pay_r.is_advance_payment:
@@ -145,7 +159,7 @@ class AccountPaymentPayments(http.Controller):
                                     invoice_id = invoice_ids.debit_move_id.move_id
                                     if line_id:
                                         pays_app_lines += self.create_line_app(
-                                            pay_r, invoice_id, company, advance_customer_id
+                                            pay_r, invoice_id, company, advance_account_customer_ids
                                         )
 
                     pays_app_method = request.env["payment.mobile.methods"].create(
@@ -353,7 +367,7 @@ class AccountPaymentPayments(http.Controller):
                 "currency_id": company.currency_id.id,
                 "invoice_id": invoice.id,
                 "payment_related": payment.id,
-                "use_balance": True if advance.id == payment.destination_account_id.id else False,
+                "use_balance": True if advance and payment.destination_account_id.id in advance else False,
             }
         )
         return pays_app_line

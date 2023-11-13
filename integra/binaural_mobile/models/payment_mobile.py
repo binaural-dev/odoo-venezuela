@@ -83,16 +83,21 @@ class PaymentMobile(models.Model):
             payments = []
             module_advance_payment = self.env["ir.module.module"].sudo().search(
                 [
-                    ('name', "ilike", "binaural_advance_payment")
+                    ('name', "=", "binaural_advance_payment")
                 ], limit=1
             )
             advance_payment_installed = True if module_advance_payment.state == "installed" else False
             if advance_payment_installed:
-                advance_account = self.env.company.advance_customer_account_id
+                company_id = self.env.company
+                advance_account_customer = company_id.advance_customer_account_id
+                advance_account_customer_igtf = company_id.customer_account_igtf_id
             for line in lines.payment_mobile_line:
                 pass_advance_pay = False
                 if advance_payment_installed:
-                    if line.payment_related.destination_account_id == advance_account:
+                    if (
+                        line.payment_related.destination_account_id == advance_account_customer or 
+                        line.payment_related.destination_account_id == advance_account_customer_igtf
+                    ):
                         total+= line.amount
                         pass_advance_pay = True
                 if not line.payment_related.id in payments and not pass_advance_pay:
