@@ -2,7 +2,7 @@ from odoo import api, fields, exceptions, http, models, _
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 
 
-class EstablishExtension(models.Model):
+class EstablishExtension(models.TransientModel):
     _name = "establish.extension"
 
     reason = fields.Text(string="Reason")
