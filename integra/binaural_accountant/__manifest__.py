@@ -25,6 +25,7 @@
         "views/account_move.xml",
         "views/account_move_line.xml",
         "views/account_payment.xml",
+        "views/res_partner.xml",
         "wizard/account_payment_register.xml",
     ],
     "images": ["static/description/icon.png"],
