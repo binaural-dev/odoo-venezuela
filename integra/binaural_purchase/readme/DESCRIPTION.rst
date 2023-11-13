@@ -30,5 +30,4 @@ Este añade los siguientes campos:
 * Diario de la compra
 * Tasa actualizada Manualmente
 
-* Al momento de cambiar la tasa manualmente en la factura este manda un mensaje en el tracking para
-saber la tasa anterior y la nueva tasa colocada
+* Al momento de cambiar la tasa manualmente en la factura este manda un mensaje en el tracking para saber la tasa anterior y la nueva tasa colocada
