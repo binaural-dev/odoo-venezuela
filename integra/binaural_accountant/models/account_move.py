@@ -119,6 +119,10 @@ class AccountMove(models.Model):
                     "formatted_discount_amount": formatLang(
                         self.env, discount_amount, currency_obj=self.currency_id
                     ),
+                    "gross_discount_amount": total,
+                    "formatted_gross_discount_amount": formatLang(
+                        self.env, total - discount_amount, currency_obj=self.currency_id
+                    ),
                     "taxes_amount": amount_taxed,
                     "formatted_taxes_amount": formatLang(
                         self.env, amount_taxed, currency_obj=self.currency_id

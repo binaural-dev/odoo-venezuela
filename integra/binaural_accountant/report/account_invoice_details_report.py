@@ -188,9 +188,10 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             invoice.detailed_amounts["discount_amount"] * multiply
         )
         gross_discount_amount = totals["gross_discount_amount"] + (
-            invoice.price_subtotal * multiply
+            (invoice.detailed_amounts["gross_amount"] - invoice.detailed_amounts["discount_amount"])
+            * multiply
         )
-        taxes_amount = totals["taxes_amount"] + (invoice.detailed_amounts["tax_amounts"] * multiply)
+        taxes_amount = totals["taxes_amount"] + (invoice.detailed_amounts["taxes_amount"] * multiply)
         total_amount = totals["total_amount"] + (invoice.tax_totals["amount_total"] * multiply)
         total_items = totals["total_items"] + 1
 
