@@ -93,21 +93,18 @@ class AccountMove(models.Model):
 
     detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
 
-    @api.depends("invoice_line_ids")
+    @api.depends("invoice_line_ids","tax_totals")
     def _compute_detailed_amounts(self):
         for record in self:
             discount_amount = 0
-            amount_taxed = 0
+            amount_taxed = record.tax_totals.get("amount_total",0) - record.tax_totals.get("amount_untaxed",0)
             total = 0
+
             for line in record.invoice_line_ids:
                 subtotal = line.price_unit * line.quantity
-                amount_taxed = 0
-                if line.tax_ids:
-                    amount_taxed = subtotal * (line.tax_ids.amount / 100)
-                total += subtotal
-
                 if line.discount > 0:
                     discount_amount += subtotal - line.price_subtotal
+                total += subtotal
 
             record.detailed_amounts = dict(
                 {
