@@ -1,5 +1,9 @@
+import logging
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class StockPicking(models.Model):
@@ -37,12 +41,9 @@ class StockPicking(models.Model):
             if seq_code in ['PICK', 'PACK'] and is_lower_than and has_picking_group:
                 raise UserError(_("No se pueden validar cantidades inferiores a las reservadas o no tiene el grupo de acceso derecho."))
 
-
     def button_validate(self):
 
         self._check_valid_qty_done_move_line_ids_without_package()
-
-        super().button_validate()
 
         if not self.guide:
             if self.shipping_type == 'shipment' and self.sequence_code == 'PACK':
@@ -55,6 +56,9 @@ class StockPicking(models.Model):
                 self.update({
                     'guide': guide_sequence
                 })
+
+        return super().button_validate()
+
 
     def write(self, vals):
         res = super().write(vals)
