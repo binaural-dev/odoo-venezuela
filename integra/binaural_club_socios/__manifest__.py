@@ -27,10 +27,12 @@
         "views/account_move.xml",
         "views/family_members.xml",
         "views/pending_debt_list.xml",
+        "views/insolvent_partner.xml",
         "wizard/status_action_batch.xml",
         "wizard/establish_extension.xml",
         "wizard/suspend_partner.xml",
-        "wizard/remove_suspend_partner.xml"
+        "wizard/remove_suspend_partner.xml",
+        "data/cron.xml"
 
     ],
 }

@@ -260,7 +260,7 @@ class ResPartner(models.Model):
                     "No partner configuration registered please contact your system administrator."
                 )
             end_date_partner = fields.Date.today() + relativedelta(
-                years=config.years_of_validity_member
+                years=config.years_of_membership
             )
             partner.write(
                 {

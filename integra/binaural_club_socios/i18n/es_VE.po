@@ -606,7 +606,7 @@ msgstr "Rango del Cliente"
 #. module: binaural_club_socios
 #: model:ir.actions.act_window,name:binaural_club_socios.action_partner_form
 msgid "Customers"
-msgstr ""
+msgstr "Socios"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__day_end_date_payment
@@ -749,14 +749,14 @@ msgstr "Fecha final de suspensión"
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_establish_extension
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
 msgid "Establish Extension"
-msgstr ""
+msgstr "Establecer Prorroga"
 
 #. module: binaural_club_socios
 #. odoo-python
 #: code:addons/binaural_club_socios/wizard/establish_extension.py:0
 #, python-format
 msgid "Establish extension:(%s)"
-msgstr ""
+msgstr "Establecer Prorroga:(%s)"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__expiration_alert_subject
@@ -1876,7 +1876,7 @@ msgstr "Fecha inicio de suspensión"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__state_id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__state_partner
 msgid "State"
-msgstr "Estado"
+msgstr "Estado del Socio"
 
 #. module: binaural_club_socios
 #: model:ir.ui.menu,name:binaural_club_socios.action_status_batch_wizard_id_action

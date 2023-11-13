@@ -1,6 +1,8 @@
 from odoo import api, fields, exceptions, http, models, _
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
+import logging
 
+_logger = logging.getLogger()
 
 class RemoveSuspendPartner(models.TransientModel):
     _name = "remove.suspend.partner"
