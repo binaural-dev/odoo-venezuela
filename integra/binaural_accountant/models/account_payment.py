@@ -33,6 +33,24 @@ class AccountPayment(models.Model):
         store=True,
         readonly=False,
     )
+    asset_receivable_amount = fields.Float(compute="_compute_asset_receivable_amount")
+
+    @api.depends("move_id")
+    def _compute_asset_receivable_amount(self):
+        for record in self:
+            if not record.move_id:
+                record.asset_receivable_amount = False
+                continue
+            if record.payment_type == "inbound":
+                record.asset_receivable_amount = record.move_id.line_ids.filtered(
+                    lambda x: x.account_id.account_type == "asset_receivable"
+                ).credit
+            else:
+                record.asset_receivable_amount = (
+                    record.asset_receivable_amount
+                ) = record.move_id.line_ids.filtered(
+                    lambda x: x.account_id.account_type == "asset_receivable"
+                ).debit
 
     @api.model_create_multi
     def create(self, vals_list):
