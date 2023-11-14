@@ -28,7 +28,7 @@
                 <t t-if="payments" t-call="portal.portal_table">
                     <thead>
                         <tr class="active">
-                            <th>Payment Date</th>
+                            <th>Date</th>
                             <th>Customer</th>
                             <th class="text-end">Amount</th>
                         </tr>
@@ -37,7 +37,7 @@
                         <t t-foreach="payments" t-as="payment">
                             <tr>
                                 <td><span t-field="payment.create_date" t-options="{'widget': 'date'}"/></td>
-                                <td><a t-attf-href="/payment_list/{{payment.id}}"><span t-field="payment.partner_id.name"/></a></td>
+                                <td><a t-attf-href="/payment_list/{{payment.id}}"><span t-field="payment.partner_id.display_name"/></a></td>
                                 <td class="text-end">
                                     <span t-field="payment.amount"/>
                                 </td>
@@ -59,7 +59,7 @@
                     <div class="row mb-3">
                         <input type="hidden" t-att-value="payments.id" id="payment_id"/>
                         <h2 class="col-sm-3" style="font-weight: lighter;">Client</h2>
-                        <h4 class="col-sm-3" style="font-weight: bolder;" t-out="payments.partner_id.name"></h4>
+                        <h4 class="col-sm-3" style="font-weight: bolder;" t-out="payments.partner_id.display_name"></h4>
                     </div>
                     <div class="d-grid gap-2 mx-auto">
                         <t t-if="payments.state not in 'cancel'">
