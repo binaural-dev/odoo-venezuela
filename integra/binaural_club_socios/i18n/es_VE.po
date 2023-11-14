@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230925\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-14 13:32+0000\n"
-"PO-Revision-Date: 2023-11-14 13:32+0000\n"
+"POT-Creation-Date: 2023-11-14 15:48+0000\n"
+"PO-Revision-Date: 2023-11-14 15:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -775,8 +775,9 @@ msgstr ""
 msgid ""
 "Extension established for %s, new member end date: %s, by user  %s, for the "
 "reason: %s"
-msgstr "Prorroga establecida para %s, nueva fecha de fin del socio: %s, por el usuario %s, por el "
-"motivo: %s"
+msgstr ""
+"Prorroga establecida para %s, nueva fecha de fin del socio: %s, por el "
+"usuario %s, por el motivo: %s"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__action_partner__type_action__extention
@@ -795,8 +796,9 @@ msgstr "Listados de Socios y Familiares"
 msgid ""
 "Family charge: %s suspended from: %s to: %s, by the user %s, for the reason:"
 " %s"
-msgstr "Carga familiar %s suspendido desde: %s hasta: %s, por el usuario %s, por el motivo:"
-" %s"
+msgstr ""
+"Carga familiar %s suspendido desde: %s hasta: %s, por el usuario %s, por el "
+"motivo: %s"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__family_reference
@@ -1285,6 +1287,7 @@ msgstr "Siguiente recordatorio"
 #. module: binaural_club_socios
 #. odoo-python
 #: code:addons/binaural_club_socios/models/res_partner.py:0
+#: code:addons/binaural_club_socios/models/res_partner.py:0
 #, python-format
 msgid ""
 "No partner configuration registered please contact your system "
@@ -1420,7 +1423,9 @@ msgstr "Titular"
 #, python-format
 msgid ""
 "Partner %s suspended from: %s to: %s, by the user %s, for the reason: %s"
-msgstr "Socio %s suspendido desde: %s hasta: %s, por el usuario %s, por el motivo: %s"
+msgstr ""
+"Socio %s suspendido desde: %s hasta: %s, por el usuario %s, por el motivo: "
+"%s"
 
 #. module: binaural_club_socios
 #: model:ir.model,name:binaural_club_socios.model_action_partner
@@ -1457,11 +1462,6 @@ msgstr "Límite para la empresa"
 #: model:ir.ui.menu,name:binaural_club_socios.partners_list
 msgid "Partner List"
 msgstr "Lista de Socios"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__use_partner_credit_limit_order
-msgid "Partner Order Limit"
-msgstr "Limite para la venta (Presupuesto)"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__partner_to_establish
@@ -1579,6 +1579,7 @@ msgid "Prior days for family member partnership alert"
 msgstr ""
 "Días anteriores para alerta de vigencia de asociación para asociados "
 "familiares"
+
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_view_tree_professions
 msgid "Profesiones"
@@ -1883,14 +1884,18 @@ msgstr ""
 #: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
 #, python-format
 msgid "Suspension of the family charge %s removed on: %s, Automatically"
-msgstr "Suspensión de la carga familiar %s removida el: %s, por el usuario %s automáticamente"
+msgstr ""
+"Suspensión de la carga familiar %s removida el: %s, por el usuario %s "
+"automáticamente"
 
 #. module: binaural_club_socios
 #. odoo-python
 #: code:addons/binaural_club_socios/wizard/remove_suspend_partner.py:0
 #, python-format
 msgid "Suspension of the family charge %s removed on: %s, by user %s manually"
-msgstr "Suspensión de la carga familiar %s removida el: %s, por el usuario %s manualmente"
+msgstr ""
+"Suspensión de la carga familiar %s removida el: %s, por el usuario %s "
+"manualmente"
 
 #. module: binaural_club_socios
 #. odoo-python
@@ -2233,6 +2238,20 @@ msgstr "Esposa(o)"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__years_of_membership
 msgid "Years of membership"
 msgstr "Años de vigencia del socio"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/models/res_partner.py:0
+#, python-format
+msgid "You cannot transfer a delinquent or inactive share."
+msgstr "No puedes transferir una acción en mora o inactiva"
+
+#. module: binaural_club_socios
+#. odoo-python
+#: code:addons/binaural_club_socios/models/res_partner.py:0
+#, python-format
+msgid "You cannot transfer a holding partner"
+msgstr "No puedes transferir un socio tenedor"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__zip
