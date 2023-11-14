@@ -23,3 +23,4 @@ class ActionPartnerPrevious(models.Model):
     ], string='Type operation')
     name_exec = fields.Char(string='User')
     date_exec = fields.Date(string='Operation Date')
+    
