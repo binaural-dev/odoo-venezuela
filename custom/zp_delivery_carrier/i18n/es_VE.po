@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230606\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-07 18:42+0000\n"
-"PO-Revision-Date: 2023-06-07 18:42+0000\n"
+"POT-Creation-Date: 2023-11-11 22:26+0000\n"
+"PO-Revision-Date: 2023-11-11 22:26+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,9 +16,29 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: zp_delivery_carrier
+#: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_carrier__foreign_rate
+msgid "Current Rate"
+msgstr "Tasa Alterna"
+
+#. module: zp_delivery_carrier
 #: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_carrier__date_rate
 msgid "Date Rate"
 msgstr "Fecha de Moneda"
+
+#. module: zp_delivery_carrier
+#: model:ir.model,name:zp_delivery_carrier.model_delivery_price_rule
+msgid "Delivery Price Rules"
+msgstr "Reglas de precios de entrega"
+
+#. module: zp_delivery_carrier
+#: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_price_rule__kg_apply_extra
+msgid "Does apply extra charge per Kg?"
+msgstr "¿Aplica cargo extra por Kg?"
+
+#. module: zp_delivery_carrier
+#: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_price_rule__kg_extra_charge_amount
+msgid "Extra charge amount per kg"
+msgstr "Importe del cargo extra por Kg"
 
 #. module: zp_delivery_carrier
 #: model_terms:ir.ui.view,arch_db:zp_delivery_carrier.view_delivery_price_rule_form
@@ -36,19 +56,36 @@ msgid "Foreign Inverse Rate"
 msgstr "Tasa Alterna Inversa"
 
 #. module: zp_delivery_carrier
+#: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_price_rule__foreign_kg_extra_charge_amount
+msgid "Foreign Kg Extra Charge Amount"
+msgstr ""
+
+#. module: zp_delivery_carrier
 #: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_price_rule__foreign_list_base_price
 msgid "Foreign List Base Price"
 msgstr "Costo de Envío Alterno"
 
 #. module: zp_delivery_carrier
-#: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_carrier__foreign_rate
-msgid "Foreign Rate"
-msgstr "Tasa Alterna"
+#: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_price_rule__kg_extra_charge
+msgid "Kg Extra charge amount"
+msgstr "Kg divisor del cargo extra"
 
 #. module: zp_delivery_carrier
-#: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_price_rule__is_foreign_currency
-msgid "Use Foreign Currency"
-msgstr "Usar Moneda Alterna"
+#. odoo-python
+#: code:addons/zp_delivery_carrier/models/delivery_carrier.py:0
+#, python-format
+msgid "No price rule matching this order; delivery cost cannot be computed."
+msgstr ""
+
+#. module: zp_delivery_carrier
+#: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_price_rule__list_base_price
+msgid "Sale Base Price"
+msgstr "Precio de venta base"
+
+#. module: zp_delivery_carrier
+#: model:ir.model,name:zp_delivery_carrier.model_delivery_carrier
+msgid "Shipping Methods"
+msgstr "Métodos de envío"
 
 #. module: zp_delivery_carrier
 #: model:ir.model.fields,help:zp_delivery_carrier.field_delivery_carrier__foreign_rate
@@ -59,3 +96,8 @@ msgstr "La tasa alterna usada para calcular el costo de los envíos."
 #: model:ir.model.fields,help:zp_delivery_carrier.field_delivery_carrier__foreign_inverse_rate
 msgid "The rate used as a factor to multiply the foreign currency."
 msgstr "La tasa utilizada como factor para multiplicar por la moneda alterna."
+
+#. module: zp_delivery_carrier
+#: model:ir.model.fields,field_description:zp_delivery_carrier.field_delivery_price_rule__is_foreign_currency
+msgid "Use Foreign Currency"
+msgstr "Usar Moneda Alterna"

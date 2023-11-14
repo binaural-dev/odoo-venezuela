@@ -255,6 +255,8 @@ msgid ""
 "<span class=\"d-none d-md-inline\">Number</span>\n"
 "                            <span class=\"d-block d-md-none\">Num.</span>"
 msgstr ""
+"<span class=\"d-none d-md-inline\">Número</span>\n"
+"                            <span class=\"d-block d-md-none\">Num.</span>"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_orders_1
@@ -1112,7 +1114,7 @@ msgstr "Factura"
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_invoices_1
 msgid "Invoice #"
-msgstr "Factura número"
+msgstr "Número"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_invoices_1
@@ -2225,7 +2227,7 @@ msgstr "Hay productos duplicados."
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.payments_list_portal
 msgid "There are no payments made to the company."
-msgstr "No se realizaron pagos a la empresa."
+msgstr "Actualmente no tiene pagos en su cuenta."
 
 #. module: binaural_mobile
 #. odoo-python
@@ -2434,12 +2436,12 @@ msgstr "No tienes acceso a esta función."
 #. module: binaural_mobile
 #: model:ir.model.fields.selection,name:binaural_mobile.selection__res_company__order_payment__0
 msgid "from the oldest invoice to the newest"
-msgstr "Desde la mas vieja a la mas nueva"
+msgstr "Mas Antigua"
 
 #. module: binaural_mobile
 #: model:ir.model.fields.selection,name:binaural_mobile.selection__res_company__order_payment__1
 msgid "from the one with the most residual amount to the one with the least"
-msgstr "Desde la que tenga mas monto residual a la que tenga menos"
+msgstr "Mayor Monto"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.products

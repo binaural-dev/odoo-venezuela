@@ -1,5 +1,19 @@
 <odoo>
     <data>
+        <record id="product_template_form_view" model="ir.ui.view">
+            <field name="name">product.template.form.view</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="binaural_purchase.product_template_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//label[@for='tariff_code']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+                <xpath expr="//div[@name='tariff_code']" position="attributes">
+                    <attribute name="invisible">1</attribute>
+                </xpath>
+            </field>
+        </record>
+
         <record id="product_template_form_zmart" model="ir.ui.view">
             <field name="name">product.template.form.zmart</field>
             <field name="model">product.template</field>

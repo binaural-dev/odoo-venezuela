@@ -50,7 +50,5 @@
 	<field name="res_model">product.pricelist.item</field>
 	<field name="view_mode">tree</field>
 	<field name="view_id" ref="product_pricelist_item_tree_view"/>
-	<!-- <field name="domain">[('price_version_id', '=', False)]</field> -->
-	<!-- <field name="context">{}</field> -->
     </record>
 </odoo>
