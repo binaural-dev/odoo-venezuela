@@ -9,13 +9,14 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "0.2",
+    "version": "0.3",
     "category": "Accountant",
     "depends": [
+        "base",
+        "purchase",
         "binaural_accountant",
         # "binaural_sale",
         # "binaural_invoice",
-        "binaural_rate",
     ],
     "data": [
         # "security/ir.model.access.csv",
@@ -23,13 +24,9 @@
         # "data/res_groups.xml",
         "views/res_config_settings.xml",
         "views/account_move.xml",
-        "views/sale_order_views.xml"
+        "views/sale_order_views.xml",
+        "views/purchase_order.xml",
     ],
-    "assets": {
-        "web.assets_frontend": [
-            # "binaural_mobile/static/src/js/portal_budget.js",
-        ]
-    },
     "images": ["static/description/icon.png"],
     "application": True,
 }

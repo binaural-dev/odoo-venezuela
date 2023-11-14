@@ -11,14 +11,12 @@
                     <field name="subsidiary"/>
                 </xpath> -->
                 <xpath expr="//group[@id='header_right_group']/div[3]" position="after">
-                    <field name="account_analytic_id" attrs="{'invisible':[('move_type','not in',['out_refund','out_invoice','in_invoice', 'in_refund'])], 'readonly': [('invoice_origin', '!=', False)]}"/>
+                    <field name="account_analytic_id" attrs="{'invisible':[('move_type','not in',['out_refund','out_invoice','in_invoice', 'in_refund'])], 'readonly': ['|',('invoice_origin','!=', False), ('ref','!=', False)]}"/>
                 </xpath>
                 
-                <xpath expr="//notebook/page[2]//tree/field[@name='analytic_distribution']" position="after">
+                <!-- <xpath expr="//notebook/page[2]//tree/field[@name='analytic_distribution']" position="after">
                     <field name="account_analytic_id" optional="hide"/>
-                </xpath>
-
-
+                </xpath> -->
             </field>
         </record>
 
