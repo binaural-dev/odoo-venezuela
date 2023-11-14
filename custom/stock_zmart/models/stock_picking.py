@@ -32,14 +32,14 @@ class StockPicking(models.Model):
         for move_line_id in self.move_line_ids_without_package:
 
             if move_line_id.qty_done > move_line_id.reserved_uom_qty:
-                raise UserError(_("You cannot validate quantities greater than those reserved."))
+                raise UserError(_("No se pueden validar cantidades superiores a las reservadas."))
 
             seq_code = move_line_id.picking_id.sequence_code
             is_lower_than = move_line_id.qty_done < move_line_id.reserved_uom_qty
             has_picking_group = self.env.user.has_group ('stock_zmart.group_stock_picking_not_lower_qty_done')
 
             if seq_code in ['PICK', 'PACK'] and is_lower_than and has_picking_group:
-                raise UserError(_("No se pueden validar cantidades inferiores a las reservadas o no tiene el grupo de acceso derecho."))
+                raise UserError(_("No se pueden validar cantidades inferiores a las reservadas o no tiene el permiso en el grupo de acceso."))
 
     def button_validate(self):
 
