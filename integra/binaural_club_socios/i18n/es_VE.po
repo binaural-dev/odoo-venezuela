@@ -6,19 +6,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230925\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-10 14:37+0000\n"
-"PO-Revision-Date: 2023-11-10 14:37+0000\n"
+"POT-Creation-Date: 2023-11-14 13:32+0000\n"
+"PO-Revision-Date: 2023-11-14 13:32+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__supplier_invoice_count
-msgid "# Vendor Bills"
-msgstr "# Facturas de proveedores"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__type
@@ -100,7 +95,7 @@ msgstr "Estado de la Acción"
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
 msgid "Action Transfer"
-msgstr "TRANSFERIR ACCIÓN"
+msgstr "Transferir Acción"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__type_action
@@ -116,7 +111,7 @@ msgstr ""
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch__actions_ids
 msgid "Actions"
-msgstr ""
+msgstr "Acciones"
 
 #. module: binaural_club_socios
 #. odoo-python
@@ -251,7 +246,7 @@ msgstr "¿Esta seguro de remover la suspensión de socios?"
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
 msgid "Are you sure you approve of the Voting process?"
-msgstr "¿Esta seguro de aprobar el proceso de Votación?""
+msgstr "¿Esta seguro de aprobar el proceso de Votación?"
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_tree_view_associates
@@ -296,16 +291,6 @@ msgstr "Asociados"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_attachment_count
 msgid "Attachment Count"
 msgstr "Nº de archivos adjuntos"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__receipt_reminder_email
-msgid ""
-"Automatically send a confirmation email to the vendor X days before the "
-"expected receipt date, asking him to confirm the exact date."
-msgstr ""
-"Envíe automáticamente un correo electrónico de confirmación al proveedor X "
-"días antes de la fecha de recepción prevista, pidiéndole que confirme la "
-"fecha exacta."
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__avatar_1920
@@ -410,7 +395,7 @@ msgstr ""
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_status_batch_wizard_action
 msgid "Change statement actions"
-msgstr "Cambiar estado de acciones en lot"
+msgstr "Cambiar estado de acciones en lote"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__channel_ids
@@ -589,11 +574,6 @@ msgid "Currency"
 msgstr "Moneda"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_stock_customer
-msgid "Customer Location"
-msgstr "Ubicación de cliente"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_payment_term_id
 msgid "Customer Payment Terms"
 msgstr "Plazo de pago de cliente"
@@ -636,11 +616,6 @@ msgid "Date remove suspend"
 msgstr "Fecha en que se removio la suspensión"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__reminder_date_before_receipt
-msgid "Days Before Receipt"
-msgstr "Días antes de la recepción"
-
-#. module: binaural_club_socios
 #: model:ir.model.constraint,message:binaural_club_socios.constraint_action_partner_previous_code_company_uniq_debt
 msgid "Debe pertenecer a la compañia."
 msgstr ""
@@ -673,6 +648,11 @@ msgstr ""
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__member_marital__divorced
 msgid "Divorced"
 msgstr "Divorciado"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_partner_insolvent_list
+msgid "Documento de identificación"
+msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__duplicated_bank_account_partners_count
@@ -1178,6 +1158,13 @@ msgid "Listado de socios y Familiares"
 msgstr ""
 
 #. module: binaural_club_socios
+#: model:ir.actions.act_window,name:binaural_club_socios.action_insolvent_partner
+#: model:ir.ui.menu,name:binaural_club_socios.menu_partnert_insolvent_list
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_partner_insolvent_list
+msgid "Listado en mora"
+msgstr ""
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_main_attachment_id
 msgid "Main Attachment"
 msgstr "Adjuntos principales"
@@ -1232,19 +1219,9 @@ msgid "Message for Invoice"
 msgstr "Mensaje para factura"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__purchase_warn_msg
-msgid "Message for Purchase Order"
-msgstr "Mensaje para el pedido de compra"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__sale_warn_msg
 msgid "Message for Sales Order"
 msgstr "Mensaje para el pedido de venta"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__picking_warn_msg
-msgid "Message for Stock Picking"
-msgstr "Mensaje para recolección de stock"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_ids
@@ -1339,13 +1316,6 @@ msgid "Number of Actions"
 msgstr "Número de acciones"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__reminder_date_before_receipt
-msgid "Number of days to send reminder email before the promised receipt date"
-msgstr ""
-"Número de días para enviar un correo electrónico de recordatorio antes de la"
-" fecha de recepción prometida"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_has_error_counter
 msgid "Number of errors"
 msgstr "Numero de errores"
@@ -1381,11 +1351,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__office_phone
 msgid "Office Phone"
 msgstr "Teléfono de oficina"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__on_time_rate
-msgid "On-Time Delivery Rate"
-msgstr "Tasa de entrega a tiempo"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__online_partner_information
@@ -1427,16 +1392,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__out_email_alert_associates
 msgid "Outgoing mail for partner alert"
 msgstr "Correo de salida para alerta de asociados"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__on_time_rate
-msgid ""
-"Over the past x days; the number of products received on time divided by the"
-" number of ordered products.x is either the System Parameter "
-"purchase_stock.on_time_delivery_days or the default 365"
-msgstr ""
-"El número de productos recibidos a tiempo por el número de productos "
-"ordenados en los últimos 12 meses."
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__parent_name
@@ -1502,6 +1457,11 @@ msgstr "Límite para la empresa"
 #: model:ir.ui.menu,name:binaural_club_socios.partners_list
 msgid "Partner List"
 msgstr "Lista de Socios"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__use_partner_credit_limit_order
+msgid "Partner Order Limit"
+msgstr "Limite para la venta (Presupuesto)"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__partner_to_establish
@@ -1619,7 +1579,6 @@ msgid "Prior days for family member partnership alert"
 msgstr ""
 "Días anteriores para alerta de vigencia de asociación para asociados "
 "familiares"
-
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_view_tree_professions
 msgid "Profesiones"
@@ -1644,32 +1603,12 @@ msgid "Professions"
 msgstr "Profesión"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__purchase_line_ids
-msgid "Purchase Lines"
-msgstr "Líneas de compra"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__purchase_warn
-msgid "Purchase Order"
-msgstr "Pedido de compra"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__purchase_order_count
-msgid "Purchase Order Count"
-msgstr "Nº de pedidos de compra"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__reason
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__reason
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__reason
 #: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__reason
 msgid "Reason"
 msgstr "Motivo"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__receipt_reminder_email
-msgid "Receipt Reminder"
-msgstr "Recordatorio de recibo"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__ref
@@ -1698,7 +1637,13 @@ msgstr "Remover suspensión"
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
-msgid "Remover suspensión"
+msgid "Remover suspension"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.actions.server,name:binaural_club_socios.cron_remove_suspend_auto_ir_actions_server
+#: model:ir.cron,cron_name:binaural_club_socios.cron_remove_suspend_auto
+msgid "Remover suspensión automaticamente"
 msgstr ""
 
 #. module: binaural_club_socios
@@ -1758,8 +1703,6 @@ msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__invoice_warn
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__picking_warn
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__purchase_warn
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__sale_warn
 msgid ""
 "Selecting the \"Warning\" option will notify user with the message, "
@@ -1897,11 +1840,6 @@ msgstr ""
 "Planificada: futuras actividades."
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__picking_warn
-msgid "Stock Picking"
-msgstr "Albarán de stock"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__street
 msgid "Street"
 msgstr "Calle"
@@ -1910,11 +1848,6 @@ msgstr "Calle"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__street2
 msgid "Street2"
 msgstr "Calle2"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_purchase_currency_id
-msgid "Supplier Currency"
-msgstr "Moneda de Proveedor"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__supplier_rank
@@ -1991,7 +1924,7 @@ msgstr "Categorías"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__vat
 msgid "Tax ID"
-msgstr "NIF"
+msgstr "Identificación fiscal"
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
@@ -2056,22 +1989,6 @@ msgid ""
 msgstr ""
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__property_stock_customer
-msgid ""
-"The stock location used as destination when sending goods to this contact."
-msgstr ""
-"La ubicación de almacén utilizada como destino al enviar mercancías a este "
-"contacto."
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__property_stock_supplier
-msgid ""
-"The stock location used as source when receiving goods from this contact."
-msgstr ""
-"La ubicación de almacén utilizada como origen al recibir productos de este "
-"contacto."
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__property_account_payable_id
 msgid ""
 "This account will be used instead of the default one as the payable account "
@@ -2088,15 +2005,6 @@ msgid ""
 msgstr ""
 "Se utilizará esta cuenta en lugar de la cuenta predeterminada como la cuenta"
 " por cobrar de la empresa actual"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__property_purchase_currency_id
-msgid ""
-"This currency will be used, instead of the default one, for purchases from "
-"the current partner"
-msgstr ""
-"Se utilizará esta moneda, en lugar de la predeterminada, para las compras de"
-" la pareja actual"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__email_normalized
@@ -2210,7 +2118,7 @@ msgstr "Clasificación"
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__action_partner_previous__type_operation__unlink
 msgid "Ulink"
-msgstr ""
+msgstr "Desvincular"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__unpaid_invoice_ids
@@ -2264,12 +2172,7 @@ msgstr "Usuarios"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__vat_usufruct
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__vat_usufruct
 msgid "Vat Usufruct"
-msgstr "RIF Usufruto"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_stock_supplier
-msgid "Vendor Location"
-msgstr "Ubicación de proveedor"
+msgstr "RIF Usufructo"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_supplier_payment_term_id
@@ -2281,7 +2184,7 @@ msgstr "Plazo de pago del proveedor"
 #: code:addons/binaural_club_socios/models/res_partner.py:0
 #, python-format
 msgid "Voting process of %s approved the:: %s, by %s"
-msgstr ""Proceso de votación de %s aprobada el: %s, por %s"
+msgstr "Proceso de votación de %s aprobada el: %s, por %s"
 
 #. module: binaural_club_socios
 #. odoo-python
