@@ -223,9 +223,9 @@ class ResPartner(models.Model):
     def action_transfer(self):
         for partner in self:
             if partner.member_type != "action":
-                raise exceptions.UserError("You cannot transfer a holding partner")
+                raise exceptions.UserError(_("You cannot transfer a holding partner"))
             if not partner.is_solvent or not partner.active:
-                raise exceptions.UserError("You cannot transfer a delinquent or inactive share.")
+                raise exceptions.UserError(_("You cannot transfer a delinquent or inactive share."))
 
             partner.active = False
             partner.message_post(
@@ -257,11 +257,11 @@ class ResPartner(models.Model):
             )
             if not config:
                 raise exceptions.UserError(
-                    "No partner configuration registered please contact your system administrator."
+                    _(
+                        "No partner configuration registered please contact your system administrator."
+                    )
                 )
-            end_date_partner = fields.Date.today() + relativedelta(
-                years=config.years_of_membership
-            )
+            end_date_partner = fields.Date.today() + relativedelta(years=config.years_of_membership)
             partner.write(
                 {
                     "state_partner": "active",
@@ -302,39 +302,43 @@ class ResPartner(models.Model):
 
     def action_suspend_partner(self):
         try:
-            form_view_id = self.env.ref("binaural_club_socios.binaural_club_socios_form_suspend_partner").id
+            form_view_id = self.env.ref(
+                "binaural_club_socios.binaural_club_socios_form_suspend_partner"
+            ).id
         except Exception as e:
             form_view_id = False
         return {
-            'type': 'ir.actions.act_window',
-            'name': 'Suspend: '+self.name,
-            'binding_view_types': 'form',
-            'view_mode': 'form',
-            'res_model': 'suspend.partner',
-            'views': [(form_view_id, 'form')],
-            'view_id': form_view_id,
-            'target' : 'new',
-            'context': {
-                'default_partner_to_suspend':self.id,
+            "type": "ir.actions.act_window",
+            "name": "Suspend: " + self.name,
+            "binding_view_types": "form",
+            "view_mode": "form",
+            "res_model": "suspend.partner",
+            "views": [(form_view_id, "form")],
+            "view_id": form_view_id,
+            "target": "new",
+            "context": {
+                "default_partner_to_suspend": self.id,
             },
         }
 
     def action_remove_suspend_partner(self):
         try:
-            form_view_id = self.env.ref("binaural_club_socios.binaural_club_socios_form_remove_suspend_partner").id
+            form_view_id = self.env.ref(
+                "binaural_club_socios.binaural_club_socios_form_remove_suspend_partner"
+            ).id
         except Exception as e:
             form_view_id = False
         return {
-            'type': 'ir.actions.act_window',
-            'name': 'Remover suspension de: '+self.name,
-            'binding_view_types': 'form',
-            'view_mode': 'form',
-            'res_model': 'remove.suspend.partner',
-            'views': [(form_view_id, 'form')],
-            'view_id': form_view_id,
-            'target' : 'new',
-            'context': {
-                'default_partner_to_remove_suspend':self.id,
+            "type": "ir.actions.act_window",
+            "name": "Remover suspension de: " + self.name,
+            "binding_view_types": "form",
+            "view_mode": "form",
+            "res_model": "remove.suspend.partner",
+            "views": [(form_view_id, "form")],
+            "view_id": form_view_id,
+            "target": "new",
+            "context": {
+                "default_partner_to_remove_suspend": self.id,
             },
         }
 
