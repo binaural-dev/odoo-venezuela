@@ -228,6 +228,7 @@ class ResPartner(models.Model):
                 raise exceptions.UserError(_("You cannot transfer a delinquent or inactive share."))
 
             partner.active = False
+
             partner.message_post(
                 subject=_("Archived partner:(%s)") % partner.name,
                 body=_("Archived partner %s on: %s, by action transfer")
@@ -236,6 +237,10 @@ class ResPartner(models.Model):
                     fields.Date.today().strftime("%d/%m/%y"),
                 ),
             )
+
+            for parent_id in partner.child_ids:
+                parent_id.active = False
+
             values_action = {
                 "name": partner.name,
                 "identification": str(partner.prefix_vat) + str(partner.vat),
@@ -245,6 +250,7 @@ class ResPartner(models.Model):
                 "type_operation": "unlink",
                 "name_exec": self.env.user.name,
                 "date_exec": fields.Date.today(),
+                
             }
             self.env["action.partner.previous"].sudo().create(values_action)
 
