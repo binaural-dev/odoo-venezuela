@@ -127,11 +127,11 @@ class PaymentMobile(models.Model):
 
     def compute_test(self):
         self.amount_total()
-        # for line in self.payment_mobile_line:
-        #     line._compute_amount()
-        #     line._compute_amount_foreign()
-        #     line._compute_amount_payment_total()
-        #     line._compute_foreign_amount_payment_total()
+        for line in self.payment_mobile_line:
+            line._compute_amount()
+            line._compute_amount_foreign()
+            line._compute_amount_payment_total()
+            line._compute_foreign_amount_payment_total()
 
 
 class PaymentMobileLine(models.Model):

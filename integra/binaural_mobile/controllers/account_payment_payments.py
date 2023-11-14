@@ -98,7 +98,6 @@ class AccountPaymentPayments(http.Controller):
                         company.customer_account_igtf_id.id,
                     ]
 
-                # advance_customer_id = request.env.company.advance_customer_account_id
                 if type_fiscal:
                     retentions, pays_retention_registered = self.register_retentions(
                         data_invoices, partner_id, company, pays_retention_registered
