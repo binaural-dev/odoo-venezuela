@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Purchase/Purchase",
-    "version": "16.0.0.1",
+    "version": "16.0.0.2",
     "depends": [
         "binaural_purchase",
         "stock",
@@ -21,19 +21,22 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "assets": {
-        'web.assets_qweb': [
+        # 'web.assets_qweb': [
             # 'stock/static/src/**/*.js',
             # 'stock/static/src/**/*.xml',
             # 'stock/static/src/scss/stock_forecasted.scss',
             # 'stock/static/src/scss/forecast_widget.scss',
             # 'stock/static/src/scss/stock_empty_screen.scss',
             # 'stock/static/src/views/**/*',
-            "purchase_zmart/static/src/stock_forecasted/forecasted_details.xml",
+            # "purchase_zmart/static/src/stock_forecasted/forecasted_details.xml",
             # (
             #     "replace",
             #     "stock/static/src/stock_forecasted/forecasted_details.xml",
             #     "purchase_zmart/static/src/stock_forecasted/forecasted_details.xml",
             # ),
+        # ],
+        'web.assets_backend': [
+            'purchase_zmart/static/**/*',
         ],
     },
 }
