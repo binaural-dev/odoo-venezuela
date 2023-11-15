@@ -57,6 +57,7 @@ Funcionalidades
 
 * Se agrega el símbolo de la moneda alterna en los campos de moneda en la orden de venta.
 * Crear varias facturas a partir de una orden de venta si esta excede el límite de líneas por factura.
+* Se agrega una vista nueva a las líneas de tarifa, en el menú Ventas/Productos/Normas de Precio y un grupo llamado "Ver Normas de Precio" que es el que permite ver esta vista.
 
 Validaciones
 """"""""""""
