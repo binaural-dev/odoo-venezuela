@@ -94,7 +94,7 @@ class DeliveryGrip(models.Model):
         kg_extra_charge_amount = line.kg_extra_charge_amount
         extra_price_per_weight = 0
 
-        if 0 in [kg_extra_charge_divisor, kg_extra_charge_amount] and kg_apply_extra:
+        if 0 in [kg_extra_charge_divisor, kg_extra_charge_amount] or not kg_apply_extra:
             return price
 
         extra_price_per_weight = extra_weight / kg_extra_charge_divisor
