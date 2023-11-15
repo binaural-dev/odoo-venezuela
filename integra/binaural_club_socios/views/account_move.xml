@@ -8,6 +8,9 @@
             <field name="arch" type="xml">
                 <field name="partner_id" position="after">
                     <field name="action_number" force_save="1" invisible="context.get('default_move_type') not in ('out_invoice', 'out_refund','out_receipt')"/>
+                    <field name="fee_period" attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund'))],'required':[('move_type','in',('out_invoice','out_refund'))]}" /> <!--attrs="{'invisible': [('state','in',('draft',))]}"/>-->
+                    <field name="pay_soon" attrs="{'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund'))]}"/>
+
                 </field>
 				<xpath expr="//notebook/page/field[@name='line_ids']/tree//field[@name='partner_id']" position="before">
 	                <field name="action_number"/>
