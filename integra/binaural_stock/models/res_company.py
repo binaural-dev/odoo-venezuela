@@ -11,3 +11,4 @@ class ResCompany(models.Model):
     group_product_available_quantity_on_sale = fields.Boolean()
     use_main_warehouse = fields.Boolean()
     main_warehouse_id = fields.Many2one("stock.warehouse")
+

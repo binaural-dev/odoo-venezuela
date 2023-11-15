@@ -1,0 +1,21 @@
+{
+    "name": "Zmart Compras",
+    "summary": """
+       Modulo para compras personalizadas para smart""",
+    "license": "LGPL-3",
+    "author": "Binauraldev",
+    "website": "https://binauraldev.com/",
+    "category": "Purchase/Purchase",
+    "version": "16.0.0.1",
+    "depends": [
+        "binaural_purchase",
+    ],
+    "data": [
+        "security/ir.model.access.csv",
+        'report/report_purchase.xml',
+        "views/purchase_order.xml",
+        "views/stock_picking.xml",
+    ],
+    "images": ["static/description/icon.png"],
+    "application": True,
+}
