@@ -2,6 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 from odoo import api, fields, models, _
 from odoo.tools.misc import formatLang, format_date
+import pytz
 
 import logging
 
@@ -47,10 +48,13 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
 
     @api.model
     def get_sale_details(self, wizard):
+        user = self.env.user
+        user_tz = pytz.timezone(user.tz)
+        current_datetime = pytz.utc.localize(fields.Datetime.now()).astimezone(user_tz)
         data = {
             "date_from": wizard.date_from,
             "date_to": wizard.date_to,
-            "date_now": datetime.now(),
+            "date_now": current_datetime,
             "company_id": wizard.company_id,
             "journal_ids": [],
             "p_journals_ids": [],
@@ -153,7 +157,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
         data = {
             "date_from": wizard.date_from,
             "date_to": wizard.date_to,
-            "date_now": datetime.now(),
+            "date_now": current_datetime,
             "company_id": wizard.company_id,
             "journal_ids": journals,
             "p_journals_ids": p_journals,

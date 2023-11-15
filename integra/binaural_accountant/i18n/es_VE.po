@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230810\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231113\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-13 13:29+0000\n"
-"PO-Revision-Date: 2023-11-13 13:29+0000\n"
+"POT-Creation-Date: 2023-11-15 20:40+0000\n"
+"PO-Revision-Date: 2023-11-15 20:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -29,6 +29,11 @@ msgstr "Total de Ventas"
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
 msgid "<strong>Total charged</strong>"
 msgstr "<strong>Total Cobrado</strong>"
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
+msgid "Amount"
+msgstr "Monto"
 
 #. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_move_line__amount_currency
@@ -55,11 +60,6 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
 msgid "B.I/Discount"
 msgstr "B.I./Descuento"
-
-#. module: binaural_accountant
-#: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
-msgid "BS Amount"
-msgstr "Monto Bs"
 
 #. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
@@ -355,6 +355,13 @@ msgid ""
 msgstr ""
 
 #. module: binaural_accountant
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__last_foreign_rate
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_move__last_foreign_rate
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__last_foreign_rate
+msgid "Last Foreign Rate"
+msgstr "Ultima tasa"
+
+#. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_invoices_details____last_update
 msgid "Last Modified on"
 msgstr ""
@@ -368,13 +375,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_invoices_details__write_date
 msgid "Last Updated on"
 msgstr ""
-
-#. module: binaural_accountant
-#: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__last_foreign_rate
-#: model:ir.model.fields,field_description:binaural_accountant.field_account_move__last_foreign_rate
-#: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__last_foreign_rate
-msgid "Last Foreign Rate"
-msgstr "Ultima tasa"
 
 #. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_bank_statement_line__manually_set_rate
@@ -521,7 +521,9 @@ msgstr ""
 #: code:addons/binaural_accountant/models/account_move.py:0
 #, python-format
 msgid "The rate has been updated from %(last_rate)s to %(rate)s "
-msgstr "La tasa ha sido actualizada de: %(last_rate)s a una tasa personalizada: %(rate)s"
+msgstr ""
+"La tasa ha sido actualizada de: %(last_rate)s a una tasa personalizada: "
+"%(rate)s"
 
 #. module: binaural_accountant
 #: model:ir.model.fields,help:binaural_accountant.field_account_payment_register__foreign_rate
