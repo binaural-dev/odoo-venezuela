@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231006\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231113\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-09 15:07+0000\n"
-"PO-Revision-Date: 2023-10-09 15:07+0000\n"
+"POT-Creation-Date: 2023-11-13 18:36+0000\n"
+"PO-Revision-Date: 2023-11-13 18:36+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -52,6 +52,11 @@ msgid "Config Settings"
 msgstr "Opciones de configuración"
 
 #. module: binaural_sale
+#: model_terms:ir.ui.view,arch_db:binaural_sale.view_sale_order_form_binaural_sales
+msgid "Create Invoice"
+msgstr "Crear factura"
+
+#. module: binaural_sale
 #. odoo-python
 #: code:addons/binaural_sale/models/sale_order.py:0
 #, python-format
@@ -59,8 +64,8 @@ msgid ""
 "Does not have enough units available for the product %s. Only has %s units "
 "of the %s demanded."
 msgstr ""
-"No tiene suficientes unidades disponibles para el producto %s. solo cuenta con %s unidades " 
-"de las %s demandadas."
+"No tiene suficientes unidades disponibles para el producto %s. solo cuenta "
+"con %s unidades de las %s demandadas."
 
 #. module: binaural_sale
 #: model:ir.model.fields,field_description:binaural_sale.field_res_company__not_allow_sell_products
@@ -163,14 +168,65 @@ msgid "Foreign inverse rate"
 msgstr "Tasa inversa alterna"
 
 #. module: binaural_sale
+#: model:res.groups,name:binaural_sale.contact_filter_sale_order_group
+msgid "Hide Contact filter (sale)"
+msgstr "Ocultar el filtro de contacto (venta)"
+
+#. module: binaural_sale
+#: model:res.groups,name:binaural_sale.create_invoice_sale_order_group
+msgid "Hide Create Invoice (sale)"
+msgstr "Ocultar Crear Factura (venta)"
+
+#. module: binaural_sale
+#: model:res.groups,name:binaural_sale.edit_product_line_pricing_sale_order_group
+msgid "Hide Edit product line pricing (sale)"
+msgstr "Ocultar precios de la línea de productos (venta)"
+
+#. module: binaural_sale
+#: model:res.groups,name:binaural_sale.payment_terms_sale_order_group
+msgid "Hide Payment terms (sale)"
+msgstr "Ocultar Plazos de pago (venta)"
+
+#. module: binaural_sale
+#: model:res.groups,name:binaural_sale.pricelist_sale_order_group
+msgid "Hide pricelist (sale)"
+msgstr "Ocultar Tarifas (venta)"
+
+#. module: binaural_sale
 #: model_terms:ir.ui.view,arch_db:binaural_sale.res_config_settings_binaural_sale
 msgid "If you have more than the quantity on stock dont allow sell."
 msgstr "Si usted tiene más de la cantidad en stock no permiten vender."
 
 #. module: binaural_sale
+#. odoo-python
+#: code:addons/binaural_sale/models/sale_order.py:0
+#, python-format
+msgid ""
+"La cuenta %s es de %s mas %s en presupuesto da un total de %s superando el "
+"limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con "
+"el administrador para aumentar el limite de crédito del cliente."
+msgstr ""
+
+#. module: binaural_sale
+#: model:ir.model.fields,field_description:binaural_sale.field_sale_order__last_foreign_rate
+msgid "Last Foreign Rate"
+msgstr "Ultima tasa"
+
+#. module: binaural_sale
+#: model:ir.model.fields,field_description:binaural_sale.field_sale_order__manually_set_rate
+msgid "Manually Set Rate"
+msgstr "Tasa Actualizada manualmente"
+
+#. module: binaural_sale
 #: model:ir.model.fields,field_description:binaural_sale.field_sale_order__partner_id_domain
 msgid "Partner Id Domain"
 msgstr ""
+
+#. module: binaural_sale
+#: model:ir.actions.act_window,name:binaural_sale.product_pricelist_item_tree_only_action
+#: model:ir.ui.menu,name:binaural_sale.pricelist_item_menu
+msgid "Price List Items"
+msgstr "Normas de Precio"
 
 #. module: binaural_sale
 #: model:ir.model.fields,field_description:binaural_sale.field_product_pricelist_item__price_with_tax
@@ -207,6 +263,11 @@ msgstr ""
 "orden."
 
 #. module: binaural_sale
+#: model_terms:ir.ui.view,arch_db:binaural_sale.view_sale_order_form_binaural_sales
+msgid "Recompute all prices based on this pricelist"
+msgstr "Recomputar todos los precios basados en esta Tarifa"
+
+#. module: binaural_sale
 #: model_terms:ir.ui.view,arch_db:binaural_sale.res_config_settings_binaural_sale
 msgid "Sales Configuration"
 msgstr "Configuración de Ventas"
@@ -214,7 +275,7 @@ msgstr "Configuración de Ventas"
 #. module: binaural_sale
 #: model:ir.model,name:binaural_sale.model_sale_order
 msgid "Sales Order"
-msgstr "Orden de venta"
+msgstr "Pedido de venta"
 
 #. module: binaural_sale
 #: model:ir.model,name:binaural_sale.model_sale_order_line
@@ -222,10 +283,30 @@ msgid "Sales Order Line"
 msgstr "Línea de pedido de venta"
 
 #. module: binaural_sale
+#: model:res.groups,name:binaural_sale.group_view_pricelist_items
+msgid "See Pricelist Items"
+msgstr "Ver Normas de Precio"
+
+#. module: binaural_sale
+#. odoo-python
+#: code:addons/binaural_sale/models/sale_order.py:0
+#: code:addons/binaural_sale/models/sale_order.py:0
+#, python-format
+msgid "The rate has been updated from %(last_rate)s to %(rate)s "
+msgstr ""
+"La tasa ha sido actualizada de: %(last_rate)s a una tasa personalizada: "
+"%(rate)s"
+
+#. module: binaural_sale
 #: model:ir.model.fields,help:binaural_sale.field_sale_order__foreign_rate
 #: model:ir.model.fields,help:binaural_sale.field_sale_order_line__foreign_rate
 msgid "The rate that is gonna be always shown to the user."
 msgstr "La tasa que se va a mostrar siempre al usuario."
+
+#. module: binaural_sale
+#: model_terms:ir.ui.view,arch_db:binaural_sale.view_sale_order_form_binaural_sales
+msgid "This will update all unit prices based on the currently set pricelist."
+msgstr "Esto actualizará todos los precios unitarios en función de la Tarifa actualmente establecida."
 
 #. module: binaural_sale
 #: model:ir.model.fields,field_description:binaural_sale.field_sale_order__total_taxed
@@ -236,6 +317,11 @@ msgstr "Total gravado"
 #: model:ir.model.fields,help:binaural_sale.field_sale_order__total_taxed
 msgid "Total Taxed of the invoice"
 msgstr "Total gravado de la factura"
+
+#. module: binaural_sale
+#: model_terms:ir.ui.view,arch_db:binaural_sale.view_sale_order_form_binaural_sales
+msgid "Update Prices"
+msgstr "Actualizar Precios"
 
 #. module: binaural_sale
 #: model:ir.model.fields,field_description:binaural_sale.field_res_company__update_sale_order_rate_using_date_order
@@ -263,12 +349,12 @@ msgstr "Identificación"
 #: model_terms:ir.ui.view,arch_db:binaural_sale.res_config_settings_binaural_sale
 msgid ""
 "When checked, the rate of the sale order will be updated using the\n"
-"\t\t\t\tdate order whenever it changes. Else, when the rate is already set,\n"
-"\t\t\t\tit will not be updated."
+"                                date order whenever it changes. Else, when the rate is already set,\n"
+"                                it will not be updated."
 msgstr ""
-"Al marcar esta opción, la tasa de la orden de venta se actualizará usando "
-"la\n \t\t\t\tfecha de la orden cada vez que cambie. De lo contrario, cuando "
-"la tasa ya esté\n\t\t\t\testablecida, no se actualizará."
+"Al marcar esta opción, la tasa de la orden de venta se actualizará usando la\n"
+" fecha de la orden cada vez que cambie. De lo contrario, cuando la tasa ya\n"
+"esté establecida, no se actualizará."
 
 #. module: binaural_sale
 #: model:ir.model.fields,help:binaural_sale.field_res_company__update_sale_order_rate_using_date_order
@@ -278,6 +364,6 @@ msgid ""
 "order whenever it changes. Else, when the rate is already set, it will not "
 "be updated."
 msgstr ""
-"Al marcar esta opción, la tasa de la orden de venta se actualizará usando "
-"la fecha de la orden cada vez que cambie. De lo contrario, cuando la tasa "
-"ya esté establecida, no se actualizará."
+"Al marcar esta opción, la tasa de la orden de venta se actualizará usando la"
+" fecha de la orden cada vez que cambie. De lo contrario, cuando la tasa ya "
+"esté establecida, no se actualizará."
