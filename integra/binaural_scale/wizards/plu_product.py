@@ -112,14 +112,14 @@ class ProductTemplate(models.TransientModel):
             worksheet.write(p_index_column, 1, product.plu_id)  # plu
             worksheet.write(p_index_column, 2, "1")  # type plu
             worksheet.write(p_index_column, 3, str(product.plu_id).zfill(5))  # Code obj
-            worksheet.write(p_index_column, 4, str(product.name)[:10])  # name1
+            worksheet.write(p_index_column, 4, str(product.name))  # name1
             worksheet.write(p_index_column, 5, "0")  # category
             worksheet.write(p_index_column, 6, "")  # name 3
             worksheet.write(p_index_column, 7, "0")  # group no
             worksheet.write(p_index_column, 8, "0")  # tag no
             worksheet.write(p_index_column, 9, "0")  # tag aux
             worksheet.write(p_index_column, 10, "0")  # Origen no
-            worksheet.write(p_index_column, 11, str(product.name)[10:20])  # name 2
+            worksheet.write(p_index_column, 11, "")  # name 2
             worksheet.write(p_index_column, 12, get_uom_id(product))  # udm
             worksheet.write(p_index_column, 13, "0")  # fixed weight
             worksheet.write(p_index_column, 14, "")  # image
