@@ -232,7 +232,7 @@
                                                     <span t-field="line.product_uom_id"/>
                                                 </td>
                                                 <td style="width:120px;text-align:center;">
-                                                    $<span t-esc="'{0:,.2f}'.format(float(line.price_unit - (line.price_unit * (line.discount / 100)))).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                    $<span t-esc="line.price_unit"/>
                                                 </td>
                                                 <td t-if="display_discount" style="width:30px;text-align:center">
                                                     <span class="text-nowrap" t-field="line.discount"/>%

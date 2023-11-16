@@ -225,7 +225,7 @@
                                                     <span t-field="line.product_uom_id"/>
                                                 </td>
                                                 <td style="width:130px;text-align:center;">
-                                                    <span t-esc="'{0:,.2f}'.format(float(line.foreign_price - (line.foreign_price * (line.discount / 100)))).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>Bs.F
+                                                    <span t-esc="line.foreign_price"/>Bs.F
                                                 </td>
                                                 <td t-if="display_discount" style="width:30px;text-align:center">
                                                     <span class="text-nowrap" t-field="line.discount"/>%
