@@ -29,6 +29,7 @@
         "views/family_members.xml",
         "views/pending_debt_list.xml",
         "views/insolvent_partner.xml",
+        "views/member_in_debt_report.xml",
         "wizard/status_action_batch.xml",
         "wizard/establish_extension.xml",
         "wizard/suspend_partner.xml",

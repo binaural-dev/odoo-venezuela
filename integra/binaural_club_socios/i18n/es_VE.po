@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230925\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-14 15:48+0000\n"
-"PO-Revision-Date: 2023-11-14 15:48+0000\n"
+"POT-Creation-Date: 2023-11-15 22:09+0000\n"
+"PO-Revision-Date: 2023-11-15 22:09+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -616,11 +616,6 @@ msgid "Date remove suspend"
 msgstr "Fecha en que se removio la suspensión"
 
 #. module: binaural_club_socios
-#: model:ir.model.constraint,message:binaural_club_socios.constraint_action_partner_previous_code_company_uniq_debt
-msgid "Debe pertenecer a la compañia."
-msgstr ""
-
-#. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__prev_state_partner__deceased
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__state_partner__deceased
 msgid "Deceased"
@@ -635,6 +630,7 @@ msgstr "Grado de confianza en este deudor"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__display_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__display_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__display_name
+#: model:ir.model.fields,field_description:binaural_club_socios.field_member_in_debt_report__display_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__display_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions__display_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_pending_debt_list__display_name
@@ -899,6 +895,7 @@ msgstr "Honorario"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__id
+#: model:ir.model.fields,field_description:binaural_club_socios.field_member_in_debt_report__id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions__id
 #: model:ir.model.fields,field_description:binaural_club_socios.field_pending_debt_list__id
@@ -933,15 +930,6 @@ msgstr "Si está marcado hay nuevos mensajes que requieren su atención."
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__message_has_sms_error
 msgid "If checked, some messages have a delivery error."
 msgstr "Si se encuentra marcado, algunos mensajes tienen error de envío."
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__team_id
-msgid ""
-"If set, this Sales Team will be used for sales and assignments related to "
-"this partner"
-msgstr ""
-"Si está configurado, este equipo de ventas será usado para las ventas y "
-"asignaciones relacionadas a este partner."
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__is_blacklisted
@@ -1069,11 +1057,6 @@ msgid "Journal Items"
 msgstr "Apuntes contables"
 
 #. module: binaural_club_socios
-#: model:ir.model.constraint,message:binaural_club_socios.constraint_pending_debt_list_code_company_uniq_debt
-msgid "La configuración de fecha tope ser unica."
-msgstr ""
-
-#. module: binaural_club_socios
 #: model:ir.model.constraint,message:binaural_club_socios.constraint_partner_config_code_company_uniq_debt
 msgid "La configuración de miembro."
 msgstr ""
@@ -1087,6 +1070,7 @@ msgstr "Idioma"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner____last_update
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous____last_update
 #: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension____last_update
+#: model:ir.model.fields,field_description:binaural_club_socios.field_member_in_debt_report____last_update
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config____last_update
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_professions____last_update
 #: model:ir.model.fields,field_description:binaural_club_socios.field_pending_debt_list____last_update
@@ -1221,11 +1205,6 @@ msgid "Message for Invoice"
 msgstr "Mensaje para factura"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__sale_warn_msg
-msgid "Message for Sales Order"
-msgstr "Mensaje para el pedido de venta"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_ids
 msgid "Messages"
 msgstr "Mensajes"
@@ -1234,6 +1213,11 @@ msgstr "Mensajes"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__mobile
 msgid "Mobile"
 msgstr "Móvil"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_member_in_debt_report__amount
+msgid "Monto"
+msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__my_activity_date_deadline
@@ -1334,6 +1318,12 @@ msgid "Number of messages with delivery error"
 msgstr "Número de mensajes con error de envío"
 
 #. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_member_in_debt_report_view_search
+msgid "Numero de Acción"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_member_in_debt_report__action_number
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_view_account_move_search
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_view_account_payment_search
 msgid "Número de Acción"
@@ -1527,6 +1517,23 @@ msgid "Pending Debt List"
 msgstr "Listado de fechas tope de cuotas"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_member_in_debt_report__quota_period
+msgid "Periodo de Cuota"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_member_in_debt_report__quota_period_str
+msgid "Periodo de la Cuota"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_account_bank_statement_line__fee_period
+#: model:ir.model.fields,field_description:binaural_club_socios.field_account_move__fee_period
+#: model:ir.model.fields,field_description:binaural_club_socios.field_account_payment__fee_period
+msgid "Periodo de la cuota"
+msgstr ""
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__phone
 msgid "Phone"
 msgstr "Teléfono"
@@ -1604,6 +1611,13 @@ msgid "Professions"
 msgstr "Profesión"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_account_bank_statement_line__pay_soon
+#: model:ir.model.fields,field_description:binaural_club_socios.field_account_move__pay_soon
+#: model:ir.model.fields,field_description:binaural_club_socios.field_account_payment__pay_soon
+msgid "Pronto Pago"
+msgstr ""
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__reason
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__reason
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__reason
@@ -1648,6 +1662,16 @@ msgid "Remover suspensión automaticamente"
 msgstr ""
 
 #. module: binaural_club_socios
+#: model:ir.model,name:binaural_club_socios.model_member_in_debt_report
+msgid "Report for member in debt based in a close date"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.ui.menu,name:binaural_club_socios.binaural_club_socios_member_in_debt_report_menu
+msgid "Reporte de Socios con Mora"
+msgstr ""
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__followup_responsible_id
 msgid "Responsible"
 msgstr "Responsable"
@@ -1668,26 +1692,6 @@ msgid "SMS Delivery error"
 msgstr "Error de entrega del SMS"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__sale_order_count
-msgid "Sale Order Count"
-msgstr "Nº de pedidos de venta"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__sale_order_ids
-msgid "Sales Order"
-msgstr "Pedido de venta"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__team_id
-msgid "Sales Team"
-msgstr "Equipo de ventas"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__sale_warn
-msgid "Sales Warnings"
-msgstr "Advertencias de ventas"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__user_id
 msgid "Salesperson"
 msgstr "Comercial"
@@ -1704,7 +1708,6 @@ msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__invoice_warn
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__sale_warn
 msgid ""
 "Selecting the \"Warning\" option will notify user with the message, "
 "Selecting \"Blocking Message\" will throw an exception with the message and "
@@ -1772,7 +1775,9 @@ msgid "Single"
 msgstr "Soltero"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_member_in_debt_report__partner_id
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_family_member_list
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_member_in_debt_report_view_search
 msgid "Socio"
 msgstr ""
 
@@ -1784,6 +1789,12 @@ msgstr ""
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__partners_previous_ids
 msgid "Socios Anteriores"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.actions.act_window,name:binaural_club_socios.action_member_in_debt_report
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_member_in_debt_report_view_tree
+msgid "Socios con Mora"
 msgstr ""
 
 #. module: binaural_club_socios
@@ -1929,7 +1940,12 @@ msgstr "Categorías"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__vat
 msgid "Tax ID"
-msgstr "Identificación fiscal"
+msgstr "NIF"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__vies_failed_message
+msgid "Technical field display a message to the user if the VIES check fails."
+msgstr ""
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
@@ -2097,6 +2113,11 @@ msgstr "Importe total que el cliente te debe."
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__debit
 msgid "Total amount you have to pay to this vendor."
 msgstr "Importe total a pagar a este proveedor."
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_member_in_debt_report_view_tree
+msgid "Total de Socios en Mora"
+msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__action_partner__state__treasury

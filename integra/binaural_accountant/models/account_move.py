@@ -98,6 +98,9 @@ class AccountMove(models.Model):
     def _compute_detailed_amounts(self):
         for record in self:
             discount_amount = 0
+            if not record.tax_totals:
+                record.detailed_amounts = dict()
+                return
             amount_taxed = record.tax_totals.get("amount_total",0) - record.tax_totals.get("amount_untaxed",0)
             total = 0
 
