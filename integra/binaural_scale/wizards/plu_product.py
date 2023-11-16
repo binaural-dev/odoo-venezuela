@@ -119,7 +119,7 @@ class ProductTemplate(models.TransientModel):
             worksheet.write(p_index_column, 8, "0")  # tag no
             worksheet.write(p_index_column, 9, "0")  # tag aux
             worksheet.write(p_index_column, 10, "0")  # Origen no
-            worksheet.write(p_index_column, 11, "")  # name 2
+            worksheet.write(p_index_column, 11, str(product.name)[10:20])  # name 2
             worksheet.write(p_index_column, 12, get_uom_id(product))  # udm
             worksheet.write(p_index_column, 13, "0")  # fixed weight
             worksheet.write(p_index_column, 14, "")  # image
