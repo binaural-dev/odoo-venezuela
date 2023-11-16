@@ -122,6 +122,7 @@ class DeliveryGrip(models.Model):
                 price = line.list_base_price + line.list_price * price_dict[line.variable_factor]
                 price = self._get_extra_charge_per_kg(line, price, weight)
                 criteria_found = True
+                break
         if not criteria_found:
             raise UserError(_("No price rule matching this order; delivery cost cannot be computed."))
 
