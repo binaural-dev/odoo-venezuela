@@ -9,13 +9,23 @@ class SaleReportBinauralSale(models.Model):
         help='Trademarks related to the product'        
     )        
 
+    brand_name = fields.Char(string='Nombre de la Marca')
+
     def _select_additional_fields(self):
         res = super()._select_additional_fields()
         res['brand_id'] = "t.brand_id"
+        res['brand_name'] = "br.name"
         return res
 
     def _group_by_sale(self):
         res = super()._group_by_sale()
         res += """,
-            t.brand_id"""
+            t.brand_id,
+            br.name
+            """
+        return res
+    
+    def _from_sale(self):
+        res = super()._from_sale()
+        res += """LEFT JOIN product_brand br ON t.brand_id = br.id"""
         return res
