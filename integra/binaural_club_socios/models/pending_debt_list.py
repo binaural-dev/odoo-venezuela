@@ -4,14 +4,6 @@ class PendingDebtList(models.Model):
     _name = "pending.debt.list"
     _description = "Pending Debt List"
 
-    _sql_constraints = [
-        (
-            "code_company_uniq_debt",
-            "unique (company_id)",
-            "La configuración de fecha tope ser unica.",
-        ),
-    ]
-
     company_id = fields.Many2one(
         "res.company",
         string="Company",

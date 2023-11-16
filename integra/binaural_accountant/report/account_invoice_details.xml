@@ -220,7 +220,7 @@
                 </div>
                 <div class="col-2 text-center">
                     <p>
-                        BS Amount
+                        Amount <t t-out="company.currency_foreign_id.symbol"/>
                     </p>
                 </div>
             </div>
