@@ -97,7 +97,9 @@ class AccountPaymentPayments(http.Controller):
                         company.advance_customer_account_id.id,
                         company.customer_account_igtf_id.id,
                     ]
-
+                module_igtf = request.env["ir.module.module"].sudo().search([('name', "ilike", "binaural_igtf")])
+                igtf_installed = True if module_igtf.state == "installed" else False
+                
                 if type_fiscal:
                     retentions, pays_retention_registered = self.register_retentions(
                         data_invoices, partner_id, company, pays_retention_registered
@@ -128,7 +130,7 @@ class AccountPaymentPayments(http.Controller):
 
                 if payments:
                     pays_registered, payments_igtf = self.register_payments(
-                        payments, ctx, company, data_invoices, seller_id, type_fiscal
+                        payments, ctx, company, data_invoices, seller_id, type_fiscal, igtf_installed,
                     )
 
                 pays_registered += pays_retention_registered
@@ -274,10 +276,11 @@ class AccountPaymentPayments(http.Controller):
 
         return retentions, pays_retention_registered
 
-    def register_payments(self, payments, ctx, company, data_invoices, seller_id, fiscal):
+    def register_payments(self, payments, ctx, company, data_invoices, seller_id, fiscal, igtf_installed):
         pays_registered = request.env["account.payment"]
         currency_vef_id = request.env.company.currency_foreign_id.id
         payments_igtf = request.env["payment.mobile.igtf"]
+    
         for payment in payments:
             pay_day = payments[payment]["dateToPay"]
             pay_day_formatted = datetime.strptime(pay_day, "%Y-%m-%d")
@@ -324,10 +327,10 @@ class AccountPaymentPayments(http.Controller):
 
             payment_create = request.env["account.payment"].sudo().create(payment_vals)
             payment_create.action_post()
-
-            payments_igtf += self.register_payment_with_igtf(
-                payment_create, payments[payment]["igtf_amount"], seller_id, fiscal
-            )
+            if igtf_installed:
+                payments_igtf += self.register_payment_with_igtf(
+                    payment_create, payments[payment]["igtf_amount"], seller_id, fiscal
+                )
 
             pays_registered += payment_create
 
@@ -349,8 +352,8 @@ class AccountPaymentPayments(http.Controller):
 
     def register_payment_with_igtf(self, rec_payment, amount_igtf, seller_id, fiscal):
         payment_igtf = request.env["payment.mobile.igtf"]
-        if rec_payment.currency_id.symbol == "$" and fiscal:
-            payment_igtf = request.env["payment.mobile.igtf"].create(
+        if rec_payment.currency_id.symbol == "$" and fiscal and rec_payment.journal_id.is_igtf:
+            payment_igtf = payment_igtf.create(
                 {
                     "payment_id": rec_payment.id,
                     "amount_igtf": float(amount_igtf),

@@ -37,6 +37,7 @@ class AccountMoveLine(models.Model):
         currency_field="foreign_currency_id",
         store=True,
     )
+    amount_currency = fields.Monetary(precompute=False)
 
     # Report fields
     foreign_debit = fields.Monetary(currency_field="foreign_currency_id")
