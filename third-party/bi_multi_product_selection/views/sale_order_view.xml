@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <record id="multiple_product_sale_order_inherit_view" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook/page/field[@name='order_line']" position="before">
+                <div style="height:50px">
+                    <button string="ADD MULTIPLE PRODUCTS" name="sale_order_select_prodcut" type="object" class="oe_highlight" states="draft"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

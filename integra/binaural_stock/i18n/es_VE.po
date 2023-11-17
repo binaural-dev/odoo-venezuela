@@ -47,6 +47,11 @@ msgstr "Todos los Almacenes"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
+msgid "Allow changing weight during picking"
+msgstr "Permitir cambiar de peso durante la Picking"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
 msgid ""
 "Allows to show the available quantity (Total minus reserved) in both product"
 " template and variant of it."
@@ -88,6 +93,18 @@ msgstr ""
 "Código de barra(s) ya ha sido asignado:\n"
 "\n"
 "%s"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_res_company__change_weight
+#: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__change_weight
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__change_weight
+msgid "Change Weight"
+msgstr "Cambiar de peso"
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_change_weight_picking
+msgid "Change Weight in Picking"
+msgstr "Cambiar peso en Picking"
 
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_res_company
