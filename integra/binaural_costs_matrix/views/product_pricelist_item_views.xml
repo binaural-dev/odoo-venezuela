@@ -6,7 +6,18 @@
 	<field name="model">product.pricelist.item</field>
 	<field name="inherit_id" ref="binaural_sale.product_pricelist_item_tree_view"/>
 	<field name="arch" type="xml">
-	    <field name="fixed_price" position="after">
+
+	    <tree position="attributes">
+		<attribute name="create">false</attribute>
+	    </tree>
+	    <field name="pricelist_id" position="attributes">
+		<attribute name="readonly">1</attribute>
+	    </field>
+	    <field name="product_tmpl_id" position="attributes">
+		<attribute name="readonly">1</attribute>
+	    </field>
+    
+	   <field name="fixed_price" position="after">
 		<field name="purchase_price"/>
 		<field name="margin_percent" widget="percentage"/>
 		<field name="margin"/>

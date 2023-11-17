@@ -11,14 +11,14 @@ class ProductPricelistItem(models.Model):
 
     purchase_price = fields.Float(
         string="Cost",
-        compute="_compute_costs",
+        related="product_tmpl_id.standard_price",
         digits="Product Price",
         store=True,
     )
 
-    latest_standard_price = fields.Float(
+    latest_standard_price = fields.Monetary(
         string="Latest Cost",
-        compute="_compute_costs",
+        related="product_tmpl_id.latest_standard_price",
         digits="Product Price",
         store=True,
     )
@@ -48,13 +48,6 @@ class ProductPricelistItem(models.Model):
         store=True,
     )
 
-    @api.depends("product_tmpl_id")
-    def _compute_costs(self):
-        _logger.warning("COMPUTE COSTS")
-        for line in self:
-            product_id = line.product_tmpl_id
-            line.purchase_price = product_id.standard_price
-            line.latest_standard_price = product_id.latest_standard_price
 
     @api.depends("fixed_price", "latest_standard_price", "purchase_price")
     def _compute_margin(self):
