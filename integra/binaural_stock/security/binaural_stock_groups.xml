@@ -48,6 +48,11 @@
             <field name="category_id" ref="base.module_category_hidden"/>
         </record>
 
+        <record id="group_hide_add_new_product_in_dispatch" model="res.groups">
+            <field name="name">Hide Add New Product In Dispatch</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
     </data>
 
 </odoo>
