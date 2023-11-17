@@ -22,7 +22,7 @@
     </record>
 
     <record id="edit_product_line_pricing_sale_order_group" model="res.groups">
-        <field name="name">Hide Edit product line pricing (sale)</field>
+        <field name="name">Block Edit product line pricing (sale)</field>
         <field name="category_id" ref="base.module_category_hidden"/>
     </record>
 

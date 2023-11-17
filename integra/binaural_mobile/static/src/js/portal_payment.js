@@ -679,8 +679,8 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
             let total_amount = +$("#total_payment").val()
             if($("#use_credit").is(":checked")){
                 total_amount += balance 
-                $("#total_payment").val(total_amount)
-                $("#total_payment_l").text(total_amount)
+                $("#total_payment").val(total_amount.toFixed(decimal_number))
+                $("#total_payment_l").text(total_amount.toFixed(decimal_number))
                 $(".hidden_pay").show()
                 $("#credit_apply").show()
                 if(+$("#amount_to_pay").val() > 0 || +$("#amount_to_pay").val() != ""){
