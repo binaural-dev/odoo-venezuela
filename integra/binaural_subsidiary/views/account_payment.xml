@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="account_payment_view_form" model="ir.ui.view">
+            <field name="name">account.payment.view.form.binaural.subsidiary</field>
+            <field name="model">account.payment</field>
+            <field name="inherit_id" ref="account.view_account_payment_form"/>
+            <field name="arch" type="xml">
+		<field name="is_internal_transfer" position="after">
+		    <field name="account_analytic_id"/>
+		</field>
+            </field>
+        </record>
+    </data>
+</odoo>
+

@@ -1,13 +1,10 @@
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
-import logging
-
-_logger = logging.getLogger(__name__)
 
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
-    
+
     subsidiary = fields.Boolean(
         related="company_id.subsidiary",
         string="Subsidiary",
@@ -22,6 +19,6 @@ class ResConfigSettings(models.TransientModel):
 
     analytical_accounts_cost_subsidiary = fields.Boolean(
         related="company_id.analytical_accounts_cost_subsidiary",
-        string="Using Analytical Accounts as Cost Center and Subsidiary", 
+        string="Using Analytical Accounts as Cost Center and Subsidiary",
         readonly=False,
     )

@@ -15,7 +15,6 @@ class ResCompany(models.Model):
     )
 
     analytical_accounts_cost_subsidiary = fields.Boolean(
-        string="Using Analytical Accounts as Cost Center and Subsidiary", 
+        string="Using Analytical Accounts as Cost Center and Subsidiary",
         readonly=False,
     )
-    

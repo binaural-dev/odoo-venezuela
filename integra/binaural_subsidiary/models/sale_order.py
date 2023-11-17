@@ -1,12 +1,14 @@
-import json
-import logging
+from odoo import models
 
-from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError, UserError
-
-_logger = logging.getLogger(__name__)
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
-    
-    account_analytic_id = fields.Many2one("account.analytic.account", string="Analytic Account")
+
+    def _prepare_invoice(self):
+        res = super(SaleOrder, self)._prepare_invoice()
+        res.update(
+            {
+                "account_analytic_id": self.analytic_account_id.id,
+            }
+        )
+        return res
