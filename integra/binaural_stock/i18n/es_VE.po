@@ -72,6 +72,11 @@ msgid "Artículo"
 msgstr ""
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Assign Serial Numbers"
+msgstr "Asignar números de serie"
+
+#. module: binaural_stock
 #. odoo-python
 #: code:addons/binaural_stock/models/product_product.py:0
 #, python-format
@@ -115,6 +120,11 @@ msgid "Define a main sell's warehouse."
 msgstr "Define un almacén de ventas principal."
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Demand"
+msgstr "Demanda"
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Descripción"
 msgstr ""
@@ -127,12 +137,31 @@ msgstr "Descargar"
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_quantity_history__except_products_at_zero
 msgid "Except Products At Zero"
-msgstr "Except Products At Zero"
+msgstr "Exceptuar Productos en 0"
+
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Description"
+msgstr "Descripción"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Details"
+msgstr "Detalles"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Done"
+msgstr "Hecho"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Fecha:"
 msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Forecast Report"
+msgstr "Informe de pronóstico"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__group_product_available_quantity_on_sale
@@ -147,7 +176,7 @@ msgstr "Grupo de Cantidad Disponible para Vender"
 #. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_hide_add_new_product_in_dispatch
 msgid "Hide Add New Product In Dispatch"
-msgstr "Ocultar agregar un nuevo producto en el despacho"
+msgstr "Ocultar agregar un nuevo producto en el Despacho"
 
 #. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_hide_cancel_button_from_inventory_transfers
@@ -255,6 +284,11 @@ msgid "Rango:"
 msgstr ""
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Reserved"
+msgstr "Reservada"
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_tree_view
 msgid "Sales Price"
 msgstr "Precio de Venta + Impuesto"
@@ -268,6 +302,12 @@ msgstr "Mostrar la Cantidad Disponible en Todos los Almacenes."
 #: model:res.groups,name:binaural_stock.group_show_standard_price
 msgid "Show standard price on the product form view"
 msgstr "Mostrar costo en la vista del producto"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Stock Moves"
+msgstr ""
+
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -311,6 +351,11 @@ msgstr "Albarán"
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Ultimo Costo"
 msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Unit of Measure"
+msgstr "Unidad de medida"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__use_main_warehouse
