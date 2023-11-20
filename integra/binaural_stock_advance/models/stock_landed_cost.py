@@ -8,16 +8,6 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-SPLIT_METHOD = [
-    ("equal", "Equal"),
-    ("by_quantity", "By Quantity"),
-    ("by_current_cost_price", "By Current Cost"),
-    ("by_weight", "By Weight"),
-    ("by_volume", "By Volume"),
-    ("by_mix", "By mix"),
-]
-
-
 class StockLandedCost(models.Model):
     _inherit = "stock.landed.cost"
 
@@ -71,7 +61,7 @@ class StockLandedCost(models.Model):
         string="Transfers",
         copy=False,
         states={"done": [("readonly", True)]},
-        domain=[("picking_type_code", "=", "incoming")],
+        domain=[("picking_type_code", "=", "incoming"),("purchase_id", "!=", False)],
     )
 
     @api.depends("date")
@@ -102,23 +92,9 @@ class StockLandedCost(models.Model):
         This method search the picking lines to calculate the percentage to assign
         """
         amount = 0
-        for picking in self.picking_ids:
-            for purchase in picking.purchase_id:
-                amount += purchase.amount_total
+        for purchase in self.picking_ids.mapped("purchase_id"):
+            amount += purchase.amount_untaxed
         return amount
-
-    def get_valuation_lines(self):
-        """
-        This method is inherited, thats add a new value in valuation lines, this value is used in the new split method (By percentage).
-        """
-        res = super().get_valuation_lines()
-        update_list = []
-        if self.is_stock_advance:
-            for move, res_el in zip(self.picking_ids.purchase_id.order_line, res):
-                copy = res_el.copy()
-                copy.update({"price_unit": move.price_subtotal})
-                update_list.append(copy)
-        return update_list
 
     def compute_landed_cost(self):
         """This method compute all prices based on split method.
@@ -174,15 +150,32 @@ class StockLandedCost(models.Model):
                         # OVERRIDE
                         elif line.split_method == "by_percentage":
 
-                            per_unit = valuation.price_unit / self._assign_picking_percentage()
-                            valuation.cost_percentage = per_unit * 100
-                            valuation.total_amount_cost = ((per_unit * 100) / 100) * line.price_unit
-                          
-                            value_percentage = (
-                                line.price_unit * ((per_unit * 100) / 100)
-                            ) / valuation.quantity
-                           
-                            value = value_percentage
+                            if self.env.company.check_calculate_taking_order_quantities:
+                                per_unit = valuation.former_cost / self._assign_picking_percentage()
+                                valuation.cost_percentage = per_unit * 100
+                                valuation.total_amount_cost = (
+                                    (valuation.cost_percentage) / 100
+                                ) * line.price_unit
+
+                                value_percentage = (
+                                    line.price_unit * ((valuation.cost_percentage) / 100)
+                                ) / valuation.quantity
+
+                                value = value_percentage
+                            if self.env.company.check_calculate_based_total_purchase_amount:
+                                per_unit = line.price_unit  / self._assign_picking_percentage()
+                                
+                                valuation.cost_percentage = per_unit * 100
+                                value_percentage = (
+                                    valuation.former_cost * ((valuation.cost_percentage) / 100)
+                                ) / valuation.quantity
+
+                                valuation.cost_ddp = (
+                                    valuation.former_cost * ((valuation.cost_percentage) / 100)
+                                )
+
+
+                                value = value_percentage                          
 
                         else:
                             value = line.price_unit / total_line
@@ -266,14 +259,14 @@ class StockLandedCost(models.Model):
     def _check_sum(self):
         """Check if each cost line its valuation lines sum to the correct amount
         and if the overall total amount is correct also
-        
-        
+
+
         When split method is by percentage, return True
         """
         prec_digits = self.env.company.currency_id.decimal_places
         for landed_cost in self:
             for cost_line in landed_cost.cost_lines:
-                #OVERRIDE 
+                # OVERRIDE
                 if not cost_line.split_method == "by_percentage":
                     total_amount = sum(
                         landed_cost.valuation_adjustment_lines.mapped("additional_landed_cost")

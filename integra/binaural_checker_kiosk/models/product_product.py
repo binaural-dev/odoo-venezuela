@@ -1,5 +1,8 @@
 from odoo import api, fields, models
 from odoo.tools import float_is_zero
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class ProductProduct(models.Model):
@@ -47,7 +50,10 @@ class ProductProduct(models.Model):
             str(round(price_with_iva / last_currency_rate, 2))
             .replace(".",",")
         )
-        
+        quantity_product_dict = res.get("sh_product_stock")
+        quantity_product = ""
+        for qty in quantity_product_dict[0].values():
+            quantity_product = qty
         res.update({
             "price_with_iva": (
                 f"{str(price_with_iva).replace('.', ',')} {foreign_currency_symbol}" 
@@ -55,8 +61,10 @@ class ProductProduct(models.Model):
             "sh_product_sale_price": f"BI = {str(sale_price).replace('.', ',')} {foreign_currency_symbol}",
             "iva": f"IVA = {str(iva_rounded).replace('.', ',')} {foreign_currency_symbol}",
             "foreign_sale_price_with_iva": f"{currency_name} {currency_symbol}{foreign_sale_price}",
+            "product_qty": quantity_product,
             "company_logo": self.env.company.logo
         })
+
         
         return res
         

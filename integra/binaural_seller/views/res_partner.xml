@@ -6,9 +6,6 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//notebook/page[@name='sales_purchases']/group/group[@name='sale']/field[@name='user_id']" position="after">
-                <field name="seller_id" groups="base.group_no_one"/>
-            </xpath>
 
             <xpath expr="//page[@name='internal_notes']" position="before">
                 <page name="sellers_assigned" string="Sellers">
@@ -19,7 +16,6 @@
                     </field>
                 </page>
             </xpath>
-
 
         </field>
     </record>
