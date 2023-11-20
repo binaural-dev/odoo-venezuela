@@ -29,6 +29,7 @@
 
         <xpath expr="//field[@name='name']" position="after">
             <field name="invoice_origin" invisible="1"/>
+	    <field name="partner_id" string="Customer"/>
             <field name="commission_invoice" widget="tagged" string="Commission Invoice"/>
         </xpath>
 
@@ -40,12 +41,11 @@
             <button name="show_invoice_resume" icon="fa-list" string="Commissions" type="object"/> 
             <field name="total_commission" widget="monetary"/>
             <field name="commission_discount"/>
-            <!-- <field name="discount_invoice" widget="many2many_tags" string="Credit Notes"/> -->
         </xpath>
 
         <xpath expr="//field[@name='invoice_date']" position="after">
 	    <field name="seller_id"/>
-            <field name="last_payment_date"/>
+            <field name="last_payment_date" string="Last Payment Date"/>
             <field name="collection_days" string="Días de cobro"/>
             <field name="invoice_payment_term_id" invisible="1"/>
         </xpath>
