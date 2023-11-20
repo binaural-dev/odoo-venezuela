@@ -11,7 +11,6 @@ class ProductCatalogReport(models.AbstractModel):
     @api.model
     def _get_report_values(self, docids, data=None):
 
-        print("\n\n\n -------datas ==>", data)
         """Prepared catalog report dynamic values
             data params used for get dynamic data based on configuration from catalog popup
         """
@@ -40,7 +39,7 @@ class ProductCatalogReport(models.AbstractModel):
                         product_dic = {
                             'id': search_products.id,
                             'default_code': search_products.default_code,
-                            'name': search_products.name,
+                            'name': search_products.name_get()[0][1],
                             'cat_name': search_products.categ_id.name,
                             'image': search_products.image_1920,
                             'price': format(price, '.'+str(data['sh_price_decimal_places'])+"f"),
@@ -94,7 +93,7 @@ class ProductCatalogReport(models.AbstractModel):
                                 price = rec.list_price
                             product_dic = {
                                 'default_code': rec.default_code,
-                                'name': rec.name,
+                                'name': rec.name_get()[0][1],
                                 'cat_name': rec.categ_id.name,
                                 'image': rec.image_1920,
                                 'price': format(price, '.'+str(data['sh_price_decimal_places'])+"f"),
