@@ -123,13 +123,9 @@ class ProductTemplate(models.TransientModel):
             worksheet.write(p_index_column, 12, get_uom_id(product))  # udm
             worksheet.write(p_index_column, 13, "0")  # fixed weight
             worksheet.write(p_index_column, 14, "")  # image
-            if product.list_price >= 0:
-                worksheet.write(
-                    p_index_column, 15, txt.format(price=product.list_price).replace(".", "")
-                )  # price
-            else:
-                amount = txt.format(price=product.list_price)
-                worksheet.write(p_index_column, 15, txt.format(price=amount.split(".")[1]))  # price
+            worksheet.write(
+                p_index_column, 15, txt.format(price=product.price_with_tax).replace(".", ",")
+            )  # price
             worksheet.write(p_index_column, 16, "0")  # piece
             worksheet.write(p_index_column, 17, "0")  # taxes
             worksheet.write(p_index_column, 18, "0")  #  date end
