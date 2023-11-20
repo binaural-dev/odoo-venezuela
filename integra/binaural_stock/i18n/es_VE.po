@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231113\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231120\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-17 15:27+0000\n"
-"PO-Revision-Date: 2023-11-17 15:27+0000\n"
+"POT-Creation-Date: 2023-11-20 20:12+0000\n"
+"PO-Revision-Date: 2023-11-20 20:12+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -130,6 +130,15 @@ msgid "Descripción"
 msgstr ""
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
+msgid "Download"
+msgstr "Descargar"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_quantity_history__except_products_at_zero
+msgid "Except Products At Zero"
+msgstr "Exceptuar Productos en 0"
+
 #: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
 msgid "Description"
 msgstr "Descripción"
@@ -206,11 +215,6 @@ msgid "Hide Validate Inventory Transfers Button"
 msgstr "Ocultar Botón Validar de las Transferencias de Inventario"
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
-msgid "Imprimir"
-msgstr ""
-
-#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Inventory:"
 msgstr "Inventario:"
@@ -275,11 +279,6 @@ msgid "Quantity"
 msgstr "Cantidad"
 
 #. module: binaural_stock
-#: model:ir.model.fields,help:binaural_stock.field_stock_picking__package_qty
-msgid "Quantity of packages used in the picking"
-msgstr ""
-
-#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Rango:"
 msgstr ""
@@ -339,16 +338,6 @@ msgid "This product must have only one tax."
 msgstr "Este producto debe tener solo un impuesto."
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.product_product_tree_view_inherit_binaural_stock
-msgid "Total Cost"
-msgstr "Costo total"
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.product_product_tree_view_inherit_binaural_stock
-msgid "Total Qty's"
-msgstr "Total de Unidades"
-
-#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Total:"
 msgstr ""
@@ -356,7 +345,7 @@ msgstr ""
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_picking
 msgid "Transfer"
-msgstr "Transferir"
+msgstr "Albarán"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -385,11 +374,6 @@ msgid "VALOR DEL INVENTARIO A PARTIR DE UNA FECHA"
 msgstr ""
 
 #. module: binaural_stock
-#: model:ir.model.fields,field_description:binaural_stock.field_product_product__value_total_cost
-msgid "Value Total Cost"
-msgstr "Costo Total"
-
-#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_quantity_history__warehouse_search_id
 msgid "Warehouse Search"
 msgstr "Buscar en Almacen"
@@ -397,4 +381,4 @@ msgstr "Buscar en Almacen"
 #. module: binaural_stock
 #: model:ir.actions.report,name:binaural_stock.inventory_valuation_report
 msgid "inventory Valuation"
-msgstr ""
+msgstr "Valoración de inventario"
