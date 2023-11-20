@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230725\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231106\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-04 14:10+0000\n"
-"PO-Revision-Date: 2023-08-04 14:10+0000\n"
+"POT-Creation-Date: 2023-11-06 13:40+0000\n"
+"PO-Revision-Date: 2023-11-06 13:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -36,6 +36,16 @@ msgid "A packaging already uses the barcode"
 msgstr "Un empaque ya usa el código de barras"
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "All"
+msgstr "Todos"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
+msgid "All Warehouse"
+msgstr "Todos los Almacenes"
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
 msgid ""
 "Allows to show the available quantity (Total minus reserved) in both product"
@@ -57,6 +67,11 @@ msgid "Alternate code for the product"
 msgstr "Còdigo alterno para el producto"
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Artículo"
+msgstr ""
+
+#. module: binaural_stock
 #. odoo-python
 #: code:addons/binaural_stock/models/product_product.py:0
 #, python-format
@@ -65,7 +80,7 @@ msgid ""
 "\n"
 "%s"
 msgstr ""
-"Còdigo de barra(s) ya ha sido asignado:\n"
+"Código de barra(s) ya ha sido asignado:\n"
 "\n"
 "%s"
 
@@ -85,9 +100,29 @@ msgid "Config Settings"
 msgstr "Opciones de configuración"
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Costo"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Costo Total"
+msgstr ""
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
 msgid "Define a main sell's warehouse."
 msgstr "Define un almacén de ventas principal."
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Descripción"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Fecha:"
+msgstr ""
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__group_product_available_quantity_on_sale
@@ -100,10 +135,71 @@ msgid "Group Product Available Quantity on Sale"
 msgstr "Grupo de Cantidad Disponible para Vender"
 
 #. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_hide_cancel_button_from_inventory_transfers
+msgid "Hide Cancel Button from Inventory Transfers"
+msgstr "Ocultar Botón Cancelar de las Transferencias de Inventario"
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_hide_discard_inventory_transfers_button
+msgid "Hide Discard Button from Inventory Transfers"
+msgstr "Ocultar el botón Descartar de las transferencias de inventario"
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_hide_override_button_for_inventory_transfers
+msgid "Hide Override Button for Inventory Transfers"
+msgstr "Ocultar Botón Anular de las Transferencias de Inventario"
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_hide_print_button_for_inventory_transfers
+msgid "Hide Print Button for Inventory Transfers"
+msgstr "Ocultar Botón Imprimir de las Transferencias de Inventario"
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_hide_return_inventory_transfers_button
+msgid "Hide Return Button from Inventory Transfers"
+msgstr "Ocultar el botón Retornar de las transferencias de inventario"
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_hide_unlock_lock_button_for_inventory_transfers
+msgid "Hide Unlock/Lock Button for Inventory Transfers"
+msgstr ""
+"Ocultar Botón Bloquear/Desbloquear de las Transferencias de Inventario"
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_hide_validate_inventory_transfers_button
+msgid "Hide Validate Inventory Transfers Button"
+msgstr "Ocultar Botón Validar de las Transferencias de Inventario"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
+msgid "Imprimir"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Inventory:"
+msgstr "Inventario:"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__is_out
+msgid "Is Out"
+msgstr ""
+
+#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__main_warehouse_id
 #: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__main_warehouse_id
 msgid "Main Warehouse"
 msgstr "Almacén Principal"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Marca"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__package_qty
+msgid "Package Qty"
+msgstr "Número de Cajas"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_kanban_view
@@ -115,6 +211,12 @@ msgstr "Precio + IVA"
 #: model:ir.model.fields,field_description:binaural_stock.field_product_template__price_with_tax
 msgid "Price With Tax"
 msgstr "Precio con Impuestos"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_product_product__price_without_tax
+#: model:ir.model.fields,field_description:binaural_stock.field_product_template__price_without_tax
+msgid "Price Without Tax"
+msgstr "Precio sin Impuestos"
 
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_product_template
@@ -138,6 +240,16 @@ msgid "Quantity"
 msgstr "Cantidad"
 
 #. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_picking__package_qty
+msgid "Quantity of packages used in the picking"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Rango:"
+msgstr ""
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_tree_view
 msgid "Sales Price"
 msgstr "Precio de Venta + Impuesto"
@@ -151,6 +263,16 @@ msgstr "Mostrar la Cantidad Disponible en Todos los Almacenes."
 #: model:res.groups,name:binaural_stock.group_show_standard_price
 msgid "Show standard price on the product form view"
 msgstr "Mostrar costo en la vista del producto"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Stock"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model,name:binaural_stock.model_stock_quantity_history
+msgid "Stock Quantity History"
+msgstr "Historia de Stock Quant"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
@@ -171,6 +293,31 @@ msgid "This product must have only one tax."
 msgstr "Este producto debe tener solo un impuesto."
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.product_product_tree_view_inherit_binaural_stock
+msgid "Total Cost"
+msgstr "Costo total"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.product_product_tree_view_inherit_binaural_stock
+msgid "Total Qty's"
+msgstr "Total de Unidades"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Total:"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model,name:binaural_stock.model_stock_picking
+msgid "Transfer"
+msgstr "Transferir"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "Ultimo Costo"
+msgstr ""
+
+#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__use_main_warehouse
 #: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__use_main_warehouse
 msgid "Use Main Warehouse"
@@ -179,4 +326,24 @@ msgstr "Usar un Almacén Principal"
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.stock_move_line_tree_view
 msgid "User"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
+msgid "VALOR DEL INVENTARIO A PARTIR DE UNA FECHA"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_product_product__value_total_cost
+msgid "Value Total Cost"
+msgstr "Costo Total"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_quantity_history__warehouse_search_id
+msgid "Warehouse Search"
+msgstr "Buscar en Almacen"
+
+#. module: binaural_stock
+#: model:ir.actions.report,name:binaural_stock.inventory_valuation_report
+msgid "inventory Valuation"
 msgstr ""

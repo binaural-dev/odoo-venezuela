@@ -1,6 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from lxml import etree
+from odoo.tools.float_utils import float_is_zero
 
 
 class SaleOrder(models.Model):
@@ -47,6 +48,9 @@ class SaleOrder(models.Model):
         store=True,
         readonly=False,
     )
+
+    last_foreign_rate = fields.Float(copy=False)
+    manually_set_rate = fields.Boolean(default=False)
 
     total_taxed = fields.Many2one(
         "account.tax",
@@ -168,7 +172,15 @@ class SaleOrder(models.Model):
         model.
         """
         Rate = self.env["res.currency.rate"]
+        # If the user doesn't want to update the foreign rate using the date order, then don't
+        # compute the rate when it is not zero.
         for sale in self:
+            if sale.manually_set_rate:
+                continue
+            if not self.env.company.update_sale_order_rate_using_date_order and not float_is_zero(
+                sale.foreign_rate, precision_rounding=self.env.company.currency_id.rounding
+            ):
+                continue
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id, sale.date_order.date() or fields.Date.today()
             )
@@ -190,6 +202,7 @@ class SaleOrder(models.Model):
                 if sale.foreign_currency_id.id == base_usd_id
                 else sale.foreign_rate
             )
+            sale.manually_set_rate = True
 
     def _create_invoices(self, grouped=False, final=False, date=None):
         """
@@ -205,7 +218,7 @@ class SaleOrder(models.Model):
         invoice_vals = self._prepare_invoice()
 
         if group % 1 != 0:
-            group = int(group) + 1
+            group = group + 1
 
         if group == 1:
             res = super()._create_invoices(grouped, final, date)
@@ -217,7 +230,7 @@ class SaleOrder(models.Model):
         invoices |= res
         _move_lines = self.env["account.move.line"]
 
-        for i in range(group - len(res)):
+        for i in range(int(group) - len(res)):
             _move_lines = res.invoice_line_ids[limit : limit + limit]
             move = (
                 self.env["account.move"]
@@ -240,6 +253,13 @@ class SaleOrder(models.Model):
 
         self._update_invoices_rate()
         for invoice in invoices:
+            first_invoice_line = invoice.invoice_line_ids[0]
+            first_invoice_line_data = first_invoice_line.read([])[0]
+            for key, value in first_invoice_line_data.items():
+                if isinstance(value, tuple):
+                    first_invoice_line_data[key] = value[0]
+            first_invoice_line.unlink()
+            self.env["account.move.line"].create(first_invoice_line_data)
             invoice.compute_line_ids_foreign_debit_and_credit()
         return invoices
 
@@ -256,6 +276,41 @@ class SaleOrder(models.Model):
                     "foreign_inverse_rate": sale.foreign_inverse_rate,
                 }
             )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        for sale in res:
+            Rate = self.env["res.currency.rate"]
+            rate_values = Rate.compute_rate(
+                sale.foreign_currency_id.id, sale.date_order or fields.Date.today()
+            )
+            last_foreign_rate = rate_values.get("foreign_rate", 0)
+            if sale.manually_set_rate and sale.foreign_rate != last_foreign_rate:
+                sale.message_post(
+                    body=_(
+                        "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    )
+                    % ({"rate": sale.foreign_rate, "last_rate": last_foreign_rate})
+                )
+        return res
+
+    def write(self, vals):
+        if vals.get("foreign_rate", False):
+            vals.update({"last_foreign_rate": self.foreign_rate})
+        res = super().write(vals)
+        if (
+            vals.get("foreign_rate", False)
+            and self.manually_set_rate
+            and self.foreign_rate != self.last_foreign_rate
+        ):
+            self.message_post(
+                body=_(
+                    "The rate has been updated from %(last_rate)s to %(rate)s ",
+                )
+                % ({"rate": self.foreign_rate, "last_rate": self.last_foreign_rate})
+            )
+        return res
 
     @api.onchange("pricelist_id")
     def _onchange_pricelist_id(self):
@@ -276,3 +331,19 @@ class SaleOrder(models.Model):
 
         except:
             self._recompute_prices()
+
+    def action_confirm(self):
+        if self.env.company.not_allow_sell_products:
+            for order in self:
+                for line in order.order_line:
+                    if line.product_id.detailed_type == "product" and line.product_id.qty_available < line.product_uom_qty:
+                        raise ValidationError(_('Does not have enough units available for the product %s. Only has %s units of the %s demanded.' ) % (line.product_id.name, line.product_id.qty_available, line.product_uom_qty))
+
+
+            if order.company_id.account_use_credit_limit and order.partner_id.use_partner_credit_limit_order:
+                total_pay = order.partner_id.credit + order.amount_total
+                if total_pay > order.partner_id.credit_limit:
+                    raise ValidationError(_("La cuenta %s es de %s mas %s en presupuesto da un total de %s superando el limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el limite de crédito del cliente.",
+                                            order.partner_id.property_account_receivable_id.display_name, order.partner_id.credit_limit, order.amount_total, total_pay, order.partner_id.credit_limit)
+                                        )
+        return super().action_confirm()

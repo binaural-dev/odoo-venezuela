@@ -54,9 +54,10 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
                         "due_date": query_res["due_date"][0]
                         if len(query_res["due_date"]) == 1
                         else None,
-                        "amount_currency": report.format_value(
-                            query_res["amount_currency"], currency=currency
-                        ),
+                        "amount_currency": query_res["amount_currency"],
+                        "currency_id": query_res["currency_id"][0]
+                        if len(query_res["currency_id"]) == 1
+                        else None,
                         "currency": currency.display_name if currency else None,
                         "account_name": query_res["account_name"][0]
                         if len(query_res["account_name"]) == 1
@@ -77,6 +78,7 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
                     {
                         "due_date": None,
                         "amount_currency": None,
+                        "currency_id": None,
                         "currency": None,
                         "account_name": None,
                         "expected_date": None,

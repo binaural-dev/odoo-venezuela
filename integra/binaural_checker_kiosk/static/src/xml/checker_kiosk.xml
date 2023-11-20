@@ -297,6 +297,13 @@
                                                             style="font-weight: 600; font-size: 1.6rem"
                                                         />
                                                     </tr>
+                                                    <tr>
+                                                        <td 
+                                                            id="quantity_available"
+                                                            align="center"
+                                                            style="font-weight: 600; font-size: 1.6rem"
+                                                        />
+                                                    </tr>
                                                 </table>    
                                             </div>
                                         </div>

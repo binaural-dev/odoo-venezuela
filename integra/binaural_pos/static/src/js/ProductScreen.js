@@ -42,51 +42,61 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
         await this._addProduct(product, options);
         NumberBuffer.reset();
       }
+      is_discount_product(prd){
+        if(this.env.pos.config.module_pos_discount 
+            && this.env.pos.config.discount_product_id
+            && (
+              this.env.pos.config.discount_product_id[0] == prd.product_tmpl_id
+              || this.env.pos.config.discount_product_id[0] == prd.product_tmpl_id[0]
+            )
+          ){
+            return true
+        }
+        return false
+
+      }
 			async _onClickPay() {
 				var self = this;
 				let order = this.env.pos.get_order();
 				let lines = order.get_orderlines();
 				let pos_config = self.env.pos.config;				
 				let call_super = true;
-				let prod_used_qty = {};
-                var order_t = _t('Deny Order')
-                var is_out = _t(' is out of stock.');
+        if(order.is_refund){
+					return super._onClickPay();
+        }
+
+        var is_out = _t(' is out of stock.');
+        let title_wrning = ""
+        let wrning = []
+
 				if(pos_config.amount_to_zero){
-					$.each(lines, function( i, line ){
+          lines.forEach((line) => {
+
 						let prd = line.product;
-						if (prd.type == 'product'){
-							if(prd.id in prod_used_qty){
-								let old_qty = prod_used_qty[prd.id][1];
-								prod_used_qty[prd.id] = [prd.qty_available,line.quantity+old_qty]
-							}else{
-								prod_used_qty[prd.id] = [prd.qty_available,line.quantity]
-							}
-						}
-						if(prd.qty_available <= 0){
-							call_super = false;
-							let wrning = prd.display_name + _t(is_out);
-							self.showPopup('ErrorPopup', {
-								title: self.env._t('Zero Quantity Not allowed'),
-								body: self.env._t(wrning),
-							});
-						}
-						else{
-							if(line.quantity > prd.qty_available){
-								call_super = false;
-								let wrning = prd.display_name + _t(is_out);
-								self.showPopup('ErrorPopup', {
-									title: self.env._t(order_t),
-									body: self.env._t(wrning),
-								});
+            if(prd.type != "product"){
+              return
+            }
 
-							}	
+            if (this.is_discount_product(prd)){
+              return
+            }
 
-						}
+						if(line.quantity > prd.qty_available || prd.qty_available <= 0){
+              call_super = false;
+              title_wrning = _t('Deny Order');
+              wrning.push(prd.display_name)
+            }	
 					});
 				}
-				if(call_super){
-					super._onClickPay();
+
+				if(!call_super){
+          let message = wrning.join(", ") + _t(is_out);
+          return self.showPopup('ErrorPopup', {
+            title: title_wrning,
+            body: message,
+          });
 				}
+        return super._onClickPay();
 			}
 		};
 
