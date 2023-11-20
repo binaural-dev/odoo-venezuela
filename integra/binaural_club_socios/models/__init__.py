@@ -8,3 +8,4 @@ from . import account_move_line
 from . import account_payment
 from . import res_users
 from . import pending_debt_list
+from . import member_in_debt_report
