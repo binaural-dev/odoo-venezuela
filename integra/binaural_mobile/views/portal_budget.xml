@@ -75,7 +75,7 @@
                         <label class="col-sm-2 form-text">Client</label>
                         <div class="col-sm-4 ">
                             <t t-if="budget">
-                                <input type="text" class="form-control" t-att-value="budget.partner_id.name" disabled="disabled"/>
+                                <input type="text" class="form-control" t-att-value="budget.partner_id.display_name" disabled="disabled"/>
                                 <input type="hidden" id='client' class="d-none" t-att-value="budget.partner_id.id" />
                             </t>
                             <t t-else="">

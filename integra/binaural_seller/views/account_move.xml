@@ -9,6 +9,10 @@
             <field name="invoice_user_id" position="after">
                 <field name="seller_id" domain="[('is_seller','=', True)]" attrs="{'readonly': [('state', '!=', 'draft')]}"/>
             </field>
+            
+            <field name="partner_shipping_id" position="after">
+                <field name="seller_id" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('move_type', '!=', 'out_receipt')]}"/>
+            </field>
         </field>
     </record>
 

@@ -10,6 +10,7 @@ on:
 jobs:
   generate_module_readme:
     runs-on: ubuntu-latest
+    if: github.repository == 'binaural-dev/integra'
     env:
       CI_COMMIT_AUTHOR: "GitHub Actions - Readme Integration"
     strategy:
