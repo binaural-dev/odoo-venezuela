@@ -24,7 +24,7 @@
                             <field name="order_in_transit"/>
                             <field name="exit_etd"/>
                             <field name="inlay_port"/>
-                            <field name="date_in_store"/>
+                            <field name="date_in_store" invisible="1"/>
                             <field name="aduana_agent"/>
                         </group>
                     </group>
@@ -40,6 +40,17 @@
                 <field name="incoterm_id" position="replace">
                     <field name="incoterm_id" invisible="True"/>
                 </field>
+            </field>
+        </record>
+
+        <record id="stock_report_view_graph" model="ir.ui.view">
+            <field name="name">stock_report_view_graph</field>
+            <field name="inherit_id" ref="stock.stock_report_view_graph"/>
+            <field name="model">report.stock.quantity</field>
+            <field name="arch" type="xml">
+                <xpath expr="//graph" position="inside">
+                    <field name="product_qty" />
+                </xpath>
             </field>
         </record>
     </data>
