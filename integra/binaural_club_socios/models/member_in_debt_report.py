@@ -1,5 +1,8 @@
 from odoo import _, api, fields, models
 from odoo import tools
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class MemberInDebtReport(models.Model):
     _name = "member.in.debt.report"
@@ -55,7 +58,8 @@ class MemberInDebtReport(models.Model):
             LEFT JOIN LATERAL (
                 SELECT fee_period, partner_id FROM account_move 
                 WHERE partner_id = partner.id
-                AND payment_state = 'paid'
+                AND (payment_state = 'paid' or payment_state = 'in_payment')
+                AND account_move.state = 'posted'
                 ORDER BY fee_period DESC
                 FETCH FIRST 1 ROWS WITH TIES
             ) invoice ON TRUE
