@@ -39,7 +39,8 @@ class MemberInDebtReport(models.Model):
                 (get_members_pending_debt(
                     partner.id,
                     partner.action_number,
-                    invoice.fee_period
+                    invoice.fee_period,
+                    partner.start_date
                 )).*
         """
 
@@ -80,7 +81,7 @@ class MemberInDebtReport(models.Model):
         tools.drop_view_if_exists(self.env.cr, self._table)
         self.env.cr.execute(
             """
-             CREATE OR REPLACE FUNCTION PUBLIC.get_members_pending_debt(p_id BIGINT, act_number BIGINT, invoice_fee_period DATE)
+             CREATE OR REPLACE FUNCTION PUBLIC.get_members_pending_debt(p_id BIGINT, act_number BIGINT, invoice_fee_period DATE, start_date DATE)
                 RETURNS TABLE(partner_id BIGINT, action_number BIGINT, quota_period DATE, amount FLOAT) AS $$
                 DECLARE
                     _rec RECORD;
@@ -88,15 +89,21 @@ class MemberInDebtReport(models.Model):
                     _tmp_next_date DATE;
                     _tmp_record RECORD;
                     curry CURSOR FOR SELECT * FROM pending_debt_list ORDER BY date_end ASC;
+                    _effective_date DATE;
                     BEGIN
                         FOR record IN curry LOOP
+                            IF invoice_fee_period IS NULL THEN
+                                _effective_date := start_date;
+                            ELSE
+                                _effective_date := invoice_fee_period;
+                            END IF;
                             IF record.date_end IS NULL THEN
                                 _tmp_date := NOW()::DATE;
                             ELSE
                                 _tmp_date := record.date_end;
                             END IF;
-                            IF invoice_fee_period <= _tmp_date AND EXTRACT(DAY FROM invoice_fee_period) <= (SELECT day_end_date_payment FROM partner_config LIMIT 1) THEN
-                                _tmp_next_date := invoice_fee_period + INTERVAL '1 months';
+                            IF _effective_date <= _tmp_date AND EXTRACT(DAY FROM _effective_date) <= (SELECT day_end_date_payment FROM partner_config LIMIT 1) THEN
+                                _tmp_next_date := _effective_date + INTERVAL '1 months';
                                 LOOP 
                                     IF EXTRACT(MONTH FROM _tmp_next_date) >= EXTRACT(MONTH FROM NOW()::DATE) AND EXTRACT(YEAR FROM _tmp_next_date) >= EXTRACT(YEAR FROM NOW()::DATE) THEN
                                         EXIT;
