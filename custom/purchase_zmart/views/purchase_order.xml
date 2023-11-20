@@ -50,12 +50,6 @@
             <field name="arch" type="xml">
                 <xpath expr="//graph" position="inside">
                     <field name="product_qty" />
-                    <!-- <field name="product_qty" type="measure"/>
-                    <field name="product_qty" type="measure"/>
-                    <field name="product_qty" type="measure"/>
-                    <field name="product_qty" type="measure"/>
-                    <field name="product_qty" type="measure"/>
-                    <field name="product_qty" type="measure"/> -->
                 </xpath>
             </field>
         </record>
