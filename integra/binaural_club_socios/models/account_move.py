@@ -12,7 +12,7 @@ class AccountMove(models.Model):
 
     def check_solvent_partner(self):
             for record in self:
-                invoices = record.partner_id.invoice_ids.filtered(lambda x: x.state in ['draft', 'posted'])
+                invoices = record.partner_id.invoice_ids.filtered(lambda x: x.payment_state in ['not_paid', 'partial'])
                 if len(invoices) > 0:
                     record.partner_id.write({'is_solvent': False})
                 else:
