@@ -138,6 +138,35 @@
                 </field>
             </xpath>
 
+            <xpath expr="//field[@name='move_line_ids_without_package'][1]" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_add_new_product_in_dispatch</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='move_line_ids_without_package'][1]" position="before">
+                <field name="move_line_ids_without_package" readonly='1' groups="binaural_stock.group_hide_add_new_product_in_dispatch"
+                attrs="{'readonly': ['|', '|', ('show_operations', '=', False), ('state', '=', 'cancel'), '&amp;', ('state', '=', 'done'), ('is_locked', '=', True)], 'invisible': [('show_reserved', '=', False)]}"
+                context="{'tree_view_ref': 'stock.view_stock_move_line_detailed_operation_tree', 'default_picking_id': id, 'default_location_id': location_id, 'default_location_dest_id': location_dest_id, 'default_company_id': company_id}"/>
+            </xpath>
+
+            <xpath expr="//field[@name='move_line_nosuggest_ids'][1]" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_add_new_product_in_dispatch</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='move_line_nosuggest_ids'][1]" position="before">
+                <field name="move_line_nosuggest_ids" readonly='1' groups="binaural_stock.group_hide_add_new_product_in_dispatch"
+                attrs="{'readonly': ['|', '|', ('show_operations', '=', False), ('state', '=', 'cancel'), '&amp;', ('state', '=', 'done'), ('is_locked', '=', True)], 'invisible': [('show_reserved', '=', True)]}"
+                context="{'tree_view_ref': 'stock.view_stock_move_line_detailed_operation_tree', 'default_picking_id': id, 'default_location_id': location_id, 'default_location_dest_id': location_dest_id, 'default_company_id': company_id}"/>
+            </xpath>
+            
+            <xpath expr="//field[@name='package_level_ids_details'][1]" position="attributes">
+                <attribute name="groups">!binaural_stock.group_hide_add_new_product_in_dispatch</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='package_level_ids_details'][1]" position="before">
+                <field name="package_level_ids_details" readonly='1' groups="binaural_stock.group_hide_add_new_product_in_dispatch"
+                context="{'default_location_id': location_id, 'default_location_dest_id': location_dest_id, 'default_company_id': company_id}"
+                attrs="{'readonly': [('state', '=', 'done')], 'invisible': ['|', ('picking_type_entire_packs', '=', False), ('show_operations', '=', False)]}" />
+            </xpath>
             
         </field>
     </record>
