@@ -425,7 +425,7 @@ msgstr "Productos"
 #: model:ir.actions.act_window,name:binaural_commissions.commission_sale_invoices_action
 #: model:ir.ui.menu,name:binaural_commissions.account_commission_sale_invoices
 msgid "Sale Invoices Per Seller"
-msgstr "Facturas de Venta por Vendedor"
+msgstr "Facturas de Ventas por Vendedor"
 
 #. module: binaural_commissions
 #: model:ir.model,name:binaural_commissions.model_sale_order
