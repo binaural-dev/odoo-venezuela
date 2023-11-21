@@ -20,7 +20,6 @@ class AccountInvoice(models.Model):
                 move.invoice_type = ""
 
     def button_digital_invoice(self):
-        self.write({"printed": True})
         return self.env.ref("invoice_zmart.action_digital_invoice").report_action(self)
 
     def button_free_form(self):
