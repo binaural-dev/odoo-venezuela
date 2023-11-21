@@ -25,4 +25,16 @@
         </field>
     </record>
 
+    <record id="product_product_tree_view_inherit_binaural_last_cost" model="ir.ui.view">
+        <field name="name">product.product.view.list.inherit</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
+        <field name="arch" type="xml">
+            <field name="qty_available" position="after">
+                <field name="latest_standard_price" />
+                <field name="value_total_last_cost" widget="monetary" sum="Total Last Cost"/>
+            </field>
+        </field>
+    </record>
+
 </odoo>
