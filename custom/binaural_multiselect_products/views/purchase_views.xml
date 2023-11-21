@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record model="ir.ui.view" id="purchase_order_view_inherit">
+        <field name="name">purchase.order.view.inherit</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="fl_so_po_multi_products.purchase_order_view_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[contains(@context, 'default_flag_order')]" position="replace">
+                <button name="select_product_view" type="object" string="Select Products"
+                    context="{'default_flag_order': 'po'}" attrs="{'invisible': [('state', '!=', 'draft')]}"
+                    class="btn-primary mb-3"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

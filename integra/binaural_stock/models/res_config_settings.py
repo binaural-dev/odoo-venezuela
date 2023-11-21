@@ -14,3 +14,7 @@ class ResConfigSettings(models.TransientModel):
     main_warehouse_id = fields.Many2one(
         "stock.warehouse", related="company_id.main_warehouse_id", readonly=False
     )
+    change_weight = fields.Boolean(
+        related='company_id.change_weight',
+        readonly=False,
+    )
