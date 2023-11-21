@@ -2,10 +2,10 @@
 <templates id="template" xml:space="preserve">
     <t name="purchase_zmart.ForecastedDetails" owl="1" t-inherit="stock.ForecastedDetails" t-inherit-mode="extension">
         <xpath expr="//table/thead//tr/td[4]" position="after">
-            <td t-if="props.docs.is_there_document_in">ETA Door Arrival</td>
+            <td t-if="props.docs.is_there_document_in" style="width:200px;">ETA Door Arrival</td>
         </xpath>
         <xpath expr="//table/tbody[1]//tr[2]/td[4]" position="after">
-            <td t-if="line.document_in"><t t-out="line.document_in.inlay_port"/></td>
+            <td t-if="line.document_in"><t t-out="line.document_in.inlay_port or ''"/></td>
         </xpath>
     </t>
 </templates>
