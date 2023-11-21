@@ -6,18 +6,21 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Purchase/Purchase",
-    "version": "16.9",
+    "version": "16.10",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
         "purchase",
+        "product",
         "binaural_tax",
         "binaural_rate",
         "binaural_filter_partner",
     ],
     # always loaded
     "data": [
+        "security/ir.model.access.csv",
         "views/purchase_order.xml",
+        "views/product_template.xml",
         "views/res_config_settings.xml",
     ],
     "images": ["static/description/icon.png"],

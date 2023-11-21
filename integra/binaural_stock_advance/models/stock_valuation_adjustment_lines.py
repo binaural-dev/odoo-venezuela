@@ -91,6 +91,45 @@ class StockValuationAdjustmentLines(models.Model):
 
     tariff_value = fields.Float("Tariff Value", compute="_compute_tariff_value")
 
+    cost_ddp = fields.Monetary("Cost DDP")
+    
+    total_cost_ddp = fields.Monetary("Total Cost DDP", compute="_compute_total_cost_ddp")
+
+    @api.depends("former_cost", "cost_line_id", "cost_ddp")
+    def _compute_total_cost_ddp(self):
+        for line in self:
+            line.total_cost_ddp = 0
+            last_cost = 0
+            original_value = line.former_cost
+            if line.cost_line_id.product_id:
+                 if self.env.company.check_calculate_based_total_purchase_amount:
+                    additional_values = line.search(
+                        [("product_id", "=", line.product_id.id), ("cost_id", "=", line.cost_id.id)]
+                    )
+                    for cost in additional_values:
+                        original_value = cost.former_cost
+                        last_cost = sum(split.cost_ddp for split in additional_values)
+                    line.total_cost_ddp = original_value + last_cost
+
+
+    @api.depends("unit_cost", "cost_line_id", "additional_landed_cost")
+    def _compute_cost_cif(self):
+        for line in self:
+            line.cost_cif = 0
+            last_cost = 0
+            original_value = line.unit_cost
+            if line.cost_line_id.product_id:
+                apply_cif_cost = self.env.company.service_products_ids
+                for product in apply_cif_cost:
+                    if line.cost_line_id.product_id == product:
+                        additional_values = line.search(
+                            [("product_id", "=", line.product_id.id), ("cost_id", "=", line.cost_id.id)]
+                        )
+                        for cost in additional_values:
+                            original_value = cost.unit_cost
+                        last_cost = sum(split.additional_landed_cost for split in additional_values)
+                line.cost_cif = original_value + last_cost
+
     @api.depends("former_cost", "additional_landed_cost")
     def _compute_final_cost(self):
         for line in self:
@@ -109,7 +148,9 @@ class StockValuationAdjustmentLines(models.Model):
     @api.depends("product_id")
     def _compute_percentage_tariff(self):
         for line in self:
-            line.percentage_tariff_code = line.product_id.percentage_tariff_code
+            line.percentage_tariff_code = 0
+            if self.env.company.service_products_ids:
+                line.percentage_tariff_code = line.product_id.percentage_tariff_code
 
     @api.depends("unit_cost", "cost_line_id", "additional_landed_cost")
     def _compute_cost_cif(self):

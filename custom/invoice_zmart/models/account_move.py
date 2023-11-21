@@ -8,6 +8,7 @@ class AccountInvoice(models.Model):
 
     printed = fields.Boolean(default=False)
     invoice_type = fields.Char(compute="_compute_invoice_type", store=True, read0nly=True)
+    partner_street = fields.Char('Client Street', related="partner_id.street", readonly=True)
 
     @api.depends("journal_id", "fiscal")
     def _compute_invoice_type(self):
