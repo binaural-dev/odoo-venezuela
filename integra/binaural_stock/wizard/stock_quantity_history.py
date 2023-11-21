@@ -38,7 +38,7 @@ class StockQuantityHistoryInh(models.TransientModel):
         except_product = self.except_products_at_zero
         domain = [
             # ("qty_available", ">", 0),
-            ("type", "!=", "service"),
+            ("type", "=", "product"),
         ]
         qty_companies = len(self.env["res.company"].sudo().search([]))
         if qty_companies > 1:
