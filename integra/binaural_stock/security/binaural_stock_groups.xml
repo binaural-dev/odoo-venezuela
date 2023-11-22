@@ -38,6 +38,21 @@
             <field name="category_id" ref="base.module_category_hidden"/>
         </record>
 
+        <record id="group_hide_return_inventory_transfers_button" model="res.groups">
+            <field name="name">Hide Return Button from Inventory Transfers</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_hide_discard_inventory_transfers_button" model="res.groups">
+            <field name="name">Hide Discard Button from Inventory Transfers</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
+        <record id="group_hide_add_new_product_in_dispatch" model="res.groups">
+            <field name="name">Hide Add New Product In Dispatch</field>
+            <field name="category_id" ref="base.module_category_hidden"/>
+        </record>
+
     </data>
 
 </odoo>

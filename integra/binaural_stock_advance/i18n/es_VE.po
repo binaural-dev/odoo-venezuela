@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230925\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-23 03:37+0000\n"
-"PO-Revision-Date: 2023-10-23 03:37+0000\n"
+"POT-Creation-Date: 2023-11-02 14:56+0000\n"
+"PO-Revision-Date: 2023-11-02 14:56+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -38,10 +38,30 @@ msgid "By Percentage"
 msgstr "Por Porcentaje"
 
 #. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__check_calculate_based_total_purchase_amount
+msgid "Calculate based on the total purchase amount"
+msgstr "Calcular basado en el monto total de la compra"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__check_calculate_taking_order_quantities
+msgid "Calculate taking into account the order quantities"
+msgstr "Calcular tomando en cuenta las cantidades de la orden"
+
+#. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__check_advance_stock
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__check_advance_stock
 msgid "Check Advance Stock"
 msgstr "Verificar Inventario Avanzado"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__check_calculate_based_total_purchase_amount
+msgid "Check Calculate Based Total Purchase Amount"
+msgstr "Calcular basado en el monto total de la compra"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__check_calculate_taking_order_quantities
+msgid "Check Calculate Taking Order Quantities"
+msgstr "Calcular tomando en cuenta las cantidades de la orden"
 
 #. module: binaural_stock_advance
 #: model:ir.model,name:binaural_stock_advance.model_res_company
@@ -262,6 +282,7 @@ msgid "Subtotal"
 msgstr "Valor original"
 
 #. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__foreign_tariff_value
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__tariff_value
 msgid "Tariff Value"
 msgstr "Valor Arancelario"

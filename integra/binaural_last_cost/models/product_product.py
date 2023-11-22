@@ -12,6 +12,12 @@ class ProductProduct(models.Model):
     
     last_latest_standard_price = fields.Monetary()
 
+    value_total_last_cost = fields.Float(compute="_calculate_value_total_last_cost")
+
+    def _calculate_value_total_last_cost(self):
+        for product in self:
+            product.value_total_last_cost = product.latest_standard_price * product.qty_available
+
     @api.depends("product_tmpl_id.latest_standard_price")
     def _compute_latest_standard_price(self):
         """

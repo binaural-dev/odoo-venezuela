@@ -3,6 +3,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import index_exists, drop_index
 from lxml import etree
 from collections import defaultdict
+from odoo.tools.misc import formatLang
 
 import logging
 
@@ -51,6 +52,7 @@ class AccountMove(models.Model):
     )
 
     manually_set_rate = fields.Boolean(default=False)
+    last_foreign_rate = fields.Float(copy=False)
 
     vat = fields.Char(
         string="VAT",
@@ -89,6 +91,46 @@ class AccountMove(models.Model):
             "Another entry with the same name already exists.",
         ),
     ]
+
+    detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
+
+    @api.depends("invoice_line_ids","tax_totals")
+    def _compute_detailed_amounts(self):
+        for record in self:
+            discount_amount = 0
+            if not record.tax_totals:
+                record.detailed_amounts = dict()
+                return
+            amount_taxed = record.tax_totals.get("amount_total",0) - record.tax_totals.get("amount_untaxed",0)
+            total = 0
+
+            for line in record.invoice_line_ids:
+                subtotal = line.price_unit * line.quantity
+                if line.discount > 0:
+                    discount_amount += subtotal - line.price_subtotal
+                total += subtotal
+
+            record.detailed_amounts = dict(
+                {
+                    "gross_amount": total,
+                    "formatted_gross_amount": formatLang(
+                        self.env, total, currency_obj=self.currency_id
+                    ),
+                    "discount_amount": discount_amount,
+                    "formatted_discount_amount": formatLang(
+                        self.env, discount_amount, currency_obj=self.currency_id
+                    ),
+                    "gross_discount_amount": total,
+                    "formatted_gross_discount_amount": formatLang(
+                        self.env, total - discount_amount, currency_obj=self.currency_id
+                    ),
+                    "taxes_amount": amount_taxed,
+                    "formatted_taxes_amount": formatLang(
+                        self.env, amount_taxed, currency_obj=self.currency_id
+                    ),
+
+                }
+            )
 
     def _auto_init(self):
         res = super()._auto_init()
@@ -201,6 +243,18 @@ class AccountMove(models.Model):
         moves._compute_rate()
 
         for move in moves:
+            Rate = self.env["res.currency.rate"]
+            rate_values = Rate.compute_rate(
+                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
+            )
+            last_foreign_rate = rate_values.get("foreign_rate", 0)
+            if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
+                move.message_post(
+                    body=_(
+                        "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    )
+                    % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
+                )
             move.compute_line_ids_foreign_debit_and_credit()
         return moves
 
@@ -209,8 +263,21 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
+        if vals.get("foreign_rate", False):
+            vals.update({"last_foreign_rate": self.foreign_rate})
         res = super().write(vals)
         for move in self:
+            if (
+                vals.get("foreign_rate", False)
+                and move.manually_set_rate
+                and move.foreign_rate != move.last_foreign_rate
+            ):
+                move.message_post(
+                    body=_(
+                        "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    )
+                    % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
+                )
             move.compute_line_ids_foreign_debit_and_credit()
         return res
 
@@ -520,6 +587,7 @@ class AccountMove(models.Model):
             if not bool(move.foreign_rate):
                 return
             move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
+            move.manually_set_rate = True
 
     def action_register_payment(self):
         """
