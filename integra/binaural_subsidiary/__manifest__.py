@@ -17,6 +17,7 @@
         "views/res_config_settings.xml",
         "views/account_move.xml",
         "views/purchase_order.xml",
+        "views/analytic_account.xml",
         "wizard/account_payment_register.xml",
     ],
     "images": ["static/description/icon.png"],

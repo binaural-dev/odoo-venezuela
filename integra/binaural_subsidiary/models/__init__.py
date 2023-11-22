@@ -5,3 +5,5 @@ from . import res_company
 from . import purchase_order
 from . import sale_order
 from . import account_move_line
+from . import analytic_account
+from . import bank_rec_widget

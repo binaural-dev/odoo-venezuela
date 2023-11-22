@@ -1,20 +1,68 @@
-from odoo import api, fields, models, _
-import logging
-
-_logger = logging.getLogger(__name__)
+from odoo import models
 
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
     def reconcile(self):
-        res = super().reconcile()
-        lines = self
-        lines_with_statements = self.env["account.move.line"]
-        for line in lines:
-            if line.statement_line_id:
-                lines_with_statements |= line
-        lines -= lines_with_statements
-        lines_with_statements.analytic_distribution = lines[0].analytic_distribution
-        return res
+        self._distribute_subsidiaries_analytic_accounts()
+        return super().reconcile()
 
+    def _distribute_subsidiaries_analytic_accounts(self, distribute_on_asset_cash_account=False):
+        """
+        Distribute the analytic accounts that are subsidiaries on the statement line or the asset
+        cash account line.
+
+        This method is called when reconciling a statement line and when validating a bank
+        statement (see bank_rec_widget.py), so it's basically being used twice when validating a
+        bank statement, once for setting the analytic accounts on the statement line when the
+        reconciliation is being made and once for setting the analytic accounts on the asset cash
+        account line, after the lines have been reconciled.
+
+        The idea is to distribute the amount of the payment lines on the bank statement line
+        according to the percentage of the analytic accounts that are subsidiaries. For example:
+
+        10102001 BBVA                   1000
+        10102006 Payments to reconcile           500
+        10102006 Payments to reconcile           500
+
+        If the payment lines have different subsidiaries, the analytic accounts will be
+        distributed on the statement line like this:
+
+        {1: 50%, 2: 50%}
+
+        Params
+        ------
+        distribute_on_asset_cash_account: bool
+            Whether to distribute the analytic accounts on the asset cash account line or the
+            statement line. If False, the analytic accounts will be distributed on the statement
+            line. If True, the analytic accounts will be distributed on the asset cash account
+            line.
+        """
+        if not distribute_on_asset_cash_account:
+            line_to_change = self.filtered(lambda l: l.statement_line_id)
+        else:
+            line_to_change = self.filtered(lambda l: l.account_id.account_type == "asset_cash")
+        move_line_with_statement_analytic_distribution = line_to_change.analytic_distribution or {}
+        if not line_to_change:
+            return
+        balance_to_distribute = abs(line_to_change.amount_residual)
+        AnalyticAccount = self.env["account.analytic.account"]
+        for line in self.filtered(lambda l: l.analytic_distribution and l.id != line_to_change.id):
+            line_analytic_distribution = line.analytic_distribution
+            if not line_analytic_distribution:
+                continue
+            line_residual = abs(
+                line.amount_residual if not distribute_on_asset_cash_account else line.balance
+            )
+            for analytic_account_id, percentage in line_analytic_distribution.items():
+                if not AnalyticAccount.browse(int(analytic_account_id)).is_subsidiary:
+                    continue
+                percentage_to_add = line_residual * percentage / balance_to_distribute
+
+                move_line_with_statement_analytic_distribution[
+                    analytic_account_id
+                ] = percentage_to_add
+            if not line_analytic_distribution:
+                continue
+        line_to_change.analytic_distribution = move_line_with_statement_analytic_distribution
