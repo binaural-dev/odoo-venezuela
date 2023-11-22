@@ -19,9 +19,8 @@ class StockPicking(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        res = super().create(vals_list)
         self.validate_block_transfers_expedition(vals_list)
-        return res
+        return super().create(vals_list)
     
     def button_validate(self):
         self.validate_block_transfers_expedition()
