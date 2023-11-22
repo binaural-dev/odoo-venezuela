@@ -7,10 +7,12 @@
     "version": "16.0",
     "category": "Accountant",
     "depends": [
+        "analytic",
         "purchase",
         "binaural_accountant",
-        "binaural_sale",
+        "binaural_invoice",
         "binaural_purchase",
+        "binaural_sale",
     ],
     "data": [
         "views/account_payment.xml",
@@ -19,6 +21,7 @@
         "views/purchase_order.xml",
         "views/analytic_account.xml",
         "wizard/account_payment_register.xml",
+        "wizard/accounting_report_views.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,

@@ -4,7 +4,7 @@ from odoo import api, fields, models, _
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    account_analytic_id = fields.Many2one("account.analytic.account", string="Analytic Account")
+    account_analytic_id = fields.Many2one("account.analytic.account", string="Subsidiary")
 
     # We need to override the create and write methods to update the analytic distribution of the
     # lines when the analytic account is changed. We don't use the compute method because it is
@@ -15,7 +15,7 @@ class AccountMove(models.Model):
     def create(self, vals_list):
         """
         Override the create method to set the analytic distribution of the lines when the analytic
-        account is set.
+        account (subsidiary) is set.
         """
         moves = super().create(vals_list)
         for move in moves:
@@ -30,10 +30,10 @@ class AccountMove(models.Model):
     def write(self, vals):
         """
         Override the write method to update the analytic distribution of the lines when the analytic
-        account is changed.
+        account (subsidiary) is changed.
 
         We need to override the write method because the compute method is called before the write
-        method and we need the old analytic account to update the analytic distribution.
+        method and we need the old subsidiary to update the analytic distribution.
         """
         if not vals.get("account_analytic_id") or not self.line_ids:
             return super().write(vals)
@@ -66,8 +66,8 @@ class AccountMove(models.Model):
 
     def action_register_payment(self):
         """
-        Override the action_register_payment method to send the default analytic account to the
-        payment wizard.
+        Override the action_register_payment method to send the default analytic account
+        (sbusidiary) to the payment wizard.
         """
         res = super().action_register_payment()
         res["context"]["default_account_analytic_id"] = self.account_analytic_id.id
