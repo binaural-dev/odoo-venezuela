@@ -116,6 +116,7 @@ class AccountMoveIgtf(models.Model):
                 reverse_move_debit.write({"is_two_percentage": True})
 
     def js_remove_outstanding_partial(self, partial_id):
-        self.remove_igtf_from_move(partial_id)
+        for move in self:
+            move.remove_igtf_from_move(partial_id)
         res = super().js_remove_outstanding_partial(partial_id)
         return res
