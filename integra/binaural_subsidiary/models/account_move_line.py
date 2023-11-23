@@ -59,7 +59,7 @@ class AccountMoveLine(models.Model):
                 # amount of the statement is alreade the one being reconciled, so we use the
                 # full percentage.
                 percentage_to_add = (
-                    line.balance * percentage / balance_to_distribute
+                    abs(line.balance) * percentage / balance_to_distribute
                     if distribute_on_asset_cash_account
                     else 100.0
                 )
