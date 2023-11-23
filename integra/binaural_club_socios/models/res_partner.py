@@ -81,7 +81,7 @@ class ResPartner(models.Model):
     vat_usufruct = fields.Char(string="Vat Usufruct", track_visibility="onchange")
     address_usufruct = fields.Text(string="Address usufruct", track_visibility="onchange")
 
-    is_solvent = fields.Boolean(string="Is solvent", default=True, track_visibility="onchange")
+    is_solvent = fields.Boolean(string="Is solvent", default=False, track_visibility="onchange")
 
     member_company = fields.Char(string="Member Company")
     member_profession = fields.Many2one(
