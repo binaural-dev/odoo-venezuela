@@ -9,8 +9,8 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.8",
-    "depends": ["stock","binaural_tax", "binaural_rate"],
+    "version": "16.9",
+    "depends": ["stock","binaural_tax", "binaural_rate", "delivery"],
     "data": [
         # 'security/ir.model.access.csv',
         "security/security_binaural_stock.xml",
