@@ -427,237 +427,235 @@ class AccountFiscalyearClosingConfig(models.Model):
     _name = "account.fiscalyear.closing.config"
     _order = "sequence asc, id asc"
 
+    # @api.onchange('l_map')
+    # def inchange_l_map(self):
+    #     #if not self.journal_id:
+    #     #    raise UserError("Seleccione un diario")
+    #     print("buscar las cuentas y ponerlas en fiscal closing==================================================================")
+    #     ingreso = self.env.ref('account.data_account_type_revenue').id
+    #     gasto = self.env.ref('account.data_account_type_expenses').id
+    #     #costo = self.env.ref('accounting_pdf_reports.data_account_type_direct_costs_cost').id
 
+    #     #('company_id','=',self.journal_id.company_id.id),
+    #     #('company_id','=',self.journal_id.company_id.id),
 
-    @api.onchange('l_map')
-    def inchange_l_map(self):
-        #if not self.journal_id:
-        #    raise UserError("Seleccione un diario")
-        print("buscar las cuentas y ponerlas en fiscal closing==================================================================")
-        ingreso = self.env.ref('account.data_account_type_revenue').id
-        gasto = self.env.ref('account.data_account_type_expenses').id
-        #costo = self.env.ref('accounting_pdf_reports.data_account_type_direct_costs_cost').id
+    #     ganancia = self.env.ref('account.data_unaffected_earnings').id
+    #     accounts = self.env['account.account'].sudo().search([('user_type_id','in',[gasto,ingreso])])
 
-        #('company_id','=',self.journal_id.company_id.id),
-        #('company_id','=',self.journal_id.company_id.id),
-
-        ganancia = self.env.ref('account.data_unaffected_earnings').id
-        accounts = self.env['account.account'].sudo().search([('user_type_id','in',[gasto,ingreso])])
-
-        config_a = self.env['account.account'].sudo().search([('user_type_id','=',ganancia)],limit=1)#esta es la de destino siempre es la misma preguntar cual es
-        maps = []
-        cont = 1
-        account_len = int(self.env['ir.config_parameter'].sudo().get_param('account_longitude_report'))
-        if not account_len:
-            raise exceptions.UserError("Por favor configure la longitud de las cuentas contables.")
-        if self.l_map:
-            #sync
-            _logger.info("accounts %s",accounts)
-            for a in accounts:
-                if len(a.code) == account_len:
-                    vals = {'name':a.name,'src_accounts':a.code,'dest_account_id':config_a.id,'fyc_config_id':self.id}
-                    cont +=1
-                    print("vals**************",vals)
-                    maps.append((0, 0, vals))
-            if len(maps) > 0:
-                #self.update({'mapping_ids':maps})
-                return {'value':{'mapping_ids':maps}}
-        else:
-            return {'value':{'mapping_ids':[(5, 0, 0)]}}
+    #     config_a = self.env['account.account'].sudo().search([('user_type_id','=',ganancia)],limit=1)#esta es la de destino siempre es la misma preguntar cual es
+    #     maps = []
+    #     cont = 1
+    #     account_len = int(self.env['ir.config_parameter'].sudo().get_param('account_longitude_report'))
+    #     if not account_len:
+    #         raise exceptions.UserError("Por favor configure la longitud de las cuentas contables.")
+    #     if self.l_map:
+    #         #sync
+    #         _logger.info("accounts %s",accounts)
+    #         for a in accounts:
+    #             if len(a.code) == account_len:
+    #                 vals = {'name':a.name,'src_accounts':a.code,'dest_account_id':config_a.id,'fyc_config_id':self.id}
+    #                 cont +=1
+    #                 print("vals**************",vals)
+    #                 maps.append((0, 0, vals))
+    #         if len(maps) > 0:
+    #             #self.update({'mapping_ids':maps})
+    #             return {'value':{'mapping_ids':maps}}
+    #     else:
+    #         return {'value':{'mapping_ids':[(5, 0, 0)]}}
 
     fyc_id = fields.Many2one(
-        comodel_name='account.fiscalyear.closing', index=True, readonly=True,
+        'account.fiscalyear.closing', index=True, readonly=True,
         string="Cierre del año fiscal", required=True, ondelete='cascade',
     )
 
-    l_map = fields.Boolean(string='Cargar Cuentas')
+    l_map = fields.Boolean(string='Load Accounts')
 
     mapping_ids = fields.One2many(
-        comodel_name='account.fiscalyear.closing.mapping',
-        inverse_name='fyc_config_id', string="Asignaciones de cuentas",
+        'account.fiscalyear.closing.mapping',
+        'fyc_config_id', string="Asignaciones de cuentas",
     )
     closing_type_ids = fields.One2many(
-        comodel_name='account.fiscalyear.closing.type',
-        inverse_name='fyc_config_id', string="Tipos de cierre",
+        'account.fiscalyear.closing.type',
+        'fyc_config_id',
     )
-    date = fields.Date(string="Fecha de asiento")
-    enabled = fields.Boolean(string="Activado", default=True)
+    date = fields.Date(string="Date Account")
+    enabled = fields.Boolean(default=True)
     journal_id = fields.Many2one(required=True)
-    move_id = fields.Many2one(comodel_name="account.move", string="Asiento")
+    move_id = fields.Many2one("account.move")
 
     # _sql_constraints = [
     #     ('code_uniq', 'unique(code, fyc_id)',
     #      _('El código debe ser único por cierre de año fiscal!')),
     # ]
 
-    #@api.multi
-    def config_inverse_get(self):
-        configs = self.env['account.fiscalyear.closing.config']
-        for config in self:
-            code = config.inverse and config.inverse.strip()
-            if code:
-                configs |= self.search([
-                    ('fyc_id', '=', config.fyc_id.id),
-                    ('code', '=', code),
-                ])
-        return configs
+    # #@api.multi
+    # def config_inverse_get(self):
+    #     configs = self.env['account.fiscalyear.closing.config']
+    #     for config in self:
+    #         code = config.inverse and config.inverse.strip()
+    #         if code:
+    #             configs |= self.search([
+    #                 ('fyc_id', '=', config.fyc_id.id),
+    #                 ('code', '=', code),
+    #             ])
+    #     return configs
 
-    #@api.multi
-    def closing_type_get(self, account):
-        self.ensure_one()
-        closing_type = self.closing_type_default
-        closing_types = self.closing_type_ids.filtered(
-            lambda r: r.account_type_id == account.user_type_id)
-        if closing_types:
-            closing_type = closing_types[0].closing_type
-        return closing_type
+    # #@api.multi
+    # def closing_type_get(self, account):
+    #     self.ensure_one()
+    #     closing_type = self.closing_type_default
+    #     closing_types = self.closing_type_ids.filtered(
+    #         lambda r: r.account_type_id == account.user_type_id)
+    #     if closing_types:
+    #         closing_type = closing_types[0].closing_type
+    #     return closing_type
 
-    #@api.multi
-    def move_prepare(self, move_lines,rate=0):
-        self.ensure_one()
-        description = self.name
-        journal_id = self.journal_id.id
-        return {
-            'ref': description,
-            'date': self.date,
-            'fyc_id': self.fyc_id.id,
-            'closing_type': self.move_type,
-            'journal_id': journal_id,
-            'line_ids': [(0, 0, m) for m in move_lines],
-            'foreign_currency_rate':rate,
-        }
+    # #@api.multi
+    # def move_prepare(self, move_lines,rate=0):
+    #     self.ensure_one()
+    #     description = self.name
+    #     journal_id = self.journal_id.id
+    #     return {
+    #         'ref': description,
+    #         'date': self.date,
+    #         'fyc_id': self.fyc_id.id,
+    #         'closing_type': self.move_type,
+    #         'journal_id': journal_id,
+    #         'line_ids': [(0, 0, m) for m in move_lines],
+    #         'foreign_currency_rate':rate,
+    #     }
 
-    def _mapping_move_lines_get(self,src,account_map):
-        move_lines = []
-        dest_totals = {}
-        # Add balance/unreconciled move lines
-        #for account_map in self.mapping_ids:
-        rate = 1
+    # def _mapping_move_lines_get(self,src,account_map):
+    #     move_lines = []
+    #     dest_totals = {}
+    #     # Add balance/unreconciled move lines
+    #     #for account_map in self.mapping_ids:
+    #     rate = 1
         
-        dest = account_map.dest_account_id
-        dest_totals.setdefault(dest, 0)
-        #aqui filtrar si viene src usar solo esa
-        if not src:
-            src_accounts = self.env['account.account'].search([
-                ('company_id', '=', self.fyc_id.company_id.id),
-                ('code', '=ilike', account_map.src_accounts),
-            ], order="code ASC")
-        else:
-            src_accounts = self.env['account.account'].sudo().search([('code','=ilike',src)])
-        #_logger.info("CANTIDAD DE src_accounts %s",len(src_accounts))
-        for account in src_accounts:
-            closing_type = self.closing_type_get(account)
-            balance = False
-            if closing_type == 'balance':
-                # Get all lines
-                lines = account_map.account_lines_get(account,self.fyc_id.jounals_type_bin)
+    #     dest = account_map.dest_account_id
+    #     dest_totals.setdefault(dest, 0)
+    #     #aqui filtrar si viene src usar solo esa
+    #     if not src:
+    #         src_accounts = self.env['account.account'].search([
+    #             ('company_id', '=', self.fyc_id.company_id.id),
+    #             ('code', '=ilike', account_map.src_accounts),
+    #         ], order="code ASC")
+    #     else:
+    #         src_accounts = self.env['account.account'].sudo().search([('code','=ilike',src)])
+    #     #_logger.info("CANTIDAD DE src_accounts %s",len(src_accounts))
+    #     for account in src_accounts:
+    #         closing_type = self.closing_type_get(account)
+    #         balance = False
+    #         if closing_type == 'balance':
+    #             # Get all lines
+    #             lines = account_map.account_lines_get(account,self.fyc_id.jounals_type_bin)
                
-                balance, move_line,rate = account_map.move_line_prepare(
-                    account, lines
-                )
-                if move_line:
-                    move_lines.append(move_line)
-            elif closing_type == 'unreconciled':
-                # Get credit and debit grouping by partner
-                """partners = account_map.account_partners_get(account)
-                for partner in partners:
-                    balance, move_line = account_map.\
-                        move_line_partner_prepare(account, partner)
-                    if move_line:
-                        move_lines.append(move_line)"""
-                continue
-            else:
-                # Account type has unsupported closing method
-                continue
-            if dest and balance:
-                dest_totals[dest] -= balance
-        # Add destination move lines, if any
-        for account_map in self.mapping_ids.filtered('dest_account_id'):
-            dest = account_map.dest_account_id
-            balance = dest_totals.get(dest, 0)
-            if not balance:
-                continue
-            dest_totals[dest] = 0
-            move_line = account_map.dest_move_line_prepare(dest, balance)
-            if move_line:
-                move_lines.append(move_line)
-        return move_lines,rate
+    #             balance, move_line,rate = account_map.move_line_prepare(
+    #                 account, lines
+    #             )
+    #             if move_line:
+    #                 move_lines.append(move_line)
+    #         elif closing_type == 'unreconciled':
+    #             # Get credit and debit grouping by partner
+    #             """partners = account_map.account_partners_get(account)
+    #             for partner in partners:
+    #                 balance, move_line = account_map.\
+    #                     move_line_partner_prepare(account, partner)
+    #                 if move_line:
+    #                     move_lines.append(move_line)"""
+    #             continue
+    #         else:
+    #             # Account type has unsupported closing method
+    #             continue
+    #         if dest and balance:
+    #             dest_totals[dest] -= balance
+    #     # Add destination move lines, if any
+    #     for account_map in self.mapping_ids.filtered('dest_account_id'):
+    #         dest = account_map.dest_account_id
+    #         balance = dest_totals.get(dest, 0)
+    #         if not balance:
+    #             continue
+    #         dest_totals[dest] = 0
+    #         move_line = account_map.dest_move_line_prepare(dest, balance)
+    #         if move_line:
+    #             move_lines.append(move_line)
+    #     return move_lines,rate
 
-    #@api.multi
-    def inverse_move_prepare(self):
-        self.ensure_one()
-        move_ids = False
-        date = self.fyc_id.date_end
-        if self.move_type == 'opening':
-            date = self.fyc_id.date_opening
-        config = self.config_inverse_get()
-        if config.move_id:
-            move_ids = config.move_id.reverse_moves(
-                date=date, journal_id=self.journal_id,
-            )
-        return move_ids
+    # #@api.multi
+    # def inverse_move_prepare(self):
+    #     self.ensure_one()
+    #     move_ids = False
+    #     date = self.fyc_id.date_end
+    #     if self.move_type == 'opening':
+    #         date = self.fyc_id.date_opening
+    #     config = self.config_inverse_get()
+    #     if config.move_id:
+    #         move_ids = config.move_id.reverse_moves(
+    #             date=date, journal_id=self.journal_id,
+    #         )
+    #     return move_ids
 
-    #@api.multi
-    def moves_create(self):
-        self.ensure_one()
-        moves = self.env['account.move']
-        # Prepare one move per configuration
-        data = False
+    # #@api.multi
+    # def moves_create(self):
+    #     self.ensure_one()
+    #     moves = self.env['account.move']
+    #     # Prepare one move per configuration
+    #     data = False
 
-        rate = 1
-        _logger.info("funcion moves_create self.mapping_ids.filtered('dest_account_id') %s",self.mapping_ids)
-        #raise UserError("T")
-        for ac in self.mapping_ids:
-            #_logger.info("src_accountssrc_accounts------------------------------------------------------ %s",ac.src_accounts)
-            #for c in ac.src_accounts:
-            data = False
-            if self.mapping_ids:
-                move_lines,rate = self._mapping_move_lines_get(ac.src_accounts,ac)
-                if len(move_lines)>0:
-                    data = self.move_prepare(move_lines,rate)
-            elif self.inverse:
-                #alerta: el move_id es un many2one
-                move_ids = self.inverse_move_prepare()
-                move = moves.browse(move_ids[0])
-                move.write({'ref': self.name, 'closing_type': self.move_type})
-                self.move_id = move.id
-                return move, data
-            # Create move
-            if not data:
-                continue
-                #return False, data
-            total_debit = sum([x[2]['debit'] for x in data['line_ids']])
-            total_credit = sum([x[2]['credit'] for x in data['line_ids']])
+    #     rate = 1
+    #     _logger.info("funcion moves_create self.mapping_ids.filtered('dest_account_id') %s",self.mapping_ids)
+    #     #raise UserError("T")
+    #     for ac in self.mapping_ids:
+    #         #_logger.info("src_accountssrc_accounts------------------------------------------------------ %s",ac.src_accounts)
+    #         #for c in ac.src_accounts:
+    #         data = False
+    #         if self.mapping_ids:
+    #             move_lines,rate = self._mapping_move_lines_get(ac.src_accounts,ac)
+    #             if len(move_lines)>0:
+    #                 data = self.move_prepare(move_lines,rate)
+    #         elif self.inverse:
+    #             #alerta: el move_id es un many2one
+    #             move_ids = self.inverse_move_prepare()
+    #             move = moves.browse(move_ids[0])
+    #             move.write({'ref': self.name, 'closing_type': self.move_type})
+    #             self.move_id = move.id
+    #             return move, data
+    #         # Create move
+    #         if not data:
+    #             continue
+    #             #return False, data
+    #         total_debit = sum([x[2]['debit'] for x in data['line_ids']])
+    #         total_credit = sum([x[2]['credit'] for x in data['line_ids']])
 
-            dif = total_credit - total_debit
+    #         dif = total_credit - total_debit
 
-            if dif != 0:
-                other_dest = False
-                for line in data['line_ids']:
-                    if len(line)>=2:
-                        if line[2]['name'] in ['Resultado','Result']:
-                            other_dest = {
-                                'account_id':line[2]['account_id'],
-                                'name':'Ajuste por precisión decimal',
-                                'date':line[2]['date'],
-                                'debit': abs(dif) if dif > 0 else False,
-                                'credit': abs(dif) if dif < 0 else False,
-                            }
-                if other_dest:
-                    data['line_ids'].append((0,0,other_dest))
-            #el modulo valida pero con 2 decimales mientras que odoo manda las lineas con muchos decimales
-            total_debit = sum([x[2]['debit'] for x in data['line_ids']])
-            total_credit = sum([x[2]['credit'] for x in data['line_ids']])
+    #         if dif != 0:
+    #             other_dest = False
+    #             for line in data['line_ids']:
+    #                 if len(line)>=2:
+    #                     if line[2]['name'] in ['Resultado','Result']:
+    #                         other_dest = {
+    #                             'account_id':line[2]['account_id'],
+    #                             'name':'Ajuste por precisión decimal',
+    #                             'date':line[2]['date'],
+    #                             'debit': abs(dif) if dif > 0 else False,
+    #                             'credit': abs(dif) if dif < 0 else False,
+    #                         }
+    #             if other_dest:
+    #                 data['line_ids'].append((0,0,other_dest))
+    #         #el modulo valida pero con 2 decimales mientras que odoo manda las lineas con muchos decimales
+    #         total_debit = sum([x[2]['debit'] for x in data['line_ids']])
+    #         total_credit = sum([x[2]['credit'] for x in data['line_ids']])
 
-            if abs(round(total_credit - total_debit, 2)) >= 0.01:
-                # the move is not balanced
-                return False, data
-            move = moves.with_context(journal_id=self.journal_id.id).create(data)
-            #self.move_id = move.id
-            #este move_id debe ser para el inversal, duda
-            if move:
-                move._onchange_rate()
-        return move, data
+    #         if abs(round(total_credit - total_debit, 2)) >= 0.01:
+    #             # the move is not balanced
+    #             return False, data
+    #         move = moves.with_context(journal_id=self.journal_id.id).create(data)
+    #         #self.move_id = move.id
+    #         #este move_id debe ser para el inversal, duda
+    #         if move:
+    #             move._onchange_rate()
+    #     return move, data
 
 
 class AccountFiscalyearClosingMapping(models.Model):
@@ -665,7 +663,7 @@ class AccountFiscalyearClosingMapping(models.Model):
     _name = "account.fiscalyear.closing.mapping"
     #aqui
     fyc_config_id = fields.Many2one(
-        comodel_name='account.fiscalyear.closing.config', index=True,
+        'account.fiscalyear.closing.config', index=True,
         string="Configuración de cierre del año fiscal", readonly=False, required=True,
         ondelete='cascade',
     )
@@ -673,147 +671,147 @@ class AccountFiscalyearClosingMapping(models.Model):
         string="Cuenta de origen", required=True,
     )
     dest_account_id = fields.Many2one(
-        comodel_name='account.account', string="Cuenta de destino",
+        'account.account', string="Cuenta de destino",
     )
 
-    #@api.multi
-    def dest_move_line_prepare(self, dest, balance, partner_id=False):
-        self.ensure_one()
-        move_line = {}
-        precision = self.env['decimal.precision'].precision_get('Account')
-        #_logger.info("precisionprecisionprecisionprecisionprecision =========> %s",precision)
-        precision = 12
-        date = self.fyc_config_id.fyc_id.date_end
-        if self.fyc_config_id.move_type == 'opening':
-            date = self.fyc_config_id.fyc_id.date_opening
-        if not float_is_zero(balance, precision_digits=precision):
-            move_line = {
-                'account_id': dest.id,
-                'debit': balance < 0 and -balance,
-                'credit': balance > 0 and balance,
-                'name': _('Result'),
-                'date': date,
-                'partner_id': partner_id,
-            }
-        return move_line
+    # #@api.multi
+    # def dest_move_line_prepare(self, dest, balance, partner_id=False):
+    #     self.ensure_one()
+    #     move_line = {}
+    #     precision = self.env['decimal.precision'].precision_get('Account')
+    #     #_logger.info("precisionprecisionprecisionprecisionprecision =========> %s",precision)
+    #     precision = 12
+    #     date = self.fyc_config_id.fyc_id.date_end
+    #     if self.fyc_config_id.move_type == 'opening':
+    #         date = self.fyc_config_id.fyc_id.date_opening
+    #     if not float_is_zero(balance, precision_digits=precision):
+    #         move_line = {
+    #             'account_id': dest.id,
+    #             'debit': balance < 0 and -balance,
+    #             'credit': balance > 0 and balance,
+    #             'name': _('Result'),
+    #             'date': date,
+    #             'partner_id': partner_id,
+    #         }
+    #     return move_line
 
-    #@api.multi
-    def move_line_prepare(self, account, account_lines, partner_id=False):
-        self.ensure_one()
-        move_line = {}
-        balance = 0
-        precision = self.env['decimal.precision'].precision_get('Account')
-        precision = 12
-        description = self.name or account.name
-        date = self.fyc_config_id.fyc_id.date_end
-        rate = 1
-        if self.fyc_config_id.move_type == 'opening':
-            date = self.fyc_config_id.fyc_id.date_opening
-        if account_lines:
-            _logger.info("CODIGO --------------- %s",account.code)
-            _logger.info("CUENTA ------------- %s",account.name)
-            d = sum(account_lines.mapped('debit'))
-            c = sum(account_lines.mapped('credit'))
-            _logger.info("Debit SUM %s",d)
-            _logger.info("CREDIT SUM %s",c)
-            balance = (
-                sum(account_lines.mapped('debit')) -
-                sum(account_lines.mapped('credit')))
-            all_deb = all_cred = balance_bs = 0 
+    # #@api.multi
+    # def move_line_prepare(self, account, account_lines, partner_id=False):
+    #     self.ensure_one()
+    #     move_line = {}
+    #     balance = 0
+    #     precision = self.env['decimal.precision'].precision_get('Account')
+    #     precision = 12
+    #     description = self.name or account.name
+    #     date = self.fyc_config_id.fyc_id.date_end
+    #     rate = 1
+    #     if self.fyc_config_id.move_type == 'opening':
+    #         date = self.fyc_config_id.fyc_id.date_opening
+    #     if account_lines:
+    #         _logger.info("CODIGO --------------- %s",account.code)
+    #         _logger.info("CUENTA ------------- %s",account.name)
+    #         d = sum(account_lines.mapped('debit'))
+    #         c = sum(account_lines.mapped('credit'))
+    #         _logger.info("Debit SUM %s",d)
+    #         _logger.info("CREDIT SUM %s",c)
+    #         balance = (
+    #             sum(account_lines.mapped('debit')) -
+    #             sum(account_lines.mapped('credit')))
+    #         all_deb = all_cred = balance_bs = 0 
           
-            for al in account_lines:
-                all_deb += al.debit * al.foreign_currency_rate
-                all_cred += al.credit * al.foreign_currency_rate
-            _logger.info("ALL DEB %s",all_deb)
-            _logger.info("ALL CRED %s",all_cred)
-            balance_bs = all_deb - all_cred
+    #         for al in account_lines:
+    #             all_deb += al.debit * al.foreign_currency_rate
+    #             all_cred += al.credit * al.foreign_currency_rate
+    #         _logger.info("ALL DEB %s",all_deb)
+    #         _logger.info("ALL CRED %s",all_cred)
+    #         balance_bs = all_deb - all_cred
 
             
-            if not float_is_zero(balance, precision_digits=precision):
-                rate = round(balance_bs/balance,2)
-                move_line = {
-                    'account_id': account.id,
-                    'debit': balance < 0 and -balance,
-                    'credit': balance > 0 and balance,
-                    'name': description,
-                    'date': date,
-                    'partner_id': partner_id,
-                }
-            else:
-                balance = 0
-        _logger.info("RATE %s",rate)
-        return balance, move_line,abs(rate)
+    #         if not float_is_zero(balance, precision_digits=precision):
+    #             rate = round(balance_bs/balance,2)
+    #             move_line = {
+    #                 'account_id': account.id,
+    #                 'debit': balance < 0 and -balance,
+    #                 'credit': balance > 0 and balance,
+    #                 'name': description,
+    #                 'date': date,
+    #                 'partner_id': partner_id,
+    #             }
+    #         else:
+    #             balance = 0
+    #     _logger.info("RATE %s",rate)
+    #     return balance, move_line,abs(rate)
 
-    #@api.multi
-    def account_lines_get(self, account,j_type):
-        _logger.info("buscar account move line por diario tipo: %s",j_type)
-        self.ensure_one()
-        start = self.fyc_config_id.fyc_id.date_start
-        end = self.fyc_config_id.fyc_id.date_end
-        company_id = self.fyc_config_id.fyc_id.company_id.id
-        if j_type == 'fiscal':
-            return self.env['account.move.line'].search([
-                ('company_id', '=', company_id),
-                ('account_id', '=', account.id),
-                ('date', '>=', start),
-                ('date', '<=', end),
-                ('move_id.journal_id.fiscal','=',True),
-            ])
-        elif j_type == 'nofiscal':
-            return self.env['account.move.line'].search([
-                ('company_id', '=', company_id),
-                ('account_id', '=', account.id),
-                ('date', '>=', start),
-                ('date', '<=', end),
-                ('move_id.journal_id.fiscal','=',False),
-            ])
-        else:
-            return self.env['account.move.line'].search([
-                ('company_id', '=', company_id),
-                ('account_id', '=', account.id),
-                ('date', '>=', start),
-                ('date', '<=', end),
-            ])
+    # #@api.multi
+    # def account_lines_get(self, account,j_type):
+    #     _logger.info("buscar account move line por diario tipo: %s",j_type)
+    #     self.ensure_one()
+    #     start = self.fyc_config_id.fyc_id.date_start
+    #     end = self.fyc_config_id.fyc_id.date_end
+    #     company_id = self.fyc_config_id.fyc_id.company_id.id
+    #     if j_type == 'fiscal':
+    #         return self.env['account.move.line'].search([
+    #             ('company_id', '=', company_id),
+    #             ('account_id', '=', account.id),
+    #             ('date', '>=', start),
+    #             ('date', '<=', end),
+    #             ('move_id.journal_id.fiscal','=',True),
+    #         ])
+    #     elif j_type == 'nofiscal':
+    #         return self.env['account.move.line'].search([
+    #             ('company_id', '=', company_id),
+    #             ('account_id', '=', account.id),
+    #             ('date', '>=', start),
+    #             ('date', '<=', end),
+    #             ('move_id.journal_id.fiscal','=',False),
+    #         ])
+    #     else:
+    #         return self.env['account.move.line'].search([
+    #             ('company_id', '=', company_id),
+    #             ('account_id', '=', account.id),
+    #             ('date', '>=', start),
+    #             ('date', '<=', end),
+    #         ])
 
-    #@api.multi
-    def move_line_partner_prepare(self, account, partner):
-        self.ensure_one()
-        move_line = {}
-        balance = partner.get('debit', 0.) - partner.get('credit', 0.)
-        precision = self.env['decimal.precision'].precision_get('Account')
-        precision = 12
-        description = self.name or account.name
-        partner_id = partner.get('partner_id')
-        if partner_id:
-            partner_id = partner_id[0]
-        date = self.fyc_config_id.fyc_id.date_end
-        if self.fyc_config_id.move_type == 'opening':
-            date = self.fyc_config_id.fyc_id.date_opening
-        if not float_is_zero(balance, precision_digits=precision):
-            move_line = {
-                'account_id': account.id,
-                'debit': balance < 0 and -balance,
-                'credit': balance > 0 and balance,
-                'name': description,
-                'date': date,
-                'partner_id': partner_id,
-            }
-        else:
-            balance = 0
-        return balance, move_line
+    # #@api.multi
+    # def move_line_partner_prepare(self, account, partner):
+    #     self.ensure_one()
+    #     move_line = {}
+    #     balance = partner.get('debit', 0.) - partner.get('credit', 0.)
+    #     precision = self.env['decimal.precision'].precision_get('Account')
+    #     precision = 12
+    #     description = self.name or account.name
+    #     partner_id = partner.get('partner_id')
+    #     if partner_id:
+    #         partner_id = partner_id[0]
+    #     date = self.fyc_config_id.fyc_id.date_end
+    #     if self.fyc_config_id.move_type == 'opening':
+    #         date = self.fyc_config_id.fyc_id.date_opening
+    #     if not float_is_zero(balance, precision_digits=precision):
+    #         move_line = {
+    #             'account_id': account.id,
+    #             'debit': balance < 0 and -balance,
+    #             'credit': balance > 0 and balance,
+    #             'name': description,
+    #             'date': date,
+    #             'partner_id': partner_id,
+    #         }
+    #     else:
+    #         balance = 0
+    #     return balance, move_line
 
-    #@api.multi
-    def account_partners_get(self, account):
-        self.ensure_one()
-        start = self.fyc_config_id.fyc_id.date_start
-        end = self.fyc_config_id.fyc_id.date_end
-        company_id = self.fyc_config_id.fyc_id.company_id.id
-        return self.env['account.move.line'].read_group([
-            ('company_id', '=', company_id),
-            ('account_id', '=', account.id),
-            ('date', '>=', start),
-            ('date', '<=', end),
-        ], ['partner_id', 'credit', 'debit'], ['partner_id'])
+    # #@api.multi
+    # def account_partners_get(self, account):
+    #     self.ensure_one()
+    #     start = self.fyc_config_id.fyc_id.date_start
+    #     end = self.fyc_config_id.fyc_id.date_end
+    #     company_id = self.fyc_config_id.fyc_id.company_id.id
+    #     return self.env['account.move.line'].read_group([
+    #         ('company_id', '=', company_id),
+    #         ('account_id', '=', account.id),
+    #         ('date', '>=', start),
+    #         ('date', '<=', end),
+    #     ], ['partner_id', 'credit', 'debit'], ['partner_id'])
 
 
 class AccountFiscalyearClosingType(models.Model):
@@ -821,7 +819,7 @@ class AccountFiscalyearClosingType(models.Model):
     _name = "account.fiscalyear.closing.type"
 
     fyc_config_id = fields.Many2one(
-        comodel_name='account.fiscalyear.closing.config', index=True,
+        'account.fiscalyear.closing.config', index=True,
         string="Configuración de cierre del año fiscal", readonly=True, required=True,
         ondelete='cascade',
     )

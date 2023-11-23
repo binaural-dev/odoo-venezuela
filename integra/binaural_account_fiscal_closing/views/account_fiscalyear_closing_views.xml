@@ -109,7 +109,7 @@
                         </group>
                     </group>
                     <notebook>
-                        <page name="moves_config" string="Configuration de asiento">
+                        <page name="moves_config" string="Accounting Entry Configuration">
                             <field name="move_config_ids">
 
                                 <tree>
@@ -143,17 +143,29 @@
                                         <div>
                                             <field  name="l_map" string="Cargar Cuentas"/>
                                         </div>
-                                        
-                                        <group name="accounts_mapping" string="Mapeo de cuentas">
-                                            <field name="mapping_ids">
+                                        <notebook>
+                                            <page name="accounts_mapping" string="Accounts Mapping">
+                                                <field name="mapping_ids">
+                                                    <tree editable="bottom">
+                                                        <field name="name"/>
+                                                        <field name="src_accounts"/>
+                                                        <field name="dest_account_id"/>
+                                                    </tree>
+                                                </field>
+                                            </page>
+                                            <page name="accounts_closing_types" string="Accounts Closing Types">
+                                                <group name="accounts_closing_types">
+                                                    <field name="closing_type_default"/>
+                                                </group>
+                                                <field name="closing_type_ids">
                                                 <tree editable="bottom">
-                                                    <field name="name"/>
-                                                    <field name="src_accounts"/>
-                                                    <field name="dest_account_id"/>
+                                                    <field name="account_type_id"/>
+                                                    <field name="closing_type_default"/>
                                                 </tree>
                                             </field>
-                                        </group>
-                                        <group name="accounts_closing_types"
+                                            </page>
+                                        </notebook>
+                                        <!-- <group name="accounts_closing_types"
                                             string="Tipos de cierre de cuentas">
                                             <field name="closing_type_default"/>
                                         </group>
@@ -164,10 +176,10 @@
                                                     <field name="closing_type_default"/>
                                                 </tree>
                                             </field>
-                                        </group>
+                                        </group> -->
                                     </sheet>
                                 </form>
-                                
+
                             </field>
                         </page>
                     </notebook>
