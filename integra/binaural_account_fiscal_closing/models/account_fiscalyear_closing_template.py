@@ -89,10 +89,10 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
         required=True,
     )
 
-    _sql_constraints = [
-        ('code_uniq', 'unique(code, template_id)',
-        'Code must be unique per fiscal year closing!'),
-    ]
+    # _sql_constraints = [
+    #     ('code_uniq', 'unique(code, template_id)',
+    #     'Code must be unique per fiscal year closing!'),
+    # ]
 
 
 class AccountFiscalyearClosingMappingTemplate(models.Model):

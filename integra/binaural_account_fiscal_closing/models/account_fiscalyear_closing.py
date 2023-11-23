@@ -119,11 +119,11 @@ class AccountFiscalyearClosing(models.Model):
         ('all', 'All dairys'),
     ], default='all')
 
-    _sql_constraints = [
-        ('year_company_uniq', 'unique(year, company_id,jounals_type_bin)',
-         _('There should be only one fiscal year closing for that year and '
-           'company!')),
-    ]
+    # _sql_constraints = [
+    #     ('year_company_uniq', 'unique(year, company_id,jounals_type_bin)',
+    #      _('There should be only one fiscal year closing for that year and '
+    #        'company!')),
+    # ]
 
     #@api.multi
     # @api.depends('closing_template_id', 'stored_template_id')
@@ -485,10 +485,10 @@ class AccountFiscalyearClosingConfig(models.Model):
     journal_id = fields.Many2one(required=True)
     move_id = fields.Many2one(comodel_name="account.move", string="Asiento")
 
-    _sql_constraints = [
-        ('code_uniq', 'unique(code, fyc_id)',
-         _('El código debe ser único por cierre de año fiscal!')),
-    ]
+    # _sql_constraints = [
+    #     ('code_uniq', 'unique(code, fyc_id)',
+    #      _('El código debe ser único por cierre de año fiscal!')),
+    # ]
 
     #@api.multi
     def config_inverse_get(self):

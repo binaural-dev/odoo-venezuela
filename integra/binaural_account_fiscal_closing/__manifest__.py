@@ -12,6 +12,8 @@
         "base",
         # "web",
         "account_accountant",
+        "account",
+        "binaural_payment_extension"
         # "account_sequence",
         # "binaural_tax",
         # "binaural_contact",
@@ -20,7 +22,11 @@
     ],
     # always loaded
     "data": [
-        # "security/ir.model.access.csv",
+        "security/account_fiscalyear_closing_security.xml",
+        "security/ir.model.access.csv",
+        "views/account_fiscalyear_closing_views.xml",
+        "views/account_fiscalyear_closing_template_views.xml",
+        "views/account_move_views.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
