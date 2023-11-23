@@ -52,14 +52,26 @@ class AccountMoveLine(models.Model):
             line_analytic_distribution = line.analytic_distribution
             if not line_analytic_distribution:
                 continue
-            line_residual = abs(
-                line.amount_residual if not distribute_on_asset_cash_account else line.balance
-            )
             for analytic_account_id, percentage in line_analytic_distribution.items():
                 if not AnalyticAccount.browse(int(analytic_account_id)).is_subsidiary:
                     continue
-                percentage_to_add = line_residual * percentage / balance_to_distribute
+                # When the method is being called on the reconciliation of a statement line, the
+                # amount of the statement is alreade the one being reconciled, so we use the
+                # full percentage.
+                percentage_to_add = (
+                    line.balance * percentage / balance_to_distribute
+                    if distribute_on_asset_cash_account
+                    else 100.0
+                )
 
+                if (
+                    distribute_on_asset_cash_account
+                    and analytic_account_id in move_line_with_statement_analytic_distribution
+                ):
+                    move_line_with_statement_analytic_distribution[
+                        analytic_account_id
+                    ] += percentage_to_add
+                    continue
                 move_line_with_statement_analytic_distribution[
                     analytic_account_id
                 ] = percentage_to_add
