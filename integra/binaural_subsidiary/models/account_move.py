@@ -19,6 +19,7 @@ class AccountMove(models.Model):
         """
         moves = super().create(vals_list)
         for move in moves:
+            self.invoice_origin_purchase(moves)
             if not move.account_analytic_id or not move.line_ids:
                 continue
             for line in move.line_ids:
@@ -72,3 +73,21 @@ class AccountMove(models.Model):
         res = super().action_register_payment()
         res["context"]["default_account_analytic_id"] = self.account_analytic_id.id
         return res
+
+
+    def invoice_origin_purchase(self, moves):
+        for invoice in moves:
+            if invoice.invoice_origin and invoice.move_type in (
+                "out_invoice",
+                "out_refund",
+                "in_invoice",
+                "in_refund",
+            ):
+                purchase_order = self.env["purchase.order"].search(
+                    [
+                        ("name", "=", invoice.invoice_origin),
+                        ("company_id", "=", self.env.company.id),
+                    ]
+                )
+                if purchase_order:
+                    invoice.account_analytic_id = purchase_order.account_analytic_id
