@@ -313,7 +313,7 @@ class GenerateProductCatalogWizard(models.TransientModel):
             line_count += 1
         fp = io.BytesIO()
         workbook.save(fp)
-        data = base64.encodestring(fp.getvalue())
+        data = base64.encodebytes(fp.getvalue())
         IrAttachment = self.env['ir.attachment']
         attachment_vals = {
             "name": self.name + '.xls',
