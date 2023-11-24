@@ -554,7 +554,9 @@ class AccountFiscalyearClosingMapping(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if vals.get("dest_account_id", False):
-                vals["dest_account_id"] = vals["dest_account_id"][0]
+                _logger.warning("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                _logger.warning(vals)
+                vals["dest_account_id"] = vals["dest_account_id"]
         res = super(AccountFiscalyearClosingMapping, self).create(vals_list)
         return res
 
