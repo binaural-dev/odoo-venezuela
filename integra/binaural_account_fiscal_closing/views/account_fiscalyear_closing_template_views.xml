@@ -79,7 +79,7 @@
                                                 </group>
                                                 <field name="closing_type_ids">
                                                     <tree editable="bottom">
-                                                        <field name="account_type_id"/>
+                                                        <field name="account_type"/>
                                                         <field name="closing_type_default"/>
                                                     </tree>
                                                 </field>
@@ -102,17 +102,12 @@
         <field name="view_mode">tree,form</field>
     </record>
 
-
-    <!-- <menuitem id="menu_account_fiscalyear_closing_configuration"
-              parent="account.menu_finance_receivables"
-              sequence="40"
-              name="Cierre del año fiscal"
-    /> -->
     <menuitem id="menu_account_fiscalyear_closing_template"
-              parent="account.menu_finance_entries"
-              sequence="94"
-              name="Plantillas de cierre"
-              action="action_account_fiscalyear_closing_template"
+        parent="account.menu_finance_entries"
+        sequence="94"
+        name="Templates Fiscal Year Close"
+        action="action_account_fiscalyear_closing_template"
+        groups="base.group_no_one"
     />
 
 </odoo>

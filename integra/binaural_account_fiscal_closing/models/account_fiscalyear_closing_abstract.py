@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import fields, models, api
 
 
 class AccountFiscalyearClosingAbstract(models.AbstractModel):
@@ -63,6 +63,15 @@ class AccountFiscalyearClosingTypeAbstract(models.AbstractModel):
         default='unreconciled',
     )
     account_type_id = fields.Many2one(
-        comodel_name='account.account.type',
+        'account.account.type',
         required=True,
     )
+
+    account_type = fields.Selection(
+        selection='_get_fields_account_type'
+    )
+
+    @api.model
+    def _get_fields_account_type(self):
+        account_type = self.env["account.account"]._fields['account_type'].selection
+        return account_type

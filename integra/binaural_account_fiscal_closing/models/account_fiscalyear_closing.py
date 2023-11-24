@@ -661,9 +661,9 @@ class AccountFiscalyearClosingConfig(models.Model):
 class AccountFiscalyearClosingMapping(models.Model):
     _inherit = "account.fiscalyear.closing.mapping.abstract"
     _name = "account.fiscalyear.closing.mapping"
-    #aqui
+    
     fyc_config_id = fields.Many2one(
-        'account.fiscalyear.closing.config', index=True,
+        'account.fiscalyear.closing.config',
         string="Configuración de cierre del año fiscal", readonly=False, required=True,
         ondelete='cascade',
     )
