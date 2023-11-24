@@ -62,7 +62,7 @@ class AccountFiscalyearClosingTypeAbstract(models.AbstractModel):
         ], string="Default closure type", required=True,
         default='unreconciled',
     )
-
+    #account_type_id
     account_type = fields.Selection(
         selection='_get_fields_account_type',
         required=True,

@@ -93,7 +93,6 @@ class AccountFiscalyearClosing(models.Model):
         
         readonly=True,
         states={'draft': [('readonly', False)]},
-        oldname='template_id',
     )
     stored_template_id = fields.Many2one(
         "account.fiscalyear.closing.template",
@@ -664,14 +663,14 @@ class AccountFiscalyearClosingMapping(models.Model):
     
     fyc_config_id = fields.Many2one(
         'account.fiscalyear.closing.config',
-        string="Configuración de cierre del año fiscal", readonly=False, required=True,
+        string="Fiscal Year Close Settings", readonly=False, required=True,
         ondelete='cascade',
     )
     src_accounts = fields.Char(
-        string="Cuenta de origen", required=True,
+        string="Origin Account", required=True,
     )
     dest_account_id = fields.Many2one(
-        'account.account', string="Cuenta de destino",
+        'account.account', string="Destination account",
     )
 
     # #@api.multi
@@ -820,6 +819,6 @@ class AccountFiscalyearClosingType(models.Model):
 
     fyc_config_id = fields.Many2one(
         'account.fiscalyear.closing.config', index=True,
-        string="Configuración de cierre del año fiscal", readonly=True, required=True,
+        string="Fiscal Year Close Settings", readonly=True, required=True,
         ondelete='cascade',
     )
