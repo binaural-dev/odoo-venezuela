@@ -6,11 +6,12 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Purchase/Purchase",
-    "version": "16.0.0.9",
+    "version": "16.0.0.10",
     "depends": [
         "binaural_purchase",
         "stock",
         "web",
+        "sale_stock",
     ],
     "data": [
         "security/ir.model.access.csv",
