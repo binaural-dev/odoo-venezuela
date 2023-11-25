@@ -21,5 +21,10 @@
             <td t-att-colspan="props.docs.is_there_document_in ? 3 : 2">Forecasted with Pending</td>
         </xpath>
 
+        <xpath expr="//table/tbody[2]//tr[@name='draft_so_out']/td[1]" position="after">
+            <td></td>
+        </xpath>
+
     </t>
+
 </templates>
