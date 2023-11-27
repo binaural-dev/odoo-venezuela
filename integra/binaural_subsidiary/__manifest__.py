@@ -20,6 +20,7 @@
         "views/account_move.xml",
         "views/purchase_order.xml",
         "views/analytic_account.xml",
+        "views/menuitems.xml",
         "wizard/account_payment_register.xml",
         "wizard/accounting_report_views.xml",
     ],

@@ -13,6 +13,9 @@
     # any module necessary for this one to work correctly
     "depends": ["binaural_payment_extension", "binaural_subsidiary"],
     # always loaded
-    "data": ["report/retention_line_report_views.xml"],
+    "data": [
+        "report/retention_line_report_views.xml",
+        "views/analytic_account.xml",
+    ],
     "auto_install": True,
 }
