@@ -45,10 +45,9 @@ class ActionPartner(models.Model):
                 ))
         if "state" in vals:
                 self.message_post(
-                body=_("Action changed to %s, by %s el: %s") % (
+                body=_("Action changed to %s, by %s") % (
                     self.state,
                     self.env.user.name,
-                    fields.Date.today().strftime("%d/%m/%y"),
                 )
             )
         return res    
