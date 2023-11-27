@@ -250,84 +250,50 @@ class AccountFiscalyearClosingMapping(models.Model):
         move_line = {}
         balance = 0
         precision = self.env["decimal.precision"].precision_get("Account")
-        precision = 12
         description = self.name or account.name
         date = self.fyc_config_id.fyc_id.date_end
         rate = 1
         if self.fyc_config_id.move_type == "opening":
             date = self.fyc_config_id.fyc_id.date_opening
         if account_lines:
-            _logger.info("CODIGO --------------- %s", account.code)
-            _logger.info("CUENTA ------------- %s", account.name)
-            d = sum(account_lines.mapped("debit"))
-            c = sum(account_lines.mapped("credit"))
-            _logger.info("Debit SUM %s", d)
-            _logger.info("CREDIT SUM %s", c)
             balance = sum(account_lines.mapped("debit")) - sum(account_lines.mapped("credit"))
-            
             foreign_balance = sum(account_lines.mapped("foreign_debit")) - sum(account_lines.mapped("foreign_credit"))
-            
-            all_deb = all_cred = balance_bs = 0
-
-            for al in account_lines:
-                all_deb += al.foreign_debit # * al.foreign_currency_rate
-                all_cred += al.foreign_credit # * al.foreign_currency_rate
-            _logger.info("ALL DEB %s", all_deb)
-            _logger.info("ALL CRED %s", all_cred)
-            balance_bs = all_deb - all_cred
 
             if not float_is_zero(balance, precision_digits=precision):
-                rate = round(balance_bs / balance, 2)
+                rate = sum(account_lines.mapped("foreign_rate")) / len(account_lines)
                 move_line = {
                     "account_id": account.id,
                     "debit": balance < 0 and -balance,
                     "credit": balance > 0 and balance,
-                    # 'foreign_debit': foreign_balance < 0 and -foreign_balance,
-                    # 'foreign_credit': foreign_balance > 0 and foreign_balance,
+                    'foreign_debit': foreign_balance < 0 and -foreign_balance,
+                    'foreign_credit': foreign_balance > 0 and foreign_balance,
                     "name": description,
                     "date": date,
                     "partner_id": partner_id,
                 }
             else:
                 balance = 0
-        #     _logger.info("RATE %s",rate)
         return balance, move_line, abs(rate)
 
     def account_lines_get(self, account, journal_type):
-        # _logger.info("buscar account move line por diario tipo: %s",journal_type)
         self.ensure_one()
         start = self.fyc_config_id.fyc_id.date_start
         end = self.fyc_config_id.fyc_id.date_end
         company_id = self.fyc_config_id.fyc_id.company_id.id
+        domain = [
+                    ("company_id", "=", company_id),
+                    ("account_id", "=", account.id),
+                    ("date", ">=", start),
+                    ("date", "<=", end),
+        ] 
         if journal_type == "fiscal":
-            return self.env["account.move.line"].search(
-                [
-                    ("company_id", "=", company_id),
-                    ("account_id", "=", account.id),
-                    ("date", ">=", start),
-                    ("date", "<=", end),
-                    ("move_id.journal_id.fiscal", "=", True),
-                ]
-            )
+            domain = domain + [("move_id.journal_id.fiscal", "=", True)]
+            return self.env["account.move.line"].search(domain)
         elif journal_type == "nofiscal":
-            return self.env["account.move.line"].search(
-                [
-                    ("company_id", "=", company_id),
-                    ("account_id", "=", account.id),
-                    ("date", ">=", start),
-                    ("date", "<=", end),
-                    ("move_id.journal_id.fiscal", "=", False),
-                ]
-            )
+            domain = domain + [("move_id.journal_id.fiscal", "=", False)]
+            return self.env["account.move.line"].search(domain)
         else:
-            return self.env["account.move.line"].search(
-                [
-                    ("company_id", "=", company_id),
-                    ("account_id", "=", account.id),
-                    ("date", ">=", start),
-                    ("date", "<=", end),
-                ]
-            )
+            return self.env["account.move.line"].search(domain)
 
     def account_partners_get(self, account):
         self.ensure_one()
