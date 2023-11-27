@@ -12,6 +12,8 @@ _logger = logging.getLogger(__name__)
 class AccountFiscalyearClosingConfigTemplate(models.Model):
     _inherit = "account.fiscalyear.closing.config.template"
     
+    l_map = fields.Boolean(string="Load accounts")
+    
     @api.onchange('l_map')
     def inchange_l_map(self):
         accounts = (
@@ -37,7 +39,6 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
                 if len(a.code):
                     vals = {'name':a.name,'src_accounts':a.code,'dest_account':config_a.code,'template_config_id':self.id} #fyc_config_id
                     cont +=1
-                    print("vals**************",vals)
                     maps.append((0, 0, vals))
             if len(maps) > 0:
                 #self.update({'mapping_ids':maps})
@@ -45,4 +46,3 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
         else:
             return {'value':{'mapping_ids':[(5, 0, 0)]}}
 
-    l_map = fields.Boolean(string="Load accounts")
