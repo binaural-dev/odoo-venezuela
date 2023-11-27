@@ -12,7 +12,7 @@
 	            <field name="prefix_vat" string="Tipo de doc"/>
                 <field name="vat" string="Cédula"/>
                 <field name="type_relation" string="Parentesco"/>
-                <field name="can_access_club" string="Acceso al club"/>
+                <field name="can_access_club"/>
                 <field name="associate_parent"/>
                 <field name="is_solvent_related"/>
             </tree>
