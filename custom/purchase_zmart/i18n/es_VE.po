@@ -1,0 +1,231 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* purchase_zmart
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20230606\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-11-15 22:40+0000\n"
+"PO-Revision-Date: 2023-11-15 22:40+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__aduana_agent
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__aduana_agent
+msgid "Aduana Agent"
+msgstr "Agente/Aduanas"
+
+#. module: purchase_zmart
+#: model:ir.model.fields.selection,name:purchase_zmart.selection__purchase_order__type_company__air
+msgid "Air"
+msgstr "Aéreo"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__bl
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__bl
+msgid "B/L"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__responsible_purchase
+msgid "Buyer"
+msgstr "Responsable de compra"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__name_company
+msgid "Company"
+msgstr "Empresa de Transporte"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_aduana_agent__create_uid
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_company__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_aduana_agent__create_date
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_company__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__date_in_store
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__date_in_store
+msgid "Date In Store"
+msgstr "Fecha en Almacén"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_aduana_agent__display_name
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_company__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: purchase_zmart
+#. odoo-javascript
+#: code:addons/purchase_zmart/static/src/stock_forecasted/forecasted_details.xml:0
+#, python-format
+msgid "ETA Door Arrival"
+msgstr "Llegada Puerta ETA"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__exit_etd
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__exit_etd
+msgid "Exit Etd"
+msgstr "Salida(ETD)"
+
+#. module: purchase_zmart
+#. odoo-javascript
+#: code:addons/purchase_zmart/static/src/stock_forecasted/stock_forecasted.js:0
+#, python-format
+msgid "Forecasted Report"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_aduana_agent__id
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_company__id
+msgid "ID"
+msgstr ""
+
+#. module: purchase_zmart
+#: model_terms:ir.ui.view,arch_db:purchase_zmart.view_purchase_order_form_inherited_zmart
+msgid "Imprimir Pedido de Compra"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__incoterm_id
+msgid "Incoterm"
+msgstr ""
+
+#. module: purchase_zmart
+#: model_terms:ir.ui.view,arch_db:purchase_zmart.view_picking_form_inherited_zmart
+#: model_terms:ir.ui.view,arch_db:purchase_zmart.view_purchase_order_form_inherited_zmart
+msgid "Información Transporte"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__inlay_port
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__inlay_port
+msgid "Inlay Port"
+msgstr "Llegada Puerto (ETA)"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,help:purchase_zmart.field_stock_picking__incoterm_id
+msgid ""
+"International Commercial Terms are a series of predefined commercial terms "
+"used in international transactions."
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields.selection,name:purchase_zmart.selection__purchase_order__type_company__land
+msgid "Land"
+msgstr "Terrestre"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_aduana_agent____last_update
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_company____last_update
+msgid "Last Modified on"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_aduana_agent__write_uid
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_company__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_aduana_agent__write_date
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_company__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_aduana_agent__name
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_company__name
+msgid "Name"
+msgstr "Nombre"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__name_company
+msgid "Name Company"
+msgstr "Empresa de Transporte"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__order_in_transit
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__order_in_transit
+msgid "Order In Transit"
+msgstr "Orden en Tránsito"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__packing_factor
+msgid "Packing Factor"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model,name:purchase_zmart.model_purchase_order
+msgid "Purchase Order"
+msgstr "Pedido de compra"
+
+#. module: purchase_zmart
+#: model:ir.model.fields.selection,name:purchase_zmart.selection__purchase_order__type_company__sea
+msgid "Sea"
+msgstr "Marítimo"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__sequence_code
+msgid "Sequence Prefix"
+msgstr ""
+
+#. module: purchase_zmart
+#: model_terms:ir.ui.view,arch_db:purchase_zmart.view_purchase_order_form_inherited_zmart
+msgid "Solicitud de Presupuesto"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model,name:purchase_zmart.model_stock_picking
+msgid "Transfer"
+msgstr "Albarán"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__transport_number
+msgid "Transport Number"
+msgstr "Numero de transporte"
+
+#. module: purchase_zmart
+#. odoo-javascript
+#: code:addons/purchase_zmart/static/src/stock_forecasted/stock_forecasted.js:0
+#, python-format
+msgid "Try to add some incoming or outgoing transfers."
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__type_company
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__type_company
+msgid "Type Company"
+msgstr "Tipo"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__user_responsible
+msgid "User Responsible"
+msgstr "Responsable"
+
+#. module: purchase_zmart
+#: model:ir.model.fields,field_description:purchase_zmart.field_purchase_order__wl
+#: model:ir.model.fields,field_description:purchase_zmart.field_stock_picking__wl
+msgid "W/L"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model,name:purchase_zmart.model_purchase_aduana_agent
+msgid "purchase.aduana.agent"
+msgstr ""
+
+#. module: purchase_zmart
+#: model:ir.model,name:purchase_zmart.model_purchase_company
+msgid "purchase.company"
+msgstr ""

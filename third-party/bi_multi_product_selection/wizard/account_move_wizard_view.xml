@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="invoice_wizard_view_form" model="ir.ui.view">
+        <field name="name">account.move.wizard.form</field>
+        <field name="model">account.move.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Test">
+                <field name="product_ids"/>
+                <footer>
+                    <button string="Cancel" class="oe_highlight" special="cancel"/>
+                    <button string="Confirm" type="object" name="confirm_invoice_product" class="oe_highlight"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="invoice_wizard_action" model="ir.actions.act_window">
+        <field name="name">Invoice Wizard</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">account.move.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="invoice_wizard_view_form"/>
+        <field name="target">new</field>
+    </record>
+</odoo>

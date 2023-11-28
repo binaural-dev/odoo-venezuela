@@ -10,6 +10,7 @@ class StockPicking(models.Model):
     change_weight = fields.Boolean(
         related='company_id.change_weight',
     )
+    
     def _compute_is_out(self):
         for record in self:
             record.is_out = (
