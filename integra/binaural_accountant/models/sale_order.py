@@ -15,6 +15,6 @@ class SaleOrder(models.Model):
                 total_pay = order.partner_id.credit + order.amount_total
                 if total_pay > order.partner_id.credit_limit:
                     raise ValidationError(_("La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
-                                            order.partner_id.credit, order.amount_total, total_pay, order.partner_id.credit_limit)
+                                            round(order.partner_id.credit, order.currency_id.decimal_places), round(order.amount_total, order.currency_id.decimal_places), total_pay, round(order.partner_id.credit_limit, order.currency_id.decimal_places))
                                         )
         return res
