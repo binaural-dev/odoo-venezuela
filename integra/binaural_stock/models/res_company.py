@@ -12,4 +12,3 @@ class ResCompany(models.Model):
     use_main_warehouse = fields.Boolean()
     main_warehouse_id = fields.Many2one("stock.warehouse")
     change_weight = fields.Boolean()
-
