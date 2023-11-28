@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "0.1",
+    "version": "1.0",
     "depends": [
         "base",
         "binaural_club_socios"
