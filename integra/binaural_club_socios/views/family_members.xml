@@ -13,7 +13,7 @@
                 <field name="vat" string="Cédula"/>
                 <field name="type_relation" string="Parentesco"/>
                 <field name="can_access_club" string="Acceso al club"/>
-                <field name="parent_id" string="Socio"/>
+                <field name="associate_parent"/>
                 <field name="is_solvent_related"/>
             </tree>
         </field>
