@@ -24,10 +24,6 @@ class StockPicking(models.Model):
             self.validate_block_transfers_expedition(val)
         return super().create(vals_list)
 
-    def button_validate(self):
-        self.validate_block_transfers_expedition()
-        return super().button_validate()
-
     def validate_block_transfers_expedition(self, vals=None):
         block_transfer_expedition = self.env.user.has_group(
             "binaural_stock.group_block_type_inventory_transfers_expeditions"
