@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231120\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231127\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-27 19:26+0000\n"
-"PO-Revision-Date: 2023-11-27 19:26+0000\n"
+"POT-Creation-Date: 2023-11-28 15:32+0000\n"
+"PO-Revision-Date: 2023-11-28 15:32+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -53,6 +53,13 @@ msgid "Cuenta Analitica"
 msgstr ""
 
 #. module: binaural_subsidiary
+#. odoo-javascript
+#: code:addons/binaural_subsidiary/static/src/js/express_checkout_form.js:0
+#, python-format
+msgid "Delivery"
+msgstr ""
+
+#. module: binaural_subsidiary
 #: model_terms:ir.ui.view,arch_db:binaural_subsidiary.binaural_subsidiary_account_move_view_search
 msgid "Group by"
 msgstr "Agrupar Por"
@@ -83,9 +90,19 @@ msgid "Purchase Order"
 msgstr "Pedido de compra"
 
 #. module: binaural_subsidiary
+#: model:ir.model,name:binaural_subsidiary.model_purchase_report
+msgid "Purchase Report"
+msgstr "Informe de Compras"
+
+#. module: binaural_subsidiary
 #: model:ir.model,name:binaural_subsidiary.model_account_payment_register
 msgid "Register Payment"
 msgstr "Registrar pago"
+
+#. module: binaural_subsidiary
+#: model:ir.model,name:binaural_subsidiary.model_sale_report
+msgid "Sales Analysis Report"
+msgstr "Informe de análisis de ventas"
 
 #. module: binaural_subsidiary
 #: model:ir.model,name:binaural_subsidiary.model_sale_order
@@ -93,8 +110,8 @@ msgid "Sales Order"
 msgstr "Pedido de venta"
 
 #. module: binaural_subsidiary
-#: model:ir.ui.menu,name:binaural_subsidiary.menu_subisidiary_configuration
 #: model:ir.actions.act_window,name:binaural_subsidiary.action_account_analytic_subsidiary
+#: model:ir.ui.menu,name:binaural_subsidiary.menu_subisidiary_configuration
 msgid "Subsidiaries"
 msgstr "Sucursales"
 
@@ -103,9 +120,13 @@ msgstr "Sucursales"
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_account_move__account_analytic_id
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_account_payment__account_analytic_id
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_purchase_order__account_analytic_id
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_purchase_report__subsidiary
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_res_company__subsidiary
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_res_config_settings__subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_sale_report__subsidiary
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_wizard_accounting_reports__account_analytic_id
+#: model_terms:ir.ui.view,arch_db:binaural_subsidiary.view_purchase_order_search_inherit_binaural_subsidairy
+#: model_terms:ir.ui.view,arch_db:binaural_subsidiary.view_search_group_by_brand_sale_report
 msgid "Subsidiary"
 msgstr "Sucursal"
 
@@ -134,4 +155,11 @@ msgstr "Uso de Cuentas Analíticas como centro de Coste y Sucursal"
 #. module: binaural_subsidiary
 #: model:ir.model,name:binaural_subsidiary.model_wizard_accounting_reports
 msgid "Wizard para generar reportes de libro de compra y ventas"
+msgstr ""
+
+#. module: binaural_subsidiary
+#. odoo-javascript
+#: code:addons/binaural_subsidiary/static/src/js/express_checkout_form.js:0
+#, python-format
+msgid "Your order"
 msgstr ""
