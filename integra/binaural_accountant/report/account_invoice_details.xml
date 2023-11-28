@@ -274,7 +274,7 @@
                     </div>
                 </t>
             </t>
-            <div t-if="payments.get('totals',False)" class="row border-bottoms" name="total_global_payments">
+            <!-- <div t-if="payments.get('totals',False)" class="row border-bottoms" name="total_global_payments">
                 <div class="col-2">
                     <strong>Total charged</strong>
                 </div>
@@ -290,7 +290,7 @@
                 <div class="col-2 text-center">
                     <strong t-out="payments['totals']['formatted_amount']" />
                 </div>
-            </div>
+            </div> -->
         </t>
         </t>
     </template>
