@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "1.4",
+    "version": "1.5",
     "depends": [
         "base",
         "base_automation",
@@ -15,6 +15,7 @@
         "binaural_contact",
         "account",
         "account_accountant",
+        "binaural_invoice_lots",
     ],
     "data": [
         "security/ir.model.access.csv",

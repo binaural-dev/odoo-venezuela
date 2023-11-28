@@ -1,10 +1,11 @@
-from odoo import models, api, exceptions, fields
+from odoo import models, api, exceptions, fields, _
 from dateutil.relativedelta import relativedelta
 from odoo.exceptions import ValidationError
 import datetime
 import logging
 
 _logger = logging.getLogger(__name__)
+
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -15,15 +16,16 @@ class AccountMove(models.Model):
 
     pay_soon = fields.Boolean(string="Pronto Pago")
 
-
     def check_solvent_partner(self):
         for record in self:
-            invoices = record.partner_id.invoice_ids.filtered(lambda x: x.payment_state in ['not_paid', 'partial'] and x.move_type == "out_invoice")
+            invoices = record.partner_id.invoice_ids.filtered(
+                lambda x: x.payment_state in ["not_paid", "partial"]
+                and x.move_type == "out_invoice"
+            )
             if len(invoices) > 0:
-                record.partner_id.write({'is_solvent': False})
+                record.partner_id.write({"is_solvent": False})
             else:
-                record.partner_id.write({'is_solvent': True})
-
+                record.partner_id.write({"is_solvent": True})
 
     def js_assign_outstanding_line(self, line_id):
         res = super().js_assign_outstanding_line(line_id)
@@ -40,39 +42,46 @@ class AccountMove(models.Model):
         self.check_solvent_partner()
         return res
 
-    def check_fixed_concept_product(self, invoice_line_ids):
-        """Verifica si al menos una línea de factura tiene un producto con fixed_concept en True."""
-        invoice_lines = self.env['account.move.line'].browse(invoice_line_ids)
-        return any(line.product_id.fixed_concept for line in invoice_lines if line.product_id)
-
-
-    def check_fee_period_exists(self, partner_id, fee_period):
-        _logger.warning("Verificando período de cuota existente...")
+    def check_fee_period_exists(self, partner_id, fee_period, current_invoice_product_ids):
         start_of_month = fee_period.replace(day=1)
         end_of_month = start_of_month + relativedelta(months=1, days=-1)
 
-        return (
-            self.search_count(
-                [
-                    ("partner_id", "=", partner_id),
-                    ("fee_period", ">=", start_of_month),
-                    ("fee_period", "<=", end_of_month),
-                    ("state", "in", ["posted"]),
-                    ("payment_state", "in", ["paid", "in_payment", "partial"]),
-                ]
-            )
-            > 0
+        existing_invoices = self.search(
+            [
+                ("partner_id", "=", partner_id),
+                ("fee_period", ">=", start_of_month),
+                ("fee_period", "<=", end_of_month),
+                ("state", "in", ["posted"]),
+                ("payment_state", "in", ["paid", "in_payment", "partial"]),
+            ]
         )
+
+        for invoice in existing_invoices:
+            fixed_concept_product_ids = {
+                line.product_id.id
+                for line in invoice.invoice_line_ids
+                if line.product_id and line.product_id.fixed_concept
+            }
+
+            if fixed_concept_product_ids.intersection(set(current_invoice_product_ids)):
+                return True
+        return False
 
     @api.model
     def create(self, vals):
         partner_id = vals.get("partner_id")
         fee_period = fields.Date.from_string(vals.get("fee_period"))
 
-        if fee_period and self.check_fee_period_exists(partner_id, fee_period) and self.check_fixed_concept_product() :
-            raise ValidationError(
-                "Ya existe una factura para este socio en el mismo mes del periodo de la cuota."
-            )
+        current_invoice_product_ids = [
+            line[2]["product_id"]
+            for line in vals.get("invoice_line_ids", [])
+            if line[2].get("product_id")
+        ]
+
+        if fee_period and self.check_fee_period_exists(
+            partner_id, fee_period, current_invoice_product_ids
+        ):
+            raise ValidationError(_("the concept has already been invoiced for this period."))
 
         res = super(AccountMove, self).create(vals)
         res.partner_id.write({"is_solvent": False})
