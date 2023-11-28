@@ -10,7 +10,7 @@
     "website": "https://www.binauraldev.com",
     "category": "Stock",
     "version": "16.9",
-    "depends": ["stock","binaural_tax", "binaural_rate", "delivery", "binaural_stock"],
+    "depends": ["stock","binaural_tax", "binaural_rate", "delivery", "binaural_brand"],
     "data": [
         # 'security/ir.model.access.csv',
         "security/security_binaural_stock.xml",
