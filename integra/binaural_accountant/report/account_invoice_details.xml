@@ -193,34 +193,24 @@
                     Nº Documento
                     </p>
                 </div>
-                <div class="col-2 text-center">
+                <div class="col-3 text-center">
                     <p t-if="show_documents">
                         Client 
                     </p>
                 </div>
-                <div class="col-2 text-center">
+                <div class="col-3 text-center">
                     <p t-if="show_documents">
                         Payment 
                     </p>
                 </div>
-                <div class="col-1 text-center">
+                <div class="col-2 text-center">
                     <p t-if="show_documents">
                         Date
                     </p>
                 </div>
                 <div class="col-2 text-center">
                     <p>
-                        USD Amount
-                    </p>
-                </div>
-                <div class="col-1 text-center">
-                    <p t-if="show_documents">
-                        Rate
-                    </p>
-                </div>
-                <div class="col-2 text-center">
-                    <p>
-                        Amount <t t-out="company.currency_foreign_id.symbol"/>
+                        Amount in Currency
                     </p>
                 </div>
             </div>
@@ -230,6 +220,7 @@
                     <div t-if="show_documents" class="payment_journal border-bottoms">
                         <p t-out="journal_id['name']"/>
                     </div>
+                    <t t-set="total_amont_payment" t-value="0"/>
                     <t t-if="show_documents" t-foreach="payments[journal]" t-as="p">
                         <t t-set="multiply" t-value="1 if p.payment_type == 'inbound' else -1"/>
                         <div class="row" name="item_payment">
@@ -241,35 +232,22 @@
                                     <p><t t-out="', '.join([x.name for x in p.reconciled_invoice_ids])"/></p>
                                 </t>
                             </div>
-                            <div class="col-2 text-center">
+                            <div class="col-3 text-center">
                                 <p><t t-out="p.partner_id.name"/></p>
                             </div>
-                            <div class="col-2 text-center">
+                            <div class="col-3 text-center">
                                 <p><t t-out="p.name"/></p>
                             </div>
-                            <div class="col-1 text-center">
+                            <div class="col-2 text-center">
                                 <p><t t-out="p.date.strftime('%d/%m/%Y')"/></p>
                             </div>
                             <div class="col-2 text-center">
-                                <t t-if="p.currency_id.id == %(base.USD)d">
-                                    <p><t t-out="self.format_monetary(p.amount * multiply,'base.USD')"/></p>
-                                </t>
-                                <t t-else="">
-                                    <p>
-                                        <t t-out="self.format_monetary(p.asset_receivable_amount * multiply,'base.USD')"/>
-                                    </p>
-                                </t>
-                            </div>
-                            <div class="col-1 text-center">
-                                <p><t t-out="p.foreign_rate"/></p>
-                            </div>
-                            <div class="col-2 text-center">
-                                <t t-if="p.currency_id.id != %(base.USD)d">
-                                    <p><t t-out="self.format_monetary(p.amount * multiply,'base.VEF')"/></p>
-                                </t>
-                                <t t-else="">
-                                    <p><t t-out="self.format_monetary((p.amount * p.foreign_rate) * multiply,'base.VEF')"/></p>
-                                </t>
+                                <p>
+                                    <t t-out="p.currency_id.symbol" t-if="p.currency_id.position == 'before'"/>
+                                    <t t-out="p.amount_signed"/>
+                                    <t t-set="total_amont_payment" t-value="p.amount + total_amont_payment"/>
+                                    <t t-out="p.currency_id.symbol" t-if="p.currency_id.position == 'after'"/>
+                                </p>
                             </div>
                         </div>
                     </t>
@@ -277,52 +255,42 @@
                         <div class="col-2">
                             <strong>Total <t t-out="journal_id['name']"/> </strong>
                         </div>
-                        <div class="col-2 text-center">
+                        <div class="col-3 text-center">
+                            <p></p>
+                        </div>
+                        <div class="col-3 text-center">
                             <p></p>
                         </div>
                         <div class="col-2 text-center">
                             <p></p>
                         </div>
-                        <div class="col-1 text-center">
-                            <p></p>
-                        </div>
                         <div class="col-2 text-center">
-                            <strong t-out="payments['totals_'+journal]['formatted_amount']"/>
-                        </div>
-                        <div class="col-1 text-center">
-                            <p>
-                            </p>
-                        </div>
-                        <div class="col-2 text-center">
-                            <strong t-out="payments['totals_'+journal]['formatted_foreign_amount']" />
+                            <strong>
+                                <t t-out="p.journal_id.currency_id.symbol" t-if="p.journal_id.currency_id and p.journal_id.currency_id.position == 'before'"/>
+                                <t t-out="total_amont_payment"/>
+                                <t t-out="p.journal_id.currency_id.symbol" t-if="p.journal_id.currency_id and p.journal_id.currency_id.position == 'after'"/>
+                            </strong>
                         </div>
                     </div>
                 </t>
             </t>
-            <div t-if="payments.get('totals',False)" class="row border-bottoms" name="total_global_payments">
+            <!-- <div t-if="payments.get('totals',False)" class="row border-bottoms" name="total_global_payments">
                 <div class="col-2">
                     <strong>Total charged</strong>
                 </div>
-                <div class="col-2 text-center">
+                <div class="col-3 text-center">
+                    <p></p>
+                </div>
+                <div class="col-3 text-center">
                     <p></p>
                 </div>
                 <div class="col-2 text-center">
-                    <p></p>
-                </div>
-                <div class="col-1 text-center">
                     <p></p>
                 </div>
                 <div class="col-2 text-center">
                     <strong t-out="payments['totals']['formatted_amount']" />
                 </div>
-                <div class="col-1 text-center">
-                    <p>
-                    </p>
-                </div>
-                <div class="col-2 text-center">
-                    <strong t-out="payments['totals']['formatted_foreign_amount']" />
-                </div>
-            </div>
+            </div> -->
         </t>
         </t>
     </template>
