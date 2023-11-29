@@ -1,0 +1,27 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_invoice_lots
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20230925\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-11-23 15:03+0000\n"
+"PO-Revision-Date: 2023-11-23 15:03+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_invoice_lots
+#: model:ir.model.fields,field_description:binaural_invoice_lots.field_product_product__fixed_concept
+#: model:ir.model.fields,field_description:binaural_invoice_lots.field_product_template__fixed_concept
+msgid "Fixed_concept"
+msgstr "Concepto Fijo"
+
+#. module: binaural_invoice_lots
+#: model:ir.model,name:binaural_invoice_lots.model_product_template
+msgid "Product"
+msgstr "Producto"

@@ -1,7 +1,7 @@
 {
-    "name": "Binaural Socios Reportes",
+    "name": "Binaural Facturacion Lotes",
     "summary": """
-        Modulo destinado a Socios de un Club
+        Modulo destinado a Facturas en lote
     """,
     "license": "LGPL-3",
     "author": "Binauraldev",
@@ -10,11 +10,11 @@
     "version": "1.0",
     "depends": [
         "base",
-        "binaural_club_socios"
+        "stock",
+        "product",
     ],
     "data": [
-        "security/ir.model.access.csv",
-        "reports/member_list_report.xml",
-        "wizard/member_list.xml"
+        "views/product_template.xml",
+
     ],
 }
