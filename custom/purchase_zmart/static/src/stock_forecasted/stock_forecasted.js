@@ -73,7 +73,8 @@ class StockForecasted extends Component{
                 let inlay_port = ''
 
                 if (record_document_in) {
-                    inlay_port = record_document_in.inlay_port
+                    inlay_port = record_document_in.inlay_port.split('-')
+                    inlay_port = `${inlay_port[2]}/${inlay_port[1]}/${inlay_port[0]}`
                 }
 
                 return {
