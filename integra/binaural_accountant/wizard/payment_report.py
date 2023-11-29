@@ -6,7 +6,9 @@ class PaymentReport(models.TransientModel):
     _name = "payment.report"
 
     payment_type = fields.Selection(
-        [("outbound", "Outbound"), ("inbound", "Inbound")], string="Payment Type"
+        [("outbound", "Outbound"), ("inbound", "Inbound")],
+        string="Payment Type",
+        default="outbound",
     )
     journal_id = fields.Many2one(
         "account.journal", required=True, domain=[("type", "in", ("bank", "cash"))]
