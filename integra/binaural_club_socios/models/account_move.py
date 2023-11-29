@@ -52,7 +52,7 @@ class AccountMove(models.Model):
                 ("fee_period", ">=", start_of_month),
                 ("fee_period", "<=", end_of_month),
                 ("state", "in", ["posted"]),
-                ("payment_state", "in", ["paid", "in_payment", "partial"]),
+                # ("payment_state", "in", ["paid", "in_payment", "partial"]),
             ]
         )
 
