@@ -252,7 +252,11 @@ class AccountFiscalyearClosing(models.Model):
                 raise ValidationError(msg)
         return True
 
-
+    def button_post(self):
+        for closing in self:
+            closing.move_ids.action_post()
+        return super().button_post()
+    
 class AccountFiscalyearClosingMapping(models.Model):
     _inherit = "account.fiscalyear.closing.mapping"
 
