@@ -15,6 +15,9 @@
                     <field  name="l_map" string="Load Accounts"/>
                 </div>
             </xpath>
+            <xpath expr="//sheet[1]//sheet[1]//field[@name='inverse']" position="attributes">
+                <attribute name="required">1</attribute>
+            </xpath>
         </field>
     </record>
 
