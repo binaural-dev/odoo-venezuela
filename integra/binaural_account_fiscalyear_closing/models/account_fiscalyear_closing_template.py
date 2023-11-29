@@ -19,7 +19,21 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
         accounts = (
             self.env["account.account"]
             .sudo()
-            .search([("account_type", "in", ["income", "expenses"])])
+            .search(
+                [
+                    (
+                        "account_type",
+                        "in",
+                        [
+                            "income",
+                            "expenses",
+                            "other_income",
+                            "expense_depreciation",
+                            "expense_direct_cost",
+                        ],
+                    )
+                ]
+            )
         )
         
         config_a = (

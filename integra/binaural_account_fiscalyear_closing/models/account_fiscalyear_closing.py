@@ -14,13 +14,24 @@ class AccountFiscalyearClosingConfig(models.Model):
 
     @api.onchange("l_map")
     def onchange_l_map(self):
-        # ('company_id','=',self.journal_id.company_id.id),
-        # ('company_id','=',self.journal_id.company_id.id),
-
         accounts = (
             self.env["account.account"]
             .sudo()
-            .search([("account_type", "in", ["income", "expenses"])])
+            .search(
+                [
+                    (
+                        "account_type",
+                        "in",
+                        [
+                            "income",
+                            "expenses",
+                            "other_income",
+                            "expense_depreciation",
+                            "expense_direct_cost",
+                        ],
+                    )
+                ]
+            )
         )
 
         config_a = (
@@ -180,7 +191,7 @@ class AccountFiscalyearClosingConfig(models.Model):
             # self.move_id = move.id
             # este move_id debe ser para el inversal, duda
             if move:
-                #move._onchange_rate() OJO CON ESTO, NO SE QUE HACE XD
+                # move._onchange_rate() OJO CON ESTO, NO SE QUE HACE XD
                 move._onchange_foreign_rate()
         return move, data
 
@@ -257,7 +268,9 @@ class AccountFiscalyearClosingMapping(models.Model):
             date = self.fyc_config_id.fyc_id.date_opening
         if account_lines:
             balance = sum(account_lines.mapped("debit")) - sum(account_lines.mapped("credit"))
-            foreign_balance = sum(account_lines.mapped("foreign_debit")) - sum(account_lines.mapped("foreign_credit"))
+            foreign_balance = sum(account_lines.mapped("foreign_debit")) - sum(
+                account_lines.mapped("foreign_credit")
+            )
 
             if not float_is_zero(balance, precision_digits=precision):
                 rate = sum(account_lines.mapped("foreign_rate")) / len(account_lines)
@@ -265,8 +278,8 @@ class AccountFiscalyearClosingMapping(models.Model):
                     "account_id": account.id,
                     "debit": balance < 0 and -balance,
                     "credit": balance > 0 and balance,
-                    'foreign_debit': foreign_balance < 0 and -foreign_balance,
-                    'foreign_credit': foreign_balance > 0 and foreign_balance,
+                    "foreign_debit": foreign_balance < 0 and -foreign_balance,
+                    "foreign_credit": foreign_balance > 0 and foreign_balance,
                     "name": description,
                     "date": date,
                     "partner_id": partner_id,
@@ -281,11 +294,11 @@ class AccountFiscalyearClosingMapping(models.Model):
         end = self.fyc_config_id.fyc_id.date_end
         company_id = self.fyc_config_id.fyc_id.company_id.id
         domain = [
-                    ("company_id", "=", company_id),
-                    ("account_id", "=", account.id),
-                    ("date", ">=", start),
-                    ("date", "<=", end),
-        ] 
+            ("company_id", "=", company_id),
+            ("account_id", "=", account.id),
+            ("date", ">=", start),
+            ("date", "<=", end),
+        ]
         if journal_type == "fiscal":
             domain = domain + [("move_id.journal_id.fiscal", "=", True)]
             return self.env["account.move.line"].search(domain)
