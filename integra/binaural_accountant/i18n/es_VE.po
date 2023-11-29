@@ -36,12 +36,8 @@ msgid "<strong>Total charged</strong>"
 msgstr "<strong>Total Cobrado</strong>"
 
 #. module: binaural_accountant
-#: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
-msgid "Amount"
-msgstr "Monto"
-
-#. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_move_line__amount_currency
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
 msgid "Amount in Currency"
 msgstr "Importe en moneda"
 
