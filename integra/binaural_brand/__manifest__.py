@@ -8,7 +8,7 @@ parroquias. 
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Stock/Inventory",
-    "version": "16.0.0.3",
+    "version": "16.0.0.4",
     "depends": ['stock', 'sale', 'purchase','account'],
     "data": [
        'security/ir.model.access.csv',

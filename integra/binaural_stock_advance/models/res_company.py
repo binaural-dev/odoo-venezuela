@@ -11,10 +11,12 @@ class ResCompany(models.Model):
     service_products_ids = fields.Many2many(
         "product.product",
         string="Service Products",
-        # default=lambda self: self._default_service_product(),
         domain=[('detailed_type','=','service')]
         
     )
+
+    check_calculate_taking_order_quantities = fields.Boolean(default=False)
+    check_calculate_based_total_purchase_amount = fields.Boolean(default=False)
 
     def _default_service_product(self):
         domain=[('detailed_type','=','service')]
