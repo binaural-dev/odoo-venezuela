@@ -1,10 +1,11 @@
+import time
 from odoo import api, models, _
 from odoo.exceptions import UserError
 from datetime import date
 
 
-class ReportMemberList(models.AbstractModel):
-    _name = "report.binaural_socios_reportes.member_list"
+class ReportAllPayments(models.AbstractModel):
+    _name = "report.binaural_accountant.financial_all_payments"
 
     @api.model
     def _get_report_values(self, docids, data=None):
@@ -23,26 +24,22 @@ class ReportMemberList(models.AbstractModel):
                 name_user = obj_uid.name
         form = data.get("form", False)
         if not form:
-            raise UserError(_("Report Form Error"))
-        state_partner = form.get("status", False)
-        status = state_partner
-        state_action = form.get("state_action", False)
+            raise UserError("Error en formulario de reporte")
+        pt = form.get("payment_type")
+        journal = self.env["account.journal"].sudo().search([("id", "=", form.get("journal_id"))])
         search_domain = []
-        if state_partner and state_partner != "all":
-            search_domain += [("state_partner", "=", state_partner)]
-        if state_action and state_action != "all":
-            search_domain += [("state_action", "=", state_action)]
-        search_domain += [
-            ("active", "=", True),
-            ("parent_id", "=", False),
-            ("customer_rank", ">", 0),
-            ("action_number", "!=", False),
-        ]
-        docs = self.env["res.partner"].sudo().search(search_domain)
+        search_domain += [("payment_type", "=", pt)]
+        search_domain += [("journal_id", "=", form.get("journal_id"))]
+        search_domain += [("date", ">=", form.get("start_date"))]
+        search_domain += [("date", "<=", form.get("end_date"))]
+
+        docs = self.env["account.payment"].sudo().search(search_domain)
+
         return {
             "data": data["form"],
             "docs": docs,
             "date": date.today(),
+            "payment_type": "A Proveedores" if pt == "outbound" else "De Clientes",
+            "journal": journal.name,
             "name_user": name_user,
-            'status': status,
         }
