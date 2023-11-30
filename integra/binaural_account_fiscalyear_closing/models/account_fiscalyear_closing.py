@@ -302,7 +302,7 @@ class AccountFiscalyearClosingMapping(models.Model):
             ("account_id", "=", account.id),
             ("date", ">=", start),
             ("date", "<=", end),
-            ("state", "!=", "cancel")
+            ("move_id.state", "!=", "cancel"),
         ]
         if journal_type == "fiscal":
             domain = domain + [("move_id.journal_id.fiscal", "=", True)]
