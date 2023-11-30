@@ -43,7 +43,7 @@ class StockPicking(models.Model):
 
     def button_validate(self):
 
-        self._check_valid_qty_done_move_line_ids_without_package()
+        # self._check_valid_qty_done_move_line_ids_without_package()
 
         if not self.guide:
             if self.shipping_type == 'shipment' and self.sequence_code == 'PACK':
