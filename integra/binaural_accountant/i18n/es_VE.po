@@ -524,7 +524,7 @@ msgstr "Pago"
 #: model:ir.actions.act_window,name:binaural_accountant.action_report_all_payments_view
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.form_wizard_all_payments
 msgid "Payment Report"
-msgstr ""
+msgstr "Reporte de pagos"
 
 #. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_payment_report__payment_type

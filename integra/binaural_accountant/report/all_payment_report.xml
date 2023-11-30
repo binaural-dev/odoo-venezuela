@@ -47,7 +47,7 @@
                                 </div>
                                 <h4 style="text-align:center">Resumen de pagos</h4>    
 		                        <br/>
-		                        <table class="table-condensed table-bordered" style="width:100%;height:100%;font-size:14px">
+		                        <table class="table-condensed table-bordered border-light" style="width:100%;height:100%;font-size:14px">
 		                            <tr>
 			                            <td>
 				                            <span><b><span t-esc="payment_type"/></b></span>
@@ -85,7 +85,7 @@
 		                        </style>     
                                 	<t t-set="qty" t-value="0"/>
 		                            <t t-set="total" t-value="0.00"/> 
-		                            <table class="table-condensed table-bordered" style="width:100%;font-size:10px;table-layout: fixed">
+		                            <table class="table-condensed table-bordered border-light" style="width:100%;font-size:10px;table-layout: fixed">
                                         <thead>
                                             <tr>
                                                 <th class="text-center">Documento</th>
