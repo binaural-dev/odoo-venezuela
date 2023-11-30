@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+    <t name="purchase_zmart.ForecastedDetails" owl="1" t-inherit="stock.ForecastedDetails" t-inherit-mode="extension">
+        <xpath expr="//table/thead//tr/td[2]" position="after">
+            <td t-if="props.docs.is_there_document_in" style="width:200px;">ETA Door Arrival</td>
+        </xpath>
+        <xpath expr="//table/tbody[1]//tr[2]/td[2]" position="after">
+            <td t-if="line.document_in"><t t-out="line.document_in.inlay_port or ''"/></td>
+        </xpath>
+
+        <xpath expr="//table/thead[2]//tr/td[1]" position="replace">
+            <td t-att-colspan="props.docs.is_there_document_in ? 3 : 2">Forecasted Inventory</td>
+        </xpath>
+        <xpath expr="//table/tbody[2]//tr[1]/td[2]" position="replace">
+            <td t-att-colspan="props.docs.is_there_document_in ? 3 : 2">Incoming Draft Transfer</td>
+        </xpath>
+        <xpath expr="//table/tbody[2]//tr[2]/td[1]" position="replace">
+            <td t-att-colspan="props.docs.is_there_document_in ? 3 : 2">Outgoing Draft Transfer</td>
+        </xpath>
+        <xpath expr="//table/thead[3]//tr/td[1]" position="replace">
+            <td t-att-colspan="props.docs.is_there_document_in ? 3 : 2">Forecasted with Pending</td>
+        </xpath>
+
+        <xpath expr="//table/tbody[2]//tr[@name='draft_so_out']/td[1]" position="after">
+            <td></td>
+        </xpath>
+
+    </t>
+
+</templates>

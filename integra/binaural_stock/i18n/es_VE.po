@@ -100,6 +100,18 @@ msgid "Block Type Inventory Transfers Expeditions"
 msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
 
 #. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_res_company__change_weight
+#: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__change_weight
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__change_weight
+msgid "Change Weight"
+msgstr "Cambiar de peso"
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_change_weight_picking
+msgid "Change Weight in Picking"
+msgstr "Cambiar peso en Picking"
+
+#. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_res_company
 msgid "Companies"
 msgstr "Compañías"

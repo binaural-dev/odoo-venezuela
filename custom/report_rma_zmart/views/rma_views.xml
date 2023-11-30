@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="rma_view_form_zmart" model="ir.ui.view">
+        <field name="name">rma.view.form.zmart</field>
+        <field name="model">rma</field>
+        <field name="inherit_id" ref="rma.rma_view_form" />
+        <field name="arch" type="xml">
+            <button name="action_preview" position="after">
+                <field name="is_action_replace_executed" invisible="1"/>
+                <button name="button_rma_note" string="Imprimir Nota de entrega RMA" type="object" class="oe_highlight" attrs="{'invisible': [('is_action_replace_executed', '!=', True)]}"/>
+            </button>
+        </field>
+    </record>
+</odoo>
