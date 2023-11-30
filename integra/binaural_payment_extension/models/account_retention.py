@@ -709,6 +709,8 @@ class AccountRetention(models.Model):
         for line in self.retention_line_ids:
             if line.move_id.move_type == "in_refund":
                 payment_type = "inbound" if self.type == "in_invoice" else "outbound"
+            if line.move_id.move_type == "out_refund":
+                payment_type = "outbound" if self.type == "out_invoice" else "inbound"
 
             payment_method_ref = (
                 "account.account_payment_method_manual_in"

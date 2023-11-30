@@ -57,7 +57,21 @@
                                     </t>
                                 </div>
                             </div>
-                            <h5 style="text-align:center">Socios</h5>        
+                            <t t-if="status == 'active'">
+                                <h5 style="text-align:center">Socios Activos</h5>
+                            </t>
+                            <t t-if="status == 'holder'">
+                                <h5 style="text-align:center">Socios Tenedores</h5>
+                            </t>
+                            <t t-if="status == 'deceased'">
+                                <h5 style="text-align:center">Socios Fallecidos</h5>
+                            </t>
+                            <t t-if="status == 'inactive'">
+                                <h5 style="text-align:center">Socios Inactivos</h5>
+                            </t>
+                            <t t-if="status == 'all'">
+                                <h5 style="text-align:center">Todos los Socios</h5>
+                            </t>
 		                </div>
 		                    <div class="">
 		                        <style>
