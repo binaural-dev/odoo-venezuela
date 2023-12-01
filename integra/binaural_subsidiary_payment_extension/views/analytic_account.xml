@@ -5,6 +5,9 @@
         <field name="model">account.analytic.account</field>
         <field name="inherit_id" ref="binaural_subsidiary.view_account_analytic_account_subsidiary_form"/>
         <field name="arch" type="xml">
+	    <field name="code" position="after">
+		<field name="municipality_id" required="1"/>
+	    </field>
 	    <sheet position="inside">
 		<notebook>
 		    <page name="tax_authorities_data" string="Tax Authorities Data">

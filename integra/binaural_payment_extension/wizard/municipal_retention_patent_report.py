@@ -152,7 +152,7 @@ class MunicipalRetentionPatentReport(models.TransientModel):
                 price_subtotal = line.foreign_subtotal
             else:
                 price_subtotal = line.price_subtotal
-            ciu = line.ciu_id
+            ciu = self._get_ciu(line.ciu_id)
             if not ((ciu.name, line.product_id.categ_id.name) in groups.keys()):
                 groups[ciu.name, line.product_id.categ_id.name] = {
                     "category_name": line.product_id.categ_id.name,
@@ -218,3 +218,6 @@ class MunicipalRetentionPatentReport(models.TransientModel):
             ("move_id.journal_id.fiscal", "=", True),
             ("move_id.state", "=", "posted"),
         ]
+
+    def _get_ciu(self, ciu):
+        return ciu

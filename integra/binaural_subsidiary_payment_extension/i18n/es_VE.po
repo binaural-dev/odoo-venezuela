@@ -82,4 +82,4 @@ msgstr "Reporte excel de retenciones municipales"
 #. module: binaural_subsidiary_payment_extension
 #: model:ir.model.fields,field_description:binaural_subsidiary_payment_extension.field_municipal_retention_patent_report__account_analytic_id
 msgid "subsidiary"
-msgstr "Sucursales"
+msgstr "Sucursal"
