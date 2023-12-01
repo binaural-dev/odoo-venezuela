@@ -49,6 +49,8 @@ class ProductProduct(models.Model):
             raise ValidationError(_("A packaging already uses the barcode"))
 
     def _compute_quantities_dict(self, lot_id, owner_id, package_id, from_date=False, to_date=False, location=False):
+        if not location:
+            return super()._compute_quantities_dict(lot_id, owner_id, package_id, from_date, to_date)
         domain_quant_loc, domain_move_in_loc, domain_move_out_loc = self._get_domain_locations()
         domain_quant = [('product_id', 'in', self.ids)] + domain_quant_loc
         dates_in_the_past = False

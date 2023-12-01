@@ -43,7 +43,7 @@ class StockQuantityHistoryInh(models.TransientModel):
         qty_companies = len(self.env["res.company"].sudo().search([]))
         if qty_companies > 1:
             domain = expression.AND(
-                [domain, [("company_id", "=", company.id)]]
+                [domain, [("company_id", "in", (company.id, False))]]
             )
         product_ids = self.env["product.product"].search(domain)
         product_ids_a = product_ids._compute_quantities_dict(
