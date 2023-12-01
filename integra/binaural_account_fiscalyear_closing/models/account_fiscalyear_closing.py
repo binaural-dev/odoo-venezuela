@@ -131,7 +131,7 @@ class AccountFiscalyearClosingConfig(models.Model):
             if move_line:
                 move_lines.append(move_line)
         return move_lines, rate
-
+    
     def moves_create(self):
         self.ensure_one()
         moves = self.env["account.move"]
@@ -188,13 +188,23 @@ class AccountFiscalyearClosingConfig(models.Model):
                 # the move is not balanced
                 return False, data
             move = moves.with_context(journal_id=self.journal_id.id).create(data)
+            _logger.warning("move: %s", move)
+            _logger.warning("move: %s", move.foreign_rate)
+            _logger.warning("move: %s", move.foreign_inverse_rate)
+            move.write({
+                "foreign_inverse_rate": rate if self.env.ref("base.VEF").id == move.foreign_currency_id.id else 1 / rate
+            })
+            _logger.warning(self.env.ref("base.VEF"))
+            _logger.warning("move: %s", move.foreign_rate)
+            _logger.warning("move: %s", move.foreign_inverse_rate)
+            _logger.warning("RATEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEee222222: %s", rate)
             # self.move_id = move.id
             # este move_id debe ser para el inversal, duda
-            if move:
-                # move._onchange_rate() OJO CON ESTO, NO SE QUE HACE XD
-                move._onchange_foreign_rate()
+            # if move:
+            #     # move._onchange_rate() OJO CON ESTO, NO SE QUE HACE XD
+            #     move._onchange_foreign_rate()
         return move, data
-
+    
 
 class AccountFiscalyearClosing(models.Model):
     _inherit = "account.fiscalyear.closing"
@@ -210,7 +220,6 @@ class AccountFiscalyearClosing(models.Model):
 
     def draft_moves_check(self):
         for closing in self:
-            _logger.info("CHECK DRAFT %s", closing.journal_type)
             if closing.journal_type == "fiscal":
                 draft_moves = self.env["account.move"].search(
                     [
@@ -271,22 +280,43 @@ class AccountFiscalyearClosingMapping(models.Model):
         if self.fyc_config_id.move_type == "opening":
             date = self.fyc_config_id.fyc_id.date_opening
         if account_lines:
+            _logger.warning("_____________________________________________________________________________________________________")
             balance = sum(account_lines.mapped("debit")) - sum(account_lines.mapped("credit"))
+            _logger.warning("BALANCE = %s", balance)
+
             foreign_balance = sum(account_lines.mapped("foreign_debit")) - sum(
                 account_lines.mapped("foreign_credit")
             )
+            _logger.warning("BALANCE alTERNOOOOOOOO= %s", foreign_balance)
+            _logger.warning("_____________________________________________________________________________________________________")
 
             if not float_is_zero(balance, precision_digits=precision):
-                rate = sum(account_lines.mapped("foreign_rate")) / len(account_lines)
+                rate = foreign_balance / balance if balance > foreign_balance else balance / foreign_balance
+                _logger.warning(balance / foreign_balance)
+                _logger.warning(foreign_balance / balance)
+                _logger.warning(account)
+                for line in account_lines:
+                    line.move_id.write({
+                    "manually_set_rate": True,
+                    })
+                    line.move_id.write({
+                    "foreign_rate": rate,
+                    })
+                    line.move_id.write({
+                    "foreign_inverse_rate": rate,
+                    })
                 move_line = {
                     "account_id": account.id,
                     "debit": balance < 0 and -balance,
                     "credit": balance > 0 and balance,
-                    "foreign_debit": foreign_balance < 0 and -foreign_balance,
-                    "foreign_credit": foreign_balance > 0 and foreign_balance,
+                    # "foreign_debit_adjustment": foreign_balance < 0 and -foreign_balance,
+                    # "foreign_credit_adjustment": foreign_balance > 0 and foreign_balance,
                     "name": description,
                     "date": date,
                     "partner_id": partner_id,
+                    "foreign_rate": rate,
+                    "foreign_inverse_rate": rate,
+
                 }
             else:
                 balance = 0
