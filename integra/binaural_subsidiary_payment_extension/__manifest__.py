@@ -17,6 +17,7 @@
         "report/retention_line_report_views.xml",
         "views/analytic_account.xml",
         "wizard/municipal_retention_patent_report.xml",
+        "wizard/municipal_retention_xlsx_report.xml",
     ],
     "auto_install": True,
 }

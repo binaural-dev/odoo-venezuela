@@ -1,11 +1,11 @@
-from odoo import api, fields, models, _
+from odoo import fields, models
 
 
 class MunicipalRetentionPatentReport(models.TransientModel):
     _inherit = "municipal.retention.patent.report"
 
     account_analytic_id = fields.Many2one(
-        "account.analytic.account", domain=[("is_subsidiary", "=", True)]
+        "account.analytic.account", string="subsidiary", domain=[("is_subsidiary", "=", True)]
     )
 
     def _get_xlsx_file_domain(self):
