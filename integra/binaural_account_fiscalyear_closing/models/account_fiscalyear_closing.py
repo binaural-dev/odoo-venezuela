@@ -266,40 +266,44 @@ class AccountFiscalyearClosingMapping(models.Model):
         description = self.name or account.name
         date = self.fyc_config_id.fyc_id.date_end
         rate = 1
+        bsd_id = self.env.ref("base.VEF").id
         if self.fyc_config_id.move_type == "opening":
             date = self.fyc_config_id.fyc_id.date_opening
         if account_lines:
+            debits = sum(account_lines.mapped("debit"))
+            credits = sum(account_lines.mapped("credit"))
+            foreign_debits = sum(account_lines.mapped("foreign_debit"))
+            foreign_credits = sum(account_lines.mapped("foreign_credit"))
+            
+            balance = debits - credits
+            foreign_balance = foreign_debits - foreign_credits
             balance = sum(account_lines.mapped("debit")) - sum(account_lines.mapped("credit"))
 
             foreign_balance = sum(account_lines.mapped("foreign_debit")) - sum(
                 account_lines.mapped("foreign_credit")
             )
-            foreign_currency = account_lines.mapped("foreign_currency_id")
-
+            foreign_currency = account_lines[0].foreign_currency_id
             if not float_is_zero(balance, precision_digits=precision):
                 rate = (
                     foreign_balance / balance
                     if balance > foreign_balance
                     else balance / foreign_balance
                 )
-                for line in account_lines:
-                    line.move_id.write(
-                        {
-                            "manually_set_rate": True,
-                        }
-                    )
-                    line.move_id.write(
-                        {
-                            "foreign_rate": rate,
-                        }
-                    )
-                    line.move_id.write(
-                        {
-                            "foreign_inverse_rate": rate
-                            if self.env.ref("base.VEF").id == foreign_currency.id
-                            else 1 / rate,
-                        }
-                    )
+                # for line in account_lines:
+                #     line.move_id.write(
+                #         {
+                #             "manually_set_rate": True,
+                #         }
+                #     )
+                #     line.move_id.write(
+                #         {
+                #             "foreign_inverse_rate": rate
+                #             if bsd_id == foreign_currency.id
+                #             else 1 / rate,
+                #             "foreign_rate": rate,
+                #         }
+                #     )
+                #     _logger.warning("donde rompi")
                 move_line = {
                     "account_id": account.id,
                     "debit": balance < 0 and -balance,
@@ -309,7 +313,7 @@ class AccountFiscalyearClosingMapping(models.Model):
                     "partner_id": partner_id,
                     "foreign_rate": rate,
                     "foreign_inverse_rate": rate
-                    if self.env.ref("base.VEF").id == foreign_currency.id
+                    if bsd_id == foreign_currency.id
                     else 1 / rate,
                 }
             else:
