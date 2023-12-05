@@ -4,7 +4,6 @@ from werkzeug.exceptions import NotFound
 
 from odoo.addons.website_sale.controllers.main import WebsiteSale
 
-
 class BinauralWebsiteSale(WebsiteSale):
     # TODO Arreglar campo de ciudad, no se esta guardando ni en el formulario del usuario ni en el
     # Formulario de dirección antes de confirmar un pedido.
