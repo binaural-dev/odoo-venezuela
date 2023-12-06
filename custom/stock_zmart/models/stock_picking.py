@@ -18,6 +18,17 @@ class StockPicking(models.Model):
     guide = fields.Char(copy=False)
     origin_sale_id = fields.Many2one("sale.order", compute="_compute_origin_sale_id")
 
+    def sort_line_from_order(self):
+        product_ids = [x.product_id.id for x in self.sale_id.order_line]
+
+        def sort_key(stock_move_line):
+            try:
+                return product_ids.index(stock_move_line.product_id.id)
+            except ValueError:
+                return float('inf')
+
+        return sorted(self.move_line_ids_without_package, key=sort_key)
+
     @api.depends("origin")
     def _compute_origin_sale_id(self):
         for record in self:
