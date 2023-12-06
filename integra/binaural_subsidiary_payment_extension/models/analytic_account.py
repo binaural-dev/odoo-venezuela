@@ -8,3 +8,6 @@ class AccountAnalyticAccount(models.Model):
     tax_authorities_name = fields.Char()
     economic_activity_number = fields.Char()
     municipality_id = fields.Many2one("res.country.municipality", required=True)
+    municipal_supplier_retentions_sequence_id = fields.Many2one(
+        "ir.sequence", string="Municipal supplier retentions sequence"
+    )

@@ -626,7 +626,12 @@ class AccountRetention(models.Model):
 
     @api.model
     def get_sequence_iva_retention(self):
-        sequence = self.env["ir.sequence"].search([("code", "=", "retention.iva.control.number"),("company_id", "=", self.env.company.id)])
+        sequence = self.env["ir.sequence"].search(
+            [
+                ("code", "=", "retention.iva.control.number"),
+                ("company_id", "=", self.env.company.id),
+            ]
+        )
         if not sequence:
             sequence = self.env["ir.sequence"].create(
                 {
@@ -639,7 +644,12 @@ class AccountRetention(models.Model):
 
     @api.model
     def get_sequence_islr_retention(self):
-        sequence = self.env["ir.sequence"].search([("code", "=", "retention.islr.control.number"),("company_id", "=", self.env.company.id)])
+        sequence = self.env["ir.sequence"].search(
+            [
+                ("code", "=", "retention.islr.control.number"),
+                ("company_id", "=", self.env.company.id),
+            ]
+        )
         if not sequence:
             sequence = self.env["ir.sequence"].create(
                 {
@@ -650,10 +660,12 @@ class AccountRetention(models.Model):
             )
         return sequence
 
-    @api.model
     def get_sequence_municipal_retention(self):
         sequence = self.env["ir.sequence"].search(
-            [("code", "=", "retention.municipal.control.number"),("company_id", "=", self.env.company.id)]
+            [
+                ("code", "=", "retention.municipal.control.number"),
+                ("company_id", "=", self.env.company.id),
+            ]
         )
         if not sequence:
             sequence = self.env["ir.sequence"].create(
