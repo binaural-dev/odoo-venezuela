@@ -4,4 +4,7 @@ from odoo import fields, models
 class PosConfig(models.Model):
     _inherit = "pos.config"
 
-    sh_analytic_account = fields.Many2one(string="Subsidiary")
+    sh_analytic_account = fields.Many2one(
+        string="Subsidiary",
+        domain=[("is_subsidiary", "=", True)],
+    )

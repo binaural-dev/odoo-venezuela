@@ -4,7 +4,11 @@ from odoo import api, fields, models, _
 class AccountPaymentRegister(models.TransientModel):
     _inherit = "account.payment.register"
 
-    account_analytic_id = fields.Many2one("account.analytic.account")
+    account_analytic_id = fields.Many2one(
+        "account.analytic.account",
+        string="Subsidiary",
+        domain=[("is_subsidiary", "=", True)],
+    )
 
     def _init_payments(self, to_process, edit_mode=False):
         """
