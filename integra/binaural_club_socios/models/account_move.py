@@ -52,7 +52,8 @@ class AccountMove(models.Model):
                 ("fee_period", ">=", start_of_month),
                 ("fee_period", "<=", end_of_month),
                 ("state", "in", ["posted"]),
-                ("move_type", "=", "out_invoice")
+                ("move_type", "=", "out_invoice"),
+                ("payment_state", "not in", ["reversed"])
             ]
         )
 
