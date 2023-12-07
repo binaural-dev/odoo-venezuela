@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230907\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-14 15:31+0000\n"
-"PO-Revision-Date: 2023-10-14 15:31+0000\n"
+"POT-Creation-Date: 2023-12-07 18:52+0000\n"
+"PO-Revision-Date: 2023-12-07 18:52+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -27,6 +27,11 @@ msgstr ""
 "para el mismo número de serie"
 
 #. module: binaural_stock_barcode
+#: model:ir.model.fields,field_description:binaural_stock_barcode.field_hr_employee__active_pick_id
+msgid "Active Pick"
+msgstr "Pick Actual"
+
+#. module: binaural_stock_barcode
 #: model:ir.ui.menu,name:binaural_stock_barcode.supervisor_settings_wizard_form_view_menuitem
 msgid "Ajustes de Supervisor de Operaciones"
 msgstr ""
@@ -39,7 +44,7 @@ msgstr "Codigo de Barras"
 #. module: binaural_stock_barcode
 #: model:ir.model,name:binaural_stock_barcode.model_barcode_rule
 msgid "Barcode Rule"
-msgstr "Regla del código de barras"
+msgstr "Regla de código de barras"
 
 #. module: binaural_stock_barcode
 #. odoo-javascript
@@ -56,6 +61,11 @@ msgstr "Cancelar"
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_stock_picking__cart_id
 msgid "Cart"
 msgstr "Carrito"
+
+#. module: binaural_stock_barcode
+#: model:ir.model.fields,field_description:binaural_stock_barcode.field_hr_employee__cart_active_id
+msgid "Cart Active"
+msgstr "Carrito actual"
 
 #. module: binaural_stock_barcode
 #: model:ir.ui.menu,name:binaural_stock_barcode.menu_stock_picking_cart_list
@@ -77,6 +87,7 @@ msgid "Company"
 msgstr "Compañia"
 
 #. module: binaural_stock_barcode
+#: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.stock_picking_incomplete_form_wizard
 #: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.view_operation_supervisor_form
 msgid "Confirm"
 msgstr "Confirmar"
@@ -273,6 +284,16 @@ msgid "Paused"
 msgstr "Pausado"
 
 #. module: binaural_stock_barcode
+#: model:ir.model.fields,field_description:binaural_stock_barcode.field_hr_employee__paused_pick_id
+msgid "Paused Pick"
+msgstr "Pick Pausado"
+
+#. module: binaural_stock_barcode
+#: model:ir.model.fields,field_description:binaural_stock_barcode.field_hr_employee__pending_pick_id
+msgid "Pending Pick"
+msgstr "Pick Pendiente"
+
+#. module: binaural_stock_barcode
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_hr_employee__pick_ids
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_stock_picking_incomplete__pick_id
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_stock_picking_time__pick_id
@@ -280,9 +301,15 @@ msgid "Pick"
 msgstr ""
 
 #. module: binaural_stock_barcode
+#: model:ir.actions.act_window,name:binaural_stock_barcode.view_stock_picking_hr_employee_tree_waiting
 #: model:ir.ui.menu,name:binaural_stock_barcode.menu_picking_waiting
 msgid "Pick Assignation"
 msgstr "Asignacion de PICK"
+
+#. module: binaural_stock_barcode
+#: model:ir.ui.menu,name:binaural_stock_barcode.menu_picking_waiting_hr_employee
+msgid "Pick Assignation (Employee)"
+msgstr "Asignacion de Picks (Por empleado)"
 
 #. module: binaural_stock_barcode
 #: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.view_employee_form
@@ -291,13 +318,9 @@ msgstr "Informacion del PICK"
 
 #. module: binaural_stock_barcode
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_stock_picking__picker_id
-msgid "Picker"
-msgstr "Responsable"
-
-#. module: binaural_stock_barcode
 #: model:ir.model.fields.selection,name:binaural_stock_barcode.selection__res_users__role_picking__picker
 msgid "Picker"
-msgstr "Pickeador"
+msgstr "Responsable"
 
 #. module: binaural_stock_barcode
 #: model:ir.model.fields.selection,name:binaural_stock_barcode.selection__barcode_rule__type__cart
@@ -353,7 +376,6 @@ msgid "Save time of take picking"
 msgstr "Guarda el Tiempo de la operacion Picking"
 
 #. module: binaural_stock_barcode
-#: model_terms:ir.actions.act_window,help:binaural_stock_barcode.view_stock_picking_tree_operation
 #: model_terms:ir.actions.act_window,help:binaural_stock_barcode.view_stock_picking_tree_waiting
 msgid "Select stock pickings with status \"waiting\""
 msgstr "Seleccione Picking con el estatus \"En Espera\""
@@ -370,6 +392,7 @@ msgstr "Movimiento stock"
 
 #. module: binaural_stock_barcode
 #: model:ir.actions.act_window,name:binaural_stock_barcode.view_stock_picking_tree_waiting
+#: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.view_tree_stock_picking_hr_employee_tree_waiting
 #: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.view_tree_stock_picking_tree_waiting
 msgid "Stock Picking (Waiting)"
 msgstr "Picking (En Espera)"
@@ -388,7 +411,7 @@ msgstr "Tipo de Picking"
 #. module: binaural_stock_barcode
 #: model:ir.model.fields.selection,name:binaural_stock_barcode.selection__res_users__role_picking__supervisor
 msgid "Supervisor"
-msgstr "Supervisor"
+msgstr ""
 
 #. module: binaural_stock_barcode
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_stock_picking__supervisor_approve_for_incomplete_qty_id
@@ -417,11 +440,19 @@ msgid "Supervisor Required To Edit"
 msgstr "Supervisor es requerido para editar cantidades"
 
 #. module: binaural_stock_barcode
+#. odoo-python
+#: code:addons/binaural_stock_barcode/controllers/stock_barcode.py:0
+#, python-format
+msgid "The pick is already assigned to another cart"
+msgstr "El pick ya esta asignado a otro carrito"
+
+#. module: binaural_stock_barcode
 #. odoo-javascript
 #: code:addons/binaural_stock_barcode/static/src/js/barcode_picking_model.js:0
 #, python-format
 msgid "The product you are trying to scan does not have reserved quantities"
-msgstr "El producto que estás intentando escanear no tiene cantidades reservadas"
+msgstr "El producto que intentas escanear no tiene cantidades reservadas"
+"El producto que estás intentando escanear no tiene cantidades reservadas"
 
 #. module: binaural_stock_barcode
 #. odoo-javascript
@@ -460,7 +491,7 @@ msgstr "Tiempo total transcurrido"
 #. module: binaural_stock_barcode
 #: model:ir.model,name:binaural_stock_barcode.model_stock_picking
 msgid "Transfer"
-msgstr ""
+msgstr "Transferencia"
 
 #. module: binaural_stock_barcode
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_barcode_rule__type
@@ -546,7 +577,9 @@ msgstr "Ha procesado menos productos que la demanda inicial."
 #, python-format
 msgid ""
 "Your user is not configured with any role to be able to take an operation"
-msgstr "Su usuario no está configurado con ningún rol para poder realizar una operación"
+msgstr ""
+"Su usuario no está configurado con ningún rol para poder realizar una "
+"operación"
 
 #. module: binaural_stock_barcode
 #: model:ir.model.fields.selection,name:binaural_stock_barcode.selection__res_users__role_picking__out
