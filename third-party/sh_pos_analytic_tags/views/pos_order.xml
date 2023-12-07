@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id='sh_analytic_account_pos_order_inherit_for_analytic_account' model="ir.ui.view">
+        <field name="name">sh.analytic.account.pos.order.view.inherit</field>
+        <field name='model'>pos.order</field>
+        <field name='inherit_id' ref="point_of_sale.view_pos_pos_form"></field>
+        <field name='arch' type='xml'>
+            <xpath expr="//field[@name='payment_ids']//tree//field[@name='payment_method_id']" position='after'>
+                <field name="sh_analytic_account" groups="analytic.group_analytic_accounting" />
+            </xpath>
+            <field name="partner_id" position="after">
+                <field name="sh_pos_order_analytic_account" groups="analytic.group_analytic_accounting" />
+            </field>
+            <xpath expr='//field[@name="lines"]//field[@name="qty"]' position='after'>
+                <field name="sh_pos_order_analytic_account" groups="analytic.group_analytic_accounting" />
+            </xpath>
+        </field>
+    </record>
+    <record id='sh_analytic_account_pos_order_search_view_inherit' model="ir.ui.view">
+        <field name="name">sh.analytic.account.pos.order.search.view.inherit</field>
+        <field name='model'>pos.order</field>
+        <field name='inherit_id' ref="point_of_sale.view_pos_order_filter"></field>
+        <field name='arch' type='xml'>
+            <xpath expr='//search//group' position="inside">
+                <separator />
+                <filter string="Analytic Account" groups="analytic.group_analytic_accounting" name="sh_groupby_account" domain="[]" context="{'group_by': 'sh_pos_order_analytic_account'}" />
+            </xpath>
+        </field>
+    </record>
+    <record id='sh_analytic_pos_saleorder_inherit_list_view' model="ir.ui.view">
+        <field name="name">sh.analytic.account.pos.order.list.view.inherit</field>
+        <field name='model'>pos.order</field>
+        <field name='inherit_id' ref="point_of_sale.view_pos_order_tree"></field>
+        <field name='arch' type='xml'>
+            <field name="partner_id" position="after">
+                <field name="sh_pos_order_analytic_account" groups="analytic.group_analytic_accounting" />
+            </field>
+        </field>
+    </record>
+   
+</odoo>
