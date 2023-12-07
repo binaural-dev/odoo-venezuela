@@ -14,13 +14,11 @@ class ProductTemplate(models.Model):
     @api.model
     def _search_build_domain(self, domain, search, fields, extra=None):
         res = super()._search_build_domain(domain, search, fields, extra=extra)
+        if not request.website.sudo().do_not_show_products_without_availability_on_site:
+            return res
 
-        domain = [
-            ("company_id", "in", (self.env.company.id, False)),
-            ("is_published", "=", True),
-        ]
-        result = expression.AND([domain, res])
-        return result
+        company_id_domain = [("company_id", "in", (self.env.company.id, False))]
+        return expression.AND([company_id_domain, res])
 
     @api.model
     def _search_fetch(self, search_detail, search, limit, order):

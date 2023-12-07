@@ -12,7 +12,6 @@
     "depends": ["base", "currency_rate_live"],
     # always loaded
     "data": [
-        "data/update_currency_data.xml",
         "views/res_config_settings.xml",
     ],
 }
