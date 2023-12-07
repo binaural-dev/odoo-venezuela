@@ -25,10 +25,28 @@ class StockPicking(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for val in vals_list:
-            self.validate_block_transfers_expedition(val)
+            self.validate_block_transfers_expedition(vals=val)
         return super().create(vals_list)
+    
+    def write(self,vals):
+        res = super().write(vals)
+        keys_to_check = [
+            "move_line_ids_without_package",
+            "move_line_nosuggest_ids",
+            "move_ids_without_package"
+        ]
+        matched_key = None
+        for key in keys_to_check:
+            if key in vals:
+                matched_key = key
+                break
+        
+        if matched_key:
+            self.validate_block_transfers_expedition(write=vals, matched_key=matched_key)
 
-    def validate_block_transfers_expedition(self, vals=None):
+        return res
+
+    def validate_block_transfers_expedition(self, vals=None, write=None, matched_key=None):
         block_transfer_expedition = self.env.user.has_group(
             "binaural_stock.group_block_type_inventory_transfers_expeditions"
         )
@@ -39,4 +57,17 @@ class StockPicking(models.Model):
                 else self.picking_type_id
             )
             if picking_type.code == "outgoing":
-                raise UserError(_("You do not have permission to make shipment-type transfers"))
+                if write and matched_key:
+                    for move_line in write[matched_key]:
+                        if isinstance(move_line[1], str):
+                            raise UserError(_("You cannot add products to shipment-type transfers"))
+                    
+                        if isinstance(move_line[1], int):
+                            if move_line[2]["quantity_done"]:
+                                lines = self[matched_key]
+                                for line in lines:
+                                    if line.id == move_line[1]:
+                                        if line.product_uom_qty < move_line[2]["quantity_done"]:
+                                            raise UserError(_("You cannot make transfers larger than the demand"))
+                            
+                else: raise UserError(_("You do not have permission to make shipment-type transfers"))

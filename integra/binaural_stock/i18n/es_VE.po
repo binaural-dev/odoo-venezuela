@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231123\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231204\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-23 14:20+0000\n"
-"PO-Revision-Date: 2023-11-23 14:20+0000\n"
+"POT-Creation-Date: 2023-12-07 13:11+0000\n"
+"PO-Revision-Date: 2023-12-07 13:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -100,16 +100,16 @@ msgid "Block Type Inventory Transfers Expeditions"
 msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
 
 #. module: binaural_stock
-#: model:ir.model,name:binaural_stock.model_res_company
-msgid "Companies"
-msgstr "Compañías"
-
-#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__change_weight
 #: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__change_weight
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__change_weight
 msgid "Change Weight"
 msgstr "Cambiar de peso"
+
+#. module: binaural_stock
+#: model:ir.model,name:binaural_stock.model_res_company
+msgid "Companies"
+msgstr "Compañías"
 
 #. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_change_weight_picking
@@ -409,6 +409,20 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_quantity_history__warehouse_search_id
 msgid "Warehouse Search"
 msgstr "Buscar en Almacen"
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "You cannot add products to shipment-type transfers"
+msgstr "No puede agregar productos a transferencias de tipo Expedicion"
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "You cannot make transfers larger than the demand"
+msgstr "No puedes hacer que las transferencias sean mayor que la demanda"
 
 #. module: binaural_stock
 #. odoo-python
