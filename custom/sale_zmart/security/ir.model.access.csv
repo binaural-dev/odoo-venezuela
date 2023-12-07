@@ -1,2 +1,2 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_sale_company,sale.company,model_sale_company,,1,1,1,1
+access_sale_shipping_mean,access_sale_shipping_mean,model_sale_shipping_mean,,1,1,1,1

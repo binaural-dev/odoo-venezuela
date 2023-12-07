@@ -15,6 +15,8 @@ class SaleOrderZmart(models.Model):
         ],
         copy=False
     )
+    shipping_mean_id = fields.Many2one("sale.shipping.mean", copy=False)
+
     shipping_mean = fields.Selection(
         [
             ("zmart_express", "Zmart Express"),
@@ -29,6 +31,28 @@ class SaleOrderZmart(models.Model):
         ],
         copy=False
     )
+    
+    def migrate_shipping_mean(self):
+        data = {
+            "zmart_express": "shipping_express",
+            "zmart_programado": "shipping_programado",
+            "liberty_express": "liberty_express",
+            "mrw": "shipping_mrw",
+            "tealca": "shipping_tealca",
+            "zoom": "shipping_zoom",
+            "domesa": "shipping_domesa",
+            "pedidos": "shipping_pedidosya",
+            "yummy": "shipping_yummy",
+        }
+
+        for record in self:
+            if not record.shipping_mean:
+                continue
+            if data.get(record.shipping_mean, False):
+                record.shipping_mean_id = self.env.ref(
+                    "sale_zmart." + data.get(record.shipping_mean, "")
+                )
+
     priority_sale = fields.Selection(
         [
             ("high", "High"),

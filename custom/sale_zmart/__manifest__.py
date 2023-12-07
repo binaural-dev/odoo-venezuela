@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sale/Sale",
-    "version": "16.0.0.24",
+    "version": "16.0.0.25",
     "depends": [
         "binaural_sale",
         "invoice_zmart",
@@ -16,10 +16,12 @@
         "binaural_stock"
     ],
     "data": [
+        "security/ir.model.access.csv",
         "data/res_group.xml",
         "data/paperformat.xml",
         "data/mail_templates.xml",
         "data/ir_cron.xml",
+        "data/sale_shipping_mean.xml",
         "report/delivery_note_rma.xml",
         "report/report_sale.xml",
         "report/stock_report_view.xml",
@@ -27,6 +29,7 @@
         "views/sale_order.xml",
         "views/stock_picking.xml",
         "views/res_company.xml",
+        "views/sale_shipping_mean.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
