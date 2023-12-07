@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "1.0",
+    "version": "1.1",
     # any module necessary for this one to work correctly
     "depends": ["base", "account_asset", "binaural_accountant"],
     # always loaded
