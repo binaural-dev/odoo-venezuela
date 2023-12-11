@@ -85,10 +85,18 @@ class SaleOrderZmart(models.Model):
 
         It also sends the custom rate of the order to the invoice
         """
-        if self.journal_id and not self.journal_id.fiscal:
-            return SaleOrder._create_invoices(self, grouped, final, date)
+        move_ids = []
 
-        return super()._create_invoices(grouped, final, date)
+        if self.journal_id and not self.journal_id.fiscal:
+            move_ids = SaleOrder._create_invoices(self, grouped, final, date)
+        else:
+            move_ids = super()._create_invoices(grouped, final, date)
+
+        for move_id in move_ids:
+            move_id.write({"journal_id": self.journal_id})
+
+        return move_ids
+
 
     @api.depends("order_line")
     def _compute_shipping_weight(self):
