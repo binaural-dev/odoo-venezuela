@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="view_res_group_page" model="ir.ui.view">
+        <field name="name">res.groups.page</field>
+        <field name="model">res.groups</field>
+        <field name="inherit_id" ref="base.view_groups_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[7]" position="after">
+                <page string="Hide Menu">
+                    <field name="menu_ids" options="{'no_create': True, 'no_edit': True}"/>    
+                </page>
+            </xpath>
+            <xpath expr="//page[8]" position="after">
+                <page string="Hide Report">
+                    <field name="report_ids" options="{'no_create': True, 'no_edit': True}"/>    
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
