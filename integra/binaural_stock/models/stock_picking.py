@@ -63,6 +63,9 @@ class StockPicking(models.Model):
                             raise UserError(_("You cannot add products to shipment-type transfers"))
                     
                         if isinstance(move_line[1], int):
+                            if not move_line[2]:
+                                raise UserError(_("You cannot add products to shipment-type transfers"))
+                                
                             if move_line[2]["quantity_done"]:
                                 lines = self[matched_key]
                                 for line in lines:
