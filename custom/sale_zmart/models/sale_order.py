@@ -1,8 +1,12 @@
+import logging
 from datetime import datetime, timedelta
 
 from odoo import _, api, fields, models
+from odoo.addons.sale.models.sale_order import SaleOrder
 from odoo.exceptions import UserError
 from odoo.tools.misc import formatLang
+
+_logger = logging.getLogger(__name__)
 
 
 class SaleOrderZmart(models.Model):
@@ -67,6 +71,24 @@ class SaleOrderZmart(models.Model):
     )
     shipping_weight = fields.Char(compute="_compute_shipping_weight")
     partner_street = fields.Char('Client Street', related="partner_id.street", readonly=True)
+
+    journal_id = fields.Many2one(
+        'account.journal',
+        domain=[('type', '=', 'sale')]
+    )
+
+    def _create_invoices(self, grouped=False, final=False, date=None):
+        """
+        This function creates the invoice associated to the order,
+        but with this inheritance it creates multiple invoices if
+        it exceeds the configuration limit.
+
+        It also sends the custom rate of the order to the invoice
+        """
+        if self.journal_id and not self.journal_id.fiscal:
+            return SaleOrder._create_invoices(self, grouped, final, date)
+
+        return super()._create_invoices(grouped, final, date)
 
     @api.depends("order_line")
     def _compute_shipping_weight(self):
