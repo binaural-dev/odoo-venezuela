@@ -80,11 +80,11 @@
                                         <div style="margin-top:-2px;margin-left:6px">
                                             <img t-if="invoice.company_id.logo"
                                                 t-att-src="image_data_uri(invoice.company_id.logo)"
-                                                height="110"
-                                                width="140"
-                                                class="mr-3 mt-1" style="display: inline-block; vertical-align: middle"/>
+                                                height="100"
+                                                width="100"
+                                                class="mt-1" style="display: inline-block; vertical-align: middle;object-fit: contain;"/>
                                         </div>
-                                        <div style="display: inline-block;vertical-align: middle;width:50%;font-size:17px;margin-top:-130px;margin-left:160px">
+                                        <div style="display: inline-block;vertical-align: middle;width:50%;font-size:17px;margin-top:-130px;margin-left:120px">
                                             <div class="col-8">
                                                 <div style="padding-bottom:5px">
                                                     <span style="padding-bottom:5px" t-field="invoice.company_id"/>
@@ -101,7 +101,7 @@
                                         </div>
                                     </div>
                                     <div style="display: flex; align-items: center;margin-top:-110px">
-                                        <div style="margin-left: 700px;">
+                                        <div style="margin-left: 750px;">
                                             <div style="font-size:17px">
                                                 <div>Nota de entrega:
                                                     <span style="margin-left:3px" t-field="invoice.name"/>
@@ -121,25 +121,10 @@
                                 </section>
 
                                 <hr style="border: none; visibility: hidden;" />
-                                <section id="segmento_2" style="border: 1px solid black; padding: 10px; border-radius: 10px;font-size:12px">
-                                    <div style="display: flex; align-items: center;width:60%;height:100px;padding-top:10px;padding-top:10px">
-                                    </div>
-                                    <div style="display: flex; align-items: center;margin-top:-100px;">
-                                        <div style="display: inline-block;" class="align-right">
-                                            <div style="padding:5px">
-                                                <div style="font-size:16px;width:100px; white-space: nowrap; text-align: left;">
-                                                    <span style="margin-left:-185px">Condic. Pago:</span>
-                                                    <span t-field="invoice.invoice_payment_term_id" style="display: inline;"></span>
-                                                </div>
-                                                <div style="font-size:16px">
-                                                    <span style="margin-left:-185px"> Vendedor: </span>
-                                                    <span t-field="invoice.invoice_user_id"/>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <table style="text-align:left;border: 1px solid white;border-right: 1px solid gray">
+                                <section id="segmento_2" class="row" style="border: 1px solid black; padding: 10px; border-radius: 10px;font-size:12px">
+
+                                    <div class="col-9" style="border-right: 1px solid gray">
+                                        <table style="text-align:left;border: 1px solid white;">
                                             <tr>
                                                 <th style="font-weight:normal;font-size:17px">
                                                     <div style="display:inline;">Cliente:</div>
@@ -166,6 +151,21 @@
                                                 </th>
                                             </tr>
                                         </table>
+                                    </div>
+
+                                    <div class="col-3"> 
+                                        <div style="display: inline-block;" class="align-right">
+                                            <div style="padding:5px; padding-left: 20px;">
+                                                <div style="font-size:16px;width:100px; white-space: nowrap; text-align: left;">
+                                                    <span>Condic. Pago:</span>
+                                                    <span t-field="invoice.invoice_payment_term_id" style="display: inline;"></span>
+                                                </div>
+                                                <div style="font-size:16px">
+                                                    <span> Vendedor: </span>
+                                                    <span t-field="invoice.invoice_user_id"/>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </section>
                             </div>
