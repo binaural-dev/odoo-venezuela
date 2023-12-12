@@ -265,7 +265,8 @@ class AccountMove(models.Model):
         the move is edited.
         """
         if vals.get("foreign_rate", False):
-            vals.update({"last_foreign_rate": self.foreign_rate})
+            for move in self:
+                vals.update({"last_foreign_rate": move.foreign_rate})
         res = super().write(vals)
         for move in self:
             if (
