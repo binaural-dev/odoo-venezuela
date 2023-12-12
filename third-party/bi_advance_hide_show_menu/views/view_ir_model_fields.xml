@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="view_ir_model_fields_hide" model="ir.ui.view">
+        <field name="name">ir.model.form</field>
+        <field name="model">ir.model</field>
+        <field name="inherit_id" ref="base.view_model_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[5]" position="after">
+                <page string="Field Configuration">
+                    <field name="field_config_id">
+                    <tree editable="bottom">
+                        <field name="config_fields_id" invisible="1"/>
+                        <field name="fields_id" domain="[('model_id','=',parent.model)]" options="{'no_create': True, 'no_edit': True}"/>
+                        <field name="name"/>
+                        <field name="group_ids" widget="many2many_tags"/>
+                        <field name="readonly"/>
+                        <field name="invisible"/> 
+                    </tree>
+                    <form string="Field Configuration">
+                        <group>
+                            <group>
+                                <field name="config_fields_id" invisible="1"/>
+                                <field name="fields_id" domain="[('model_id','=',parent.model)]"/>
+                                <field name="name"/>
+                            </group>
+                            <group>
+                                <field name="group_ids" widget="many2many_tags"/>
+                                <field name="readonly"/>
+                                <field name="invisible"/> 
+                            </group>
+                        </group>
+                    </form>  
+                </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
