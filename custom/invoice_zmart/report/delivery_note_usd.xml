@@ -23,7 +23,7 @@
             <field name="report_name">invoice_zmart.template_invoice_delivery_note_usd</field>
             <field name="report_file">invoice_zmart.template_invoice_delivery_note_usd</field>
             <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
-            <field name="paperformat_id" ref="invoice_zmart.paperformat_note"/>
+            <field name="paperformat_id" ref="invoice_zmart.paperformat_note_bs_usd"/>
             <field name="binding_type">report</field>
             <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
             <field name="binding_model_id" ref="account.model_account_move"/>
@@ -36,7 +36,7 @@
             <field name="report_name">invoice_zmart.template_invoice_delivery_note_usd</field>
             <field name="report_file">invoice_zmart.template_invoice_delivery_note_usd</field>
             <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
-            <field name="paperformat_id" ref="invoice_zmart.paperformat_note"/>
+            <field name="paperformat_id" ref="invoice_zmart.paperformat_note_bs_usd"/>
             <field name="binding_type">report</field>
             <field name="print_report_name" >(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + '.pdf')</field>
             <field name="binding_model_id" eval="False"/>
@@ -87,92 +87,97 @@
                                     float: right;
                                 }
                             </style>
-                            <section id="segmento_1" style="padding: 10px;height: 100px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
-                                <div style="display: flex; align-items: center;width:60%;height:115px;border: 1px solid black; border-radius: 10px">
-                                    <div style="margin-top:-2px;margin-left:6px"><img t-if="invoice.company_id.logo"
-                                        t-att-src="image_data_uri(invoice.company_id.logo)"
-                                        height="110"
-                                        width="140"
-                                        class="mr-3 mt-1" style="display: inline-block; vertical-align: middle"/></div>
-                                    <div style="display: inline-block;vertical-align: middle;width:50%;font-size:16px;margin-top:-130px;margin-left:160px">
-                                        <div class="col-8">
-                                            <div style="padding-bottom:5px">
-                                                <span style="padding-bottom:5px" t-field="invoice.company_id"/>
-                                            </div>
-                                            <div style="padding-bottom:5px">
-                                                <span style="margin-right:3px;">R.I.F:</span>
-                                                <span t-field="invoice.company_id.vat"/>
-                                            </div>
-                                            <div>
-                                                <span style="margin-right:3px;margin-right:3px">N.I.T:</span>
-                                                <span t-field="invoice.company_id.nit"/>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div style="display: flex; align-items: center;margin-top:-110px">
-                                    <div style="margin-left: 700px;">
-                                        <div style="font-size:17px">
-                                            <div>Nota de entrega:
-                                                <span style="margin-left:3px" t-field="invoice.name"/>
-                                            </div>
-                                            <div>Numero de pedido:
-                                                <span style="margin-left:3px" t-field="invoice.invoice_origin"/>
-                                            </div>
-                                            <div>Fecha de Emision:
-                                                <span style="margin-left:3px" t-field="invoice.invoice_date"/>
-                                            </div>
-                                            <div style="padding-top:6px">Fecha de entrega:
-                                                <span style="margin-left:3px" t-field="invoice.invoice_reception_date"/>
+
+                            <div class="header">
+                                <section id="segmento_1" style="padding: 10px;height: 100px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+                                    <div style="display: flex; align-items: center;width:60%;height:115px;border: 1px solid black; border-radius: 10px">
+                                        <div style="margin-top:-2px;margin-left:6px"><img t-if="invoice.company_id.logo"
+                                            t-att-src="image_data_uri(invoice.company_id.logo)"
+                                            height="110"
+                                            width="140"
+                                            class="mr-3 mt-1" style="display: inline-block; vertical-align: middle"/></div>
+                                        <div style="display: inline-block;vertical-align: middle;width:50%;font-size:16px;margin-top:-130px;margin-left:160px">
+                                            <div class="col-8">
+                                                <div style="padding-bottom:5px">
+                                                    <span style="padding-bottom:5px" t-field="invoice.company_id"/>
+                                                </div>
+                                                <div style="padding-bottom:5px">
+                                                    <span style="margin-right:3px;">R.I.F:</span>
+                                                    <span t-field="invoice.company_id.vat"/>
+                                                </div>
+                                                <div>
+                                                    <span style="margin-right:3px;margin-right:3px">N.I.T:</span>
+                                                    <span t-field="invoice.company_id.nit"/>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </section>
-                            <hr style="border: none; visibility: hidden;" />
-                            <section id="segmento_2" style="border: 1px solid black; padding: 10px; border-radius: 10px;font-size:12px">
-                                <div style="display: flex; align-items: center;width:60%;height:100px;padding-top:10px;padding-top:10px">
-                                </div>
-                                <div style="display: flex; align-items: center;margin-top:-100px;">
-                                    <div style="display: inline-block;" class="align-right">
-                                        <div style="padding:5px">
-                                            <div style="font-size:16px;width:100px; white-space: nowrap; text-align: left;">
-                                                <span style="margin-left:-185px">Condic. Pago:</span>
-                                                <span t-field="invoice.invoice_payment_term_id" style="display: inline;"></span>
-                                            </div>
-                                            <div style="font-size:16px">
-                                                <span style="margin-left:-185px"> Vendedor: </span>
-                                                <span t-field="invoice.invoice_user_id"/>
+                                    <div style="display: flex; align-items: center;margin-top:-110px">
+                                        <div style="margin-left: 700px;">
+                                            <div style="font-size:17px">
+                                                <div>Nota de entrega:
+                                                    <span style="margin-left:3px" t-field="invoice.name"/>
+                                                </div>
+                                                <div>Numero de pedido:
+                                                    <span style="margin-left:3px" t-field="invoice.invoice_origin"/>
+                                                </div>
+                                                <div>Fecha de Emision:
+                                                    <span style="margin-left:3px" t-field="invoice.invoice_date"/>
+                                                </div>
+                                                <div style="padding-top:6px">Fecha de entrega:
+                                                    <span style="margin-left:3px" t-field="invoice.invoice_reception_date"/>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <table style="text-align:left;border: 1px solid white;border-right: 1px solid gray">
-                                        <tr>
-                                            <th style="font-weight:normal;font-size:17px"><div style="display:inline;">Cliente:</div><span style="margin-left:25px" t-field="invoice.partner_id"/></th>
-                                        </tr>
-                                        <tr>
-                                            <th style=";font-weight:normal;font-size:17px">
-                                                <div style="display:inline;">R.I.F.:</div>
-                                                <span style="margin-left:35px" t-field="invoice.partner_id.prefix_vat"/>-
-                                                <span style="margin-right:30px" t-field="invoice.partner_id.vat"/>N.I.T.:
-                                                <span style="margin-left:3px" t-field="invoice.partner_id.nit"/>
-                                            </th>
-                                        </tr>
-                                        <tr>
-                                            <th style="width:700px;font-weight:normal;font-size:17px;padding-right:40px">
-                                                <div style="display:inline;">Dirección:</div>
-                                                    <span style="margin-left:3px" t-out="invoice.partner_id.contact_address_complete"/>
-                                            </th>
-                                        </tr>
-                                        <tr>
-                                            <th style="font-weight:normal;font-size:17px">Teléfonos:<span style="margin-left:3px" t-out="invoice.partner_id.phone"/></th>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </section>
+                                </section>
+                                <hr style="border: none; visibility: hidden;" />
+                                <section id="segmento_2" style="border: 1px solid black; padding: 10px; border-radius: 10px;font-size:12px">
+                                    <div style="display: flex; align-items: center;width:60%;height:100px;padding-top:10px;padding-top:10px">
+                                    </div>
+                                    <div style="display: flex; align-items: center;margin-top:-100px;">
+                                        <div style="display: inline-block;" class="align-right">
+                                            <div style="padding:5px">
+                                                <div style="font-size:16px;width:100px; white-space: nowrap; text-align: left;">
+                                                    <span style="margin-left:-185px">Condic. Pago:</span>
+                                                    <span t-field="invoice.invoice_payment_term_id" style="display: inline;"></span>
+                                                </div>
+                                                <div style="font-size:16px">
+                                                    <span style="margin-left:-185px"> Vendedor: </span>
+                                                    <span t-field="invoice.invoice_user_id"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <table style="text-align:left;border: 1px solid white;border-right: 1px solid gray">
+                                            <tr>
+                                                <th style="font-weight:normal;font-size:17px"><div style="display:inline;">Cliente:</div><span style="margin-left:25px" t-field="invoice.partner_id"/></th>
+                                            </tr>
+                                            <tr>
+                                                <th style=";font-weight:normal;font-size:17px">
+                                                    <div style="display:inline;">R.I.F.:</div>
+                                                    <span style="margin-left:35px" t-field="invoice.partner_id.prefix_vat"/>-
+                                                    <span style="margin-right:30px" t-field="invoice.partner_id.vat"/>N.I.T.:
+                                                    <span style="margin-left:3px" t-field="invoice.partner_id.nit"/>
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <th style="width:700px;font-weight:normal;font-size:17px;padding-right:40px">
+                                                    <div style="display:inline;">Dirección:</div>
+                                                        <span style="margin-left:3px" t-out="invoice.partner_id.contact_address_complete"/>
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <th style="font-weight:normal;font-size:17px">Teléfonos:<span style="margin-left:3px" t-out="invoice.partner_id.phone"/></th>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </section>
+                            </div>
+
                             <hr style="border: none; visibility: hidden;"/>
+
                             <section id="segmento_3">
                                 <t t-set="display_discount" t-value="any(l.discount for l in invoice.invoice_line_ids)"/>
                                 <table name="table_product">
@@ -219,10 +224,10 @@
                                                 </t>
                                                 <t t-else="">
                                                     <td style="width:170px;text-align:center;">
-                                                        <span t-esc="line.product_id.default_code[:20]"/>
+                                                        <span t-esc="line.product_id.default_code[:20] if line.product_id.default_code else line.product_id.default_code"/>
                                                     </td>
                                                     <td style="width:390px;text-align:left;">
-                                                        <span t-esc="line.product_id.name[:43]"/>
+                                                        <span t-esc="line.product_id.name[:43] if line.product_id.name else line.product_id.name"/>
                                                     </td>
                                                 </t>
                                                 <td style="width:110px;text-align:center;">
@@ -247,8 +252,10 @@
                                     </tbody>
                                 </table>
                             </section>
+
                             <div style="border: none;border-top: 1px solid #000;margin: 20px 0;"></div>
                             <div style="width:100%;margin-top:20px"></div>
+
                             <section id="segmento_4">
                                 <table name="table_total" style="border: 1px solid white">
                                     <tr>
@@ -393,6 +400,13 @@
                                     </div>
                                 </div>
                             </section>
+
+                            <div class="footer">
+ 
+                                <ul class="list-inline" style="float:right;" >
+                                    <li style="display: inline-block;" t-if="invoice.journal_id.fiscal"><span t-if="invoice.journal_id.fiscal">Página: <span class="page"/>/<span class="topage"/></span></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </t>
