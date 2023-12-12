@@ -176,22 +176,10 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
 
     def p_get_new_values(self, totals, payment):
         multiply = 1 if payment.payment_type == "inbound" else -1
-        if payment.currency_id.id == self.env.ref("base.USD").id:
-            amount = totals["amount"] + (payment.amount * multiply)
-            foreign_amount = totals["foreign_amount"] + (
-                (payment.amount * payment.foreign_rate) * multiply
-            )
-        else:
-            amount = totals["amount"] + (payment.asset_receivable_amount * multiply)
-            foreign_amount = totals["foreign_amount"] + (payment.amount * multiply)
-
+        amount = totals["amount"] + (payment.amount * multiply)
         return {
             "amount": amount,
-            "foreign_amount": foreign_amount,
-            "formatted_amount": formatLang(self.env, amount, currency_obj=self.env.ref("base.USD")),
-            "formatted_foreign_amount": formatLang(
-                self.env, foreign_amount, currency_obj=self.env.ref("base.VEF")
-            ),
+            "formatted_amount": formatLang(self.env, amount, currency_obj=payment.currency_id),
         }
 
     def get_new_values(self, totals, invoice):
