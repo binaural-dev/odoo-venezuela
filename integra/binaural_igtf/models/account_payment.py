@@ -290,7 +290,7 @@ class AccountPaymentIgtf(models.Model):
 
 
         for payment in self:
-            if payment.reconciled_invoice_ids or payment.reconciled_bill_ids and payment.is_igtf:
+            if payment.reconciled_invoice_ids or payment.reconciled_bill_ids and payment.is_igtf_on_foreign_exchange:
                 for invoice in payment.reconciled_invoice_ids:
                     if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                         invoice.bi_igtf = invoice.bi_igtf - (get_payment_amount_invoice(payment, invoice) * self.foreign_rate)
