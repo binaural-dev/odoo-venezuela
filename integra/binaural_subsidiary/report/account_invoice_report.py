@@ -13,10 +13,9 @@ class AccountInvoiceReport(models.Model):
         aac.name AS subsidiary
         """
         return res
-    
+
     @api.model
     def _from(self):
         res = super()._from()
         res += "LEFT JOIN account_analytic_account aac ON move.account_analytic_id = aac.id"
         return res
-    # view_account_invoice_report_search
