@@ -8,7 +8,6 @@ _logger = logging.getLogger(__name__)
 class ResPartnerInherit(models.Model):
     _inherit = "res.partner"
 
-
     seller_ids = fields.Many2many(
         "hr.employee",
         string="Sellers",
