@@ -13,12 +13,12 @@ class SaleReportBinauralSale(models.Model):
 
     def _from_sale(self):
         res = super()._from_sale()
-        res += """LEFT JOIN account_analytic_account aac ON s.analytic_account_id = aac.id"""
+        res += """ LEFT JOIN account_analytic_account aac ON s.analytic_account_id = aac.id """
         return res
 
     def _group_by_sale(self):
         res = super()._group_by_sale()
         res += """,
             aac.name
-            """
+        """
         return res
