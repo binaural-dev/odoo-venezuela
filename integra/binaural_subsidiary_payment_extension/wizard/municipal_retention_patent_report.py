@@ -26,6 +26,9 @@ class MunicipalRetentionPatentReport(models.TransientModel):
     def _get_ciu(self, ciu):
         EconomicActivity = self.env["economic.activity"]
         ciu_with_the_same_municipality_as_the_subsidiary = EconomicActivity.search(
-            [("name", "=", ciu.name), ("municipality_id", "=", self.account_analytic_id.id)]
+            [
+                ("name", "=", ciu.name),
+                ("municipality_id", "=", self.account_analytic_id.municipality_id.id),
+            ]
         )
         return ciu_with_the_same_municipality_as_the_subsidiary

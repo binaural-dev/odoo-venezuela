@@ -22,6 +22,7 @@
         "views/res_config_settings.xml",
         "views/account_move.xml",
         "views/purchase_order.xml",
+        "views/sale_order.xml",
         "views/analytic_account.xml",
         "views/menuitems.xml",
         "wizard/account_payment_register.xml",
