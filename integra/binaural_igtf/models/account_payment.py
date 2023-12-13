@@ -278,14 +278,15 @@ class AccountPaymentIgtf(models.Model):
         # if payment have reconciled_invoice_ids or reconciled_bill_ids and is_igtf is True clear bi_igtf of the reconciled invoices
         def get_payment_amount_invoice(self, invoice):
             self.ensure_one()
-            payments = invoice.invoice_payments_widget.get("content", False)
-            for payment in payments:
-                payment_id = payment.get("account_payment_id", False)
-                if not payment_id:
-                    continue
+            if invoice.bi_igtf < self.amount:
+                payments = invoice.invoice_payments_widget.get("content", False)
+                for payment in payments:
+                    payment_id = payment.get("account_payment_id", False)
+                    if not payment_id:
+                        continue
 
-                if self.id == payment_id:
-                    return abs(payment['amount'])
+                    if self.id == payment_id:
+                        return abs(payment['amount'])
             return self.amount
 
 
