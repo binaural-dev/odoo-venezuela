@@ -197,11 +197,6 @@ msgid "Group Product Available Quantity on Sale"
 msgstr "Grupo de Cantidad Disponible para Vender"
 
 #. module: binaural_stock
-#: model:res.groups,name:binaural_stock.group_hide_add_new_product_in_dispatch
-msgid "Hide Add New Product In Dispatch"
-msgstr "Ocultar agregar un nuevo producto en el Despacho"
-
-#. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_hide_cancel_button_from_inventory_transfers
 msgid "Hide Cancel Button from Inventory Transfers"
 msgstr "Ocultar Botón Cancelar de las Transferencias de Inventario"
@@ -413,6 +408,7 @@ msgstr "Buscar en Almacen"
 #. module: binaural_stock
 #. odoo-python
 #: code:addons/binaural_stock/models/stock_picking.py:0
+#: code:addons/binaural_stock/models/stock_picking.py:0
 #, python-format
 msgid "You cannot add products to shipment-type transfers"
 msgstr "No puede agregar productos a transferencias de tipo Expedicion"
@@ -423,6 +419,13 @@ msgstr "No puede agregar productos a transferencias de tipo Expedicion"
 #, python-format
 msgid "You cannot make transfers larger than the demand"
 msgstr "No puedes hacer que las transferencias sean mayor que la demanda"
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "You cannot make transfers larger than the reserved quantity"
+msgstr "You cannot make transfers larger than the reserved quantity"
 
 #. module: binaural_stock
 #. odoo-python

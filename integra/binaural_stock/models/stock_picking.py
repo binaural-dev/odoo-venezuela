@@ -6,6 +6,11 @@ import logging
 _logger = logging.getLogger(__name__)
 
 from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError
+
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
@@ -66,11 +71,18 @@ class StockPicking(models.Model):
                             if not move_line[2]:
                                 raise UserError(_("You cannot add products to shipment-type transfers"))
                                 
-                            if move_line[2]["quantity_done"]:
+                            if "quantity_done" in move_line[2] or "qty_done" in move_line[2]:
                                 lines = self[matched_key]
                                 for line in lines:
                                     if line.id == move_line[1]:
-                                        if line.product_uom_qty < move_line[2]["quantity_done"]:
-                                            raise UserError(_("You cannot make transfers larger than the demand"))
+                                        
+                                        if "quantity_done" in move_line[2]:
+                                            quantity_done = move_line[2].get("quantity_done")
+                                            if line.product_uom_qty < quantity_done:
+                                                raise UserError(_("You cannot make transfers larger than the demand"))
+                                        elif "qty_done" in move_line[2]:
+                                            quantity_done = move_line[2].get("qty_done")
+                                            if line.reserved_uom_qty < quantity_done:
+                                                raise UserError(_("You cannot make transfers larger than the reserved quantity"))
                             
                 else: raise UserError(_("You do not have permission to make shipment-type transfers"))
