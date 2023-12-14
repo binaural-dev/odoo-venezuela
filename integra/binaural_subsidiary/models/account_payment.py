@@ -4,7 +4,11 @@ from odoo import fields, models, _
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
-    account_analytic_id = fields.Many2one("account.analytic.account", string="Subsidiary")
+    account_analytic_id = fields.Many2one(
+        "account.analytic.account",
+        string="Subsidiary",
+        domain=[("is_subsidiary", "=", True)],
+    )
 
     def _synchronize_to_moves(self, changed_fields):
         """

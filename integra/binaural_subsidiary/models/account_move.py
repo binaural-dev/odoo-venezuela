@@ -4,7 +4,11 @@ from odoo import api, fields, models, _
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    account_analytic_id = fields.Many2one("account.analytic.account", string="Subsidiary")
+    account_analytic_id = fields.Many2one(
+        "account.analytic.account",
+        string="Subsidiary",
+        domain=[("is_subsidiary", "=", True)],
+    )
 
     # We need to override the create and write methods to update the analytic distribution of the
     # lines when the analytic account is changed. We don't use the compute method because it is
@@ -73,7 +77,6 @@ class AccountMove(models.Model):
         res = super().action_register_payment()
         res["context"]["default_account_analytic_id"] = self.account_analytic_id.id
         return res
-
 
     def invoice_origin_purchase(self, moves):
         for invoice in moves:

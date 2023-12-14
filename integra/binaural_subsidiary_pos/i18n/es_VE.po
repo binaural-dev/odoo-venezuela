@@ -6,14 +6,19 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20231204\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-04 19:48+0000\n"
-"PO-Revision-Date: 2023-12-04 19:48+0000\n"
+"POT-Creation-Date: 2023-12-06 13:47+0000\n"
+"PO-Revision-Date: 2023-12-06 13:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: binaural_subsidiary_pos
+#: model:ir.model,name:binaural_subsidiary_pos.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
 
 #. module: binaural_subsidiary_pos
 #: model:ir.model,name:binaural_subsidiary_pos.model_pos_config
@@ -38,7 +43,14 @@ msgstr "Sesión TPV"
 #. module: binaural_subsidiary_pos
 #: model:ir.model.fields,field_description:binaural_subsidiary_pos.field_pos_config__sh_analytic_account
 #: model:ir.model.fields,field_description:binaural_subsidiary_pos.field_pos_order__sh_pos_order_analytic_account
+#: model:ir.model.fields,field_description:binaural_subsidiary_pos.field_pos_order_line__sh_pos_order_analytic_account
 #: model:ir.model.fields,field_description:binaural_subsidiary_pos.field_pos_payment__sh_analytic_account
 #: model:ir.model.fields,field_description:binaural_subsidiary_pos.field_pos_session__sh_analytic_account
+#: model:ir.model.fields,field_description:binaural_subsidiary_pos.field_res_config_settings__pos_sh_analytic_account
 msgid "Subsidiary"
-msgstr "Sucursales"
+msgstr "Sucursal"
+
+#. module: sh_pos_analytic_tags
+#: model_terms:ir.ui.view,arch_db:sh_pos_analytic_tags.sh_pos_analytic_tags_res_config_settings_view_form
+msgid "POS Anaylytic Tags"
+msgstr "POS Sucursales (Modulo de terceros usado por Binaural)"
