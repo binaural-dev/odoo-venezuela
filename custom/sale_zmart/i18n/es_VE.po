@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230606\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230928\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-08 22:22+0000\n"
-"PO-Revision-Date: 2023-11-08 22:22+0000\n"
+"POT-Creation-Date: 2023-12-07 20:30+0000\n"
+"PO-Revision-Date: 2023-12-07 20:30+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -344,6 +344,11 @@ msgid ""
 msgstr ""
 
 #. module: sale_zmart
+#: model:ir.actions.server,name:sale_zmart.update_shipping_mean
+msgid "Actualizar Medio de envio"
+msgstr ""
+
+#. module: sale_zmart
 #. odoo-python
 #: code:addons/sale_zmart/models/sale_order.py:0
 #, python-format
@@ -426,6 +431,16 @@ msgid "Confirmation Date"
 msgstr ""
 
 #. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_mean__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_mean__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
 #: model_terms:ir.ui.view,arch_db:sale_zmart.template_sale_order_delivery_note_usd
 msgid "Código"
@@ -461,6 +476,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__discount_4
 msgid "Discount 4"
 msgstr "Descuento 4%"
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_mean__display_name
+msgid "Display Name"
+msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__document_number_invoice
@@ -527,6 +547,11 @@ msgid "Hora de impresión:"
 msgstr ""
 
 #. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_mean__id
+msgid "ID"
+msgstr ""
+
+#. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.view_sale_order_form_zmart
 msgid "Imprimir Nota de Entrega RMA"
 msgstr ""
@@ -554,6 +579,21 @@ msgstr "Tipo de documento"
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.report_print_label
 msgid "Kg"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_mean____last_update
+msgid "Last Modified on"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_mean__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_mean__write_date
+msgid "Last Updated on"
 msgstr ""
 
 #. module: sale_zmart
@@ -591,6 +631,11 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
 msgid "N.I.T.:"
 msgstr ""
+
+#. module: sale_zmart
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_shipping_mean__name
+msgid "Name"
+msgstr "Nombre"
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
@@ -698,6 +743,18 @@ msgid "Sale Note RMA"
 msgstr "Nota de entrega RMA"
 
 #. module: sale_zmart
+#: model:ir.model,name:sale_zmart.model_sale_shipping_mean
+#: model:ir.ui.menu,name:sale_zmart.sale_shipping_mean_menu
+msgid "Sale Shipping Mean"
+msgstr "Medio de Envio"
+
+#. module: sale_zmart
+#: model:ir.actions.act_window,name:sale_zmart.sale_shipping_mean_action
+#: model_terms:ir.ui.view,arch_db:sale_zmart.sale_shipping_mean_tree_view
+msgid "Sale shipping means"
+msgstr "Medio de Envios"
+
+#. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_sale_order
 msgid "Sales Order"
 msgstr "Pedido de venta"
@@ -721,6 +778,7 @@ msgstr ""
 
 #. module: sale_zmart
 #: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_mean
+#: model:ir.model.fields,field_description:sale_zmart.field_sale_order__shipping_mean_id
 #: model:ir.model.fields,field_description:sale_zmart.field_stock_picking__shipping_mean
 msgid "Shipping Mean"
 msgstr "Medio de Envío:"
@@ -772,7 +830,7 @@ msgstr ""
 #. module: sale_zmart
 #: model:ir.model,name:sale_zmart.model_stock_picking
 msgid "Transfer"
-msgstr "Albarán"
+msgstr "Transferir"
 
 #. module: sale_zmart
 #: model_terms:ir.ui.view,arch_db:sale_zmart.template_invoice_delivery_note_rma
