@@ -11,6 +11,10 @@
     # any module necessary for this one to work correctly
     "depends": ["binaural_subsidiary", "stock_account"],
     "data": [
+        "views/stock_move.xml",
+        "views/stock_move_line.xml",
+        "views/stock_picking.xml",
+        "views/stock_valuation_layer.xml",
         "views/stock_warehouse.xml",
     ],
     "auto_install": True,

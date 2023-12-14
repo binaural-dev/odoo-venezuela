@@ -6,7 +6,7 @@ class StockValuationLayer(models.Model):
 
     subsidiary_id = fields.Many2one(
         "account.analytic.account",
-        string="Origin Subsidiary",
+        string="Subsidiary",
         compute="_compute_subsidiary_id",
         store=True,
     )
@@ -21,9 +21,7 @@ class StockValuationLayer(models.Model):
                 svl.subsidiary_id = move.subsidiary_origin_id
 
     def _validate_accounting_entries(self):
-        _logger.warning("SVL: %s", self)
         res = super()._validate_accounting_entries()
-        _logger.warning("SVL: %s", self)
         for svl in self:
             svl.account_move_id.account_analytic_id = svl.subsidiary_id.id
         return res
