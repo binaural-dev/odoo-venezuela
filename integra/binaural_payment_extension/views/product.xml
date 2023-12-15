@@ -7,6 +7,11 @@
             <field name="categ_id" position="after">
                 <field name="ciu_id"/>
             </field>
+	    <notebook position="inside">
+		<page name="ciu_ids">
+		    <field name="ciu_ids"/>
+		</page>
+	    </notebook>
         </field>
     </record>
 </odoo>
