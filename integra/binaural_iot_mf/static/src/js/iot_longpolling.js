@@ -7,12 +7,11 @@ import { IoTLongpolling } from '@iot/iot_longpolling';
 export class BinauralIoTLongpolling extends IoTLongpolling {
   constructor(dialogService) {
     super(...arguments);
-    this.ACTION_TIMEOUT = 160000;
   }
 
   action(iot_ip, device_identifier, data) {
-    console.log("action")
-    return super.action(...arguments);
+    let res = super.action(...arguments)
+    return res
   }
 }
 

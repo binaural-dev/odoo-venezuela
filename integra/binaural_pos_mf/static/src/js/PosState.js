@@ -109,17 +109,21 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         return invoice
       }
       async print_out_invoice(data) {
-        this.env.services.ui.block()
+        let self = this;
         const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
         return new Promise(async (resolve, reject) => {
-          fdm.add_listener(data => {
-            fdm.remove_listener();
-            this.env.services.ui.unblock()
-            data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
-          })
-          await fdm.action({
+          let response = await fdm.action({
             action: `print_${data.type}`,
             data: data,
+          })
+          if (!response["result"]) {
+            self.env.services.ui.unblock()
+            return reject({ "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
+          }
+          fdm.add_listener(data => {
+            fdm.remove_listener();
+            self.env.services.ui.unblock()
+            data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
           })
         });
       }
@@ -128,24 +132,28 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         order.mf_invoice_number = data["sequence"] || false;
       }
       async push_single_order(order, opts) {
-        if (this.useFiscalMachine() && order && !order.to_receipt && !order.mf_invoice_number) {
-          try {
+        try {
+          if (this.useFiscalMachine() && order && !order.to_receipt && !order.mf_invoice_number) {
+            this.env.services.ui.block()
             const response = await this.print_out_invoice(await this.get_data_invoice(order))
+            this.env.services.ui.unblock()
             if (!response.valid) {
               throw new Error(response["message"])
             }
             this.set_data_from_fiscal_machine(order, response)
             return await super.push_single_order(order, opts);
-          } catch (err) {
-            return Promise.reject({
-              code: 701,
-              error: {
-                errorMessage: err.message,
-                errorCode: "400"
-              }
-            });
           }
+        } catch (err) {
+          this.env.services.ui.unblock()
+          return Promise.reject({
+            code: 701,
+            error: {
+              errorMessage: err.message,
+              errorCode: "400"
+            }
+          });
         }
+        this.env.services.ui.unblock()
         return await super.push_single_order(...arguments);
       }
     };

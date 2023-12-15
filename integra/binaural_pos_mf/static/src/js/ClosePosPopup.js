@@ -11,11 +11,6 @@ odoo.define("binaural_pos_mf.ClosePosPopup", function(require) {
         if (!fdm) return
         this.env.services.ui.block()
         new Promise(async (resolve, reject) => {
-          fdm.add_listener(data => {
-            fdm.remove_listener();
-            this.env.services.ui.unblock()
-            data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
-          })
           await fdm.action({
             action: 'report_x',
             data: {},
@@ -27,18 +22,21 @@ odoo.define("binaural_pos_mf.ClosePosPopup", function(require) {
         if (!fdm) return
         this.env.services.ui.block()
         const promise = new Promise(async (resolve, reject) => {
-          fdm.add_listener(data => {
-            fdm.remove_listener();
-            this.env.services.ui.unblock()
-            data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
-          })
-          await fdm.action({
+          let response = await fdm.action({
             action: 'report_z',
             data: {},
           })
+          if (!response["result"]){
+            self.env.services.ui.unblock()
+            return reject({"message":"No se ha podido establecer conexion con la Maquina Fiscal",})
+          }
+          fdm.add_listener(data => {
+            fdm.remove_listener();
+            self.env.services.ui.unblock()
+            data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
+          })
         });
         promise.then(async (data) => {
-          console.log(data)
           await this.rpc({
             model: 'account.move',
             method: 'report_z',

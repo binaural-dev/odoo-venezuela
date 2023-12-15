@@ -11,6 +11,7 @@ import glob
 import urllib3
 import platform
 from functools import reduce
+import traceback
 
 from odoo.addons.hw_drivers.iot_handlers.sdk.ReportData import ReportData
 from odoo.addons.hw_drivers.iot_handlers.sdk.S1PrinterData import S1PrinterData
@@ -25,7 +26,7 @@ from odoo.addons.hw_drivers.iot_handlers.sdk.S8PPrinterData import S8PPrinterDat
 from odoo.addons.hw_drivers.iot_handlers.sdk.S25PrinterData import S25PrinterData
 from odoo.addons.hw_drivers.iot_handlers.sdk.AcumuladosX import AcumuladosX
 
-from odoo import http
+from odoo import http,_
 from odoo.addons.hw_drivers.main import iot_devices
 from odoo.addons.hw_drivers.event_manager import event_manager
 from odoo.addons.hw_drivers.tools import helpers
@@ -215,7 +216,6 @@ class SerialFiscalDriver(SerialDriver):
         super().__init__(identifier, device)
         self.identifier = identifier
         self.device_type = "fiscal_data_module"
-        self.device_name = "Desconocido - Fiscal Printer HKA"
         self.device_connection = "serial"
         self._set_actions()
 
@@ -280,6 +280,29 @@ class SerialFiscalDriver(SerialDriver):
                 "hello": self.get_last_invoice_number,
             }
         )
+
+    def run(self):
+        try:
+            with serial_connection(self.device_identifier, self._protocol) as connection:
+                self._connection = connection
+                self._status['status'] = self.STATUS_CONNECTED
+                self._push_status()
+        except Exception:
+            msg = _('Error while reading %s', self.device_name)
+            self._status = {'status': self.STATUS_ERROR, 'message_title': msg, 'message_body': traceback.format_exc()}
+            self._push_status()
+
+    def _set_name(self):
+        """Tries to build the device's name based on its type and protocol name but falls back on a default name if that doesn't work."""
+        try:
+            with serial_connection(self.device_identifier, self._protocol) as connection:
+                self._connection = connection
+                estado_s1 = self.GetS1PrinterData(True)
+                machine_number = estado_s1["data"]["_registeredMachineNumber"]
+                name = machine_number.capitalize()+ " - Fiscal Printer HKA"
+        except Exception:
+                name = "Desconocido - Fiscal Printer HKA"
+        self.device_name = name
 
     def test(self, data):
         self.SendCmd("7")

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="Chrome" t-inherit="point_of_sale.Chrome" t-inherit-mode="extension" owl="1">
+        <xpath expr="//CashierName" position="after">
+            <div t-on-click="_on_click_mf_test">
+                <i class="fa fa-fw fa-print" role="img"></i>
+                <p> Maquina Fiscal</p>
+            </div>
+        </xpath>
+    </t>
+</templates>
