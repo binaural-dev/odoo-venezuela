@@ -1,8 +1,4 @@
-import logging
-_logger = logging.getLogger(__name__)
-
-def migration(cr, version):
-    _logger.warning("POST MIGRATION AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+def migrate(cr, installed_version):
     cr.execute(
         """
         DELETE FROM product_template_ciu_rel;
