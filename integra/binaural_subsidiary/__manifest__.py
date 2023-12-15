@@ -19,7 +19,6 @@
         "report/purchase_report.xml",
         "report/account_invoice_report.xml",
         "views/account_payment.xml",
-        "views/res_config_settings.xml",
         "views/account_move.xml",
         "views/purchase_order.xml",
         "views/sale_order.xml",
