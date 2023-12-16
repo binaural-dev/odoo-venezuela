@@ -12,10 +12,11 @@ class StockPicking(models.Model):
         related = 'sale_id.shipping_type', 
         string = "Shipping type"
     )
-    shipping_mean = fields.Selection(
-        related = 'sale_id.shipping_mean'
+    shipping_mean = fields.Many2one("sale.shipping.mean",
+        related = 'sale_id.shipping_mean_id'
     )
-    shipping_method = fields.Selection(
+
+    shipping_method = fields.Selection( # <-- deprecated 
         [
             ("prepaid", "Prepaid"),
             ("free", "Free"),
