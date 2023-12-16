@@ -123,7 +123,7 @@
                                 <hr style="border: none; visibility: hidden;" />
                                 <section id="segmento_2" class="row" style="border: 1px solid black; padding: 10px; border-radius: 10px;font-size:12px">
 
-                                    <div class="col-9" style="border-right: 1px solid gray">
+                                    <div class="col-8" style="border-right: 1px solid gray;">
                                         <table style="text-align:left;border: 1px solid white;">
                                             <tr>
                                                 <th style="font-weight:normal;font-size:17px">
@@ -140,7 +140,7 @@
                                                 </th>
                                             </tr>
                                             <tr>
-                                                <th style="width:700px;font-weight:normal;font-size:17px;padding-right:40px">
+                                                <th style="font-weight:normal;font-size:17px;padding-right:40px">
                                                     <div style="display:inline;">Dirección:</div>
                                                     <span style="margin-left:3px" t-out="invoice.partner_id.contact_address_complete"/>
                                                 </th>
@@ -153,19 +153,9 @@
                                         </table>
                                     </div>
 
-                                    <div class="col-3"> 
-                                        <div style="display: inline-block;" class="align-right">
-                                            <div style="padding:5px; padding-left: 20px;">
-                                                <div style="font-size:16px;width:100px; white-space: nowrap; text-align: left;">
-                                                    <span>Condic. Pago:</span>
-                                                    <span t-field="invoice.invoice_payment_term_id" style="display: inline;"></span>
-                                                </div>
-                                                <div style="font-size:16px">
-                                                    <span> Vendedor: </span>
-                                                    <span t-field="invoice.invoice_user_id"/>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div class="col-4" style="font-size:16px;padding-left:10px;"> 
+                                        <span>Condic. Pago: <span t-field="invoice.invoice_payment_term_id" /></span><br/>
+                                        <span>Vendedor:  <span t-field="invoice.invoice_user_id" /></span>
                                     </div>
                                 </section>
                             </div>
@@ -395,7 +385,7 @@
 
                             <div class="footer">
                                 <ul class="list-inline" style="float:right;">
-                                    <li style="display: inline-block;"><span t-if="invoice.journal_id.fiscal">Página: <span class="page"/>/<span class="topage"/></span></li>
+                                    <li style="display: inline-block;"><span>Página: <span class="page"/>/<span class="topage"/></span></li>
                                 </ul>
                             </div>
                         </div>
