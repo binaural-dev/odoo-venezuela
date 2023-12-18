@@ -8,6 +8,7 @@ class AccountMove(models.Model):
         "account.analytic.account",
         string="Subsidiary",
         domain=[("is_subsidiary", "=", True)],
+        default=lambda self: self.env.user.subsidiary_id,
     )
 
     # We need to override the create and write methods to update the analytic distribution of the
