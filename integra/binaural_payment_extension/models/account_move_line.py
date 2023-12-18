@@ -11,6 +11,6 @@ class AccountMoveLine(models.Model):
     @api.depends("product_id.ciu_ids")
     def _compute_ciu_id(self):
         for line in self:
-            if not line.product_id or line.ciu_id:
+            if not line.product_id or line.ciu_id or not line.product_id.ciu_ids:
                 continue
             line.ciu_id = line.product_id.ciu_ids[0]
