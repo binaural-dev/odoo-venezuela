@@ -1,0 +1,14 @@
+<odoo>
+    <data>
+        <record id="view_picking_form_inherited_zmart" model="ir.ui.view">
+            <field name="name">stock.picking.form.zmart</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//button[@name='action_cancel']" position="after">
+                    <button name="button_picking_rma" string="Imprimir Nota de entrega RMA" type="object" class="oe_highlight" attrs="{'invisible': [('sequence_code', '!=', 'OUT')]}"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

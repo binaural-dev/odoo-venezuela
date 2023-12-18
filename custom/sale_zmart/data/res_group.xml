@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record model="res.groups" id="group_sale_note_rma">
+            <field name="name">Sale Note RMA</field>
+        </record>
+
+        <record model="res.groups" id="group_shipping_mean">
+            <field name="name">Editar Medio de Envio</field>
+        </record>
+
+    </data>
+</odoo>
