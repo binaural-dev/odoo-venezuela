@@ -1,6 +1,6 @@
 {
     "name": "Binaural POS with IoT MF",
-    "version": "14.7",
+    "version": "14.8",
     "category": "Accounting",
     "summary": "Binaural POS with IoT MF",
     "description": "Binaural POS with IoT MF",
