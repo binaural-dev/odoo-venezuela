@@ -8,7 +8,7 @@ odoo.define("binaural_pos_mf.Chrome", function(require) {
     class extends Chrome {
       async _on_click_mf_test() {
         try {
-          const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
+          const fdm = this.env.pos.useFiscalMachine();
           let response = await fdm.action({
             action: `test`,
             data: true,

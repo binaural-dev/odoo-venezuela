@@ -10,7 +10,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         super(...arguments);
       }
       useFiscalMachine() {
-        return this.config.iface_fiscal_data_module;
+        return this.env.proxy.iot_device_proxies["fiscal_data_module"];
       }
       get currentOrder() {
         return this.get_order();
@@ -110,7 +110,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
       }
       async print_out_invoice(data) {
         let self = this;
-        const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
+        const fdm = this.useFiscalMachine();
         return new Promise(async (resolve, reject) => {
           let response = await fdm.action({
             action: `print_${data.type}`,
@@ -141,7 +141,8 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               throw new Error(response["message"])
             }
             this.set_data_from_fiscal_machine(order, response)
-            return await super.push_single_order(order, opts);
+            this.env.services.ui.unblock()
+            return await super.push_single_order(...arguments);
           }
         } catch (err) {
           this.env.services.ui.unblock()
@@ -153,8 +154,6 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             }
           });
         }
-        this.env.services.ui.unblock()
-        return await super.push_single_order(...arguments);
       }
     };
   Registries.Model.extend(PosGlobalState, BinauralPosState);
