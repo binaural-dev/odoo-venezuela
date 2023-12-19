@@ -921,15 +921,8 @@ class SerialFiscalDriver(SerialDriver):
         connection = self._connection
         try:
             connection.setRTS(True)
-            lpri = 1
-            while not connection.getCTS():
-                time.sleep(lpri / 10)
-                lpri = lpri + 1
-                if lpri > 20:
-                    connection.setRTS(False)
-                    return False
             return True
-        except serial.SerialException:
+        except serial.SerialException as Error:
             return False
 
     def SendCmd(self, cmd):

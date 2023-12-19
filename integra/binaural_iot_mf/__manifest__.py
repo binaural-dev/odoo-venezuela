@@ -1,6 +1,6 @@
 {
     "name": "Binaural IoT - The Factory HKA",
-    "version": "2.9",
+    "version": "16.0.1.0.0",
     "category": "Accounting",
     "summary": "The Factory HKA (SDK) en IoT",
     "license": "LGPL-3",
