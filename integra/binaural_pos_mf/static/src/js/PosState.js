@@ -118,7 +118,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           })
           if (!response["result"]) {
             self.env.services.ui.unblock()
-            return reject({ "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
+            return reject({ "valid": false, "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
           }
           fdm.add_listener(data => {
             fdm.remove_listener();
@@ -132,20 +132,20 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         order.mf_invoice_number = data["sequence"] || false;
       }
       async push_single_order(order, opts) {
+        if (!(this.useFiscalMachine() && order && !order.to_receipt && !order.mf_invoice_number)) {
+          return await super.push_single_order(...arguments);
+        }
+        let valid = true
         try {
-          if (this.useFiscalMachine() && order && !order.to_receipt && !order.mf_invoice_number) {
-            this.env.services.ui.block()
-            const response = await this.print_out_invoice(await this.get_data_invoice(order))
-            this.env.services.ui.unblock()
-            if (!response.valid) {
-              throw new Error(response["message"])
-            }
-            this.set_data_from_fiscal_machine(order, response)
-            this.env.services.ui.unblock()
-            return await super.push_single_order(...arguments);
-          }
-        } catch (err) {
+          this.env.services.ui.block()
+          const response = await this.print_out_invoice(await this.get_data_invoice(order))
           this.env.services.ui.unblock()
+          if (!response.valid) {
+            throw new Error(response["message"])
+          }
+          this.set_data_from_fiscal_machine(order, response)
+        } catch (err) {
+          valid = false
           return Promise.reject({
             code: 701,
             error: {
@@ -153,6 +153,11 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               errorCode: "400"
             }
           });
+        } finally {
+          this.env.services.ui.unblock()
+          if (valid) {
+            return await super.push_single_order(...arguments);
+          }
         }
       }
     };
