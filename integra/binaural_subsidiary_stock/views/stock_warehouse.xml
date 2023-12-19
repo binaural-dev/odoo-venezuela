@@ -8,6 +8,7 @@
         <field name="arch" type="xml">
 	    <field name="code" position="after">
 		<field name="subsidiary_id"/>
+		<field name="inventory_account_id"/>
 	    </field>
         </field>
     </record>
