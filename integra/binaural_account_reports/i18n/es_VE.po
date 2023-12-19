@@ -223,3 +223,9 @@ msgstr "Estado de Resultado"
 #: model:ir.model.fields,field_description:binaural_account_reports.field_account_report__usd
 msgid "USD"
 msgstr ""
+
+#. module: binaural_account_reports
+#: model:ir.actions.client,name:binaural_account_reports.action_account_report_ja_usd
+#: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_journal_report_usd
+msgid "Journal Report USD"
+msgstr "Reporte de diario $"
