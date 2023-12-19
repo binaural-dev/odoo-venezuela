@@ -48,6 +48,7 @@ class ProductPricelistItem(models.Model):
         store=True,
     )
 
+
     @api.depends("fixed_price", "latest_standard_price", "purchase_price")
     def _compute_margin(self):
         for line in self:

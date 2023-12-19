@@ -25,6 +25,7 @@ class ReportMemberList(models.AbstractModel):
         if not form:
             raise UserError(_("Report Form Error"))
         state_partner = form.get("status", False)
+        status = state_partner
         state_action = form.get("state_action", False)
         search_domain = []
         if state_partner and state_partner != "all":
@@ -43,4 +44,5 @@ class ReportMemberList(models.AbstractModel):
             "docs": docs,
             "date": date.today(),
             "name_user": name_user,
+            'status': status,
         }

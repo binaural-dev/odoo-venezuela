@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.4.9",
+    "version": "16.4.13",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -29,8 +29,10 @@
         "views/account_payment.xml",
         "views/res_partner.xml",
         "report/account_invoice_details.xml",
+        "report/all_payment_report.xml",
         "wizard/account_payment_register.xml",
         "wizard/invoices_details.xml",
+        "wizard/payment_report.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,

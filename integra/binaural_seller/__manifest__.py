@@ -5,7 +5,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.6.14",
+    "version": "16.6.18",
     "category": "Hr/Invoicing/Account",
     "depends": [
         "account",
