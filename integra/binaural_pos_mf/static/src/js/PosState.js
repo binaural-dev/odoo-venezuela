@@ -147,6 +147,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           this.env.services.ui.block()
           const response = await this.print_out_invoice(await this.get_data_invoice(order))
           this.env.services.ui.unblock()
+          console.log("RESPONSE",response)
           if (!response.valid) {
             throw new Error(response["message"])
           }
