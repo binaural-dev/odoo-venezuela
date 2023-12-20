@@ -123,6 +123,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             action: `print_${data.type}`,
             data: data,
           })
+          console.log("RESPONSaE 2",response)
           if (!response["result"]) {
             self.env.services.ui.unblock()
             return reject({ "valid": false, "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
