@@ -10,6 +10,9 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
     )
 
     def print_xlsx(self):
+        if not self.env.company.use_subsidiary_with_multiple_municipalities:
+            return super().print_xlsx()
+
         self.env.context = self.with_context(
             do_not_validate_missing_tax_authorities_name_per_company=True
         ).env.context
@@ -19,6 +22,8 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         return super().print_xlsx()
 
     def _get_tax_authorities_record(self, company):
+        if not self.env.company.use_subsidiary_with_multiple_municipalities:
+            return super()._get_tax_authorities_record(company)
         return self.account_analytic_id
 
     def _get_filtered_retention_lines(self, lines):
