@@ -22,6 +22,12 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         res.push(`PEDIDO: ${this.env.pos.get_order().uid}`)
         return res
       }
+      get get_flag_21(){
+        return this.config.flag_21
+      }
+      get get_traditional_line(){
+        return this.config.traditional_line
+      }
       async get_data_invoice(order) {
         const currency = { symbol: 'Bs', position: 'after', rounding: 0.01, decimals: 2 };
 
@@ -30,8 +36,8 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           company_id: {
             name: this.company.name,
           },
-          flag_21: this.config.flag_21,
-          traditional_line: this.config.traditional_line
+          flag_21: this.get_flag_21,
+          traditional_line: this.get_traditional_line,
         }
         if (order.get_partner()) {
 
@@ -106,6 +112,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             }
           })
         }
+        console.log(invoice)
         return invoice
       }
       async print_out_invoice(data) {
