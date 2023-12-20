@@ -131,6 +131,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           fdm.add_listener(data => {
             fdm.remove_listener();
             self.env.services.ui.unblock()
+            console.log(data)
             data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
           })
         });
