@@ -112,7 +112,6 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             }
           })
         }
-        console.log(invoice)
         return invoice
       }
       async print_out_invoice(data) {
@@ -123,7 +122,6 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             action: `print_${data.type}`,
             data: data,
           })
-          console.log("RESPONSaE 2",response)
           if (!response["result"]) {
             self.env.services.ui.unblock()
             return reject({ "valid": false, "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
@@ -131,8 +129,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           fdm.add_listener(data => {
             fdm.remove_listener();
             self.env.services.ui.unblock()
-            console.log(data)
-            data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
+            data.value.valid ? resolve(data["value"]) : reject(data["value"])
           })
         });
       }
@@ -149,7 +146,6 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           this.env.services.ui.block()
           const response = await this.print_out_invoice(await this.get_data_invoice(order))
           this.env.services.ui.unblock()
-          console.log("RESPONSE",response)
           if (!response.valid) {
             throw new Error(response["message"])
           }
