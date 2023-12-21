@@ -165,7 +165,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             $("#payment_terms_value").val(property_payment_term_id.length > 0 ? property_payment_term_id[0] : "")
             
             $("#openProduct").attr('disabled', false)
-            $("input[id='client']").select2("enable", false);
             $("#same_address").attr('disabled', false)
             $("#openClient").remove()
         },
@@ -366,6 +365,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $("#note").val("")
                 $("#product_head").show()
                 $("#number").show()
+                $("input[id='client']").select2("enable", false);
                 $("#number_order").text(data[0].name)
                 $("#number_order_value").val(data[0].id)
                 $("#same_address").attr('disabled', true)
