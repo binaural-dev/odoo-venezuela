@@ -11,3 +11,5 @@ class AccountJournal(models.Model):
     series_correlative_sequence_id = fields.Many2one(
         "ir.sequence", string="Series control number", tracking=True
     )
+
+    is_contingency = fields.Boolean(default=False)
