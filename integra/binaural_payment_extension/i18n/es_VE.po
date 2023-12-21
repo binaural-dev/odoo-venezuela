@@ -389,7 +389,7 @@ msgstr "Alícuota"
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__allowed_lines_move_ids
 msgid "Allowed Lines Move"
-msgstr "Apuntes permitidas"
+msgstr "Apuntes permitidos"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__related_amount_subtract_fees
