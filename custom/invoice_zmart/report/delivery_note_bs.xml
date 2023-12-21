@@ -163,7 +163,7 @@
                             <hr style="border: none; visibility: hidden;" />
                             <section id="segmento_3">
                             <t t-set="display_discount" t-value="any(l.discount for l in invoice.invoice_line_ids)"/>
-                                <table name="table_product" style="height:20px;">
+                                <table name="table_product" style="height:20px;position:relative;top:-15px;">
                                     <tr style="border-bottom: 2px solid black;height:30px;border-top: 2px solid black;height:30px;font-size:16px;">
                                         <th style="width:120px;text-align:center;border-left:1px solid white;text-align:center;">Código</th>
                                         <th style="width:440px;text-align:left;border-left:1px solid white;padding-left: 10px;text-align:center;">Descripción</th>
