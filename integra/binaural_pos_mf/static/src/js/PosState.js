@@ -28,6 +28,10 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
       get get_traditional_line(){
         return this.config.traditional_line
       }
+
+      is_same_mf(serial){
+        return true
+      }
       async get_data_invoice(order) {
         const currency = { symbol: 'Bs', position: 'after', rounding: 0.01, decimals: 2 };
 
@@ -62,7 +66,12 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           }
         }
 
-        if (lines.length > 0) {
+        invoice['type'] = 'out_invoice'
+        if (order.get_total_with_tax() < 0) {
+          invoice['type'] = 'out_refund'
+        }
+
+        if (lines.length > 0 && invoice['type'] == 'out_refund') {
           try {
             let response = await this.env.services.rpc({
               model: 'pos.order',
@@ -70,6 +79,9 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               args: [[], lines[0].orderline.orderUid],
               kwargs: {},
             })
+            if(!this.is_same_mf(response[0].fiscal_machine)){
+              return {"valid": false, "message": `El documento fue impreso desde la Maquina ${response[0].fiscal_machine}`}
+            }
             if (response.length > 0) {
               invoice["invoice_affected"] = {
                 "number": response[0].mf_invoice_number,
@@ -78,14 +90,10 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               }
             }
           } catch (e) {
-            console.log(e)
+            console.log("AQUIIIIIIIIIIIIIIIi")
           }
         }
 
-        invoice['type'] = 'out_invoice'
-        if (order.get_total_with_tax() < 0) {
-          invoice['type'] = 'out_refund'
-        }
         if (order.orderlines.length > 0) {
 
           let vef_base = this.currency.name === "VEF"
@@ -112,6 +120,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             }
           })
         }
+        invoice["valid"] = true
         return invoice
       }
       async print_out_invoice(data) {
@@ -144,13 +153,19 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         let valid = true
         try {
           this.env.services.ui.block()
-          const response = await this.print_out_invoice(await this.get_data_invoice(order))
+          let data = await this.get_data_invoice(order)
+          if(!data["valid"]){
+            this.env.services.ui.unblock()
+            throw new Error(data["message"])
+          }
+          const response = await this.print_out_invoice(data)
           this.env.services.ui.unblock()
           if (!response.valid) {
             throw new Error(response["message"])
           }
           this.set_data_from_fiscal_machine(order, response)
         } catch (err) {
+          this.env.services.ui.unblock()
           valid = false
           return Promise.reject({
             code: 701,

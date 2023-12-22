@@ -421,7 +421,9 @@ class SerialFiscalDriver(SerialDriver):
         valid = True
         cmd = []
         try:
-            self._States("S1")
+            last_trama = self._States("S1")
+            last_res = S1PrinterData(last_trama)
+            last_number = last_res.__dict__["_lastNCNumber"]
             status = self.ReadFpStatus(True)
             if status["data"]["error"]["code"] != "0":
                 raise Exception(status["data"]["error"]["msg"])
@@ -551,6 +553,8 @@ class SerialFiscalDriver(SerialDriver):
             res = S1PrinterData(trama)
             number = res.__dict__["_lastNCNumber"]
             machine_number = res.__dict__["_registeredMachineNumber"]
+            if number == last_number:
+                return {"valid": False ,"message": "No se imprimio el documento"}
             machine = {
                 "valid": True,
                 "data": {"sequence": number, "serial_machine": machine_number},
@@ -573,6 +577,10 @@ class SerialFiscalDriver(SerialDriver):
         cmd = []
         try:
             self._States("S1")
+            last_trama = self._States("S1")
+            last_res = S1PrinterData(last_trama)
+            last_number = last_res.__dict__["_lastInvoiceNumber"]
+
             status = self.ReadFpStatus(True)
             if status["data"]["error"]["code"] != "0":
                 raise Exception(status["data"]["error"]["msg"])
@@ -691,6 +699,9 @@ class SerialFiscalDriver(SerialDriver):
             trama = self._States("S1")
             res = S1PrinterData(trama)
             number = res.__dict__["_lastInvoiceNumber"]
+            if number == last_number:
+                return {"valid": False ,"message": "No se imprimio el documento"}
+
             machine_number = res.__dict__["_registeredMachineNumber"]
             machine = {
                 "valid": True,
@@ -918,12 +929,7 @@ class SerialFiscalDriver(SerialDriver):
         return self.data["value"]
 
     def _HandleCTSRTS(self):
-        connection = self._connection
-        try:
-            connection.setRTS(True)
-            return True
-        except serial.SerialException as Error:
-            return False
+        return True
 
     def SendCmd(self, cmd):
         connection = self._connection

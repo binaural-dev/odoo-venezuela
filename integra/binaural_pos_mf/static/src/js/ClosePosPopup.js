@@ -7,9 +7,8 @@ odoo.define("binaural_pos_mf.ClosePosPopup", function(require) {
   const BinauralClosePosPopup = (ClosePosPopup) =>
     class extends ClosePosPopup {
       generate_report_x() {
-        const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
+        const fdm = this.env.pos.useFiscalMachine();
         if (!fdm) return
-        this.env.services.ui.block()
         new Promise(async (resolve, reject) => {
           await fdm.action({
             action: 'report_x',
@@ -18,7 +17,7 @@ odoo.define("binaural_pos_mf.ClosePosPopup", function(require) {
         });
       }
       generate_report_z() {
-        const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
+        const fdm = this.env.pos.useFiscalMachine();
         if (!fdm) return
         this.env.services.ui.block()
         const promise = new Promise(async (resolve, reject) => {
@@ -32,8 +31,8 @@ odoo.define("binaural_pos_mf.ClosePosPopup", function(require) {
           }
           fdm.add_listener(data => {
             fdm.remove_listener();
-            self.env.services.ui.unblock()
-            data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
+            console.log(data.value)
+            !!data.value.valid ? resolve(data["value"]) : reject(data["value"])
           })
         });
         promise.then(async (data) => {
@@ -47,6 +46,8 @@ odoo.define("binaural_pos_mf.ClosePosPopup", function(require) {
             method: 'set_report_z',
             args: [this.env.pos.pos_session.id, data],
           })
+        }).finally(() => {
+          this.env.services.ui.unblock()
         })
       }
     }
