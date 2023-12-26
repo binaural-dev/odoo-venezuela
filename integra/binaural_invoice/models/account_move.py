@@ -36,6 +36,7 @@ class AccountMove(models.Model):
                 [
                     ("is_contingency", "=", True),
                     ("id", "!=", move.id),
+                    ("correlative", "!=", False),
                     ("correlative", "=", move.correlative),
                     ("journal_id", "=", move.journal_id.id),
                 ],
