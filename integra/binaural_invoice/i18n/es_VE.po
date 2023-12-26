@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20231129\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-21 18:44+0000\n"
-"PO-Revision-Date: 2023-12-21 18:44+0000\n"
+"POT-Creation-Date: 2023-12-26 19:00+0000\n"
+"PO-Revision-Date: 2023-12-26 19:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -143,6 +143,7 @@ msgid "<strong>Nro Document:</strong>"
 msgstr "<strong>Nro Documento:</strong>"
 
 #. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.template_binaural_invoce_report_invoice_document
 msgid "<strong>Nro de Pedido:</strong>"
 msgstr ""
@@ -501,6 +502,15 @@ msgstr "Número de control para series"
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
 msgid "Telf:"
 msgstr ""
+
+#. module: binaural_invoice
+#. odoo-python
+#: code:addons/binaural_invoice/models/account_move.py:0
+#, python-format
+msgid ""
+"The correlative must be unique per journal when using a contingency journal"
+msgstr ""
+"El nro de control debe ser único por diario en caso de diarios de contingencia"
 
 #. module: binaural_invoice
 #. odoo-python

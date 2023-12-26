@@ -12,4 +12,4 @@ class AccountJournal(models.Model):
         "ir.sequence", string="Series control number", tracking=True
     )
 
-    is_contingency = fields.Boolean(default=False)
+    is_contingency = fields.Boolean(default=False, tracking=True)

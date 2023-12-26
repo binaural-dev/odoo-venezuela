@@ -17,7 +17,7 @@
 		<attribute name="attrs">
 		    {
 			'readonly': ['&amp;', '|', ('move_type', 'in', ('out_invoice', 'out_refund')), ('is_contingency', '=', False), ('state', '=', 'posted')],
-			'required': [('move_type', 'in', ('in_invoice', 'in_refund', 'in_receipt'))]
+			'required': ['|', ('move_type', 'in', ('in_invoice', 'in_refund', 'in_receipt')), ('is_contingency', '=', True)]
 		    }
 		</attribute>
                 <attribute name="placeholder">JRNL/2016/00001</attribute>
@@ -31,8 +31,8 @@
                 <field name="correlative"
                     attrs="{
                         'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],
-                        'readonly':  ['&amp;', ('move_type', 'in', ['out_invoice', 'out_refund']), ('is_contingency', '=', False)],
-                        'required':  [('move_type', 'in', ['in_invoice', 'in_refund'])]
+                        'readonly':  ['&amp;', '|', ('move_type', 'in', ['out_invoice', 'out_refund']), ('is_contingency', '=', False), ('state', '=', 'posted')],
+                        'required':  ['|', ('move_type', 'in', ['in_invoice', 'in_refund']), ('is_contingency', '=', True)]
                     }"/>
             </xpath>
 

@@ -18,6 +18,26 @@ class AccountMove(models.Model):
     last_payment_date = fields.Date(compute="_compute_last_payment_date", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")
 
+    @api.constrains("correlative", "is_contingency")
+    def _check_correlative(self):
+        AccountMove = self.env["account.move"]
+        for move in self:
+            if not move.is_contingency:
+                continue
+            repeated_moves = AccountMove.search(
+                [
+                    ("is_contingency", "=", True),
+                    ("id", "!=", move.id),
+                    ("correlative", "=", move.correlative),
+                    ("journal_id", "=", move.journal_id.id),
+                ],
+                limit=1,
+            )
+            if repeated_moves:
+                raise UserError(
+                    _("The correlative must be unique per journal when using a contingency journal")
+                )
+
     @api.depends("amount_residual")
     def _compute_last_payment_date(self):
         for move in self:
