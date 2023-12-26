@@ -3,6 +3,7 @@ from . import account_move_line
 from . import account_payment
 from . import analytic_account
 from . import bank_rec_widget
+from . import ir_rule
 from . import purchase_order
 from . import res_company
 from . import res_config_settings
