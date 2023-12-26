@@ -21,9 +21,17 @@ class AccountMove(models.Model):
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
         AccountMove = self.env["account.move"]
+        is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
         for move in self:
             if not move.is_contingency:
                 continue
+            if not is_series_invoicing_enabled and not move.correlative:
+                raise ValidationError(
+                    _(
+                        "Contingency journal's invoices should always have a correlative if series "
+                        "invoicing is not enabled"
+                    )
+                )
             repeated_moves = AccountMove.search(
                 [
                     ("is_contingency", "=", True),

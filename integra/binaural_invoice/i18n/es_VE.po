@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20231129\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-26 19:00+0000\n"
-"PO-Revision-Date: 2023-12-26 19:00+0000\n"
+"POT-Creation-Date: 2023-12-26 20:22+0000\n"
+"PO-Revision-Date: 2023-12-26 20:22+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -222,6 +222,17 @@ msgstr ""
 #: model:ir.model,name:binaural_invoice.model_res_config_settings
 msgid "Config Settings"
 msgstr "Opciones de configuración"
+
+#. module: binaural_invoice
+#. odoo-python
+#: code:addons/binaural_invoice/models/account_move.py:0
+#, python-format
+msgid ""
+"Contingency journal's invoices should always have a correlative if series "
+"invoicing is not enabled"
+msgstr ""
+"Las facturas de diarios de contingencia siempre deben tener nro de control "
+"si no se está utilizando facturación por series"
 
 #. module: binaural_invoice
 #: model:ir.model.fields,field_description:binaural_invoice.field_account_bank_statement_line__correlative
@@ -510,7 +521,8 @@ msgstr ""
 msgid ""
 "The correlative must be unique per journal when using a contingency journal"
 msgstr ""
-"El nro de control debe ser único por diario en caso de diarios de contingencia"
+"El nro de control debe ser único por diario en caso de diarios de "
+"contingencia"
 
 #. module: binaural_invoice
 #. odoo-python
