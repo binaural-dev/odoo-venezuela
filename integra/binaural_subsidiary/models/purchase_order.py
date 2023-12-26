@@ -8,4 +8,5 @@ class PurchaseOrder(models.Model):
         "account.analytic.account",
         string="Subsidiary",
         domain=[("is_subsidiary", "=", True)],
+        default=lambda self: self.env.user.subsidiary_id,
     )
