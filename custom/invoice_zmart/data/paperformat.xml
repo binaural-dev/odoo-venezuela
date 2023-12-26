@@ -37,7 +37,7 @@
             <field name="margin_left">8</field>
             <field name="margin_right">9</field>
             <field name="header_line" eval="False"/>
-            <field name="header_spacing">55</field>
+            <field name="header_spacing">60</field>
             <field name="dpi">110</field>
         </record>
     </data>
