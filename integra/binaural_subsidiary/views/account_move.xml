@@ -7,7 +7,7 @@
             <field name="inherit_id" ref="account.view_move_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//group[@id='header_right_group']/div[3]" position="after">
-                    <field name="account_analytic_id" attrs="{'readonly': ['|',('invoice_origin','!=', False), ('ref','!=', False)]}"/>
+                    <field name="account_analytic_id" attrs="{'readonly': ['|',('invoice_origin','!=', False), ('ref','!=', False)]}" required="1"/>
                 </xpath>
             </field>
         </record>

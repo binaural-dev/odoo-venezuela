@@ -9,7 +9,7 @@
     "category": "Hidden",
     "version": "16.0.2.0.0",
     # any module necessary for this one to work correctly
-    "depends": ["binaural_subsidiary", "stock_account"],
+    "depends": ["binaural_subsidiary", "stock", "stock_account"],
     "data": [
         "security/ir_rule.xml",
         "views/stock_move.xml",

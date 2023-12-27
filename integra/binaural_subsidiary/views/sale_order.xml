@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
 	    <field name="payment_term_id" position="after">
-                <field name="subsidiary_id"/>
+                <field name="subsidiary_id" required="1"/>
 	    </field>
         </field>
     </record>
