@@ -407,7 +407,7 @@
                                         <tr class="amount_row">
                                             <td class="amount_col"><strong>Descuento:</strong></td>
                                             <td class="text-end amount_col">
-                                                <strong>$<span t-esc="discount_total_amount" /></strong> 
+                                                <strong>$<span t-esc="discount_total_amount"  t-options='{"widget": "float", "precision": 2}'/></strong> 
                                             </td>
                                             <td class="text-end amount_col">
                                                 <strong><span t-esc="foreign_discount_total_amount" t-options='{"widget": "float", "precision": 2}'/> <span t-esc="foreign_currency_symbol" /> </strong> 
