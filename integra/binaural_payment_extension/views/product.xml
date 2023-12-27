@@ -4,9 +4,11 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <field name="categ_id" position="after">
-                <field name="ciu_id"/>
-            </field>
+	    <notebook position="inside">
+		<page name="ciu_ids" string="Economic Activities">
+		    <field name="ciu_ids" options="{'no_create': True}"/>
+		</page>
+	    </notebook>
         </field>
     </record>
 </odoo>

@@ -27,5 +27,5 @@ class SaleReportBinauralSale(models.Model):
     
     def _from_sale(self):
         res = super()._from_sale()
-        res += """LEFT JOIN product_brand br ON t.brand_id = br.id"""
+        res += """ LEFT JOIN product_brand br ON t.brand_id = br.id """
         return res

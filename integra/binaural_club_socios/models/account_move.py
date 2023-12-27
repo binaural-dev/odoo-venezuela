@@ -52,7 +52,8 @@ class AccountMove(models.Model):
                 ("fee_period", ">=", start_of_month),
                 ("fee_period", "<=", end_of_month),
                 ("state", "in", ["posted"]),
-                # ("payment_state", "in", ["paid", "in_payment", "partial"]),
+                ("move_type", "=", "out_invoice"),
+                ("payment_state", "not in", ["reversed"])
             ]
         )
 
@@ -86,3 +87,19 @@ class AccountMove(models.Model):
         res = super(AccountMove, self).create(vals)
         res.partner_id.write({"is_solvent": False})
         return res
+
+    def action_post(self):
+        for record in self:
+            if record.move_type == 'out_invoice':
+                current_invoice_product_ids = [
+                    line.product_id.id
+                    for line in record.invoice_line_ids
+                    if line.product_id and line.product_id.fixed_concept
+                ]
+
+                if record.fee_period and self.check_fee_period_exists(
+                    record.partner_id.id, record.fee_period, current_invoice_product_ids
+                ):
+                    raise ValidationError(_("the concept has already been invoiced for this period."))
+
+        return super(AccountMove, self).action_post()

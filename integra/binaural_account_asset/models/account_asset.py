@@ -64,7 +64,7 @@ class AccountAsset(models.Model):
         """
         res = super().compute_depreciation_board()
         for asset in self:
-            self.depreciation_move_ids.write(
+            asset.depreciation_move_ids.write(
                 {
                     "foreign_rate": asset.foreign_rate,
                     "foreign_inverse_rate": asset.foreign_inverse_rate,

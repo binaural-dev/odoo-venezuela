@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- <record id='sh_analytic_move_order_line_view_inherit' model="ir.ui.view">
+        <field name="name">sh.analytic.account.move.order.line.view.inherit</field>
+        <field name='model'>account.move.line</field>
+        <field name='inherit_id' ref="account.view_move_line_tree_grouped"></field>
+        <field name='arch' type='xml'>
+            <field name='analytic_tag_ids' position="attributes">
+                <attribute name="widget">many2many_tags</attribute>
+            </field>
+        </field>
+    </record> -->
+</odoo>
