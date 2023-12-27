@@ -254,10 +254,10 @@
                                                 <span t-field="line.discount"/>
                                             </td>
 
-                                            <t t-set="discount_total_amount" t-value="float(discount_total_amount + line.price_unit * (line.discount / 100))"/>
-                                            <t t-set="foreign_discount_total_amount" t-value="float(foreign_discount_total_amount + line.foreign_price * (line.discount / 100))"/>
+                                            <t t-set="discount_total_amount" t-value="float(discount_total_amount + line.product_uom_qty * line.price_unit * (line.discount / 100))"/>
+                                            <t t-set="foreign_discount_total_amount" t-value="float(foreign_discount_total_amount + line.product_uom_qty * + line.foreign_price * (line.discount / 100))"/>
                                             <td style="text-align:center;padding:10px;">
-                                                $<span t-esc="'{0:,.2f}'.format(float(line.price_unit * (line.discount / 100))).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                $<span t-esc="'{0:,.2f}'.format(float(line.price_unit - line.price_unit * (line.discount / 100))).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
                                             </td>
                                             <td class="td_right"
                                                 style="text-align:right">
@@ -407,7 +407,7 @@
                                         <tr class="amount_row">
                                             <td class="amount_col"><strong>Descuento:</strong></td>
                                             <td class="text-end amount_col">
-                                                <strong>$<span t-esc="discount_total_amount" t-options='{"widget": "float", "precision": 2}'/></strong> 
+                                                <strong>$<span t-esc="discount_total_amount"  t-options='{"widget": "float", "precision": 2}'/></strong> 
                                             </td>
                                             <td class="text-end amount_col">
                                                 <strong><span t-esc="foreign_discount_total_amount" t-options='{"widget": "float", "precision": 2}'/> <span t-esc="foreign_currency_symbol" /> </strong> 
