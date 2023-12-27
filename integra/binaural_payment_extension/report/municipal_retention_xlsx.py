@@ -72,7 +72,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
             "E12",
             bold,
             "NUMERO DE LICENCIA DE ACTIVIDADES ECONOMICAS: ",
-            str(company.economic_activity_number),
+            str(tax_authorities_record.economic_activity_number),
         )
         worksheet2.write_rich_string("A13", bold, "DIRECCIÓN FISCAL: ", company.street)
         worksheet2.write("G14", "FECHA DE EMISIÓN O TRANSACCION", boldWithBorderJustify)
