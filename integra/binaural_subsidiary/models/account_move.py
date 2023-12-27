@@ -11,18 +11,20 @@ class AccountMove(models.Model):
         default=lambda self: self.env.user.subsidiary_id,
     )
 
-    # We need to override the create and write methods to update the analytic distribution of the
-    # lines when the analytic account is changed. We don't use the compute method because it is
+    # It's needed to inherit the create and write methods to update the analytic distribution of the
+    # lines when the analytic account is changed. The compute method isn't used because it is
     # called before the write method and we need the old analytic account to update the analytic
     # distribution.
 
     @api.model_create_multi
     def create(self, vals_list):
         """
-        Override the create method to set the analytic distribution of the lines when the analytic
+        Inherits the create method to set the analytic distribution of the lines when the analytic
         account (subsidiary) is set.
         """
         moves = super().create(vals_list)
+        if self.env.context.get("skip_subsidiaries_setting", False):
+            return moves
         for move in moves:
             self.invoice_origin_purchase(moves)
             if not move.account_analytic_id or not move.line_ids:
@@ -35,10 +37,10 @@ class AccountMove(models.Model):
 
     def write(self, vals):
         """
-        Override the write method to update the analytic distribution of the lines when the analytic
+        Inherits the write method to update the analytic distribution of the lines when the analytic
         account (subsidiary) is changed.
 
-        We need to override the write method because the compute method is called before the write
+        We need to extend the write method because the compute method is called before the write
         method and we need the old subsidiary to update the analytic distribution.
         """
         if not vals.get("account_analytic_id") or not self.line_ids:
@@ -72,7 +74,7 @@ class AccountMove(models.Model):
 
     def action_register_payment(self):
         """
-        Override the action_register_payment method to send the default analytic account
+        Inherits the action_register_payment method to send the default analytic account
         (sbusidiary) to the payment wizard.
         """
         res = super().action_register_payment()
