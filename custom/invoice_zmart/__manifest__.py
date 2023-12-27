@@ -8,8 +8,8 @@
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
     'category': 'Invoice',
-    'version': '16.0.1.5',
-    'depends': ['binaural_invoice', 'binaural_base_igtf'],
+    "version": "16.0.1.10.0",
+    'depends': ['binaural_invoice', 'binaural_base_igtf','binaural_payment_extension'],
     'data': [
         'data/paperformat.xml',
         'data/res_group.xml',
@@ -19,6 +19,7 @@
         'report/digital_invoice.xml',
         'report/free_form_bs.xml',
         'report/free_form_usd.xml',
+        'report/retention_voucher_templates.xml',
         'views/account_move.xml',
         'views/account_payment.xml',
         'wizard/wizard_confirm_account_move_view.xml',
