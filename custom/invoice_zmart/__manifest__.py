@@ -9,7 +9,7 @@
     'website': "https://binauraldev.com/",
     'category': 'Invoice',
     "version": "16.0.1.0.0",
-    'depends': ['binaural_invoice', 'binaural_base_igtf'],
+    'depends': ['binaural_invoice', 'binaural_base_igtf','binaural_payment_extension'],
     'data': [
         'data/paperformat.xml',
         'data/res_group.xml',
