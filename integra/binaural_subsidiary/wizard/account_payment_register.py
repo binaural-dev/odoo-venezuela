@@ -7,7 +7,9 @@ class AccountPaymentRegister(models.TransientModel):
     account_analytic_id = fields.Many2one(
         "account.analytic.account",
         string="Subsidiary",
-        domain=[("is_subsidiary", "=", True)],
+        domain=lambda self: (
+            f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
+        ),
     )
 
     def _init_payments(self, to_process, edit_mode=False):

@@ -7,7 +7,9 @@ class AccountPayment(models.Model):
     account_analytic_id = fields.Many2one(
         "account.analytic.account",
         string="Subsidiary",
-        domain=[("is_subsidiary", "=", True)],
+        domain=lambda self: (
+            f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
+        ),
     )
 
     def _synchronize_to_moves(self, changed_fields):
