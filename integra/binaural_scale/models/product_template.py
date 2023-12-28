@@ -12,20 +12,38 @@ class ProductTemplate(models.Model):
 
     plu_id = fields.Char(string="PLU ID")
 
+    @api.model
+    def set_barcode_products_with_plu(self):
+        products = self.search(
+            [
+                ("plu_id", "!=", False),
+                ("company_id", "in", [self.env.company.id,False]),
+            ]
+        )
+        products.set_barcode_by_plu()
+
+    def set_barcode_by_plu(self):
+        code = "21"
+        if len(self) > 0 and self[0].env.company.scan_barcode_scale_by_price:
+            code = "23"
+        for record in self:
+            if record.plu_id:
+                barcode = f"{code}{record.plu_id.zfill(5) or 00000}000000"
+                new_barcode = record.env["barcode.nomenclature"].sanitize_ean(barcode)
+                record.write({"barcode": new_barcode})
+            if not record.plu_id:
+                record.write({"barcode": False})
+
     @api.onchange("plu_id")
     def _unique_plu(self):
         product = self.env["product.template"].search(
             [
                 ("plu_id", "=", self.plu_id),
                 ("plu_id", "!=", False),
-                ("company_id", "=", self.env.company.id),
+                ("company_id", "in", [self.env.company.id, False]),
             ]
         )
         if product:
             raise UserError(_("Este PLU ya existe en otro producto"))
-        if self.plu_id:
-            barcode = f"21{self.plu_id.zfill(5) or 00000}000000"
-            new_barcode = self.env["barcode.nomenclature"].sanitize_ean(barcode)
-            self.write({"barcode": new_barcode})
-        if not self.plu_id:
-            self.write({"barcode": False})
+        self.set_barcode_by_plu()
+

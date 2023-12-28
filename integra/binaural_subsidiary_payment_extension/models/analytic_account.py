@@ -11,3 +11,6 @@ class AccountAnalyticAccount(models.Model):
     municipal_supplier_retentions_sequence_id = fields.Many2one(
         "ir.sequence", string="Municipal supplier retentions sequence"
     )
+    use_subsidiary_with_multiple_municipalities = fields.Boolean(
+        related="company_id.use_subsidiary_with_multiple_municipalities"
+    )
