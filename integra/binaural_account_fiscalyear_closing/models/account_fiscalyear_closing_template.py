@@ -27,7 +27,7 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
                         [
                             "income",
                             "expense",
-                            "other_income",
+                            "income_other",
                             "expense_depreciation",
                             "expense_direct_cost",
                         ],

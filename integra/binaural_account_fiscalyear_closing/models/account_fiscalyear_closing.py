@@ -25,7 +25,7 @@ class AccountFiscalyearClosingConfig(models.Model):
                         [
                             "income",
                             "expense",
-                            "other_income",
+                            "income_other",
                             "expense_depreciation",
                             "expense_direct_cost",
                         ],
@@ -59,6 +59,7 @@ class AccountFiscalyearClosingConfig(models.Model):
         else:
             return {"value": {"mapping_ids": [(5, 0, 0)]}}
 
+# select id, name from account_account where account_type in ('income','expense','other_income','expense_depreciation','expense_direct_cost')
     l_map = fields.Boolean(string="Load Accounts")
 
     def move_prepare(self, move_lines, rate=0):
