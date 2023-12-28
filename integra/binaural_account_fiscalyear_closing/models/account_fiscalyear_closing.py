@@ -59,7 +59,6 @@ class AccountFiscalyearClosingConfig(models.Model):
         else:
             return {"value": {"mapping_ids": [(5, 0, 0)]}}
 
-# select id, name from account_account where account_type in ('income','expense','other_income','expense_depreciation','expense_direct_cost')
     l_map = fields.Boolean(string="Load Accounts")
 
     def move_prepare(self, move_lines, rate=0):
@@ -259,7 +258,8 @@ class AccountFiscalyearClosing(models.Model):
         for closing in self:
             closing.move_ids.action_post()
         return super().button_post()
-
+    
+    #Todo el registro de las cuentas esta en esta funcion
     def calculate(self):
         bsd_id = self.env.ref("base.VEF")
         dest_account = self.env["account.account"].sudo().search(
@@ -334,16 +334,9 @@ class AccountFiscalyearClosing(models.Model):
                                     0,
                                     {
                                         "account_id": account.id,
-                                        # "debit": balance < 0 and -balance,
-                                        # "credit": balance > 0 and balance,
                                         "balance": -balance,
                                         "name": config.name,
                                         "date": config.date,
-                                        # "partner_id": partner_id,
-                                        # "foreign_rate": rate,
-                                        # "foreign_inverse_rate": rate
-                                        # if bsd_id == foreign_currency
-                                        # else 1 / rate,
                                     }
                                 ),
                                 (
@@ -351,16 +344,9 @@ class AccountFiscalyearClosing(models.Model):
                                     0,
                                     {
                                         "account_id": dest_account.id,
-                                        # "debit": balance < 0 and -balance,
-                                        # "credit": balance > 0 and balance,
                                         "balance": balance,
                                         "name": _("Result"),
                                         "date": config.date,
-                                        # "partner_id": partner_id,
-                                        # "foreign_rate": rate,
-                                        # "foreign_inverse_rate": rate
-                                        # if bsd_id == foreign_currency
-                                        # else 1 / rate,
                                     }
                                 ),
                             ],
