@@ -4,3 +4,5 @@ from . import account_general_ledger
 from . import account_partner_ledger
 from . import account_report
 from . import res_partner
+from . import account_journal_report
+from . import account_generic_tax_report
