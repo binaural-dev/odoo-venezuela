@@ -11,7 +11,7 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     outstanding_credits_debits_widget_advance_payment = fields.Binary(
-        compute="_compute_get_outstanding_info_JSON_advance_payment"
+        compute="_compute_get_outstanding_info_JSON_advance_payment",
     )
     invoice_outstanding_credits_debits_widget_advance_payment = fields.Binary(
         compute="_compute_payments_widget_to_reconcile_info_advance_payment",
@@ -240,7 +240,6 @@ class AccountMove(models.Model):
         )
         self.has_outstanding = has_outstanding
 
-
     def js_assign_outstanding_line(self, line_id):
         self.ensure_one()
         lines = self.env["account.move.line"].browse(line_id)
@@ -256,12 +255,20 @@ class AccountMove(models.Model):
             credit = True
             name_1 = "CUENTA POR COBRAR CLIENTE"
             name_2 = "ANTICIPO/CLIENTE"
-            account_2 = payment.destination_account_id.id if payment else self.env.company.advance_customer_account_id.id
+            account_2 = (
+                payment.destination_account_id.id
+                if payment
+                else self.env.company.advance_customer_account_id.id
+            )
         else:
             credit = False
             name_1 = "CUENTA POR PAGAR PROVEEDOR"
             name_2 = "ANTICIPO/PROVEEDOR"
-            account_2 = payment.destination_account_id.id if payment else self.env.company.advance_supplier_account_id.id
+            account_2 = (
+                payment.destination_account_id.id
+                if payment
+                else self.env.company.advance_supplier_account_id.id
+            )
 
         return [
             Command.create(
@@ -323,19 +330,7 @@ class AccountMove(models.Model):
                 )
 
         line_vals = self.get_line_vals(self.move_type, account, amount_to_show, payment)
-        move = self.env["account.move"].create(
-            {
-                "name": self.name + " - " + payment.name if payment.name else self.name,
-                "date": self.date,
-                "journal_id": payment.journal_id.id if payment.journal_id else 1,
-                "state": "draft",
-                "line_ids": line_vals,
-                "foreign_currency_id": payment.foreign_currency_id.id,
-                "foreign_rate": payment.foreign_rate,
-                "company_id": self.company_id.id,
-            }
-        )
-        move.action_post()
+        move = self._create_payment_move(line_vals, payment)
 
         account_move_lines = [
             line.id
@@ -358,6 +353,22 @@ class AccountMove(models.Model):
         lines_to_reconcile.reconcile()
 
         return lines_to_reconcile.ids
+
+    def _create_payment_move(self, line_vals, payment):
+        move = self.env["account.move"].create(
+            {
+                "name": self.name + " - " + payment.name if payment.name else self.name,
+                "date": self.date,
+                "journal_id": payment.journal_id.id if payment.journal_id else 1,
+                "state": "draft",
+                "line_ids": line_vals,
+                "foreign_currency_id": payment.foreign_currency_id.id,
+                "foreign_rate": payment.foreign_rate,
+                "company_id": self.company_id.id,
+            }
+        )
+        move.action_post()
+        return move
 
     def js_remove_outstanding_partial(self, partial_id):
         """Called by the 'payment' widget to remove a reconciled entry to the present invoice.

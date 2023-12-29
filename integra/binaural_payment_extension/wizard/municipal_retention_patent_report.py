@@ -60,16 +60,9 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         columns2[14].update({"format": money_format})
         columns2[15].update({"format": money_format})
 
-        invoice_lines = self.env["account.move.line"].search(
-            [
-                ("move_id.invoice_date", ">=", self.date_start),
-                ("move_id.invoice_date", "<=", self.date_end),
-                ("move_id.move_type", "in", ["out_invoice", "out_refund"]),
-                ("move_id.financial_document", "=", True),
-                ("move_id.journal_id.fiscal", "=", True),
-                ("move_id.state", "=", "posted"),
-            ]
-        )
+        domain = self._get_xlsx_file_domain()
+
+        invoice_lines = self.env["account.move.line"].search(domain)
 
         invoice_lines = invoice_lines.filtered(lambda l: l.price_unit > 0)
         usd_currency = self.env.ref("base.USD")
@@ -132,17 +125,19 @@ class MunicipalRetentionPatentReport(models.TransientModel):
         workbook.close()
         return result.getvalue()
 
+    def _get_xlsx_file_domain(self):
+        return [
+            ("move_id.invoice_date", ">=", self.date_start),
+            ("move_id.invoice_date", "<=", self.date_end),
+            ("move_id.move_type", "in", ["out_invoice", "out_refund"]),
+            ("move_id.financial_document", "=", True),
+            ("move_id.journal_id.fiscal", "=", True),
+            ("move_id.state", "=", "posted"),
+        ]
+
     def _get_xlsx_municipality_retention_report(self):
-        invoice_lines = self.env["account.move.line"].search(
-            [
-                ("move_id.invoice_date", ">=", self.date_start),
-                ("move_id.invoice_date", "<=", self.date_end),
-                ("move_id.move_type", "in", ["out_invoice", "out_refund"]),
-                ("move_id.financial_document", "=", False),
-                ("move_id.journal_id.fiscal", "=", True),
-                ("move_id.state", "=", "posted"),
-            ]
-        )
+        domain = self._get_xlsx_municipality_retention_report_domain()
+        invoice_lines = self.env["account.move.line"].search(domain)
 
         invoice_lines = invoice_lines.filtered(lambda l: any(l.ciu_id))
 
@@ -213,3 +208,13 @@ class MunicipalRetentionPatentReport(models.TransientModel):
             numero += 1
         table = pandas.DataFrame(data)
         return table.fillna(0)
+
+    def _get_xlsx_municipality_retention_report_domain(self):
+        return [
+            ("move_id.invoice_date", ">=", self.date_start),
+            ("move_id.invoice_date", "<=", self.date_end),
+            ("move_id.move_type", "in", ["out_invoice", "out_refund"]),
+            ("move_id.financial_document", "=", False),
+            ("move_id.journal_id.fiscal", "=", True),
+            ("move_id.state", "=", "posted"),
+        ]
