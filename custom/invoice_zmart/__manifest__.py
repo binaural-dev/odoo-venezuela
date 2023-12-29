@@ -8,7 +8,7 @@
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
     'category': 'Invoice',
-    "version": "16.0.1.10.0",
+    "version": "16.0.1.10.1",
     'depends': ['binaural_invoice', 'binaural_base_igtf','binaural_payment_extension'],
     'data': [
         'data/paperformat.xml',
