@@ -48,6 +48,8 @@ class AccountMove(models.Model):
                             )
                         )
                     else:
+                        if invoice.seller_id:
+                            return
                         seller_name = ""
                         for seller in invoice.partner_id.seller_ids:
                             seller_name += seller.name + ", "
