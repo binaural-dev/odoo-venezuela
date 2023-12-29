@@ -198,54 +198,56 @@
                                         <t t-set="iva_8" t-value="0.00"/>
                                         <t t-set="lines" t-value="invoice.invoice_line_ids.sorted(key=lambda l: (-l.sequence, l.date, l.move_name, -l.id), reverse=True)"/>
                                         <t t-foreach="lines" t-as="line">
-                                            <tr style="height:25px">
-                                                <t t-set="base_sin_descuento"
-                                                    t-value="base_sin_descuento + (line.quantity * line.foreign_price)"/>
-                                                <t t-if="len(line.tax_ids) > 0">
-                                                    <t t-if="line.tax_ids[0].amount == 8">
-                                                        <t t-set="base_8" t-value="base_8 + (line.foreign_subtotal)"/>
-                                                        <t t-set="iva_8"
-                                                            t-value="iva_8 + (line.tax_ids[0].amount/100) * (line.foreign_subtotal)"/>
+                                            <t t-if="line.quantity != 0">
+                                                <tr style="height:25px">
+                                                    <t t-set="base_sin_descuento"
+                                                        t-value="base_sin_descuento + (line.quantity * line.foreign_price)"/>
+                                                    <t t-if="len(line.tax_ids) > 0">
+                                                        <t t-if="line.tax_ids[0].amount == 8">
+                                                            <t t-set="base_8" t-value="base_8 + (line.foreign_subtotal)"/>
+                                                            <t t-set="iva_8"
+                                                                t-value="iva_8 + (line.tax_ids[0].amount/100) * (line.foreign_subtotal)"/>
+                                                        </t>
+                                                        <t t-if="line.tax_ids[0].amount == 16"> 
+                                                            <t t-set="base_16"
+                                                                t-value="base_16 + (line.foreign_subtotal)"/>
+                                                            <t t-set="iva_16"
+                                                                t-value="iva_16 +(line.tax_ids[0].amount/100) * (line.foreign_subtotal)"/>
+                                                        </t>
                                                     </t>
-                                                    <t t-if="line.tax_ids[0].amount == 16"> 
-                                                        <t t-set="base_16"
-                                                            t-value="base_16 + (line.foreign_subtotal)"/>
-                                                        <t t-set="iva_16"
-                                                            t-value="iva_16 +(line.tax_ids[0].amount/100) * (line.foreign_subtotal)"/>
+                                                    <t t-if="invoice.move_type in ['out_debit', 'in_debit']">
+                                                        <td></td>
+                                                        <td style="width:410px;text-align:left;">
+                                                            <span t-field="line.name"/>
+                                                        </td>
                                                     </t>
-                                                </t>
-                                                <t t-if="invoice.move_type in ['out_debit', 'in_debit']">
-                                                    <td></td>
-                                                    <td style="width:410px;text-align:left;">
-                                                        <span t-field="line.name"/>
+                                                    <t t-else="">
+                                                        <td style="width:170px;text-align:center;">
+                                                            <span t-esc="line.product_id.default_code[:20] if line.product_id.default_code else line.product_id.default_code"/>
+                                                        </td>
+                                                        <td style="width:390px;text-align:left;">
+                                                            <span t-esc="line.product_id.name[:43] if line.product_id.name else line.product_id.name"/>
+                                                        </td>
+                                                    </t>
+                                                    <td style="width:110px;text-align:center;">
+                                                        <span t-esc="line.quantity" t-options='{"widget": "float", "precision": 2}'/>
                                                     </td>
-                                                </t>
-                                                <t t-else="">
-                                                    <td style="width:170px;text-align:center;">
-                                                        <span t-esc="line.product_id.default_code[:20] if line.product_id.default_code else line.product_id.default_code"/>
+                                                    <td style="width:80px;text-align:center;">
+                                                        <span t-field="line.product_uom_id"/>
                                                     </td>
-                                                    <td style="width:390px;text-align:left;">
-                                                        <span t-esc="line.product_id.name[:43] if line.product_id.name else line.product_id.name"/>
+                                                    <td style="width:120px;text-align:center;">
+                                                        $<span t-esc="line.price_unit"/>
                                                     </td>
-                                                </t>
-                                                <td style="width:110px;text-align:center;">
-                                                    <span t-esc="line.quantity" t-options='{"widget": "float", "precision": 2}'/>
-                                                </td>
-                                                <td style="width:80px;text-align:center;">
-                                                    <span t-field="line.product_uom_id"/>
-                                                </td>
-                                                <td style="width:120px;text-align:center;">
-                                                    $<span t-esc="line.price_unit"/>
-                                                </td>
-                                                <td t-if="display_discount" style="width:30px;text-align:center">
-                                                    <span class="text-nowrap" t-field="line.discount"/>%
-                                                </td>
-                                                <t t-set="price_total" t-value="line.price_total"/>
-                                                <td class="td_right"
-                                                    style="width:90px;text-align:right">
-                                                    $<span t-esc="'{0:,.2f}'.format(float(price_total)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
-                                                </td>
-                                            </tr>
+                                                    <td t-if="display_discount" style="width:30px;text-align:center">
+                                                        <span class="text-nowrap" t-field="line.discount"/>%
+                                                    </td>
+                                                    <t t-set="price_total" t-value="line.price_total"/>
+                                                    <td class="td_right"
+                                                        style="width:90px;text-align:right">
+                                                        $<span t-esc="'{0:,.2f}'.format(float(price_total)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
                                         </t>
                                     </tbody>
                                 </table>
