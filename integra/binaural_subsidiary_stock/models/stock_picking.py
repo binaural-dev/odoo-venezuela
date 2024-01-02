@@ -18,6 +18,20 @@ class StockPicking(models.Model):
         store=True,
     )
 
+    location_id = fields.Many2one(
+        domain=lambda self: (
+            "[('company_id', 'in', (company_id, False)),"
+            f"('warehouse_id.subsidiary_id', 'in', {self.env.user.subsidiary_ids.ids})]"
+        )
+    )
+
+    location_dest_id = fields.Many2one(
+        domain=lambda self: (
+            "[('company_id', 'in', (company_id, False)),"
+            f"('warehouse_id.subsidiary_id', 'in', {self.env.user.subsidiary_ids.ids})]"
+        )
+    )
+
     def button_validate(self):
         """
         Creates and posts the valuation move when the picking is an internal transfer, after the
