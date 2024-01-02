@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_account_move_only_fiscal,access_account_move_only_fiscal,account.model_account_move,binaural_fiscal.group_show_only_fiscal_invoices,1,0,0,0

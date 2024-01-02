@@ -12,6 +12,9 @@
     "depends": ["base", "account_accountant"],
     # always loaded
     "data": [
+        "security/binaural_fiscal_groups.xml",
+        "security/ir_rule.xml",
+        "security/ir.model.access.csv",
         "views/account_journal.xml",
         "views/account_move.xml",
     ],
