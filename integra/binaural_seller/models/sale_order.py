@@ -31,6 +31,8 @@ class SaleOrder(models.Model):
                         )
                     )
                 else:
+                    if order.seller_id:
+                        return
                     seller_name = ""
                     for seller in order.partner_id.seller_ids:
                         seller_name += seller.name + ", "

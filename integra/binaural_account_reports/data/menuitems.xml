@@ -63,6 +63,12 @@
 	parent="account_reports.account_reports_audit_reports_menu"
     />
     <menuitem
+        id="menu_action_account_journal_report_usd"
+        name="Journal Report USD"
+        action="action_account_report_ja_usd"
+	parent="account_reports.account_reports_audit_reports_menu"
+    />
+    <menuitem
         id="menu_action_account_report_aged_receivable_usd"
         name="Aged Receivable USD"
         action="action_account_report_ar_usd"
