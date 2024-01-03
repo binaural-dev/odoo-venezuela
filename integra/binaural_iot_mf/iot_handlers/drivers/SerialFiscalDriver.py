@@ -11,6 +11,7 @@ import glob
 import urllib3
 import platform
 from functools import reduce
+import traceback
 
 from odoo.addons.hw_drivers.iot_handlers.sdk.ReportData import ReportData
 from odoo.addons.hw_drivers.iot_handlers.sdk.S1PrinterData import S1PrinterData
@@ -25,7 +26,7 @@ from odoo.addons.hw_drivers.iot_handlers.sdk.S8PPrinterData import S8PPrinterDat
 from odoo.addons.hw_drivers.iot_handlers.sdk.S25PrinterData import S25PrinterData
 from odoo.addons.hw_drivers.iot_handlers.sdk.AcumuladosX import AcumuladosX
 
-from odoo import http
+from odoo import http,_
 from odoo.addons.hw_drivers.main import iot_devices
 from odoo.addons.hw_drivers.event_manager import event_manager
 from odoo.addons.hw_drivers.tools import helpers
@@ -215,7 +216,6 @@ class SerialFiscalDriver(SerialDriver):
         super().__init__(identifier, device)
         self.identifier = identifier
         self.device_type = "fiscal_data_module"
-        self.device_name = "Desconocido - Fiscal Printer HKA"
         self.device_connection = "serial"
         self._set_actions()
 
@@ -280,6 +280,29 @@ class SerialFiscalDriver(SerialDriver):
                 "hello": self.get_last_invoice_number,
             }
         )
+
+    def run(self):
+        try:
+            with serial_connection(self.device_identifier, self._protocol) as connection:
+                self._connection = connection
+                self._status['status'] = self.STATUS_CONNECTED
+                self._push_status()
+        except Exception:
+            msg = _('Error while reading %s', self.device_name)
+            self._status = {'status': self.STATUS_ERROR, 'message_title': msg, 'message_body': traceback.format_exc()}
+            self._push_status()
+
+    def _set_name(self):
+        """Tries to build the device's name based on its type and protocol name but falls back on a default name if that doesn't work."""
+        try:
+            with serial_connection(self.device_identifier, self._protocol) as connection:
+                self._connection = connection
+                estado_s1 = self.GetS1PrinterData(True)
+                machine_number = estado_s1["data"]["_registeredMachineNumber"]
+                name = machine_number.capitalize()+ " - Fiscal Printer HKA"
+        except Exception:
+                name = "Desconocido - Fiscal Printer HKA"
+        self.device_name = name
 
     def test(self, data):
         self.SendCmd("7")
@@ -398,7 +421,9 @@ class SerialFiscalDriver(SerialDriver):
         valid = True
         cmd = []
         try:
-            self._States("S1")
+            last_trama = self._States("S1")
+            last_res = S1PrinterData(last_trama)
+            last_number = last_res.__dict__["_lastNCNumber"]
             status = self.ReadFpStatus(True)
             if status["data"]["error"]["code"] != "0":
                 raise Exception(status["data"]["error"]["msg"])
@@ -528,6 +553,8 @@ class SerialFiscalDriver(SerialDriver):
             res = S1PrinterData(trama)
             number = res.__dict__["_lastNCNumber"]
             machine_number = res.__dict__["_registeredMachineNumber"]
+            if number == last_number:
+                return {"valid": False ,"message": "No se imprimio el documento"}
             machine = {
                 "valid": True,
                 "data": {"sequence": number, "serial_machine": machine_number},
@@ -550,6 +577,10 @@ class SerialFiscalDriver(SerialDriver):
         cmd = []
         try:
             self._States("S1")
+            last_trama = self._States("S1")
+            last_res = S1PrinterData(last_trama)
+            last_number = last_res.__dict__["_lastInvoiceNumber"]
+
             status = self.ReadFpStatus(True)
             if status["data"]["error"]["code"] != "0":
                 raise Exception(status["data"]["error"]["msg"])
@@ -668,6 +699,9 @@ class SerialFiscalDriver(SerialDriver):
             trama = self._States("S1")
             res = S1PrinterData(trama)
             number = res.__dict__["_lastInvoiceNumber"]
+            if number == last_number:
+                return {"valid": False ,"message": "No se imprimio el documento"}
+
             machine_number = res.__dict__["_registeredMachineNumber"]
             machine = {
                 "valid": True,
@@ -895,19 +929,7 @@ class SerialFiscalDriver(SerialDriver):
         return self.data["value"]
 
     def _HandleCTSRTS(self):
-        connection = self._connection
-        try:
-            connection.setRTS(True)
-            lpri = 1
-            while not connection.getCTS():
-                time.sleep(lpri / 10)
-                lpri = lpri + 1
-                if lpri > 20:
-                    connection.setRTS(False)
-                    return False
-            return True
-        except serial.SerialException:
-            return False
+        return True
 
     def SendCmd(self, cmd):
         connection = self._connection
