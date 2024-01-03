@@ -14,6 +14,8 @@ class AccountRetention(models.Model):
     @api.depends("retention_line_ids")
     def _compute_account_analytic_id(self):
         for retention in self:
+            if not retention.retention_line_ids:
+                continue
             retention.account_analytic_id = retention.retention_line_ids[0].account_analytic_id
 
     def action_post(self):
