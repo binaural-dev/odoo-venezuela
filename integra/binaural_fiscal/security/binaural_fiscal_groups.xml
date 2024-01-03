@@ -3,9 +3,9 @@
 
     <data>
 
-        <record model="res.groups" id="group_show_only_fiscal_invoices">
-            <field name="name">Show Only Fiscal Invoices</field>
-            <field name="category_id" ref="base.module_category_accounting"/>
+        <record model="res.groups" id="group_fiscal_inspectorate">
+            <field name="name">Fiscal Inspectorate</field>
+            <field name="category_id" ref="base.module_category_accounting_accounting"/>
         </record>
         
     </data>

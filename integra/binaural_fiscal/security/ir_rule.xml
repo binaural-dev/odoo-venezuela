@@ -6,8 +6,8 @@
         <record id="access_only_fiscal_invoices" model="ir.rule">
             <field name="name">Only Fiscal Invoices Access Rights</field>
             <field name="model_id" ref="account.model_account_move"/>
-            <field name="domain_force">[('journal_id.fiscal', '=', False)]</field>
-            <field name="groups" eval="[(4, ref('binaural_fiscal.group_show_only_fiscal_invoices'))]"/>
+            <field name="domain_force">[('journal_id.fiscal', '=',True)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal.group_fiscal_inspectorate'))]"/>
             <field name="perm_write" eval="False"/>
             <field name="perm_create" eval="False"/>
             <field name="perm_unlink" eval="False"/>
