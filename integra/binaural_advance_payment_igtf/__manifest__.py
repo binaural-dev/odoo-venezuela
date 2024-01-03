@@ -8,11 +8,19 @@
     "category": "Accounting/Igtf",
     "version": "1.3",
     # any module necessary for this one to work correctly
-    "depends": ["base", "binaural_accountant", "binaural_tax", "binaural_rate", "binaural_fiscal", "binaural_igtf", "binaural_advance_payment"],
+    "depends": [
+        "base",
+        "binaural_accountant",
+        "binaural_tax",
+        "binaural_rate",
+        "binaural_fiscal",
+        "binaural_igtf",
+        "binaural_advance_payment",
+    ],
     # always loaded
     "data": [
         "views/res_config_settings.xml",
     ],
     "images": ["static/description/icon.png"],
-    "application": True,
+    "auto_install": True,
 }

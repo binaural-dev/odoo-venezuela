@@ -3,6 +3,8 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import index_exists, drop_index
 from lxml import etree
 from collections import defaultdict
+from odoo.tools.misc import formatLang
+from odoo.tools import float_compare
 
 import logging
 
@@ -51,6 +53,7 @@ class AccountMove(models.Model):
     )
 
     manually_set_rate = fields.Boolean(default=False)
+    last_foreign_rate = fields.Float(copy=False)
 
     vat = fields.Char(
         string="VAT",
@@ -89,6 +92,46 @@ class AccountMove(models.Model):
             "Another entry with the same name already exists.",
         ),
     ]
+
+    detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
+
+    @api.depends("invoice_line_ids","tax_totals")
+    def _compute_detailed_amounts(self):
+        for record in self:
+            discount_amount = 0
+            if not record.tax_totals:
+                record.detailed_amounts = dict()
+                return
+            amount_taxed = record.tax_totals.get("amount_total",0) - record.tax_totals.get("amount_untaxed",0)
+            total = 0
+
+            for line in record.invoice_line_ids:
+                subtotal = line.price_unit * line.quantity
+                if line.discount > 0:
+                    discount_amount += subtotal - line.price_subtotal
+                total += subtotal
+
+            record.detailed_amounts = dict(
+                {
+                    "gross_amount": total,
+                    "formatted_gross_amount": formatLang(
+                        self.env, total, currency_obj=self.currency_id
+                    ),
+                    "discount_amount": discount_amount,
+                    "formatted_discount_amount": formatLang(
+                        self.env, discount_amount, currency_obj=self.currency_id
+                    ),
+                    "gross_discount_amount": total,
+                    "formatted_gross_discount_amount": formatLang(
+                        self.env, total - discount_amount, currency_obj=self.currency_id
+                    ),
+                    "taxes_amount": amount_taxed,
+                    "formatted_taxes_amount": formatLang(
+                        self.env, amount_taxed, currency_obj=self.currency_id
+                    ),
+
+                }
+            )
 
     def _auto_init(self):
         res = super()._auto_init()
@@ -201,6 +244,18 @@ class AccountMove(models.Model):
         moves._compute_rate()
 
         for move in moves:
+            Rate = self.env["res.currency.rate"]
+            rate_values = Rate.compute_rate(
+                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
+            )
+            last_foreign_rate = rate_values.get("foreign_rate", 0)
+            if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
+                move.message_post(
+                    body=_(
+                        "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    )
+                    % ({"rate": move.foreign_rate, "last_rate": last_foreign_rate})
+                )
             move.compute_line_ids_foreign_debit_and_credit()
         return moves
 
@@ -209,8 +264,22 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
+        if vals.get("foreign_rate", False):
+            for move in self:
+                vals.update({"last_foreign_rate": move.foreign_rate})
         res = super().write(vals)
         for move in self:
+            if (
+                vals.get("foreign_rate", False)
+                and move.manually_set_rate
+                and move.foreign_rate != move.last_foreign_rate
+            ):
+                move.message_post(
+                    body=_(
+                        "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    )
+                    % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
+                )
             move.compute_line_ids_foreign_debit_and_credit()
         return res
 
@@ -337,14 +406,29 @@ class AccountMove(models.Model):
                     continue
 
                 line_name = line.name or False
+                currency_id = self.env.company.currency_id
+                subtotal_found = False
+                if is_invoice and line_name in subtotals_by_name:
+                    for subtotals in subtotals_by_name[line_name]:
+                        if float_compare(line.debit,subtotals["price_subtotal"],precision_digits=currency_id.decimal_places) == 0:
+                            line.foreign_debit = subtotals["foreign_subtotal"]
+                            subtotal_found = True
+                        if float_compare(line.credit,subtotals["price_subtotal"], precision_digits=currency_id.decimal_places) == 0:
+                            line.foreign_credit = subtotals["foreign_subtotal"]
+                            subtotal_found = True
+                        if subtotal_found:
+                            subtotals_by_name[line_name].remove(subtotals)
+                            break
+                    continue
 
                 lines_with_same_tax = self.line_ids.filtered(
-                    lambda l: l.tax_ids and l.tax_ids.description == line_name
+                    lambda l: l.tax_ids and l.tax_ids.name == line_name
                 )
                 if not (lines_with_same_tax and line_name):
                     line.foreign_debit = line.debit * self.foreign_inverse_rate
                     line.foreign_credit = line.credit * self.foreign_inverse_rate
                     continue
+
                 line.foreign_debit = (
                     sum(lines_with_same_tax.mapped("foreign_debit"))
                     * lines_with_same_tax[0].tax_ids[0].amount
@@ -355,20 +439,6 @@ class AccountMove(models.Model):
                     * lines_with_same_tax[0].tax_ids[0].amount
                     / 100
                 )
-
-                subtotal_found = False
-                if is_invoice and line_name in subtotals_by_name:
-                    for subtotals in subtotals_by_name[line_name]:
-                        if line.debit == subtotals["price_subtotal"]:
-                            line.foreign_debit = subtotals["foreign_subtotal"]
-                            subtotal_found = True
-                        if line.credit == subtotals["price_subtotal"]:
-                            line.foreign_credit = subtotals["foreign_subtotal"]
-                            subtotal_found = True
-                        if subtotal_found:
-                            subtotals_by_name[line_name].remove(subtotals)
-                            break
-                    continue
 
         account_payable_or_receivable_line = self.line_ids.filtered(
             lambda l: l.account_id.account_type in receivable_and_payable_account_types
@@ -520,6 +590,7 @@ class AccountMove(models.Model):
             if not bool(move.foreign_rate):
                 return
             move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
+            move.manually_set_rate = True
 
     def action_register_payment(self):
         """
@@ -557,12 +628,11 @@ class AccountMove(models.Model):
                 if total_pay > invoice.partner_id.credit_limit:
                     raise ValidationError(
                         _(
-                            "La cuenta %s es de %s mas %s en factura da un total de %s superando el limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el limite de crédito del cliente.",
-                            invoice.partner_id.property_account_receivable_id.display_name,
-                            invoice.partner_id.credit_limit,
-                            invoice.amount_residual,
-                            total_pay,
-                            invoice.partner_id.credit_limit,
+                            "La cuenta por cobrar del cliente es de %s más %s en factura da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
+                            round(invoice.partner_id.credit, invoice.currency_id.decimal_places),
+                            round(invoice.amount_residual, invoice.currency_id.decimal_places),
+                            round(total_pay, invoice.currency_id.decimal_places),
+                            round(invoice.partner_id.credit_limit, invoice.currency_id.decimal_places),
                         )
                     )
         return res

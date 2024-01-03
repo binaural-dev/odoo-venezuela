@@ -23,10 +23,10 @@ FIELDPARTNER = [
     "state_id",
     "zip",
     "parent_id",
-    "seller_id",
+    "seller_ids",
     "country_id",
     "active",
-    "seller_id",
+    "seller_ids",
     "total_due",
     "withholding_type_id",
     "display_name",
@@ -258,7 +258,7 @@ class AccountMovePayments(http.Controller):
 
         data.update(
             {
-                "data": currency_company.rate
+                "data": [currency_company.rate,currency_company.inverse_company_rate]
             }
         )
 

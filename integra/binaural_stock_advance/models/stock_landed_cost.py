@@ -93,7 +93,7 @@ class StockLandedCost(models.Model):
         """
         amount = 0
         for purchase in self.picking_ids.mapped("purchase_id"):
-            amount += purchase.amount_total
+            amount += purchase.amount_untaxed
         return amount
 
     def compute_landed_cost(self):
@@ -149,17 +149,33 @@ class StockLandedCost(models.Model):
                             value = valuation.former_cost * per_unit
                         # OVERRIDE
                         elif line.split_method == "by_percentage":
-                            per_unit = valuation.former_cost / self._assign_picking_percentage()
-                            valuation.cost_percentage = per_unit * 100
-                            valuation.total_amount_cost = (
-                                (valuation.cost_percentage) / 100
-                            ) * line.price_unit
 
-                            value_percentage = (
-                                line.price_unit * ((valuation.cost_percentage) / 100)
-                            ) / valuation.quantity
+                            if self.env.company.check_calculate_taking_order_quantities:
+                                per_unit = valuation.former_cost / self._assign_picking_percentage()
+                                valuation.cost_percentage = per_unit * 100
+                                valuation.total_amount_cost = (
+                                    (valuation.cost_percentage) / 100
+                                ) * line.price_unit
 
-                            value = value_percentage
+                                value_percentage = (
+                                    line.price_unit * ((valuation.cost_percentage) / 100)
+                                ) / valuation.quantity
+
+                                value = value_percentage
+                            if self.env.company.check_calculate_based_total_purchase_amount:
+                                per_unit = line.price_unit  / self._assign_picking_percentage()
+                                
+                                valuation.cost_percentage = per_unit * 100
+                                value_percentage = (
+                                    valuation.former_cost * ((valuation.cost_percentage) / 100)
+                                ) / valuation.quantity
+
+                                valuation.cost_ddp = (
+                                    valuation.former_cost * ((valuation.cost_percentage) / 100)
+                                )
+
+
+                                value = value_percentage                          
 
                         else:
                             value = line.price_unit / total_line

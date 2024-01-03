@@ -12,7 +12,9 @@
                         </group>                    
                     </group>
                     <group>
-                        <field name="before_datas" />
+                        <field name="before_datas_filename"  invisible="1" />
+                        <field name="before_datas" filename="before_datas_filename" />
+                        
                     </group>
                 </sheet>
             </form>
