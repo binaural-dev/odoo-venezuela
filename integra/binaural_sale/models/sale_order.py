@@ -21,14 +21,6 @@ class SaleOrder(models.Model):
         """
         return self.env.company.currency_foreign_id.id or False
 
-    # def _pricelist_domain(self):
-    #     # domain = [('currency_id','=',self.env.company.currency_id)]
-    #     # domain_without_company = expression.AND([domain, [('company_id', '=', False)]])
-    #     # domain_with_company = expression.AND([domain, [('company_id', '=', self.env.company)]])
-
-    #     return "['|', ('company_id', '=', False), ('company_id', '=', self.env.company)]"
-    #     expression.OR([domain_with_company, domain_without_company])
-
     foreign_currency_id = fields.Many2one(
         "res.currency",
         default=default_alternate_currency,
@@ -356,17 +348,14 @@ class SaleOrder(models.Model):
                         line.product_id.detailed_type == "product"
                         and line.product_id.qty_available < line.product_uom_qty
                     ):
-                        raise ValidationError(
-                            _(
-                                "Does not have enough units available for the product %s. Only has %s units of the %s demanded."
-                            )
-                            % (
-                                line.product_id.name,
-                                line.product_id.qty_available,
-                                line.product_uom_qty,
-                            )
+                        msg = _("Does not have enough units available for the product ")
+                        msg += _("{}. Only has {} units of the {} demanded.").format(
+                            line.product_id.name,
+                            line.product_id.qty_available,
+                            line.product_uom_qty,
                         )
-
+                        raise ValidationError(msg)
+                    
             if (
                 order.company_id.account_use_credit_limit
                 and order.partner_id.use_partner_credit_limit_order

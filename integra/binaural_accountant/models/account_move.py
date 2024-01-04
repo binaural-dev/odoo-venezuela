@@ -301,7 +301,9 @@ class AccountMove(models.Model):
     def _check_currency_id(self):
         for move in self:
             if move.currency_id.id != self.env.company.currency_id.id:
-                raise ValidationError(_("You cannot place a currency other than the base of the system."))
+                raise ValidationError(
+                    _("You cannot place a currency other than the base of the system.")
+                    )
 
     def compute_line_ids_foreign_debit_and_credit(self):
         """
