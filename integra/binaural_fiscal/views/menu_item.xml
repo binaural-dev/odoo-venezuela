@@ -5,9 +5,20 @@
         <field name="groups_id" eval="[(4,ref('binaural_fiscal.group_fiscal_inspectorate'))]"/>
     </record>
 
-    <menuitem name="Invoicing"
-    id="account_accountant.menu_accounting"
+    <menuitem id="account_accountant.menu_accounting"
     groups="account.group_account_readonly,account.group_account_invoice,binaural_fiscal.group_fiscal_inspectorate"
     />
+
+    <record id="account.menu_finance_entries" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4,ref('binaural_fiscal.group_fiscal_inspectorate'))]"/>
+    </record>
+
+    <record id="account.menu_action_move_journal_line_form" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4,ref('binaural_fiscal.group_fiscal_inspectorate'))]"/>
+    </record>
+
+    <record id="account.menu_action_account_moves_all" model="ir.ui.menu">
+        <field name="groups_id" eval="[(4,ref('binaural_fiscal.group_fiscal_inspectorate'))]"/>
+    </record>
 
 </odoo>
