@@ -364,8 +364,8 @@ class AccountMove(models.Model):
                 # If the line is an adjustment line, the foreign debit and foreign credit will be
                 # the foreign debit and foreign credit adjustment fields.
                 if (line.foreign_debit_adjustment + line.foreign_credit_adjustment) != 0:
-                    line.foreign_debit = line.foreign_debit_adjustment
-                    line.foreign_credit = line.foreign_credit_adjustment
+                    line.foreign_debit = abs(line.foreign_debit_adjustment)
+                    line.foreign_credit = abs(line.foreign_credit_adjustment)
                     continue
 
                 if (
@@ -378,8 +378,8 @@ class AccountMove(models.Model):
                         line_foreign_id.foreign_debit_adjustment
                         + line_foreign_id.foreign_credit_adjustment
                     ) != 0:
-                        line.foreign_debit = line_foreign_id.foreign_credit_adjustment
-                        line.foreign_credit = line_foreign_id.foreign_debit_adjustment
+                        line.foreign_debit = abs(line.foreign_debit_adjustment)
+                        line.foreign_credit = abs(line.foreign_credit_adjustment)
                     else:
                         line.foreign_debit = (
                             abs(line_foreign_id.amount_currency)
