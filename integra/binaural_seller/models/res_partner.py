@@ -1,5 +1,5 @@
 import logging
-from odoo import api, fields, models,_
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -8,19 +8,13 @@ _logger = logging.getLogger(__name__)
 class ResPartnerInherit(models.Model):
     _inherit = "res.partner"
 
-    seller_id = fields.Many2one(
-        "hr.employee",
-        string="Seller",
-        tracking=True,
-        help="Seller associated with the partner.",
-    )
-
     seller_ids = fields.Many2many(
         "hr.employee",
         string="Sellers",
         tracking=True,
         help="Sellers associated with the partner.",
-        default=lambda self: self.env.company.initial_seller
+        default=lambda self: self.env.company.initial_seller,
+        domain=[("is_seller", "=", True)],
     )
 
     @api.model
@@ -35,7 +29,7 @@ class ResPartnerInherit(models.Model):
         res.append("seller_ids")
 
         return res
-    
+
     @api.model_create_multi
     def create(self, vals_list):
         partner = super().create(vals_list)
@@ -51,7 +45,16 @@ class ResPartnerInherit(models.Model):
 
     def sellers_validate(self):
         for partner in self:
-            if not self.env.company.multiple_sellers and len(partner.seller_ids) > 1:
-                raise UserError(_("You are only allowed to assign a salesperson to the customer"))
-            if not len(partner.seller_ids):
-                raise UserError(_("The customer must have at least one salesperson assigned"))
+            employee_seller = self.env["hr.employee"].search(
+                [
+                    ("company_id", "=", self.env.company.id), 
+                    ("is_seller", "=", True)
+                ], limit=1
+            )
+            if employee_seller:
+                if not self.env.company.multiple_sellers and len(partner.seller_ids) > 1:
+                    raise UserError(
+                        _("You are only allowed to assign a salesperson to the customer")
+                    )
+                if not len(partner.seller_ids):
+                    raise UserError(_("The customer must have at least one salesperson assigned"))

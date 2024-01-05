@@ -1,6 +1,6 @@
 {
     "name": "Binaural POS Descuentos",
-    "version": "16.1",
+    "version": "16.2",
     "category": "Accounting",
     "summary": "Binaural POS Descuentos",
     "sequence": "1",

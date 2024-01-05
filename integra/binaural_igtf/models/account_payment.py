@@ -276,19 +276,33 @@ class AccountPaymentIgtf(models.Model):
 
     def action_draft(self):
         # if payment have reconciled_invoice_ids or reconciled_bill_ids and is_igtf is True clear bi_igtf of the reconciled invoices
+        def get_payment_amount_invoice(self, invoice):
+            self.ensure_one()
+            if invoice.bi_igtf < self.amount:
+                payments = invoice.invoice_payments_widget.get("content", False)
+                for payment in payments:
+                    payment_id = payment.get("account_payment_id", False)
+                    if not payment_id:
+                        continue
+
+                    if self.id == payment_id:
+                        return abs(payment['amount'])
+            return self.amount
+
+
         for payment in self:
-            if payment.reconciled_invoice_ids or payment.reconciled_bill_ids and payment.is_igtf:
+            if payment.reconciled_invoice_ids or payment.reconciled_bill_ids and payment.is_igtf_on_foreign_exchange:
                 for invoice in payment.reconciled_invoice_ids:
                     if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                        invoice.bi_igtf = invoice.bi_igtf - (payment.amount * self.foreign_rate)
+                        invoice.bi_igtf = invoice.bi_igtf - (get_payment_amount_invoice(payment, invoice) * self.foreign_rate)
                     else:
-                        invoice.bi_igtf = invoice.bi_igtf - payment.amount
+                        invoice.bi_igtf = invoice.bi_igtf - get_payment_amount_invoice(payment, invoice)
 
                 for bill in payment.reconciled_bill_ids:
                     if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                        bill.bi_igtf = bill.bi_igtf - (payment.amount * self.foreign_rate)
+                        bill.bi_igtf = bill.bi_igtf - (get_payment_amount_invoice(payment, bill) * self.foreign_rate)
                     else:
-                        bill.bi_igtf = bill.bi_igtf - payment.amount
+                        bill.bi_igtf = bill.bi_igtf - get_payment_amount_invoice(payment, bill)
         
                 move = self.env["account.move"].search([("payment_igtf_id", "=", payment.id)])
                 if move:

@@ -15,66 +15,98 @@ class AccountMove(models.Model):
     invoice_reception_date = fields.Date(
         "Reception Date", help="Indicates when the invoice was received by the client/company"
     )
-    last_payment_date = fields.Date(
-        compute="_compute_last_payment_date",
-        store=True
-    )
-    
+    last_payment_date = fields.Date(compute="_compute_last_payment_date", store=True)
+    is_contingency = fields.Boolean(related="journal_id.is_contingency")
+
+    @api.constrains("correlative", "is_contingency")
+    def _check_correlative(self):
+        AccountMove = self.env["account.move"]
+        is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
+        for move in self:
+            if not move.is_contingency:
+                continue
+            if not is_series_invoicing_enabled and not move.correlative:
+                raise ValidationError(
+                    _(
+                        "Contingency journal's invoices should always have a correlative if series "
+                        "invoicing is not enabled"
+                    )
+                )
+            repeated_moves = AccountMove.search(
+                [
+                    ("is_contingency", "=", True),
+                    ("id", "!=", move.id),
+                    ("correlative", "!=", False),
+                    ("correlative", "=", move.correlative),
+                    ("journal_id", "=", move.journal_id.id),
+                ],
+                limit=1,
+            )
+            if repeated_moves:
+                raise UserError(
+                    _("The correlative must be unique per journal when using a contingency journal")
+                )
+
     @api.depends("amount_residual")
     def _compute_last_payment_date(self):
         for move in self:
             is_client_invoice = move.move_type == "out_invoice"
             not_amount_residual = move.currency_id.is_zero(move.amount_residual)
             is_invoice_payment_widget = move.invoice_payments_widget
-            
+
             is_valid_invoice = is_client_invoice and not_amount_residual
             is_valid_invoice_payment = is_valid_invoice and is_invoice_payment_widget
-            
+
             reconcilieds = move._get_reconciled_invoices_partials()
             settlement_date = None
-            
+
             if is_valid_invoice_payment:
-                settlement_date = self.get_max_payment_date(
-                    move.invoice_payments_widget
-                )
-                
+                settlement_date = self.get_max_payment_date(move.invoice_payments_widget)
+
                 settlement_date = fields.Date.from_string(settlement_date)
-                
+
                 if not settlement_date:
                     if reconcilieds:
-                        value = [invoice[0][2].date for invoice in reconcilieds if invoice and not isinstance(invoice[0], int)]
+                        value = [
+                            invoice[0][2].date
+                            for invoice in reconcilieds
+                            if invoice and not isinstance(invoice[0], int)
+                        ]
                         if value:
                             settlement_date = max(value)
             else:
                 if reconcilieds:
-                    value = [invoice[0][2].date for invoice in reconcilieds if invoice and not isinstance(invoice[0], int)]
-                    if value: 
+                    value = [
+                        invoice[0][2].date
+                        for invoice in reconcilieds
+                        if invoice and not isinstance(invoice[0], int)
+                    ]
+                    if value:
                         max_value = max(value)
                         settlement_date = max_value
 
             move.last_payment_date = settlement_date
-            
+
     @staticmethod
     def get_max_payment_date(payments):
         dates = list()
-        
+
         have_payments = payments.get("content")
         is_valid_process = have_payments and payments
-        
+
         settlement_date = False
-        
+
         if is_valid_process:
             for payment in have_payments:
                 account_payment_id = payment.get("account_payment_id", False)
                 if account_payment_id:
                     dates.append(payment.get("date", False))
-                    
-        is_exist_dates = len(dates) > 0            
+
+        is_exist_dates = len(dates) > 0
         if is_exist_dates:
             settlement_date = max(dates)
 
         return settlement_date
-
 
     @api.onchange("invoice_line_ids")
     def _onchange_invoice_line_ids(self):
@@ -107,22 +139,29 @@ class AccountMove(models.Model):
     @api.model
     def is_valid_to_sequence(self) -> bool:
         """
-        Check if the invoice satisfies the conditions to
-        associate a new sequence number.
+        Check if the invoice satisfies the conditions to associate a new sequence number to its
+        correlative.
 
         Returns:
-            True or False whether the invoice already has a
-            sequence number or not.
+            True or False whether the invoice already has a sequence number or not.
         """
-        journal_fiscal = self.journal_id.fiscal
-        journal_type = self.journal_id.type == 'sale'
-        is_valid = journal_fiscal and not self.correlative and journal_type
-        
+        is_journal_fiscal = self.journal_id.fiscal
+        journal_type = self.journal_id.type == "sale"
+        is_contingency = self.journal_id.is_contingency
+        is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
+        is_valid = (
+            is_journal_fiscal
+            and not self.correlative
+            and journal_type
+            and (not is_contingency or is_series_invoicing_enabled)
+        )
+
         return is_valid
 
     @api.model
     def get_sequence(self, is_fiscal=False):
-        """Allow the invoice to have both a generic sequence
+        """
+        Allows the invoice to have both a generic sequence
         number or a specific one given certain conditions.
 
         Returns
@@ -131,18 +170,20 @@ class AccountMove(models.Model):
         """
 
         self.ensure_one()
-        series_invoicing_enabled = self.company_id.group_sales_invoicing_series
+        is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
         sequence = self.env["ir.sequence"].sudo()
         correlative = None
 
-        if series_invoicing_enabled and is_fiscal:
+        if is_series_invoicing_enabled and is_fiscal:
             correlative = self.journal_id.series_correlative_sequence_id
 
             if not correlative:
                 raise UserError(_("The sale's series sequence must be in the selected journal."))
             return correlative.next_by_id(correlative.id)
 
-        correlative = sequence.search([("code", "=", "invoice.correlative"),("company_id", "=", self.env.company.id)])
+        correlative = sequence.search(
+            [("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)]
+        )
         if not correlative:
             correlative = sequence.create(
                 {

@@ -52,6 +52,7 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 									'<img class="img img-responsive img-fluid" style="width: 500px; heigth: 500px" t-attf-src="data:image/jpeg;base64,' + result.company_logo + '" alt="Company Logo" />'
 								)
 								$("#foreign_sale_price_with_iva").html(result.foreign_sale_price_with_iva);
+								$("#quantity_available").html(result.product_qty);
 
 								let count = 1
 								result.sh_product_stock.forEach(object => {
@@ -288,4 +289,3 @@ odoo.define("sh_price_checker_kiosk.checker_action_kiosk_mode", function(require
 
     return CheckerKiosk;
 })
-

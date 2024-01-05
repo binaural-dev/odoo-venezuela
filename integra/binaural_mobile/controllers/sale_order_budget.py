@@ -538,7 +538,7 @@ class SaleOrderBudget(http.Controller):
 
             if product.free_qty < line.product_uom_qty:
                 message = _(
-                    "You are trying to sell %(uom_qty).2f %(uom)s from %(product_name)s but you only have %(product_quantity).2f %(uom)s available in %(warehouse)s."
+                    "Estás tratando de vender %(uom_qty).2f %(uom)s de %(product_name)s Pero solo tienes %(product_quantity).2f %(uom)s disponible en %(warehouse)s."
                 ) % {
                     "uom_qty": line.product_uom_qty,
                     "uom": line.product_id.uom_id.name,

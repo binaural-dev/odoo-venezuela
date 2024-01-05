@@ -31,7 +31,13 @@ class AccountMove(models.Model):
         res = super().action_post()
         multiple_seller_config = self.env.company.multiple_sellers
         for invoice in self:
-            if not invoice.seller_id and invoice.move_type == "out_invoice":
+            if not invoice.seller_id and invoice.move_type in (
+                "out_invoice",
+                "out_refund",
+                "out_receipt",
+            ):
+                if not invoice.partner_id.seller_ids:
+                    raise UserError(_("The customer must have at least one salesperson assigned"))
                 if len(invoice.partner_id.seller_ids) == 1:
                     invoice.seller_id = invoice.partner_id.seller_ids[0]
                 if len(invoice.partner_id.seller_ids) > 1:
@@ -42,6 +48,8 @@ class AccountMove(models.Model):
                             )
                         )
                     else:
+                        if invoice.seller_id:
+                            return
                         seller_name = ""
                         for seller in invoice.partner_id.seller_ids:
                             seller_name += seller.name + ", "
@@ -58,4 +66,3 @@ class AccountMove(models.Model):
         self.seller_id = (
             self.partner_id.seller_ids[0] if len(self.partner_id.seller_ids) == 1 else False
         )
-

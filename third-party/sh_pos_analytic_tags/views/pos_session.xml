@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id='sh_analytic_account_session_view' model="ir.ui.view">
+        <field name="name">sh.analytic.account.session.view.inherit</field>
+        <field name='model'>pos.session</field>
+        <field name='inherit_id' ref="point_of_sale.view_pos_session_form"></field>
+        <field name='arch' type='xml'>
+            <field name='start_at' position='after'>
+                <field name="sh_analytic_account" groups="analytic.group_analytic_accounting"></field>
+            </field>
+        </field>
+    </record>
+</odoo>

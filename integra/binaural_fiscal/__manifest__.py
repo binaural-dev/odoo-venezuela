@@ -7,13 +7,13 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "16.0.0.0.2",
+    "version": "16.0.0.0.4",
     # any module necessary for this one to work correctly
-    "depends": ["base", "account_accountant","sale", "sales_team", "account"],
+    "depends": ["base", "account_accountant", "account","sale", "sales_team",],
     # always loaded
     "data": [
+        "security/binaural_fiscal_groups.xml",
         "security/security_group.xml",
-        # "security/ir.model.access.csv",
         "views/account_journal.xml",
         "views/account_move.xml",
     ],
