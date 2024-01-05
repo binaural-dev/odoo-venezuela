@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231006\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240102\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-11 20:21+0000\n"
-"PO-Revision-Date: 2023-10-11 20:21+0000\n"
+"POT-Creation-Date: 2024-01-04 14:58+0000\n"
+"PO-Revision-Date: 2024-01-04 14:58+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -297,3 +297,10 @@ msgstr ""
 "Al marcar esta opción, la tasa de la orden de compra se actualizará usando "
 "la fecha de la orden de compra cada vez que cambie. De lo contrario, cuando "
 "la tasa ya está establecida, no se actualizará."
+
+#. module: binaural_purchase
+#. odoo-python
+#: code:addons/binaural_purchase/models/purchase_order.py:0
+#, python-format
+msgid "You cannot place a currency other than the base of the system."
+msgstr "No puede colocar una moneda que no sea la base del sistema."
