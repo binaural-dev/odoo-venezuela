@@ -1,0 +1,19 @@
+from odoo import fields, models
+
+
+class StockPicking(models.Model):
+    _inherit = "stock.picking"
+
+    subsidiary_origin_id = fields.Many2one(
+        "account.analytic.account",
+        string="Origin Subsidiary",
+        related="location_id.warehouse_id.subsidiary_id",
+        store=True,
+    )
+
+    subsidiary_dest_id = fields.Many2one(
+        "account.analytic.account",
+        string="Destination Subsidiary",
+        related="location_dest_id.warehouse_id.subsidiary_id",
+        store=True,
+    )
