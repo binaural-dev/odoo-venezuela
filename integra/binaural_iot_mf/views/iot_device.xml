@@ -91,6 +91,9 @@
                     name="flag_21"
                     attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
                 <field 
+                    name="has_cashbox"
+                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                <field 
                     name="traditional_line"
                     attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
             </xpath>

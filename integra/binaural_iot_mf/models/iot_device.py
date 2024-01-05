@@ -20,6 +20,7 @@ class IotDeviceInherit(models.Model):
     max_description = fields.Integer(default=127)
     traditional_line = fields.Boolean(default=True)
     flag_21 = fields.Selection([("30", "30"), ("00", "00")], default="30")
+    has_cashbox = fields.Boolean()
     payment_methods = fields.Selection(
         [
             ("1", "1"),

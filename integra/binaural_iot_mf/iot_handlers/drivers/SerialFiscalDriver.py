@@ -26,7 +26,7 @@ from odoo.addons.hw_drivers.iot_handlers.sdk.S8PPrinterData import S8PPrinterDat
 from odoo.addons.hw_drivers.iot_handlers.sdk.S25PrinterData import S25PrinterData
 from odoo.addons.hw_drivers.iot_handlers.sdk.AcumuladosX import AcumuladosX
 
-from odoo import http,_
+from odoo import http, _
 from odoo.addons.hw_drivers.main import iot_devices
 from odoo.addons.hw_drivers.event_manager import event_manager
 from odoo.addons.hw_drivers.tools import helpers
@@ -285,11 +285,15 @@ class SerialFiscalDriver(SerialDriver):
         try:
             with serial_connection(self.device_identifier, self._protocol) as connection:
                 self._connection = connection
-                self._status['status'] = self.STATUS_CONNECTED
+                self._status["status"] = self.STATUS_CONNECTED
                 self._push_status()
         except Exception:
-            msg = _('Error while reading %s', self.device_name)
-            self._status = {'status': self.STATUS_ERROR, 'message_title': msg, 'message_body': traceback.format_exc()}
+            msg = _("Error while reading %s", self.device_name)
+            self._status = {
+                "status": self.STATUS_ERROR,
+                "message_title": msg,
+                "message_body": traceback.format_exc(),
+            }
             self._push_status()
 
     def _set_name(self):
@@ -299,9 +303,9 @@ class SerialFiscalDriver(SerialDriver):
                 self._connection = connection
                 estado_s1 = self.GetS1PrinterData(True)
                 machine_number = estado_s1["data"]["_registeredMachineNumber"]
-                name = machine_number.capitalize()+ " - Fiscal Printer HKA"
+                name = machine_number + " - Fiscal Printer HKA"
         except Exception:
-                name = "Desconocido - Fiscal Printer HKA"
+            name = "Desconocido - Fiscal Printer HKA"
         self.device_name = name
 
     def test(self, data):
@@ -361,9 +365,7 @@ class SerialFiscalDriver(SerialDriver):
         if _data:
             data = _data
         _logger.info(data)
-        self.SendCmd(
-            "I2S"+ str(data["resume_range_from"] + data["resume_range_to"])
-        )
+        self.SendCmd("I2S" + str(data["resume_range_from"] + data["resume_range_to"]))
         self.data["value"] = {"valid": True, "message": "MENSAJE"}
         event_manager.device_changed(self)
         return self.data["value"]
@@ -509,13 +511,18 @@ class SerialFiscalDriver(SerialDriver):
 
             new_payment_lines = []
             for item in invoice["payment_lines"]:
-                if item["payment_method"] not in [payment["payment_method"] for payment in new_payment_lines]:
+                if item["payment_method"] not in [
+                    payment["payment_method"] for payment in new_payment_lines
+                ]:
                     new_payment_lines.append(item)
                     continue
 
                 for value in new_payment_lines:
                     if item["payment_method"] == value["payment_method"]:
                         value["amount"] += item["amount"]
+
+            if invoice.get("has_cashbox",False):
+                cmd.append("w")
 
             for item in new_payment_lines:
                 item["amount"] = abs(item["amount"])
@@ -554,7 +561,7 @@ class SerialFiscalDriver(SerialDriver):
             number = res.__dict__["_lastNCNumber"]
             machine_number = res.__dict__["_registeredMachineNumber"]
             if number == last_number:
-                return {"valid": False ,"message": "No se imprimio el documento"}
+                return {"valid": False, "message": "No se imprimio el documento"}
             machine = {
                 "valid": True,
                 "data": {"sequence": number, "serial_machine": machine_number},
@@ -576,7 +583,6 @@ class SerialFiscalDriver(SerialDriver):
         valid = True
         cmd = []
         try:
-            self._States("S1")
             last_trama = self._States("S1")
             last_res = S1PrinterData(last_trama)
             last_number = last_res.__dict__["_lastInvoiceNumber"]
@@ -660,13 +666,21 @@ class SerialFiscalDriver(SerialDriver):
 
             new_payment_lines = []
             for item in invoice["payment_lines"]:
-                if item["payment_method"] not in [payment["payment_method"] for payment in new_payment_lines]:
+                if item["payment_method"] not in [
+                    payment["payment_method"] for payment in new_payment_lines
+                ]:
                     new_payment_lines.append(item)
                     continue
 
                 for value in new_payment_lines:
                     if item["payment_method"] == value["payment_method"]:
                         value["amount"] += item["amount"]
+
+            if invoice.get("has_cashbox",False):
+                cmd.append("w")
+
+            for item in new_payment_lines:
+                item["amount"] = abs(item["amount"])
 
             if len(invoice["payment_lines"]) == 1 or invoice["payment_lines"][0]["amount"] == 0:
                 cmd.append("1" + str(invoice["payment_lines"][0]["payment_method"]))
@@ -700,7 +714,7 @@ class SerialFiscalDriver(SerialDriver):
             res = S1PrinterData(trama)
             number = res.__dict__["_lastInvoiceNumber"]
             if number == last_number:
-                return {"valid": False ,"message": "No se imprimio el documento"}
+                return {"valid": False, "message": "No se imprimio el documento"}
 
             machine_number = res.__dict__["_registeredMachineNumber"]
             machine = {
@@ -750,6 +764,24 @@ class SerialFiscalDriver(SerialDriver):
 
     def get_last_invoice_number(self, data):
         try:
+            payment_methods = [
+                "PE01EFECTIVO 01",
+                "PE02EFECTIVO 02",
+                "PE03PAGO MOVIL 01",
+                "PE04PAGO MOVIL 02",
+                "PE05PAGO MOVIL 03",
+                "PE06PAGO MOVIL 04",
+                "PE07TRANSFERENCIA 01 ",
+                "PE08TRANSFERENCIA 02",
+                "PE09TRANSFERENCIA 03",
+                "PE10TRANSFERENCIA 04",
+                "PE19DIVISA",
+                "PE20DIVISA",
+                "PE21ZELLE",
+            ]
+            for line in payment_methods:
+                self.SendCmd(line)
+
             estado_s1 = self.GetS1PrinterData(True)
             number = estado_s1["data"]["_lastInvoiceNumber"]
             machine_number = estado_s1["data"]["_registeredMachineNumber"]

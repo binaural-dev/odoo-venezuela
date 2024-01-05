@@ -28,6 +28,9 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
       get get_traditional_line(){
         return this.config.traditional_line
       }
+      get has_cashbox(){
+        return this.config.has_cashbox
+      }
 
       is_same_mf(serial){
         return true
@@ -42,6 +45,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           },
           flag_21: this.get_flag_21,
           traditional_line: this.get_traditional_line,
+          has_cashbox: this.has_cashbox && order.is_paid_with_cash(),
         }
         if (order.get_partner()) {
 
@@ -90,7 +94,6 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               }
             }
           } catch (e) {
-            console.log("AQUIIIIIIIIIIIIIIIi")
           }
         }
 
