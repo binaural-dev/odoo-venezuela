@@ -9,12 +9,12 @@ Dejara de funcionar  -->
 
 
         <record model="res.groups" id="group_can_see_fiscal">
-            <field name="name">Inspeccion Fiscal / Puede ver Fiscal</field>
+            <field name="name">Inspeccion Fiscal / Solo Puede ver Fiscal</field>
             <field name="category_id" ref="base.module_category_accounting"/>
         </record>
 
         <record model="res.groups" id="group_cannot_see_fiscal">
-            <field name="name">Inspeccion Fiscal / No puede ver fiscal</field>
+            <field name="name">Inspeccion Fiscal / puede ver fiscal y no fiscal</field>
             <field name="category_id" ref="base.module_category_accounting"/>
         </record>
 
