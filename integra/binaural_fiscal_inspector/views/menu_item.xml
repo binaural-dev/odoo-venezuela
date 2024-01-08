@@ -19,14 +19,14 @@
     <record id="account.menu_action_account_moves_all" model="ir.ui.menu">
         <field name="groups_id" eval="[(4,ref('binaural_fiscal_inspector.group_fiscal_inspectorate'))]"/>
     </record>
-    
-    <record id="account_reports.menu_action_account_report_general_ledger" model="ir.ui.menu">
-        <field name="groups_id" eval="[(4,ref('binaural_fiscal_inspector.group_fiscal_inspectorate'))]"/>
-    </record>
 
-    <record id="account_reports.menu_action_account_report_partner_ledger" model="ir.ui.menu">
-        <field name="groups_id" eval="[(4,ref('binaural_fiscal_inspector.group_fiscal_inspectorate'))]"/>
-    </record>
+    <menuitem id="menu_fiscal_reports" name="Account Reports" parent="account_accountant.menu_accounting"
+        groups="binaural_fiscal_inspector.group_fiscal_inspectorate">
+        <menuitem id="menu_action_account_report_general_ledger_fiscal" name="General Ledger" 
+        action="account_reports.action_account_report_general_ledger" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        <menuitem id="menu_action_account_report_partner_ledger_fiscal" name="Partner Ledger" 
+        action="account_reports.action_account_report_partner_ledger" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+    </menuitem>
 
 
 </odoo>
