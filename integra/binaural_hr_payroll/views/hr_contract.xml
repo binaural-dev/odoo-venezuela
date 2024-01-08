@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="hr_contract_form" model="ir.ui.view">
+            <field name="name">hr.contract.form.binaural.hr.payroll</field>
+            <field name="model">hr.contract</field>
+            <field name="priority" eval="100"/>
+            <field name="inherit_id" ref="hr_payroll.hr_contract_form_inherit"/>
+            <field name="arch" type="xml">
+		<div name="wage" position="after">
+                    <label for="foreign_hourly_wage" attrs="{'invisible': [('wage_type', '!=', 'hourly')]}"/>
+                    <div class="o_row mw-50" name="foreign_hourly_wage" attrs="{'invisible': [('wage_type', '!=', 'hourly')]}">
+                    	<field name="foreign_hourly_wage" nolabel="1"/>
+                    	<span>/ hour</span>
+                    </div>
+                    <label for="foreign_wage" attrs="{'invisible': [('wage_type', '=', 'hourly')]}"/>
+                    <div class="o_row mw-50" name="foreign_wage" attrs="{'invisible': [('wage_type', '=', 'hourly')]}">
+                    	<field name="foreign_wage" nolabel="1"/>
+                    	<span>/ month</span>
+                    </div>
+		</div>
+            </field>
+        </record>
+    </data>
+</odoo>
