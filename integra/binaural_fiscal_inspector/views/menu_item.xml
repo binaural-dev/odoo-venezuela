@@ -28,6 +28,8 @@
         action="account_reports.action_account_report_partner_ledger" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
         <menuitem id="menu_action_account_report_aged_receivable_fiscal" name="Aged Receivable" 
         action="account_reports.action_account_report_ar" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        <menuitem id="menu_action_account_report_aged_payable_fiscal" name="Aged Payable" 
+        action="account_reports.action_account_report_ap" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
     </menuitem>
 
 
