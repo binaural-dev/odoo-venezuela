@@ -4,9 +4,10 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.0.5.0.0",
+    "version": "16.0.5.0.1",
     "category": "Accountant",
     "depends": [
+        "base",
         "analytic",
         "purchase",
         "binaural_accountant",
