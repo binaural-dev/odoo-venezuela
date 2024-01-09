@@ -32,6 +32,9 @@
         action="account_reports.action_account_report_ap" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
         <menuitem id="menu_action_account_report_coa_fiscal" name="Trial Balance" 
         action="account_reports.action_account_report_coa" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        <menuitem id="menu_action_account_report_balance_sheet_fiscal" name="Balance Sheet" 
+        action="account_reports.action_account_report_bs" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+
 
     </menuitem>
 
