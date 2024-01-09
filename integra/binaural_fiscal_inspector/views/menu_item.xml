@@ -22,21 +22,30 @@
 
     <menuitem id="menu_fiscal_reports" name="Account Reports" 
     parent="account_accountant.menu_accounting" groups="binaural_fiscal_inspector.group_fiscal_inspectorate">
-        <menuitem id="menu_action_account_report_general_ledger_fiscal" name="General Ledger" 
-        action="account_reports.action_account_report_general_ledger" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
-        <menuitem id="menu_action_account_report_partner_ledger_fiscal" name="Partner Ledger" 
-        action="account_reports.action_account_report_partner_ledger" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
-        <menuitem id="menu_action_account_report_aged_receivable_fiscal" name="Aged Receivable" 
-        action="account_reports.action_account_report_ar" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
-        <menuitem id="menu_action_account_report_aged_payable_fiscal" name="Aged Payable" 
-        action="account_reports.action_account_report_ap" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
-        <menuitem id="menu_action_account_report_coa_fiscal" name="Trial Balance" 
-        action="account_reports.action_account_report_coa" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
-        <menuitem id="menu_action_account_report_balance_sheet_fiscal" name="Balance Sheet" 
-        action="account_reports.action_account_report_bs" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
-
-
-    </menuitem>
+        <menuitem id="statement_report_fiscal_menu" name="Statement Reports" 
+        groups="binaural_fiscal_inspector.group_fiscal_inspectorate" sequence="1">
+            <menuitem id="menu_action_account_report_balance_sheet_fiscal" name="Balance Sheet" 
+            action="account_reports.action_account_report_bs" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+            <menuitem id="menu_action_account_report_result_statement_fiscal" name="Result Statement"
+            action="binaural_account_reports.action_account_report_rs" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        </menuitem>
+        <menuitem id="partner_report_fiscal_menu" name="Partner Reports" 
+        groups="binaural_fiscal_inspector.group_fiscal_inspectorate" sequence="2">
+            <menuitem id="menu_action_account_report_partner_ledger_fiscal" name="Partner Ledger" 
+            action="account_reports.action_account_report_partner_ledger" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>   
+            <menuitem id="menu_action_account_report_aged_receivable_fiscal" name="Aged Receivable" 
+            action="account_reports.action_account_report_ar" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+            <menuitem id="menu_action_account_report_aged_payable_fiscal" name="Aged Payable" 
+            action="account_reports.action_account_report_ap" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        </menuitem>
+        <menuitem id="audit_report_fiscal_menu" name="Audit Reports" 
+        groups="binaural_fiscal_inspector.group_fiscal_inspectorate" sequence="3">
+            <menuitem id="menu_action_account_report_general_ledger_fiscal" name="General Ledger" 
+            action="account_reports.action_account_report_general_ledger" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>    
+            <menuitem id="menu_action_account_report_coa_fiscal" name="Trial Balance" 
+            action="account_reports.action_account_report_coa" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        </menuitem>        
+</menuitem>
 
 
 </odoo>

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-09 14:41+0000\n"
-"PO-Revision-Date: 2024-01-09 14:41+0000\n"
+"POT-Creation-Date: 2024-01-09 15:36+0000\n"
+"PO-Revision-Date: 2024-01-09 15:36+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -31,6 +31,11 @@ msgid "Aged Receivable"
 msgstr "Vencido por Cobrar"
 
 #. module: binaural_fiscal_inspector
+#: model:ir.ui.menu,name:binaural_fiscal_inspector.audit_report_fiscal_menu
+msgid "Audit Reports"
+msgstr "Informes de auditoría"
+
+#. module: binaural_fiscal_inspector
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_balance_sheet_fiscal
 msgid "Balance Sheet"
 msgstr "Balance de Situación"
@@ -49,6 +54,21 @@ msgstr "Libro Mayor"
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_partner_ledger_fiscal
 msgid "Partner Ledger"
 msgstr "Libro Mayor de Empresa"
+
+#. module: binaural_fiscal_inspector
+#: model:ir.ui.menu,name:binaural_fiscal_inspector.partner_report_fiscal_menu
+msgid "Partner Reports"
+msgstr "Informes de Socios"
+
+#. module: binaural_fiscal_inspector
+#: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_result_statement_fiscal
+msgid "Result Statement"
+msgstr "Declaración de resultados"
+
+#. module: binaural_fiscal_inspector
+#: model:ir.ui.menu,name:binaural_fiscal_inspector.statement_report_fiscal_menu
+msgid "Statement Reports"
+msgstr "Informes de declaración"
 
 #. module: binaural_fiscal_inspector
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_coa_fiscal
