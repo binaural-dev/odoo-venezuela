@@ -46,6 +46,7 @@ export class IoTFiscalMachineComponent extends Widget {
       "test": _t("Test"),
       "command": _t("Send Command"),
       "print_resume_date": _t("Print Resume"),
+      "configure_device": _t("Configure Device"),
     }
     this.state = useState({
       action: this[this.props.action] || this.not_function,

@@ -58,6 +58,26 @@ FLAG_21 = {
         "disc_int": 7,
         "disc_decimal": 2,
     },
+    "01": {
+        "max_amount_int": 7,
+        "max_amount_decimal": 3,
+        "max_payment_amount_int": 10,
+        "max_payment_amount_decimal": 2,
+        "max_qty_int": 5,
+        "max_qty_decimal": 3,
+        "disc_int": 7,
+        "disc_decimal": 2,
+    },
+    "02": {
+        "max_amount_int": 6,
+        "max_amount_decimal": 4,
+        "max_payment_amount_int": 10,
+        "max_payment_amount_decimal": 2,
+        "max_qty_int": 5,
+        "max_qty_decimal": 3,
+        "disc_int": 7,
+        "disc_decimal": 2,
+    },
 }
 
 TAX = {
@@ -296,6 +316,40 @@ class SerialFiscalDriver(SerialDriver):
             }
             self._push_status()
 
+    def configure_device(self, data):
+        if data["data"].get("flag_21",False):
+            self.SendCmd("PJ21" + data["data"]["flag_21"])
+        if data["data"].get("has_cashbox",False):
+            self.SendCmd("PJ24" + data["data"]["has_cashbox"])
+        self.SendCmd("PJ6300")
+
+        payment_methods = [
+            "PE01EFECTIVO 01",
+            "PE02EFECTIVO 02",
+            "PE03PAGO MOVIL 01",
+            "PE04PAGO MOVIL 02",
+            "PE05PAGO MOVIL 03",
+            "PE06PAGO MOVIL 04",
+            "PE07TRANSFERENCIA 01 ",
+            "PE08TRANSFERENCIA 02",
+            "PE09TRANSFERENCIA 03",
+            "PE10TRANSFERENCIA 04",
+            "PE11PUNTO DE VENTA 01 ",
+            "PE12PUNTO DE VENTA 02",
+            "PE13PUNTO DE VENTA 03",
+            "PE14PUNTO DE VENTA 04",
+            "PE15CREDITO 01",
+            "PE16CREDITO 02",
+            "PE19DIVISA",
+            "PE20DIVISA",
+            "PE21ZELLE",
+        ]
+        for line in payment_methods:
+            self.SendCmd(line)
+
+        self.data["value"] = {"status": "true"}
+        event_manager.device_changed(self)
+
     def _set_name(self):
         """Tries to build the device's name based on its type and protocol name but falls back on a default name if that doesn't work."""
         try:
@@ -422,6 +476,16 @@ class SerialFiscalDriver(SerialDriver):
     def _print_out_refund(self, invoice):
         valid = True
         cmd = []
+
+        max_amount_int = FLAG_21[invoice["flag_21"]]["max_amount_int"]
+        max_amount_decimal = FLAG_21[invoice["flag_21"]]["max_amount_decimal"]
+        max_payment_amount_int = FLAG_21[invoice["flag_21"]]["max_payment_amount_int"]
+        max_payment_amount_decimal = FLAG_21[invoice["flag_21"]]["max_payment_amount_decimal"]
+        max_qty_int = FLAG_21[invoice["flag_21"]]["max_qty_int"]
+        max_qty_decimal = FLAG_21[invoice["flag_21"]]["max_qty_decimal"]
+        disc_int = FLAG_21[invoice["flag_21"]]["disc_int"]
+        disc_decimal = FLAG_21[invoice["flag_21"]]["disc_decimal"]
+
         try:
             last_trama = self._States("S1")
             last_res = S1PrinterData(last_trama)
@@ -458,18 +522,22 @@ class SerialFiscalDriver(SerialDriver):
                 code = ""
                 if item.get("code", False):
                     code = "|" + item.get("code", "") + "|"
-                amount_i, amount_d = self.split_amount(abs(item["price_unit"]))
-                qty_i, qty_d = self.split_amount(item["quantity"])
+
+                amount_i, amount_d = self.split_amount(
+                    abs(round(item["price_unit"], max_amount_decimal)),
+                    dec=max_amount_decimal,
+                )
+                qty_i, qty_d = self.split_amount(item["quantity"], dec=max_qty_decimal)
 
                 if invoice.get("traditional_line", True):
                     cmd.append(
                         str(
                             "d"
                             + str(item.get("tax", "0"))
-                            + amount_i.zfill(FLAG_21[invoice["flag_21"]]["max_amount_int"])
-                            + amount_d.zfill(FLAG_21[invoice["flag_21"]]["max_amount_decimal"])
-                            + qty_i.zfill(FLAG_21[invoice["flag_21"]]["max_qty_int"])
-                            + qty_d.zfill(FLAG_21[invoice["flag_21"]]["max_qty_decimal"])
+                            + amount_i.zfill(max_amount_int)
+                            + amount_d.zfill(max_amount_decimal)
+                            + qty_i.zfill(max_qty_int)
+                            + qty_d.zfill(max_qty_decimal)
                             + f"{code}"
                             + item["name"][0:127].strip().replace("Ñ", "N").replace("ñ", "n")
                         )
@@ -479,13 +547,13 @@ class SerialFiscalDriver(SerialDriver):
                         str(
                             "GC+"
                             + str(item["tax"])
-                            + amount_i.zfill(FLAG_21[invoice["flag_21"]]["max_amount_int"])
+                            + amount_i.zfill(max_amount_int)
                             + ","
-                            + amount_d.zfill(FLAG_21[invoice["flag_21"]]["max_amount_decimal"])
+                            + amount_d.zfill(max_amount_decimal)
                             + "||"
-                            + qty_i.zfill(FLAG_21[invoice["flag_21"]]["max_qty_int"])
+                            + qty_i.zfill(max_qty_int)
                             + ","
-                            + qty_d.zfill(FLAG_21[invoice["flag_21"]]["max_qty_decimal"])
+                            + qty_d.zfill(max_qty_decimal)
                             + "||"
                             + code
                             + item["name"][0:127].replace("Ñ", "N").replace("ñ", "n")
@@ -493,18 +561,18 @@ class SerialFiscalDriver(SerialDriver):
                     )
 
                 if item.get("discount", 0) > 0:
-                    amount_i, amount_d = self.split_amount(item.get("discount"))
+                    amount_i, amount_d = self.split_amount(
+                        round(item.get("discount"), disc_decimal), dec=disc_decimal
+                    )
                     cmd.append(f"p-{amount_i.zfill(2)}{amount_d.zfill(2)}")
 
             cmd.append(str("3"))  # sub total en factura
 
             if discount_amount > 0:
-                amount_i, amount_d = self.split_amount(round(discount_amount, 2))
-                cmd.append(
-                    "q-"
-                    + amount_i.zfill(FLAG_21[invoice["flag_21"]]["disc_int"])
-                    + amount_d.zfill(FLAG_21[invoice["flag_21"]]["disc_decimal"])
+                amount_i, amount_d = self.split_amount(
+                    round(discount_amount, disc_decimal), dec=disc_decimal
                 )
+                cmd.append("q-" + amount_i.zfill(disc_int) + amount_d.zfill(disc_decimal))
 
             def filter_unique_type_method(payment):
                 return payment["payment_method"] == "20"
@@ -537,13 +605,13 @@ class SerialFiscalDriver(SerialDriver):
                 for item in new_payment_lines:
                     amount_i, amount_d = self.split_amount(
                         item["amount"],
-                        dec=FLAG_21[invoice["flag_21"]]["max_payment_amount_decimal"],
+                        dec=max_payment_amount_decimal,
                     )
                     cmd.append(
                         "2"
                         + str(
                             (item["payment_method"] or "01")
-                            + amount_i.zfill(FLAG_21[invoice["flag_21"]]["max_payment_amount_int"])
+                            + amount_i.zfill(max_payment_amount_int)
                             + amount_d
                         )
                     )
@@ -582,6 +650,16 @@ class SerialFiscalDriver(SerialDriver):
     def _print_out_invoice(self, invoice):
         valid = True
         cmd = []
+
+        max_amount_int = FLAG_21[invoice["flag_21"]]["max_amount_int"]
+        max_amount_decimal = FLAG_21[invoice["flag_21"]]["max_amount_decimal"]
+        max_payment_amount_int = FLAG_21[invoice["flag_21"]]["max_payment_amount_int"]
+        max_payment_amount_decimal = FLAG_21[invoice["flag_21"]]["max_payment_amount_decimal"]
+        max_qty_int = FLAG_21[invoice["flag_21"]]["max_qty_int"]
+        max_qty_decimal = FLAG_21[invoice["flag_21"]]["max_qty_decimal"]
+        disc_int = FLAG_21[invoice["flag_21"]]["disc_int"]
+        disc_decimal = FLAG_21[invoice["flag_21"]]["disc_decimal"]
+
         try:
             last_trama = self._States("S1")
             last_res = S1PrinterData(last_trama)
@@ -616,17 +694,21 @@ class SerialFiscalDriver(SerialDriver):
                 code = ""
                 if item.get("code", False):
                     code = "|" + item.get("code", "") + "|"
-                amount_i, amount_d = self.split_amount(item["price_unit"])
-                qty_i, qty_d = self.split_amount(item["quantity"])
+
+                amount_i, amount_d = self.split_amount(
+                    abs(round(item["price_unit"], max_amount_decimal)),
+                    dec=max_amount_decimal,
+                )
+                qty_i, qty_d = self.split_amount(item["quantity"], dec=max_qty_decimal)
 
                 if invoice.get("traditional_line", True):
                     cmd.append(
                         str(
                             TAX.get(str(item.get("tax", " ")), " ")
-                            + amount_i.zfill(FLAG_21[invoice["flag_21"]]["max_amount_int"])
-                            + amount_d.zfill(FLAG_21[invoice["flag_21"]]["max_amount_decimal"])
-                            + qty_i.zfill(FLAG_21[invoice["flag_21"]]["max_qty_int"])
-                            + qty_d.zfill(FLAG_21[invoice["flag_21"]]["max_qty_decimal"])
+                            + amount_i.zfill(max_amount_int)
+                            + amount_d.zfill(max_amount_decimal)
+                            + qty_i.zfill(max_qty_int)
+                            + qty_d.zfill(max_qty_decimal)
                             + f"{code}"
                             + item["name"][0:127].strip().replace("Ñ", "N").replace("ñ", "n")
                         )
@@ -649,17 +731,17 @@ class SerialFiscalDriver(SerialDriver):
                         )
                     )
                 if item.get("discount", 0) > 0:
-                    amount_i, amount_d = self.split_amount(item.get("discount"))
+                    amount_i, amount_d = self.split_amount(
+                        round(item.get("discount"), disc_decimal), dec=disc_decimal
+                    )
                     cmd.append(f"p-{amount_i.zfill(2)}{amount_d.zfill(2)}")
 
             cmd.append(str("3"))  # sub total en factura
             if discount_amount > 0:
-                amount_i, amount_d = self.split_amount(round(discount_amount, 2))
-                cmd.append(
-                    "q-"
-                    + amount_i.zfill(FLAG_21[invoice["flag_21"]]["disc_int"])
-                    + amount_d.zfill(FLAG_21[invoice["flag_21"]]["disc_decimal"])
+                amount_i, amount_d = self.split_amount(
+                    round(discount_amount, disc_decimal), dec=disc_decimal
                 )
+                cmd.append("q-" + amount_i.zfill(disc_int) + amount_d.zfill(disc_decimal))
 
             def filter_unique_type_method(payment):
                 return payment["payment_method"] == "20"
@@ -692,13 +774,13 @@ class SerialFiscalDriver(SerialDriver):
                 for item in new_payment_lines:
                     amount_i, amount_d = self.split_amount(
                         item["amount"],
-                        dec=FLAG_21[invoice["flag_21"]]["max_payment_amount_decimal"],
+                        dec=max_payment_amount_decimal,
                     )
                     cmd.append(
                         "2"
                         + str(
                             (item["payment_method"] or "01")
-                            + amount_i.zfill(FLAG_21[invoice["flag_21"]]["max_payment_amount_int"])
+                            + amount_i.zfill(max_payment_amount_int)
                             + amount_d
                         )
                     )
@@ -764,24 +846,6 @@ class SerialFiscalDriver(SerialDriver):
 
     def get_last_invoice_number(self, data):
         try:
-            payment_methods = [
-                "PE01EFECTIVO 01",
-                "PE02EFECTIVO 02",
-                "PE03PAGO MOVIL 01",
-                "PE04PAGO MOVIL 02",
-                "PE05PAGO MOVIL 03",
-                "PE06PAGO MOVIL 04",
-                "PE07TRANSFERENCIA 01 ",
-                "PE08TRANSFERENCIA 02",
-                "PE09TRANSFERENCIA 03",
-                "PE10TRANSFERENCIA 04",
-                "PE19DIVISA",
-                "PE20DIVISA",
-                "PE21ZELLE",
-            ]
-            for line in payment_methods:
-                self.SendCmd(line)
-
             estado_s1 = self.GetS1PrinterData(True)
             number = estado_s1["data"]["_lastInvoiceNumber"]
             machine_number = estado_s1["data"]["_registeredMachineNumber"]
