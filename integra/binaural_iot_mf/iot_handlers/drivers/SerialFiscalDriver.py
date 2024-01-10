@@ -295,6 +295,7 @@ class SerialFiscalDriver(SerialDriver):
                 "report_x": self.PrintXReport,
                 "report_z": self.PrintZReport,
                 "get_last_invoice_number": self.get_last_invoice_number,
+                "configure_device": self.configure_device,
                 # deprecated
                 "pre_invoice": self.pre_invoice,
                 "hello": self.get_last_invoice_number,
