@@ -94,11 +94,10 @@ class AccountFiscalyearClosingConfig(models.Model):
                 order="code ASC",
             )
         else:
-            src_accounts = self.env["account.account"].sudo().search(
-                [
-                    ("company_id", "=", self.fyc_id.company_id.id),
-                    ("code", "=ilike", src)
-                ]
+            src_accounts = (
+                self.env["account.account"]
+                .sudo()
+                .search([("company_id", "=", self.fyc_id.company_id.id), ("code", "=ilike", src)])
             )
         for account in src_accounts:
             closing_type = self.closing_type_get(account)
@@ -111,13 +110,6 @@ class AccountFiscalyearClosingConfig(models.Model):
                 if move_line:
                     move_lines.append(move_line)
             elif closing_type == "unreconciled":
-                # Get credit and debit grouping by partner
-                # """partners = account_map.account_partners_get(account)
-                # for partner in partners:
-                #     balance, move_line = account_map.
-                #         move_line_partner_prepare(account, partner)
-                #     if move_line:
-                #         move_lines.append(move_line)"""
                 continue
             else:
                 # Account type has unsupported closing method
@@ -135,68 +127,6 @@ class AccountFiscalyearClosingConfig(models.Model):
             if move_line:
                 move_lines.append(move_line)
         return move_lines, rate
-
-    def moves_create(self):
-        self.ensure_one()
-        moves = self.env["account.move"]
-        # Prepare one move per configuration
-        data = False
-
-        rate = 1
-        for ac in self.mapping_ids:
-            data = False
-            if self.mapping_ids:
-                move_lines, rate = self._mapping_move_lines_get(ac.src_accounts, ac)
-                if len(move_lines) > 0:
-                    data = self.move_prepare(move_lines, rate)
-            elif self.inverse:
-                # alerta: el move_id es un many2one
-                move_ids = self.inverse_move_prepare()
-                move = moves.browse(move_ids[0])
-                move.write({"ref": self.name, "closing_type": self.move_type})
-                self.move_id = move.id
-                return move, data
-            # Create move
-            if not data:
-                continue
-                # return False, data
-            total_debit = sum([x[2]["debit"] for x in data["line_ids"]])
-            total_credit = sum([x[2]["credit"] for x in data["line_ids"]])
-
-            dif = total_credit - total_debit
-
-            if dif != 0:  # OJITO CON ESTO que genera otro asiento para sacar la diferencia
-                other_dest = False
-                for line in data["line_ids"]:
-                    if len(line) >= 2:
-                        if line[2]["name"] in ["Resultado", "Result"]:
-                            other_dest = {
-                                "account_id": line[2]["account_id"],
-                                "name": "Ajuste por precisión decimal",
-                                "date": line[2]["date"],
-                                "debit": abs(dif) if dif > 0 else False,
-                                "credit": abs(dif) if dif < 0 else False,
-                            }
-                if other_dest:
-                    data["line_ids"].append((0, 0, other_dest))
-            # el modulo valida pero con 2 decimales mientras que odoo manda las lineas con muchos decimales
-            total_debit = sum([x[2]["debit"] for x in data["line_ids"]])
-            total_credit = sum([x[2]["credit"] for x in data["line_ids"]])
-
-            if abs(round(total_credit - total_debit, 2)) >= 0.01:  # Esto redondea
-                # the move is not balanced
-                return False, data
-            move = moves.with_context(journal_id=self.journal_id.id).create(data)
-            move.write(
-                {
-                    "foreign_inverse_rate": rate
-                    if self.env.ref("base.VEF").id == move.foreign_currency_id.id
-                    else 1 / rate
-                }
-            )
-            # if move:
-            #     move._onchange_foreign_rate()
-        return move, data
 
 
 class AccountFiscalyearClosing(models.Model):
@@ -258,103 +188,108 @@ class AccountFiscalyearClosing(models.Model):
         for closing in self:
             closing.move_ids.action_post()
         return super().button_post()
-    
-    #Todo el registro de las cuentas esta en esta funcion
-    def calculate(self):
-        bsd_id = self.env.ref("base.VEF")
-        dest_account = self.env["account.account"].sudo().search(
-            [("account_type", "=", "equity_unaffected")],
-            limit=1,
-        )
 
-        foreign_currency = self.env.company.currency_foreign_id
+    # Todo el registro de las cuentas esta en esta funcion
+    def calculate(self):
+        dest_account = (
+            self.env["account.account"]
+            .sudo()
+            .search(
+                [("account_type", "=", "equity_unaffected")],
+                limit=1,
+            )
+        )
+        currencies = {
+            "bsd_id": self.env.ref("base.VEF"),
+            "foreign_currency": self.env.company.currency_foreign_id,
+        }
+
         for closing in self:
             # Perform checks, raise exception if check fails
             if closing.check_draft_moves:
                 closing.draft_moves_check()
 
-            start = self.date_start
-            end = self.date_end
-            company_id = self.company_id.id
-            
             for config in closing.move_config_ids.filtered("enabled"):
-                src_accounts = self.env["account.account"].search(
-                    [
-                        ("company_id", "=", self.company_id.id),
-                        ("code", "in", config.mapping_ids.mapped("src_accounts")),
-                    ],
-                    order="code ASC",
-                )
-                domain = [
-                    ("company_id", "=", company_id),
-                    ("account_id", "in", src_accounts.ids),
-                    ("date", ">=", start),
-                    ("date", "<=", end),
-                    ("move_id.state", "!=", "cancel"),
-                ]
-                balances = {
-                    read['account_id'][0]: {
-                        "balance": read["balance"],
-                        "foreign_balance": read["foreign_balance"]
-                    }
-                    for read in self.env["account.move.line"]._read_group(
-                        domain=domain,
-                        fields=["balance", "foreign_balance", 'account_id'],
-                        groupby=['account_id'],
-                    )
-                }
-                move_lines = []
-                vals = []
-                for account in src_accounts:
-                    balance_dict = balances.get(account.id, {})
-                    balance = balance_dict.get("balance", 0)
-                    foreign_balance = balance_dict.get("foreign_balance", 0)
-                    if balance == 0 and foreign_balance == 0:
-                        continue
-                    rate = abs(
-                        foreign_balance / balance
-                        if bsd_id == foreign_currency
-                        else balance / foreign_balance
-                    )
-                    vals.append(
-                        {
-                            "ref": config.name,
-                            "date": config.date,
-                            "fyc_id": self.id,
-                            "closing_type": config.move_type,
-                            "journal_id": config.journal_id.id,
-                            "manually_set_rate": True,
-                            "foreign_rate": rate,
-                            "foreign_inverse_rate": rate
-                            if bsd_id == foreign_currency
-                            else 1 / rate,
-                            "line_ids": [
-                                (
-                                    0,
-                                    0,
-                                    {
-                                        "account_id": account.id,
-                                        "balance": -balance,
-                                        "name": config.name,
-                                        "date": config.date,
-                                    }
-                                ),
-                                (
-                                    0,
-                                    0,
-                                    {
-                                        "account_id": dest_account.id,
-                                        "balance": balance,
-                                        "name": _("Result"),
-                                        "date": config.date,
-                                    }
-                                ),
-                            ],
-                        }
-                    )
-                move_ids = self.env["account.move"].create(vals)
+                balances = self._get_balances(config)
+                self._create_closing_moves(config, balances, dest_account, currencies)
 
         return True
+
+    def _get_balances(self, config):
+        src_accounts = self.env["account.account"].search(
+            [
+                ("company_id", "=", self.company_id.id),
+                ("code", "in", config.mapping_ids.mapped("src_accounts")),
+            ],
+            order="code ASC",
+        )
+        domain = [
+            ("company_id", "=", self.company_id.id),
+            ("account_id", "in", src_accounts.ids),
+            ("date", ">=", self.date_start),
+            ("date", "<=", self.date_end),
+            ("move_id.state", "!=", "cancel"),
+        ]
+        balances = self.env["account.move.line"]._read_group(
+            domain=domain,
+            fields=["balance", "foreign_balance", "account_id"],
+            groupby=["account_id"],
+        )
+        return balances
+
+    def _create_closing_moves(self, config, balances, dest_account, currencies):
+        vals = []
+        for balance_dict in balances:
+            balance = balance_dict.get("balance", 0)
+            foreign_balance = balance_dict.get("foreign_balance", 0)
+            if (currencies["bsd_id"] == currencies["foreign_currency"] and balance == 0) or (
+                currencies["bsd_id"] != currencies["foreign_currency"] and foreign_balance == 0
+            ):
+                continue
+
+            rate = abs(
+                foreign_balance / balance
+                if currencies["bsd_id"] == currencies["foreign_currency"]
+                else balance / foreign_balance
+            )
+            vals.append(
+                {
+                    "ref": config.name,
+                    "date": config.date,
+                    "fyc_id": self.id,
+                    "closing_type": config.move_type,
+                    "journal_id": config.journal_id.id,
+                    "manually_set_rate": True,
+                    "foreign_rate": rate,
+                    "foreign_inverse_rate": (
+                        rate if currencies["bsd_id"] == currencies["foreign_currency"] else 1 / rate
+                    ),
+                    "line_ids": [
+                        (
+                            0,
+                            0,
+                            {
+                                "account_id": balance_dict["account_id"][0],
+                                "balance": -balance,
+                                "name": config.name,
+                                "date": config.date,
+                            },
+                        ),
+                        (
+                            0,
+                            0,
+                            {
+                                "account_id": dest_account.id,
+                                "balance": balance,
+                                "name": _("Result"),
+                                "date": config.date,
+                            },
+                        ),
+                    ],
+                }
+            )
+        self.env["account.move"].create(vals)
+
 
 class AccountFiscalyearClosingMapping(models.Model):
     _inherit = "account.fiscalyear.closing.mapping"
@@ -375,7 +310,7 @@ class AccountFiscalyearClosingMapping(models.Model):
             credits = sum(account_lines.mapped("credit"))
             foreign_debits = sum(account_lines.mapped("foreign_debit"))
             foreign_credits = sum(account_lines.mapped("foreign_credit"))
-            
+
             balance = debits - credits
             foreign_balance = foreign_debits - foreign_credits
             # balance = sum(account_lines.mapped("debit")) - sum(account_lines.mapped("credit"))
@@ -391,17 +326,17 @@ class AccountFiscalyearClosingMapping(models.Model):
                     else balance / foreign_balance
                 )
                 # for line in account_lines:
-                    # _logger.warning("NO ENTIENDO")
-                    # 
-                    # line.move_id.write(
-                    #     {
-                    #         "manually_set_rate": True,
-                    #         "foreign_inverse_rate": rate
-                    #         if bsd_id == foreign_currency.id
-                    #         else 1 / rate,
-                    #         "foreign_rate": rate,
-                    #     }
-                    # )
+                # _logger.warning("NO ENTIENDO")
+                #
+                # line.move_id.write(
+                #     {
+                #         "manually_set_rate": True,
+                #         "foreign_inverse_rate": rate
+                #         if bsd_id == foreign_currency.id
+                #         else 1 / rate,
+                #         "foreign_rate": rate,
+                #     }
+                # )
                 move_line = {
                     "account_id": account.id,
                     "debit": balance < 0 and -balance,
@@ -410,15 +345,11 @@ class AccountFiscalyearClosingMapping(models.Model):
                     "date": date,
                     "partner_id": partner_id,
                     "foreign_rate": rate,
-                    "foreign_inverse_rate": rate
-                    if bsd_id == foreign_currency.id
-                    else 1 / rate,
+                    "foreign_inverse_rate": rate if bsd_id == foreign_currency.id else 1 / rate,
                 }
             else:
                 balance = 0
         return balance, move_line, abs(rate)
-
-    
 
     def account_lines_get(self, account, journal_type):
         self.ensure_one()
@@ -441,8 +372,8 @@ class AccountFiscalyearClosingMapping(models.Model):
         else:
             return self.env["account.move.line"]._read_group(
                 domain=domain,
-                fields=["debit","credit","foreign_debit","foreign_credit",'account_id'],
-                groupby=['account_id'],
+                fields=["debit", "credit", "foreign_debit", "foreign_credit", "account_id"],
+                groupby=["account_id"],
             )
 
     def account_partners_get(self, account):

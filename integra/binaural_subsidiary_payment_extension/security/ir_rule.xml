@@ -1,0 +1,15 @@
+<odoo>
+    <data>
+        <record id="account_retention_subsidiary_rule" model="ir.rule">
+            <field name="name">subsidiary account retention rule</field>
+            <field name="model_id" ref="model_account_retention"/>
+            <field name="domain_force">['|',('account_analytic_id','=',False),('account_analytic_id', 'in', subsidiary_ids)]</field>
+        </record>
+
+        <record id="retention_line_report_subsidiary_rule" model="ir.rule">
+            <field name="name">subsidiary retention line report rule</field>
+            <field name="model_id" ref="model_retention_line_report"/>
+            <field name="domain_force">['|',('account_analytic_id','=',False),('account_analytic_id', 'in', subsidiary_ids)]</field>
+        </record>
+    </data>
+</odoo>
