@@ -235,6 +235,34 @@ export class IoTFiscalMachineComponent extends Widget {
       .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
 
   }
+  async configure_device() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    const device = this.props.record.resId
+
+    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/configure_device", {
+      model: 'iot.device',
+      method: 'configure_device',
+      args: [device],
+      kwargs: {},
+    })
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+    });
+
+    this.iotDevice.action({
+      action: "configure_device",
+      data: request,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+  }
   async test() {
     if (!this.device) {
       this.showFailedConnection()
