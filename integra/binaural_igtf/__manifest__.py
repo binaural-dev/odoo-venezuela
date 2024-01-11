@@ -6,11 +6,12 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Igtf",
-    "version": "16.0.14.0.1",
+    "version": "16.0.14.0.2",
     # any module necessary for this one to work correctly
     "depends": ["base", "account", "account_accountant", "binaural_tax", "binaural_rate", "binaural_fiscal", "binaural_base_igtf"],
     # always loaded
     "data": [
+    "data/ir_actions_server.xml",
     "views/account_journal.xml",
     "views/account_payment.xml",
     "wizard/account_payment_register.xml",
