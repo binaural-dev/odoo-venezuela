@@ -1,4 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_zmart_product_template_oem,zmart_product_template_oem,model_product_template_oem,,1,1,1,1
-access_zmart_product_template_tariff,zmart_product_template_tariff,model_product_template_tariff,,1,1,1,1
-access_zmart_product_template_packaging,zmart_product_template_packaging,model_product_template_packaging,,1,1,1,1

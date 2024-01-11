@@ -7,7 +7,7 @@ class ResConfigSettings(models.TransientModel):
     module_binaural_igtf = fields.Boolean(related="company_id.module_binaural_igtf", readonly=False)
 
     unique_tax = fields.Boolean(related="company_id.unique_tax", readonly=False)
-    
+
     exent_aliquot_sale = fields.Many2one(
         "account.tax", related="company_id.exent_aliquot_sale", readonly=False
     )
