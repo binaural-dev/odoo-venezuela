@@ -121,9 +121,7 @@ class AccountMoveLine(models.Model):
     def _compute_amount_currency(self):
         for line in self:
             if line.amount_currency is False:
-                line.amount_currency = line.currency_id.round(
-                    line.balance * line.foreign_rate
-                )
+                line.amount_currency = line.currency_id.round(line.balance * line.foreign_rate)
             if line.currency_id == line.company_id.currency_id:
                 line.amount_currency = line.balance
 

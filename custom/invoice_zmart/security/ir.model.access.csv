@@ -1,3 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_invoice_sale_note,Access to invoice sale note,model_account_move,invoice_zmart.group_sale_note,1,1,1,1
-access_invoice_zmart,Access to invoice sale note,model_wizard_confirm_account_move,,1,1,1,1
