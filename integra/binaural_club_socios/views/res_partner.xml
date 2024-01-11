@@ -32,7 +32,7 @@
             </xpath>
 
             <field name="title" position="after">
-                    <field name="start_date" attrs="{'invisible':[('supplier_rank','>', 0)],'required': [('action_number', '!=', False)]}"/>
+                    <field name="start_date" required="1" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
 
                     <field name="end_date_partner" attrs="{'invisible':['|',('supplier_rank','>', 0),('parent_id','!=',False)]}" />
                     <field name="alerted_end_date_partner" />
