@@ -19,7 +19,7 @@
 	</template>
 	<template id="product" inherit_id="website_sale.product">
 		<xpath expr="//div[@id='o_wsale_cta_wrapper']" position="after">
-			<t t-set="product_available_qty" t-value="round(product.qty_available) or 0" />
+			<t t-set="product_available_qty" t-value="round(product.quantity) or 0" />
 			<div class="oe_item_qty_available mt-2">
 				<t t-if="not request.env.user._is_public()">
 					<t t-if="product_available_qty > 0">
