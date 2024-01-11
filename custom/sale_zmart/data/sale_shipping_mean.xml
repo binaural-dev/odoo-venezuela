@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="update_shipping_mean" model="ir.actions.server">
+        <field name="name">Actualizar Medio de envio</field>
+        <field name="model_id" ref="model_sale_order" />
+        <field name="binding_model_id" ref="model_sale_order" />
+        <field name="state">code</field>
+        <field name="code">records.migrate_shipping_mean()</field>
+    </record>
+
+    <record id="shipping_express" model="sale.shipping.mean">
+        <field name="name">Zmart Express</field>
+    </record>
+
+    <record id="shipping_programado" model="sale.shipping.mean">
+        <field name="name">Zmart programado</field>
+    </record>
+
+    <record id="liberty_express" model="sale.shipping.mean">
+        <field name="name">Liberty Express</field>
+    </record>
+
+    <record id="shipping_mrw" model="sale.shipping.mean">
+        <field name="name">MRW</field>
+    </record>
+
+    <record id="shipping_tealca" model="sale.shipping.mean">
+        <field name="name">Tealca</field>
+    </record>
+
+    <record id="shipping_zoom" model="sale.shipping.mean">
+        <field name="name">Zoom</field>
+    </record>
+
+    <record id="shipping_domesa" model="sale.shipping.mean">
+        <field name="name">Domesa</field>
+    </record>
+
+    <record id="shipping_pedidosya" model="sale.shipping.mean">
+        <field name="name">Pedidos Ya</field>
+    </record>
+
+    <record id="shipping_yummy" model="sale.shipping.mean">
+        <field name="name">Yummy</field>
+    </record>
+
+</odoo>

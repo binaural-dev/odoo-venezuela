@@ -297,6 +297,11 @@ msgid "See Pricelist Items"
 msgstr "Ver Normas de Precio"
 
 #. module: binaural_sale
+#: model:res.groups,name:binaural_sale.group_view_pricelist_items
+msgid "See Pricelist Items"
+msgstr "Ver Normas de Precio"
+
+#. module: binaural_sale
 #. odoo-python
 #: code:addons/binaural_sale/models/sale_order.py:0
 #: code:addons/binaural_sale/models/sale_order.py:0

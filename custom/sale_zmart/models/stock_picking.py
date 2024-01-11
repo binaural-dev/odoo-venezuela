@@ -1,0 +1,155 @@
+import base64
+import io
+
+import qrcode
+from odoo import api, fields, models
+
+
+class StockPicking(models.Model):
+    _inherit = 'stock.picking'
+
+    shipping_type = fields.Selection(
+        related = 'sale_id.shipping_type', 
+        string = "Shipping type"
+    )
+    shipping_mean = fields.Many2one("sale.shipping.mean",
+        related = 'sale_id.shipping_mean_id'
+    )
+
+    shipping_method = fields.Selection( # <-- deprecated 
+        [
+            ("prepaid", "Prepaid"),
+            ("free", "Free"),
+            ("collect_at_destination", "Collect at Destination"),
+        ],
+        related = "sale_id.shipping_method",
+        default = "free",
+        store = True
+    )
+    packing_factor = fields.Integer(
+        store = "True"
+    )
+    sequence_code = fields.Char(
+        related = 'picking_type_id.sequence_code'
+    )
+    guide = fields.Char(
+        readonly = False
+    )
+    user_vend_id = fields.Many2one(
+        related = "sale_id.user_id"
+    )
+    user_pick_id = fields.Many2one(
+        'res.users',
+        domain=lambda self: self.get_user_domain(),
+    )
+
+    user_pack_id = fields.Many2one(
+        'res.users'
+    )
+    user_sale = fields.Many2one(
+        related = "sale_id.user_id",
+    )
+    user_out_id = fields.Many2one(
+        'res.users'
+    )
+    package_qty = fields.Integer(
+        "Package Quantity", 
+        help = "Quantity of packages used in the picking"
+    )
+    qr_code = fields.Binary(
+        string = 'Código QR', 
+        compute = '_compute_qr_code'
+    )
+    priority_sale = fields.Selection(
+        [
+            ("high", "High"),
+            ("medium", "Medium"),
+            ("low", "Low"),
+        ],
+        related = "sale_id.priority_sale",
+        store = True
+    )
+    document_type_invoice = fields.Selection(
+        [("invoice", "Invoice"), ("delivery_note", "Delivery Note")],
+        string="Document Type",
+        compute="_compute_document_type",
+        default=False,
+    )
+    document_number_invoice = fields.Char(compute="_compute_document_type")
+    partner_street = fields.Char('Client Street', related="partner_id.street", readonly=True)
+
+    @api.depends("origin")
+    def _compute_document_type(self):
+        for record in self:
+            order_id = self.env["sale.order"].sudo().search([("name", "=", record.origin)])
+            journal_type = False
+            invoices = []
+            for invoice in order_id.invoice_ids.filtered(lambda x: x.state == "posted"):
+                if invoice.journal_id.fiscal:
+                    journal_type = "invoice"
+                else:
+                    journal_type = "delivery_note"
+
+                invoices.append(invoice.name)
+
+            record.document_type_invoice = journal_type
+            record.document_number_invoice = ", ".join(invoices) if len(invoices) != 0 else False
+    
+    def get_user_domain(self):
+        return [('id', '=', self.env.user.id)]
+    
+    def button_validate(self):
+        res = super().button_validate()
+        if self.sequence_code == 'PICK':
+            current_user = self.env.user
+            self.user_pick_id = current_user.id
+        if self.sequence_code == 'PACK':
+            current_user = self.env.user
+            self.user_pack_id = current_user
+        if self.sequence_code == 'OUT':
+            current_user = self.env.user
+            self.user_out_id = current_user
+        return res
+    
+    @api.onchange('guide','package_qty','user_pack_id')
+    def onchange_guide(self):
+        if self.sequence_code == 'PACK':
+            self.write({'user_pack_id':self.env.user.id})
+            picking_outs = self.env['stock.picking'].search([('origin', '=', self.origin), ('sequence_code', '=', 'OUT')])
+            if picking_outs:
+                picking_outs.write({'guide': self.guide})
+                picking_outs.write({'package_qty': self.package_qty})
+                picking_outs.write({'user_pack_id': self.env.user.id})
+    
+    @api.onchange('user_pick_id')
+    def onchange_user_pick(self):
+        if self.sequence_code == 'PICK':
+            picking_pack = self.env['stock.picking'].search([('origin', '=', self.origin),('sequence_code','=','PACK')])
+            if picking_pack:
+                picking_pack.write({'user_pick_id': self.user_pick_id})
+            picking_out = self.env['stock.picking'].search([('origin', '=', self.origin),('sequence_code','=','OUT')])
+            if picking_out:
+                picking_out.write({'user_pick_id': self.user_pick_id})
+    
+    @api.depends('name')
+    def _compute_qr_code(self):
+        for record in self:
+            # Generar el código QR
+            qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+            qr.add_data(record.name)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+
+            # Convertir la imagen a base64
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            qr_image = base64.b64encode(buffer.getvalue())
+
+            # Actualizar el campo binario con el código QR
+            record.qr_code = qr_image
+    
+    def print_label(self):
+        return self.env.ref('sale_zmart.action_print_label').report_action(self)
+    
+    def _get_report_lang(self):
+        return self.move_ids and self.move_ids[0].partner_id.lang or self.partner_id.lang or self.env.lang

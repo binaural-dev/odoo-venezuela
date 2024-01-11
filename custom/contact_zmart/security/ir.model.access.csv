@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_zmart_res_partner_sale,zmart_res_partner_sale,model_res_partner_sale,,1,1,1,1
