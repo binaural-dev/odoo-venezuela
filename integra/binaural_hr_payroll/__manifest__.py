@@ -9,8 +9,12 @@
     "depends": ["hr_payroll", "binaural_rate"],
     # always loaded
     "data": [
+        "data/hr_work_entry_type.xml",
+        "data/resource_calendar.xml",
+        "data/hr_payroll_structure_type.xml",
         "views/hr_contract.xml",
         "views/res_config_settings.xml",
         "views/hr_payslip.xml",
+        "views/hr_salary_rule.xml",
     ],
 }
