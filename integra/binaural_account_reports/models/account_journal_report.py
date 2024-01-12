@@ -67,7 +67,14 @@ class JournalReportCustomHandler(models.AbstractModel):
                         COALESCE("account_move_line".credit, 0)
                     )
                     END as credit,
-                    COALESCE("account_move_line".balance, 0) as balance,
+                    CASE WHEN {report_in_foreign_currency}
+                    THEN (
+                        COALESCE("account_move_line".foreign_balance, 0)
+                    )
+                    ELSE (
+                        COALESCE("account_move_line".balance, 0)
+                    )
+                    END as balance,
                     {j_name} as journal_name,
                     j.code as journal_code,
                     j.type as journal_type,
