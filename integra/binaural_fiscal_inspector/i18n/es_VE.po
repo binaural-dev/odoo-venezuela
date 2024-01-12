@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-09 15:36+0000\n"
-"PO-Revision-Date: 2024-01-09 15:36+0000\n"
+"POT-Creation-Date: 2024-01-12 13:13+0000\n"
+"PO-Revision-Date: 2024-01-12 13:13+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -41,6 +41,11 @@ msgid "Balance Sheet"
 msgstr "Balance de Situación"
 
 #. module: binaural_fiscal_inspector
+#: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_financial_situation_statement_fiscal
+msgid "Financial situation statement"
+msgstr "Estado de Situación Financiera"
+
+#. module: binaural_fiscal_inspector
 #: model:res.groups,name:binaural_fiscal_inspector.group_fiscal_inspectorate
 msgid "Fiscal Inspectorate"
 msgstr "Inspeccion Fiscal"
@@ -63,7 +68,7 @@ msgstr "Informes de Socios"
 #. module: binaural_fiscal_inspector
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_result_statement_fiscal
 msgid "Result Statement"
-msgstr "Declaración de resultados"
+msgstr "Estado de resultados"
 
 #. module: binaural_fiscal_inspector
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.statement_report_fiscal_menu
