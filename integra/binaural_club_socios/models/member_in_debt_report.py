@@ -102,7 +102,7 @@ class MemberInDebtReport(models.Model):
                             ELSE
                                 _tmp_date := record.date_end;
                             END IF;
-                            IF _effective_date <= _tmp_date AND EXTRACT(DAY FROM _effective_date) <= (SELECT day_end_date_payment FROM partner_config LIMIT 1) THEN
+                            IF _effective_date <= _tmp_date AND EXTRACT(DAY FROM _effective_date) >= (SELECT day_end_date_payment FROM partner_config LIMIT 1) THEN
                                 _tmp_next_date := _effective_date + INTERVAL '1 months';
                                 LOOP 
                                     IF EXTRACT(MONTH FROM _tmp_next_date) >= EXTRACT(MONTH FROM NOW()::DATE) AND EXTRACT(YEAR FROM _tmp_next_date) >= EXTRACT(YEAR FROM NOW()::DATE) THEN
