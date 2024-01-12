@@ -1,0 +1,114 @@
+from odoo import api, fields, models, _
+from odoo.tools.safe_eval import safe_eval
+
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
+class HrSalaryRule(models.Model):
+    _inherit = "hr.salary.rule"
+
+    foreign_amount_fix = fields.Float()
+    foreign_amount_percentage_base = fields.Char()
+
+    def _compute_rule_foreign_result(self, localdict):
+        """
+        :param localdict: dictionary containing the current computation environment
+        :return: returns a tuple (amount, qty, rate)
+        :rtype: (float, float, float)
+        """
+        self.ensure_one()
+        if self.amount_select == "fix":
+            if not self.foreign_amount_fix:
+                return self.amount_fix * localdict["foreign_inverse_rate"] or 0.0
+            return self.foreign_amount_fix or 0.0
+        if self.amount_select == "percentage":
+            if not self.foreign_amount_percentage_base:
+                return (
+                    float(safe_eval(self.amount_percentage_base, localdict))
+                    * localdict["foreign_inverse_rate"]
+                )
+            return float(safe_eval(self.foreign_amount_percentage_base, localdict))
+        else:  # python code
+            try:
+                safe_eval(self.amount_python_compute or 0.0, localdict, mode="exec", nocopy=True)
+                _logger.warning("RESULT: %s", localdict)
+                if not "foreign_result" in localdict.keys():
+                    localdict["foreign_result"] = (
+                        localdict["result"] * localdict["foreign_inverse_rate"]
+                    )
+                return float(localdict["foreign_result"])
+            except Exception as e:
+                self._raise_error(localdict, _("Wrong python code defined for:"), e)
+
+    def _compute_rule(self, localdict):
+        """
+        :param localdict: dictionary containing the current computation environment
+        :return: returns a tuple (amount, qty, rate)
+        :rtype: (float, float, float)
+        """
+        self.ensure_one()
+        if self.amount_select == "fix":
+            try:
+                return (
+                    self.amount_fix or 0.0,
+                    self.foreign_amount_fix,
+                    float(safe_eval(self.quantity, localdict)),
+                    100.0,
+                )
+            except Exception as e:
+                self._raise_error(localdict, _("Wrong quantity defined for:"), e)
+        if self.amount_select == "percentage":
+            try:
+                return (
+                    float(safe_eval(self.amount_percentage_base, localdict)),
+                    float(safe_eval(self.foreign_amount_percentage_base, localdict)),
+                    float(safe_eval(self.quantity, localdict)),
+                    self.amount_percentage or 0.0,
+                )
+            except Exception as e:
+                self._raise_error(localdict, _("Wrong percentage base or quantity defined for:"), e)
+        else:  # python code
+            try:
+                safe_eval(self.amount_python_compute or 0.0, localdict, mode="exec", nocopy=True)
+                _logger.warning("LOCALDICT INSIDE COMPUTE RULE: %s", localdict)
+                _logger.warning("LOCALDICT KEYS: %s", localdict.keys())
+                if localdict.get("foreign_result", None) is None:
+                    foreign_result = float(localdict["result"]) * localdict["foreign_inverse_rate"]
+                else:
+                    foreign_result = float(localdict["foreign_result"])
+
+                return (
+                    float(localdict["result"]),
+                    foreign_result,
+                    localdict.get("result_qty", 1.0),
+                    localdict.get("result_rate", 100.0),
+                )
+            except Exception as e:
+                self._raise_error(localdict, _("Wrong python code defined for:"), e)
+
+#     def _get_new_worked_days_lines(self):
+#         if self.struct_id.category == "liquidation":
+#             worked_days_line_values = self._get_worked_day_lines(check_out_of_contract=False)
+
+#         worked_days_lines = self.worked_days_line_ids.browse([])
+#         work_entry_basic = self.env.ref("binaural_nomina.hr_work_entry_binaural_basic").id
+#         sum_worked_days = sum(x["number_of_days"] for x in worked_days_line_values)
+
+#         for r in worked_days_line_values:
+#             r["payslip_id"] = self.id
+#             if (
+#                 r["work_entry_type_id"] == work_entry_basic
+#                 and self.struct_id.category == "salary"
+#                 and self.schedule_payment != "days"
+#             ):
+#                 if sum_worked_days > (30 if self.date_from.month != 2 else 28):
+#                     r["number_of_days"] -= sum_worked_days - (
+#                         30 if self.date_from.month != 2 else 28
+#                     )
+#                 if sum_worked_days >= 28 and self.date_from.month == 2:
+#                     r["number_of_days"] += 30 - sum_worked_days
+#             worked_days_lines |= worked_days_lines.new(r)
+
+#         return worked_days_lines

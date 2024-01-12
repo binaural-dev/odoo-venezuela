@@ -8,9 +8,11 @@
             <field name="inherit_id" ref="hr_payroll.view_hr_payslip_form"/>
             <field name="arch" type="xml">
 		<xpath expr="//field[@name='worked_days_line_ids']/tree/field[@name='amount']" position="after">
+		    <field name="foreign_currency_id" column_invisible="1"/>
 		    <field name="foreign_amount"/>
 		</xpath>
 		<xpath expr="//field[@name='line_ids']/tree/field[@name='amount']" position="after">
+		    <field name="foreign_currency_id" column_invisible="1"/>
 		    <field name="foreign_amount"/>
 		</xpath>
 		<xpath expr="//field[@name='line_ids']/tree/field[@name='total']" position="after">
