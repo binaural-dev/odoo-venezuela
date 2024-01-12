@@ -47,7 +47,6 @@
             <menuitem id="menu_action_account_report_coa_fiscal" name="Trial Balance" 
             action="account_reports.action_account_report_coa" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
         </menuitem>        
-</menuitem>
-
+    </menuitem>
 
 </odoo>
