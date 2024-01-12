@@ -28,6 +28,8 @@
             action="account_reports.action_account_report_bs" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
             <menuitem id="menu_action_account_report_result_statement_fiscal" name="Result Statement"
             action="binaural_account_reports.action_account_report_rs" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+            <menuitem id="menu_action_account_report_financial_situation_statement_fiscal" name="Financial situation statement"
+            action="binaural_account_reports.action_account_report_fs" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
         </menuitem>
         <menuitem id="partner_report_fiscal_menu" name="Partner Reports" 
         groups="binaural_fiscal_inspector.group_fiscal_inspectorate" sequence="2">
