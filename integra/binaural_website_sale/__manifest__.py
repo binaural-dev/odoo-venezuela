@@ -5,7 +5,7 @@
     "summary": "Visualizar solo los productos con cantidad disponible en la tienda",
     "website": "https://binauraldev.com/",
     "license": "LGPL-3",
-    "version": "16.0.0.0.5",
+    "version": "16.0.0.0.6",
     "depends": ["binaural_stock", "website_sale"],
     "data": [
         "views/res_config_settings_views.xml",
