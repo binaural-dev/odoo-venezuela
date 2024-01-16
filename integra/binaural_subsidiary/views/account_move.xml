@@ -8,7 +8,6 @@
             <field name="arch" type="xml">
                 <xpath expr="//group[@id='header_right_group']/div[3]" position="after">
                     <field name="account_analytic_id" attrs="{'readonly': [('invoice_origin','!=', False)]}" required="1"/>
-                    <!-- ['|',('invoice_origin','!=', False), ('ref','!=', False)] -->
                 </xpath>
             </field>
         </record>
