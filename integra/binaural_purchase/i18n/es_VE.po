@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240102\n"
+"Project-Id-Version: Odoo Server 16.0+e-20230810\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-04 14:58+0000\n"
-"PO-Revision-Date: 2024-01-04 14:58+0000\n"
+"POT-Creation-Date: 2023-11-13 15:55+0000\n"
+"PO-Revision-Date: 2023-11-13 15:55+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -58,6 +58,21 @@ msgstr "Compañías"
 #: model:ir.model,name:binaural_purchase.model_res_config_settings
 msgid "Config Settings"
 msgstr "Opciones de configuración"
+
+#. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_template_tariff__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_template_tariff__create_date
+msgid "Created on"
+msgstr ""
+
+#. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_template_tariff__display_name
+msgid "Display Name"
+msgstr ""
 
 #. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__filter_partner
@@ -154,6 +169,11 @@ msgid "Foreign inverse rate"
 msgstr "Tasa inversa alterna"
 
 #. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_template_tariff__id
+msgid "ID"
+msgstr ""
+
+#. module: binaural_purchase
 #: model:ir.model,name:binaural_purchase.model_account_move
 msgid "Journal Entry"
 msgstr "Asiento contable"
@@ -169,9 +189,29 @@ msgid "Last Foreign Rate"
 msgstr "Ultima tasa"
 
 #. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_template_tariff____last_update
+msgid "Last Modified on"
+msgstr ""
+
+#. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_template_tariff__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_template_tariff__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__manually_set_rate
 msgid "Manually Set Rate"
 msgstr "Tasa actualizada manualmente"
+
+#. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_template_tariff__name
+msgid "Name"
+msgstr "Código Arancelario"
 
 #. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__partner_id_domain
@@ -205,6 +245,17 @@ msgid ""
 "Rate that will be used as factor to multiply of the foreign currency for "
 "this order."
 msgstr ""
+
+#. module: binaural_purchase
+#: model:ir.model,name:binaural_purchase.model_product_template_tariff
+msgid "Tarifa de Producto"
+msgstr ""
+
+#. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_product__tariff_code
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_template__tariff_code
+msgid "Tariff Code"
+msgstr "Código Arancelario"
 
 #. module: binaural_purchase
 #. odoo-python
@@ -247,6 +298,13 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__total_taxed
 msgid "Total Taxed"
 msgstr "Total gravado"
+
+#. module: binaural_purchase
+#. odoo-python
+#: code:addons/binaural_purchase/models/purchase_order.py:0
+#, python-format
+msgid "You cannot place a currency other than the base of the system."
+msgstr "No puede colocar una moneda que no sea la base del sistema."
 
 #. module: binaural_purchase
 #: model:ir.model.fields,help:binaural_purchase.field_purchase_order__total_taxed
@@ -299,8 +357,7 @@ msgstr ""
 "la tasa ya está establecida, no se actualizará."
 
 #. module: binaural_purchase
-#. odoo-python
-#: code:addons/binaural_purchase/models/purchase_order.py:0
-#, python-format
-msgid "You cannot place a currency other than the base of the system."
-msgstr "No puede colocar una moneda que no sea la base del sistema."
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_product__percentage_tariff_code
+#: model:ir.model.fields,field_description:binaural_purchase.field_product_template__percentage_tariff_code
+msgid "tariff %"
+msgstr "Arancel %"
