@@ -300,6 +300,13 @@ msgid "Total Taxed"
 msgstr "Total gravado"
 
 #. module: binaural_purchase
+#. odoo-python
+#: code:addons/binaural_purchase/models/purchase_order.py:0
+#, python-format
+msgid "You cannot place a currency other than the base of the system."
+msgstr "No puede colocar una moneda que no sea la base del sistema."
+
+#. module: binaural_purchase
 #: model:ir.model.fields,help:binaural_purchase.field_purchase_order__total_taxed
 msgid "Total Taxed of the order"
 msgstr "Total gravado de la orden"
