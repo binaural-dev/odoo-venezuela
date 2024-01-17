@@ -1,8 +1,22 @@
-from odoo import models
+from odoo import api, fields, models
 
 
 class AccountRetention(models.Model):
     _inherit = "account.retention"
+
+    account_analytic_id = fields.Many2one(
+        "account.analytic.account",
+        string="Subsidiary",
+        compute="_compute_account_analytic_id",
+        store=True,
+    )
+
+    @api.depends("retention_line_ids")
+    def _compute_account_analytic_id(self):
+        for retention in self:
+            if not retention.retention_line_ids:
+                continue
+            retention.account_analytic_id = retention.retention_line_ids[0].account_analytic_id
 
     def action_post(self):
         res = super().action_post()

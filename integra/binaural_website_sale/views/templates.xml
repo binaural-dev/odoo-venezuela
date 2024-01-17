@@ -1,20 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="cart" inherit_id="website_sale.cart">
-	<xpath expr="//div[hasclass('oe_website_sale')]/div" position="before">
-	    <t t-if="errors">
-		<h5 class="text-danger">The following products does not have enough stock:</h5>
-		<ul>
-		    <t t-foreach="errors" t-as="error">
-			<li>
-			    <p class="text-danger">
-				<t t-out="error['product']"/> (available quantity
-				<t t-out="error['qty'] + ')'"/>
-			    </p>
-			</li>
-		    </t>
-		</ul>
-	    </t>
-	</xpath>
+		<xpath expr="//div[hasclass('oe_website_sale')]/div" position="before">
+			<t t-if="errors">
+			<h5 class="text-danger">The following products does not have enough stock:</h5>
+			<ul>
+				<t t-foreach="errors" t-as="error">
+				<li>
+					<p class="text-danger">
+					<t t-out="error['product']"/> (available quantity
+					<t t-out="error['qty'] + ')'"/>
+					</p>
+				</li>
+				</t>
+			</ul>
+			</t>
+		</xpath>
+	</template>
+	<template id="product" inherit_id="website_sale.product">
+		<xpath expr="//div[@id='o_wsale_cta_wrapper']" position="after">
+			<t t-set="product_available_qty" t-value="round(product.quantity) or 0" />
+			<div class="oe_item_qty_available mt-2">
+				<t t-if="not request.env.user._is_public()">
+					<t t-if="product_available_qty > 0">
+						<span class="available_text text-success">Disponibles: <span class="font-weight-bold"><t t-raw="product_available_qty"/></span></span>
+						<br/>
+					</t>
+					<t t-else="">
+						<span class="available_text text-danger">Disponibles: <span class="font-weight-bold"><t t-raw="product_available_qty"/></span></span>
+					</t>
+				</t>
+            </div>
+		</xpath>
+	</template>
+	<template id="product_price" name="product_price inherit" inherit_id="website_sale.product_price">
+		<xpath expr=".//div[1]" position="replace">
+			<t t-if="not request.env.user._is_public()">
+				<t t-set="product_available_qty" t-value="round(product.qty_available) or 0" />
+				<div itemprop="offers" itemscope="itemscope" itemtype="http://schema.org/Offer" class="product_price mt16">
+					<h4 class="oe_price_h4 css_editable_mode_hidden">
+						<span t-attf-class="text-danger oe_default_price {{'' if combination_info['has_discounted_price'] else 'd-none'}}" 
+							style="text-decoration: line-through; white-space: nowrap;"
+							t-esc="combination_info['list_price']" 
+							t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+						<b class="oe_price" style="white-space: nowrap;" t-esc="combination_info['price']" 
+							t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>
+						<span itemprop="price" style="display:none;" t-esc="combination_info['price']"/>
+						<span itemprop="priceCurrency" style="display:none;" t-esc="website.currency_id.name"/>
+					</h4>
+					<h4 class="css_non_editable_mode_hidden decimal_precision" t-att-data-precision="str(website.currency_id.decimal_places)">
+						<span t-field="product.list_price"
+							t-options='{"widget": "monetary","display_currency": product.currency_id,}'/>
+					</h4>
+				</div>
+			</t>
+		</xpath>
+	</template>
+	<template id="product_default_code_inherit" inherit_id="website_sale.product">
+        <xpath expr="//div[@id='product_details'][1]/span[1]" position="after">
+			<t t-if="product.default_code">
+            	SKU: <span t-esc="product.default_code" style="text-transform: uppercase;" />
+            </t>
+        </xpath>
     </template>
-</odoo>
+</odoo> 

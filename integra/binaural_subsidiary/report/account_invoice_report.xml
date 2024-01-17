@@ -7,7 +7,7 @@
         <field name="inherit_id" ref="account.view_account_invoice_report_search"/>
         <field name="arch" type="xml">
             <field name="partner_id" position="before">
-                <filter name="subsidiary" string="Subsidiary" context="{'group_by':'subsidiary'}"/>
+                <filter name="subsidiary_id" string="Subsidiary" context="{'group_by':'subsidiary_id'}"/>
             </field>
         </field>
     </record>
