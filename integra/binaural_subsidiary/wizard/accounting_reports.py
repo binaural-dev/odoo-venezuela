@@ -6,7 +6,9 @@ class AccountingReports(models.TransientModel):
 
     account_analytic_id = fields.Many2one(
         "account.analytic.account",
-        domain=[("is_subsidiary", "=", True)],
+        domain=lambda self: (
+            f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
+        ),
         string="Subsidiary",
     )
 

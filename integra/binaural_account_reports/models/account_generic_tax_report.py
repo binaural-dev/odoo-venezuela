@@ -134,8 +134,9 @@ class GenericTaxReportCustomHandler(models.AbstractModel):
                         for child_tax_id in group_info['child_tax_ids']:
                             results[group_info['type_tax_use']]['children'][child_tax_id]['base_amount'][column_group_key] += row['base_amount']
                     else:
-                        results[row['tax_type_tax_use']]['children'][row['tax_id']]['base_amount'][column_group_key] += row['base_amount']
-
+                        if row['base_amount'] is not None:
+                            row['base_amount'] = 0.0
+                            results[row['tax_type_tax_use']]['children'][row['tax_id']]['base_amount'][column_group_key] += row['base_amount']
             # Fetch the tax amounts.
             self._cr.execute(f'''
                 SELECT
