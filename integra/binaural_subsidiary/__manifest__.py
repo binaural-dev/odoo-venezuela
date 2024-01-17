@@ -16,6 +16,7 @@
         "binaural_sale",
     ],
     "data": [
+        "data/account_analytic_account.xml",
         "security/ir_rule.xml",
         "report/sale_report.xml",
         "report/purchase_report.xml",

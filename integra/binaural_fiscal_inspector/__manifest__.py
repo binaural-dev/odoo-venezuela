@@ -18,4 +18,5 @@
         "data/res_users.xml",
         "views/menu_item.xml",
     ],
+    'post_init_hook': "create_res_users_fiscal",
 }
