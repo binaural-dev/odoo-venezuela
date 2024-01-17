@@ -153,10 +153,17 @@ class BinauralWebsiteSale(WebsiteSale):
     @http.route(['/shop/confirmation'], type='http', auth="public", website=True, sitemap=False)
     def shop_payment_confirmation(self, **post):
         res = super().shop_payment_confirmation(**post)
-        company = request.env.user.company_id
+        website = request.env['website'].get_current_website()
+        company = request.env["res.company"].search(
+            [
+                ("id","=",website._get_cached('company_id'))
+            ]
+        )
         if company.budget_send:
             order = res.qcontext['order']
-            order.with_context(send_email=True).sudo().action_confirm()
+            order.update({
+                "state": "sent",
+            })
         return res
 
     def sitemap_shop(env, rule, qs):
