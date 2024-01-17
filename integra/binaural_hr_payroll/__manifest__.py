@@ -4,9 +4,9 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Payroll Localization",
-    "version": "16.0.1.0.0",
+    "version": "16.0.1.0.1",
     # any module necessary for this one to work correctly
-    "depends": ["hr_payroll", "binaural_rate"],
+    "depends": ["hr", "hr_payroll", "binaural_rate"],
     # always loaded
     "data": [
         "data/hr_work_entry_type.xml",
