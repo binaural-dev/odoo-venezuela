@@ -34,7 +34,7 @@
                 </div>
             </div>
         </xpath>
-        <xpath
+        <!-- <xpath
             expr="//t[@t-if='website_sale_order.amount_total']"
             position="attributes"
         >
@@ -43,7 +43,7 @@
                 separator=" "
                 add="and not website.checkout_skip_payment"
             />
-        </xpath>
+        </xpath> -->
         <xpath expr="//div[hasclass('js_payment')]" position="attributes">
             <attribute
                 name="t-if"
