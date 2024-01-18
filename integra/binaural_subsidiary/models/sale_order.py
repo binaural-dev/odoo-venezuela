@@ -13,6 +13,10 @@ class SaleOrder(models.Model):
         default=lambda self: self.env.user.subsidiary_id,
     )
 
+    company_subsidiary = fields.Boolean(
+        related='company_id.subsidiary'
+    )
+
     def _prepare_invoice(self):
         res = super(SaleOrder, self)._prepare_invoice()
         res.update(

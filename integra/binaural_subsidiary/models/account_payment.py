@@ -12,6 +12,10 @@ class AccountPayment(models.Model):
         ),
     )
 
+    company_subsidiary = fields.Boolean(
+        related='company_id.subsidiary'
+    )
+    
     def _synchronize_to_moves(self, changed_fields):
         """
         Override the original method to change the analytic account (subidiary) of the move using

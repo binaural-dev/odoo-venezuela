@@ -22,3 +22,8 @@ class ResConfigSettings(models.TransientModel):
         string="Using Analytical Accounts as Cost Center and Subsidiary",
         readonly=False,
     )
+
+    group_analytic_accounting_related = fields.Boolean(
+        related='group_analytic_accounting',
+        config_parameter="binaural_subsidiary.group_analytic_accounting_related",
+    )
