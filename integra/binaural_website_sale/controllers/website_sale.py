@@ -211,3 +211,9 @@ class BinauralWebsiteSale(WebsiteSale):
                 "search_count": len(search_product),
             })
         return res
+
+      def _get_search_order(self, post):
+        # OrderBy will be parsed in orm and so no direct sql injection
+        # id is added to be sure that order is a unique sort key
+        order = 'quantity desc'
+        return 'is_published desc, %s' % order

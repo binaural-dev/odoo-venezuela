@@ -67,7 +67,14 @@ class JournalReportCustomHandler(models.AbstractModel):
                         COALESCE("account_move_line".credit, 0)
                     )
                     END as credit,
-                    COALESCE("account_move_line".balance, 0) as balance,
+                    CASE WHEN {report_in_foreign_currency}
+                    THEN (
+                        COALESCE("account_move_line".foreign_balance, 0)
+                    )
+                    ELSE (
+                        COALESCE("account_move_line".balance, 0)
+                    )
+                    END as balance,
                     {j_name} as journal_name,
                     j.code as journal_code,
                     j.type as journal_type,
@@ -215,3 +222,38 @@ class JournalReportCustomHandler(models.AbstractModel):
 
         # Return the result, ordered by country name
         return dict(sorted(res.items()))
+    
+    def _get_journal_initial_balance(self, options, journal_id, date_month=False):
+        queries = []
+        params = []
+        report = self.env.ref('account_reports.journal_report')
+        report_in_foreign_currency = get_is_foreign_currency(self.env)
+        for column_group_key, options_group in report._split_options_per_column_group(options).items():
+            new_options = self.env['account.general.ledger.report.handler']._get_options_initial_balance(options_group)  # Same options as the general ledger
+            tables, where_clause, where_params = report._query_get(new_options, 'normal', domain=[('journal_id', '=', journal_id)])
+            params.append(column_group_key)
+            params += where_params
+            queries.append(f"""
+                SELECT
+                    %s AS column_group_key,
+                    CASE WHEN {report_in_foreign_currency}
+                    THEN (
+                        sum("account_move_line".foreign_balance) 
+                    )
+                    ELSE (
+                        sum("account_move_line".balance) 
+                    )
+                    END as balance
+                FROM {tables}
+                JOIN account_journal journal ON journal.id = "account_move_line".journal_id AND "account_move_line".account_id = journal.default_account_id
+                WHERE {where_clause}
+                GROUP BY journal.id
+            """)
+
+        self._cr.execute(" UNION ALL ".join(queries), params)
+
+        init_balance_by_col_group = {column_group_key: 0.0 for column_group_key in options['column_groups']}
+        for result in self._cr.dictfetchall():
+            init_balance_by_col_group[result['column_group_key']] = result['balance']
+
+        return init_balance_by_col_group

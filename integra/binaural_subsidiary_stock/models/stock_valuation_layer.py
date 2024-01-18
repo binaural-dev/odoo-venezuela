@@ -15,6 +15,8 @@ class StockValuationLayer(models.Model):
     def _compute_subsidiary_id(self):
         for svl in self:
             move = svl.stock_move_id or svl.stock_valuation_layer_id.stock_move_id
+            if not move:
+                continue
             if move._is_in():
                 svl.subsidiary_id = move.subsidiary_dest_id
             if move._is_out():
