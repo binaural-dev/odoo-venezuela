@@ -30,10 +30,6 @@ class HrPayslip(models.Model):
         index=True,
     )
 
-    def _compute_foreign_currency_id(self):
-        for slip in self:
-            slip.foreign_currency_id = self.env.company.currency_foreign_id
-
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
         """
@@ -45,20 +41,24 @@ class HrPayslip(models.Model):
                 return
             payslip.foreign_inverse_rate = Rate.compute_inverse_rate(payslip.foreign_rate)
 
-    @api.depends("date_to")
+    def _compute_foreign_currency_id(self):
+        for slip in self:
+            slip.foreign_currency_id = self.env.company.currency_foreign_id
+
+    @api.depends("date_to", "foreign_currency_id")
     def _compute_rate(self):
         """
-        Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
+        Compute the rate of the payslip using the compute_rate method of the res.currency.rate
+        model.
         """
         Rate = self.env["res.currency.rate"]
         for payslip in self:
             if payslip.foreign_inverse_rate:
                 continue
 
-            rate_values = Rate.compute_rate(
-                self.foreign_currency_id.id, payslip.date_to or fields.Date.today()
-            )
-            payslip.update(rate_values)
+            rate_values = Rate.compute_rate(self.foreign_currency_id.id, fields.Date.today())
+            payslip.foreign_rate = rate_values["foreign_rate"]
+            payslip.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
 
     def _get_foreign_paid_amount(self):
         self.ensure_one()
