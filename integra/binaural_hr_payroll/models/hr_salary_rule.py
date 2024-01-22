@@ -11,6 +11,25 @@ class HrSalaryRule(models.Model):
 
     foreign_amount_fix = fields.Float()
     foreign_amount_percentage_base = fields.Char()
+    amount_python_compute = fields.Text(
+        default="""
+                    # Available variables:
+                    #----------------------
+                    # payslip: object containing the payslips
+                    # employee: hr.employee object
+                    # contract: hr.contract object
+                    # rules: object containing the rules code (previously computed)
+                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+                    # worked_days: object containing the computed worked days.
+                    # inputs: object containing the computed inputs.
+                    # foreign_inverse_rate: Inverse rate of the slip.
+
+                    # Note: returned value have to be set in the variable 'result' and foreign value
+                    # in the variable 'foreign_result'
+
+                    result = contract.wage * 0.10
+                    foreign_result = contract.wage * foreign_inverse_rate"""
+    )
 
     def _compute_rule_foreign_result(self, localdict):
         """
@@ -87,6 +106,7 @@ class HrSalaryRule(models.Model):
                 )
             except Exception as e:
                 self._raise_error(localdict, _("Wrong python code defined for:"), e)
+
 
 #     def _get_new_worked_days_lines(self):
 #         if self.struct_id.category == "liquidation":
