@@ -62,7 +62,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
       get is_refund(){
         return this.getHasRefundLines()
       }
-      get current_rate() {
+      get rate_from_lines(){
         let rate = this.pos.config.foreign_rate
         if (!this.is_refund){
           return rate
@@ -73,6 +73,14 @@ odoo.define("binaural_pos.OrderState", function(require) {
           }
         })
         return rate
+      }
+      get current_rate() {
+        let rate = this.rate_from_lines
+        this.set_foreign_currency_rate(rate)
+        return rate
+      }
+      set_foreign_currency_rate(rate) {
+        this.foreign_currency_rate = rate;
       }
       init_from_JSON(json) {
         super.init_from_JSON(...arguments)
