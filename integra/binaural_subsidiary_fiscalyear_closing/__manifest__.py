@@ -7,9 +7,9 @@
     # Check https://github.com/odoo/odoo/blob/16.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     "category": "Technical",
-    "version": "16.0.1.0.0",
+    "version": "16.0.1.0.1",
     # any module necessary for this one to work correctly
-    "depends": ["binaural_account_fiscalyear_closing"],
+    "depends": ["binaural_account_fiscalyear_closing","binaural_subsidiary"],
     # always loaded
     "auto_install": True,
 }
