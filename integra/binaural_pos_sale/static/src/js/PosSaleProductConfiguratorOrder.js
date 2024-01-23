@@ -1,4 +1,4 @@
-odoo.define('binaural_pos.PosSaleProductConfiguratorOrder', function (require) {
+odoo.define('binaural_pos_sale.PosSaleProductConfiguratorOrder', function (require) {
   "use strict";
 
   var { Order } = require('point_of_sale.models');

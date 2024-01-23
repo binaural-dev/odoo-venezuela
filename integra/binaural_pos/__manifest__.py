@@ -8,7 +8,7 @@
     "website": "https://binauraldev.com/",
     "version": "16.0.0.1.1",
     # any module necessary for this one to work correctly
-    "depends": ["base", "point_of_sale", "binaural_rate", "binaural_contact", "binaural_stock", "pos_sale_product_configurator"],
+    "depends": ["base", "point_of_sale", "binaural_rate", "binaural_contact", "binaural_stock"],
     # always loaded
     "data": [
         "data/res_group.xml",
