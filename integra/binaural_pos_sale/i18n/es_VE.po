@@ -4,16 +4,37 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230810\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-08-16 17:22+0000\n"
-"PO-Revision-Date: 2023-08-16 17:22+0000\n"
+"POT-Creation-Date: 2024-01-24 21:15+0000\n"
+"PO-Revision-Date: 2024-01-24 21:15+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: binaural_pos_sale
+#. odoo-javascript
+#: code:addons/binaural_pos_sale/static/src/js/SaleOrderManagementScreen.js:0
+#, python-format
+msgid ""
+"Are you sure to process the order with ${sale_order[0].pricelist_id[0]} "
+"since your checkout currently does not allow that rate?"
+msgstr ""
+"¿Esta seguro de procesar el pedido con la ${sale_order[0].pricelist_id[0]} "
+"dado que su caja actualmente no tiene permitida dicha tarifa?"
+
+#. module: binaural_pos_sale
+#: model:ir.model,name:binaural_pos_sale.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: binaural_pos_sale
+#: model:ir.model,name:binaural_pos_sale.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
 
 #. module: binaural_pos_sale
 #. odoo-javascript
@@ -31,18 +52,9 @@ msgid "Order error"
 msgstr "Error de la Orden"
 
 #. module: binaural_pos_sale
-#. odoo-javascript
-#: code:addons/binaural_pos_sale/static/src/js/ProductScreen.js:0
-#, python-format
-msgid "This order has been modified. Please refresh the order."
-msgstr "La orden fue modificada en ventas. Por favor elimine la ordern y vuelva a obtenerla"
-
-#. module: binaural_pos_sale
-#. odoo-javascript
-#: code:addons/binaural_pos_sale/static/src/js/SaleOrderManagementScreen.js:0
-#, python-format
-msgid "You already contain this sales order"
-msgstr "Ya esta orden contiene este pedido de ventas."
+#: model:ir.model,name:binaural_pos_sale.model_pos_config
+msgid "Point of Sale Configuration"
+msgstr "Configuración del TPV"
 
 #. module: binaural_pos_sale
 #: model:ir.model.fields,field_description:binaural_pos_sale.field_pos_config__pos_use_rate_from_order
@@ -50,3 +62,29 @@ msgstr "Ya esta orden contiene este pedido de ventas."
 #: model:ir.model.fields,field_description:binaural_pos_sale.field_res_config_settings__pos_use_rate_from_order
 msgid "Pos Use Rate From Order"
 msgstr "Usar Tasa desde Pedido de Venta"
+
+#. module: binaural_pos_sale
+#: model:ir.model,name:binaural_pos_sale.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Línea pedido de venta"
+
+#. module: binaural_pos_sale
+#. odoo-javascript
+#: code:addons/binaural_pos_sale/static/src/js/ProductScreen.js:0
+#, python-format
+msgid "This order has been modified. Please refresh the order."
+msgstr ""
+"La orden fue modificada en ventas. Por favor elimine la ordern y vuelva a "
+"obtenerla"
+
+#. module: binaural_pos_sale
+#: model_terms:ir.ui.view,arch_db:binaural_pos_sale.res_config_settings_binaural_pos
+msgid "Use Rate from Sale Order"
+msgstr "Usar la Tasa desde el Presupuesto"
+
+#. module: binaural_pos_sale
+#. odoo-javascript
+#: code:addons/binaural_pos_sale/static/src/js/SaleOrderManagementScreen.js:0
+#, python-format
+msgid "You already contain this sales order"
+msgstr "Ya esta orden contiene este pedido de ventas."
