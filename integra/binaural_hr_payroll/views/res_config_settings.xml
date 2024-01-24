@@ -24,7 +24,6 @@
 			<div class="col-lg-8 col-12 o_setting_box">
                             <div class="o_setting_left_pane"/>
                             <div class="o_setting_right_pane">
-                                <!-- <label for="default_commission_on_target" string="Valores iniciales"/> -->
                                 <div class="text-muted">
                                     Minimun legal wage
                                 </div>
