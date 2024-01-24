@@ -8,6 +8,7 @@
             <field name="inherit_id" ref="hr_payroll.hr_contract_form_inherit"/>
             <field name="arch" type="xml">
 		<div name="wage" position="after">
+		    <field name="foreign_currency_id" invisible="1"/>
                     <label for="foreign_hourly_wage" attrs="{'invisible': [('wage_type', '!=', 'hourly')]}"/>
                     <div class="o_row mw-50" name="foreign_hourly_wage" attrs="{'invisible': [('wage_type', '!=', 'hourly')]}">
                     	<field name="foreign_hourly_wage" nolabel="1"/>
