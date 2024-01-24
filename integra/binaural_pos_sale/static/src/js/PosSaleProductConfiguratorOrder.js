@@ -7,7 +7,7 @@ odoo.define('binaural_pos_sale.PosSaleProductConfiguratorOrder', function (requi
   // Inherit from addons/pos_sale_product_configurator/static/src/js/models.js
   const PosSaleProductConfiguratorOrder = (Order) => class PosSaleProductConfiguratorOrder extends Order {
       async add_product(product, options) {
-          super.add_product(...arguments);
+        await super.add_product(...arguments);
       }
   }
   Registries.Model.extend(Order, PosSaleProductConfiguratorOrder);

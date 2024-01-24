@@ -18,6 +18,11 @@
             "binaural_pos_sale/static/src/js/*.js",
             "binaural_pos_sale/static/src/xml/*.xml",
             "binaural_pos_sale/static/src/css/*.css",
+            (
+                "replace",
+                "pos_sale_product_configurator/static/src/js/models.js",
+                "binaural_pos_sale/static/src/js/PosSaleProductConfiguratorOrder.js",
+            ),
         ],
     },
 }
