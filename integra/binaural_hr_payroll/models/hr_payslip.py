@@ -21,7 +21,7 @@ class HrPayslip(models.Model):
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
-        help="Rate that will be used as factor to multiply of the foreign currency for this move.",
+        help="Rate that will be used as factor to multiply of the foreign currency for this payslip.",
         compute="_compute_rate",
         digits=(16, 15),
         default=0.0,
@@ -245,6 +245,23 @@ class HrPayslip(models.Model):
         #                 localdict = rule.category_id._sum_salary_rule_category(localdict, tot_rule)
         #         vals["foreign_amount"] = rule._compute_rule_foreign_result(localdict)
         # return line_vals
+
+    def _get_base_local_dict(self):
+        localdict = super()._get_base_local_dict()
+        localdict.update(
+            {
+                "salario_minimo_actual": self.company_id.law_base_wage,
+                "tope_ivss": self.company_id.ivss_wage_treshold,
+                "tope_pf": self.company_id.forced_unemployment_wage_treshold,
+                "dias_utilidades_config": self.company_id.profit_sharing_days_qty,
+                "dias_vacaciones_config": self.company_id.first_year_vacation_days,
+                "dias_prestaciones_mes_config": self.company_id.benefits_days_per_month,
+                "tipo_calculo_intereses_prestaciones_config": self.company_id.benefits_interest_computation_type,
+                # TODO Complemtentos Salariales
+                # "allowances": BrowsableObject(self.employee_id.id, allowances_dict, self.env),
+            }
+        )
+        return localdict
 
     def _get_localdict(self):
         localdict = super()._get_localdict()
