@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240108\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-24 13:59+0000\n"
-"PO-Revision-Date: 2024-01-24 13:59+0000\n"
+"POT-Creation-Date: 2024-01-24 19:55+0000\n"
+"PO-Revision-Date: 2024-01-24 19:55+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -49,7 +49,8 @@ msgstr "Días de Vacaciones Adicionales Posterior al Primer Año"
 #. module: binaural_hr_payroll
 #: model:ir.model.constraint,message:binaural_hr_payroll.constraint_res_company_additional_vacation_days_after_first_year
 msgid "Additional Vacation Days After First Year must be a positive number"
-msgstr "Días de Vacaciones Adicionales Posterior al Primer Año debe ser positivo"
+msgstr ""
+"Días de Vacaciones Adicionales Posterior al Primer Año debe ser positivo"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__profit_sharing_type__annual_avg
@@ -160,15 +161,19 @@ msgid "Contract Foreign Wage"
 msgstr "Salario Alterno del Contrato"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_contract__foreign_currency_id
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__foreign_currency_id
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__foreign_currency_id
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_run__foreign_currency_id
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_worked_days__foreign_currency_id
 msgid "Currency Foreign"
 msgstr "Moneda Alterna"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_contract__foreign_currency_id
 #: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payslip__foreign_currency_id
 #: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payslip_line__foreign_currency_id
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payslip_run__foreign_currency_id
 #: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payslip_worked_days__foreign_currency_id
 msgid "Currency Foreign for the company"
 msgstr "Moneda Alterna para la compañía"
@@ -274,11 +279,13 @@ msgstr "Salario Por Hora Alterno"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__foreign_inverse_rate
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_run__foreign_inverse_rate
 msgid "Foreign Inverse Rate"
 msgstr "Tasa Alterna Inversa"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__foreign_rate
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_run__foreign_rate
 msgid "Foreign Rate"
 msgstr "Tasa Alterna"
 
@@ -415,6 +422,11 @@ msgid "Payroll Configuration"
 msgstr "Configuración de Nómina"
 
 #. module: binaural_hr_payroll
+#: model:ir.model,name:binaural_hr_payroll.model_hr_payslip_run
+msgid "Payslip Batches"
+msgstr "Lotes de recibos de nómina"
+
+#. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_hr_payslip_line
 msgid "Payslip Line"
 msgstr "Línea de recibo de nómina"
@@ -468,9 +480,8 @@ msgid ""
 "Rate that will be used as factor to multiply of the foreign currency for "
 "this payslip."
 msgstr ""
-"Tasa que se usará como factor para multiplicar la moneda alterna para "
-"este recibo."
-
+"Tasa que se usará como factor para multiplicar la moneda alterna para este "
+"recibo."
 
 #. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_hr_salary_rule
@@ -480,7 +491,9 @@ msgstr "Regla de Salario"
 #. module: binaural_hr_payroll
 #: model:ir.model.constraint,message:binaural_hr_payroll.constraint_res_company_provisions_cron_day
 msgid "The value of Provisions Cron Day must be between 1 and 30"
-msgstr "El valor de Día del Mes Para Ejecutar El Cron de Provisiones debe ser entre 1 y 30"
+msgstr ""
+"El valor de Día del Mes Para Ejecutar El Cron de Provisiones debe ser entre "
+"1 y 30"
 
 #. module: binaural_hr_payroll
 #. odoo-python
@@ -522,7 +535,9 @@ msgstr ""
 #: model:ir.model.fields,help:binaural_hr_payroll.field_res_company__benefits_interest_computation_type
 #: model:ir.model.fields,help:binaural_hr_payroll.field_res_config_settings__benefits_interest_computation_type
 msgid "Whether the benefits interest is computed internally or by escrow"
-msgstr "Si los intereses de prestaciones van a ser calculados internamente o por fideicomiso"
+msgstr ""
+"Si los intereses de prestaciones van a ser calculados internamente o por "
+"fideicomiso"
 
 #. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_resource_calendar_attendance

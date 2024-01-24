@@ -15,6 +15,7 @@
         "views/hr_contract.xml",
         "views/res_config_settings.xml",
         "views/hr_payslip.xml",
+        "views/hr_payslip_run.xml",
         "views/hr_salary_rule.xml",
     ],
 }

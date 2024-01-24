@@ -16,7 +16,6 @@ class HrPayslip(models.Model):
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
-        default=0.0,
         store=True,
         readonly=False,
     )
@@ -24,7 +23,6 @@ class HrPayslip(models.Model):
         help="Rate that will be used as factor to multiply of the foreign currency for this payslip.",
         compute="_compute_rate",
         digits=(16, 15),
-        default=0.0,
         store=True,
         readonly=False,
         index=True,
@@ -41,11 +39,7 @@ class HrPayslip(models.Model):
                 return
             payslip.foreign_inverse_rate = Rate.compute_inverse_rate(payslip.foreign_rate)
 
-    def _compute_foreign_currency_id(self):
-        for slip in self:
-            slip.foreign_currency_id = self.env.company.currency_foreign_id
-
-    @api.depends("date_to", "foreign_currency_id")
+    @api.depends("foreign_currency_id", "payslip_run_id")
     def _compute_rate(self):
         """
         Compute the rate of the payslip using the compute_rate method of the res.currency.rate
@@ -55,8 +49,15 @@ class HrPayslip(models.Model):
         for payslip in self:
             if payslip.foreign_inverse_rate:
                 continue
+            run_id = payslip.payslip_run_id
+            if run_id:
+                rate_values = {
+                    "foreign_rate": run_id.foreign_rate,
+                    "foreign_inverse_rate": run_id.foreign_inverse_rate,
+                }
+            else:
+                rate_values = Rate.compute_rate(payslip.foreign_currency_id.id, fields.Date.today())
 
-            rate_values = Rate.compute_rate(self.foreign_currency_id.id, fields.Date.today())
             payslip.foreign_rate = rate_values["foreign_rate"]
             payslip.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
 

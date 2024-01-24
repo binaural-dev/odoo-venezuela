@@ -47,7 +47,7 @@ class ResCompany(models.Model):
         ),
         (
             "provisions_cron_day",
-            "CHECK(provisions_cron_day >= 1 AND provision_cron_day <= 30)",
+            "CHECK(provisions_cron_day >= 1 AND provisions_cron_day <= 30)",
             "The value of Provisions Cron Day must be between 1 and 30",
         ),
     ]
