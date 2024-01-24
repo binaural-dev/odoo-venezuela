@@ -13,22 +13,29 @@ class HrSalaryRule(models.Model):
     foreign_amount_percentage_base = fields.Char()
     amount_python_compute = fields.Text(
         default="""
-                    # Available variables:
-                    #----------------------
-                    # payslip: object containing the payslips
-                    # employee: hr.employee object
-                    # contract: hr.contract object
-                    # rules: object containing the rules code (previously computed)
-                    # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
-                    # worked_days: object containing the computed worked days.
-                    # inputs: object containing the computed inputs.
-                    # foreign_inverse_rate: Inverse rate of the slip.
+            # Available variables:
+            #----------------------
+            # payslip: object containing the payslips
+            # employee: hr.employee object
+            # contract: hr.contract object
+            # rules: object containing the rules code (previously computed)
+            # categories: object containing the computed salary rule categories (sum of amount of all rules belonging to that category).
+            # worked_days: object containing the computed worked days.
+            # inputs: object containing the computed inputs.
+            # foreign_inverse_rate: Inverse rate of the slip.
+            # salario_minimo_actual: salario minimo actual en BS asignado por configuracion general
+            # tope_ivss: float con tope de salarios en BS para deduccion IVSS asignado por configuracion
+            # tope_pf: float con tope de salarios en BS para deduccion paro forzoso asignado por configuracion
+            # dias_utilidades_config: int con cantidad de días de utilidades
+            # dias_vacaciones_config: int con días de vacaciones del primer año
+            # dias_prestaciones_mes_config: int con días de prestaciones por mes
+            # tipo_calculo_intereses_prestaciones_config: str con el tipo de cálculo de intereses de prestaciones
 
-                    # Note: returned value have to be set in the variable 'result' and foreign value
-                    # in the variable 'foreign_result'
+            # Note: returned value have to be set in the variable 'result' and foreign value
+            # in the variable 'foreign_result'
 
-                    result = contract.wage * 0.10
-                    foreign_result = contract.wage * foreign_inverse_rate"""
+            result = contract.wage * 0.10
+            foreign_result = contract.wage * foreign_inverse_rate"""
     )
 
     def _compute_rule_foreign_result(self, localdict):
