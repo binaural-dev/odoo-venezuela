@@ -52,7 +52,7 @@ class ResCompany(models.Model):
         ),
     ]
     compute_payroll_using = fields.Selection(
-        [("base_wage", "Base Wage"), ("foreign_wage", "Foreign Wage")]
+        [("base_wage", "Base Wage"), ("foreign_wage", "Foreign Wage")], default="base_wage"
     )
 
     provisions_cron_day = fields.Integer(
