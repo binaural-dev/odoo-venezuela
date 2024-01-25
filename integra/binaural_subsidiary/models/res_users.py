@@ -1,6 +1,9 @@
-from odoo import api, fields, models, _
+import logging
+
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
+_logger = logging.getLogger(__name__)
 
 class ResUsers(models.Model):
     _inherit = "res.users"
@@ -10,13 +13,32 @@ class ResUsers(models.Model):
         string="Default Subsidiary",
         domain=[("is_subsidiary", "=", True)],
     )
+
     subsidiary_ids = fields.Many2many(
         "account.analytic.account", string="Subsidiaries", domain=[("is_subsidiary", "=", True)]
     )
 
+    is_required_subsidiary = fields.Boolean(
+        compute="_compute_is_required_subsidiary",
+        store=True
+    )
+
+    @api.depends('company_ids.subsidiary', 'company_id.subsidiary')
+    def _compute_is_required_subsidiary(self):
+        for record in self:
+            subsidiary_values = record.company_ids.mapped('subsidiary')
+
+            some_has_subsidiary = any(x == True for x in subsidiary_values)
+
+            record.is_required_subsidiary = some_has_subsidiary
+
     @api.constrains("subsidiary_id", "subsidiary_ids", "active")
     def _check_subsidiary(self):
         for user in self.filtered(lambda u: u.active):
+
+            if not user.is_required_subsidiary:
+                continue
+
             if user.subsidiary_id not in user.subsidiary_ids:
                 raise ValidationError(
                     _(
