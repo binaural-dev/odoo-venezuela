@@ -12,3 +12,8 @@ class PurchaseOrder(models.Model):
         ),
         default=lambda self: self.env.user.subsidiary_id,
     )
+
+    company_subsidiary = fields.Boolean(
+        related='company_id.subsidiary'
+    )
+    

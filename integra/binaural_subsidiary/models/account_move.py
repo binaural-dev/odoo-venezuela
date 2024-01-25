@@ -13,6 +13,10 @@ class AccountMove(models.Model):
         default=lambda self: self.env.user.subsidiary_id,
     )
 
+    company_subsidiary = fields.Boolean(
+        related='company_id.subsidiary'
+    )
+    
     # It's needed to inherit the create and write methods to update the analytic distribution of the
     # lines when the analytic account is changed. The compute method isn't used because it is
     # called before the write method and we need the old analytic account to update the analytic
