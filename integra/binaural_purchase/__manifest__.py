@@ -17,8 +17,10 @@
     ],
     # always loaded
     "data": [
+        'security/ir.model.access.csv',
         "views/purchase_order.xml",
         "views/res_config_settings.xml",
+        'views/product_template.xml',
     ],
     "images": ["static/description/icon.png"],
     "application": True,
