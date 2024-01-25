@@ -185,7 +185,7 @@ class AccountFiscalyearClosing(models.Model):
             "name": tmpl_config.name,
             "sequence": tmpl_config.sequence,
             "code": tmpl_config.code,
-            "inverse": tmpl_config.inverse,
+            # "inverse": tmpl_config.inverse,
             "move_type": tmpl_config.move_type,
             "date": date,
             "journal_id": (

@@ -8,4 +8,6 @@ class SaleOrder(models.Model):
         res = super()._get_sale_order_fields()
         res.append("foreign_subtotal")
         res.append("foreign_price")
+        res.append("foreign_rate")
+        res.append("foreign_inverse_rate")
         return res 
