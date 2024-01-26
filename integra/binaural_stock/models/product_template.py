@@ -51,6 +51,18 @@ class ProductTemplate(models.Model):
     @api.depends("qty_available", "outgoing_qty")
     def _compute_available_quantity(self):
         for product in self:
-            variants_free = product.product_variant_ids.mapped("free_qty")
-            total_available: float = sum(variants_free)
-            product.update({"quantity": total_available})
+            stock_quant = self.env["stock.quant"].search(
+                [
+                    ("product_tmpl_id", "=", product.id),
+                    ("quantity", ">", 0),
+                    ("product_tmpl_id.type", "!=", "service"),
+                ]
+            )
+            quantity_available = 0.0
+            for quant in stock_quant:
+                if (
+                    quant.warehouse_id.lot_stock_id == quant.location_id
+                    or quant.warehouse_id.lot_stock_id == quant.location_id.location_id
+                ):
+                    quantity_available += quant.quantity
+            product.update({"quantity": quantity_available})
