@@ -93,7 +93,7 @@ export class IoTFiscalMachineComponent extends Widget {
       .then(data => {
         onIoTActionResult(data, this.env)
       })
-      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   async payment_method() {
@@ -349,7 +349,7 @@ export class IoTFiscalMachineComponent extends Widget {
       .then(data => {
         onIoTActionResult(data, this.env)
       })
-      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   async generate_report_x() {
@@ -368,7 +368,7 @@ export class IoTFiscalMachineComponent extends Widget {
       .then(data => {
         onIoTActionResult(data, this.env)
       })
-      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   async programacion() {
@@ -388,7 +388,7 @@ export class IoTFiscalMachineComponent extends Widget {
         console.log(data)
         onIoTActionResult(data, this.env)
       })
-      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   async print_out_invoice() {

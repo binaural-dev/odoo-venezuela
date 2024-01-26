@@ -8,6 +8,8 @@
                 <span class="back_text">View Payments Origin</span>
             </div>
         </xpath>
+        <xpath expr="//div[@class='button js_cashdrawer']" position="replace">
+        </xpath>
         <xpath expr="//div[hasclass('left-content')]" position="replace">
             <div class="left-content">
                 <t t-if="env.isMobile">

@@ -92,6 +92,12 @@
                     name="flag_21"
                     attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
                 <field 
+                    name="flag_24"
+                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                <field 
+                    name="show_version"
+                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                <field 
                     name="has_cashbox"
                     attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
                 <field 

@@ -11,17 +11,23 @@ class IotDeviceInherit(models.Model):
     _inherit = "iot.device"
 
     serial_machine = fields.Char(string="Serial of fiscal machine", default=False)
-    max_amount_int = fields.Integer(compute="_compute_max_amounts") #deprecated
-    max_amount_decimal = fields.Integer(compute="_compute_max_amounts") #deprecated
-    max_qty_int = fields.Integer(string="Max quantity int", compute="_compute_max_amounts") #deprecated
-    max_qty_decimal = fields.Integer(string="Max quantity Deciamal", compute="_compute_max_amounts") #deprecated
-    max_payment_amount_int = fields.Integer(compute="_compute_max_amounts") #deprecated
-    max_payment_amount_decimal = fields.Integer(compute="_compute_max_amounts") #deprecated
-    max_description = fields.Integer(default=127) #deprecated
+    max_amount_int = fields.Integer(compute="_compute_max_amounts")  # deprecated
+    max_amount_decimal = fields.Integer(compute="_compute_max_amounts")  # deprecated
+    max_qty_int = fields.Integer(
+        string="Max quantity int", compute="_compute_max_amounts"
+    )  # deprecated
+    max_qty_decimal = fields.Integer(
+        string="Max quantity Deciamal", compute="_compute_max_amounts"
+    )  # deprecated
+    max_payment_amount_int = fields.Integer(compute="_compute_max_amounts")  # deprecated
+    max_payment_amount_decimal = fields.Integer(compute="_compute_max_amounts")  # deprecated
+    max_description = fields.Integer(default=127)  # deprecated
     traditional_line = fields.Boolean(default=True)
     flag_21 = fields.Selection(
         [("30", "30"), ("00", "00"), ("01", "01"), ("02", "02")], default="00"
     )
+    flag_24 = fields.Selection([("00", "00"), ("01", "01")], default="00")
+    show_version = fields.Boolean()
     has_cashbox = fields.Boolean()
     payment_methods = fields.Selection(
         [
@@ -86,7 +92,11 @@ class IotDeviceInherit(models.Model):
     resume_range_to = fields.Date(default=fields.Date().today())
 
     def configure_device(self):
-        return {"flag_21": self.flag_21, "has_cashbox": "01" if self.has_cashbox else "00"}
+        return {
+            "flag_21": self.flag_21,
+            "flag_24": self.flag_24,
+            "show_version": "77" if self.show_version else "00",
+        }
 
     def get_data_to_payment_method(self):
         if not self.payment_method_name or self.payment_method_name == "":

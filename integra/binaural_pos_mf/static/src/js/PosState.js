@@ -9,6 +9,18 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
       constructor() {
         super(...arguments);
       }
+      open_cashbox() {
+        if (this.useFiscalMachine() && this.config.has_cashbox) {
+          const fdm = this.useFiscalMachine();
+          fdm.action({
+            action: `logger`,
+            data: "0",
+          })
+        } else {
+          return super.open_cashbox(...arguments);
+        }
+      };
+
       useFiscalMachine() {
         return this.env.proxy.iot_device_proxies["fiscal_data_module"];
       }
@@ -22,17 +34,17 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         res.push(`PEDIDO: ${this.env.pos.get_order().uid}`)
         return res
       }
-      get get_flag_21(){
+      get get_flag_21() {
         return this.config.flag_21
       }
-      get get_traditional_line(){
+      get get_traditional_line() {
         return this.config.traditional_line
       }
-      get has_cashbox(){
+      get has_cashbox() {
         return this.config.has_cashbox
       }
 
-      is_same_mf(serial){
+      is_same_mf(serial) {
         return true
       }
       async get_data_invoice(order) {
@@ -83,8 +95,8 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               args: [[], lines[0].orderline.orderUid],
               kwargs: {},
             })
-            if(!this.is_same_mf(response[0].fiscal_machine)){
-              return {"valid": false, "message": `El documento fue impreso desde la Maquina ${response[0].fiscal_machine}`}
+            if (!this.is_same_mf(response[0].fiscal_machine)) {
+              return { "valid": false, "message": `El documento fue impreso desde la Maquina ${response[0].fiscal_machine}` }
             }
             if (response.length > 0) {
               invoice["invoice_affected"] = {
@@ -157,7 +169,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         try {
           this.env.services.ui.block()
           let data = await this.get_data_invoice(order)
-          if(!data["valid"]){
+          if (!data["valid"]) {
             this.env.services.ui.unblock()
             throw new Error(data["message"])
           }

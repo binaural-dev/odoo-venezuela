@@ -320,8 +320,10 @@ class SerialFiscalDriver(SerialDriver):
     def configure_device(self, data):
         if data["data"].get("flag_21",False):
             self.SendCmd("PJ21" + data["data"]["flag_21"])
-        if data["data"].get("has_cashbox",False):
-            self.SendCmd("PJ24" + data["data"]["has_cashbox"])
+        if data["data"].get("flag_24",False):
+            self.SendCmd("PJ24" + data["data"]["flag_24"])
+        if data["data"].get("show_version",False):
+            self.SendCmd("PJ77" + data["data"]["show_version"])
         self.SendCmd("PJ6300")
 
         payment_methods = [
@@ -335,14 +337,14 @@ class SerialFiscalDriver(SerialDriver):
             "PE08TRANSFERENCIA 02",
             "PE09TRANSFERENCIA 03",
             "PE10TRANSFERENCIA 04",
-            "PE11PUNTO DE VENTA 01 ",
-            "PE12PUNTO DE VENTA 02",
-            "PE13PUNTO DE VENTA 03",
-            "PE14PUNTO DE VENTA 04",
+            "PE11PDV 01 ",
+            "PE12PDV 02",
+            "PE13PDV 03",
+            "PE14PDV 04",
             "PE15CREDITO 01",
             "PE16CREDITO 02",
-            "PE19DIVISA",
-            "PE20DIVISA",
+            "PE19DIVISA 02",
+            "PE20DIVISA 01",
             "PE21ZELLE",
         ]
         for line in payment_methods:
@@ -1507,7 +1509,7 @@ class SerialFiscalDriver(SerialDriver):
                 "valid": False,
                 "message": "No se completo el reporte Z",
             }
-            reportZ = self.GetZReport()
+            reportZ = self.GetS1PrinterData(True)
             self.trama = self._States_Report("I0Z", 9)
             self.data["value"] = {
                 "valid": True,
