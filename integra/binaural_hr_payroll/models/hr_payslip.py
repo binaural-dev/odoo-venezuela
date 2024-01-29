@@ -1,3 +1,5 @@
+from calendar import isleap
+
 from odoo import api, fields, models, _
 from odoo.tools import html2plaintext, is_html_empty
 from odoo.exceptions import UserError
@@ -71,47 +73,21 @@ class HrPayslip(models.Model):
 
     def _get_worked_day_lines(self, domain=None, check_out_of_contract=True):
         worked_day_lines = super()._get_worked_day_lines(domain=domain, check_out_of_contract=True)
-        _logger.warning("WORKEd DAY LINES: %s", worked_day_lines)
+        work_entry_basic = self.env.ref("binaural_hr_payroll.hr_work_entry_binaural_basic").id
         worked_days_sum = sum(line["number_of_days"] for line in worked_day_lines)
-        # for line in work
+        _logger.warning("Worked days sum: %s", worked_days_sum)
+
+        for r in worked_day_lines:
+            if r["work_entry_type_id"] == work_entry_basic:
+                february_day = 29 if isleap(self.date_from.year) else 28
+                if worked_days_sum > (30 if self.date_from.month != 2 else february_day):
+                    r["number_of_days"] -= worked_days_sum - (
+                        30 if self.date_from.month != 2 else 28
+                    )
+                if worked_days_sum >= february_day and self.date_from.month == 2:
+                    r["number_of_days"] += 30 - worked_days_sum
+
         return worked_day_lines
-
-    # def _get_new_worked_days_lines(self):
-    # if not self.struct_id.use_worked_day_lines or self.struct_id.category == "profit_sharing":
-    #     return [(5, False, False)]
-
-    # if self.struct_id.category == "liquidation":
-    #     last_move_date_to_now = self.employee_id._get_date_range_since_last_salary_move()
-    #     domain = [
-    #         ("date_start", "in", last_move_date_to_now),
-    #         ("date_stop", "in", last_move_date_to_now),
-    #     ]
-    #     worked_days_line_values = self._get_worked_day_lines(
-    #         check_out_of_contract=False, domain=domain
-    #     )
-    # else:
-    #     worked_days_line_values = self._get_worked_day_lines(check_out_of_contract=False)
-
-    # worked_days_lines = self.worked_days_line_ids.browse([])
-    # work_entry_basic = self.env.ref("binaural_nomina.hr_work_entry_binaural_basic").id
-    # sum_worked_days = sum(x["number_of_days"] for x in worked_days_line_values)
-
-    # for r in worked_days_line_values:
-    #     r["payslip_id"] = self.id
-    #     if (
-    #         r["work_entry_type_id"] == work_entry_basic
-    #         and self.struct_id.category == "salary"
-    #         and self.schedule_payment != "days"
-    #     ):
-    #         if sum_worked_days > (30 if self.date_from.month != 2 else 28):
-    #             r["number_of_days"] -= sum_worked_days - (
-    #                 30 if self.date_from.month != 2 else 28
-    #             )
-    #         if sum_worked_days >= 28 and self.date_from.month == 2:
-    #             r["number_of_days"] += 30 - sum_worked_days
-    #     worked_days_lines |= worked_days_lines.new(r)
-
-    # return worked_days_lines
 
     def _get_contract_foreign_wage(self):
         self.ensure_one()
@@ -227,25 +203,6 @@ class HrPayslip(models.Model):
             line_vals += list(result.values())
         _logger.warning("LINE VALS: %s", line_vals)
         return line_vals
-
-        # line_vals = super()._get_payslip_lines()
-        # HrPayslip = self.env["hr.payslip"]
-        # HrSalaryRule = self.env["hr.salary.rule"]
-        # for vals in line_vals:
-        #     localdict = self.env.context.get("force_payslip_localdict", None)
-        #     payslip = HrPayslip.browse(vals["slip_id"])
-        #     if localdict is None:
-        #         localdict = payslip._get_localdict()
-        #     rule = HrSalaryRule.browse(vals["salary_rule_id"])
-        #     if rule._satisfy_condition(localdict):
-        #         if rule.id in localdict["same_type_input_lines"]:
-        #             for multi_line_rule in localdict["same_type_input_lines"][rule.code]:
-        #                 localdict["inputs"].dict[rule.code] = multi_line_rule
-        #                 amount, qty, rate = rule._compute_rule(localdict)
-        #                 tot_rule = amount * qty * rate / 100.0
-        #                 localdict = rule.category_id._sum_salary_rule_category(localdict, tot_rule)
-        #         vals["foreign_amount"] = rule._compute_rule_foreign_result(localdict)
-        # return line_vals
 
     def _get_base_local_dict(self):
         localdict = super()._get_base_local_dict()
