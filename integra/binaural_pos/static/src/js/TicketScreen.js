@@ -3,9 +3,16 @@ odoo.define('binaural_pos.TicketScreen', function(require) {
 
   const Registries = require('point_of_sale.Registries');
   const TicketScreen = require('point_of_sale.TicketScreen');
+  const { useListener } = require("@web/core/utils/hooks");
+  const NumberBuffer = require('point_of_sale.NumberBuffer');
 
   const BinauralTicketScreen = (TicketScreen) =>
     class BinauralTicketScreen extends TicketScreen {
+      setup() {
+        super.setup();
+        useListener('do-fullrefund', this._onDoFullRefund);
+      }
+
       _prepareRefundOrderlineOptions(toRefundDetail) {
         let res = super._prepareRefundOrderlineOptions(toRefundDetail)
         const { orderline } = toRefundDetail;
@@ -38,6 +45,53 @@ odoo.define('binaural_pos.TicketScreen', function(require) {
         this.env.pos.toRefundLines[orderline.id] = newToRefundDetail;
         return newToRefundDetail;
       }
+
+      // Odoo Native Ref: _onUpdateSelectedOrderline (method)
+      _onUpdateAllOrderline() {
+        NumberBuffer.reset() // Reset numpad widget values to avoid inconsistency
+
+        const order = this.getSelectedSyncedOrder();
+        
+        if (!order) return;
+
+        for (const orderline of order.orderlines) {
+          if (!orderline) continue;
+  
+          const toRefundDetail = this._getToRefundDetail(orderline);
+  
+          // When already linked to an order, do not modify the to refund quantity.
+          if (toRefundDetail.destinationOrderUid) continue;
+  
+          const refundableQty = toRefundDetail.orderline.qty - toRefundDetail.orderline.refundedQty;
+  
+  
+          if (refundableQty <= 0) continue ;
+  
+          toRefundDetail.qty = refundableQty;
+          
+        }
+
+      }
+
+      // Odoo Native Ref: _onDoRefund (method)
+      async _onDoFullRefund() {
+        const order = this.getSelectedSyncedOrder();
+
+        if (!order) {
+          this._state.ui.highlightHeaderNote = !this._state.ui.highlightHeaderNote;
+          return;
+        }
+
+        const { confirmed } = await this.showPopup('ConfirmPopup', {
+          title: this.env._t('You want to refund all products'),
+          body: _.str.sprintf(
+            this.env._t('By confirming below each product line will be assigned with the total amount available to be reimbursed.'),
+          ),
+        });
+        if (!confirmed) return;
+        this._onUpdateAllOrderline()
+      }
+
       async _onDoRefund() {
         const order = this.getSelectedSyncedOrder();
 

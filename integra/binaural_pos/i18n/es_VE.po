@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230810\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-30 18:56+0000\n"
-"PO-Revision-Date: 2023-10-30 18:56+0000\n"
+"POT-Creation-Date: 2024-01-27 20:59+0000\n"
+"PO-Revision-Date: 2024-01-27 20:59+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -21,6 +21,13 @@ msgstr ""
 #, python-format
 msgid " is out of stock."
 msgstr " no tiene suficiente stock"
+
+#. module: binaural_pos
+#. odoo-python
+#: code:addons/binaural_pos/models/pos_session.py:0
+#, python-format
+msgid "%s POS payment of %s in %s"
+msgstr ""
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -81,6 +88,17 @@ msgstr "Disponible:"
 #: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
 msgid "Base Amount"
 msgstr "Base Imponible"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/TicketScreen.js:0
+#, python-format
+msgid ""
+"By confirming below each product line will be assigned with the total amount"
+" available to be reimbursed."
+msgstr ""
+"Al confirmar a continuación a cada línea de producto se le asignará la "
+"cantidad total disponible para ser reembolsado."
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -275,6 +293,13 @@ msgid "Foreign total:"
 msgstr "Total alterno:"
 
 #. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/Screens/TicketScreen/ControlButtons/FullRefundButton.xml:0
+#, python-format
+msgid "Full refund"
+msgstr "Reembolso total"
+
+#. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_res_company__module_binaural_base_igtf
 #: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__module_binaural_base_igtf
 msgid "IGTF"
@@ -293,6 +318,13 @@ msgstr "IGTF en TPV"
 #, python-format
 msgid "Invoice"
 msgstr "Factura"
+
+#. module: binaural_pos
+#. odoo-python
+#: code:addons/binaural_pos/models/pos_payment.py:0
+#, python-format
+msgid "Invoice payment for %s (%s) using %s"
+msgstr ""
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_method__is_foreign_currency
@@ -575,11 +607,6 @@ msgid "Total:"
 msgstr ""
 
 #. module: binaural_pos
-#: model:ir.model,name:binaural_pos.model_res_users
-msgid "User"
-msgstr "Usuario"
-
-#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/NumpadWidget.js:0
 #, python-format
@@ -613,7 +640,7 @@ msgstr ""
 
 #. module: binaural_pos
 #. odoo-javascript
-#: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
+#: code:addons/binaural_pos/static/src/js/TicketScreen.js:0
 #, python-format
-msgid "Zero Quantity Not allowed"
-msgstr "Cantidad 0 no esta permitido"
+msgid "You want to refund all products"
+msgstr "Desea reembolsar todos los productos"
