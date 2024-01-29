@@ -1,4 +1,4 @@
-from odoo import models, fields, _, api
+from odoo import _, api, fields, models
 
 
 class PosConfig(models.Model):
@@ -28,6 +28,7 @@ class PosConfig(models.Model):
         related="company_id.pos_show_just_products_with_available_qty"
     )
     pos_search_cne = fields.Boolean(related="company_id.pos_search_cne")
+    pos_require_supervisor_key = fields.Boolean(related="company_id.pos_require_supervisor_key")
     amount_to_zero = fields.Boolean("Amount to zero")
 
     @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")

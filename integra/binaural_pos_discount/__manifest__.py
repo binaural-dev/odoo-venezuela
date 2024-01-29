@@ -19,5 +19,5 @@
     "images": ["static/description/icon.png"],
     "installable": True,
     "application": False,
-    "auto_install": False,
+    "auto_install": True,
 }

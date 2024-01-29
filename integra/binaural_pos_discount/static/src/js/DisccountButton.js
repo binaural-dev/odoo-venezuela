@@ -7,6 +7,25 @@ odoo.define('binaural_pos_discount.DiscountButton', function(require) {
 
   const BinauralDiscountButton = (DiscountButton) =>
     class extends DiscountButton {
+
+      discount_supervisor_key() {
+
+      }
+
+      async onClick() {
+        var self = this;
+
+        const pos_require_supervisor_key = this.env.pos.config.pos_require_supervisor_key;
+
+        if (pos_require_supervisor_key) {
+          discount_supervisor_key();
+          await super.onClick();
+          return
+        }
+
+        await super.onClick();
+      }
+
       async apply_discount(pc) {
         var order = this.env.pos.get_order();
         var lines = order.get_orderlines();

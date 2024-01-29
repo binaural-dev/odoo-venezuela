@@ -96,6 +96,24 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div 
+                            groups="point_of_sale.group_pos_manager"
+                            class="col-12 col-lg-6 o_setting_box"
+                            id="mf_setting_pos_require_supervisor_key"
+                            attrs="{'invisible': [('pos_module_pos_discount', '=', False), ('pos_manual_discount', '=', False)]}"
+                        >
+                            <div class="o_setting_left_pane">
+                                <field name="pos_require_supervisor_key"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="pos_require_supervisor_key"/>
+                                <div class="text-muted">
+				    Display popup to type supervisor pin to apply discounts
+                                </div>
+                            </div>
+                        </div>
+
                         <hr style="margin-top: 24px;"/>
                         <div class="app_settings_header pt-1 pb-1">
                             <div class="col-xs-12 col-md-6 ms-0 o_setting_box">

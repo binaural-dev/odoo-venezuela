@@ -1,4 +1,4 @@
-from odoo import api, fields, models, _
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -30,6 +30,7 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.pos_show_just_products_with_available_qty", readonly=False
     )
     pos_search_cne = fields.Boolean(related="company_id.pos_search_cne", readonly=False)
+    pos_require_supervisor_key = fields.Boolean(related="company_id.pos_require_supervisor_key", readonly=False)
 
     # @api.onchange("module_binaural_pos_igtf")
     # def _onchange_module_binaural_pos_igtf(self):
