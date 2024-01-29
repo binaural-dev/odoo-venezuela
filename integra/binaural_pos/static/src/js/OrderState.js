@@ -14,7 +14,9 @@ odoo.define("binaural_pos.OrderState", function(require) {
         this.to_invoice = true;
         let always_invoice = !this.pos.config.always_invoice;
         this.to_receipt = always_invoice;
-        this.toggle_receipt_invoice(always_invoice)
+        if (this.to_receipt == true) {
+          this.toggle_receipt_invoice(always_invoice);
+        }
         this.lock_toggle_receipt_invoice = false
       }
       get_qty_products(){
