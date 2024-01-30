@@ -24,8 +24,8 @@
     "application": True,
     "assets": {
         "point_of_sale.assets": [
-            "binaural_pos/static/src/js/**/*.js",
-            "binaural_pos/static/src/xml/**/*.xml",
+            "binaural_pos/static/src/js/*.js",
+            "binaural_pos/static/src/xml/*.xml",
             "binaural_pos/static/src/css/*.css",
         ],
         "point_of_sale.qunit_suite_tests": [
