@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20230925\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-27 15:28+0000\n"
-"PO-Revision-Date: 2023-09-27 15:28+0000\n"
+"POT-Creation-Date: 2023-11-02 14:56+0000\n"
+"PO-Revision-Date: 2023-11-02 14:56+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -21,15 +21,47 @@ msgid "Additional Landed Cost Und"
 msgstr "Costos Adicionales Und"
 
 #. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__apply_cif
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__apply_cif
+msgid "Apply Cif"
+msgstr "CIF"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__apply_fob
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__apply_fob
+msgid "Apply Fob"
+msgstr "FOB"
+
+#. module: binaural_stock_advance
 #: model:ir.model.fields.selection,name:binaural_stock_advance.selection__stock_landed_cost_lines__split_method__by_percentage
 msgid "By Percentage"
 msgstr "Por Porcentaje"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__check_calculate_based_total_purchase_amount
+msgid "Calculate based on the total purchase amount"
+msgstr "Calcular basado en el monto total de la compra"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__check_calculate_taking_order_quantities
+msgid "Calculate taking into account the order quantities"
+msgstr "Calcular tomando en cuenta las cantidades de la orden"
 
 #. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__check_advance_stock
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__check_advance_stock
 msgid "Check Advance Stock"
 msgstr "Verificar Inventario Avanzado"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__check_calculate_based_total_purchase_amount
+msgid "Check Calculate Based Total Purchase Amount"
+msgstr "Calcular basado en el monto total de la compra"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__check_calculate_taking_order_quantities
+msgid "Check Calculate Taking Order Quantities"
+msgstr "Calcular tomando en cuenta las cantidades de la orden"
 
 #. module: binaural_stock_advance
 #: model:ir.model,name:binaural_stock_advance.model_res_company
@@ -47,6 +79,11 @@ msgstr "Opciones de configuración"
 #, python-format
 msgid "Cost"
 msgstr "Detalles"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__cost_cif
+msgid "Cost CIF"
+msgstr "CIF"
 
 #. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__price_unit
@@ -77,13 +114,17 @@ msgstr ""
 "Por cantidad: El coste se dividirá según la cantidad del producto..\n"
 "Por coste actual: El coste se dividirá según el coste actual del producto.\n"
 "Por peso: El coste se dividirá dependiendo de su peso.\n"
-"Por volumen: El coste se dividirá dependiendo de su volumen.\n"
-"Por porcentaje : Distribucion porcentual en base a la orden de compra."
+"Por volumen: El coste se dividirá dependiendo de su volumen."
 
 #. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__foreign_additional_landed_cost
 msgid "Foreign Additional landed cost"
 msgstr "Costos Adicionales Und Alterno"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__foreign_cost_cif
+msgid "Foreign Cost Cif"
+msgstr "CIF Alterno"
 
 #. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_landed_cost__foreign_currency_id
@@ -176,6 +217,11 @@ msgid "Latest Standard Price Updated"
 msgstr "Último Costo actualizado"
 
 #. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__percentage_tariff_code
+msgid "Percentage Tariff"
+msgstr "% Arancelario"
+
+#. module: binaural_stock_advance
 #: model:ir.model,name:binaural_stock_advance.model_product_product
 msgid "Product Variant"
 msgstr "Variantes de producto"
@@ -187,6 +233,12 @@ msgid ""
 "Rate that will be used as factor to multiply of the foreign currency for "
 "this move."
 msgstr ""
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__service_products_ids
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__service_products_ids
+msgid "Service Products"
+msgstr "Productos tipo Servicio"
 
 #. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_landed_cost_lines__split_method
@@ -227,7 +279,13 @@ msgstr ""
 #. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__former_cost
 msgid "Subtotal"
-msgstr ""
+msgstr "Valor original"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__foreign_tariff_value
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__tariff_value
+msgid "Tariff Value"
+msgstr "Valor Arancelario"
 
 #. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__total_amount_cost
@@ -248,6 +306,12 @@ msgstr "Costo Und"
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__update_latest_standard_price
 msgid "Update Last Cost"
 msgstr "Actualizar Último Costo"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__use_fee_percentage
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__use_fee_percentage
+msgid "Use Fee Percentage"
+msgstr "Usar % Arancelario en Costos en Destino"
 
 #. module: binaural_stock_advance
 #: model:ir.model,name:binaural_stock_advance.model_stock_valuation_adjustment_lines

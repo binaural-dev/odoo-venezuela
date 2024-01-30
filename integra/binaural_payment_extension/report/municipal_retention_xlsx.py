@@ -35,9 +35,13 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         datos = tabla
         worksheet2 = workbook.add_worksheet(nombre)
         worksheet2.set_column("A:Z", 20)
-        if company.tax_authorities_logo:
-            tax_authorities_logo = BytesIO(base64.b64decode(company.tax_authorities_logo))
+        tax_authorities_record = self._get_tax_authorities_record(company, retention_id)
+        if tax_authorities_record.tax_authorities_logo:
+            tax_authorities_logo = BytesIO(
+                base64.b64decode(tax_authorities_record.tax_authorities_logo)
+            )
             worksheet2.insert_image("A2", "image.png", {"image_data": tax_authorities_logo})
+        tax_authorities_name = tax_authorities_record.tax_authorities_name or ""
 
         worksheet2.write(
             "C2",
@@ -50,7 +54,9 @@ class MunicipalRetentionXlsx(models.AbstractModel):
             bold,
         )
         worksheet2.write(
-            "C5", "COMPROBANTE DE RETENCION IMPUESTO ACTIVIDADES ECONOMICAS PALAVECINO", bold
+            "C5",
+            f"COMPROBANTE DE RETENCION IMPUESTO ACTIVIDADES ECONOMICAS {tax_authorities_name.upper()}",
+            bold,
         )
         worksheet2.write("D7", "AGENTE DE RETENCIÓN", bold)
         worksheet2.write("G7", "COMPROBANTE:", boldWithBorder)
@@ -66,7 +72,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
             "E12",
             bold,
             "NUMERO DE LICENCIA DE ACTIVIDADES ECONOMICAS: ",
-            str(company.economic_activity_number),
+            str(tax_authorities_record.economic_activity_number),
         )
         worksheet2.write_rich_string("A13", bold, "DIRECCIÓN FISCAL: ", company.street)
         worksheet2.write("G14", "FECHA DE EMISIÓN O TRANSACCION", boldWithBorderJustify)
@@ -122,7 +128,9 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         worksheet2.write("I" + str(col2 + 1), total_retained, money_format)
         boldWithBorderTop = workbook.add_format({"bold": 1, "top": 1})
 
-        worksheet2.write("B" + str(col2 + 12), "\t\tFirma del Agente de Retención", boldWithBorderTop)
+        worksheet2.write(
+            "B" + str(col2 + 12), "\t\tFirma del Agente de Retención", boldWithBorderTop
+        )
         worksheet2.write("C" + str(col2 + 12), "", boldWithBorderTop)
 
         worksheet2.write("F" + str(col2 + 12), "Firma del Beneficiario", boldWithBorderTop)
@@ -189,3 +197,6 @@ class MunicipalRetentionXlsx(models.AbstractModel):
 
         tabla = pandas.DataFrame(lista)
         return tabla.fillna(0)
+
+    def _get_tax_authorities_record(self, company, retention_id):
+        return company

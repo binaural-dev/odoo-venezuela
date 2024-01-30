@@ -626,7 +626,12 @@ class AccountRetention(models.Model):
 
     @api.model
     def get_sequence_iva_retention(self):
-        sequence = self.env["ir.sequence"].search([("code", "=", "retention.iva.control.number"),("company_id", "=", self.env.company.id)])
+        sequence = self.env["ir.sequence"].search(
+            [
+                ("code", "=", "retention.iva.control.number"),
+                ("company_id", "=", self.env.company.id),
+            ]
+        )
         if not sequence:
             sequence = self.env["ir.sequence"].create(
                 {
@@ -639,7 +644,12 @@ class AccountRetention(models.Model):
 
     @api.model
     def get_sequence_islr_retention(self):
-        sequence = self.env["ir.sequence"].search([("code", "=", "retention.islr.control.number"),("company_id", "=", self.env.company.id)])
+        sequence = self.env["ir.sequence"].search(
+            [
+                ("code", "=", "retention.islr.control.number"),
+                ("company_id", "=", self.env.company.id),
+            ]
+        )
         if not sequence:
             sequence = self.env["ir.sequence"].create(
                 {
@@ -650,10 +660,12 @@ class AccountRetention(models.Model):
             )
         return sequence
 
-    @api.model
     def get_sequence_municipal_retention(self):
         sequence = self.env["ir.sequence"].search(
-            [("code", "=", "retention.municipal.control.number"),("company_id", "=", self.env.company.id)]
+            [
+                ("code", "=", "retention.municipal.control.number"),
+                ("company_id", "=", self.env.company.id),
+            ]
         )
         if not sequence:
             sequence = self.env["ir.sequence"].create(
@@ -664,11 +676,17 @@ class AccountRetention(models.Model):
                 }
             )
         return sequence
+    
+    def clear_islr_retention_number(self):
+        for line in self.retention_line_ids:
+            if line.move_id.islr_voucher_number:
+                line.move_id.islr_voucher_number = False
 
     def action_cancel(self):
         self.payment_ids.mapped("move_id.line_ids").remove_move_reconcile()
         self.payment_ids.action_cancel()
         self.write({"state": "cancel"})
+        self.clear_islr_retention_number()
 
     def create_payment_from_retention_form(self):
         """
@@ -709,6 +727,8 @@ class AccountRetention(models.Model):
         for line in self.retention_line_ids:
             if line.move_id.move_type == "in_refund":
                 payment_type = "inbound" if self.type == "in_invoice" else "outbound"
+            if line.move_id.move_type == "out_refund":
+                payment_type = "outbound" if self.type == "out_invoice" else "inbound"
 
             payment_method_ref = (
                 "account.account_payment_method_manual_in"

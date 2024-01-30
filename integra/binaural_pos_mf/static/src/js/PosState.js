@@ -10,7 +10,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         super(...arguments);
       }
       useFiscalMachine() {
-        return this.config.iface_fiscal_data_module;
+        return this.env.proxy.iot_device_proxies["fiscal_data_module"];
       }
       get currentOrder() {
         return this.get_order();
@@ -22,6 +22,16 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         res.push(`PEDIDO: ${this.env.pos.get_order().uid}`)
         return res
       }
+      get get_flag_21(){
+        return this.config.flag_21
+      }
+      get get_traditional_line(){
+        return this.config.traditional_line
+      }
+
+      is_same_mf(serial){
+        return true
+      }
       async get_data_invoice(order) {
         const currency = { symbol: 'Bs', position: 'after', rounding: 0.01, decimals: 2 };
 
@@ -30,8 +40,8 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           company_id: {
             name: this.company.name,
           },
-          flag_21: this.config.flag_21,
-          traditional_line: this.config.traditional_line
+          flag_21: this.get_flag_21,
+          traditional_line: this.get_traditional_line,
         }
         if (order.get_partner()) {
 
@@ -56,7 +66,12 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           }
         }
 
-        if (lines.length > 0) {
+        invoice['type'] = 'out_invoice'
+        if (order.get_total_with_tax() < 0) {
+          invoice['type'] = 'out_refund'
+        }
+
+        if (lines.length > 0 && invoice['type'] == 'out_refund') {
           try {
             let response = await this.env.services.rpc({
               model: 'pos.order',
@@ -64,6 +79,9 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               args: [[], lines[0].orderline.orderUid],
               kwargs: {},
             })
+            if(!this.is_same_mf(response[0].fiscal_machine)){
+              return {"valid": false, "message": `El documento fue impreso desde la Maquina ${response[0].fiscal_machine}`}
+            }
             if (response.length > 0) {
               invoice["invoice_affected"] = {
                 "number": response[0].mf_invoice_number,
@@ -72,14 +90,10 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
               }
             }
           } catch (e) {
-            console.log(e)
+            console.log("AQUIIIIIIIIIIIIIIIi")
           }
         }
 
-        invoice['type'] = 'out_invoice'
-        if (order.get_total_with_tax() < 0) {
-          invoice['type'] = 'out_refund'
-        }
         if (order.orderlines.length > 0) {
 
           let vef_base = this.currency.name === "VEF"
@@ -106,20 +120,25 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             }
           })
         }
+        invoice["valid"] = true
         return invoice
       }
       async print_out_invoice(data) {
-        this.env.services.ui.block()
-        const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
+        let self = this;
+        const fdm = this.useFiscalMachine();
         return new Promise(async (resolve, reject) => {
-          fdm.add_listener(data => {
-            fdm.remove_listener();
-            this.env.services.ui.unblock()
-            data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
-          })
-          await fdm.action({
+          let response = await fdm.action({
             action: `print_${data.type}`,
             data: data,
+          })
+          if (!response["result"]) {
+            self.env.services.ui.unblock()
+            return reject({ "valid": false, "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
+          }
+          fdm.add_listener(data => {
+            fdm.remove_listener();
+            self.env.services.ui.unblock()
+            data.value.valid ? resolve(data["value"]) : reject(data["value"])
           })
         });
       }
@@ -128,25 +147,39 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         order.mf_invoice_number = data["sequence"] || false;
       }
       async push_single_order(order, opts) {
-        if (this.useFiscalMachine() && order && !order.to_receipt && !order.mf_invoice_number) {
-          try {
-            const response = await this.print_out_invoice(await this.get_data_invoice(order))
-            if (!response.valid) {
-              throw new Error(response["message"])
+        if (!(this.useFiscalMachine() && order && !order.to_receipt && !order.mf_invoice_number)) {
+          return await super.push_single_order(...arguments);
+        }
+        let valid = true
+        try {
+          this.env.services.ui.block()
+          let data = await this.get_data_invoice(order)
+          if(!data["valid"]){
+            this.env.services.ui.unblock()
+            throw new Error(data["message"])
+          }
+          const response = await this.print_out_invoice(data)
+          this.env.services.ui.unblock()
+          if (!response.valid) {
+            throw new Error(response["message"])
+          }
+          this.set_data_from_fiscal_machine(order, response)
+        } catch (err) {
+          this.env.services.ui.unblock()
+          valid = false
+          return Promise.reject({
+            code: 701,
+            error: {
+              errorMessage: err.message,
+              errorCode: "400"
             }
-            this.set_data_from_fiscal_machine(order, response)
-            return await super.push_single_order(order, opts);
-          } catch (err) {
-            return Promise.reject({
-              code: 701,
-              error: {
-                errorMessage: err.message,
-                errorCode: "400"
-              }
-            });
+          });
+        } finally {
+          this.env.services.ui.unblock()
+          if (valid) {
+            return await super.push_single_order(...arguments);
           }
         }
-        return await super.push_single_order(...arguments);
       }
     };
   Registries.Model.extend(PosGlobalState, BinauralPosState);

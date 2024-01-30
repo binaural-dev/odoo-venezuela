@@ -49,6 +49,9 @@ class PurchaseOrder(models.Model):
         readonly=False,
     )
 
+    manually_set_rate = fields.Boolean(default=False)
+    last_foreign_rate = fields.Float(copy=False)
+
     total_taxed = fields.Many2one(
         "account.tax",
         help="Total Taxed of the order",
@@ -70,6 +73,20 @@ class PurchaseOrder(models.Model):
     journal_invoice_id = fields.Many2one(
         "account.journal", string="Journal Invoice", domain="[('type', '=', 'purchase')]"
     )
+
+    @api.constrains("foreign_rate")
+    def _check_rate(self):
+        for move in self:
+            if not move.foreign_rate:
+                raise ValidationError(_("The order does not have rate"))
+
+    @api.constrains("currency_id")
+    def _check_currency_id(self):
+        for move in self:
+            if move.currency_id.id != self.env.company.currency_id.id:
+                raise ValidationError(
+                    _("You cannot place a currency other than the base of the system.")
+                )
 
     @api.onchange("journal_invoice_id")
     def _onchange_journal_invoice_id(self):
@@ -204,6 +221,8 @@ class PurchaseOrder(models.Model):
         """
         Rate = self.env["res.currency.rate"]
         for purchase in self:
+            if purchase.manually_set_rate:
+                continue
             if (
                 not self.env.company.update_purchase_order_rate_using_date_order
                 and not float_is_zero(
@@ -237,6 +256,7 @@ class PurchaseOrder(models.Model):
                 if purchase.foreign_currency_id.id == base_usd_id
                 else purchase.foreign_rate
             )
+            purchase.manually_set_rate = True
 
     def action_create_invoice(self):
         # Update the foreign rate and foreign inverse rate of the invoice
@@ -250,4 +270,39 @@ class PurchaseOrder(models.Model):
                     "foreign_inverse_rate": self.foreign_inverse_rate,
                 }
             )
+        return res
+
+    def write(self, vals):
+        if vals.get("foreign_rate", False):
+            vals.update({"last_foreign_rate": self.foreign_rate})
+        res = super().write(vals)
+        if (
+            vals.get("foreign_rate", False)
+            and self.manually_set_rate
+            and self.foreign_rate != self.last_foreign_rate
+        ):
+            self.message_post(
+                body=_(
+                    "The rate has been updated from %(last_rate)s to %(rate)s ",
+                )
+                % ({"rate": self.foreign_rate, "last_rate": self.last_foreign_rate})
+            )
+        return res
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        for purchase in res:
+            Rate = self.env["res.currency.rate"]
+            rate_values = Rate.compute_rate(
+                purchase.foreign_currency_id.id, purchase.date_order or fields.Date.today()
+            )
+            last_foreign_rate = rate_values.get("foreign_rate", 0)
+            if purchase.manually_set_rate and purchase.foreign_rate != last_foreign_rate:
+                purchase.message_post(
+                    body=_(
+                        "The rate has been updated from %(last_rate)s to %(rate)s ",
+                    )
+                    % ({"rate": purchase.foreign_rate, "last_rate": last_foreign_rate})
+                )
         return res

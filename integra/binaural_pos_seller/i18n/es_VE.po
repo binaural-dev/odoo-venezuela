@@ -1,0 +1,68 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_pos_seller
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20231127\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-11-30 20:16+0000\n"
+"PO-Revision-Date: 2023-11-30 20:16+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_pos_seller
+#. odoo-javascript
+#: code:addons/binaural_pos_seller/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "(Seller)"
+msgstr "(Vendedor)"
+
+#. module: binaural_pos_seller
+#: model:ir.model.fields,help:binaural_pos_seller.field_pos_order__seller_id
+msgid "Partner's seller reference."
+msgstr "Referencia del vendedor del cliente."
+
+#. module: binaural_pos_seller
+#: model:ir.model,name:binaural_pos_seller.model_pos_order
+msgid "Point of Sale Orders"
+msgstr "Pedidos del TPV"
+
+#. module: binaural_pos_seller
+#: model:ir.model,name:binaural_pos_seller.model_pos_session
+msgid "Point of Sale Session"
+msgstr "Sesión TPV"
+
+#. module: binaural_pos_seller
+#. odoo-javascript
+#: code:addons/binaural_pos_seller/static/src/xml/PaymentScreen.xml:0
+#: code:addons/binaural_pos_seller/static/src/xml/PaymentScreen.xml:0
+#: model:ir.model.fields,field_description:binaural_pos_seller.field_pos_order__seller_id
+#, python-format
+msgid "Seller"
+msgstr "Vendedor"
+
+#. module: binaural_pos_seller
+#. odoo-javascript
+#: code:addons/binaural_pos_seller/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "Seller Required"
+msgstr "Se requiere un vendedor"
+
+#. module: binaural_pos_seller
+#. odoo-javascript
+#: code:addons/binaural_pos_seller/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "Sellers"
+msgstr "Vendedores"
+
+#. module: binaural_pos_seller
+#. odoo-javascript
+#: code:addons/binaural_pos_seller/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "You must select a seller to complete the order."
+msgstr "Debe seleccionar un vendedor para completar el pedido."

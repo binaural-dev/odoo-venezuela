@@ -13,7 +13,7 @@ odoo.define("binaural_pos.PaymentState", function(require) {
       constructor() {
         super(...arguments);
         this.foreign_amount = this.foreign_amount || 0;
-        this.foreign_rate = this.foreign_rate || this.pos.config.foreign_rate;
+        this.foreign_rate = this.order.current_rate;
       }
       export_as_JSON() {
         let res = super.export_as_JSON();

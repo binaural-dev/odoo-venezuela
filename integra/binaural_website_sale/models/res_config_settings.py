@@ -8,3 +8,8 @@ class ResConfigSettings(models.TransientModel):
         related="website_id.do_not_show_products_without_availability_on_site",
         readonly=False,
     )
+    
+    budget_send = fields.Boolean(
+        related='company_id.budget_send',
+        readonly=False,
+    )

@@ -9,11 +9,6 @@ export class BinauralIoTLongpolling extends IoTLongpolling {
     super(...arguments);
     this.ACTION_TIMEOUT = 160000;
   }
-
-  action(iot_ip, device_identifier, data) {
-    console.log("action")
-    return super.action(...arguments);
-  }
 }
 
 export const iotLongpollingService = {

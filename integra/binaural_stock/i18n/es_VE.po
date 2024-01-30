@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231023\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231204\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 20:32+0000\n"
-"PO-Revision-Date: 2023-10-26 20:32+0000\n"
+"POT-Creation-Date: 2023-12-07 13:11+0000\n"
+"PO-Revision-Date: 2023-12-07 13:11+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -38,12 +38,17 @@ msgstr "Un empaque ya usa el código de barras"
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "All"
-msgstr ""
+msgstr "Todos"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
 msgid "All Warehouse"
 msgstr "Todos los Almacenes"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
+msgid "Allow changing weight during picking"
+msgstr "Permitir cambiar de peso durante la Picking"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
@@ -72,6 +77,11 @@ msgid "Artículo"
 msgstr ""
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Assign Serial Numbers"
+msgstr "Asignar números de serie"
+
+#. module: binaural_stock
 #. odoo-python
 #: code:addons/binaural_stock/models/product_product.py:0
 #, python-format
@@ -85,9 +95,26 @@ msgstr ""
 "%s"
 
 #. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_block_type_inventory_transfers_expeditions
+msgid "Block Type Inventory Transfers Expeditions"
+msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_res_company__change_weight
+#: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__change_weight
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__change_weight
+msgid "Change Weight"
+msgstr "Cambiar de peso"
+
+#. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_res_company
 msgid "Companies"
 msgstr "Compañías"
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_change_weight_picking
+msgid "Change Weight in Picking"
+msgstr "Cambiar peso en Picking"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_product_category__company_id
@@ -115,14 +142,49 @@ msgid "Define a main sell's warehouse."
 msgstr "Define un almacén de ventas principal."
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Demand"
+msgstr "Demanda"
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Descripción"
 msgstr ""
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Description"
+msgstr "Descripción"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Details"
+msgstr "Detalles"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Done"
+msgstr "Hecho"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
+msgid "Download"
+msgstr "Descargar"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_quantity_history__except_products_at_zero
+msgid "Except Products At Zero"
+msgstr "Exceptuar Productos en 0"
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Fecha:"
 msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Forecast Report"
+msgstr "Informe de pronóstico"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__group_product_available_quantity_on_sale
@@ -140,6 +202,11 @@ msgid "Hide Cancel Button from Inventory Transfers"
 msgstr "Ocultar Botón Cancelar de las Transferencias de Inventario"
 
 #. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_hide_discard_inventory_transfers_button
+msgid "Hide Discard Button from Inventory Transfers"
+msgstr "Ocultar el botón Descartar de las transferencias de inventario"
+
+#. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_hide_override_button_for_inventory_transfers
 msgid "Hide Override Button for Inventory Transfers"
 msgstr "Ocultar Botón Anular de las Transferencias de Inventario"
@@ -148,6 +215,11 @@ msgstr "Ocultar Botón Anular de las Transferencias de Inventario"
 #: model:res.groups,name:binaural_stock.group_hide_print_button_for_inventory_transfers
 msgid "Hide Print Button for Inventory Transfers"
 msgstr "Ocultar Botón Imprimir de las Transferencias de Inventario"
+
+#. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_hide_return_inventory_transfers_button
+msgid "Hide Return Button from Inventory Transfers"
+msgstr "Ocultar el botón Retornar de las transferencias de inventario"
 
 #. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_hide_unlock_lock_button_for_inventory_transfers
@@ -159,11 +231,6 @@ msgstr ""
 #: model:res.groups,name:binaural_stock.group_hide_validate_inventory_transfers_button
 msgid "Hide Validate Inventory Transfers Button"
 msgstr "Ocultar Botón Validar de las Transferencias de Inventario"
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
-msgid "Imprimir"
-msgstr ""
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -188,8 +255,8 @@ msgstr ""
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__package_qty
-msgid "Package Quantity"
-msgstr ""
+msgid "Package Qty"
+msgstr "Número de Cajas"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_kanban_view
@@ -219,6 +286,16 @@ msgid "Product Category"
 msgstr "Categoría de producto"
 
 #. module: binaural_stock
+#: model:ir.model,name:binaural_stock.model_stock_move_line
+msgid "Product Moves (Stock Move Line)"
+msgstr "Movimientos de Producto (Stock Move Line)"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_move_line__product_tag_ids
+msgid "Product Tags"
+msgstr "Etiquetas de Producto"
+
+#. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_product_product
 msgid "Product Variant"
 msgstr "Variantes de producto"
@@ -230,14 +307,14 @@ msgid "Quantity"
 msgstr "Cantidad"
 
 #. module: binaural_stock
-#: model:ir.model.fields,help:binaural_stock.field_stock_picking__package_qty
-msgid "Quantity of packages used in the picking"
-msgstr ""
-
-#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Rango:"
 msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Reserved"
+msgstr "Reservada"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_tree_view
@@ -257,6 +334,11 @@ msgstr "Mostrar costo en la vista del producto"
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Stock"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Stock Moves"
 msgstr ""
 
 #. module: binaural_stock
@@ -283,16 +365,6 @@ msgid "This product must have only one tax."
 msgstr "Este producto debe tener solo un impuesto."
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.product_product_tree_view_inherit_binaural_stock
-msgid "Total Cost"
-msgstr "Costo total"
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.product_product_tree_view_inherit_binaural_stock
-msgid "Total Qty's"
-msgstr "Total de Unidades"
-
-#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Total:"
 msgstr ""
@@ -306,6 +378,11 @@ msgstr "Transferir"
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Ultimo Costo"
 msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "Unit of Measure"
+msgstr "Unidad de medida"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__use_main_warehouse
@@ -324,16 +401,40 @@ msgid "VALOR DEL INVENTARIO A PARTIR DE UNA FECHA"
 msgstr ""
 
 #. module: binaural_stock
-#: model:ir.model.fields,field_description:binaural_stock.field_product_product__value_total_cost
-msgid "Value Total Cost"
-msgstr "Costo Total"
-
-#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_quantity_history__warehouse_search_id
 msgid "Warehouse Search"
 msgstr "Buscar en Almacen"
 
 #. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "You cannot add products to shipment-type transfers"
+msgstr "No puede agregar productos a transferencias de tipo Expedicion"
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "You cannot make transfers larger than the demand"
+msgstr "No puedes hacer que las transferencias sean mayor que la demanda"
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "You cannot make transfers larger than the reserved quantity"
+msgstr "You cannot make transfers larger than the reserved quantity"
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "You do not have permission to make shipment-type transfers"
+msgstr "No tiene permiso para hacer transferencias de tipo de Expedicion"
+
+#. module: binaural_stock
 #: model:ir.actions.report,name:binaural_stock.inventory_valuation_report
 msgid "inventory Valuation"
-msgstr ""
+msgstr "Valoración de inventario"
