@@ -9,46 +9,6 @@ odoo.define('binaural_pos_discount.DiscountButton', function(require) {
   const BinauralDiscountButton = (DiscountButton) =>
     class extends DiscountButton {
 
-      async is_valid_supervisor_discount() {
-
-        const { confirmed } = await Gui.showPopup(
-          "SupervisorPopup",
-          {
-            title: _t("Insert Supervisor's Password"),
-          }
-        );
-
-        console.log({confirmed});
-
-        // return confirmed
-        // if (!confirmed) {
-        //   return
-        // }
-
-        console.error('is_valid_supervisor_discount');
-
-        return false
-      }
-      
-
-      async onClick() {
-        var self = this;
-
-        const pos_require_supervisor_key = this.env.pos.config.pos_require_supervisor_key;
-
-        if (pos_require_supervisor_key) {
-          const isValid = await self.is_valid_supervisor_discount();
-
-          if (isValid) {
-            await super.onClick();
-          }
-
-          return
-        }
-
-        await super.onClick();
-      }
-
       async apply_discount(pc) {
         var order = this.env.pos.get_order();
         var lines = order.get_orderlines();
