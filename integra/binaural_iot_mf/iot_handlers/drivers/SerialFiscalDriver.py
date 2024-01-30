@@ -1580,7 +1580,7 @@ class SerialFiscalDriver(SerialDriver):
             "0x58": {"msg": "No hay asignadas  directivas", "code": "88"},
             "0x54": {"msg": "Tasa Invalida", "code": "84"},
             "0x50": {"msg": "Comando Invalido/Valor Invalido", "code": "80"},
-            "0x48": {"msg": "Error Gaveta", "code": "72"},
+            "0x48": {"msg": "Error Gaveta", "code": "0"},
             "0x43": {"msg": "Fin en la entrega de papel y error mec�nico", "code": "3"},
             "0x42": {"msg": "Error de indole mecanico en la entrega de papel", "code": "2"},
             "0x41": {"msg": "Fin en la entrega de papel", "code": "1"},
