@@ -6,6 +6,7 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
   const SelectCashierMixin = require('pos_hr.SelectCashierMixin');
   const PosComponent = require('point_of_sale.PosComponent');
   const { useBarcodeReader } = require('point_of_sale.custom_hooks');
+  const { _t } = require('web.core');
 
   class SupervisorPopup extends SelectCashierMixin(PosComponent) {
     setup() {
@@ -45,7 +46,7 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
       );
 
       if (employee) {
-        this.close({}, {},true);
+        this.close({}, true);
 
         return
       }
@@ -89,9 +90,9 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
 
   SupervisorPopup.template = 'SupervisorPopup';
   SupervisorPopup.defaultProps = {
-    confirmText: 'Confirm',
-    cancelText: 'Cancel',
-    title: "Insert Supervisor's Password",
+    confirmText: _t('Confirm'),
+    cancelText: _t('Cancel'),
+    title: _t("Insert Supervisor's Password"),
     body: '',
   };
 
