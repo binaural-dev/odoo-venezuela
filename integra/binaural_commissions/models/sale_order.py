@@ -1,4 +1,5 @@
-from odoo import models
+import json
+from odoo import models, fields
 from collections import defaultdict
 import logging
 
@@ -7,6 +8,9 @@ _logger = logging.getLogger(__name__)
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
+
+    commission_invoice_date_field = fields.Char(readonly=True,copy=False)
+    compute_commission_when = fields.Char(readonly=True,copy=False)
 
     def assing_commission_policy_line_images_to_order_lines(self):
         """
@@ -94,8 +98,25 @@ class SaleOrder(models.Model):
         )
         return
 
+    def set_company_settings(self):
+        self.commission_invoice_date_field = self.company_id.commission_invoice_date_field
+        self.compute_commission_when = self.company_id.compute_commission_when
+
+    def _prepare_invoice(self):
+        """
+        Prepare the dict of values to create the new invoice for a sales order. This method may be
+        overridden to implement custom invoice generation (making sure to call super() to establish
+        a clean extension chain).
+        """
+        self.ensure_one()
+        res = super()._prepare_invoice()
+        res["commission_invoice_date_field"] = self.commission_invoice_date_field
+        res["compute_commission_when"] = self.compute_commission_when
+        return res
+
     def action_confirm(self):
         res = super(SaleOrder, self).action_confirm()
         for order in self:
             order.assing_commission_policy_line_images_to_order_lines()
+            order.set_company_settings()
         return res

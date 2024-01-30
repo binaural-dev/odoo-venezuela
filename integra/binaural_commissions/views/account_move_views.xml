@@ -15,6 +15,20 @@
     </field>
 </record>
 
+<record id="view_move_form" model="ir.ui.view">
+    <field name="name">account.move.form</field>
+    <field name="model">account.move</field>
+    <field name="inherit_id" ref="account.view_move_form"/>
+    <field name="arch" type="xml">
+        <xpath expr="//field[@name='invoice_date']" position="after">
+            <field name="collection_days"/>
+            <field name="total_commission" widget="monetary"/>
+            <field name="last_payment_date" string="Last Payment Date"/>
+            <field name="first_payment_date" string="First Payment Date"/>
+        </xpath>
+    </field>
+</record>
+
 
 <record id="commission_sale_invoices_tree_view" model="ir.ui.view">
     <field name="name">commission.sale.invoices.tree</field>
