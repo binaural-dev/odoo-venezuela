@@ -8,12 +8,14 @@
     "author": "Binaural.dev",
     "support": "contacto@binaural.dev",
     "depends": ["binaural_pos", "binaural_pos_discount"],
-    "data": [],
+    "data": [
+        "views/res_config_settings.xml"
+    ],
     "assets": {
         "point_of_sale.assets": [
-            "binaural_pos_discount/static/src/js/*.js",
-            "binaural_pos_discount/static/src/xml/*.xml",
-            "binaural_pos_discount/static/src/css/*.css",
+            "binaural_pos_hr/static/src/js/*.js",
+            "binaural_pos_hr/static/src/xml/*.xml",
+            "binaural_pos_hr/static/src/css/*.css",
         ],
     },
     "images": ["static/description/icon.png"],
