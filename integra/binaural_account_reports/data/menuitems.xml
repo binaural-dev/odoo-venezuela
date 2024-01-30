@@ -60,7 +60,6 @@
         id="menu_action_account_report_general_ledger_usd"
         name="General Ledger USD"
         action="action_account_report_general_ledger_usd"
-        groups="binaural_fiscal.group_cannot_see_fiscal"
 	parent="account_reports.account_reports_audit_reports_menu"
     />
     <menuitem
