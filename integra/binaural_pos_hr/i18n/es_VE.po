@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-30 22:12+0000\n"
-"PO-Revision-Date: 2024-01-30 22:12+0000\n"
+"POT-Creation-Date: 2024-01-30 22:19+0000\n"
+"PO-Revision-Date: 2024-01-30 22:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -18,7 +18,7 @@ msgstr ""
 #. module: binaural_pos_hr
 #: model:ir.model.fields.selection,name:binaural_pos_hr.selection__hr_employee__pos_employee_type__cashier
 msgid "Cashier"
-msgstr ""
+msgstr "Cajero"
 
 #. module: binaural_pos_hr
 #: model:ir.model,name:binaural_pos_hr.model_res_company
@@ -32,7 +32,7 @@ msgstr "Opciones de configuración"
 
 #. module: binaural_pos_hr
 #: model_terms:ir.ui.view,arch_db:binaural_pos_hr.res_config_settings_binaural_pos
-msgid "Display popup to type supervisor pin to apply discounts"
+msgid "Mostrar ventana emergente para escribir el pin de supervisor y aplicar descuentos"
 msgstr ""
 
 #. module: binaural_pos_hr
@@ -46,7 +46,7 @@ msgstr "Empleado"
 #: code:addons/binaural_pos_hr/static/src/js/SupervisorPopup.js:0
 #, python-format
 msgid "Incorrect Password"
-msgstr ""
+msgstr "Contraseña Incorrecta"
 
 #. module: binaural_pos_hr
 #. odoo-javascript
@@ -54,7 +54,7 @@ msgstr ""
 #: code:addons/binaural_pos_hr/static/src/js/NumpadWidget.js:0
 #, python-format
 msgid "Insert Supervisor's Password"
-msgstr ""
+msgstr "Insertar Contraseña de Supervisor"
 
 #. module: binaural_pos_hr
 #: model:ir.model,name:binaural_pos_hr.model_pos_config
@@ -64,7 +64,7 @@ msgstr "Configuración del TPV"
 #. module: binaural_pos_hr
 #: model:ir.model.fields,field_description:binaural_pos_hr.field_hr_employee__pos_employee_type
 msgid "Pos Employee Type"
-msgstr ""
+msgstr "Tipo de empleado pos"
 
 #. module: binaural_pos_hr
 #: model:ir.model.fields.selection,name:binaural_pos_hr.selection__hr_employee__pos_employee_type__supervisor
@@ -76,9 +76,9 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_pos_hr.field_res_company__pos_require_supervisor_key
 #: model:ir.model.fields,field_description:binaural_pos_hr.field_res_config_settings__pos_require_supervisor_key
 msgid "Supervisor Key"
-msgstr ""
+msgstr "Clave de supervisor"
 
 #. module: binaural_pos_hr
 #: model:ir.model.fields.selection,name:binaural_pos_hr.selection__hr_employee__pos_employee_type__waiter
 msgid "Waiter"
-msgstr ""
+msgstr "Mesonero"
