@@ -12,6 +12,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+
 class StockPicking(models.Model):
     _inherit = "stock.picking"
 
@@ -19,8 +20,9 @@ class StockPicking(models.Model):
     is_out = fields.Boolean(compute="_compute_is_out")
 
     change_weight = fields.Boolean(
-        related='company_id.change_weight',
+        related="company_id.change_weight",
     )
+
     def _compute_is_out(self):
         for record in self:
             record.is_out = (
@@ -32,20 +34,20 @@ class StockPicking(models.Model):
         for val in vals_list:
             self.validate_block_transfers_expedition(vals=val)
         return super().create(vals_list)
-    
-    def write(self,vals):
+
+    def write(self, vals):
         res = super().write(vals)
         keys_to_check = [
             "move_line_ids_without_package",
             "move_line_nosuggest_ids",
-            "move_ids_without_package"
+            "move_ids_without_package",
         ]
         matched_key = None
         for key in keys_to_check:
             if key in vals:
                 matched_key = key
                 break
-        
+
         if matched_key:
             self.validate_block_transfers_expedition(write=vals, matched_key=matched_key)
 
@@ -57,7 +59,9 @@ class StockPicking(models.Model):
         )
         if block_transfer_expedition:
             picking_type = (
-                self.env["stock.picking.type"].search([("id", "=", vals.get("picking_type_id", False))])
+                self.env["stock.picking.type"].search(
+                    [("id", "=", vals.get("picking_type_id", False))]
+                )
                 if vals
                 else self.picking_type_id
             )
@@ -66,23 +70,33 @@ class StockPicking(models.Model):
                     for move_line in write[matched_key]:
                         if isinstance(move_line[1], str):
                             raise UserError(_("You cannot add products to shipment-type transfers"))
-                    
+
                         if isinstance(move_line[1], int):
                             if not move_line[2]:
-                                raise UserError(_("You cannot add products to shipment-type transfers"))
-                                
+                                raise UserError(
+                                    _("You cannot add products to shipment-type transfers")
+                                )
+
                             if "quantity_done" in move_line[2] or "qty_done" in move_line[2]:
                                 lines = self[matched_key]
                                 for line in lines:
                                     if line.id == move_line[1]:
-                                        
                                         if "quantity_done" in move_line[2]:
                                             quantity_done = move_line[2].get("quantity_done")
                                             if line.product_uom_qty < quantity_done:
-                                                raise UserError(_("You cannot make transfers larger than the demand"))
+                                                raise UserError(
+                                                    _(
+                                                        "You cannot make transfers larger than the demand"
+                                                    )
+                                                )
                                         elif "qty_done" in move_line[2]:
                                             quantity_done = move_line[2].get("qty_done")
                                             if line.reserved_uom_qty < quantity_done:
-                                                raise UserError(_("You cannot make transfers larger than the reserved quantity"))
-                            
-                else: raise UserError(_("You do not have permission to make shipment-type transfers"))
+                                                raise UserError(
+                                                    _(
+                                                        "You cannot make transfers larger than the reserved quantity"
+                                                    )
+                                                )
+
+                else:
+                    raise UserError(_("You do not have permission to make shipment-type transfers"))

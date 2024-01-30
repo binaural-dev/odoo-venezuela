@@ -78,6 +78,12 @@ class SaleOrder(models.Model):
         )
     )
 
+    @api.constrains("foreign_rate")
+    def _check_rate(self):
+        for move in self:
+            if not move.foreign_rate:
+                raise ValidationError(_("The order does not have rate"))
+
     @api.constrains("order_line")
     def _check_taxes_id(self):
         for order in self:
@@ -355,7 +361,7 @@ class SaleOrder(models.Model):
                             line.product_uom_qty,
                         )
                         raise ValidationError(msg)
-                    
+
             if (
                 order.company_id.account_use_credit_limit
                 and order.partner_id.use_partner_credit_limit_order
