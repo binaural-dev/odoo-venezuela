@@ -85,7 +85,7 @@ odoo.define('binaural_pos.TicketScreen', function(require) {
         const { confirmed } = await this.showPopup('ConfirmPopup', {
           title: this.env._t('You want to refund all products'),
           body: _.str.sprintf(
-            this.env._t('By confirming below each product line will be assigned with the total amount available to be reimbursed.'),
+            this.env._t('By confirming each product line will be assigned with the total amount to be reimbursed.'),
           ),
         });
         if (!confirmed) return;
