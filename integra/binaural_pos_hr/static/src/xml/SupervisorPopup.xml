@@ -10,8 +10,7 @@
                     </header>
                     <div>
                         <input 
-                            type="password" 
-                            t-on-change="captureChange" 
+                            type="password"
                             t-on-keyup="checkconfirm"
                             t-ref="input"
                             />
@@ -20,7 +19,7 @@
                         <div class="button highlight confirm" t-on-click="confirm">
                             <t t-esc="props.confirmText" />
                         </div>
-                        <div class="button cancel" t-on-click="cancel">
+                        <div class="button cancel" t-on-click="close">
                             <t t-esc="props.cancelText" />
                         </div>
                     </footer>

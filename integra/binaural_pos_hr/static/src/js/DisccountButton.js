@@ -18,18 +18,8 @@ odoo.define('binaural_pos_hr.DiscountButton', function(require) {
           }
         );
 
-        console.log({confirmed});
-
-        // return confirmed
-        // if (!confirmed) {
-        //   return
-        // }
-
-        console.error('is_valid_supervisor_discount');
-
-        return false
+        return confirmed
       }
-      
 
       async onClick() {
         var self = this;

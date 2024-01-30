@@ -1,15 +1,16 @@
 {
     "name": "Binaural POS HR",
-    "version": "16.2",
+    "version": "16.0.0.0.1",
     "category": "Accounting",
     "summary": "Binaural POS HR",
     "sequence": "1",
     "license": "LGPL-3",
     "author": "Binaural.dev",
     "support": "contacto@binaural.dev",
-    "depends": ["binaural_pos", "binaural_pos_discount"],
+    "depends": ["binaural_pos", "binaural_pos_discount", "pos_hr"],
     "data": [
-        "views/res_config_settings.xml"
+        "views/res_config_settings.xml",
+        "views/hr_employee.xml",
     ],
     "assets": {
         "point_of_sale.assets": [

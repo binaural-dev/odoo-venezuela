@@ -3,27 +3,52 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
 
   const { useRef } = owl;
   const Registries = require('point_of_sale.Registries');
-  const SelectCashierMixin = require('binaural_pos.SelectCashierMixin');
+  const SelectCashierMixin = require('pos_hr.SelectCashierMixin');
   const PosComponent = require('point_of_sale.PosComponent');
   const { useBarcodeReader } = require('point_of_sale.custom_hooks');
-
-  // const AbstractAwaitablePopup = require('point_of_sale.AbstractAwaitablePopup');
 
   class SupervisorPopup extends SelectCashierMixin(PosComponent) {
     setup() {
       super.setup();
-      this.password = "";
       this.inputRef = useRef('input');
       useBarcodeReader({cashier: this.barcodeCashierAction}, true);
     }
 
-    async askPin(employee) {
+    async askPin(code) {
+      if (code == "") return;
+      if (!this.env.pos.supervisor_ids) return;
 
-      if (this.password == "") return;
+      const employee = this.env.pos.supervisor_ids.find(
+        (emp) => (
+          emp.pin === code
+        )
+      );
 
-      if (employee.pin === Sha1.hash(this.password)) {
-        return employee;
-      } 
+      if (employee) {
+        this.close({}, true);
+        return;
+      }
+
+      await this.showPopup('ErrorPopup', {
+          title: this.env._t('Incorrect Password'),
+      });
+      
+    }
+
+    async askBarcode(code) {
+      if (!this.env.pos.supervisor_ids) return;
+
+      const employee = this.env.pos.supervisor_ids.find(
+        (emp) => (
+          emp.barcode === code.code
+        )
+      );
+
+      if (employee) {
+        this.close({}, {},true);
+
+        return
+      }
 
       await this.showPopup('ErrorPopup', {
           title: this.env._t('Incorrect Password'),
@@ -35,31 +60,23 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
     }
 
     async barcodeCashierAction(code) {
-      this.inputRef.el.value = code;
+      this.inputRef.el.value = '';
+      this.askBarcode(code);
     }
 
     mounted() {
       this.inputRef.el.focus();
     }
 
-    captureChange(event) {
-      this.password = event.target.value;
-      console.log('check if change on scan code fo just use this.password', this.password); 
-    }
-
-    cancel() {
+    close(event, confirmed = false) {
       this.env.posbus.trigger('close-popup', {
         popupId: this.props.id,
-        response: { confirmed: false, payload: false },
+        response: { confirmed: confirmed, payload: confirmed },
       });
     }
   
     confirm() {
-      console.log('confirm',this.env.pos.employees);
-      this.env.posbus.trigger('close-popup', {
-        popupId: this.props.id,
-        response: { confirmed: true, payload: true },
-      });
+      this.askPin(this.inputRef.el.value);
     }
 
     checkconfirm(event){
@@ -67,7 +84,6 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
         this.confirm()
       }
     }
-
 
   }
 
