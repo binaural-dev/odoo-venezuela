@@ -27,9 +27,9 @@ odoo.define("binaural_pos_hr.NumpadWidget", function (require) {
       async changeMode(mode) {
 
         if (mode == 'discount' && this.env.pos.numpadMode != 'discount') {
-          const pos_require_supervisor_key = this.env.pos.config.pos_require_supervisor_key;
+          const pos_discount_require_supervisor_key = this.env.pos.config.pos_discount_require_supervisor_key;
           
-          if (pos_require_supervisor_key) {
+          if (pos_discount_require_supervisor_key) {
             const is_valid_discount = await this.is_valid_supervisor_discount();
             if (!is_valid_discount) return;
 

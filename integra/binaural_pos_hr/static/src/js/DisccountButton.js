@@ -24,9 +24,9 @@ odoo.define('binaural_pos_hr.DiscountButton', function(require) {
       async onClick() {
         var self = this;
 
-        const pos_require_supervisor_key = this.env.pos.config.pos_require_supervisor_key;
+        const pos_discount_require_supervisor_key = this.env.pos.config.pos_discount_require_supervisor_key;
 
-        if (pos_require_supervisor_key) {
+        if (pos_discount_require_supervisor_key) {
           const isValid = await self.is_valid_supervisor_discount();
 
           if (isValid) {
