@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240126\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240102\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-30 15:21+0000\n"
-"PO-Revision-Date: 2024-01-30 15:21+0000\n"
+"POT-Creation-Date: 2024-01-04 14:58+0000\n"
+"PO-Revision-Date: 2024-01-04 14:58+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -29,6 +29,11 @@ msgstr "<strong>Cobros</strong>"
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
 msgid "<strong>Total Sales</strong>"
 msgstr "Total de Ventas"
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
+msgid "<strong>Total charged</strong>"
+msgstr "<strong>Total Cobrado</strong>"
 
 #. module: binaural_accountant
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_move_line__amount_currency
@@ -544,6 +549,11 @@ msgid "Proveedor"
 msgstr ""
 
 #. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
+msgid "Rate"
+msgstr "Tasa"
+
+#. module: binaural_accountant
 #: model:ir.model.fields,help:binaural_accountant.field_account_payment_register__foreign_inverse_rate
 msgid ""
 "Rate that will be used as factor to multiply of the foreign currency for the"
@@ -647,13 +657,6 @@ msgstr ""
 #. module: binaural_accountant
 #. odoo-python
 #: code:addons/binaural_accountant/models/account_move.py:0
-#, python-format
-msgid "The move does not have rate"
-msgstr "El asiento no tiene tasa"
-
-#. module: binaural_accountant
-#. odoo-python
-#: code:addons/binaural_accountant/models/account_move.py:0
 #: code:addons/binaural_accountant/models/account_move.py:0
 #, python-format
 msgid "The rate has been updated from %(last_rate)s to %(rate)s "
@@ -708,6 +711,11 @@ msgstr "Total gravado de la factura"
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.financial_all_payments
 msgid "Total:"
 msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
+msgid "USD Amount"
+msgstr "Monto USD"
 
 #. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.view_account_move_form_binaural_invoice
