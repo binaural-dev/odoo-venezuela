@@ -31,12 +31,13 @@
     <field name="model">account.move</field>
     <field name="inherit_id" ref="account.view_move_form"/>
     <field name="arch" type="xml">
-        <xpath expr="//field[@name='invoice_date']" position="after">
+        <xpath expr="//div[@name='journal_div']" position="after">
             <field name="collection_days"/>
             <field name="total_commission" widget="monetary"/>
-            <field name="commission_invoice_date_field"/>
-            <field name="last_payment_date" string="Last Payment Date"/>
-            <field name="first_payment_date" string="First Payment Date"/>
+            <field name="commission_invoice_date_field" invisible="1"/>
+            <field name="compute_commission_when" invisible="1"/>
+            <field name="last_payment_date" string="Last Payment Date" invisible="1"/>
+            <field name="first_payment_date" string="First Payment Date" invisible="1"/>
         </xpath>
     </field>
 </record>

@@ -36,9 +36,12 @@ class AccountMove(models.Model):
     def show_invoice_resume(self):
         return True
 
-    @api.depends("amount_residual")
+    @api.depends("amount_residual","collection_days")
     def _compute_total_commission_of_invoice(self):
         for record in self:
+            if not record._can_recompute_commission():
+                continue
+
             if not record.is_valid_to_compute_commission():
                 record.total_commission = 0
                 continue
@@ -52,14 +55,22 @@ class AccountMove(models.Model):
                     total += line.price_subtotal * (commission / 100)
             record.total_commission = total
 
+    def _can_recompute_commission(self):
+        """Check if the invoice can be recomputed."""
+        if self.commission_payment_state not in ["not_paid", False]:
+            return False
+        return True
+
+
     def is_valid_to_compute_commission(self):
+        """Check if the invoice is valid to compute commission."""
         self.ensure_one()
         if (
             self.compute_commission_when == "invoice_is_fully_paid"
             and not self.currency_id.is_zero(self.amount_residual)
         ):
             return False
-        if self.commission_payment_state != "not_paid":
+        if self.collection_days == 0:
             return False
         if self.state != "posted":
             return False
