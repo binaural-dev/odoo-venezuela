@@ -1,4 +1,4 @@
-from odoo import fields, models
+from odoo import api, fields, models
 
 
 class SaleOrder(models.Model):
@@ -10,8 +10,19 @@ class SaleOrder(models.Model):
         domain=lambda self: (
             f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
         ),
-        default=lambda self: self.env.user.subsidiary_id,
+        compute="_compute_account_analytic_id",
+        store=True,
+        readonly=False
     )
+
+    company_subsidiary = fields.Boolean(
+        related='company_id.subsidiary'
+    )
+
+    @api.depends('company_subsidiary')
+    def _compute_account_analytic_id(self):
+        for record in self:
+            record.subsidiary_id = self.env.user.subsidiary_id  if record.company_subsidiary else None
 
     def _prepare_invoice(self):
         res = super(SaleOrder, self)._prepare_invoice()
