@@ -25,3 +25,6 @@ class ResConfigSettings(models.TransientModel):
     commission_payment_through = fields.Selection(
         related="company_id.commission_payment_through", readonly=False
     )
+    in_invoice_status_commission = fields.Selection(
+        related="company_id.in_invoice_status_commission", readonly=False
+    )

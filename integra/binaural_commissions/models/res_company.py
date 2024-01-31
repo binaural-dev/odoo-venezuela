@@ -26,6 +26,13 @@ class ResPartner(models.Model):
         ],
         default="invoice_is_fully_paid",
     )
+    in_invoice_status_commission = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("posted", "Posted"),
+        ],
+        default="draft",
+    )
     commission_payment_through = fields.Selection(
         [
             ("commission_invoice", "Commission Invoice"),

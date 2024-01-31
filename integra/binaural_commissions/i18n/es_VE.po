@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231016\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-20 13:38+0000\n"
-"PO-Revision-Date: 2023-11-20 13:38+0000\n"
+"POT-Creation-Date: 2024-01-31 22:49+0000\n"
+"PO-Revision-Date: 2024-01-31 22:49+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -77,6 +77,12 @@ msgid "Commission"
 msgstr "Comisión"
 
 #. module: binaural_commissions
+#: model:ir.actions.act_window,name:binaural_commissions.commission_invoice_action
+#: model:ir.ui.menu,name:binaural_commissions.account_commission_in_invoices
+msgid "Commission / Invoice Commission"
+msgstr "Comisiones / Facturas de Comisión"
+
+#. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__commission_discount
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_move__commission_discount
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__commission_discount
@@ -90,8 +96,12 @@ msgid "Commission Invoice"
 msgstr "Factura de Comisión"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__commission_invoice_date_field
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move__commission_invoice_date_field
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__commission_invoice_date_field
 #: model:ir.model.fields,field_description:binaural_commissions.field_res_company__commission_invoice_date_field
 #: model:ir.model.fields,field_description:binaural_commissions.field_res_config_settings__commission_invoice_date_field
+#: model:ir.model.fields,field_description:binaural_commissions.field_sale_order__commission_invoice_date_field
 msgid "Commission Invoice Date Field"
 msgstr "Campo de Fecha para la comisión"
 
@@ -182,8 +192,17 @@ msgid "Companies"
 msgstr "Compañías"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__company_id
+msgid "Company"
+msgstr "Compañía"
+
+#. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__compute_commission_when
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move__compute_commission_when
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__compute_commission_when
 #: model:ir.model.fields,field_description:binaural_commissions.field_res_company__compute_commission_when
 #: model:ir.model.fields,field_description:binaural_commissions.field_res_config_settings__compute_commission_when
+#: model:ir.model.fields,field_description:binaural_commissions.field_sale_order__compute_commission_when
 msgid "Compute Commission When"
 msgstr "Calcular Comisión Cuando"
 
@@ -206,6 +225,7 @@ msgstr "¡Crea una nueva política de comisión!"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__create_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__create_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__create_uid
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__create_uid
 msgid "Created by"
 msgstr "Creado por"
 
@@ -213,6 +233,7 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__create_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__create_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__create_date
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__create_date
 msgid "Created on"
 msgstr "Creado en"
 
@@ -244,6 +265,7 @@ msgstr "Descuento de pagos correctivos"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__display_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__display_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__display_name
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__display_name
 msgid "Display Name"
 msgstr "Nombre a Mostrar"
 
@@ -260,9 +282,19 @@ msgid "Do not apply to the report"
 msgstr "No aplicar al reporte"
 
 #. module: binaural_commissions
+#: model:ir.model.fields.selection,name:binaural_commissions.selection__res_company__in_invoice_status_commission__draft
+msgid "Draft"
+msgstr "Borrador"
+
+#. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_sale_invoices_tree_view
 msgid "Días de cobro"
 msgstr ""
+
+#. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
+msgid "First Payment Date"
+msgstr "Fecha de Primer Pago"
 
 #. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy__policy_type__all
@@ -270,11 +302,45 @@ msgid "General"
 msgstr ""
 
 #. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.generate_commission_from_invoice
+msgid "Generate"
+msgstr "Generar"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/account_move.py:0
+#, python-format
+msgid "Generate Commission"
+msgstr "Generar Comisión"
+
+#. module: binaural_commissions
+#: model:ir.model.fields.selection,name:binaural_commissions.selection__generate_commission_from_invoice__invoice_type__one2one
+msgid "Generate a commission invoice"
+msgstr "Generar una factura por comisión"
+
+#. module: binaural_commissions
+#: model:ir.model.fields.selection,name:binaural_commissions.selection__generate_commission_from_invoice__invoice_type__many2one
+msgid "Generate an invoice with all commissions"
+msgstr "Generar una factura con todas las comisiones"
+
+#. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__id
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__id
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__id
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__id
 msgid "ID"
 msgstr ""
+
+#. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_res_company__in_invoice_status_commission
+#: model:ir.model.fields,field_description:binaural_commissions.field_res_config_settings__in_invoice_status_commission
+msgid "In Invoice Status Commission"
+msgstr "Estado de la Factura de Comisión"
+
+#. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__invoice_ids
+msgid "Invoice"
+msgstr "Facturas"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__commission_invoice
@@ -294,6 +360,11 @@ msgid "Invoice Reception Date"
 msgstr "Fecha de Recepción de Factura"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__invoice_type
+msgid "Invoice Type"
+msgstr "Tipo de Factura"
+
+#. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__res_company__compute_commission_when__invoice_first_payment
 msgid "Invoice first payment"
 msgstr "Primer pago de la factura"
@@ -302,6 +373,13 @@ msgstr "Primer pago de la factura"
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__res_company__compute_commission_when__invoice_is_fully_paid
 msgid "Invoice paid totally"
 msgstr "Factura pagada totalmente"
+
+#. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__is_commission_invoice
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move__is_commission_invoice
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__is_commission_invoice
+msgid "Is Commission Invoice"
+msgstr "Pago a Vendedores"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__is_report_range
@@ -314,6 +392,11 @@ msgid "Journal Entry"
 msgstr "Asiento contable"
 
 #. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
+msgid "Journal Items"
+msgstr ""
+
+#. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
 msgid "Journal used for commissions computation"
 msgstr "Diario usado para el cálculo de comisiones"
@@ -322,11 +405,13 @@ msgstr "Diario usado para el cálculo de comisiones"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy____last_update
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line____last_update
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image____last_update
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice____last_update
 msgid "Last Modified on"
 msgstr "Última Modificación en"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_sale_invoices_tree_view
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
 msgid "Last Payment Date"
 msgstr "Fecha del Último Pago"
 
@@ -334,6 +419,7 @@ msgstr "Fecha del Último Pago"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__write_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__write_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__write_uid
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__write_uid
 msgid "Last Updated by"
 msgstr "Última Actualización por"
 
@@ -341,6 +427,7 @@ msgstr "Última Actualización por"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__write_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__write_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__write_date
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__write_date
 msgid "Last Updated on"
 msgstr "Última Actualización en"
 
@@ -355,9 +442,26 @@ msgid "Name"
 msgstr "Nombre"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__origin_commission_invoice
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move__origin_commission_invoice
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__origin_commission_invoice
+msgid "Origin Commission Invoice"
+msgstr "Facturas origen de comisión"
+
+#. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
+msgid "Origin commissions"
+msgstr "Facturas origen de comisión"
+
+#. module: binaural_commissions
 #: model:product.template,name:binaural_commissions.product_product_commission_payment_product_template
 msgid "Pago de comisiones"
 msgstr ""
+
+#. module: binaural_commissions
+#: model:ir.actions.server,name:binaural_commissions.generate_seller_in_invoice
+msgid "Pay Commissions"
+msgstr "Pagar Comisiones"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
@@ -403,6 +507,11 @@ msgid "Policy Line Images"
 msgstr "Imágenes de Línea de Política"
 
 #. module: binaural_commissions
+#: model:ir.model.fields.selection,name:binaural_commissions.selection__res_company__in_invoice_status_commission__posted
+msgid "Posted"
+msgstr "Publicado"
+
+#. module: binaural_commissions
 #: model:ir.model,name:binaural_commissions.model_product_template
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__product_ids
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy__policy_type__product
@@ -438,9 +547,17 @@ msgid "Sales Order Line"
 msgstr "Línea pedido de venta"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__seller_id
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_sale_invoice_filter
 msgid "Seller"
 msgstr "Vendedor"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/wizard/generate_commission_from_invoice.py:0
+#, python-format
+msgid "Seller invoices"
+msgstr "Facturas de Ventas de Vendedor"
 
 #. module: binaural_commissions
 #. odoo-python
@@ -461,9 +578,21 @@ msgstr ""
 "comisión."
 
 #. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/account_move.py:0
+#, python-format
+msgid "The invoice must have the same seller"
+msgstr "La factura debe tener el mismo vendedor"
+
+#. module: binaural_commissions
 #: model_terms:ir.actions.act_window,help:binaural_commissions.commission_sale_invoices_action
 msgid "There are no applicable invoices for commissions payment!"
 msgstr "¡No hay facturas que apliquen para el pago de comisiones!"
+
+#. module: binaural_commissions
+#: model_terms:ir.actions.act_window,help:binaural_commissions.commission_invoice_action
+msgid "There are no invoices for commissions payment!"
+msgstr "No hay facturas de pago de comisiones!"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__total_commission
@@ -483,6 +612,11 @@ msgid "commission policy for sellers"
 msgstr "política de comisión para vendedores"
 
 #. module: binaural_commissions
+#: model:ir.model,name:binaural_commissions.model_generate_commission_from_invoice
+msgid "generate.commission.from.invoice"
+msgstr ""
+
+#. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__account_move__commission_payment_state__process
 msgid "in process"
 msgstr "en proceso"
@@ -496,3 +630,8 @@ msgstr "no pagada"
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__account_move__commission_payment_state__paid
 msgid "paid"
 msgstr "pagada"
+
+#. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
+msgid "state of invoice payment of commission"
+msgstr "Estado de la factura para el pago de condiciones iniciaria con"

@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
 
 import logging
 
@@ -12,6 +13,7 @@ class AccountMove(models.Model):
         "account.move",
         string="Invoice Commission",
     )
+    origin_commission_invoice = fields.One2many("account.move", "commission_invoice")
     collection_days = fields.Integer(compute="_compute_collection_days")
     total_commission = fields.Float(compute="_compute_total_commission_of_invoice")
     # discount_invoice = fields.Many2many(
@@ -32,11 +34,29 @@ class AccountMove(models.Model):
 
     commission_invoice_date_field = fields.Char(readonly=True, copy=False)
     compute_commission_when = fields.Char(readonly=True, copy=False)
+    is_commission_invoice = fields.Boolean(readonly=True, copy=False)
 
     def show_invoice_resume(self):
         return True
 
-    @api.depends("amount_residual","collection_days")
+    def generate_seller_in_invoices(self):
+        if len(self.seller_id) > 1:
+            raise ValidationError(_("The invoice must have the same seller"))
+
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Generate Commission"),
+            "res_model": "generate.commission.from.invoice",
+            "view_mode": "form",
+            "view_id": self.env.ref("binaural_commissions.generate_commission_from_invoice").id,
+            "target": "new",
+            "context": {
+                "default_invoice_ids": self.ids,
+                "default_seller_id": self.seller_id.user_partner_id.id,
+            },
+        }
+
+    @api.depends("amount_residual", "collection_days")
     def _compute_total_commission_of_invoice(self):
         for record in self:
             if not record._can_recompute_commission():
@@ -50,7 +70,7 @@ class AccountMove(models.Model):
             for line in record.invoice_line_ids:
                 if line.sale_line_ids.commission_policy_line_image_ids:
                     commission = line.sale_line_ids.get_amount_commission_policy_line_image(
-                        self.collection_days
+                        record.collection_days
                     )
                     total += line.price_subtotal * (commission / 100)
             record.total_commission = total
@@ -60,7 +80,6 @@ class AccountMove(models.Model):
         if self.commission_payment_state not in ["not_paid", False]:
             return False
         return True
-
 
     def is_valid_to_compute_commission(self):
         """Check if the invoice is valid to compute commission."""

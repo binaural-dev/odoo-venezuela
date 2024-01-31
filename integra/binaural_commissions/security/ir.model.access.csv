@@ -2,3 +2,4 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_commission_policy,access.commission.policy,model_commission_policy,,1,1,1,1
 access_commission_policy_line,access.commission.policy.line,model_commission_policy_line,,1,1,1,1
 access_commission_policy_line_image,access.commission.policy.line.image,model_commission_policy_line_image,,1,1,1,1
+access_generate_commission_from_invoice,access.generate.commission.from.invoice,model_generate_commission_from_invoice,,1,1,1,1

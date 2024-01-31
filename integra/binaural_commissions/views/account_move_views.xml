@@ -32,16 +32,31 @@
     <field name="inherit_id" ref="account.view_move_form"/>
     <field name="arch" type="xml">
         <xpath expr="//div[@name='journal_div']" position="after">
-            <field name="collection_days"/>
-            <field name="total_commission" widget="monetary"/>
+            <field name="collection_days" attrs="{'invisible': [('move_type', '!=','out_invoice')]}"/>
+            <field name="total_commission" widget="monetary" attrs="{'invisible': [('move_type', '!=','out_invoice')]}"/>
             <field name="commission_invoice_date_field" invisible="1"/>
             <field name="compute_commission_when" invisible="1"/>
             <field name="last_payment_date" string="Last Payment Date" invisible="1"/>
             <field name="first_payment_date" string="First Payment Date" invisible="1"/>
+            <field name="commission_invoice" attrs="{'invisible': [('move_type', '!=','out_invoice')]}"/>
+            <field name="is_commission_invoice" invisible="1"/>
+        </xpath>
+        <xpath expr="//notebook" position="inside">
+            <page id="origin_commission_tab" name="origin_commission_tab" string="Origin commissions" attrs="{'invisible': [('is_commission_invoice', '!=', True)]}">
+                <field name="origin_commission_invoice" mode="tree">
+                    <tree editable="bottom" string="Journal Items" default_order="sequence, id">
+                        <field name="name"/>
+                        <field name="total_commission" widget="monetary" sum="Total Commission"/>
+                    </tree>
+                </field>
+            </page>
         </xpath>
     </field>
 </record>
 
+<record id="account.action_move_in_invoice_type" model="ir.actions.act_window">
+    <field name="domain">[('move_type', '=', 'in_invoice'),("is_commission_invoice", "=",False)]</field>
+</record>
 
 <record id="commission_sale_invoices_tree_view" model="ir.ui.view">
     <field name="name">commission.sale.invoices.tree</field>
@@ -99,6 +114,24 @@
         <xpath expr="//field[@name='company_id']" position="attributes">
             <attribute name="invisible">1</attribute>
         </xpath>
+    </field>
+</record>
+
+<record id="commission_invoice_action" model="ir.actions.act_window">
+    <field name="name">Commission / Invoice Commission</field>
+    <field name="res_model">account.move</field>
+    <field name="view_mode">tree,form</field>
+    <field name="domain">
+	[
+	    ("move_type", "=", "in_invoice"),
+        ("is_commission_invoice", "=", True),
+	]
+    </field>
+	    <!-- ("date_reception", "!=", False) -->
+    <field name="help" type="html">
+        <p class="o_view_nocontent_smiling_face">
+            There are no invoices for commissions payment!
+        </p>
     </field>
 </record>
 

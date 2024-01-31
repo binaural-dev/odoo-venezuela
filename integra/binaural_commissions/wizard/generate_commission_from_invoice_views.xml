@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="generate_commission_from_invoice" model="ir.ui.view">
+        <field name="name">generate.commission.from.invoice</field>
+        <field name="model">generate.commission.from.invoice</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="invoice_type" widget="radio"/>
+                            <field name="seller_id" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+            <footer>
+                <button name="create_invoice" type="object" string="Generate"/>
+            </footer>
+        </field>
+    </record>
+</odoo>
