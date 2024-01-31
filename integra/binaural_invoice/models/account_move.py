@@ -50,19 +50,24 @@ class AccountMove(models.Model):
 
     @api.depends("amount_residual")
     def _compute_payment_dates(self):
+
+        def clear_dates(move):
+            move.last_payment_date = False
+            move.first_payment_date = False
+
         for move in self:
             if not move.is_invoice(include_receipts=True) and move.state != "posted":
-                move.last_payment_date = False
+                clear_dates(move)
                 continue
 
             is_invoice_payment_widget = bool(move.invoice_payments_widget)
             if not is_invoice_payment_widget:
-                move.last_payment_date = False
+                clear_dates(move)
                 continue
 
             payments = move.invoice_payments_widget
             if not payments or not payments.get("content", False):
-                move.last_payment_date = False
+                clear_dates(move)
                 continue
 
             last_date = False

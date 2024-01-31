@@ -39,6 +39,10 @@ class AccountMove(models.Model):
     @api.depends("amount_residual")
     def _compute_total_commission_of_invoice(self):
         for record in self:
+            if not record.is_valid_to_compute_commission():
+                record.total_commission = 0
+                continue
+
             total = 0
             for line in record.invoice_line_ids:
                 if line.sale_line_ids.commission_policy_line_image_ids:
@@ -47,6 +51,19 @@ class AccountMove(models.Model):
                     )
                     total += line.price_subtotal * (commission / 100)
             record.total_commission = total
+
+    def is_valid_to_compute_commission(self):
+        self.ensure_one()
+        if (
+            self.compute_commission_when == "invoice_is_fully_paid"
+            and not self.currency_id.is_zero(self.amount_residual)
+        ):
+            return False
+        if self.commission_payment_state != "not_paid":
+            return False
+        if self.state != "posted":
+            return False
+        return True
 
     @api.depends("invoice_date_due", "invoice_date")
     def _compute_collection_days(self):

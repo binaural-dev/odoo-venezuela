@@ -15,6 +15,17 @@
     </field>
 </record>
 
+<record id="view_account_move_form_binaural_invoice" model="ir.ui.view">
+    <field name="name">account.move.form</field>
+    <field name="model">account.move</field>
+    <field name="inherit_id" ref="binaural_invoice.view_account_move_form_binaural_invoice"/>
+    <field name="arch" type="xml">
+        <xpath expr="//field[@name='invoice_reception_date']" position="attributes">
+            <attribute name="attrs">{'required': [('commission_invoice_date_field','=','invoice_reception_date'),('move_type','=','out_invoice')]}</attribute>
+        </xpath>
+    </field>
+</record>
+
 <record id="view_move_form" model="ir.ui.view">
     <field name="name">account.move.form</field>
     <field name="model">account.move</field>
@@ -23,6 +34,7 @@
         <xpath expr="//field[@name='invoice_date']" position="after">
             <field name="collection_days"/>
             <field name="total_commission" widget="monetary"/>
+            <field name="commission_invoice_date_field"/>
             <field name="last_payment_date" string="Last Payment Date"/>
             <field name="first_payment_date" string="First Payment Date"/>
         </xpath>
