@@ -15,6 +15,7 @@
         "security/binaural_fiscal_groups.xml",
         "security/ir_rule.xml",
         "security/ir.model.access.csv",
+        "data/res_users.xml",
         "views/menu_item.xml",
     ],
     'post_init_hook': "create_res_users_fiscal",
