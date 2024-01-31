@@ -676,11 +676,17 @@ class AccountRetention(models.Model):
                 }
             )
         return sequence
+    
+    def clear_islr_retention_number(self):
+        for line in self.retention_line_ids:
+            if line.move_id.islr_voucher_number:
+                line.move_id.islr_voucher_number = False
 
     def action_cancel(self):
         self.payment_ids.mapped("move_id.line_ids").remove_move_reconcile()
         self.payment_ids.action_cancel()
         self.write({"state": "cancel"})
+        self.clear_islr_retention_number()
 
     def create_payment_from_retention_form(self):
         """

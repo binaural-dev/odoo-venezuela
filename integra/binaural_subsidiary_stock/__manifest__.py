@@ -7,10 +7,11 @@
     # Check https://github.com/odoo/odoo/blob/16.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     "category": "Hidden",
-    "version": "16.0.1.0.0",
+    "version": "16.0.2.0.3",
     # any module necessary for this one to work correctly
-    "depends": ["binaural_subsidiary", "stock_account"],
+    "depends": ["binaural_subsidiary", "stock", "stock_account"],
     "data": [
+        "security/ir_rule.xml",
         "views/stock_move.xml",
         "views/stock_move_line.xml",
         "views/stock_picking.xml",
