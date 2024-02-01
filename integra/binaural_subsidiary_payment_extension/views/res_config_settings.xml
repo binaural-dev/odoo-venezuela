@@ -5,20 +5,18 @@
             <field name="name">res.config.settings.binaural.subsidiary.payment.extension</field>
             <field name="model">res.config.settings</field>
             <field name="priority" eval="101"/>
-            <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
+            <field name="inherit_id" ref="binaural_subsidiary.res_config_settings_binaural_subsidiary"/>
             <field name="arch" type="xml">
-                <xpath expr="//div[@name='binaural_rate_settings']" position="after">
-                    <h2>Subsidiary Configuration</h2>
-                    <div class="row mt16 o_settings_container">
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_subsidiary_settings">
-                            <div class="o_setting_left_pane">
-                                <field name="use_subsidiary_with_multiple_municipalities" widget="upgrade_boolean"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="use_subsidiary_with_multiple_municipalities"/>
-                                <div class="text-muted">
-                                    Use subsidiaries with multiple municipalities
-                                </div>
+                <xpath expr="//div[@name='Binaural_subsidiary_settings']" position="after">
+                    <div class="col-12 col-lg-6 o_setting_box" name="Binaural_subsidiary_payment_extention_settings"
+                    attrs="{'invisible': [('subsidiary', '=', False)]}">
+                        <div class="o_setting_left_pane">
+                            <field name="use_subsidiary_with_multiple_municipalities" widget="upgrade_boolean"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="use_subsidiary_with_multiple_municipalities"/>
+                            <div class="text-muted">
+                                Use subsidiaries with multiple municipalities
                             </div>
                         </div>
                     </div>

@@ -10,7 +10,7 @@
     # any module necessary for this one to work correctly
     "depends": ["base", "point_of_sale", "pos_sale", "pos_sale_product_configurator"],
     # always loaded
-    "data": [],
+    "data": ["views/res_config_settings_views.xml"],
     "images": ["static/description/icon.png"],
     "application": True,
     "assets": {
