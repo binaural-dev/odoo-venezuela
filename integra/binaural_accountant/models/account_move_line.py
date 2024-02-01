@@ -12,6 +12,7 @@ _logger = logging.getLogger(__name__)
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
+    not_foreign_recalculate = fields.Boolean()
     foreign_currency_id = fields.Many2one(related="move_id.foreign_currency_id", store=True)
     foreign_rate = fields.Float(related="move_id.foreign_rate", store=True)
     foreign_inverse_rate = fields.Float(
