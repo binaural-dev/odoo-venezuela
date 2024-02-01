@@ -1,4 +1,4 @@
-from odoo import api, fields, models, _
+from odoo import _, api, fields, models
 
 
 class AccountMove(models.Model):
@@ -10,13 +10,23 @@ class AccountMove(models.Model):
         domain=lambda self: (
             f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
         ),
-        default=lambda self: self.env.user.subsidiary_id,
+        compute="_compute_account_analytic_id",
+        store=True,
+        readonly=False
     )
 
+    company_subsidiary = fields.Boolean(
+        related='company_id.subsidiary'
+    )
+    
     # It's needed to inherit the create and write methods to update the analytic distribution of the
     # lines when the analytic account is changed. The compute method isn't used because it is
     # called before the write method and we need the old analytic account to update the analytic
     # distribution.
+    @api.depends('company_subsidiary')
+    def _compute_account_analytic_id(self):
+        for record in self:
+            record.account_analytic_id = self.env.user.subsidiary_id  if record.company_subsidiary else None
 
     @api.model_create_multi
     def create(self, vals_list):
