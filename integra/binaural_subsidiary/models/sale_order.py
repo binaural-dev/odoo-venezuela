@@ -23,7 +23,7 @@ class SaleOrder(models.Model):
     @api.depends('company_subsidiary')
     def _compute_account_analytic_id(self):
         for record in self:
-            if record.account_analytic_id:
+            if record.subsidiary_id:
                 continue
             record.subsidiary_id = self.env.user.subsidiary_id  if record.company_subsidiary else None
 
