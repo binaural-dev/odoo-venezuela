@@ -12,16 +12,19 @@ class SaleOrder(models.Model):
         ),
         compute="_compute_account_analytic_id",
         store=True,
-        readonly=False
+        readonly=False,
+        tracking=True,
     )
 
     company_subsidiary = fields.Boolean(
-        related='company_id.subsidiary'
+        related='company_id.subsidiary', store=True,
     )
 
     @api.depends('company_subsidiary')
     def _compute_account_analytic_id(self):
         for record in self:
+            if record.account_analytic_id:
+                continue
             record.subsidiary_id = self.env.user.subsidiary_id  if record.company_subsidiary else None
 
     def _prepare_invoice(self):

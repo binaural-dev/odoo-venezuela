@@ -10,10 +10,11 @@ class AccountPayment(models.Model):
         domain=lambda self: (
             f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
         ),
+        tracking=True,
     )
 
     company_subsidiary = fields.Boolean(
-        related='company_id.subsidiary'
+        related='company_id.subsidiary', store=True,
     )
     
     def _synchronize_to_moves(self, changed_fields):
