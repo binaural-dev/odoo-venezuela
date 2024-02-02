@@ -225,3 +225,98 @@ class HrPayslip(models.Model):
         localdict = super()._get_localdict()
         localdict["foreign_inverse_rate"] = self.foreign_inverse_rate
         return localdict
+
+    def action_payslip_done(self):
+        res = super().action_payslip_done()
+        for slip in self:
+            slip._register_payroll_move()
+        return res
+
+    def _register_payroll_move(self):
+        self.ensure_one()
+        payroll_structure_category = self.struct_id.category
+
+        if payroll_structure_category == "provision":
+            return
+
+        move_params = {}
+        move_params["move_type"] = payroll_structure_category
+        move_params["employee_id"] = self.employee_id.id
+        move_params["date"] = self.date_to
+
+        # TODO: Vacaciones
+
+        #         if payroll_structure_category == "vacation":
+        #             move_params["date_from_vacation"] = self.date_from_vacation
+        #             move_params["date_to_vacation"] = self.date_to_vacation
+
+        total_basic = 0
+        total_deduction = 0
+        total_accrued = 0
+        total_net = 0
+        total_assig = 0
+        advance_of_benefits = 0
+        benefits_payment = 0
+        profit_sharing_payment = 0
+        vacation_days = 0
+        vacation_bonus_days = 0
+        total_vacation_bonus = 0
+        consumed_vacation_days = 0
+        total_vacation = 0
+
+        for line in self.line_ids:
+            if line.category_id.code == "DED":
+                total_deduction += line.total
+            if line.category_id.code == "ASIG":
+                total_assig += line.total
+            if line.category_id.code == "BASIC":
+                total_basic += line.total
+            if line.category_id.code == "DEV":
+                total_accrued += line.total
+            if line.category_id.code == "NET":
+                total_net += line.total
+
+            if line.code == "DDBVM":
+                vacation_days += line.total
+            if line.code == "DDVM":
+                consumed_vacation_days += line.total
+            if line.code == "PDDVM":
+                total_vacation += line.total
+            if line.code == "DDBVM":
+                vacation_bonus_days += line.total
+            if line.code == "PDDBVM":
+                total_vacation_bonus += line.total
+            if line.code == "UTIL":
+                profit_sharing_payment += line.total
+            if line.code == "ADPRESTA":
+                advance_of_benefits += line.total
+
+            if payroll_structure_category == "liquidation":
+                if line.code == "DDVMLIQ":
+                    vacation_days += line.total
+                if line.code == "PDDVMLIQ":
+                    total_vacation += line.total
+                if line.code == "DDVBMLIQ":
+                    vacation_bonus_days += line.total
+                if line.code == "PDDVBMLIQ":
+                    total_vacation_bonus += line.total
+                if line.code == "UTILLIQ":
+                    profit_sharing_payment += line.total
+                if line.code == "PRESTA":
+                    benefits_payment += line.total
+
+        move_params["total_basic"] = total_basic
+        move_params["total_deduction"] = total_deduction
+        move_params["total_accrued"] = total_accrued
+        move_params["total_net"] = total_net
+        move_params["total_assig"] = total_assig
+        move_params["advance_of_benefits"] = advance_of_benefits
+        move_params["benefits_payment"] = benefits_payment
+        move_params["profit_sharing_payment"] = profit_sharing_payment
+        move_params["vacation_days"] = vacation_days
+        move_params["vacation_bonus_days"] = vacation_bonus_days
+        move_params["total_vacation_bonus"] = total_vacation_bonus
+        move_params["consumed_vacation_days"] = consumed_vacation_days
+        move_params["total_vacation"] = total_vacation
+
+        return self.env["hr.payroll.move"].create(move_params)
