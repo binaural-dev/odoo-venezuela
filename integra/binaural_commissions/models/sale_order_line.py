@@ -15,14 +15,3 @@ class SaleOrderLine(models.Model):
             if line.date_from <= days <= line.date_to:
                 return line.commission
         return False
-            
-
-        
-
-
-
-#     def assign_commission_policy_line_images(self):
-
-#         for line in self:
-#             line.commision_policy_line_image_ids = line.product_id.commision_policy_line_image_ids
-#             line.product_id.commision_policy_line_image_ids = False

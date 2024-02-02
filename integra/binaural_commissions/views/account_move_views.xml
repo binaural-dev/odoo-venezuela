@@ -23,6 +23,14 @@
         <xpath expr="//field[@name='invoice_reception_date']" position="attributes">
             <attribute name="attrs">{'required': [('commission_invoice_date_field','=','invoice_reception_date'),('move_type','=','out_invoice')]}</attribute>
         </xpath>
+        <xpath expr="//field[@name='correlative']" position="attributes">
+            <attribute name="attrs">{
+                        'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],
+                        'readonly':  ['|', '&amp;', ('move_type', 'in', ['out_invoice', 'out_refund']), ('is_contingency', '=', False), ('state', '=', 'posted')],
+                        'required':  [('move_type', 'in', ['in_invoice', 'in_refund']), ('is_commission_invoice', '!=', True)]
+                    }
+            </attribute>
+        </xpath>
     </field>
 </record>
 
@@ -33,18 +41,21 @@
     <field name="arch" type="xml">
         <xpath expr="//div[@name='journal_div']" position="after">
             <field name="collection_days" attrs="{'invisible': [('move_type', '!=','out_invoice')]}"/>
+            <field name="commission_payment_state" widget="badge" decoration-muted="commission_payment_state == 'not_paid'"
+                   decoration-success="commission_payment_state == 'paid'" decoration-info="commission_payment_state == 'process'"
+                   optional="show" string="Payment State (Commission)" attrs="{'invisible': [('move_type', '!=','out_invoice')]}"/>
             <field name="total_commission" widget="monetary" attrs="{'invisible': [('move_type', '!=','out_invoice')]}"/>
             <field name="commission_invoice_date_field" invisible="1"/>
             <field name="compute_commission_when" invisible="1"/>
             <field name="last_payment_date" string="Last Payment Date" invisible="1"/>
             <field name="first_payment_date" string="First Payment Date" invisible="1"/>
-            <field name="commission_invoice" attrs="{'invisible': [('move_type', '!=','out_invoice')]}"/>
+            <field name="commission_invoice" readonly="1" attrs="{'invisible': [('move_type', '!=','out_invoice')]}"/>
             <field name="is_commission_invoice" invisible="1"/>
         </xpath>
         <xpath expr="//notebook" position="inside">
             <page id="origin_commission_tab" name="origin_commission_tab" string="Origin commissions" attrs="{'invisible': [('is_commission_invoice', '!=', True)]}">
                 <field name="origin_commission_invoice" mode="tree">
-                    <tree editable="bottom" string="Journal Items" default_order="sequence, id">
+                    <tree editable="bottom" string="Journal Items">
                         <field name="name"/>
                         <field name="total_commission" widget="monetary" sum="Total Commission"/>
                     </tree>

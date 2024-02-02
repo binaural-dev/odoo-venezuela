@@ -15,13 +15,13 @@ class AccountMove(models.Model):
     )
     origin_commission_invoice = fields.One2many("account.move", "commission_invoice")
     collection_days = fields.Integer(compute="_compute_collection_days")
-    total_commission = fields.Float(compute="_compute_total_commission_of_invoice")
+    total_commission = fields.Float(compute="_compute_total_commission_of_invoice", store=True)
     # discount_invoice = fields.Many2many(
     #     "account.move", "reversal_move_id", "move_id", compute="_compute_discount_invoice"
     # )
     commission_payment_state = fields.Selection(
         [("not_paid", "not paid"), ("process", "in process"), ("paid", "paid")],
-        # compute="_compute_paid_seller",
+        compute="_compute_paid_seller",
         store=True,
         help="Payment State (Commission Invoice)",
     )
@@ -36,13 +36,34 @@ class AccountMove(models.Model):
     compute_commission_when = fields.Char(readonly=True, copy=False)
     is_commission_invoice = fields.Boolean(readonly=True, copy=False)
 
+    def button_cancel(self):
+        for record in self:
+            if record.commission_invoice:
+                record.commission_invoice.button_cancel()
+
+            if record.origin_commission_invoice:
+                for invoice in record.origin_commission_invoice:
+                    invoice.commission_invoice = False
+        return super().button_cancel()
+
+    @api.depends("commission_invoice", "commission_invoice.payment_state", "total_commission")
+    def _compute_paid_seller(self):
+        for record in self:
+            if not record.commission_invoice:
+                record.commission_payment_state = "not_paid"
+                continue
+            if record.commission_invoice.payment_state in ["paid", "in_payment"]:
+                record.commission_payment_state = "paid"
+                continue
+            record.commission_payment_state = "process"
+
     def show_invoice_resume(self):
         return True
 
     def generate_seller_in_invoices(self):
-        if len(self.seller_id) > 1:
-            raise ValidationError(_("The invoice must have the same seller"))
-
+        for record in self:
+            if record.state != "posted":
+                raise ValidationError(_("Only posted invoices can be processed."))
         return {
             "type": "ir.actions.act_window",
             "name": _("Generate Commission"),
@@ -52,7 +73,7 @@ class AccountMove(models.Model):
             "target": "new",
             "context": {
                 "default_invoice_ids": self.ids,
-                "default_seller_id": self.seller_id.user_partner_id.id,
+                "default_seller_id": self.seller_id[0].user_partner_id.id,
             },
         }
 
@@ -60,13 +81,14 @@ class AccountMove(models.Model):
     def _compute_total_commission_of_invoice(self):
         for record in self:
             if not record._can_recompute_commission():
+                record.total_commission = record.total_commission
                 continue
 
             if not record.is_valid_to_compute_commission():
                 record.total_commission = 0
                 continue
 
-            total = 0
+            total = False
             for line in record.invoice_line_ids:
                 if line.sale_line_ids.commission_policy_line_image_ids:
                     commission = line.sale_line_ids.get_amount_commission_policy_line_image(
@@ -89,7 +111,11 @@ class AccountMove(models.Model):
             and not self.currency_id.is_zero(self.amount_residual)
         ):
             return False
-        if self.collection_days == 0:
+        if self.collection_days == 0 and (
+            self._get_commission_date_from()
+            and self._get_commission_date_to()
+            and self._get_commission_date_from() != self._get_commission_date_to()
+        ):
             return False
         if self.state != "posted":
             return False

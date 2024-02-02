@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-31 22:49+0000\n"
-"PO-Revision-Date: 2024-01-31 22:49+0000\n"
+"POT-Creation-Date: 2024-02-02 19:48+0000\n"
+"PO-Revision-Date: 2024-02-02 19:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -442,6 +442,13 @@ msgid "Name"
 msgstr "Nombre"
 
 #. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/account_move.py:0
+#, python-format
+msgid "Only posted invoices can be processed."
+msgstr "Solo las facturas publicadas pueden ser procesadas."
+
+#. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__origin_commission_invoice
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_move__origin_commission_invoice
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__origin_commission_invoice
@@ -482,6 +489,8 @@ msgstr "Estado de Pago (Factura de Comisión)"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_sale_invoices_tree_view
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.generate_commission_from_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
 msgid "Payment State (Commission)"
 msgstr "Estado de Pago (Comisión)"
 
@@ -560,6 +569,11 @@ msgid "Seller invoices"
 msgstr "Facturas de Ventas de Vendedor"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__seller_ids
+msgid "Sellers"
+msgstr "Vendedores"
+
+#. module: binaural_commissions
 #. odoo-python
 #: code:addons/binaural_commissions/models/commission_policy_line.py:0
 #, python-format
@@ -579,10 +593,17 @@ msgstr ""
 
 #. module: binaural_commissions
 #. odoo-python
-#: code:addons/binaural_commissions/models/account_move.py:0
+#: code:addons/binaural_commissions/wizard/generate_commission_from_invoice.py:0
 #, python-format
-msgid "The invoice must have the same seller"
-msgstr "La factura debe tener el mismo vendedor"
+msgid "The invoices %s already has a commission invoice in process"
+msgstr "Las facturas %s ya tienen una factura de comisión en proceso"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/wizard/generate_commission_from_invoice.py:0
+#, python-format
+msgid "The invoices must have the same seller"
+msgstr "Las facturas deben tener el mismo vendedor"
 
 #. module: binaural_commissions
 #: model_terms:ir.actions.act_window,help:binaural_commissions.commission_sale_invoices_action
@@ -598,13 +619,14 @@ msgstr "No hay facturas de pago de comisiones!"
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__total_commission
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_move__total_commission
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__total_commission
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
 msgid "Total Commission"
 msgstr "Total de Comisión"
 
 #. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy__product_commission_type__brand
 msgid "brand"
-msgstr "marca"
+msgstr "Marca"
 
 #. module: binaural_commissions
 #: model:ir.model,name:binaural_commissions.model_commission_policy
@@ -619,17 +641,17 @@ msgstr ""
 #. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__account_move__commission_payment_state__process
 msgid "in process"
-msgstr "en proceso"
+msgstr "En Proceso"
 
 #. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__account_move__commission_payment_state__not_paid
 msgid "not paid"
-msgstr "no pagada"
+msgstr "No Pagada"
 
 #. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__account_move__commission_payment_state__paid
 msgid "paid"
-msgstr "pagada"
+msgstr "Pagada"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
