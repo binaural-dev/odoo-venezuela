@@ -187,7 +187,9 @@ odoo.define('binaural_pos_sale.SaleOrderManagementScreen', function(require) {
               }
               new_line.setQuantityFromSOL(line);
               new_line.set_unit_price(line.price_unit);
-              new_line.set_foreign_price(line.foreign_price)
+              if (!!this.env.pos.config.pos_use_rate_from_order){
+                new_line.set_foreign_price(line.foreign_price)
+              }
               new_line.set_discount(line.discount);
               this.env.pos.get_order().add_orderline(new_line);
             }

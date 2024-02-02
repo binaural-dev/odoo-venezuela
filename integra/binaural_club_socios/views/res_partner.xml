@@ -10,9 +10,9 @@
 	            <field name="supplier_rank" invisible="1"/>
 	            <field name="customer_rank" invisible="1"/>
                 <field name="action_number" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
-                <field name="type_relation"/>
+                <field name="type_relation" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="state_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
-                <field name="state_partner" />
+                <field name="state_partner" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="associate_parent" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>
                 <field name="associate_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>
                 <field name="can_access_club" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
@@ -137,7 +137,7 @@
 
                 <!--pagina de asociados-->
                 <page name="internal_notes" position="after">
-                    <page string="Asociados Familiar" name="page_associates">
+                    <page string="Asociados Familiar" name="page_associates" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}">
 
                        <field name="associate_childs"  readonly="1" force_save="1"/>
                     </page>

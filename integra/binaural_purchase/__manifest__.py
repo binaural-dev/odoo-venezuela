@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Purchase/Purchase",
-    "version": "16.0.0.1.0",
+    "version": "16.0.0.2.1",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -17,8 +17,10 @@
     ],
     # always loaded
     "data": [
+        'security/ir.model.access.csv',
         "views/purchase_order.xml",
         "views/res_config_settings.xml",
+        'views/product_template.xml',
     ],
     "images": ["static/description/icon.png"],
     "application": True,

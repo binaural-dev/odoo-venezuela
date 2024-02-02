@@ -6,5 +6,7 @@ class PosConfig(models.Model):
 
     sh_analytic_account = fields.Many2one(
         string="Subsidiary",
-        domain=[("is_subsidiary", "=", True)],
+        domain=lambda self: (
+            f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
+        ),
     )

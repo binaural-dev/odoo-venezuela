@@ -34,6 +34,7 @@ class PosOrder(models.Model):
             {
                 "foreign_rate": self.foreign_currency_rate,
                 "foreign_inverse_rate": self.foreign_currency_rate,
+                "manually_set_rate": True,
             }
         )
         if not self.to_receipt:
