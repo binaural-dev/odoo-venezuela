@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240117\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-31 20:44+0000\n"
-"PO-Revision-Date: 2024-01-31 20:44+0000\n"
+"POT-Creation-Date: 2024-02-02 13:21+0000\n"
+"PO-Revision-Date: 2024-02-02 13:21+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -52,6 +52,11 @@ msgstr ""
 "descuentos"
 
 #. module: binaural_pos_hr
+#: model_terms:ir.ui.view,arch_db:binaural_pos_hr.res_config_settings_binaural_pos
+msgid "Display popup to type supervisor pin to cash moves"
+msgstr "Mostrar ventana emergente para escribir el pin de supervisor y mover efectivo"
+
+#. module: binaural_pos_hr
 #: model:ir.model,name:binaural_pos_hr.model_hr_employee
 msgid "Employee"
 msgstr "Empleado"
@@ -83,6 +88,12 @@ msgstr "Configuración del TPV"
 #: model:ir.model,name:binaural_pos_hr.model_pos_session
 msgid "Point of Sale Session"
 msgstr "Sesión TPV"
+
+#. module: binaural_pos_hr
+#: model:ir.model.fields,field_description:binaural_pos_hr.field_pos_config__pos_cashmove_require_supervisor_key
+#: model:ir.model.fields,field_description:binaural_pos_hr.field_res_config_settings__pos_cashmove_require_supervisor_key
+msgid "Pos Cashmove Require Supervisor Key"
+msgstr "Clave Supervisor Requerida para Movimiento de Efectivo"
 
 #. module: binaural_pos_hr
 #: model:ir.model.fields,field_description:binaural_pos_hr.field_hr_employee__pos_employee_type
