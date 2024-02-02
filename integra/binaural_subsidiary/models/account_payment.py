@@ -10,10 +10,11 @@ class AccountPayment(models.Model):
         domain=lambda self: (
             f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
         ),
+        tracking=True,
     )
 
     company_subsidiary = fields.Boolean(
-        related='company_id.subsidiary'
+        related='company_id.subsidiary', store=True,
     )
     
     def _synchronize_to_moves(self, changed_fields):
@@ -25,3 +26,7 @@ class AccountPayment(models.Model):
         for payment in self.with_context(skip_account_move_synchronization=True):
             payment.move_id.write({"account_analytic_id": payment.account_analytic_id.id})
         return res
+
+    def correccion_subsidiary_account_payment(self):
+        for payment in self:
+            payment.account_analytic_id = payment.move_id.account_analytic_id
