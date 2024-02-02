@@ -74,19 +74,13 @@ class PurchaseOrder(models.Model):
         "account.journal", string="Journal Invoice", domain="[('type', '=', 'purchase')]"
     )
 
-    @api.constrains("foreign_rate")
-    def _check_rate(self):
-        for move in self:
-            if not move.foreign_rate:
-                raise ValidationError(_("The order does not have rate"))
-
     @api.constrains("currency_id")
     def _check_currency_id(self):
         for move in self:
             if move.currency_id.id != self.env.company.currency_id.id:
                 raise ValidationError(
                     _("You cannot place a currency other than the base of the system.")
-                )
+                    )
 
     @api.onchange("journal_invoice_id")
     def _onchange_journal_invoice_id(self):

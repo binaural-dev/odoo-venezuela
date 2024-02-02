@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.4.15.0",
+    "version": "16.0.4.15.1",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
