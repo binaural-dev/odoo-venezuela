@@ -657,14 +657,3 @@ class AccountMove(models.Model):
                     )
         return res
 
-    @api.model
-    def abs_amount_lines_ids_adjust(self):
-        for line in self.line_ids:
-            line.write(
-                {
-                    "foreign_debit_adjustment": abs(line.foreign_debit_adjustment),
-                    "foreign_credit_adjustment": abs(line.foreign_credit_adjustment),
-                    "foreign_debit": abs(line.foreign_debit),
-                    "foreign_credit": abs(line.foreign_credit),
-                }
-            )
