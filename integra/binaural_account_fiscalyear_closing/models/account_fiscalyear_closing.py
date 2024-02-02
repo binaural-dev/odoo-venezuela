@@ -29,7 +29,8 @@ class AccountFiscalyearClosingConfig(models.Model):
                             "expense_depreciation",
                             "expense_direct_cost",
                         ],
-                    )
+                    ),
+                    ("company_id", "in", [self.env.company.id, False]),
                 ]
             )
         )
@@ -37,7 +38,11 @@ class AccountFiscalyearClosingConfig(models.Model):
         config_a = (
             self.env["account.account"]
             .sudo()
-            .search([("account_type", "=", "equity_unaffected")], limit=1)
+            .search(
+                [
+                    ("account_type", "=", "equity_unaffected"),
+                    ("company_id", "in", [self.env.company.id, False])
+                ], limit=1)
         )  # esta es la de destino siempre es la misma preguntar cual es
         maps = []
         cont = 1
@@ -195,7 +200,10 @@ class AccountFiscalyearClosing(models.Model):
             self.env["account.account"]
             .sudo()
             .search(
-                [("account_type", "=", "equity_unaffected")],
+                [
+                    ("account_type", "=", "equity_unaffected"),
+                    ("company_id", "in", [self.company_id.id, False])
+                ],
                 limit=1,
             )
         )

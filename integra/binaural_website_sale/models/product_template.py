@@ -39,7 +39,7 @@ class ProductTemplate(models.Model):
             )._compute_quantities_dict()[product.id]
             return (quantities_dict["qty_available"] - quantities_dict["outgoing_qty"]) > 0
 
-        products_with_available_quantity = results.filtered(
+        products_with_available_quantity = results.sudo().filtered(
             is_available_quantity_greater_than_zero_on_warehouse
         )
         return products_with_available_quantity, len(products_with_available_quantity)

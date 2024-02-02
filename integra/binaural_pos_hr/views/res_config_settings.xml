@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_config_settings_binaural_pos" model="ir.ui.view">
+            <field name="name">res.config.settings.binaural.pos</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="binaural_pos.res_config_settings_binaural_pos"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='binaural_igtf_settings']/div[@id='bin_igtf_settings_pos_show_just_products_with_available_qty']" position="after">
+                    <div 
+                        groups="point_of_sale.group_pos_manager"
+                        class="col-12 col-lg-6 o_setting_box"
+                        id="mf_setting_pos_discount_require_supervisor_key"
+                        attrs="{'invisible': [('pos_module_pos_discount', '=', False), ('pos_manual_discount', '=', False)]}"
+                    >
+                        <div class="o_setting_left_pane">
+                            <field name="pos_discount_require_supervisor_key"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="pos_discount_require_supervisor_key"/>
+                            <div class="text-muted">
+                Display popup to type supervisor pin to apply discounts
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="col-12 col-lg-6 o_setting_box"
+                        id="mf_setting_pos_refund_require_supervisor_key"
+                    >
+                        <div class="o_setting_left_pane">
+                            <field name="pos_refund_require_supervisor_key"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="pos_refund_require_supervisor_key"/>
+                            <div class="text-muted">
+                Display popup to type supervisor pin to apply discounts
+                            </div>
+                        </div>
+                    </div>
+
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
