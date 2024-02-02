@@ -49,3 +49,11 @@ class SaleOrder(models.Model):
                     if main_warehouse_id and not user_warehouse_id
                     else user_warehouse_id
                 )
+
+    def correccion_subsidiary_order(self):
+        for order in self:
+            if order.warehouse_id:
+                order.subsidiary_id = (order.warehouse_id.subsidiary_id 
+                                        if order.subsidiary_id.id != order.warehouse_id.subsidiary_id.id 
+                                        else order.subsidiary_id
+                                    )

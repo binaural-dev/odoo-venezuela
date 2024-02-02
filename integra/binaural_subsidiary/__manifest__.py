@@ -18,6 +18,7 @@
     ],
     "data": [
         "security/ir_rule.xml",
+        "data/ir_actions_server.xml",
         "report/sale_report.xml",
         "report/purchase_report.xml",
         "report/account_invoice_report.xml",

@@ -112,3 +112,13 @@ class AccountMove(models.Model):
                 )
                 if purchase_order:
                     invoice.account_analytic_id = purchase_order.account_analytic_id
+
+    def correccion_subsidiary(self):
+        for move in self:
+            if move.invoice_line_ids:
+                subsidiary_id = move.invoice_line_ids[0].analytic_distribution
+                if subsidiary_id:
+                    subsidiary_id = subsidiary_id.keys()
+                    for subsidiary in subsidiary_id:
+                        subsidiary_id = subsidiary
+                    move.account_analytic_id = self.env['account.analytic.account'].search([('id', '=', subsidiary_id)])

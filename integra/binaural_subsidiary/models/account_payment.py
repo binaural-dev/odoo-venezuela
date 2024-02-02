@@ -26,3 +26,7 @@ class AccountPayment(models.Model):
         for payment in self.with_context(skip_account_move_synchronization=True):
             payment.move_id.write({"account_analytic_id": payment.account_analytic_id.id})
         return res
+
+    def correccion_subsidiary_account_payment(self):
+        for payment in self:
+            payment.account_analytic_id = payment.move_id.account_analytic_id
