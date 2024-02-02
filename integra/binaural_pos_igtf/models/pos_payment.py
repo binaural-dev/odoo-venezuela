@@ -78,6 +78,7 @@ class PosPayment(models.Model):
                             ).property_account_receivable_id.id,
                             "partner_id": accounting_partner.id,
                             "move_id": payment_move.id,
+                            "not_foreign_recalculate": True,
                             "foreign_debit": abs(amount_without_igtf)
                             if amount_without_igtf < 0
                             else 0,
@@ -94,6 +95,7 @@ class PosPayment(models.Model):
                         "account_id": self.env.company.customer_account_igtf_id.id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
+                        "not_foreign_recalculate": True,
                         "foreign_debit": abs(payment.foreign_igtf_amount)
                         if payment.foreign_igtf_amount < 0
                         else 0,
@@ -112,6 +114,7 @@ class PosPayment(models.Model):
                         ).property_account_receivable_id.id,  # The field being company dependant, we need to make sure the right value is received.
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
+                        "not_foreign_recalculate": True,
                         "foreign_debit": abs(payment.foreign_amount)
                         if payment.foreign_amount < 0
                         else 0,
@@ -127,6 +130,7 @@ class PosPayment(models.Model):
                 {
                     "account_id": pos_session.company_id.account_default_pos_receivable_account_id.id,
                     "move_id": payment_move.id,
+                    "not_foreign_recalculate": True,
                     "foreign_debit": abs(payment.foreign_amount)
                     if payment.foreign_amount > 0
                     else 0,
