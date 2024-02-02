@@ -21,5 +21,5 @@ class StockWarehouse(models.Model):
     )
 
     company_subsidiary = fields.Boolean(
-        related='company_id.subsidiary', store=True,
+        related='company_id.subsidiary', store=True, string="Company Subsidiary",
     )
