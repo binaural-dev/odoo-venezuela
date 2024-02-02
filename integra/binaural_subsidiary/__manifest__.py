@@ -4,7 +4,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.0.5.0.5",
+    "version": "16.0.5.0.7",
     "category": "Accountant",
     "depends": [
         "base",
@@ -19,6 +19,7 @@
     "data": [
         "data/account_analytic_account.xml",
         "security/ir_rule.xml",
+        "data/ir_actions_server.xml",
         "report/sale_report.xml",
         "report/purchase_report.xml",
         "report/account_invoice_report.xml",

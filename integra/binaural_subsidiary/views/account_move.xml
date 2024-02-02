@@ -10,7 +10,7 @@
                     <field name="company_subsidiary" invisible='1'/>   
                     <field name="account_analytic_id"
                         attrs="{
-                            'readonly': [('invoice_origin','!=', False)],
+                            'readonly': ['|',('invoice_origin','!=', False),('state', '!=', 'draft')],
                             'invisible': [('company_subsidiary', '=', False)],
                             'required': [('company_subsidiary', '=', True)]}"/>
                 </xpath>
