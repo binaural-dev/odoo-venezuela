@@ -50,6 +50,8 @@ class PosPayment(models.Model):
                     {
                         "journal_id": journal.id,
                         "date": fields.Date.context_today(payment),
+                        "foreign_rate": payment.foreign_rate,
+                        "foreign_inverse_rate": payment.foreign_rate,
                         "ref": _("Invoice payment for %s (%s) using %s")
                         % (order.name, order.account_move.name, payment_method.name),
                         "pos_payment_ids": payment.ids,
