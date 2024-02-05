@@ -25,6 +25,11 @@ Los modulos que dependen de este modulo tecnico son:
 * Binaural Anticipos
 * Binaural Anticipos IGTF
 
+Grupos agregados al instalar el modulo:
+"""""""""""""""""""""""""""""""""""""""
+
+* Ocultar campos fiscal de Diarios Fiscales
+
 
 **Tabla de Contenidos**
 
