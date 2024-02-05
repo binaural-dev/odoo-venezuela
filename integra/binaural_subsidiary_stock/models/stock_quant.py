@@ -43,8 +43,8 @@ class StockQuant(models.Model):
             if not record.location_id.warehouse_id.subsidiary_id:
                 continue
 
-            if (
-                record.location_id.warehouse_id.subsidiary_id
-                not in self.env.user.subsidiary_ids.ids
-            ):
-                raise UserError(_("Subsidiary Stock Quant Rule"))
+            # if (
+            #     record.location_id.warehouse_id.subsidiary_id
+            #     not in self.env.user.subsidiary_ids.ids
+            # ):
+            #     raise UserError(_("Subsidiary Stock Quant Rule"))
