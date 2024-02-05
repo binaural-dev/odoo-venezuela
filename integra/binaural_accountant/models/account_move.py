@@ -299,7 +299,7 @@ class AccountMove(models.Model):
 
     @api.constrains("currency_id")
     def _check_currency_id(self):
-        for move in self:
+        for move in self.filtered(lambda m: m.is_invoice(include_receipts=True)):
             if move.currency_id.id != self.env.company.currency_id.id:
                 raise ValidationError(
                     _("You cannot place a currency other than the base of the system.")

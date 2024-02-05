@@ -9,8 +9,8 @@
 
             <xpath expr="//page[@name='internal_notes']" position="before">
                 <page name="sellers_assigned" string="Sellers">
-                    <field name="seller_ids" required="1">
-                        <tree name="sellers_tree" create="0" delete="1" multi_edit="0">
+                    <field name="seller_ids" nolabel="1">
+                        <tree create="False" delete="False" multi_edit="False" edit="False" editable="top" no_open="1">
                             <field name="name"/>
                         </tree>
                     </field>
