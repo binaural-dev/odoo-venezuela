@@ -48,6 +48,8 @@ class HrPayslipRun(models.Model):
             if run.foreign_inverse_rate:
                 continue
 
+            _logger.warning("Run foreign currency: %s", run.foreign_currency_id)
             rate_values = Rate.compute_rate(run.foreign_currency_id.id, fields.Date.today())
+            _logger.warning("RATe VaLUES: %s", rate_values)
             run.foreign_rate = rate_values["foreign_rate"]
             run.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
