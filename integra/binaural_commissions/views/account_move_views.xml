@@ -23,6 +23,9 @@
         <xpath expr="//field[@name='invoice_reception_date']" position="attributes">
             <attribute name="attrs">{'required': [('commission_invoice_date_field','=','invoice_reception_date'),('move_type','=','out_invoice')]}</attribute>
         </xpath>
+        <xpath expr="//field[@name='correlative']" position="before">
+            <field name="is_commission_invoice" invisible="1"/>
+        </xpath>
         <xpath expr="//field[@name='correlative']" position="attributes">
             <attribute name="attrs">{
                         'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],
