@@ -8,7 +8,7 @@
     "website": "https://binauraldev.com/",
     "version": "16.0.0.0.4",
     # any module necessary for this one to work correctly
-    "depends": ["base", "point_of_sale", "pos_sale", "pos_sale_product_configurator"],
+    "depends": ["base", "point_of_sale", "pos_sale","binaural_pos", "pos_sale_product_configurator"],
     # always loaded
     "data": ["views/res_config_settings_views.xml"],
     "images": ["static/description/icon.png"],
