@@ -65,8 +65,4 @@ class ProductTemplate(models.Model):
                     or quant.warehouse_id.lot_stock_id == quant.location_id.location_id
                 ):
                     quantity_available += quant.quantity
-                else:
-                    quantity_available -= (
-                        quant.quantity if quant.quantity > 0 else quant.quantity * -1
-                    )
             product.update({"quantity": quantity_available if quantity_available >= 0 else 0})
