@@ -16,11 +16,6 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_product_catalog_brand
-#: model_terms:ir.ui.view,arch_db:binaural_product_catalog_brand.style_6
-msgid "Brand:"
-msgstr "Marca:"
-
-#. module: binaural_product_catalog_brand
 #: model:ir.model,name:binaural_product_catalog_brand.model_product_catalog_wizard
 msgid "Product Catalog Wizard"
 msgstr "Catálogo de Productos Asistente"
