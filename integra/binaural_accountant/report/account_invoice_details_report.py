@@ -43,6 +43,7 @@ class AccountInvoiceDetailsReport(models.AbstractModel):
             ("company_id", "=", wizard.company_id.id),
             ("date", ">=", wizard.date_from),
             ("date", "<=", wizard.date_to),
+            ("partner_type", "=", "customer"),
             # ("reconciled_invoice_ids", "!=", False),
         ]
 

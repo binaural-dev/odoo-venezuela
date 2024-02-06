@@ -48,11 +48,6 @@ msgid "Another entry with the same name already exists."
 msgstr "Ya existe un asiento con el mismo nombre."
 
 #. module: binaural_accountant
-#: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__asset_receivable_amount
-msgid "Asset Receivable Amount"
-msgstr "Monto de Cuenta por cobrar"
-
-#. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.financial_all_payments
 msgid "Autorizado por:<br/><br/>"
 msgstr ""
