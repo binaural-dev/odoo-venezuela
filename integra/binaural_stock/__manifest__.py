@@ -9,7 +9,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.0.0.3",
+    "version": "16.0.0.0.4",
     "depends": ["stock","binaural_tax", "binaural_rate", "delivery", "binaural_brand"],
     "data": [
         # 'security/ir.model.access.csv',
