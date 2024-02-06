@@ -1,10 +1,6 @@
 from odoo import api, fields, models, _
 from odoo.tools.safe_eval import safe_eval
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class HrSalaryRule(models.Model):
     _inherit = "hr.salary.rule"
@@ -31,6 +27,9 @@ class HrSalaryRule(models.Model):
             # dias_vacaciones_config: int con días de vacaciones del primer año
             # dias_prestaciones_mes_config: int con días de prestaciones por mes
             # tipo_calculo_intereses_prestaciones_config: str con el tipo de cálculo de intereses de prestaciones
+            # compute_payroll_using: str conteniendo la información de como se va a calcular el
+                                     salario. Los valores posibles son ("base_wage", "foreign_wage")
+
 
             # Note: returned value have to be set in the variable 'result'
             # El valor alterno a devolver tiene que ser colocado en la variable "foreign_result"
@@ -62,7 +61,6 @@ class HrSalaryRule(models.Model):
         else:  # python code
             try:
                 safe_eval(self.amount_python_compute or 0.0, localdict, mode="exec", nocopy=True)
-                _logger.warning("RESULT: %s", localdict)
                 if not "foreign_result" in localdict.keys():
                     localdict["foreign_result"] = (
                         localdict["result"] * localdict["foreign_inverse_rate"]
@@ -101,8 +99,6 @@ class HrSalaryRule(models.Model):
         else:  # python code
             try:
                 safe_eval(self.amount_python_compute or 0.0, localdict, mode="exec", nocopy=True)
-                _logger.warning("LOCALDICT INSIDE COMPUTE RULE: %s", localdict)
-                _logger.warning("LOCALDICT KEYS: %s", localdict.keys())
                 if localdict.get("foreign_result", None) is None:
                     foreign_result = float(localdict["result"]) * localdict["foreign_inverse_rate"]
                 else:

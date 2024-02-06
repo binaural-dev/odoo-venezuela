@@ -1,7 +1,4 @@
 from odoo import api, fields, models, _
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class HrPayslipRun(models.Model):
@@ -42,14 +39,11 @@ class HrPayslipRun(models.Model):
         Compute the rate of the payslip using the compute_rate method of the res.currency.rate
         model.
         """
-        _logger.warning("RATE ON RUN COMPUTE")
         Rate = self.env["res.currency.rate"]
         for run in self:
             if run.foreign_inverse_rate:
                 continue
 
-            _logger.warning("Run foreign currency: %s", run.foreign_currency_id)
             rate_values = Rate.compute_rate(run.foreign_currency_id.id, fields.Date.today())
-            _logger.warning("RATe VaLUES: %s", rate_values)
             run.foreign_rate = rate_values["foreign_rate"]
             run.foreign_inverse_rate = rate_values["foreign_inverse_rate"]

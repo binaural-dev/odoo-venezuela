@@ -47,3 +47,16 @@ class HrContract(models.Model):
             return 0
         self.ensure_one()
         return self["foreign_" + self._get_contract_wage_field()]
+
+    def get_integral_daily_wage(self):
+        self.ensure_one()
+        employee_id = self.employee_id
+        employee_salary_payments = employee_id.get_all_payroll_moves()
+
+        if not employee_salary_payments:
+            return 0
+
+        last_accrued = employee_salary_payments[-1]["total_accrued"]
+        bonus_days_alicuot = employee_id.get_vacation_bonus_days_alicuot()
+        profit_sharing_days_alicuot = employee_id.get_profit_sharing_days_alicuot()
+        return (last_accrued / 30) + bonus_days_alicuot + profit_sharing_days_alicuot

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_employee_form" model="ir.ui.view">
+        <field name="name">binaural.hr.payroll.view.employee.form</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+	    <field name="job_title" position="before">
+                <div id="vat"   >
+                    <field name="prefix_vat"/>
+                    <field name="vat" placeholder="RIF"/>
+                </div>
+            </field>
+
+	    <field name="work_email" position="after">
+		<field name="entry_date"/>
+	    </field>
+    	</field>
+    </record>
+
+    <record id="view_employee_filter" model="ir.ui.view">
+        <field name="name">binaural.hr.payroll.view.employee.filter</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_filter"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="vat" string="Document"/>
+                <field name="vat_rif"/>
+                <field name="department_id"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="hr_kanban_view_employees" model="ir.ui.view">
+        <field name="name">binaural.hr.payroll.employee.kanban</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.hr_kanban_view_employees"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="vat"/>
+            </field>
+            <field name="job_title" position="after">
+                / <field name="department_id"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_employee_tree" model="ir.ui.view">
+        <field name="name">binaural.hr.payroll.employee.tree</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="vat" string="Document"/>
+                <field name="vat_rif"/>
+            </field>
+        </field>
+    </record>
+</odoo>
+

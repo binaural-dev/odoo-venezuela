@@ -1,6 +1,4 @@
 from odoo import api, fields, models
-import logging
-_logger = logging.getLogger(__name__)
 
 
 class HrPayslipWorkedDays(models.Model):
@@ -23,7 +21,6 @@ class HrPayslipWorkedDays(models.Model):
         "payslip_id.sum_worked_hours",
     )
     def _compute_foreign_amount(self):
-        _logger.warning("compute foreign amount aaaaaaaaaaaaaaaa")
         for worked_days in self:
             if worked_days.payslip_id.edited or worked_days.payslip_id.state not in [
                 "draft",
@@ -34,21 +31,16 @@ class HrPayslipWorkedDays(models.Model):
                 worked_days.amount = 0
                 continue
             contract = worked_days.payslip_id.contract_id
-            _logger.warning("Compute payroll using: %s", contract.compute_payroll_using)
-            _logger.warning("Foreign inverse rate: %s", worked_days.payslip_id.foreign_inverse_rate)
             if worked_days.payslip_id.wage_type == "hourly":
-                _logger.warning("Hourly wage: %s", contract.hourly_wage)
                 wage = (
                     contract.foreign_hourly_wage
                     if contract.compute_payroll_using == "foreign_wage"
                     else contract.hourly_wage * worked_days.payslip_id.foreign_inverse_rate
                 )
-                _logger.warning("compute foreign amount wage: %s", wage)
                 worked_days.foreign_amount = (
                     wage * worked_days.number_of_hours if worked_days.is_paid else 0
                 )
             else:
-                _logger.warning("Contract Wage: %s", contract.contract_wage)
                 wage = (
                     contract.contract_foreign_wage
                     if contract.compute_payroll_using == "foreign_wage"
@@ -56,7 +48,6 @@ class HrPayslipWorkedDays(models.Model):
                         contract.contract_wage * worked_days.payslip_id.foreign_inverse_rate
                     )
                 )
-                _logger.warning("compute foreign amount wage: %s", wage)
                 worked_days.foreign_amount = (
                     wage
                     * worked_days.number_of_hours
@@ -73,7 +64,6 @@ class HrPayslipWorkedDays(models.Model):
         "payslip_id.sum_worked_hours",
     )
     def _compute_amount(self):
-        _logger.warning("compute amount aaaaaaaaaaaaaaaa")
         for worked_days in self:
             if worked_days.payslip_id.edited or worked_days.payslip_id.state not in [
                 "draft",
@@ -90,7 +80,6 @@ class HrPayslipWorkedDays(models.Model):
                     if contract.compute_payroll_using == "base_wage"
                     else contract.foreign_hourly_wage / worked_days.payslip_id.foreign_inverse_rate
                 )
-                _logger.warning("compute amount wage: %s", wage)
                 worked_days.amount = (
                     wage * worked_days.number_of_hours if worked_days.is_paid else 0
                 )
@@ -102,7 +91,6 @@ class HrPayslipWorkedDays(models.Model):
                         contract.contract_foreign_wage / worked_days.payslip_id.foreign_inverse_rate
                     )
                 )
-                _logger.warning("compute amount wage: %s", wage)
                 worked_days.amount = (
                     wage
                     * worked_days.number_of_hours

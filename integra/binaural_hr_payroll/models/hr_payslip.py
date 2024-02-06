@@ -1,11 +1,9 @@
 from calendar import isleap
+from datetime import date
 
 from odoo import api, fields, models, _
 from odoo.tools import html2plaintext, is_html_empty
 from odoo.exceptions import UserError
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class HrPayslip(models.Model):
@@ -75,7 +73,6 @@ class HrPayslip(models.Model):
         worked_day_lines = super()._get_worked_day_lines(domain=domain, check_out_of_contract=True)
         work_entry_basic = self.env.ref("binaural_hr_payroll.hr_work_entry_binaural_basic").id
         worked_days_sum = sum(line["number_of_days"] for line in worked_day_lines)
-        _logger.warning("Worked days sum: %s", worked_days_sum)
 
         for r in worked_day_lines:
             if r["work_entry_type_id"] == work_entry_basic:
@@ -138,7 +135,6 @@ class HrPayslip(models.Model):
                             localdict.update({"foreign_result": None})
                             localdict["inputs"].dict[rule.code] = multi_line_rule
                             amount, foreign_amount, qty, rate = rule._compute_rule(localdict)
-                            _logger.warning("Foreign amount: %s", foreign_amount)
                             tot_rule = amount * qty * rate / 100.0
                             localdict = rule.category_id._sum_salary_rule_category(
                                 localdict, tot_rule
@@ -165,7 +161,6 @@ class HrPayslip(models.Model):
                     else:
                         localdict.update({"foreign_result": None})
                         amount, foreign_amount, qty, rate = rule._compute_rule(localdict)
-                        _logger.warning("Foreign amount: %s", foreign_amount)
                         # check if there is already a rule computed with that code
                         previous_amount = rule.code in localdict and localdict[rule.code] or 0.0
                         # set/overwrite the amount computed for this rule in the localdict
@@ -201,7 +196,6 @@ class HrPayslip(models.Model):
                             "slip_id": payslip.id,
                         }
             line_vals += list(result.values())
-        _logger.warning("LINE VALS: %s", line_vals)
         return line_vals
 
     def _get_base_local_dict(self):
@@ -215,6 +209,7 @@ class HrPayslip(models.Model):
                 "dias_vacaciones_config": self.company_id.first_year_vacation_days,
                 "dias_prestaciones_mes_config": self.company_id.benefits_days_per_month,
                 "tipo_calculo_intereses_prestaciones_config": self.company_id.benefits_interest_computation_type,
+                "compute_payroll_using": self.company_id.compute_payroll_using,
                 # TODO Complemtentos Salariales
                 # "allowances": BrowsableObject(self.employee_id.id, allowances_dict, self.env),
             }
@@ -320,3 +315,23 @@ class HrPayslip(models.Model):
         move_params["total_vacation"] = total_vacation
 
         return self.env["hr.payroll.move"].create(move_params)
+
+    @api.model
+    def _compute_monday_in_range(self, slip_id):
+        count = 0
+
+        if slip_id:
+            payslip = self.env["hr.payslip"].browse(slip_id)
+
+            date_from = date(payslip.date_from.year, payslip.date_from.month, payslip.date_from.day)
+            date_to = date(payslip.date_to.year, payslip.date_to.month, payslip.date_to.day)
+
+            for d_ord in range(date_from.toordinal(), date_to.toordinal() + 1):
+                d = date.fromordinal(d_ord)
+                if d.weekday() == 0:
+                    count += 1
+        else:
+            raise UserWarning("You must add an hr.payslip id for the monday computation")
+            # raise UserWarning("Debe agregar un id de hr.payslip para el calculo de lunes")
+
+        return count
