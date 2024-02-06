@@ -2,7 +2,7 @@
 <odoo>
   <template id="style_6" inherit_id="binaural_product_catalog.style_6">
       <xpath expr="//div[@class='card-catalog__specifications']" position="inside">
-          <p class="helvetica-bold" t-if="show_brand">Brand: <span t-esc="o.get('brand', '')"/>
+          <p class="helvetica-bold" t-if="show_brand">Marca: <span t-esc="o.get('brand', '')"/>
           </p>
     </xpath>
   </template>
