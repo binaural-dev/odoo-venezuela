@@ -9,7 +9,8 @@
                 <field name="company_subsidiary" invisible='1'/>   
                 <field name="account_analytic_id" 
                 attrs="{'invisible': [('company_subsidiary', '=', False)],
-                        'required': [('company_subsidiary', '=', True)]}"/>
+                        'required': [('company_subsidiary', '=', True)],
+                        'readonly': [('state', '!=', 'draft')]}"/>
             </xpath>
         </field>
     </record>

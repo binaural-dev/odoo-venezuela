@@ -3,10 +3,12 @@ odoo.define('binaural_pos_discount.DiscountButton', function(require) {
 
   const DiscountButton = require('pos_discount.DiscountButton');
   const Registries = require('point_of_sale.Registries');
-
+  const { Gui } = require("point_of_sale.Gui");
+  const { _t } = require("web.core");
 
   const BinauralDiscountButton = (DiscountButton) =>
     class extends DiscountButton {
+
       async apply_discount(pc) {
         var order = this.env.pos.get_order();
         var lines = order.get_orderlines();
