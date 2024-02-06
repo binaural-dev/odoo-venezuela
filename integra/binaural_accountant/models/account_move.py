@@ -4,6 +4,7 @@ from odoo.tools import index_exists, drop_index
 from lxml import etree
 from collections import defaultdict
 from odoo.tools.misc import formatLang
+from odoo.tools import float_compare
 
 import logging
 
@@ -296,6 +297,14 @@ class AccountMove(models.Model):
                 ):
                     raise ValidationError(_("This product must have only one tax."))
 
+    @api.constrains("currency_id")
+    def _check_currency_id(self):
+        for move in self.filtered(lambda m: m.is_invoice(include_receipts=True)):
+            if move.currency_id.id != self.env.company.currency_id.id:
+                raise ValidationError(
+                    _("You cannot place a currency other than the base of the system.")
+                    )
+
     def compute_line_ids_foreign_debit_and_credit(self):
         """
         This method is used to compute the foreign debit and foreign credit of the line_ids field
@@ -363,8 +372,8 @@ class AccountMove(models.Model):
                 # If the line is an adjustment line, the foreign debit and foreign credit will be
                 # the foreign debit and foreign credit adjustment fields.
                 if (line.foreign_debit_adjustment + line.foreign_credit_adjustment) != 0:
-                    line.foreign_debit = line.foreign_debit_adjustment
-                    line.foreign_credit = line.foreign_credit_adjustment
+                    line.foreign_debit = abs(line.foreign_debit_adjustment)
+                    line.foreign_credit = abs(line.foreign_credit_adjustment)
                     continue
 
                 if (
@@ -377,8 +386,8 @@ class AccountMove(models.Model):
                         line_foreign_id.foreign_debit_adjustment
                         + line_foreign_id.foreign_credit_adjustment
                     ) != 0:
-                        line.foreign_debit = line_foreign_id.foreign_credit_adjustment
-                        line.foreign_credit = line_foreign_id.foreign_debit_adjustment
+                        line.foreign_debit = abs(line.foreign_debit_adjustment)
+                        line.foreign_credit = abs(line.foreign_credit_adjustment)
                     else:
                         line.foreign_debit = (
                             abs(line_foreign_id.amount_currency)
@@ -405,14 +414,29 @@ class AccountMove(models.Model):
                     continue
 
                 line_name = line.name or False
+                currency_id = self.env.company.currency_id
+                subtotal_found = False
+                if is_invoice and line_name in subtotals_by_name:
+                    for subtotals in subtotals_by_name[line_name]:
+                        if float_compare(line.debit,subtotals["price_subtotal"],precision_digits=currency_id.decimal_places) == 0:
+                            line.foreign_debit = subtotals["foreign_subtotal"]
+                            subtotal_found = True
+                        if float_compare(line.credit,subtotals["price_subtotal"], precision_digits=currency_id.decimal_places) == 0:
+                            line.foreign_credit = subtotals["foreign_subtotal"]
+                            subtotal_found = True
+                        if subtotal_found:
+                            subtotals_by_name[line_name].remove(subtotals)
+                            break
+                    continue
 
                 lines_with_same_tax = self.line_ids.filtered(
-                    lambda l: l.tax_ids and l.tax_ids.description == line_name
+                    lambda l: l.tax_ids and l.tax_ids.name == line_name
                 )
                 if not (lines_with_same_tax and line_name):
                     line.foreign_debit = line.debit * self.foreign_inverse_rate
                     line.foreign_credit = line.credit * self.foreign_inverse_rate
                     continue
+
                 line.foreign_debit = (
                     sum(lines_with_same_tax.mapped("foreign_debit"))
                     * lines_with_same_tax[0].tax_ids[0].amount
@@ -423,20 +447,6 @@ class AccountMove(models.Model):
                     * lines_with_same_tax[0].tax_ids[0].amount
                     / 100
                 )
-
-                subtotal_found = False
-                if is_invoice and line_name in subtotals_by_name:
-                    for subtotals in subtotals_by_name[line_name]:
-                        if line.debit == subtotals["price_subtotal"]:
-                            line.foreign_debit = subtotals["foreign_subtotal"]
-                            subtotal_found = True
-                        if line.credit == subtotals["price_subtotal"]:
-                            line.foreign_credit = subtotals["foreign_subtotal"]
-                            subtotal_found = True
-                        if subtotal_found:
-                            subtotals_by_name[line_name].remove(subtotals)
-                            break
-                    continue
 
         account_payable_or_receivable_line = self.line_ids.filtered(
             lambda l: l.account_id.account_type in receivable_and_payable_account_types

@@ -69,7 +69,7 @@ class AccountMoveRetention(models.Model):
             if move.move_type not in ("in_invoice", "in_refund"):
                 continue
 
-            if move.retention_islr_line_ids and move.fiscal:
+            if move.retention_islr_line_ids and move.fiscal and not move.islr_voucher_number:
                 move._validate_islr_retention()
                 retention = move._create_supplier_retention("islr")
                 retention.action_post()

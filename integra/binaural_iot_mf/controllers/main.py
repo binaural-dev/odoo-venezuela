@@ -17,3 +17,14 @@ class ApiIoT(http.Controller):
         for iot in iot_ids:
             response[iot.identifier] = iot.fiscal_port_ids.mapped(lambda x: x.name)
         return json.dumps(response)
+
+
+    @http.route(
+        "/iot_blacklist/ports", type="http", auth="public", methods=["GET"], csrf=False, website=True
+    )
+    def getFiscalPortsToBlock(self, **kw):
+        iot_ids = request.env["iot.box"].sudo().search([("blacklist", "=", True)])
+        response = {}
+        for iot in iot_ids:
+            response[iot.identifier] = iot.blacklist_port_ids.mapped(lambda x: x.name)
+        return json.dumps(response)

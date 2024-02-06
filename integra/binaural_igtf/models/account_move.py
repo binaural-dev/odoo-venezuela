@@ -21,6 +21,27 @@ class AccountMoveIgtf(models.Model):
         copy=False,
     )
 
+    def recalculate_bi_igtf(self):
+        """This method can be used by ir.actions.server to update bi_igtf"""
+        for record in self:
+
+            if not record.invoice_payments_widget:
+                record.bi_igtf = 0
+                continue
+
+            payments = record.invoice_payments_widget.get("content", False)
+            amount = 0
+            for payment in payments:
+                payment_id = payment.get("account_payment_id", False)
+                if not payment_id:
+                    continue
+
+                payment_id = record.env["account.payment"].browse([payment_id])
+                if payment_id.is_igtf_on_foreign_exchange:
+                    amount += abs(payment['amount'])
+            record.bi_igtf = amount
+
+
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
 

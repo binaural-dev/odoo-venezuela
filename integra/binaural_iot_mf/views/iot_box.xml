@@ -5,7 +5,10 @@
         <field name="model">iot.box</field>
         <field name="inherit_id" ref="iot.iot_box_view_form"/>
         <field name="arch" type="xml">
+
             <xpath expr="//field[@name='ip']" position="after">
+                <field name="blacklist"/>
+                <field name="blacklist_port_ids" attrs="{'invisible': [('blacklist','=', False)]}"/>
                 <!-- <field name="ip_public"/> -->
                 <field name="has_fiscal_machine"/>
                 <field name="fiscal_port_ids" attrs="{'invisible': [('has_fiscal_machine','=', False)]}"/>

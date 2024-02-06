@@ -1,6 +1,6 @@
 {
     "name": "Binaural POS Descuentos",
-    "version": "16.2",
+    "version": "16.2.0.0.1",
     "category": "Accounting",
     "summary": "Binaural POS Descuentos",
     "sequence": "1",
@@ -19,5 +19,5 @@
     "images": ["static/description/icon.png"],
     "installable": True,
     "application": False,
-    "auto_install": False,
+    "auto_install": True,
 }

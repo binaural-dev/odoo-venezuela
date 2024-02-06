@@ -124,7 +124,7 @@ class ProductTemplate(models.TransientModel):
             worksheet.write(p_index_column, 13, "0")  # fixed weight
             worksheet.write(p_index_column, 14, "")  # image
             worksheet.write(
-                p_index_column, 15, txt.format(price=product.price_with_tax).replace(".", ",")
+                p_index_column, 15, txt.format(price=product.price_with_tax).replace(".", "")
             )  # price
             worksheet.write(p_index_column, 16, "0")  # piece
             worksheet.write(p_index_column, 17, "0")  # taxes

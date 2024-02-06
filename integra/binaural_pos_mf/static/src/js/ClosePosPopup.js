@@ -7,15 +7,9 @@ odoo.define("binaural_pos_mf.ClosePosPopup", function(require) {
   const BinauralClosePosPopup = (ClosePosPopup) =>
     class extends ClosePosPopup {
       generate_report_x() {
-        const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
+        const fdm = this.env.pos.useFiscalMachine();
         if (!fdm) return
-        this.env.services.ui.block()
         new Promise(async (resolve, reject) => {
-          fdm.add_listener(data => {
-            fdm.remove_listener();
-            this.env.services.ui.unblock()
-            data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
-          })
           await fdm.action({
             action: 'report_x',
             data: {},
@@ -23,22 +17,25 @@ odoo.define("binaural_pos_mf.ClosePosPopup", function(require) {
         });
       }
       generate_report_z() {
-        const fdm = this.env.proxy.iot_device_proxies.fiscal_data_module;
+        const fdm = this.env.pos.useFiscalMachine();
         if (!fdm) return
         this.env.services.ui.block()
         const promise = new Promise(async (resolve, reject) => {
-          fdm.add_listener(data => {
-            fdm.remove_listener();
-            this.env.services.ui.unblock()
-            data.status.status === "connected" ? resolve(data["value"]) : reject(data["value"])
-          })
-          await fdm.action({
+          let response = await fdm.action({
             action: 'report_z',
             data: {},
           })
+          if (!response["result"]){
+            self.env.services.ui.unblock()
+            return reject({"message":"No se ha podido establecer conexion con la Maquina Fiscal",})
+          }
+          fdm.add_listener(data => {
+            fdm.remove_listener();
+            console.log(data.value)
+            !!data.value.valid ? resolve(data["value"]) : reject(data["value"])
+          })
         });
         promise.then(async (data) => {
-          console.log(data)
           await this.rpc({
             model: 'account.move',
             method: 'report_z',
@@ -49,6 +46,8 @@ odoo.define("binaural_pos_mf.ClosePosPopup", function(require) {
             method: 'set_report_z',
             args: [this.env.pos.pos_session.id, data],
           })
+        }).finally(() => {
+          this.env.services.ui.unblock()
         })
       }
     }
