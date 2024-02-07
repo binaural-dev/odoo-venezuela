@@ -1,0 +1,64 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* sh_pos_analytic_tags
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 15.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-06-02 12:29+0000\n"
+"PO-Revision-Date: 2022-06-02 12:29+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: sh_pos_analytic_tags
+#: model:ir.model.fields,field_description:sh_pos_analytic_tags.field_pos_config__sh_analytic_account
+#: model:ir.model.fields,field_description:sh_pos_analytic_tags.field_pos_order__sh_pos_order_analytic_account
+#: model:ir.model.fields,field_description:sh_pos_analytic_tags.field_pos_order_line__sh_pos_order_analytic_account
+#: model:ir.model.fields,field_description:sh_pos_analytic_tags.field_pos_payment__sh_analytic_account
+#: model:ir.model.fields,field_description:sh_pos_analytic_tags.field_pos_session__sh_analytic_account
+#: model_terms:ir.ui.view,arch_db:sh_pos_analytic_tags.sh_analytic_account_pos_order_search_view_inherit
+msgid "Analytic Account"
+msgstr "Analysekonto"
+
+#. module: sh_pos_analytic_tags
+#: model:ir.model.fields,field_description:sh_pos_analytic_tags.field_pos_payment__sh_analytic_tags
+#: model:ir.model.fields,field_description:sh_pos_analytic_tags.field_pos_session__sh_analytic_tags
+msgid "Analytic Tag"
+msgstr "Analytik -Tag"
+
+#. module: sh_pos_analytic_tags
+#: model:ir.model.fields,field_description:sh_pos_analytic_tags.field_pos_config__sh_analytic_account_tags
+#: model:ir.model.fields,field_description:sh_pos_analytic_tags.field_pos_order__sh_pos_order_analytic_account_tags
+#: model:ir.model.fields,field_description:sh_pos_analytic_tags.field_pos_order_line__sh_pos_order_analytic_account_tags
+msgid "Analytic Tags"
+msgstr "Analytik -Tags"
+
+#. module: sh_pos_analytic_tags
+#: model:ir.model,name:sh_pos_analytic_tags.model_pos_config
+msgid "Point of Sale Configuration"
+msgstr "Verkaufspunktkonfiguration"
+
+#. module: sh_pos_analytic_tags
+#: model:ir.model,name:sh_pos_analytic_tags.model_pos_order_line
+msgid "Point of Sale Order Lines"
+msgstr "Verkaufspunkt -Verkaufslinien"
+
+#. module: sh_pos_analytic_tags
+#: model:ir.model,name:sh_pos_analytic_tags.model_pos_order
+msgid "Point of Sale Orders"
+msgstr "Verkaufspunktbestellungen"
+
+#. module: sh_pos_analytic_tags
+#: model:ir.model,name:sh_pos_analytic_tags.model_pos_payment
+msgid "Point of Sale Payments"
+msgstr "Verkaufszahlungen"
+
+#. module: sh_pos_analytic_tags
+#: model:ir.model,name:sh_pos_analytic_tags.model_pos_session
+msgid "Point of Sale Session"
+msgstr "Sitzungspunkt"

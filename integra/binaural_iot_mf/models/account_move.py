@@ -51,9 +51,6 @@ class AccountMoveInh(models.Model):
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
 
-        if len(account_moves) == 0:
-            raise ValidationError(_("No hay facturas disponibles para el reporte Z"))
-
         return True
 
     def report_z(self, serial, response):

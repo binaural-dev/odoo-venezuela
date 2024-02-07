@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<odoo>
+    <record id="view_ir_action_report_hide" model="ir.ui.view">
+        <field name="name">ir.actions.report.form</field>
+        <field name="model">ir.actions.report</field>
+        <field name="inherit_id" ref="base.act_report_xml_view"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[2]" position="after">
+                <page string="Hide From User">
+                    <field name="users_ids" options="{'no_create': True, 'no_edit': True}"/>
+                </page>
+            </xpath>
+            <xpath expr="//page[3]" position="after">
+                <page string="Hide From Group">
+                    <field name="group_ids" options="{'no_create': True, 'no_edit': True}"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

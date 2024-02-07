@@ -14,8 +14,17 @@ odoo.define("binaural_pos.OrderState", function(require) {
         this.to_invoice = true;
         let always_invoice = !this.pos.config.always_invoice;
         this.to_receipt = always_invoice;
-        this.toggle_receipt_invoice(always_invoice)
+        if (this.to_receipt == true) {
+          this.toggle_receipt_invoice(always_invoice);
+        }
         this.lock_toggle_receipt_invoice = false
+      }
+      get_qty_products(){
+        let qty = 0
+        this.get_orderlines().forEach((line) => {
+          qty += line.quantity
+        })
+        return qty
       }
       get_orderlines() {
         if(!this.cid || !this.pos.get_order()){
@@ -55,7 +64,7 @@ odoo.define("binaural_pos.OrderState", function(require) {
       get is_refund(){
         return this.getHasRefundLines()
       }
-      get current_rate() {
+      get rate_from_lines(){
         let rate = this.pos.config.foreign_rate
         if (!this.is_refund){
           return rate
@@ -66,6 +75,14 @@ odoo.define("binaural_pos.OrderState", function(require) {
           }
         })
         return rate
+      }
+      get current_rate() {
+        let rate = this.rate_from_lines
+        this.set_foreign_currency_rate(rate)
+        return rate
+      }
+      set_foreign_currency_rate(rate) {
+        this.foreign_currency_rate = rate;
       }
       init_from_JSON(json) {
         super.init_from_JSON(...arguments)

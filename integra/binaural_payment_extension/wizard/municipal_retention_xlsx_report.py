@@ -1,4 +1,4 @@
-from odoo import models, fields, _
+from odoo import api, models, fields, _
 from datetime import date
 from dateutil.relativedelta import relativedelta
 import xlsxwriter
@@ -26,8 +26,14 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
     def print_xlsx(self):
         domain = self._get_municipal_retention_domain()
         retentions_count = self.env["account.retention"].search_count(domain)
+        do_not_validate_missing_tax_authorities_name_per_company = self.env.context.get(
+            "do_not_validate_missing_tax_authorities_name_per_company", False
+        )
 
-        if not self.env.company.tax_authorities_name:
+        if (
+            not do_not_validate_missing_tax_authorities_name_per_company
+            and not self.env.company.tax_authorities_name
+        ):
             raise ValidationError(_("The company has no tax authorities name"))
 
         if not retentions_count:
@@ -57,11 +63,13 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         worksheet2 = workbook.add_worksheet(nombre)
         worksheet2.set_column("A:Z", 20)
         company = self.env.company
-        if company.tax_authorities_logo:
-            tax_authorities_logo = BytesIO(base64.b64decode(company.tax_authorities_logo))
+        tax_authorities_record = self._get_tax_authorities_record(company)
+        if tax_authorities_record.tax_authorities_logo:
+            tax_authorities_logo = BytesIO(base64.b64decode(tax_authorities_record.tax_authorities_logo))
             worksheet2.insert_image("A1", "image.png", {"image_data": tax_authorities_logo})
         worksheet2.write("C2", "RENDICIÓN INFORMATIVA MENSUAL DEL AGENTE DE RETENCIÓN", bold)
-        worksheet2.write("D4", company.tax_authorities_name.upper(), bold)
+        if tax_authorities_record.tax_authorities_name:
+            worksheet2.write("D4", tax_authorities_record.tax_authorities_name.upper(), bold)
         worksheet2.write("A8", "AGENTE DE RETENCIÓN:", bold)
         worksheet2.write("C8", company.name)
         worksheet2.write("A9", "NUMERO DE REGISTRO UNICO DE INFORMACION FISCAL:", bold)
@@ -130,6 +138,9 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         data2 = data2.getvalue()
         return data2
 
+    def _get_tax_authorities_record(self, company):
+        return company
+
     def _get_xlsx_municipal_retention_report(self):
         domain = self._get_municipal_retention_domain()
         retentions = self.env["account.retention"].search(domain, order="date_accounting asc")
@@ -155,7 +166,8 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         usd = self.env.ref("base.USD")
         numero = 1
         for retention in retentions:
-            for retention_line in retention.retention_line_ids:
+            retention_lines = self._get_filtered_retention_lines(retention.retention_line_ids)
+            for retention_line in retention_lines:
                 invoice_amount = 0
                 retention_amount = 0
 
@@ -195,6 +207,9 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
                 numero += 1
         table = pandas.DataFrame(lista)
         return table.fillna(0)
+
+    def _get_filtered_retention_lines(self, lines):
+        return lines
 
     def _get_municipal_retention_domain(self):
         return [

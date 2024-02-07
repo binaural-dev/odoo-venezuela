@@ -12,6 +12,10 @@ class StockValuationAdjustmentLines(models.Model):
     def default_is_stock_advance(self):
         return self.env.company.check_advance_stock or False
 
+    additional_landed_cost = fields.Monetary("Additional Landed Cost Und")
+
+    former_cost = fields.Monetary("Subtotal")
+
     foreign_currency_id = fields.Many2one(related="cost_id.foreign_currency_id", store=True)
     foreign_rate = fields.Float(related="cost_id.foreign_rate", store=True)
     foreign_inverse_rate = fields.Float(related="cost_id.foreign_inverse_rate", store=True)
@@ -55,14 +59,20 @@ class StockValuationAdjustmentLines(models.Model):
         "Foreign Unit Cost",
         digits="Tasa",
         currency_field="foreign_currency_id",
-        compute="_compute_foreign_unit_cost"
+        compute="_compute_foreign_unit_cost",
     )
+
+    foreign_cost_cif = fields.Float("Foreign Cost Cif", compute="_compute_foreign_cost_cif")
+
+    foreign_tariff_value = fields.Float("Tariff Value", compute="_compute_foreign_tariff_value")
+
+     
 
     unit_cost = fields.Monetary("Unit cost", compute="_compute_unit_cost")
     total_amount_cost = fields.Monetary("Total amount cost")
     last_cost = fields.Monetary("Last cost", compute="_compute_last_cost", store=True)
     is_stock_advance = fields.Boolean(string="Is stock Advance", default=default_is_stock_advance)
-    cost_percentage = fields.Float("Cost percentage", default=0)
+    cost_percentage = fields.Float("Cost percentage %", default=0)
     price_unit = fields.Monetary("Cost Total With Tax", default=0)
     latest_standard_price = fields.Monetary(compute="_compute_latest_standard_price", store=True)
     update_latest_standard_price = fields.Boolean(
@@ -75,15 +85,115 @@ class StockValuationAdjustmentLines(models.Model):
         compute="_compute_update_latest_standard_price", store=True
     )
 
+    cost_cif = fields.Float("Cost CIF", compute="_compute_cost_cif")
 
-    @api.depends("former_cost","quantity")
+    percentage_tariff_code = fields.Float("Percentage Tariff", compute="_compute_percentage_tariff")
+
+    tariff_value = fields.Float("Tariff Value", compute="_compute_tariff_value")
+
+    cost_ddp = fields.Monetary("Cost DDP")
+    
+    total_cost_ddp = fields.Monetary("Total Cost DDP", compute="_compute_total_cost_ddp")
+
+    @api.depends("former_cost", "cost_line_id", "cost_ddp")
+    def _compute_total_cost_ddp(self):
+        for line in self:
+            line.total_cost_ddp = 0
+            last_cost = 0
+            original_value = line.former_cost
+            if line.cost_line_id.product_id:
+                 if self.env.company.check_calculate_based_total_purchase_amount:
+                    additional_values = line.search(
+                        [("product_id", "=", line.product_id.id), ("cost_id", "=", line.cost_id.id)]
+                    )
+                    for cost in additional_values:
+                        original_value = cost.former_cost
+                        last_cost = sum(split.cost_ddp for split in additional_values)
+                    line.total_cost_ddp = original_value + last_cost
+
+
+    @api.depends("unit_cost", "cost_line_id", "additional_landed_cost")
+    def _compute_cost_cif(self):
+        for line in self:
+            line.cost_cif = 0
+            last_cost = 0
+            original_value = line.unit_cost
+            if line.cost_line_id.product_id:
+                apply_cif_cost = self.env.company.service_products_ids
+                for product in apply_cif_cost:
+                    if line.cost_line_id.product_id == product:
+                        additional_values = line.search(
+                            [("product_id", "=", line.product_id.id), ("cost_id", "=", line.cost_id.id)]
+                        )
+                        for cost in additional_values:
+                            original_value = cost.unit_cost
+                        last_cost = sum(split.additional_landed_cost for split in additional_values)
+                line.cost_cif = original_value + last_cost
+
+    @api.depends("former_cost", "additional_landed_cost")
+    def _compute_final_cost(self):
+        for line in self:
+            if not line.cost_line_id.split_method == "by_percentage":
+                line.final_cost = line.former_cost + line.additional_landed_cost
+            line.final_cost = (line.additional_landed_cost * line.quantity) + line.former_cost
+            if line.tariff_value:
+                line.final_cost += (line.tariff_value * line.quantity )
+
+    @api.depends("former_cost", "quantity")
     def _compute_unit_cost(self):
         for line in self:
             line.unit_cost = line.former_cost / line.quantity
 
+
+    @api.depends("product_id")
+    def _compute_percentage_tariff(self):
+        for line in self:
+            line.percentage_tariff_code = 0
+            if self.env.company.service_products_ids:
+                line.percentage_tariff_code = line.product_id.percentage_tariff_code
+
+    @api.depends("unit_cost", "cost_line_id", "additional_landed_cost")
+    def _compute_cost_cif(self):
+        for line in self:
+            line.cost_cif = 0
+            last_cost = 0
+            original_value = line.unit_cost
+            if line.cost_line_id.product_id:
+                apply_cif_cost = self.env.company.service_products_ids
+                for product in apply_cif_cost:
+                    if line.cost_line_id.product_id == product:
+                        additional_values = line.search(
+                            [("product_id", "=", line.product_id.id), ("cost_id", "=", line.cost_id.id)]
+                        )
+                        for cost in additional_values:
+                            original_value = cost.unit_cost
+                        last_cost = sum(split.additional_landed_cost for split in additional_values)
+                line.cost_cif = original_value + last_cost
+                
+
+    @api.depends("cost_cif")
+    def _compute_tariff_value(self):
+        apply_cif_cost = self.env.company.service_products_ids
+        for line in self:
+            line.tariff_value = 0
+            for product in apply_cif_cost:
+                if line.cost_line_id.product_id == product:
+                    line.tariff_value = (line.cost_cif * line.percentage_tariff_code) / 100
+                  
+
     # FOREIGN FIELDS
 
-    @api.depends("unit_cost")
+    @api.depends("cost_cif", "foreign_inverse_rate")
+    def _compute_foreign_cost_cif(self):
+        for line in self:
+            line.foreign_cost_cif = line.cost_cif * line.foreign_inverse_rate
+
+    @api.depends("tariff_value", "foreign_inverse_rate")
+    def _compute_foreign_tariff_value(self):
+        for line in self:
+            line.foreign_tariff_value = line.tariff_value * line.foreign_inverse_rate
+
+    @api.depends("unit_cost", "foreign_inverse_rate")
     def _compute_foreign_unit_cost(self):
         for line in self:
             line.foreign_unit_cost = line.unit_cost * line.foreign_inverse_rate
@@ -130,10 +240,21 @@ class StockValuationAdjustmentLines(models.Model):
                     [("product_id", "=", line.product_id.id), ("cost_id", "=", line.cost_id.id)]
                 )
                 for cost in additional_values:
-
                     original_value = cost.unit_cost
                 last_cost = sum(split.additional_landed_cost for split in additional_values)
-            line.last_cost = last_cost + original_value
+                
+                line.last_cost =  original_value + last_cost
+
+                if self.env.company.use_fee_percentage:
+                    apply_cif_cost = self.env.company.service_products_ids
+                    for product in apply_cif_cost:
+                        if line.cost_line_id.product_id == product:
+                            for cost in additional_values:
+                                original_value = cost.unit_cost
+                                tariff_value = sum(split.tariff_value for split in additional_values)
+
+                                line.last_cost += tariff_value
+                
 
     @api.depends("product_id")
     def _compute_latest_standard_price(self):

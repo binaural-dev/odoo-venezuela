@@ -56,7 +56,7 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
 
                             ret.push({
                                 id: client.id,
-                                text: client.name,
+                                text: client.display_name,
                                 isNew: false,
                             });
                             self.partners.push(client); 
@@ -373,7 +373,7 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
             const is400 = status === 400;
             if(is400) return
 
-            $("#rate-day").val(data)
+            $("#rate-day").val(data[0] > data[1] ? data[0]: data[1])
         },
 
         Empty_inputs: function(){
@@ -492,6 +492,7 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
 
         CalculateTotal: function() {
             let decimal_number = +$("#decimal").val()
+
             let tableBody = $('#pay_methods');
             let totalPayment = 0;
 
@@ -521,7 +522,7 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
             const decimal = +$("#decimal").val()
             const decimal_places_foreign = +$("#currency_foreign_id").val()
             const currency_foreign_rate = +$("#currency_foreign_rate").val()
-            const amount_to_pay = +$("#amount_total_pay").val() + +$("#total_retention").val()
+            const amount_to_pay = +$("#amount_total_pay").val()
             const total_payment =  +$('#total_payment').val()
             const remainingAmount = (amount_to_pay - total_payment).toFixed(decimal)
             const remainingAmountForeign = +(remainingAmount * currency_foreign_rate).toFixed(decimal_places_foreign)
@@ -611,8 +612,8 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
                 let retention_vef = parseFloat(amount_retention_vef.value)
                 let total_retention_vef = +$("#total_retention_vef").val()
                 total_retention_vef += retention_vef
-                $("#total_retention_vef").val(total_retention_vef.toFixed(decimal))
-                $("#total_retention_l_vef").text(total_retention_vef.toFixed(decimal).replace('.', ','))
+                $("#total_retention_vef").val(total_retention_vef.toFixed(decimal_places_foreign))
+                $("#total_retention_l_vef").text(total_retention_vef.toFixed(decimal_places_foreign).replace('.', ','))
             }
 
             this.validate_payment_method_invoices()
@@ -678,8 +679,8 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
             let total_amount = +$("#total_payment").val()
             if($("#use_credit").is(":checked")){
                 total_amount += balance 
-                $("#total_payment").val(total_amount)
-                $("#total_payment_l").text(total_amount)
+                $("#total_payment").val(total_amount.toFixed(decimal_number))
+                $("#total_payment_l").text(total_amount.toFixed(decimal_number))
                 $(".hidden_pay").show()
                 $("#credit_apply").show()
                 if(+$("#amount_to_pay").val() > 0 || +$("#amount_to_pay").val() != ""){

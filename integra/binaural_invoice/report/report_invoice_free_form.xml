@@ -51,7 +51,10 @@
                                 <span><strong>Total Facturado:</strong><t t-out="o.reversed_entry_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/></span>
                                 <br/>
                             </t>
+                            <p><strong>Nro de Pedido:</strong><t t-out="o.invoice_origin"/></p>
                             <p><strong>Fecha:</strong> <t t-out="o.invoice_date.strftime('%d/%m/%Y')"/></p>
+                            
+                        
                         </div>
                     </div>
 
@@ -94,7 +97,10 @@
                                         <td>
                                             <span t-field="line.product_id.default_code"/>
                                         </td>
-                                        <td name="account_invoice_line_name"><span t-field="line.name" t-options="{'widget': 'text'}"/></td>
+					<td name="account_invoice_line_name">
+					    <span t-field="line.name" t-options="{'widget': 'text'}"/>
+					    <t t-if="all(tax.amount == 0.0 for tax in line.tax_ids)">(E)</t>
+					</td>
                                         <td class="text-end">
                                             <span t-field="line.quantity"/>
                                             <span t-field="line.product_uom_id"  groups="uom.group_uom"/>
