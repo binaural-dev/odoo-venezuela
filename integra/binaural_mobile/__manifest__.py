@@ -9,7 +9,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.6.4",
+    "version": "16.0.0.1.2",
     "category": "Human Resources/Stock/Sales/Invoicing",
     "depends": [
         "web",
@@ -58,5 +58,4 @@
     },
     "images": ["static/description/icon.png"],
     "application": True,
-
 }

@@ -30,6 +30,13 @@ class PosOrder(models.Model):
     def _prepare_invoice_vals(self):
         self.ensure_one()
         res = super()._prepare_invoice_vals()
+        res.update(
+            {
+                "foreign_rate": self.foreign_currency_rate,
+                "foreign_inverse_rate": self.foreign_currency_rate,
+                "manually_set_rate": True,
+            }
+        )
         if not self.to_receipt:
             return res
         res.update({"journal_id": self.session_id.config_id.receipt_journal_id.id})

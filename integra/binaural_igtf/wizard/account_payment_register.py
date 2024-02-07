@@ -1,4 +1,7 @@
 from odoo import api, models, fields, _
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class AccountPaymentRegisterIgtf(models.TransientModel):
     _inherit = "account.payment.register"
@@ -31,23 +34,27 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         store=True,
     )
 
-    @api.depends("journal_id")
+    @api.depends("journal_id","currency_id")
     def _compute_check_igtf(self):
         for payment in self:
-            for line in payment.line_ids:
-                if (
-                    self.env.company.taxpayer_type == "ordinary"
-                    and line.move_id.move_type == "out_invoice"
-                ):
-                    payment.is_igtf = False
-                if (
-                    self.env.company.taxpayer_type == "ordinary"
-                    and line.move_id.partner_id.taxpayer_type == "ordinary"
-                    and line.move_id.move_type == "in_invoice"
-                ):
-                    payment.is_igtf = False
-                else:
+            payment.is_igtf = False
+            if payment.currency_id.id == 2 and payment.journal_id.currency_id.id == 2:
+                for line in payment.line_ids:
+                    if (
+                        self.env.company.taxpayer_type == "ordinary"
+                        and line.move_id.move_type == "out_invoice"
+                        
+                    ):
+                        payment.is_igtf = False
+                    if (
+                        self.env.company.taxpayer_type == "ordinary"
+                        and line.move_id.partner_id.taxpayer_type == "ordinary"
+                        and line.move_id.move_type == "in_invoice"
+                    ):
+                        payment.is_igtf = False
+                    
                     payment.is_igtf = self.env.company.is_igtf
+            
 
     @api.depends("is_igtf")
     def _compute_igtf_percentage(self):

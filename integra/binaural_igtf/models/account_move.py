@@ -21,6 +21,27 @@ class AccountMoveIgtf(models.Model):
         copy=False,
     )
 
+    def recalculate_bi_igtf(self):
+        """This method can be used by ir.actions.server to update bi_igtf"""
+        for record in self:
+
+            if not record.invoice_payments_widget:
+                record.bi_igtf = 0
+                continue
+
+            payments = record.invoice_payments_widget.get("content", False)
+            amount = 0
+            for payment in payments:
+                payment_id = payment.get("account_payment_id", False)
+                if not payment_id:
+                    continue
+
+                payment_id = record.env["account.payment"].browse([payment_id])
+                if payment_id.is_igtf_on_foreign_exchange:
+                    amount += abs(payment['amount'])
+            record.bi_igtf = amount
+
+
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
 
@@ -30,6 +51,7 @@ class AccountMoveIgtf(models.Model):
         :param partial_id: id of the partial reconciliation to remove
         :type partial_id: int
         """
+
         partial = self.env["account.partial.reconcile"].browse(partial_id)
 
         payment_credit = partial.credit_move_id.payment_id
@@ -41,81 +63,87 @@ class AccountMoveIgtf(models.Model):
         reverse_move_credit = partial.credit_move_id.payment_id.reconciled_bill_ids
         reverse_move_debit = partial.debit_move_id.payment_id.reconciled_bill_ids
 
-        if (
-            payment_credit.is_igtf
-            and payment_credit.is_igtf_on_foreign_exchange
-            and move_credit
-            and move_credit.bi_igtf > 0
-        ):
-            amount = partial.credit_move_id.payment_id.amount
-            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                amount = amount * move_credit.foreign_rate
-            result = move_credit.bi_igtf - amount
-            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                result = move_credit.bi_igtf - (amount * self.foreign_rate)
-            if result < 0:
-                result = 0
-            move_credit.write({"bi_igtf": result})
 
-            if payment_credit.is_two_percentage:
-                move_credit.write({"is_two_percentage": True})
+        for move in move_credit:
 
-        if (
-            payment_debit.is_igtf
-            and payment_debit.is_igtf_on_foreign_exchange
-            and move_debit
-            and move_debit.bi_igtf > 0
-        ):
-            amount = partial.debit_move_id.payment_id.amount
-            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                amount = amount * move_debit.foreign_rate
-            result = move_debit.bi_igtf - amount
-            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                result = move_debit.bi_igtf - (amount * self.foreign_rate)
-            if result < 0:
-                result = 0
-            move_debit.write({"bi_igtf": result})
-            if payment_debit.is_two_percentage:
-                move_debit.write({"is_two_percentage": True})
+            if (
+                payment_credit.is_igtf
+                and payment_credit.is_igtf_on_foreign_exchange
+                and move
+                and move.bi_igtf > 0
+            ):
+                amount = partial.credit_move_id.payment_id.amount
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    amount = amount * move.foreign_rate
+                result = move.bi_igtf - amount
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    result = move.bi_igtf - (amount * self.foreign_rate)
+                if result < 0:
+                    result = 0
+                move.write({"bi_igtf": result})
 
+                if payment_credit.is_two_percentage:
+                    move.write({"is_two_percentage": True})
 
-        if (
-            payment_credit.is_igtf
-            and payment_credit.is_igtf_on_foreign_exchange
-            and reverse_move_credit
-            and reverse_move_credit.bi_igtf > 0
-        ):
-            amount = partial.credit_move_id.payment_id.amount
-            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                amount = amount * reverse_move_credit.foreign_rate
-            result = reverse_move_credit.bi_igtf - amount
-            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                result = reverse_move_credit.bi_igtf - (amount * self.foreign_rate)
-            if result < 0:
-                result = 0
-            reverse_move_credit.write({"bi_igtf": result})
-            if payment_credit.is_two_percentage:
-                move_credit.write({"is_two_percentage": True})
+        for move in move_debit:
+            if (
+                payment_debit.is_igtf
+                and payment_debit.is_igtf_on_foreign_exchange
+                and move
+                and move.bi_igtf > 0
+            ):
+                amount = partial.debit_move_id.payment_id.amount
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    amount = amount * move.foreign_rate
+                result = move.bi_igtf - amount
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    result = move.bi_igtf - (amount * self.foreign_rate)
+                if result < 0:
+                    result = 0
+                move.write({"bi_igtf": result})
+                if payment_debit.is_two_percentage:
+                    move.write({"is_two_percentage": True})
 
-        if (
-            payment_debit.is_igtf
-            and payment_debit.is_igtf_on_foreign_exchange
-            and reverse_move_debit
-            and reverse_move_debit.bi_igtf > 0
-        ):
-            amount = partial.debit_move_id.payment_id.amount
-            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                amount = amount * reverse_move_debit.foreign_rate
-            result = reverse_move_debit.bi_igtf - amount
-            if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                result = reverse_move_debit.bi_igtf - (amount * self.foreign_rate)
-            if result < 0:
-                result = 0
-            reverse_move_debit.write({"bi_igtf": result})
-            if payment_debit.is_two_percentage:
-                reverse_move_debit.write({"is_two_percentage": True})
+        for reverse_credit in reverse_move_credit:
+            if (
+                payment_credit.is_igtf
+                and payment_credit.is_igtf_on_foreign_exchange
+                and reverse_credit
+                and reverse_credit.bi_igtf > 0
+            ):
+                amount = partial.credit_move_id.payment_id.amount
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    amount = amount * reverse_credit.foreign_rate
+                result = reverse_credit.bi_igtf - amount
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    result = reverse_credit.bi_igtf - (amount * self.foreign_rate)
+                if result < 0:
+                    result = 0
+                reverse_credit.write({"bi_igtf": result})
+                if payment_credit.is_two_percentage:
+                    move_credit.write({"is_two_percentage": True})
+
+        for reverse_debit in reverse_move_debit:
+            if (
+                payment_debit.is_igtf
+                and payment_debit.is_igtf_on_foreign_exchange
+                and reverse_debit
+                and reverse_debit.bi_igtf > 0
+            ):
+                amount = partial.debit_move_id.payment_id.amount
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    amount = amount * reverse_debit.foreign_rate
+                result = reverse_debit.bi_igtf - amount
+                if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+                    result = reverse_debit.bi_igtf - (amount * self.foreign_rate)
+                if result < 0:
+                    result = 0
+                reverse_debit.write({"bi_igtf": result})
+                if payment_debit.is_two_percentage:
+                    reverse_debit.write({"is_two_percentage": True})
 
     def js_remove_outstanding_partial(self, partial_id):
-        self.remove_igtf_from_move(partial_id)
+        for move in self:
+            move.remove_igtf_from_move(partial_id)
         res = super().js_remove_outstanding_partial(partial_id)
         return res

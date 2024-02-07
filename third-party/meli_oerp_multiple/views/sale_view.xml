@@ -143,6 +143,20 @@
             </field>
         </record>
 
+        <record model="ir.ui.view" id="view_meli_orders_multiple_invoices_form">
+            <field name="name">mercadolibre.orders.multiple.invoices.form</field>
+            <field name="model">mercadolibre.orders</field>
+            <field name="inherit_id" ref="meli_oerp_accounting.meli_oerp_acct_orders_invoices_form"/>
+            <field name="arch" type="xml">
+              <xpath expr="//button[@name='orders_post_invoice']" position="before">
+                <button name='send_post_message' type="object"
+                  string="Mensaje Postventa"
+                  class="oe_stat_button"
+                  icon="fa-send"/>
+              </xpath>
+            </field>
+        </record>
+
 
         <record model="ir.ui.view" id="view_sale_order_form_mercadolibre">
             <field name="name">sale.order.form.mercadolibre</field>

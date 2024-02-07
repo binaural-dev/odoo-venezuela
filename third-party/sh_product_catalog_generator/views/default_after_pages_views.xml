@@ -12,7 +12,8 @@
                         </group>                    
                     </group>
                     <group>
-                        <field name="after_datas" />
+                        <field name="after_datas_filename"  invisible="1" />
+                        <field name="after_datas" filename="after_datas_filename" />
                     </group>
                 </sheet>
             </form>

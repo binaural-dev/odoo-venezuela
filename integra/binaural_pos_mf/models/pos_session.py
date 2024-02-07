@@ -20,6 +20,7 @@ class PosSession(models.Model):
     def _loader_params_iot_device(self):
         res = super()._loader_params_iot_device()
         res["search_params"]["fields"].append("flag_21")
+        res["search_params"]["fields"].append("traditional_line")
         return res
 
     def _loader_params_account_tax(self):

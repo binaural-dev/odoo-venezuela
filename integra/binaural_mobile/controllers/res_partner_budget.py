@@ -19,18 +19,19 @@ FIELDNAMES = [
     "city",
     "state_id",
     "zip",
-    "seller_id",
+    "seller_ids",
     "country_id",
     "property_product_pricelist",
     "property_payment_term_id",
     "type",
     "child_ids",
     "active",
-    "seller_id",
+    "seller_ids",
+    "display_name",
 ]
 CHILDFIELDNAMES = ["street", "id", "type"]
 CHILD_TYPES = ["invoice", "delivery"]
-FIELDFILTERS = ["id", "name", "seller_id"]
+FIELDFILTERS = ["id", "name", "seller_ids"]
 
 class ResPartnerBudget(http.Controller):
     

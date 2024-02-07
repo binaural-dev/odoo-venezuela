@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>   
+    <data>
+        <record id="group_create_btn_access" model="res.groups">
+            <field name="name">Hide Create Button</field>
+        </record>
+        <record id="group_edit_form_btn_access" model="res.groups">
+            <field name="name">Hide Edit Button </field>
+        </record>
+       <record id="group_import_btn_access" model="res.groups">
+            <field name="name">Hide Import Button</field>
+        </record>
+        <record id="group_export_btn_access" model="res.groups">
+            <field name="name">Hide Export All Button</field>
+        </record>
+        <record id="group_hide_action_btn" model="res.groups">
+            <field name="name">Hide Action Button</field>
+        </record>
+        <record id="group_hide_print_btn" model="res.groups">
+            <field name="name">Hide Print Button</field>
+        </record>
+        <record id="group_hide_delete_action" model="res.groups">
+            <field name="name">Hide Delete Action</field>
+        </record>
+        <record id="group_hide_duplicate_action" model="res.groups">
+            <field name="name">Hide Duplicate Action</field>
+        </record>
+        <record id="group_hide_export_action" model="res.groups">
+            <field name="name">Hide Export Action</field>
+        </record>
+    </data>
+</odoo>

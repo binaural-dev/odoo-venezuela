@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231129\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-29 17:24+0000\n"
-"PO-Revision-Date: 2023-04-29 17:24+0000\n"
+"POT-Creation-Date: 2023-12-26 20:22+0000\n"
+"PO-Revision-Date: 2023-12-26 20:22+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -144,6 +144,12 @@ msgstr "<strong>Nro Documento:</strong>"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_binaural_invoce_report_invoice_document
+msgid "<strong>Nro de Pedido:</strong>"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
 msgid "<strong>Numero de Control:</strong>"
 msgstr ""
 
@@ -193,11 +199,6 @@ msgid "Accounting Reports"
 msgstr ""
 
 #. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.res_config_settings_binaural_invoice
-msgid "It allow enable the invoicing sequences by series in sale's journals."
-msgstr "Permite habilitar las secuencias de la facturación por series en los diarios de ventas." 
-
-#. module: binaural_invoice
 #: model:ir.model.fields.selection,name:binaural_invoice.selection__wizard_accounting_reports__report__purchase
 msgid "Book Purchase"
 msgstr "Libro de Compras"
@@ -223,11 +224,33 @@ msgid "Config Settings"
 msgstr "Opciones de configuración"
 
 #. module: binaural_invoice
+#. odoo-python
+#: code:addons/binaural_invoice/models/account_move.py:0
+#, python-format
+msgid ""
+"Contingency journal's invoices should always have a correlative if series "
+"invoicing is not enabled"
+msgstr ""
+"Las facturas de diarios de contingencia siempre deben tener nro de control "
+"si no se está utilizando facturación por series"
+
+#. module: binaural_invoice
 #: model:ir.model.fields,field_description:binaural_invoice.field_account_bank_statement_line__correlative
 #: model:ir.model.fields,field_description:binaural_invoice.field_account_move__correlative
 #: model:ir.model.fields,field_description:binaural_invoice.field_account_payment__correlative
+#: model:ir.ui.menu,name:binaural_invoice.control_number_menu
 msgid "Control Number"
 msgstr "Número de Control"
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__create_date
+msgid "Created on"
+msgstr ""
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
@@ -327,6 +350,21 @@ msgid "Invoice Configuration"
 msgstr "Configuración de Facturación"
 
 #. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_bank_statement_line__is_contingency
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_journal__is_contingency
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_move__is_contingency
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_payment__is_contingency
+msgid "Is Contingency"
+msgstr "Es Contingencia"
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.res_config_settings_binaural_invoice
+msgid "It allow enable the invoicing sequences by series in sale's journals."
+msgstr ""
+"Permite habilitar las secuencias de la facturación por series en los diarios"
+" de ventas."
+
+#. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.view_account_move_form_binaural_invoice
 msgid "JRNL/2016/00001"
 msgstr ""
@@ -347,6 +385,13 @@ msgid "Last Modified on"
 msgstr ""
 
 #. module: binaural_invoice
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_bank_statement_line__last_payment_date
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_move__last_payment_date
+#: model:ir.model.fields,field_description:binaural_invoice.field_account_payment__last_payment_date
+msgid "Last Payment Date"
+msgstr ""
+
+#. module: binaural_invoice
 #: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__write_uid
 msgid "Last Updated by"
 msgstr ""
@@ -359,13 +404,13 @@ msgstr ""
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.res_config_settings_binaural_invoice
 msgid "Limit the number of products on an invoice"
-msgstr "Limitar la cantidad de productos en una factura"
+msgstr "Limitar la cantidad de productos en una factura forma libre"
 
 #. module: binaural_invoice
 #: model:ir.model.fields,field_description:binaural_invoice.field_res_company__max_product_invoice
 #: model:ir.model.fields,field_description:binaural_invoice.field_res_config_settings__max_product_invoice
 msgid "Max Product Invoice"
-msgstr "Cantidad maxima de Productos en Factura"
+msgstr "Cantidad máxima de productos en Facturas Forma Libre"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
@@ -380,6 +425,11 @@ msgstr ""
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
 msgid "Nro de Factura:"
+msgstr ""
+
+#. module: binaural_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_invoice.account_move_form_binaural_account_move
+msgid "Nro de Pedido"
 msgstr ""
 
 #. module: binaural_invoice
@@ -468,6 +518,16 @@ msgstr ""
 #. odoo-python
 #: code:addons/binaural_invoice/models/account_move.py:0
 #, python-format
+msgid ""
+"The correlative must be unique per journal when using a contingency journal"
+msgstr ""
+"El nro de control debe ser único por diario en caso de diarios de "
+"contingencia"
+
+#. module: binaural_invoice
+#. odoo-python
+#: code:addons/binaural_invoice/models/account_move.py:0
+#, python-format
 msgid "The sale's series sequence must be in the selected journal."
 msgstr ""
 "La secuencia de series de ventas debe estar seleccionada en el diario."
@@ -516,6 +576,11 @@ msgid "You can not add more than %s products to the invoice."
 msgstr "No puede agregar más de %s productos a la factura."
 
 #. module: binaural_invoice
+#: model:ir.actions.act_window,name:binaural_invoice.ir_invoice_correlative
+msgid "control number"
+msgstr "Número de control"
+
+#. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.tax_groups_totals
 msgid "on"
-msgstr ""
+msgstr "En"
