@@ -43,7 +43,11 @@ class CommissionPolicyItem(models.Model):
                 record.name = ""
                 continue
             if record.applied_on == "1_product":
-                record.name = f"{POLICY_TYPE.get(record.applied_on,'')}: {record.product_id.name}"
+                text = POLICY_TYPE.get(record.applied_on,'')
+                text += ": " + record.product_id.name
+                if record.excluded:
+                    text += " (Excluido)"
+                record.name = text
             if record.applied_on == "2_brand":
                 record.name = f"{POLICY_TYPE.get(record.applied_on,'')}: {record.brand_id.name}"
             if record.applied_on == "3_category":
