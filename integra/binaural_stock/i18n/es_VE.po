@@ -62,6 +62,7 @@ msgstr ""
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_product_product__alternate_code
 #: model:ir.model.fields,field_description:binaural_stock.field_product_template__alternate_code
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_product_template_search_alternate_code
 msgid "Alternate Code"
 msgstr "Còdigo Alterno"
 

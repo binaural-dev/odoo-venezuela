@@ -27,6 +27,23 @@
         </field>
     </record>
 
+    <record id="view_product_template_search_alternate_code" model="ir.ui.view">
+        <field name="name">product.template.search.alternate.code</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view" />
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="alternate_code" />
+                <filter
+                    string="Alternate Code"
+                    name="groupby_alternate_code"
+                    domain="[]"
+                    context="{'group_by' : 'alternate_code'}"
+                />
+                <separator />
+            </field>
+        </field>
+    </record>
 
     <record id="product_template_form_view" model="ir.ui.view">
         <field name="name">product.template.form.view.binaural.stock</field>
