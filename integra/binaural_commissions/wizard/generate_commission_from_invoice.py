@@ -25,7 +25,7 @@ class GenerateCommission(models.TransientModel):
     # NO ME DEJA GUARDAR LAS NUEVAS FACTURAS PARA CREAR COMISION
 
     seller_ids = fields.Many2many(
-        "hr.employee", string="Sellers", compute="_compute_seller_ids", store=False, precompute=True
+        "hr.employee", string="Sellers", compute="_compute_seller_ids", store=False
     )
     seller_id = fields.Many2one("res.partner", string="Seller", required=True, store=False)
     invoice_ids = fields.Many2many("account.move")
@@ -34,9 +34,6 @@ class GenerateCommission(models.TransientModel):
     def _compute_seller_ids(self):
         for record in self:
             record.seller_ids = record.invoice_ids.seller_id
-            _logger.info("HAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-            _logger.info("HAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-            _logger.info("HAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
     def _prepare_invoice_vals(self):
         def default_invoice_data(invoice):

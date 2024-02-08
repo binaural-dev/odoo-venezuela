@@ -21,6 +21,7 @@ class CommissionPolicyLine(models.Model):
         "Do not apply to the report", help="Do not apply this restriction to the report"
     )
     policy_id = fields.Many2one("commission.policy", required=True, ondelete="cascade")
+    policy_type = fields.Selection(related="policy_id.policy_type")
 
     @api.constrains("commission")
     def _check_commission_non_negative(self):

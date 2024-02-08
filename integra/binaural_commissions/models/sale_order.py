@@ -1,5 +1,5 @@
 import json
-from odoo import models, fields
+from odoo import api, models, fields
 from collections import defaultdict
 import logging
 
@@ -9,8 +9,91 @@ _logger = logging.getLogger(__name__)
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
-    commission_invoice_date_field = fields.Char(readonly=True,copy=False)
-    compute_commission_when = fields.Char(readonly=True,copy=False)
+    commission_invoice_date_field = fields.Char(readonly=True, copy=False)
+    compute_commission_when = fields.Char(readonly=True, copy=False)
+
+    @api.model
+    def fields_to_read_from_commission_policy_line(self):
+        return [
+            "date_from",
+            "date_to",
+            "commission",
+            "percentage_report",
+            "not_applied",
+            "policy_type",
+        ]
+
+    @api.model
+    def _get_commission_product_items(self, lines):
+        lines_with_commission = self.env["sale.order.line"]
+        line_comission = []
+
+        product_ids = lines.product_id
+        brand_ids = product_ids.brand_id.ids
+        category_ids = product_ids.categ_id.ids
+        categories = product_ids.categ_id
+        finish_categ = False
+        while not finish_categ:
+            if len(categories.parent_id.ids) == 0:
+                finish_categ = True
+
+            category_ids += categories.parent_id.ids
+            categories = categories.parent_id
+
+        CommisionPolicesItem = self.env["commission.product.item"]
+        items = CommisionPolicesItem.search(
+            [("product_id", "in", product_ids.ids), ("applied_on", "=", "1_product")]
+        )
+        if len(brand_ids) > 1:
+            items += CommisionPolicesItem.search(
+                [("brand_id", "in", brand_ids), ("applied_on", "=", "2_brand")]
+            )
+        if len(category_ids) > 1:
+            items += CommisionPolicesItem.search(
+                [
+                    ("category_id", "in", category_ids),
+                    ("applied_on", "=", "3_category"),
+                ],
+                order="len_category_sub_category desc",
+            )
+
+        processed_lines = []
+        for item in items:
+            for line in lines:
+                if line.id in processed_lines:
+                    continue
+                if line.product_id == item.product_id:
+                    if item.excluded:
+                        processed_lines.append(line.id)
+                        continue
+                    line_comission.append((line, item))
+                    processed_lines.append(line.id)
+                    lines_with_commission |= line
+                    continue
+
+                if item.brand_id and line.product_id.brand_id == item.brand_id:
+                    line_comission.append((line, item))
+                    processed_lines.append(line.id)
+                    lines_with_commission |= line
+                    continue
+
+                if not item.category_id or not line.product_id.categ_id:
+                    continue
+
+                category = line.product_id.categ_id
+                finish = False
+                while not finish:
+                    if category == item.category_id:
+                        line_comission.append((line, item))
+                        processed_lines.append(line.id)
+                        lines_with_commission |= line
+                        finish = True
+                    elif not category.parent_id:
+                        finish = True
+                    else:
+                        category = category.parent_id
+
+        return lines_with_commission, line_comission
 
     def assing_commission_policy_line_images_to_order_lines(self):
         """
@@ -45,41 +128,44 @@ class SaleOrder(models.Model):
         """
         CommissionPolicy = self.env["commission.policy"]
         CommissionPolicyLineImage = self.env["commission.policy.line.image"]
-        product_policies = CommissionPolicy.search([("policy_type", "=", "product")])
-        fields_to_read_from_commission_policy_line = [
-            "date_from",
-            "date_to",
-            "commission",
-            "percentage_report",
-            "not_applied",
-        ]
+
+        (
+            lines_with_commissions_type_product,
+            lines_commissions,
+        ) = self._get_commission_product_items(self.order_line)
+
+        fields_to_read_from_commission_policy_line = (
+            self.fields_to_read_from_commission_policy_line()
+        )
+
         policy_line_images_grouped_by_commission_policy = defaultdict(
             lambda: self.env["sale.order.line"]
         )
-        lines_with_commissions_types_other_than_product = self.order_line
 
-        for product in product_policies.product_ids:
-            lines_with_product_on_commission_policies = self.order_line.filtered(
-                lambda l: l.product_id == product
-            )
-            lines_with_commissions_types_other_than_product -= (
-                lines_with_product_on_commission_policies
-            )
-            for line in lines_with_product_on_commission_policies:
-                commission_policy_id = product.commission_policy_id
-                if commission_policy_id in policy_line_images_grouped_by_commission_policy:
-                    line.commission_policy_line_image_ids = (
-                        policy_line_images_grouped_by_commission_policy[commission_policy_id]
-                    )
-                    continue
-                commission_policy_lines = commission_policy_id.commission_line_ids.read(
-                    fields_to_read_from_commission_policy_line
+        lines_with_commissions_types_other_than_product = (
+            self.order_line - lines_with_commissions_type_product
+        )
+
+        for line_commission in lines_commissions:
+            line = line_commission[0]
+            commission_item = line_commission[1]
+
+            commission_policy_id = commission_item.commission_policy_id
+
+            if commission_policy_id in policy_line_images_grouped_by_commission_policy:
+                line.commission_policy_line_image_ids = (
+                    policy_line_images_grouped_by_commission_policy[commission_policy_id]
                 )
-                images = CommissionPolicyLineImage.create(commission_policy_lines)
-                line.commission_policy_line_image_ids = images.ids
-                policy_line_images_grouped_by_commission_policy[commission_policy_id] = images
+                continue
+            commission_policy_lines = commission_policy_id.commission_line_ids.read(
+                fields_to_read_from_commission_policy_line
+            )
+            images = CommissionPolicyLineImage.create(commission_policy_lines)
+            line.commission_policy_line_image_ids = images.ids
+            policy_line_images_grouped_by_commission_policy[commission_policy_id] = images
 
         client_policies = CommissionPolicy.search([("policy_type", "=", "client")])
+
         for policy in client_policies:
             if self.partner_id in policy.clients_id:
                 images = CommissionPolicyLineImage.create(

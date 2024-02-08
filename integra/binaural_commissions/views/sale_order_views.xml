@@ -6,7 +6,12 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//tree/field[@name='tax_id']" position="after">
-                <field name="commission_policy_line_image_ids" widget="many2many_tags"/>
+                <field 
+                    name="commission_policy_line_image_ids" 
+                    readonly="1"
+                    optional="hide"
+                    widget="many2many_tags" 
+                    />
             </xpath>
         </field>
     </record>

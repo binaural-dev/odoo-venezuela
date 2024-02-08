@@ -19,6 +19,18 @@ class AccountMove(models.Model):
     first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")
 
+    def write(self, vals):
+        res = super().write(vals)
+        for move in self:
+            if vals.get("invoice_reception_date", False):
+                move.message_post(
+                    body=_(
+                        "The invoice reception date has been updated to %s",
+                        move.invoice_reception_date,
+                    )
+                )
+        return res
+
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
         AccountMove = self.env["account.move"]
@@ -50,7 +62,6 @@ class AccountMove(models.Model):
 
     @api.depends("amount_residual")
     def _compute_payment_dates(self):
-
         def clear_dates(move):
             move.last_payment_date = False
             move.first_payment_date = False
@@ -88,7 +99,7 @@ class AccountMove(models.Model):
                 first_date = fields.Date.from_string(min(dates))
 
             move.last_payment_date = last_date
-            move.first_payment_date = first_date 
+            move.first_payment_date = first_date
 
     @api.model
     def validate_payment(self, payment):

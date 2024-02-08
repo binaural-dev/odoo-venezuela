@@ -36,23 +36,20 @@
                         <field name="is_report_range" />
                     </group>
                     <group>
-                        <field name="product_commission_type" widget="radio" options="{'horizontal': true}"
-                               attrs="{'invisible': [('policy_type', '!=', 'product')]}"/>
-                        <field name="products_id" widget="many2many_tags"
-                               attrs="{'invisible': [('product_commission_type', '!=', 'product')], 'required': [('product_commission_type', '=', 'product')]}"/>
-                        <field name="brands_id" widget="many2many_tags"
-                               attrs="{'invisible': [('product_commission_type', '!=', 'brand')], 'required': [('product_commission_type', '=', 'brand')]}"/>
-                        <field name="categories_id" widget="many2many_tags"
-                               attrs="{'invisible': [('product_commission_type', '!=', 'category')], 'required': [('product_commission_type', '=', 'category')]}"/>
                     </group>
                 </group>
                 <notebook>
                     <page string="Commissions Range">
                         <field name="commission_line_ids"/>
                     </page>
-                    <page string="Products"
-                          attrs="{'invisible': [('product_commission_type', 'in', ['product', False])]}">
-			<field name="product_ids"/>
+                    <page string="Products" attrs="{'invisible': [('policy_type', '!=','product')]}">
+                    <field name="commission_product_item_ids" mode="tree" options="{'no_create': True, 'no_create_edit':True}">
+                        <tree>
+                            <field name="applied_on"/>
+                            <field name="name"/>
+                            <field name="len_category_sub_category" invisible="1"/>
+                        </tree>
+                    </field>
                     </page>
 		    <page string="Clients"
 			  attrs="{'invisible': [('policy_type', '!=', 'client')]}">
