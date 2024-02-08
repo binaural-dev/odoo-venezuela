@@ -43,3 +43,10 @@ msgstr "La orden fue modificada en ventas. Por favor elimine la ordern y vuelva 
 #, python-format
 msgid "You already contain this sales order"
 msgstr "Ya esta orden contiene este pedido de ventas."
+
+#. module: binaural_pos_sale
+#: model:ir.model.fields,field_description:binaural_pos_sale.field_pos_config__pos_use_rate_from_order
+#: model:ir.model.fields,field_description:binaural_pos_sale.field_res_company__pos_use_rate_from_order
+#: model:ir.model.fields,field_description:binaural_pos_sale.field_res_config_settings__pos_use_rate_from_order
+msgid "Pos Use Rate From Order"
+msgstr "Usar Tasa desde Pedido de Venta"

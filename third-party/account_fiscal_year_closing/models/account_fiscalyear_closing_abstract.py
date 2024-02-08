@@ -32,10 +32,10 @@ class AccountFiscalyearClosingConfigAbstract(models.AbstractModel):
     name = fields.Char(string="Description", required=True)
     sequence = fields.Integer(index=True, default=1)
     code = fields.Char(string="Unique code", required=True)
-    inverse = fields.Char(
-        string="Inverse config",
-        help="Configuration code to inverse its move",
-    )
+    # inverse = fields.Char(
+    #     string="Inverse config",
+    #     help="Configuration code to inverse its move",
+    # )
     move_type = fields.Selection(
         selection=[
             ("closing", "Closing"),

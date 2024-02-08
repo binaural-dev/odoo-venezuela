@@ -12,6 +12,10 @@ class AccountPaymentRegister(models.TransientModel):
         ),
     )
 
+    company_subsidiary = fields.Boolean(
+        related='company_id.subsidiary'
+    )
+
     def _init_payments(self, to_process, edit_mode=False):
         """
         Override the original method to add the analytic account to the payments.

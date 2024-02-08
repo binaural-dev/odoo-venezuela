@@ -85,7 +85,7 @@
                             </div>
                         </div>
 
-                        <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
+                        <div class="col-12 col-lg-6 o_setting_box" id="bin_igtf_settings_pos_show_just_products_with_available_qty">
                             <div class="o_setting_left_pane">
                                 <field name="pos_show_just_products_with_available_qty"/>
                             </div>
@@ -96,6 +96,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <hr style="margin-top: 24px;"/>
                         <div class="app_settings_header pt-1 pb-1">
                             <div class="col-xs-12 col-md-6 ms-0 o_setting_box">
@@ -129,7 +130,7 @@
                             </div>
                         </div>
 
-                        <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="col-12 col-lg-6 o_setting_box" id="receipt_journal_id_pane">
                             <div class="o_setting_right_pane">
                                 <div>
                                     <label for="receipt_journal_id"/>

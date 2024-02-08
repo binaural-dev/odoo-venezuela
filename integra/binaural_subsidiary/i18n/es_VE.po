@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231204\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-22 20:22+0000\n"
-"PO-Revision-Date: 2023-12-22 20:22+0000\n"
+"POT-Creation-Date: 2024-02-02 19:42+0000\n"
+"PO-Revision-Date: 2024-02-02 19:42+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -27,6 +27,11 @@ msgid "Analytic Account"
 msgstr "Cuenta analítica"
 
 #. module: binaural_subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_res_config_settings__group_analytic_accounting_related
+msgid "Analytic Accounting"
+msgstr ""
+
+#. module: binaural_subsidiary
 #: model:ir.model,name:binaural_subsidiary.model_bank_rec_widget
 msgid "Bank reconciliation widget for a single statement line"
 msgstr ""
@@ -38,9 +43,23 @@ msgid "Companies"
 msgstr "Compañías"
 
 #. module: binaural_subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_account_bank_statement_line__company_subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_account_move__company_subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_account_payment__company_subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_purchase_order__company_subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_sale_order__company_subsidiary
+msgid "Company Subsidiary"
+msgstr "Configuración Sucursal"
+
+#. module: binaural_subsidiary
 #: model:ir.model,name:binaural_subsidiary.model_res_config_settings
 msgid "Config Settings"
 msgstr "Opciones de configuración"
+
+#. module: binaural_subsidiary
+#: model_terms:ir.ui.view,arch_db:binaural_subsidiary.binaural_subsidiary_account_move_view_search
+msgid "Cuenta Analitica"
+msgstr ""
 
 #. module: binaural_subsidiary
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_res_users__subsidiary_id
@@ -58,6 +77,11 @@ msgid "Invoices Statistics"
 msgstr "Estadísticas de facturas"
 
 #. module: binaural_subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_res_users__is_required_subsidiary
+msgid "Is Required Subsidiary"
+msgstr ""
+
+#. module: binaural_subsidiary
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_account_analytic_account__is_subsidiary
 msgid "Is Subsidiary"
 msgstr "Es Sucursal"
@@ -70,7 +94,7 @@ msgstr "Asiento contable"
 #. module: binaural_subsidiary
 #: model:ir.model,name:binaural_subsidiary.model_account_move_line
 msgid "Journal Item"
-msgstr "Diario de partida"
+msgstr "Apunte contable"
 
 #. module: binaural_subsidiary
 #: model:ir.model,name:binaural_subsidiary.model_account_payment
@@ -117,16 +141,17 @@ msgstr "Sucursales"
 
 #. module: binaural_subsidiary
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_account_bank_statement_line__account_analytic_id
-#: model:ir.model.fields,field_description:binaural_subsidiary.field_account_invoice_report__subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_account_invoice_report__subsidiary_id
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_account_move__account_analytic_id
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_account_payment__account_analytic_id
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_account_payment_register__account_analytic_id
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_account_payment_register__company_subsidiary
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_purchase_order__account_analytic_id
-#: model:ir.model.fields,field_description:binaural_subsidiary.field_purchase_report__subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_purchase_report__subsidiary_id
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_res_company__subsidiary
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_res_config_settings__subsidiary
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_sale_order__subsidiary_id
-#: model:ir.model.fields,field_description:binaural_subsidiary.field_sale_report__subsidiary
+#: model:ir.model.fields,field_description:binaural_subsidiary.field_sale_report__subsidiary_id
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_wizard_accounting_reports__account_analytic_id
 #: model_terms:ir.ui.view,arch_db:binaural_subsidiary.view_account_invoice_report_search_inherit_binaural_subsidairy
 #: model_terms:ir.ui.view,arch_db:binaural_subsidiary.view_purchase_order_search_inherit_binaural_subsidairy
@@ -141,8 +166,30 @@ msgstr "Sucursal"
 msgid ""
 "Subsidiary %(subsidiary_name)s is not in the allowed subsidiaries for user "
 "%(user_name)s (%(subsidiary_allowed)s)."
-msgstr "La sucursal %(subsidiary_name)s no está en las sucursales permitidas "
-"para el usuario %(user_name)s (%(subsidiary_allowed)s)"
+msgstr ""
+"La sucursal %(subsidiary_name)s no está en las sucursales permitidas para el"
+" usuario %(user_name)s (%(subsidiary_allowed)s)"
+
+#. module: binaural_subsidiary
+#: model_terms:ir.ui.view,arch_db:binaural_subsidiary.res_config_settings_binaural_subsidiary
+msgid "Subsidiary (Quotation and Facture)"
+msgstr "Subsidiaria (Cotización y Factura)"
+
+#. module: binaural_subsidiary
+#: model_terms:ir.ui.view,arch_db:binaural_subsidiary.res_config_settings_binaural_subsidiary
+msgid "Subsidiary Configuration"
+msgstr "Configuración de Subsidiaria"
+
+#. module: binaural_subsidiary
+#. odoo-python
+#: code:addons/binaural_subsidiary/models/analytic_account.py:0
+#, python-format
+msgid ""
+"This analytical account is used for subsidiaries. The company must be "
+"specified."
+msgstr ""
+"La cuenta analítica is utilizada en subsidiarias. La compañia debe ser "
+"especificada."
 
 #. module: binaural_subsidiary
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_res_company__analytical_accounts_subsidiary
@@ -160,3 +207,23 @@ msgstr "Usuario"
 #: model:ir.model.fields,field_description:binaural_subsidiary.field_res_config_settings__analytical_accounts_cost_subsidiary
 msgid "Using Analytical Accounts as Cost Center and Subsidiary"
 msgstr "Uso de Cuentas Analíticas como centro de Coste y Sucursal"
+
+#. module: binaural_subsidiary
+#: model:ir.model,name:binaural_subsidiary.model_wizard_accounting_reports
+msgid "Wizard para generar reportes de libro de compra y ventas"
+msgstr ""
+
+#. module: binaural_subsidiary
+#: model:ir.actions.server,name:binaural_subsidiary.correction_subsidiary_account_move
+msgid "correction subsidiary account move"
+msgstr ""
+
+#. module: binaural_subsidiary
+#: model:ir.actions.server,name:binaural_subsidiary.correction_subsidiary_account_payment
+msgid "correction subsidiary account payment"
+msgstr ""
+
+#. module: binaural_subsidiary
+#: model:ir.actions.server,name:binaural_subsidiary.correction_subsidiary_sale_order
+msgid "correction subsidiary sale order"
+msgstr ""
