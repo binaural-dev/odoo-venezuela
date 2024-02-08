@@ -63,6 +63,8 @@ class ResPartner(models.Model):
         track_visibility="onchange",
     )
 
+    business_name = fields.Char()
+
     business_name_usufruct = fields.Char(
         string="Business name usufruct", track_visibility="onchange"
     )
