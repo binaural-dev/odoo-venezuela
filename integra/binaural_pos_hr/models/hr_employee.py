@@ -12,3 +12,20 @@ class HrEmployee(models.Model):
         ],
         default="cashier",
     )
+
+    def get_pos_hr_employee_domain(self):
+        return [
+            ('pos_employee_type', '=', 'supervisor')
+        ]
+    
+    def get_pos_hr_employee_fields(self):
+        return ['name', 'pos_employee_type', 'pin', 'barcode']
+
+    @api.model
+    def get_pos_hr_employee(self):
+        domain = self.get_pos_hr_employee_domain()
+        fields = self.get_pos_hr_employee_fields()
+
+        hr_employee_ids = self.search_read(domain, fields)
+
+        return hr_employee_ids
