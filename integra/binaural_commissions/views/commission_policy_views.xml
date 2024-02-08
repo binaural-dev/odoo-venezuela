@@ -47,6 +47,7 @@
                         <tree>
                             <field name="applied_on"/>
                             <field name="name"/>
+                            <field name="excluded"/>
                             <field name="len_category_sub_category" invisible="1"/>
                         </tree>
                     </field>
