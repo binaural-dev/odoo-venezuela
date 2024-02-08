@@ -45,7 +45,7 @@
                     <field name="aditional_email" attrs="{'invisible':[('supplier_rank','>', 0)]}"/>
                     <field name="member_type" readonly="1" force_save="1" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
 
-
+                    <field name="business_name" string="Nombre de la empresa" attrs="{'invisible':['|',('is_company','=', False),('supplier_rank','>', 0)]}"/>
                     <field name="business_name_usufruct"  attrs="{'invisible':['|',('is_company','=', False),('supplier_rank','>', 0)]}"/>
                     <div id="vat_u" class="" attrs="{'invisible':['|',('is_company','=', False),('supplier_rank','>', 0)]}">
                         <field name="prefix_vat_usufruct"/>
