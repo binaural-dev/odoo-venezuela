@@ -4,7 +4,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.0.5.0.9",
+    "version": "16.0.5.1.0",
     "category": "Accountant",
     "depends": [
         "base",
