@@ -9,7 +9,7 @@ import json
 
 class ApiIoT(http.Controller):
     @http.route(
-        "/iot_fiscal/ports", type="http", auth="public", methods=["GET"], csrf=False, website=True
+        "/iot_fiscal/ports", type="http", auth="public", methods=["GET"], csrf=False
     )
     def getFiscalPorts(self, **kw):
         iot_ids = request.env["iot.box"].sudo().search([("has_fiscal_machine", "=", True)])
@@ -20,7 +20,7 @@ class ApiIoT(http.Controller):
 
 
     @http.route(
-        "/iot_blacklist/ports", type="http", auth="public", methods=["GET"], csrf=False, website=True
+        "/iot_blacklist/ports", type="http", auth="public", methods=["GET"], csrf=False
     )
     def getFiscalPortsToBlock(self, **kw):
         iot_ids = request.env["iot.box"].sudo().search([("blacklist", "=", True)])

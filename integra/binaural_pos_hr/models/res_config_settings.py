@@ -20,3 +20,6 @@ class ResConfigSettings(models.TransientModel):
     pos_change_receipt_require_supervisor_key = fields.Boolean(
         related="pos_config_id.pos_change_receipt_require_supervisor_key", readonly=False
     )
+    pos_cashmove_require_supervisor_key = fields.Boolean(
+        related="pos_config_id.pos_cashmove_require_supervisor_key", readonly=False
+    )
