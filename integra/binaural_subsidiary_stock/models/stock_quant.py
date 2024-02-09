@@ -47,6 +47,9 @@ class StockQuant(models.Model):
             if not self.env.user.is_required_subsidiary:
                 continue
 
+            if record.location_id.usage not in ['transit', 'internal']:
+                continue
+
             if not record.location_id.warehouse_id.subsidiary_id:
                 raise UserError(_("Assign a subsidiary to the location-related warehouse."))
 
