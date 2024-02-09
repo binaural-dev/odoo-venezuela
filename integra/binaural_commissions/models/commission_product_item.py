@@ -29,6 +29,35 @@ class CommissionPolicyItem(models.Model):
         compute="_compute_len_category_sub_category", store=True
     )
 
+    def show_products_brands(self):
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Products",
+            "res_model": "product.product",
+            "view_mode": "tree",
+            "domain": [("brand_id", "=", self.brand_id.id), ("commission_item_ids", "!=", False)],
+            "target": "new",
+        }
+
+    def show_products_categories(self):
+        category_ids = self.category_id.ids
+        categories = self.category_id
+        finish_categ = False
+        while not finish_categ:
+            if len(categories.parent_id.ids) == 0:
+                finish_categ = True
+
+            category_ids += categories.parent_id.ids
+            categories = categories.parent_id
+        return {
+            "type": "ir.actions.act_window",
+            "name": "Products",
+            "res_model": "product.product",
+            "view_mode": "tree",
+            "domain": [("categ_id", "in", category_ids)],
+            "target": "new",
+        }
+
     @api.depends("category_id", "len_category_sub_category")
     def _compute_len_category_sub_category(self):
         for record in self:

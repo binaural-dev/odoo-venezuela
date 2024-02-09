@@ -77,14 +77,24 @@ class AccountMove(models.Model):
             record.commission_payment_state = "process"
 
     def show_invoice_resume(self):
+        view = self.env.ref("binaural_commissions.invoice_commission_summary_wizard_form_view")
+
+        invoice_lines = self.invoice_line_ids.filtered(lambda x: x.commission_image_id != False)
+
         return {
+            "name": _("Resumen de Factura"),
             "type": "ir.actions.act_window",
-            "name": _("Commission Invoice"),
-            "res_model": "account.move.line",
-            "view_mode": "tree",
-            "view_id": self.env.ref("binaural_commissions.account_move_line_view_commission").id,
-            "domain": [("move_id", "in", self.ids), ("product_id", "!=", False)],
+            "view_mode": "form",
+            "res_model": "invoice.commission.summary.wizard",
+            "views": [(view.id, "form")],
+            "view_id": view.id,
             "target": "new",
+            "flags": {"mode": "readonly"},
+            "context": dict(
+                self.env.context,
+                default_name=self.name,
+                default_invoice_line_ids=invoice_lines.ids,
+            ),
         }
 
     def generate_seller_in_invoices(self):

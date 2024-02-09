@@ -4,3 +4,4 @@ access_commission_policy_line,access.commission.policy.line,model_commission_pol
 access_commission_product_item,access.commission.product.item,model_commission_product_item,,1,1,1,1
 access_commission_policy_line_image,access.commission.policy.line.image,model_commission_policy_line_image,,1,1,1,1
 access_generate_commission_from_invoice,access.generate.commission.from.invoice,model_generate_commission_from_invoice,,1,1,1,1
+access_invoice_commission_summary_wizard,access.invoice.commission.summary.wizard,model_invoice_commission_summary_wizard,,1,1,1,1
