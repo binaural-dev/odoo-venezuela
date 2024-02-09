@@ -68,6 +68,9 @@
                 </field>
             </page>
         </xpath>
+    <xpath expr="//field[@name='invoice_line_ids']/tree" position="inside">
+        <field name="commission_image_id" readonly="1" widget="badge" optional="hide"/>
+    </xpath>
     </field>
 </record>
 
@@ -163,7 +166,7 @@
     <field name="domain">
 	[
 	    ("move_type", "=", "out_invoice"),
-	    ("payment_state", "in", ("paid", "in_payment")),
+	    ("total_commission", ">", 0),
 	    ("seller_id", "!=", False)
 	]
     </field>

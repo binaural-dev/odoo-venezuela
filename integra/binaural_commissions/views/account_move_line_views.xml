@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="account_move_line_view_commission" model="ir.ui.view">
+        <field name="name">account.move.line.view.commission</field>
+        <field name="model">account.move.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="product_id"/>
+                <field name="price_subtotal"/>
+                <field name="policy_type" invisible="1"/>
+                <field name="commission_image_id" widget="badge" decoration-primary="policy_type=='client'"
+                       decoration-success="policy_type=='product'" decoration-warning="policy_type=='all'"/>
+                <field name="commission_amount" sum="Total Commission"/>
+            </tree>
+        </field>
+    </record>
+</odoo>

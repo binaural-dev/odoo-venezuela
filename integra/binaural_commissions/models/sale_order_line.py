@@ -10,8 +10,8 @@ class SaleOrderLine(models.Model):
     )
 
     @api.model
-    def get_amount_commission_policy_line_image(self,days):
+    def get_commission_policy_line_image(self,days):
         for line in self.commission_policy_line_image_ids:
             if line.date_from <= days <= line.date_to:
-                return line.commission
+                return line
         return False

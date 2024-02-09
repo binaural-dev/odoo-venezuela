@@ -6,10 +6,10 @@ import logging
 _logger = logging.getLogger(__name__)
 
 LABEL = {
-    "invoice_date": _("Invoice Date"),
-    "invoice_reception_date": _("Invoice Reception Date"),
-    "invoice_is_fully_paid": _("Invoice paid totally"),
-    "invoice_first_payment": _("Invoice first payment"),
+    "invoice_date": _("Fecha de Factura"),
+    "invoice_reception_date": _("Fecha de Recepción"),
+    "invoice_is_fully_paid": _("Factura pagada completamente"),
+    "invoice_first_payment": _("Primera fecha de pago"),
 }
 
 
@@ -77,7 +77,15 @@ class AccountMove(models.Model):
             record.commission_payment_state = "process"
 
     def show_invoice_resume(self):
-        return True
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Commission Invoice"),
+            "res_model": "account.move.line",
+            "view_mode": "tree",
+            "view_id": self.env.ref("binaural_commissions.account_move_line_view_commission").id,
+            "domain": [("move_id", "in", self.ids), ("product_id", "!=", False)],
+            "target": "new",
+        }
 
     def generate_seller_in_invoices(self):
         for record in self:
@@ -112,15 +120,29 @@ class AccountMove(models.Model):
 
             if not record.is_valid_to_compute_commission():
                 record.total_commission = 0
+                for line in record.invoice_line_ids:
+                    line.commission_image_id = False
+                    line.commission_amount = 0
                 continue
 
             total = False
             for line in record.invoice_line_ids:
                 if line.sale_line_ids.commission_policy_line_image_ids:
-                    commission = line.sale_line_ids.get_amount_commission_policy_line_image(
+                    commission_id = line.sale_line_ids.get_commission_policy_line_image(
                         record.collection_days
                     )
-                    total += line.price_subtotal * (commission / 100)
+
+                    if len(commission_id) > 1:
+                        raise ValidationError(
+                            _(
+                                "The commission policy has more than one record with the same date range."
+                            )
+                        )
+                    line.commission_image_id = commission_id
+                    line.commission_amount = line.price_subtotal * (
+                        line.commission_image_id.commission / 100
+                    )
+                    total += line.commission_amount
             record.total_commission = total
 
     def _can_recompute_commission(self):
@@ -158,7 +180,7 @@ class AccountMove(models.Model):
             date_from = record._get_commission_date_from()
             date_to = record._get_commission_date_to()
             if date_from and date_to:
-                days = (date_from - date_to).days
+                days = (date_to - date_from).days
             record.collection_days = days
 
     def _get_commission_date_from(self):

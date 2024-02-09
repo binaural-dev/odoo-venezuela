@@ -1,7 +1,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
-POLICY_TYPE = {"1_product": _("Product"), "2_brand": _("Brand"), "3_category": _("Category")}
+POLICY_TYPE = {"1_product": _("Producto"), "2_brand": _("Marca"), "3_category": _("Categoria")}
 
 import logging
 
@@ -25,7 +25,9 @@ class CommissionPolicyItem(models.Model):
     )
     excluded = fields.Boolean("Excluded")
     commission_policy_id = fields.Many2one("commission.policy", string="Commission Policy")
-    len_category_sub_category = fields.Integer(compute="_compute_len_category_sub_category", store=True)
+    len_category_sub_category = fields.Integer(
+        compute="_compute_len_category_sub_category", store=True
+    )
 
     @api.depends("category_id", "len_category_sub_category")
     def _compute_len_category_sub_category(self):
@@ -43,7 +45,7 @@ class CommissionPolicyItem(models.Model):
                 record.name = ""
                 continue
             if record.applied_on == "1_product":
-                text = POLICY_TYPE.get(record.applied_on,'')
+                text = POLICY_TYPE.get(record.applied_on, "")
                 text += ": " + record.product_id.name
                 if record.excluded:
                     text += " (Excluido)"

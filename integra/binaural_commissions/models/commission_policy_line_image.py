@@ -3,7 +3,7 @@ from odoo import api, fields, models, _
 import logging
 _logger = logging.getLogger(__name__)
 
-POLICY_TYPE = {"client": _("Client"), "product": _("Product"), "all": _("General")}
+POLICY_TYPE = {"client": _("Cliente"), "product": _("Producto"), "all": _("General")}
 
 
 class CommissionPolicyLineImage(models.Model):
