@@ -8,11 +8,12 @@
     "website": "https://binauraldev.com",
     "category": "Technical",
     "version": "16.3",
-    "depends": ["product", "purchase", "stock_account", "stock"],
+    "depends": ["product", "purchase", "stock_account", "stock", "sale"],
     "data": [
         "views/product_pricelist_views.xml",
         "views/product_views.xml",
         "views/purchase_views.xml",
-        "views/product_product.xml",   
+        "views/product_product.xml",
+        "views/account_move.xml",
     ],
 }
