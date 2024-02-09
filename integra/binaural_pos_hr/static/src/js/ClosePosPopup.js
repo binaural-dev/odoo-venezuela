@@ -8,7 +8,9 @@ odoo.define('binaural_pos_hr.ClosePosPopup', function(require) {
   const BinauralClosePosPopup = (ClosePosPopup) =>
     class extends ClosePosPopup {
       async confirm() {
-        if (!this.env.pos.config.pos_close_session_require_supervisor_key) {
+        if (
+          this.env.pos.config.pos_type_close_require_supervisor_key  != 'popup'
+          || !this.env.pos.config.pos_close_session_require_supervisor_key) {
           return await super.confirm()
         }
         const { confirmed } = await Gui.showPopup("SupervisorPopup", {});

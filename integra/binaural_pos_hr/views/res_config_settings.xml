@@ -51,6 +51,9 @@
                             <div class="text-muted">
                 Display popup to type supervisor pin to close session 
                             </div>
+                            <field name="pos_type_close_require_supervisor_key" 
+                                widget="radio" 
+                                attrs="{'invisible': [('pos_close_session_require_supervisor_key','!=',True)]}"/>
                         </div>
                     </div>
 

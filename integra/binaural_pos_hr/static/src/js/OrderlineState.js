@@ -17,6 +17,12 @@ odoo.define("binaural_pos_hr.OrderlineState", function(require) {
             return 
           }
         }
+        if (quantity < this.quantity) {
+          const { confirmed } = await Gui.showPopup("SupervisorPopup", {});
+          if (!confirmed) {
+            return 
+          }
+        }
         return await super.set_quantity(...arguments)
       }
     };
