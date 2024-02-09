@@ -6,18 +6,56 @@ odoo.define('binaural_subsidiary_pos_hr.SubsidiarySupervisorPopup', function(req
 
   const { _t } = require('web.core');
 
-  const SupervisorPopupChild = (SupervisorPopup) => (
+  console.log("SupervisorPopupChild");
 
-    class SupervisorPopupChild extends SupervisorPopup {
+  const SupervisorPopupChild = (SupervisorPopup) => (
+    class extends SupervisorPopup {
       setup() {
         super.setup();
 
-        // subsidiary_id = this.pos.config.sh_analytic_account[0]
+        this.pos_setting_subsidiary_id = this.env.pos.config.sh_analytic_account[0]
+
+      }
+
+      is_passkey_valid (key, value) {
+        /**
+         * Return the posible options below:
+         * 
+         * -1: There are errors caused by empty data.
+         * -2: There are supervisors matching with the value (pass), but there aren't matching with the current subsidiary specified from pos_config.
+         *  0: There aren't supervisor matching with the value (pass).
+         *  1: Success -> There are at least one supervisor matching either value and subsidiary.
+         * 
+         */
+
+        if (value == "") return -1;
+        if (!this.supervisor_ids) return -1;
+
+        const supervisor_ids = this.supervisor_ids.filter(
+          (emp) => (emp[key] === value)
+        );
+
+        console.log({value});
+        console.log(this.env.pos);
+        console.log('this.pos_setting_subsidiary_id: ', this.pos_setting_subsidiary_id);
+        console.log('this.supervisor_ids: ', this.supervisor_ids);
+
+        if (!supervisor_ids.length) return 0;
+
+        const exist_supervisor_on_subsidiary = supervisor_ids.filter(emp => (
+          emp.subsidiary_ids.includes(this.pos_setting_subsidiary_id)
+        ))
+
+        console.log({exist_supervisor_on_subsidiary});
+
+        if (!exist_supervisor_on_subsidiary.length) return -2;
+
+        return 1
       }
     }
   )
 
   Registries.Component.extend(SupervisorPopup, SupervisorPopupChild);
 
-  return SupervisorPopupChild;
+  return SupervisorPopup;
 });

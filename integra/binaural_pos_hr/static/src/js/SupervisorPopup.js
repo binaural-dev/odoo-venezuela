@@ -32,17 +32,25 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
     }
 
     async askPassKey(key, value) {
-      const employee = this.is_passkey_valid(key, value)
+      const employee = this.is_passkey_valid(key, value);
 
-      if (employee === -1) return;
+      console.log({employee});
 
-      if (employee) {
+      if (employee === 1) {
         this.close({}, true);
         return;
       }
 
+      if (employee === -1) return;
+
+      let msg_error = this.env._t('Incorrect Password');
+
+      if (employee === -2) {
+        msg_error = this.env._t('You do not have permission for this subsidiary')
+      }
+
       await this.showPopup('ErrorPopup', {
-          title: this.env._t('Incorrect Password'),
+          title: msg_error,
       });
     }
 
