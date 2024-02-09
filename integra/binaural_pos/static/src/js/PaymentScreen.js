@@ -5,6 +5,12 @@ odoo.define("binaural_pos.PaymentScreen", function (require) {
 
   const BinauralPaymentScreen = (PaymentScreen) =>
     class BinauralPaymentScreen extends PaymentScreen {
+      addNewPaymentLine({ detail: paymentMethod }) {
+        if(paymentMethod["type"] == "cash"){
+          this.env.pos.open_cashbox();
+        }
+        return super.addNewPaymentLine(...arguments);
+      }
       _updateSelectedPaymentline() {
         // do nothing if there is not a selected payment line
         if (!this.selectedPaymentLine) return;
