@@ -35,7 +35,7 @@ class CommissionPolicyItem(models.Model):
             "name": "Products",
             "res_model": "product.product",
             "view_mode": "tree",
-            "domain": [("brand_id", "=", self.brand_id.id), ("commission_item_ids", "!=", False)],
+            "domain": [("brand_id", "=", self.brand_id.id), ("commission_item_ids", "=", False)],
             "target": "new",
         }
 
@@ -54,7 +54,7 @@ class CommissionPolicyItem(models.Model):
             "name": "Products",
             "res_model": "product.product",
             "view_mode": "tree",
-            "domain": [("categ_id", "in", category_ids)],
+            "domain": [("categ_id", "in", category_ids), ("commission_item_ids", "=", False)],
             "target": "new",
         }
 
