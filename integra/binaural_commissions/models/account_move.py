@@ -132,7 +132,7 @@ class AccountMove(models.Model):
                         record.collection_days
                     )
 
-                    if len(commission_id) > 1:
+                    if commission_id and len(commission_id) > 1:
                         raise ValidationError(
                             _(
                                 "The commission policy has more than one record with the same date range."
