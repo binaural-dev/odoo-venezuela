@@ -14,7 +14,7 @@ odoo.define('binaural_subsidiary_pos_hr.SubsidiarySupervisorPopup', function(req
         super.setup();
 
         this.pos_setting_subsidiary_id = this.env.pos.config.sh_analytic_account[0]
-
+        this.is_subsidiary_setting_active = this.env.pos.config.subsidiary;
       }
 
       is_passkey_valid (key, value) {
@@ -27,6 +27,11 @@ odoo.define('binaural_subsidiary_pos_hr.SubsidiarySupervisorPopup', function(req
          *  1: Success -> There are at least one supervisor matching either value and subsidiary.
          * 
          */
+
+        if (!this.is_subsidiary_setting_active) {
+          return super.is_passkey_valid(key, value)
+        }
+
 
         if (value == "") return -1;
         if (!this.supervisor_ids) return -1;
