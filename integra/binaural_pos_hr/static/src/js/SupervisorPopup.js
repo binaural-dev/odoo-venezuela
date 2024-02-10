@@ -27,7 +27,9 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
         )
       );
 
-      return employee;
+      if (!employee) return 0;
+
+      return 1;
 
     }
 
