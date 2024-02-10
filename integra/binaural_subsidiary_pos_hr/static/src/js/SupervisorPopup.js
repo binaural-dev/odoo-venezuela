@@ -35,18 +35,11 @@ odoo.define('binaural_subsidiary_pos_hr.SubsidiarySupervisorPopup', function(req
           (emp) => (emp[key] === value)
         );
 
-        console.log({value});
-        console.log(this.env.pos);
-        console.log('this.pos_setting_subsidiary_id: ', this.pos_setting_subsidiary_id);
-        console.log('this.supervisor_ids: ', this.supervisor_ids);
-
         if (!supervisor_ids.length) return 0;
 
         const exist_supervisor_on_subsidiary = supervisor_ids.filter(emp => (
           emp.subsidiary_ids.includes(this.pos_setting_subsidiary_id)
         ))
-
-        console.log({exist_supervisor_on_subsidiary});
 
         if (!exist_supervisor_on_subsidiary.length) return -2;
 

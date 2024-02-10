@@ -34,8 +34,6 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
     async askPassKey(key, value) {
       const employee = this.is_passkey_valid(key, value);
 
-      console.log({employee});
-
       if (employee === 1) {
         this.close({}, true);
         return;
