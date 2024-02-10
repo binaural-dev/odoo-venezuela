@@ -43,10 +43,6 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
 
       let msg_error = this.env._t('Incorrect Password');
 
-      if (employee === -2) {
-        msg_error = this.env._t('You do not have permission for this subsidiary')
-      }
-
       await this.showPopup('ErrorPopup', {
           title: msg_error,
       });

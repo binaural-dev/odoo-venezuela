@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-10 14:20+0000\n"
-"PO-Revision-Date: 2024-02-10 14:20+0000\n"
+"POT-Creation-Date: 2024-02-10 14:32+0000\n"
+"PO-Revision-Date: 2024-02-10 14:32+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,6 +26,13 @@ msgid "Employee"
 msgstr "Empleado"
 
 #. module: binaural_subsidiary_pos_hr
+#. odoo-javascript
+#: code:addons/binaural_subsidiary_pos_hr/static/src/js/SupervisorPopup.js:0
+#, python-format
+msgid "Incorrect Password"
+msgstr "Contraseña Incorrecta"
+
+#. module: binaural_subsidiary_pos_hr
 #: model:ir.model.fields,field_description:binaural_subsidiary_pos_hr.field_hr_employee__is_required_subsidiary
 msgid "Is Required Subsidiary"
 msgstr "Es requerida la sucursal"
@@ -34,3 +41,10 @@ msgstr "Es requerida la sucursal"
 #: model:ir.model.fields,field_description:binaural_subsidiary_pos_hr.field_hr_employee__subsidiary_ids
 msgid "Subsidiaries"
 msgstr "Sucursales"
+
+#. module: binaural_subsidiary_pos_hr
+#. odoo-javascript
+#: code:addons/binaural_subsidiary_pos_hr/static/src/js/SupervisorPopup.js:0
+#, python-format
+msgid "You do not have permission for this subsidiary"
+msgstr "No tienes permiso para esta sucursal"

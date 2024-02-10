@@ -45,6 +45,27 @@ odoo.define('binaural_subsidiary_pos_hr.SubsidiarySupervisorPopup', function(req
 
         return 1
       }
+
+      async askPassKey(key, value) {
+        const employee = this.is_passkey_valid(key, value);
+  
+        if (employee === 1) {
+          this.close({}, true);
+          return;
+        }
+  
+        if (employee === -1) return;
+  
+        let msg_error = this.env._t('Incorrect Password');
+  
+        if (employee === -2) {
+          msg_error = this.env._t('You do not have permission for this subsidiary')
+        }
+  
+        await this.showPopup('ErrorPopup', {
+            title: msg_error,
+        });
+      }
     }
   )
 
