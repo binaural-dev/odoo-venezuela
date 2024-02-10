@@ -1,3 +1,6 @@
+
+import hashlib
+
 from odoo import _, api, fields, models
 
 
@@ -26,6 +29,10 @@ class HrEmployee(models.Model):
         domain = self.get_pos_hr_employee_domain()
         fields = self.get_pos_hr_employee_fields()
 
-        hr_employee_ids = self.search_read(domain, fields)
+        hr_employee_ids = self.sudo().search_read(domain, fields)
+
+        for e in hr_employee_ids:
+            e['barcode'] = hashlib.sha1(e['barcode'].encode('utf8')).hexdigest() if e['barcode'] else False
+            e['pin'] = hashlib.sha1(e['pin'].encode('utf8')).hexdigest() if e['pin'] else False
 
         return hr_employee_ids

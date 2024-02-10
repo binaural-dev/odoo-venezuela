@@ -6,8 +6,6 @@ odoo.define('binaural_subsidiary_pos_hr.SubsidiarySupervisorPopup', function(req
 
   const { _t } = require('web.core');
 
-  console.log("SupervisorPopupChild");
-
   const SupervisorPopupChild = (SupervisorPopup) => (
     class extends SupervisorPopup {
       setup() {
@@ -37,7 +35,7 @@ odoo.define('binaural_subsidiary_pos_hr.SubsidiarySupervisorPopup', function(req
         if (!this.supervisor_ids) return -1;
 
         const supervisor_ids = this.supervisor_ids.filter(
-          (emp) => (emp[key] === value)
+          (emp) => (emp[key] === Sha1.hash(value))
         );
 
         if (!supervisor_ids.length) return 0;
