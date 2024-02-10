@@ -13,48 +13,51 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
       super.setup();
       this.inputRef = useRef('input');
       useBarcodeReader({cashier: this.barcodeCashierAction}, true);
+
+      this.supervisor_ids = this.env.pos.supervisor_ids
     }
 
-    async askPin(code) {
-      if (code == "") return;
-      if (!this.env.pos.supervisor_ids) return;
+    is_passkey_valid (key, value) {
+      if (value == "") return -1;
+      if (!this.supervisor_ids) return -1;
 
-      const employee = this.env.pos.supervisor_ids.find(
+      const employee = this.supervisor_ids.find(
         (emp) => (
-          emp.pin === code
+          emp[key] === value
         )
       );
 
-      if (employee) {
+      return employee;
+
+    }
+
+    async askPassKey(key, value) {
+      const employee = this.is_passkey_valid(key, value);
+
+      if (employee === 1) {
         this.close({}, true);
         return;
       }
 
+      if (employee === -1) return;
+
+      let msg_error = this.env._t('Incorrect Password');
+
       await this.showPopup('ErrorPopup', {
-          title: this.env._t('Incorrect Password'),
+          title: msg_error,
       });
+    }
+
+    async askPin(code) {
+
+      await this.askPassKey('pin', code)
       
     }
 
     async askBarcode(code) {
-      if (!this.env.pos.supervisor_ids) return;
 
-      const employee = this.env.pos.supervisor_ids.find(
-        (emp) => (
-          emp.barcode === code.code
-        )
-      );
+      await this.askPassKey('barcode', code.code)
 
-      if (employee) {
-        this.close({}, true);
-
-        return
-      }
-
-      await this.showPopup('ErrorPopup', {
-          title: this.env._t('Incorrect Password'),
-      });
-      
     }
 
     async selectCashier() {
