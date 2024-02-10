@@ -1,3 +1,4 @@
+/* global Sha1 */
 odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
   'use strict';
 
@@ -15,6 +16,7 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
       useBarcodeReader({cashier: this.barcodeCashierAction}, true);
 
       this.supervisor_ids = this.env.pos.supervisor_ids
+
     }
 
     is_passkey_valid (key, value) {
@@ -23,7 +25,7 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
 
       const employee = this.supervisor_ids.find(
         (emp) => (
-          emp[key] === value
+          emp[key] === Sha1.hash(value)
         )
       );
 
