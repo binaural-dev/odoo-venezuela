@@ -34,12 +34,12 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
     async askPassKey(key, value) {
       const employee = this.is_passkey_valid(key, value);
 
-      if (employee === 1) {
+      if (employee === -1) return;
+
+      if (employee) {
         this.close({}, true);
         return;
       }
-
-      if (employee === -1) return;
 
       let msg_error = this.env._t('Incorrect Password');
 
