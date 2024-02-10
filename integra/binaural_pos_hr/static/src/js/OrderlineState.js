@@ -8,7 +8,11 @@ odoo.define("binaural_pos_hr.OrderlineState", function(require) {
   const BinauralOrderlineState = (Orderline) =>
     class BinauralOrderlineState extends Orderline {
       async set_quantity(quantity, keep_price){
+        console.log(quantity, keep_price, 'quantity, keep_price')
         if (!this.pos.config.pos_remove_orderline_require_supervisor_key) {
+          return await super.set_quantity(...arguments)
+        }
+        if (quantity < 1 && quantity > 0 || quantity < 0 && quantity > -1) {
           return await super.set_quantity(...arguments)
         }
         if(quantity === 'remove'){
