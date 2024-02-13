@@ -6,7 +6,7 @@
             <field name="model">res.config.settings</field>
             <field name="inherit_id" ref="binaural_pos.res_config_settings_binaural_pos"/>
             <field name="arch" type="xml">
-                <xpath expr="//div[@name='binaural_igtf_settings']/div[@id='bin_igtf_settings_pos_show_just_products_with_available_qty']" position="after">
+                <xpath expr="//div[@name='binaural_igtf_settings']/div[@id='receipt_journal_id_pane']" position="after">
                     <div 
                         groups="point_of_sale.group_pos_manager"
                         class="col-12 col-lg-6 o_setting_box"

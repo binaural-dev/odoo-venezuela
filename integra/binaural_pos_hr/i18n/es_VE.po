@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-31 20:44+0000\n"
-"PO-Revision-Date: 2024-01-31 20:44+0000\n"
+"POT-Creation-Date: 2024-02-10 15:05+0000\n"
+"PO-Revision-Date: 2024-02-10 15:05+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,11 +26,6 @@ msgstr "Cancelar"
 #: model:ir.model.fields.selection,name:binaural_pos_hr.selection__hr_employee__pos_employee_type__cashier
 msgid "Cashier"
 msgstr "Cajero"
-
-#. module: binaural_pos_hr
-#: model:ir.model,name:binaural_pos_hr.model_res_company
-msgid "Companies"
-msgstr "Compañías"
 
 #. module: binaural_pos_hr
 #: model:ir.model,name:binaural_pos_hr.model_res_config_settings
@@ -59,7 +54,6 @@ msgstr "Empleado"
 #. module: binaural_pos_hr
 #. odoo-javascript
 #: code:addons/binaural_pos_hr/static/src/js/SupervisorPopup.js:0
-#: code:addons/binaural_pos_hr/static/src/js/SupervisorPopup.js:0
 #, python-format
 msgid "Incorrect Password"
 msgstr "Contraseña Incorrecta"
@@ -85,28 +79,26 @@ msgid "Point of Sale Session"
 msgstr "Sesión TPV"
 
 #. module: binaural_pos_hr
+#: model:ir.model.fields,field_description:binaural_pos_hr.field_pos_config__pos_discount_require_supervisor_key
+#: model:ir.model.fields,field_description:binaural_pos_hr.field_res_config_settings__pos_discount_require_supervisor_key
+msgid "Pos Discount Require Supervisor Key"
+msgstr "Clave Supervisor Descuentos"
+
+#. module: binaural_pos_hr
 #: model:ir.model.fields,field_description:binaural_pos_hr.field_hr_employee__pos_employee_type
 msgid "Pos Employee Type"
 msgstr "Tipo de empleado pos"
 
 #. module: binaural_pos_hr
+#: model:ir.model.fields,field_description:binaural_pos_hr.field_pos_config__pos_refund_require_supervisor_key
+#: model:ir.model.fields,field_description:binaural_pos_hr.field_res_config_settings__pos_refund_require_supervisor_key
+msgid "Pos Refund Require Supervisor Key"
+msgstr "Clave Supervisor Reembolsos"
+
+#. module: binaural_pos_hr
 #: model:ir.model.fields.selection,name:binaural_pos_hr.selection__hr_employee__pos_employee_type__supervisor
 msgid "Supervisor"
 msgstr ""
-
-#. module: binaural_pos_hr
-#: model:ir.model.fields,field_description:binaural_pos_hr.field_pos_config__pos_discount_require_supervisor_key
-#: model:ir.model.fields,field_description:binaural_pos_hr.field_res_company__pos_discount_require_supervisor_key
-#: model:ir.model.fields,field_description:binaural_pos_hr.field_res_config_settings__pos_discount_require_supervisor_key
-msgid "Supervisor Key Discounts"
-msgstr "Clave Supervisor Descuentos"
-
-#. module: binaural_pos_hr
-#: model:ir.model.fields,field_description:binaural_pos_hr.field_pos_config__pos_refund_require_supervisor_key
-#: model:ir.model.fields,field_description:binaural_pos_hr.field_res_company__pos_refund_require_supervisor_key
-#: model:ir.model.fields,field_description:binaural_pos_hr.field_res_config_settings__pos_refund_require_supervisor_key
-msgid "Supervisor Key Refunds"
-msgstr "Clave Supervisor Reembolsos"
 
 #. module: binaural_pos_hr
 #: model:ir.model.fields.selection,name:binaural_pos_hr.selection__hr_employee__pos_employee_type__waiter

@@ -130,7 +130,7 @@
                             </div>
                         </div>
 
-                        <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="col-12 col-lg-6 o_setting_box" id="receipt_journal_id_pane">
                             <div class="o_setting_right_pane">
                                 <div>
                                     <label for="receipt_journal_id"/>
