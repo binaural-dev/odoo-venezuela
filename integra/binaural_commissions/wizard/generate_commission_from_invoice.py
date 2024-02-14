@@ -58,7 +58,7 @@ class GenerateCommission(models.TransientModel):
             new_vals = dict()
             new_vals = default_invoice_data(invoice)
             new_vals["invoice_line_ids"] = self._prepare_commission_line_vals(
-                invoice.total_commission
+                invoice.total_commission, invoice
             )
             new_vals["origin_commission_invoice"] = [invoice.id]
             vals.append(new_vals)
@@ -80,13 +80,13 @@ class GenerateCommission(models.TransientModel):
         new_vals = dict()
         new_vals = default_invoice_data(self.invoice_ids)
 
-        new_vals["invoice_line_ids"] = self._prepare_commission_line_vals(commission_amount)
+        new_vals["invoice_line_ids"] = self._prepare_commission_line_vals(commission_amount,self.invoice_ids)
         new_vals["origin_commission_invoice"] = [Command.set(self.invoice_ids.ids)]
         return [new_vals]
 
-    def _prepare_commission_line_vals(self, amount):
+    def _prepare_commission_line_vals(self, amount, invoices):
         product_id = self.env.company.commission_product_id
-        invoice_names = ", ".join(self.invoice_ids.mapped("name"))
+        invoice_names = ", ".join(invoices.mapped("name"))
         return [
             Command.create(
                 {
