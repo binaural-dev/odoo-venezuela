@@ -48,6 +48,14 @@ class HrContract(models.Model):
         self.ensure_one()
         return self["foreign_" + self._get_contract_wage_field()]
 
+    def get_vef_wage(self):
+        self.ensure_one()
+        vef_currency = self.env.ref("base.VEF")
+        if self.foreign_currency_id == vef_currency:
+            return self._get_contract_foreign_wage()
+        return self._get_contract_wage()
+        # return self[self.wage_field_to_use]
+
     def get_integral_daily_wage(self):
         self.ensure_one()
         employee_id = self.employee_id

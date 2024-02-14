@@ -6,14 +6,31 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240205\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-06 16:00+0000\n"
-"PO-Revision-Date: 2024-02-06 16:00+0000\n"
+"POT-Creation-Date: 2024-02-14 14:40+0000\n"
+"PO-Revision-Date: 2024-02-14 14:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: binaural_hr_payroll
+#: model:ir.actions.report,print_report_name:binaural_hr_payroll.hr_pre_payslip_run_report
+msgid ""
+"\n"
+"        'Reporte Pre-nómina General %s - %s' % (\n"
+"          object.date_start.strftime('%m/%d/%Y'), object.date_end.strftime('%m/%d/%Y')\n"
+"        )\n"
+"      "
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid ""
+", \n"
+"                Cuenta"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
@@ -39,6 +56,104 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
 msgid "<span>Day(s)</span>"
 msgstr "<span>Día(s)</span>"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run
+msgid "<span>Pagina </span><span class=\"page\"/> de <span class=\"topage\"/>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+msgid "<strong>Calculado en </strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "<strong>Calculado en: </strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "<strong>Cargo: </strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+msgid "<strong>Cargo</strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "<strong>Cédula de Id.: </strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+msgid "<strong>Cédula de Identidad</strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "<strong>Departamento: </strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+msgid "<strong>Departamento</strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "<strong>Empleado: </strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+msgid "<strong>Empleado</strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid ""
+"<strong>Esta nómina no está validada. Este no es un documento "
+"legal.</strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "<strong>Fecha de Ingreso: </strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+msgid "<strong>Fecha de Ingreso</strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "<strong>Neto</strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "<strong>Período de Pago: </strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+msgid "<strong>Período de Pago</strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "<strong>Salario Básico</strong>"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "<strong>Total</strong>"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_needaction
@@ -83,6 +198,12 @@ msgstr "Pagos de Anticipos"
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__profit_sharing_type__annual_avg
 msgid "Annual wage average"
 msgstr "Promedio de salario anual"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Asignaciones"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:hr.work.entry.type,name:binaural_hr_payroll.hr_work_entry_binaural_asistencia_nocturna
@@ -170,6 +291,12 @@ msgstr "Pagos de Prestaciones"
 #. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
 msgid "CRON"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Cantidad"
 msgstr ""
 
 #. module: binaural_hr_payroll
@@ -300,10 +427,21 @@ msgid "Days"
 msgstr "Días"
 
 #. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Deducciones"
+msgstr ""
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__department_id
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payroll_move_view_search
 msgid "Department"
 msgstr "Departamento"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__display_name
+msgid "Display Name"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__employee_vat
@@ -335,6 +473,11 @@ msgstr ""
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__resource_calendar_attendance__day_period__early_morning
 msgid "Early Morning"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Emisión:"
 msgstr ""
 
 #. module: binaural_hr_payroll
@@ -390,6 +533,16 @@ msgstr "Días de Vacaciones del Primer Año"
 #: model:ir.model.constraint,message:binaural_hr_payroll.constraint_res_company_first_year_vacation_days
 msgid "First Year Vacation Days must be a positive number"
 msgstr "Días de Vacaciones del Primer Año debe ser positivo"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_follower_ids
+msgid "Followers"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_partner_ids
+msgid "Followers (Partners)"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
@@ -485,6 +638,7 @@ msgstr "Salario Por Hora"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__vat
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__id
 msgid "ID"
 msgstr "CI"
 
@@ -492,6 +646,17 @@ msgstr "CI"
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
 msgid "IVSS Configuration"
 msgstr "Configuración de IVSS"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payroll_move__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr "Si está"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payroll_move__message_has_error
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payroll_move__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:hr.work.entry.type,name:binaural_hr_payroll.hr_work_entry_binaural_leave
@@ -507,6 +672,11 @@ msgstr ""
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__benefits_interest_computation_type__internal
 msgid "Internal"
 msgstr "Interno"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_is_follower
+msgid "Is Follower"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__ivss_wage_treshold
@@ -561,6 +731,11 @@ msgstr "Pagos de Liquidación"
 #: model:ir.ui.menu,name:binaural_hr_payroll.menu_hr_payroll_liquidation_move
 msgid "Liquidations Payments"
 msgstr "Pagos de Liquidaciones"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run
+msgid "Logo"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_main_attachment_id
@@ -641,6 +816,44 @@ msgid "Night"
 msgstr "Noche"
 
 #. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Nombre"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_needaction_counter
+msgid "Number of Actions"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_has_error_counter
+msgid "Number of errors"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payroll_move__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payroll_move__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Número de días"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Número de horas"
+msgstr ""
+
+#. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_hr_payslip
 msgid "Pay Slip"
 msgstr "Recibo de nómina"
@@ -680,6 +893,16 @@ msgstr "Pagos de Nómina"
 #: model:ir.model,name:binaural_hr_payroll.model_hr_payslip_worked_days
 msgid "Payslip Worked Days"
 msgstr "Días trabajados en el recibo de nómina"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Periodo:"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.actions.report,name:binaural_hr_payroll.hr_pre_payslip_run_report
+msgid "Pre-payslip run report"
+msgstr "Reporte pre-nómina"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__prefix_vat
@@ -764,6 +987,26 @@ msgstr ""
 "recibo."
 
 #. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+msgid "Recibo conforme, CI:"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Recibo de Salario -"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Reporte Pre-nómina -"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr ""
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_move__move_type__salary
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_structure__category__salary
 msgid "Salary"
@@ -790,6 +1033,30 @@ msgstr "Estructura salarial"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__seniority
 msgid "Seniority"
 msgstr "Anitgüedad"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Tasa (%)"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+msgid "Tasa(%)"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid ""
+"The net amount will be recovered from the first positive remuneration "
+"established after this."
+msgstr ""
+
+#. module: binaural_hr_payroll
+#. odoo-python
+#: code:addons/binaural_hr_payroll/report/hr_payslip_run_report.py:0
+#, python-format
+msgid "The pre payslip run report should be called upon one record."
+msgstr "El reporte pre nómina debe ser llamado sobre un registro."
 
 #. module: binaural_hr_payroll
 #: model:ir.model.constraint,message:binaural_hr_payroll.constraint_res_company_provisions_cron_day
@@ -825,6 +1092,11 @@ msgid "Total Deduction"
 msgstr "Total Deducciones"
 
 #. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Total Empleados:"
+msgstr ""
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__total_net
 msgid "Total Net"
 msgstr "Total Neto"
@@ -838,6 +1110,12 @@ msgstr "Total Vacaciones"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__total_vacation_bonus
 msgid "Total Vacation Bonus"
 msgstr "Total Bono Vacaional"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_payslip_binaural
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
+msgid "Total a pagar en"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__move_type
@@ -908,6 +1186,16 @@ msgid "Wage Field To Use"
 msgstr "Campo de Salario a Usar"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__website_message_ids
+msgid "Website Messages"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payroll_move__website_message_ids
+msgid "Website communication history"
+msgstr ""
+
+#. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
 msgid ""
 "Wether the base wage for the payroll computations is gonna be\n"
@@ -964,3 +1252,13 @@ msgstr "Año"
 #, python-format
 msgid "Years"
 msgstr "Años"
+
+#. module: binaural_hr_payroll
+#: model:ir.model,name:binaural_hr_payroll.model_report_binaural_hr_payroll_report_pre_payslip_run
+msgid "report.binaural_hr_payroll.report_pre_payslip_run"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model,name:binaural_hr_payroll.model_report_hr_payroll_report_payslip_lang
+msgid "report.hr_payroll.report_payslip_lang"
+msgstr ""
