@@ -78,7 +78,6 @@ msgstr "Empleado"
 #. module: binaural_pos_hr
 #. odoo-javascript
 #: code:addons/binaural_pos_hr/static/src/js/SupervisorPopup.js:0
-#: code:addons/binaural_pos_hr/static/src/js/SupervisorPopup.js:0
 #, python-format
 msgid "Incorrect Password"
 msgstr "Contraseña Incorrecta"
