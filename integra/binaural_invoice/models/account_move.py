@@ -13,23 +13,13 @@ class AccountMove(models.Model):
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     invoice_reception_date = fields.Date(
-        "Reception Date", help="Indicates when the invoice was received by the client/company"
+        "Reception Date",
+        help="Indicates when the invoice was received by the client/company",
+        tracking=True,
     )
     last_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")
-
-    def write(self, vals):
-        res = super().write(vals)
-        for move in self:
-            if vals.get("invoice_reception_date", False):
-                move.message_post(
-                    body=_(
-                        "The invoice reception date has been updated to %s",
-                        move.invoice_reception_date,
-                    )
-                )
-        return res
 
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
