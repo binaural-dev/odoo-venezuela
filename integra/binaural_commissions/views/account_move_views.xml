@@ -60,7 +60,7 @@
         </xpath>
         <xpath expr="//notebook" position="inside">
             <page id="origin_commission_tab" name="origin_commission_tab" string="Origin commissions" attrs="{'invisible': [('is_commission_invoice', '!=', True)]}">
-                <field name="origin_commission_invoice" mode="tree">
+                <field name="origin_commission_invoice" readonly="1" mode="tree">
                     <tree editable="bottom" string="Journal Items">
                         <field name="name"/>
                         <field name="total_commission" widget="monetary" sum="Total Commission"/>

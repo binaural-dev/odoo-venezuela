@@ -14,11 +14,13 @@
                     <field name="invoice_line_ids" readonly="1">
                         <tree>
                             <field name="product_id"/>
-                            <field name="price_subtotal"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="price_subtotal" widget="monetary"  options="{'currency_field': 'currency_id'}"/>
                             <field name="policy_type" invisible="1"/>
                             <field name="commission_image_id" widget="badge" decoration-primary="policy_type=='client'"
                                    decoration-success="policy_type=='product'" decoration-warning="policy_type=='all'"/>
-                            <field name="commission_amount" sum="Total Commission"/>
+                            <field name="commission_amount" sum="Total Commission" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                    
                             </tree>
                     </field>
                     <footer>

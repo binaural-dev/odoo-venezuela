@@ -47,6 +47,12 @@ class AccountMove(models.Model):
     label_commission_when = fields.Char(compute="_compute_field_settings")
     is_commission_invoice = fields.Boolean(readonly=True, copy=False)
 
+    def action_post(self):
+        for record in self:
+            if record.is_commission_invoice and not record.invoice_date:
+                record.invoice_date = fields.Date.context_today(self)
+        return super().action_post()
+
     @api.depends("commission_invoice_date_field", "compute_commission_when")
     def _compute_field_settings(self):
         for record in self:

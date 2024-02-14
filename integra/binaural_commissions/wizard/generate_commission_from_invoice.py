@@ -86,11 +86,12 @@ class GenerateCommission(models.TransientModel):
 
     def _prepare_commission_line_vals(self, amount):
         product_id = self.env.company.commission_product_id
+        invoice_names = ", ".join(self.invoice_ids.mapped("name"))
         return [
             Command.create(
                 {
                     "product_id": product_id.id,
-                    "name": "Commission",
+                    "name": _("Commission of invoices: %s", invoice_names),
                     "price_unit": amount,
                     "quantity": 1,
                     "tax_ids": [(Command.set, 0, product_id.taxes_id.ids)],
