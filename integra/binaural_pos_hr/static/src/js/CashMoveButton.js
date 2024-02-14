@@ -3,6 +3,7 @@
 import CashMoveButton from 'point_of_sale.CashMoveButton';
 import Registries from 'point_of_sale.Registries';
 import { Gui } from "point_of_sale.Gui";
+import { _t } from "web.core";
 
 const BinauralCashMoveButton = (CashMoveButton) =>
   class BinauralCashMoveButton extends CashMoveButton {
@@ -11,7 +12,9 @@ const BinauralCashMoveButton = (CashMoveButton) =>
         return await super.onClick(...arguments)
       }
       const { confirmed } = await Gui.showPopup(
-        "SupervisorPopup",{}
+        "SupervisorPopup",{
+            title: _t("Insert Supervisor's Password"),
+          }
       );
       if (!confirmed) {
         return
