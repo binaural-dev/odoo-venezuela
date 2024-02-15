@@ -67,7 +67,7 @@ class GenerateCommission(models.TransientModel):
             raise ValidationError(
                 _(
                     "The invoices %s already has a commission invoice in process",
-                    ",".join(invoices_with_commission_invoice),
+                    ", ".join(invoices_with_commission_invoice),
                 )
             )
 

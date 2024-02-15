@@ -808,7 +808,9 @@ msgstr "La política de comisión tiene más de un registro con el mismo rango d
 #: code:addons/binaural_commissions/wizard/generate_commission_from_invoice.py:0
 #, python-format
 msgid "The invoices %s already has a commission invoice in process"
-msgstr "Las facturas %s ya tienen una factura de comisión en proceso"
+msgstr ""
+"La(s) factura(s) %s ya tienen una factura de proveedor "
+"por pago de comisión en \"Proceso\" o \"Pagada\""
 
 #. module: binaural_commissions
 #. odoo-python
