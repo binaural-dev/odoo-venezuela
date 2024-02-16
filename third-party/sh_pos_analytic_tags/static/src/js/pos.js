@@ -9,8 +9,6 @@ odoo.define('sh_pos_analytic.pos', function (require) {
     const shPosOrder = (Order) => class shPosOrder extends Order {
         export_as_JSON() {
             const json = super.export_as_JSON(...arguments);
-
-            console.log("this.pos.pos_session.sh_analytic_account", this.pos.config)
             json.sh_pos_order_analytic_account = this.pos.config.sh_analytic_account[0] || null;
             return json;
         }
