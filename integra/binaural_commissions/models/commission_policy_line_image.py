@@ -24,7 +24,6 @@ class CommissionPolicyLineImage(models.Model):
         selection=[("client", "Client"), ("product", "Product"), ("all", "General")],
         string="Commission Type",
     )
-    # sale_order_line_id = fields.Many2one("sale.order.line", required=True, ondelete="cascade")
 
     def name_get(self):
         values = []

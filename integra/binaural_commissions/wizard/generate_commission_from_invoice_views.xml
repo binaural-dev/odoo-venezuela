@@ -23,8 +23,10 @@
                                 <field name="name"/>
                                 <field name="partner_id"/>
                                 <field name="seller_id"/>
-                                <field name="total_commission" widget="monetary"/>
+                                <field name="total_commission" widget="monetary" sum="Total Commission"/>
+                                <field name="commission_discount" widget="monetary" sum="Total discount"/>
                                 <field name="amount_total" widget="monetary"/>
+                                <field name="commission_invoice"/> 
                                 <field name="payment_state"/>
                                 <field name="commission_payment_state" widget="badge" decoration-muted="commission_payment_state == 'not_paid'" decoration-success="commission_payment_state == 'paid'" decoration-info="commission_payment_state == 'process'" optional="show" string="Payment State (Commission)" />
                             </tree>

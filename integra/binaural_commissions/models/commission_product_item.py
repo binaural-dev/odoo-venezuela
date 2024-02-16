@@ -44,11 +44,12 @@ class CommissionPolicyItem(models.Model):
         categories = self.category_id
         finish_categ = False
         while not finish_categ:
-            if len(categories.parent_id.ids) == 0:
+            if len(categories.child_id.ids) == 0:
                 finish_categ = True
 
-            category_ids += categories.parent_id.ids
-            categories = categories.parent_id
+            category_ids += categories.child_id.ids
+            categories = categories.child_id
+
         return {
             "type": "ir.actions.act_window",
             "name": "Products",

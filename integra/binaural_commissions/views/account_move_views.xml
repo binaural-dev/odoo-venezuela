@@ -64,6 +64,7 @@
                     <tree editable="bottom" string="Journal Items">
                         <field name="name"/>
                         <field name="total_commission" widget="monetary" sum="Total Commission"/>
+                        <field name="commission_discount" widget="monetary" sum="Total discount"/>
                     </tree>
                 </field>
             </page>
@@ -102,7 +103,7 @@
         <xpath expr="//field[@name='amount_total_signed']" position="before">
             <button name="show_invoice_resume" icon="fa-list" string="Commissions" type="object"/> 
             <field name="total_commission" widget="monetary"/>
-            <field name="commission_discount"/>
+            <field name="commission_discount" widget="monetary"/>
         </xpath>
 
         <xpath expr="//field[@name='invoice_date']" position="after">
@@ -166,7 +167,7 @@
     <field name="domain">
 	[
 	    ("move_type", "=", "out_invoice"),
-	    ("total_commission", ">", 0),
+	    ("amount_residual", "=", 0),
 	    ("seller_id", "!=", False)
 	]
     </field>

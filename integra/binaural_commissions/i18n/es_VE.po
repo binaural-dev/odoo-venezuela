@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-14 19:33+0000\n"
-"PO-Revision-Date: 2024-02-14 19:33+0000\n"
+"POT-Creation-Date: 2024-02-16 21:30+0000\n"
+"PO-Revision-Date: 2024-02-16 21:30+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -228,7 +228,7 @@ msgstr "Tipo de Comisión"
 #: code:addons/binaural_commissions/wizard/generate_commission_from_invoice.py:0
 #, python-format
 msgid "Commission of invoices: %s"
-msgstr "Comisión de facturas: %s"
+msgstr "Comisión de: %s"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,help:binaural_commissions.field_commission_policy_line__commission
@@ -336,6 +336,13 @@ msgstr "Desde"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__date_to
 msgid "Date To"
 msgstr "Hasta"
+
+#. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__discount_invoice
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move__discount_invoice
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__discount_invoice
+msgid "Discount Invoice"
+msgstr "Descuento de Factura"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,help:binaural_commissions.field_account_bank_statement_line__commission_discount
@@ -801,16 +808,33 @@ msgstr ""
 #, python-format
 msgid ""
 "The commission policy has more than one record with the same date range."
-msgstr "La política de comisión tiene más de un registro con el mismo rango de fecha."
+msgstr ""
+"La política de comisión tiene más de un registro con el mismo rango de "
+"fecha."
 
 #. module: binaural_commissions
 #. odoo-python
 #: code:addons/binaural_commissions/wizard/generate_commission_from_invoice.py:0
 #, python-format
+msgid ""
+"The discount amount cannot be greater or equal than the commission amount"
+msgstr "El monto de descuento no puede ser mayor o igual que el monto de comisión"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/account_move.py:0
+#, python-format
+msgid "The invoice(s) %s have an amount pending to pay."
+msgstr "La(s) factura(s) %s tienen un monto pendiente por pagar."
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/account_move.py:0
+#, python-format
 msgid "The invoices %s already has a commission invoice in process"
 msgstr ""
-"La(s) factura(s) %s ya tienen una factura de proveedor "
-"por pago de comisión en \"Proceso\" o \"Pagada\""
+"La(s) factura(s) %s ya tienen una factura de proveedor por pago de comisión "
+"en \"Proceso\" o \"Pagada\""
 
 #. module: binaural_commissions
 #. odoo-python
@@ -818,6 +842,13 @@ msgstr ""
 #, python-format
 msgid "The invoices must have the same seller"
 msgstr "Las facturas deben tener el mismo vendedor"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/account_move.py:0
+#, python-format
+msgid "The reception date cannot be empty after the set date."
+msgstr "La fecha de recepción no puede estar vacía después ser establecida."
 
 #. module: binaural_commissions
 #: model_terms:ir.actions.act_window,help:binaural_commissions.commission_sale_invoices_action
@@ -833,10 +864,17 @@ msgstr "No hay facturas de pago de comisiones!"
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__total_commission
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_move__total_commission
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__total_commission
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.generate_commission_from_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.invoice_commission_summary_wizard_form_view
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
 msgid "Total Commission"
 msgstr "Total de Comisión"
+
+#. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.generate_commission_from_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
+msgid "Total discount"
+msgstr "Total de descuento"
 
 #. module: binaural_commissions
 #. odoo-python
