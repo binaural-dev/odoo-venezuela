@@ -6,7 +6,8 @@
     <field name="arch" type="xml">
         <tree editable="bottom">
             <field name="date_from" />
-            <field name="date_to"/>
+            <field name="date_to" attrs="{'invisible': [('infinite','=',True)]}"/>
+            <field name="infinite"/>
             <field name="commission"/>
         </tree>
     </field>

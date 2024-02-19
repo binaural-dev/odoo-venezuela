@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-19 15:43+0000\n"
-"PO-Revision-Date: 2024-02-19 15:43+0000\n"
+"POT-Creation-Date: 2024-02-19 20:13+0000\n"
+"PO-Revision-Date: 2024-02-19 20:13+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -463,6 +463,12 @@ msgid "In Invoice Status Commission"
 msgstr "Estado de la Factura de Comisión"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__infinite
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__infinite
+msgid "Infinite"
+msgstr "Hasta el infinito"
+
+#. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__invoice_ids
 msgid "Invoice"
 msgstr "Facturas"
@@ -813,17 +819,6 @@ msgstr "¡La comisión no puede ser menor que cero!"
 
 #. module: binaural_commissions
 #. odoo-python
-#: code:addons/binaural_commissions/models/commission_policy.py:0
-#, python-format
-msgid ""
-"The commission date from must be lower or equal to the latest commission "
-"date to."
-msgstr ""
-"La fecha de comisión desde debe ser menor o igual a la fecha de la última "
-"comisión."
-
-#. module: binaural_commissions
-#. odoo-python
 #: code:addons/binaural_commissions/models/account_move.py:0
 #, python-format
 msgid ""
@@ -831,6 +826,21 @@ msgid ""
 msgstr ""
 "La política de comisión tiene más de un registro con el mismo rango de "
 "fecha."
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/commission_policy_line.py:0
+#, python-format
+msgid "The date from must be lower than the date to!"
+msgstr "La fecha desde debe ser menor que la fecha hasta"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/commission_policy_line.py:0
+#: code:addons/binaural_commissions/models/commission_policy_line.py:0
+#, python-format
+msgid "The date range must not overlap!"
+msgstr "Los rangos de fecha no deben superponerse"
 
 #. module: binaural_commissions
 #. odoo-python

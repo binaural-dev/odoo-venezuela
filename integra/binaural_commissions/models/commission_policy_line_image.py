@@ -10,6 +10,7 @@ class CommissionPolicyLineImage(models.Model):
     _name = "commission.policy.line.image"
     _description = "Commission Policy Line Image"
     _rec_name = "commission"
+    _order = "date_from asc"
 
     date_from = fields.Integer(required=True, default=1)
     date_to = fields.Integer(required=True)
@@ -18,11 +19,12 @@ class CommissionPolicyLineImage(models.Model):
         selection=[("client", "Client"), ("product", "Product"), ("all", "General")],
         string="Commission Type",
     )
+    infinite = fields.Boolean()
 
     def name_get(self):
         values = []
         for record in self:
-            range_date = f"[{record.date_from} - {record.date_to}]"
+            range_date = f"[{record.date_from} => {record.date_to if not record.infinite else '∞'}]"
             if record.date_to == record.date_from:
                 range_date = f"[{record.date_from}]"
             values.append((record.id, f"{POLICY_TYPE.get(record.policy_type,'')} {record.commission} % {range_date}"))

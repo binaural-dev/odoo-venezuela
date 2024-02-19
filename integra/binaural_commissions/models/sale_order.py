@@ -19,6 +19,7 @@ class SaleOrder(models.Model):
             "date_to",
             "commission",
             "policy_type",
+            "infinite",
         ]
 
     @api.model

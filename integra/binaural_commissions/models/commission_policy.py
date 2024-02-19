@@ -38,21 +38,6 @@ class CommissionPolicy(models.Model):
             )
             commission.display_name = f"{policy_type}" f" ({commission.name})"
 
-    @api.constrains("commission_line_ids")
-    def _check_previous_range_date_to(self):
-        for commission in self:
-            if len(commission.commission_line_ids) > 1:
-                commission_lines_list = sorted(
-                    commission.commission_line_ids, key=lambda x: x.date_from
-                )
-                if commission_lines_list[-1].date_from <= commission_lines_list[-2].date_to:
-                    raise ValidationError(
-                        _(
-                            "The commission date from must be lower or equal to the "
-                            "latest commission date to."
-                        )
-                    )
-
     def create_image_lines(self):
         commission_lines = self.commission_line_ids
         read_lines = commission_lines.read(["date_from", "date_to", "commission", "policy_type"])

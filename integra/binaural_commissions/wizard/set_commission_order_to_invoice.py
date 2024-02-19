@@ -14,34 +14,28 @@ class SetCommissionOrderToInvoice(models.Model):
     def action_confirm(self):
         order_message = []
         invoice_message = []
-        for sale_order in self.sale_order_ids:
-            sale_order.set_company_settings()
-            for line in sale_order.order_line:
-                if not self.overwrite_commission:
-                    continue
-                if not line.commission_policy_line_image_ids:
-                    continue
-                if line.order_id.name not in order_message:
-                    order_message.append(line.order_id.name)
-                line.commission_policy_line_image_ids = False
-            sale_order.assing_commission_policy_line_images_to_order_lines()
-            for invoice in sale_order.invoice_ids:
-                invoice.write(
-                    {
-                        "commission_invoice_date_field": sale_order.commission_invoice_date_field,
-                        "compute_commission_when": sale_order.compute_commission_when,
-                    }
-                )
-                for line in invoice.invoice_line_ids:
-                    if not self.overwrite_commission:
-                        continue
-                    if not line.commission_image_id:
-                        continue
-                    if invoice.name not in invoice_message:
-                        invoice_message.append(invoice.name)
-                    line.commission_image_id = False
 
-                invoice.calculate_commission()
+        if self.overwrite_commission:
+            order_message = self.sale_order_ids.order_line.filtered(
+                lambda x: x.commission_policy_line_image_ids
+            ).order_id.mapped("name")
+            invoice_message = self.sale_order_ids.invoice_ids.invoice_line_ids.filtered(
+                lambda x: x.commission_image_id
+            ).move_id.mapped("name")
+
+            self.sale_order_ids.order_line.commission_policy_line_image_ids = False
+            self.sale_order_ids.invoice_ids.invoice_line_ids.commission_image_id = False
+
+        data_write = {
+            "commission_invoice_date_field": self.company_id.commission_invoice_date_field,
+            "compute_commission_when": self.company_id.compute_commission_when,
+        }
+
+        self.sale_order_ids.write(data_write)
+        self.sale_order_ids.assing_commission_policy_line_images_to_order_lines()
+
+        self.sale_order_ids.invoice_ids.write(data_write)
+        self.sale_order_ids.invoice_ids.calculate_commission()
 
         if len(order_message) == 0 and len(invoice_message) == 0:
             return True
@@ -66,7 +60,6 @@ class SetCommissionOrderToInvoice(models.Model):
                     """,
                     ", ".join(invoice_message),
                 )
-                
             )
 
         return {
