@@ -26,7 +26,6 @@ class CommissionPolicy(models.Model):
         string="Commission Type",
         required=True,
     )
-    is_report_range = fields.Boolean(groups="base.group_no_one", copy=False)
     clients_id = fields.Many2many("res.partner", "commission_policy_client_rel", string="Clients")
     commission_line_ids = fields.One2many("commission.policy.line", "policy_id")
     commission_product_item_ids = fields.One2many("commission.product.item", "commission_policy_id")

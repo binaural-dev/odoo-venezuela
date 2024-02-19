@@ -8,8 +8,6 @@
             <field name="date_from" />
             <field name="date_to"/>
             <field name="commission"/>
-            <field name="percentage_report"/>
-            <field name="not_applied"/>
         </tree>
     </field>
 </record>

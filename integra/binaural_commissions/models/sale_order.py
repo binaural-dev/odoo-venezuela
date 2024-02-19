@@ -18,8 +18,6 @@ class SaleOrder(models.Model):
             "date_from",
             "date_to",
             "commission",
-            "percentage_report",
-            "not_applied",
             "policy_type",
         ]
 

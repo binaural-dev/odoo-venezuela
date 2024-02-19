@@ -33,7 +33,6 @@
                 <group>
                     <group>
                         <field name="policy_type"/>
-                        <field name="is_report_range" />
                     </group>
                     <group>
                     </group>

@@ -255,12 +255,6 @@ msgid "Commission percentage based in a certain range date"
 msgstr "Porcentaje de comisión basado en cierto rango de fecha"
 
 #. module: binaural_commissions
-#: model:ir.model.fields,help:binaural_commissions.field_commission_policy_line__percentage_report
-#: model:ir.model.fields,help:binaural_commissions.field_commission_policy_line_image__percentage_report
-msgid "Commission percentage of reports"
-msgstr "Porcentaje de comisión de reportes"
-
-#. module: binaural_commissions
 #: model:ir.ui.menu,name:binaural_commissions.account_commission
 #: model:ir.ui.menu,name:binaural_commissions.account_commission_configuration
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_sale_invoices_tree_view
@@ -377,18 +371,6 @@ msgstr "Descuento de pagos correctivos"
 #: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__display_name
 msgid "Display Name"
 msgstr "Nombre a Mostrar"
-
-#. module: binaural_commissions
-#: model:ir.model.fields,help:binaural_commissions.field_commission_policy_line__not_applied
-#: model:ir.model.fields,help:binaural_commissions.field_commission_policy_line_image__not_applied
-msgid "Do not apply this restriction to the report"
-msgstr "No aplicar esta restricción al reporte"
-
-#. module: binaural_commissions
-#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__not_applied
-#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__not_applied
-msgid "Do not apply to the report"
-msgstr "No aplicar al reporte"
 
 #. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__res_company__in_invoice_status_commission__draft
@@ -533,11 +515,6 @@ msgstr "Factura pagada totalmente"
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__is_commission_invoice
 msgid "Is Commission Invoice"
 msgstr "Pago a Vendedores"
-
-#. module: binaural_commissions
-#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__is_report_range
-msgid "Is Report Range"
-msgstr "Es Rango de Reporte"
 
 #. module: binaural_commissions
 #: model:ir.model,name:binaural_commissions.model_account_move
@@ -703,12 +680,6 @@ msgstr "Estado de Pago (Comisión)"
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__res_company__commission_payment_through__payroll
 msgid "Payroll"
 msgstr "Nómina"
-
-#. module: binaural_commissions
-#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__percentage_report
-#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__percentage_report
-msgid "Percentage for Reports"
-msgstr "Porcentaje para Reportes"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__policy_id
