@@ -8,6 +8,8 @@ class AccountMoveLine(models.Model):
     @api.constrains("analytic_distribution")
     def _check_one_subsidiary_per_analytic_distribution(self):
         for line in (line for line in self if line.move_id.is_invoice(include_receipts=True)):
+            if not line.analytic_distribution:
+                continue
             analytic_accounts = self.env["account.analytic.account"].browse(
                 (int(account_id) for account_id in line.analytic_distribution.keys())
             )
