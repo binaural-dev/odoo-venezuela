@@ -16,10 +16,6 @@ class ResCompany(models.Model):
         help="Currency Foreign for the company"
     )
 
-    currency_provider = fields.Selection(
-        selection_add=[("bcv", "Venezuelan Central Bank")]
-    )
-
     @api.model
     def _parse_bcv_data(self, availible_currencies):
         usd_rate_bcv = binaural_bcv_query.get_usd_rate_of_the_day_bcv(self)
