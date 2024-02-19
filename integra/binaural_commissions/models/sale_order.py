@@ -1,5 +1,5 @@
 import json
-from odoo import api, models, fields
+from odoo import api, models, fields, _
 from collections import defaultdict
 import logging
 
@@ -206,3 +206,20 @@ class SaleOrder(models.Model):
             order.assing_commission_policy_line_images_to_order_lines()
             order.set_company_settings()
         return res
+
+    def set_commission_from_sale(self):
+        view = self.env.ref("binaural_commissions.set_commission_order_to_invoice_form")
+        return {
+            "name": _("Set Commission Order to Invoice"),
+            "type": "ir.actions.act_window",
+            "view_mode": "form",
+            "res_model": "set.commission.order.to.invoice",
+            "views": [(view.id, "form")],
+            "view_id": view.id,
+            "target": "new",
+            "flags": {"mode": "readonly"},
+            "context": dict(
+                self.env.context,
+                default_sale_order_ids=self.ids,
+            ),
+        }

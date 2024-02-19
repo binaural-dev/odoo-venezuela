@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-16 21:30+0000\n"
-"PO-Revision-Date: 2024-02-16 21:30+0000\n"
+"POT-Creation-Date: 2024-02-19 15:43+0000\n"
+"PO-Revision-Date: 2024-02-19 15:43+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -47,6 +47,13 @@ msgid "<span class=\"o_form_label\">Commission Product</span>"
 msgstr "<span class=\"o_form_label\">Produco de Comisión</span>"
 
 #. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/wizard/set_commission_order_to_invoice.py:0
+#, python-format
+msgid "Action complete, but..."
+msgstr "Acción completada, pero..."
+
+#. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__applied_on
 msgid "Applied On"
 msgstr "Aplica para"
@@ -61,6 +68,11 @@ msgstr "Marca"
 #: model:ir.model,name:binaural_commissions.model_product_brand
 msgid "Brands"
 msgstr "Marcas"
+
+#. module: binaural_commissions
+#: model:ir.actions.server,name:binaural_commissions.action_calculate_commission
+msgid "Calculate Commission"
+msgstr "Calcular Comisión"
 
 #. module: binaural_commissions
 #: model_terms:product.template,description:binaural_commissions.product_product_commission_payment_product_template
@@ -101,6 +113,7 @@ msgstr "Cliente"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.invoice_commission_summary_wizard_form_view
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.set_commission_order_to_invoice_form
 msgid "Close"
 msgstr "Cerrar"
 
@@ -272,6 +285,7 @@ msgstr "Compañías"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__company_id
+#: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__company_id
 msgid "Company"
 msgstr "Compañía"
 
@@ -307,6 +321,7 @@ msgstr "¡Crea una nueva política de comisión!"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__create_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__create_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__create_uid
+#: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__create_uid
 msgid "Created by"
 msgstr "Creado por"
 
@@ -317,6 +332,7 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__create_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__create_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__create_date
+#: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__create_date
 msgid "Created on"
 msgstr "Creado en"
 
@@ -338,11 +354,11 @@ msgid "Date To"
 msgstr "Hasta"
 
 #. module: binaural_commissions
-#: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__discount_invoice
-#: model:ir.model.fields,field_description:binaural_commissions.field_account_move__discount_invoice
-#: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__discount_invoice
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__discount_invoice_ids
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move__discount_invoice_ids
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__discount_invoice_ids
 msgid "Discount Invoice"
-msgstr "Descuento de Factura"
+msgstr "Factura de Descuento"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,help:binaural_commissions.field_account_bank_statement_line__commission_discount
@@ -358,6 +374,7 @@ msgstr "Descuento de pagos correctivos"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__display_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__display_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__display_name
+#: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__display_name
 msgid "Display Name"
 msgstr "Nombre a Mostrar"
 
@@ -425,6 +442,7 @@ msgstr ""
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.generate_commission_from_invoice
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.set_commission_order_to_invoice_form
 msgid "Generate"
 msgstr "Generar"
 
@@ -452,6 +470,7 @@ msgstr "Generar una factura con todas las comisiones"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__id
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__id
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__id
+#: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__id
 msgid "ID"
 msgstr ""
 
@@ -561,6 +580,7 @@ msgstr "Calcular Comisión Cuando"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item____last_update
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice____last_update
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard____last_update
+#: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice____last_update
 msgid "Last Modified on"
 msgstr "Última Modificación en"
 
@@ -577,6 +597,7 @@ msgstr "Fecha del Último Pago"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__write_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__write_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__write_uid
+#: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__write_uid
 msgid "Last Updated by"
 msgstr "Última Actualización por"
 
@@ -587,6 +608,7 @@ msgstr "Última Actualización por"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__write_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__write_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__write_date
+#: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__write_date
 msgid "Last Updated on"
 msgstr "Última Actualización en"
 
@@ -632,6 +654,11 @@ msgstr "Facturas origen de comisión"
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
 msgid "Origin commissions"
 msgstr "Facturas origen de comisión"
+
+#. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__overwrite_commission
+msgid "Overwrite Commission"
+msgstr "Sobrescribir Comisiones"
 
 #. module: binaural_commissions
 #: model:product.template,name:binaural_commissions.product_product_commission_payment_product_template
@@ -752,6 +779,11 @@ msgid "Sale Invoices Per Seller"
 msgstr "Facturas de Ventas por Vendedor"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__sale_order_ids
+msgid "Sale Order"
+msgstr "Ordernes de Ventas"
+
+#. module: binaural_commissions
 #: model:ir.model,name:binaural_commissions.model_sale_order
 msgid "Sales Order"
 msgstr "Pedido de venta"
@@ -778,6 +810,23 @@ msgstr "Facturas de Ventas de Vendedor"
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__seller_ids
 msgid "Sellers"
 msgstr "Vendedores"
+
+#. module: binaural_commissions
+#: model:ir.model,name:binaural_commissions.model_set_commission_order_to_invoice
+msgid "Set Commission Order To Invoice"
+msgstr "Establecer Comisión desde la Orden a Factura"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/sale_order.py:0
+#, python-format
+msgid "Set Commission Order to Invoice"
+msgstr "Establecer Comisión desde la Orden a Factura"
+
+#. module: binaural_commissions
+#: model:ir.actions.server,name:binaural_commissions.action_set_commission_from_sale
+msgid "Set Commission from Sale"
+msgstr "Asignar política y parametrós de comisiones a presupuestos"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_product_item_form_view
@@ -818,7 +867,20 @@ msgstr ""
 #, python-format
 msgid ""
 "The discount amount cannot be greater or equal than the commission amount"
-msgstr "El monto de descuento no puede ser mayor o igual que el monto de comisión"
+msgstr ""
+"El monto de descuento no puede ser mayor o igual que el monto de comisión"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/wizard/set_commission_order_to_invoice.py:0
+#, python-format
+msgid ""
+"The invoice(s) %s already had commissions assigned, \n"
+"                    they have been deleted and it has been generated again\n"
+"                    "
+msgstr ""
+"La(s) factura(s) %s ya tienen comisiones asignadas, han sido eliminadas y se"
+" han generado nuevamente"
 
 #. module: binaural_commissions
 #. odoo-python
@@ -842,6 +904,18 @@ msgstr ""
 #, python-format
 msgid "The invoices must have the same seller"
 msgstr "Las facturas deben tener el mismo vendedor"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/wizard/set_commission_order_to_invoice.py:0
+#, python-format
+msgid ""
+"The order(s) %s already had commissions assigned, \n"
+"                    they have been deleted and it has been generated again\n"
+"                    "
+msgstr ""
+"La(s) orden(es) %s ya tienen comisiones asignadas, han sido eliminadas y se "
+"han generado nuevamente"
 
 #. module: binaural_commissions
 #. odoo-python
