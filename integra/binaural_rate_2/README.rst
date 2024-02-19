@@ -1,6 +1,6 @@
-=======================
-Binaural Tasa de Cambio
-=======================
+==========================
+Binaural Tasa de Cambio 2
+==========================
 
 .. 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -14,25 +14,9 @@ Binaural Tasa de Cambio
 
 |badge1|
 
-El módulo "Binaural Tasa de cambio" es una herramienta que te permite seleccionar una moneda alternativa en el sistema y realizar cálculos relacionados con esa moneda. 
-Este módulo es utilizado por varios otros módulos técnicos, los cuales son:
-
-* Binaural Contabilidad
-* Binaural IGTF Tecnico 
-* Binaural IGTF
-* Binaural Pos
-* Binaural Retenciones
-* Binaural Cuentas Analiticas
-* Binaural Anticipos
-* Binaural Anticipos IGTF
-* Binaural Compras
-* Binaural Ventas
-* Binaural Vendedores
-* Binaural Inventario
-* Binaural Importaciones
-
-Estos módulos dependen del módulo "Binaural Tasa de cambio" para funcionar correctamente y aprovechar las funcionalidades relacionadas con la moneda alternativa.
-
+El módulo "Binaural Tasa de cambio de 2" es una herramienta que te permite agregar a la tasa de cambio automatica la opcion del 'bcv' la cual es la tasa oficial de venezuela. 
+Este módulo es utilizado por el modulo de binaural tasa de cambio.
+Este modulo es neceario para activar entre la opciones de tasa de cambio automatica tener disponible la opcion del bcv
 
 **Tabla de Contenidos**
 
@@ -42,18 +26,15 @@ Estos módulos dependen del módulo "Binaural Tasa de cambio" para funcionar cor
 Cómo se utiliza
 ===============
 
-Para configurar la moneda alternativa en el sistema, sigue estos pasos:
+Para configurar en la tasa automatica con la opcion de bcv, sigue estos pasos:
 
 1. Dirígete a la sección "Ajustes" en tu sistema.
-2. Busca la opción "Configuración de tasas" o una opción similar y selecciónala.
-3. En la configuración de tasas, busca la moneda alternativa que deseas activar y selecciona la opción correspondiente.
-4. A continuación, ve a la configuración específica de esa moneda.
-5. En la configuración de la moneda, encontrarás un campo donde puedes ingresar la tasa de cambio.
-6. Coloca la tasa de cambio adecuada para realizar las transacciones en esa moneda.
-7. Guarda los cambios realizados.
+2. Busca en la seccion de contabilidad el apartado de "monedas" o escribe en el buscador "tasas".
+3. Aparecera la opcion de "Tasas automaticas", Activa esta opcion.
+4. A continuación, Selecciona el servicio 'BCV', el intervalo de ejecucion y la proxima ejecucion.
+5. Guarda los cambios realizados.
 
-Una vez configurada la moneda alternativa con su respectiva tasa de cambio, podrás utilizarla en las transacciones y cálculos relacionados con esa moneda en tu sistema.
-
+Una vez configurada la tasa automatica con la opcion de bcv podra tener la actulizacion automatica por el intervalo establacido
 Créditos
 ========
 
