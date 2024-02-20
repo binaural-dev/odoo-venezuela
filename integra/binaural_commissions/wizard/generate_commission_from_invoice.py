@@ -87,7 +87,7 @@ class GenerateCommission(models.TransientModel):
                     "name": _("Commission of invoices: %s", invoice_names),
                     "price_unit": amount,
                     "quantity": 1,
-                    "tax_ids": [(Command.set, 0, product_id.taxes_id.ids)],
+                    "tax_ids": product_id.supplier_taxes_id.ids,
                 }
             ),
         ]
