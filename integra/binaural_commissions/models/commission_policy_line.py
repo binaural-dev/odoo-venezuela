@@ -12,7 +12,7 @@ class CommissionPolicyLine(models.Model):
     _description = "Commission percentage based in a certain range date"
     _order = "date_from asc"
 
-    date_from = fields.Integer(required=True, default=1)
+    date_from = fields.Integer(required=True, default=0)
     date_to = fields.Integer(required=True)
     commission = fields.Float(required=True, help="Commission percentage")
     policy_id = fields.Many2one("commission.policy", required=True, ondelete="cascade")
@@ -34,6 +34,9 @@ class CommissionPolicyLine(models.Model):
     def _check_date_range(self):
         dates = []
         for line in self.policy_id.commission_line_ids:
+            if line.date_from > line.date_to and not line.infinite:
+                raise ValidationError(_("The date from must be lower than the date to!"))
+
             if not dates:
                 dates.append(line.date_from)
                 dates.append(line.date_to)
@@ -50,8 +53,6 @@ class CommissionPolicyLine(models.Model):
 
             if line.date_to <= max_date and line.date_to >= min_date:
                 raise ValidationError(_("The date range must not overlap!"))
-            if line.date_from > line.date_to:
-                raise ValidationError(_("The date from must be lower than the date to!"))
 
             dates.append(line.date_from)
             dates.append(line.date_to)
