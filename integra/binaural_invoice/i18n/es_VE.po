@@ -250,7 +250,7 @@ msgstr "Número de Control"
 #. module: binaural_invoice
 #: model:res.groups,name:binaural_invoice.create_out_refund
 msgid "Create Out Refund Moves"
-msgstr "Crear Devoluciones de Ventas"
+msgstr "Mostar botón para crear Facturas Rectificativas"
 
 #. module: binaural_invoice
 #: model:ir.model.fields,field_description:binaural_invoice.field_wizard_accounting_reports__create_uid

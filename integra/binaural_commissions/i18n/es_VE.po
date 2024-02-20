@@ -840,7 +840,7 @@ msgstr "La fecha desde debe ser menor que la fecha hasta"
 #: code:addons/binaural_commissions/models/commission_policy_line.py:0
 #, python-format
 msgid "The date range must not overlap!"
-msgstr "Los rangos de fecha no deben superponerse"
+msgstr "Los rangos de días no deben superponerse"
 
 #. module: binaural_commissions
 #. odoo-python
