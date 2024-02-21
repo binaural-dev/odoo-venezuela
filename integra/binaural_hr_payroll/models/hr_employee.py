@@ -20,6 +20,10 @@ class HrEmployee(models.Model):
     entry_date = fields.Date(required=True, tracking=True)
     seniority = fields.Char(compute="_compute_seniority")
 
+    allowance_line_ids = fields.One2many(
+        "hr.allowance.line", "employee_id", string="Salary Allowances", tracking=True
+    )
+
     @api.depends("entry_date", "departure_date")
     def _compute_seniority(self):
         for employee in self:

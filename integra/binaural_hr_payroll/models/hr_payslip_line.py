@@ -11,6 +11,15 @@ class HrPayslipLine(models.Model):
         compute="_compute_foreign_total", store=True, currency_field="foreign_currency_id"
     )
 
+    employee_name = fields.Char(related="employee_id.name")
+    employee_vat = fields.Char(related="employee_id.vat")
+    employee_job_id = fields.Many2one("hr.job", related="employee_id.job_id")
+    employee_department_id = fields.Many2one(
+        "hr.department", string="Departament", related="employee_id.department_id"
+    )
+    category_code = fields.Char(related="category_id.code")
+    slip_state = fields.Selection(related="slip_id.state")
+
     @api.depends("quantity", "amount", "rate")
     def _compute_foreign_total(self):
         for line in self:

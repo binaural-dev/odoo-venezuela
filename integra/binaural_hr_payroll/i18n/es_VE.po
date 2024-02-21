@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240205\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-14 14:40+0000\n"
-"PO-Revision-Date: 2024-02-14 14:40+0000\n"
+"POT-Creation-Date: 2024-02-20 20:00+0000\n"
+"PO-Revision-Date: 2024-02-20 20:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -23,13 +23,6 @@ msgid ""
 "          object.date_start.strftime('%m/%d/%Y'), object.date_end.strftime('%m/%d/%Y')\n"
 "        )\n"
 "      "
-msgstr ""
-
-#. module: binaural_hr_payroll
-#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
-msgid ""
-", \n"
-"                Cuenta"
 msgstr ""
 
 #. module: binaural_hr_payroll
@@ -161,6 +154,11 @@ msgid "Action Needed"
 msgstr "Acción Neceasria"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__active
+msgid "Active"
+msgstr "Activo"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__additional_vacation_days_after_first_year
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_config_settings__additional_vacation_days_after_first_year
 msgid "Additional Vacation Days After First Year"
@@ -193,6 +191,23 @@ msgstr "Pago de Anticipos"
 #: model:ir.ui.menu,name:binaural_hr_payroll.menu_hr_payroll_advance_move
 msgid "Advances Payments"
 msgstr "Pagos de Anticipos"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__allowance_id
+msgid "Allowance"
+msgstr "Complemento"
+
+#. module: binaural_hr_payroll
+#: model:ir.actions.act_window,name:binaural_hr_payroll.binaural_paysheet_hr_allowance_line_action_list
+#: model:ir.ui.menu,name:binaural_hr_payroll.binaural_paysheet_hr_allowance_line_menu
+msgid "Allowances Update"
+msgstr "Actualización de Complementos"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.binaural_paysheet_hr_allowance_line_view_form
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.binaural_paysheet_hr_allowance_line_view_list
+msgid "Allowances Update List"
+msgstr "Lista de Actualizaciones de Complementos"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__profit_sharing_type__annual_avg
@@ -305,6 +320,13 @@ msgid "Category"
 msgstr "Categoría"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__code
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__code
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__category_code
+msgid "Code"
+msgstr "Código"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__cc_bonus_additional_days
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_config_settings__cc_bonus_additional_days
 msgid "Colective Contract Additional Bonus Days"
@@ -359,11 +381,15 @@ msgid "Contract Foreign Wage"
 msgstr "Salario Alterno del Contrato"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__create_uid
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__create_uid
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__create_uid
 msgid "Created by"
 msgstr "Creado por"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__create_date
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__create_date
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__create_date
 msgid "Created on"
 msgstr "Creado en"
@@ -433,12 +459,25 @@ msgid "Deducciones"
 msgstr ""
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__employee_department_id
+msgid "Departament"
+msgstr "Departamento"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__department_id
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payroll_move_view_search
 msgid "Department"
 msgstr "Departamento"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__description
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__description
+msgid "Description"
+msgstr "Descripción"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__display_name
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__display_name
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__display_name
 msgid "Display Name"
 msgstr ""
@@ -482,6 +521,7 @@ msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_hr_employee
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__employee_id
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__employee_id
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payroll_move_view_search
 msgid "Employee"
@@ -491,6 +531,16 @@ msgstr "Empleado"
 #: model:ir.model,name:binaural_hr_payroll.model_hr_contract
 msgid "Employee Contract"
 msgstr "Contrato de empleado"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__employee_name
+msgid "Employee Name"
+msgstr "Nombre del Empleado"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__employee_vat
+msgid "Employee VAT"
+msgstr "CI del Empleado"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__entry_date
@@ -602,6 +652,11 @@ msgid "Foreign Wage"
 msgstr "Salario Alterno"
 
 #. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payslip_allowance_line_search
+msgid "Group By"
+msgstr "Agrupar por"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__has_message
 msgid "Has Message"
 msgstr "Tiene Mensaje"
@@ -637,8 +692,11 @@ msgid "Hourly Wage"
 msgstr "Salario Por Hora"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__id
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__id
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__vat
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__id
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__employee_vat
 msgid "ID"
 msgstr "CI"
 
@@ -657,6 +715,11 @@ msgstr "Si está"
 #: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payroll_move__message_has_sms_error
 msgid "If checked, some messages have a delivery error."
 msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_allowance_view_search
+msgid "Inactive"
+msgstr "Inactivo"
 
 #. module: binaural_hr_payroll
 #: model:hr.work.entry.type,name:binaural_hr_payroll.hr_work_entry_binaural_leave
@@ -686,20 +749,27 @@ msgstr "Tope Salario IVSS"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__employee_job_id
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__employee_job_id
 msgid "Job Position"
-msgstr ""
+msgstr "Puesto de Trabajo"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance____last_update
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line____last_update
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move____last_update
 msgid "Last Modified on"
 msgstr ""
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__write_uid
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__write_uid
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__write_uid
 msgid "Last Updated by"
 msgstr ""
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__write_date
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__write_date
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__write_date
 msgid "Last Updated on"
 msgstr ""
@@ -714,6 +784,11 @@ msgstr "Último salario devengado"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_config_settings__law_base_wage
 msgid "Law Base Wage"
 msgstr "Sueldo Base de Ley"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__line_ids
+msgid "Line"
+msgstr "Línea"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_move__move_type__liquidation
@@ -806,9 +881,12 @@ msgid "Months"
 msgstr "Meses"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__name
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__name
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__employee_name
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_allowance_view_form
 msgid "Name"
-msgstr ""
+msgstr "Nombre"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__resource_calendar_attendance__day_period__night
@@ -1013,6 +1091,37 @@ msgid "Salary"
 msgstr "Salario"
 
 #. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_allowance_view_search
+msgid "Salary Allowance"
+msgstr "Complemento Salarial"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payslip_allowance_line_tree
+msgid "Salary Allowance Report"
+msgstr "Reporte de Complementos Salariales"
+
+#. module: binaural_hr_payroll
+#: model:ir.actions.act_window,name:binaural_hr_payroll.hr_allowance_action
+#: model:ir.actions.act_window,name:binaural_hr_payroll.hr_payslip_allowance_line_action
+#: model:ir.model,name:binaural_hr_payroll.model_hr_allowance
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__allowance_line_ids
+#: model:ir.ui.menu,name:binaural_hr_payroll.menu_hr_allowance
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_allowance_view_search
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.view_employee_form
+msgid "Salary Allowances"
+msgstr "Complementos Salariales"
+
+#. module: binaural_hr_payroll
+#: model:ir.ui.menu,name:binaural_hr_payroll.menu_hr_payslip_allowance_lines_report
+msgid "Salary Allowances Report"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model,name:binaural_hr_payroll.model_hr_allowance_line
+msgid "Salary Allowances line"
+msgstr "Línea de Complementos Salariales"
+
+#. module: binaural_hr_payroll
 #: model:ir.actions.act_window,name:binaural_hr_payroll.hr_payroll_move_salary_action
 #: model:ir.ui.menu,name:binaural_hr_payroll.menu_hr_payroll_salary_move
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payroll_move_salary_view_tree
@@ -1033,6 +1142,11 @@ msgstr "Estructura salarial"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__seniority
 msgid "Seniority"
 msgstr "Anitgüedad"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__slip_state
+msgid "Status"
+msgstr "Estado"
 
 #. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
@@ -1064,6 +1178,16 @@ msgid "The value of Provisions Cron Day must be between 1 and 30"
 msgstr ""
 "El valor de Día del Mes Para Ejecutar El Cron de Provisiones debe ser entre "
 "1 y 30"
+
+#. module: binaural_hr_payroll
+#. odoo-python
+#: code:addons/binaural_hr_payroll/models/hr_allowance.py:0
+#: code:addons/binaural_hr_payroll/models/hr_allowance.py:0
+#: model:ir.model.constraint,message:binaural_hr_payroll.constraint_hr_allowance_code_unique
+#: model:ir.model.constraint,message:binaural_hr_payroll.constraint_hr_allowance_name_unique
+#, python-format
+msgid "There is an allowance with that name already."
+msgstr "Ya existe un complemento con ese nombre."
 
 #. module: binaural_hr_payroll
 #. odoo-python
@@ -1124,6 +1248,12 @@ msgid "Type"
 msgstr "tipo"
 
 #. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_allowance_view_form
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_allowance_view_tree
+msgid "Update"
+msgstr "Actualizar"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__use_analytic_account_per_departments
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_config_settings__use_analytic_account_per_departments
 msgid "Use Analytic Account Per Departments"
@@ -1174,6 +1304,12 @@ msgstr "Configuración de Vacaciones"
 #: model:ir.ui.menu,name:binaural_hr_payroll.menu_hr_payroll_vacation_move
 msgid "Vacations Payments"
 msgstr "Pagos de Vacaciones"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__value
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__value
+msgid "Value"
+msgstr "Valor"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__wage_field_to_use__wage
@@ -1252,6 +1388,14 @@ msgstr "Año"
 #, python-format
 msgid "Years"
 msgstr "Años"
+
+#. module: binaural_hr_payroll
+#. odoo-python
+#: code:addons/binaural_hr_payroll/models/hr_allowance.py:0
+#, python-format
+msgid "You can't disable this allowance because it's binded to an employee."
+msgstr ""
+"No puedes archivar este complemento porque ya está asociado a un empleado."
 
 #. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_report_binaural_hr_payroll_report_pre_payslip_run

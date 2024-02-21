@@ -4,15 +4,17 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Payroll Localization",
-    "version": "16.0.1.4.0",
+    "version": "16.0.2.0.0",
     # any module necessary for this one to work correctly
-    "depends": ["hr", "hr_payroll", "binaural_rate"],
+    "depends": ["hr", "hr_payroll", "hr_work_entry_contract_enterprise", "binaural_rate"],
     # always loaded
     "data": [
         "data/hr_work_entry_type.xml",
         "data/resource_calendar.xml",
         "data/hr_payroll_structure_type.xml",
         "security/ir.model.access.csv",
+        "views/hr_allowance.xml",
+        "views/hr_allowance_line.xml",
         "views/hr_contract.xml",
         "views/hr_employee.xml",
         "views/hr_payroll_move.xml",

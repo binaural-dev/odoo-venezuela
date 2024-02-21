@@ -15,6 +15,19 @@
 	    <field name="work_email" position="after">
 		<field name="entry_date"/>
 	    </field>
+
+	    <notebook position="inside">
+		<page name="allowances" string="Salary Allowances">
+                    <field name="allowance_line_ids">
+                        <tree string="Salary Allowances" editable="bottom">
+                            <field name="allowance_id"/>
+                            <field name="code"/>
+                            <field name="value"/>
+                            <field name="description"/>
+                        </tree>
+                    </field>
+                </page>
+	    </notebook>
     	</field>
     </record>
 

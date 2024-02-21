@@ -36,4 +36,26 @@
 	action="hr_payroll_move_liquidation_action"
 	parent="hr_payroll.menu_hr_payroll_report"
     />
+    <menuitem
+	id="menu_hr_allowance"
+	name="Salary Allowances"
+	action="hr_allowance_action"
+	parent="hr_work_entry_contract_enterprise.menu_hr_payroll_configuration"
+	sequence="13"
+    />
+    <menuitem
+	id="binaural_paysheet_hr_allowance_line_menu"
+	parent="hr_work_entry_contract_enterprise.menu_hr_payroll_configuration"
+	name="Allowances Update"
+	sequence="99"
+	action="binaural_paysheet_hr_allowance_line_action_list"
+    />
+    <menuitem
+	id="menu_hr_payslip_allowance_lines_report"
+	name="Salary Allowances Report"
+	action="hr_payslip_allowance_line_action"
+	parent="hr_payroll.menu_hr_payroll_report"
+    />
+
+
 </odoo>

@@ -2,6 +2,7 @@ from calendar import isleap
 from datetime import date
 
 from odoo import api, fields, models, _
+from odoo.addons.hr_payroll.models.browsable_object import BrowsableObject
 from odoo.tools import html2plaintext, is_html_empty
 from odoo.exceptions import UserError
 
@@ -200,6 +201,9 @@ class HrPayslip(models.Model):
 
     def _get_base_local_dict(self):
         localdict = super()._get_base_local_dict()
+        allowances = self.employee_id.mapped("allowance_line_ids")
+        allowances_values_per_code = {allowance.code: allowance.value for allowance in allowances}
+
         localdict.update(
             {
                 "salario_minimo_actual": self.company_id.law_base_wage,
@@ -211,7 +215,9 @@ class HrPayslip(models.Model):
                 "tipo_calculo_intereses_prestaciones_config": self.company_id.benefits_interest_computation_type,
                 "compute_payroll_using": self.company_id.compute_payroll_using,
                 # TODO Complemtentos Salariales
-                # "allowances": BrowsableObject(self.employee_id.id, allowances_dict, self.env),
+                "allowances": BrowsableObject(
+                    self.employee_id.id, allowances_values_per_code, self.env
+                ),
             }
         )
         return localdict

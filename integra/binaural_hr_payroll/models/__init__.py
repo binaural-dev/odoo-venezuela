@@ -1,4 +1,5 @@
 from . import browsable_object
+from . import hr_allowance
 from . import hr_contract
 from . import hr_employee
 from . import hr_payroll_move

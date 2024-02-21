@@ -1,2 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_allowance,access_hr_allowance,model_hr_allowance,,1,1,1,0
+access_hr_allowance_line,access_hr_allowance_line,model_hr_allowance_line,,1,1,1,1
 access_hr_payroll_move,access_hr_payroll_move,model_hr_payroll_move,,1,1,1,1
