@@ -145,6 +145,7 @@ class SaleOrderBudget(http.Controller):
                                     )
                                 }
                             )
+                            return data
                     sale.action_confirm()
                     sale._create_analytic_account()
                 elif confirm == "cancel":
