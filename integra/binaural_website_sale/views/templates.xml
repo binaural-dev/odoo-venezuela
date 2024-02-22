@@ -63,4 +63,16 @@
             </t>
         </xpath>
     </template>
+
+	<template id="cart_lines_inherit" inherit_id="website_sale.cart_lines">
+        <xpath expr="//t[1]/input[@class='js_quantity form-control quantity'][1]" position="replace">
+            
+            <t t-set="line_product_available_qty" t-value="round(line.product_id.quantity) or 0" />
+            <input type="text" class="js_quantity form-control quantity" t-att-data-line-id="line.id" 
+			t-att-data-max="line_product_available_qty" t-att-data-product-id="line.product_id.id" 
+			t-att-value="int(line.product_uom_qty) == line.product_uom_qty and int(line.product_uom_qty) or line.product_uom_qty" />
+
+        </xpath>
+    </template>
+
 </odoo> 
