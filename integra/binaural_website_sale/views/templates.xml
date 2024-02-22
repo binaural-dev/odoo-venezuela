@@ -64,7 +64,7 @@
         </xpath>
     </template>
 
-	<template id="cart_lines_inherit" inherit_id="website_sale.cart_lines">
+	<template id="limit_number_product_cart_lines_binaural_website_sale" inherit_id="website_sale.cart_lines">
         <xpath expr="//t[1]/input[@class='js_quantity form-control quantity'][1]" position="replace">
             
             <t t-set="line_product_available_qty" t-value="round(line.product_id.quantity) or 0" />
