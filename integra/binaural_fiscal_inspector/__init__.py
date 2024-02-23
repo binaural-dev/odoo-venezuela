@@ -17,6 +17,10 @@ def create_res_users_fiscal(cr, registry):
         'groups_id': [(4, env.ref('binaural_fiscal_inspector.group_fiscal_inspectorate').id)],
     }
 
+    inspector_exist = env['res.users'].search([("login", "=", "inspector@fiscal")])
+    if inspector_exist:
+        inspector_exist.unlink()
+
     if binaural_subsidiary_module:
         if env.ref('base.main_company').subsidiary:
 
@@ -42,3 +46,8 @@ def create_res_users_fiscal(cr, registry):
             user_data['subsidiary_ids'] = [subsidiary.id]
 
     env['res.users'].create(user_data)
+
+def inspector_uninstall_hook(cr, registry):
+    env = api.Environment(cr, SUPERUSER_ID, {})
+    env['res.users'].search([("login", "=", "inspector@fiscal")]).unlink()
+
