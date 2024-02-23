@@ -57,7 +57,7 @@ msgstr ""
 "<span colspan=\"2\" class=\"oe_title\">Política de comisiones de Tipo producto, aplica a:</span>\n"
 "                                <span colspan=\"2\">- Producto (Prioridad 1)</span>\n"
 "                                <span colspan=\"2\">- Marca (Prioridad 2)</span>\n"
-"                                <span colspan=\"2\">- Categoria (Prioridad 3)</span>"
+"                                <span colspan=\"2\">- Categoría (Prioridad 3)</span>"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_policy_form_view
@@ -155,7 +155,7 @@ msgstr "Días de Cobro"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__commission
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__commission
 msgid "Commission"
-msgstr "Comisión"
+msgstr "Comisión (%)"
 
 #. module: binaural_commissions
 #: model:ir.actions.act_window,name:binaural_commissions.commission_invoice_action
@@ -365,13 +365,13 @@ msgstr "Cliente"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__date_from
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__date_from
 msgid "Date From"
-msgstr "Desde"
+msgstr "Desde (Días)"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__date_to
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__date_to
 msgid "Date To"
-msgstr "Hasta"
+msgstr "Hasta (Días)"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__discount_invoice_ids
@@ -629,7 +629,7 @@ msgstr "Leyenda (Tipo de Comisión)"
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__len_category_sub_category
 msgid "Len Category Sub Category"
-msgstr "Cantidad de sub categoria"
+msgstr "Cantidad de sub categoría"
 
 #. module: binaural_commissions
 #. odoo-python
