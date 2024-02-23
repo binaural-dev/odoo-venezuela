@@ -30,6 +30,11 @@ class CommissionPolicy(models.Model):
     commission_line_ids = fields.One2many("commission.policy.line", "policy_id")
     commission_product_item_ids = fields.One2many("commission.product.item", "commission_policy_id")
 
+    def unlink(self):
+        for record in self:
+            unlink(record.commission_product_item_ids.ids)
+        return super().unlink()
+
     @api.depends("policy_type", "name")
     def _compute_display_name(self):
         for commission in self:
