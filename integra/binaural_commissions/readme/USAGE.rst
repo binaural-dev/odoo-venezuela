@@ -22,3 +22,11 @@ de 7 al infinito = 1% de comision
 Al momento de confirmar el presupuesto, en este se almacena la configuracion al dia de las comisiones,
 es decir, se almacenan los rangos de dias correspendientes al producto, el cliente o la politica general. 
 
+Al momento de crear la Factura, se envian las configuraciones a ella, y dependiendo de la cantidad de dias
+de diferencia entre (dependiendo de la configuracion) Fecha de la Factura/Fecha de recepcion hasta 
+La fecha del Primer pago/la fecha del ultimo pago (omitiendo retenciones).
+
+En caso de que se pague en el rango de 3 dias, aplicaria un 3% de comisión
+
+Al seleccionar multiples facturas, se selecciona Accion > Pagar Comisiones, y te desplega un 
+Popup donde te muestra informacion y como desea pagar la comision.

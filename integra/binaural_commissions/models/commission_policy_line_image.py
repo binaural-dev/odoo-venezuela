@@ -25,7 +25,7 @@ class CommissionPolicyLineImage(models.Model):
         values = []
         for record in self:
             range_date = f"[{record.date_from} => {record.date_to if not record.infinite else '∞'}]"
-            if record.date_to == record.date_from:
+            if record.date_to == record.date_from and not record.infinite:
                 range_date = f"[{record.date_from}]"
             values.append((record.id, f"{POLICY_TYPE.get(record.policy_type,'')} {record.commission} % {range_date}"))
         return values
