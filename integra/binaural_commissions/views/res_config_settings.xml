@@ -49,7 +49,7 @@
                                 </div>
                                 <div class="content-group">
                                     <div class="mt16">
-                                        <field name="compute_commission_when" class="o_light_label" widget="radio"/>
+                                        <field name="compute_commission_when" class="o_light_label" widget="radio" readonly="1"/>
                                     </div>
                                 </div>
                             </div>
@@ -94,7 +94,7 @@
                                 </div>
                                 <div class="content-group">
                                     <div class="mt16">
-                                        <field name="commission_payment_through" class="o_light_label" widget="radio"/>
+                                        <field name="commission_payment_through" class="o_light_label" widget="radio" readonly="1"/>
                                     </div>
                                 </div>
                             </div>

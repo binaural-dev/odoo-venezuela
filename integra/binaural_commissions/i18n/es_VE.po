@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-19 20:13+0000\n"
-"PO-Revision-Date: 2024-02-19 20:13+0000\n"
+"POT-Creation-Date: 2024-02-23 13:28+0000\n"
+"PO-Revision-Date: 2024-02-23 13:28+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -45,6 +45,32 @@ msgstr "<span class=\"o_form_label\">Diario de Comisión</span>"
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
 msgid "<span class=\"o_form_label\">Commission Product</span>"
 msgstr "<span class=\"o_form_label\">Produco de Comisión</span>"
+
+#. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_policy_form_view
+msgid ""
+"<span colspan=\"2\" class=\"oe_title\">Product Commission, apply to</span>\n"
+"                                <span colspan=\"2\">- Product (Priority 1)</span>\n"
+"                                <span colspan=\"2\">- Marca (Priority 2)</span>\n"
+"                                <span colspan=\"2\">- Category (Priority 3)</span>"
+msgstr ""
+"<span colspan=\"2\" class=\"oe_title\">Política de comisiones de Tipo producto, aplica a:</span>\n"
+"                                <span colspan=\"2\">- Producto (Prioridad 1)</span>\n"
+"                                <span colspan=\"2\">- Marca (Prioridad 2)</span>\n"
+"                                <span colspan=\"2\">- Categoria (Prioridad 3)</span>"
+
+#. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_policy_form_view
+msgid ""
+"<span colspan=\"2\" class=\"oe_title\">Type of commmission and properties</span>\n"
+"                                <span colspan=\"2\">- Product (Priority 1)</span>\n"
+"                                <span colspan=\"2\">- Client (Priority 2)</span>\n"
+"                                <span colspan=\"2\">- General (Priority 3)</span>"
+msgstr ""
+"<span colspan=\"2\" class=\"oe_title\">Tipo de comisiones y sus prioridades:</span>\n"
+"                                <span colspan=\"2\">- Producto (Prioridad 1)</span>\n"
+"                                <span colspan=\"2\">- Cliente (Prioridad 2)</span>\n"
+"                                <span colspan=\"2\">- General (Prioridad 3)</span>"
 
 #. module: binaural_commissions
 #. odoo-python
@@ -168,7 +194,7 @@ msgstr "Factura de Comisión"
 #: model:ir.model.fields,field_description:binaural_commissions.field_res_config_settings__commission_invoice_date_field
 #: model:ir.model.fields,field_description:binaural_commissions.field_sale_order__commission_invoice_date_field
 msgid "Commission Invoice Date Field"
-msgstr "Campo de Fecha para la comisión"
+msgstr "Fecha en factura cliente para la comisión"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_product_brand__commission_item_ids
@@ -291,7 +317,7 @@ msgstr "Compañía"
 #: model:ir.model.fields,field_description:binaural_commissions.field_res_config_settings__compute_commission_when
 #: model:ir.model.fields,field_description:binaural_commissions.field_sale_order__compute_commission_when
 msgid "Compute Commission When"
-msgstr "Calcular Comisión Cuando"
+msgstr "Calcular Comisión Con"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
@@ -554,7 +580,7 @@ msgstr "Fecha para la comisión"
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_move__label_commission_when
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__label_commission_when
 msgid "Label Commission When"
-msgstr "Calcular Comisión Cuando"
+msgstr "Calcular Comisión Con"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy____last_update
@@ -594,6 +620,11 @@ msgstr "Última Actualización por"
 #: model:ir.model.fields,field_description:binaural_commissions.field_set_commission_order_to_invoice__write_date
 msgid "Last Updated on"
 msgstr "Última Actualización en"
+
+#. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_policy_form_view
+msgid "Legend (Type of Commission)"
+msgstr "Leyenda (Tipo de Comisión)"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__len_category_sub_category
