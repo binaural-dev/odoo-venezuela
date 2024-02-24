@@ -27,6 +27,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             "change #countryClient": "_onChangeCountry",
             "change #stateClient": "_onChangeState",
             "change #municipalityClient": "_onChangeMunicipality",
+            "click #openProduct": "_onClickOpenProduct",
         },
         init: function(parent, options) {
             this._super.apply(this, arguments);
@@ -139,8 +140,10 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
             this._onProductModalScroll(self);
 
-            this._renderProducts(self);
+        },
 
+        _onClickOpenProduct: function () {
+            this._renderProducts(this);
         },
         
         _onChangeClient: function(ev) {
