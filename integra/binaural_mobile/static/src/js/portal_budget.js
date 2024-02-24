@@ -140,14 +140,37 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             this.includeTax()
 
         },
+        _getClients: async () => {
+            const clients = $.ajax({
+                type: "GET",
+                dataType: 'json',
+                url: '/budget/client',
+                contentType: "application/json; charset=utf-8",
+                data: JSON.stringify({'query': ""}),
+            });
+
+            return clients;
+
+        },
         _onClickCreateDeliveryContact: () => {
             $("#typeContactCreateClientModal").val("delivery")
         },
         _onClickCreateClient: () => {
             $("#typeContactCreateClientModal").val("contact")
         },
-        _onChangeClient: function ({target}) {
+        _onChangeClient: async function ({target}) {
             this._loadContactSelectOptions(this.partners, target.value);
+        },
+        _loadContacts: async function () {
+            const {data, status } = await this._getClients()
+
+            const is400e = status === 400;
+
+            if (is400e) return 
+
+            this.partners = data;
+
+            this._loadContactSelectOptions(this.partners, $('#client').val());
         },
         _loadContactSelectOptions: (partners, value) => {
             const $addressSelections = $("select.address_selection");
@@ -715,10 +738,13 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 } 
                 $(".register-client").val('')
                 $("#createClient").modal('hide')
+
+                this._loadContacts();
                 return
             }
             let msgValidate = 'Debes de llenar los campos obligarios del formulario.'
             this._msgErrorRegisterClient(msgValidate)
+
         },
 
         _msgErrorRegisterClient: function(msg){
