@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-26 14:45+0000\n"
-"PO-Revision-Date: 2024-02-26 14:45+0000\n"
+"POT-Creation-Date: 2024-02-26 19:48+0000\n"
+"PO-Revision-Date: 2024-02-26 19:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -652,6 +652,13 @@ msgstr "Nombre"
 
 #. module: binaural_commissions
 #. odoo-python
+#: code:addons/binaural_commissions/wizard/set_commission_order_to_invoice.py:0
+#, python-format
+msgid "Only orders in state 'Sale' or 'Done' can be processed"
+msgstr "Solo pueden ser procesadas las ordenes en estado 'Pedido de Venta' y 'Bloqueado'"
+
+#. module: binaural_commissions
+#. odoo-python
 #: code:addons/binaural_commissions/models/account_move.py:0
 #, python-format
 msgid "Only posted invoices can be processed."
@@ -974,14 +981,17 @@ msgstr "No puedes agregar un pago a una factura sin fecha de recepción."
 #: code:addons/binaural_commissions/models/commission_policy.py:0
 #, python-format
 msgid "You can't change the policy type if there are clients assigned"
-msgstr "Para cambiar tipo de comisión, la pestaña Cliente no debe contener registros"
+msgstr ""
+"Para cambiar tipo de comisión, la pestaña Cliente no debe contener registros"
 
 #. module: binaural_commissions
 #. odoo-python
 #: code:addons/binaural_commissions/models/commission_policy.py:0
 #, python-format
 msgid "You can't change the policy type if there are products assigned"
-msgstr "Para cambiar tipo de comisión, la pestaña Producto no debe contener registros"
+msgstr ""
+"Para cambiar tipo de comisión, la pestaña Producto no debe contener "
+"registros"
 
 #. module: binaural_commissions
 #. odoo-python

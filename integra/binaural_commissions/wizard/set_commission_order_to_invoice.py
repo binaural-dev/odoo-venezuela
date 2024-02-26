@@ -1,4 +1,5 @@
 from odoo import fields, models, _
+from odoo.exceptions import ValidationError
 
 
 class SetCommissionOrderToInvoice(models.Model):
@@ -30,6 +31,9 @@ class SetCommissionOrderToInvoice(models.Model):
             "commission_invoice_date_field": self.company_id.commission_invoice_date_field,
             "compute_commission_when": self.company_id.compute_commission_when,
         }
+        
+        if self.sale_order_ids.filtered(lambda x: x.state not in ["done","sale"]):
+            raise ValidationError(_("Only orders in state 'Sale' or 'Done' can be processed"))
 
         self.sale_order_ids.write(data_write)
         self.sale_order_ids.assing_commission_policy_line_images_to_order_lines()
