@@ -47,9 +47,8 @@
         </xpath>
 
         <xpath expr="//div[hasclass('js_invoice')]" position="replace">
-            <t t-set="default_invoice" t-value="env.pos.config.always_invoice"/>
             <div class="button js_invoice"
-                t-att-class="{ highlight: currentOrder.is_to_receipt() != default_invoice }"
+                t-att-class="{ highlight: !currentOrder.is_to_receipt()}"
                 t-on-click="toggleIsToInvoice">
                     <i class="fa fa-file-text-o" /> 
                     <t t-if="currentOrder.is_to_receipt()">
