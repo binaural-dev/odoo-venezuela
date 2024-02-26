@@ -25,8 +25,7 @@
 
             <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']" position="after">
                 <field name="foreign_subtotal"/>
-                <field name="foreign_rate" optional="hide"/>
-                <field name="foreign_rate" optional="hide"/>
+                    <field name="foreign_rate" optional="hide"/>
                 <field
             name="foreign_inverse_rate"
         groups="base.group_no_one"
