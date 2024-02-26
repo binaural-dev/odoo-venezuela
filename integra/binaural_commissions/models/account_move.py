@@ -237,7 +237,6 @@ class AccountMove(models.Model):
             invoice._compute_discount_invoice()
             invoice._compute_total_commission_of_invoice()
 
-
     def is_valid_to_generate_commission(self):
         invoices_not_paid = []
         invoices_with_commission_invoice = []
@@ -251,7 +250,6 @@ class AccountMove(models.Model):
 
             if record.amount_residual > 0:
                 invoices_not_paid.append(record.name)
-
 
         if len(invoices_with_commission_invoice) > 0:
             raise ValidationError(
@@ -349,7 +347,13 @@ class AccountMove(models.Model):
                     out_refund_id.currency_id.decimal_places,
                 )
 
-            total_commission += amount_total
+            percentaje = float_round(
+                (payment.get("amount", 0) * 100) / out_refund_id.amount_total,
+                precision_digits=self.currency_id.decimal_places,
+            )
+            total_commission += float_round(
+                amount_total * (percentaje / 100), precision_digits=self.currency_id.decimal_places
+            )
             invoice_ids |= out_refund_id
 
         return invoice_ids, total_commission
