@@ -647,7 +647,7 @@ class AccountMove(models.Model):
                 if total_pay > invoice.partner_id.credit_limit:
                     raise ValidationError(
                         _(
-                            "La cuenta por cobrar del cliente es de %s más %s en factura da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
+                            "No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta por cobrar del cliente es de %s más %s en factura da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
                             round(invoice.partner_id.credit, invoice.currency_id.decimal_places),
                             round(invoice.amount_residual, invoice.currency_id.decimal_places),
                             round(total_pay, invoice.currency_id.decimal_places),
