@@ -36,6 +36,7 @@
 	    <field name="arch" type="xml">
 		<tree string="Salary Payments" editable="bottom">
 		    <field name="date" optional="show"/>
+		    <field name="slip_id" optional="hide"/>
 		    <field name="employee_id" optional="show"/>
 		    <field name="employee_vat" optional="show"/>
 		    <field name="department_id" optional="show"/>
@@ -44,6 +45,10 @@
 		    <field name="total_accrued" optional="show"/>
 		    <field name="total_deduction" optional="show"/>
 		    <field name="total_net" optional="show"/>
+		    <field name="foreign_total_basic" optional="hide"/>
+		    <field name="foreign_total_accrued" optional="hide"/>
+		    <field name="foreign_total_deduction" optional="hide"/>
+		    <field name="foreign_total_net" optional="hide"/>
 		</tree>
 	    </field>
 	</record>
@@ -57,6 +62,7 @@
 		    <field name="date_from_vacation" optional="hide"/>
 		    <field name="date_to_vacation" optional="hide"/>
 		    <field name="vacational_period" optional="show"/>
+		    <field name="slip_id" optional="hide"/>
 		    <field name="employee_id" optional="show"/>
 		    <field name="employee_vat" optional="show"/>
 		    <field name="department_id" optional="show"/>
@@ -69,6 +75,11 @@
 		    <field name="total_vacation" optional="show"/>
 		    <field name="total_vacation_bonus" optional="show"/>
 		    <field name="total_net" optional="show"/>
+
+		    <field name="foreign_total_basic" optional="hide"/>
+		    <field name="foreign_total_vacation" optional="hide"/>
+		    <field name="foreign_total_vacation_bonus" optional="hide"/>
+		    <field name="foreign_total_net" optional="hide"/>
 		</tree>
 	    </field>
 	</record>
@@ -79,6 +90,7 @@
 	    <field name="arch" type="xml">
 		<tree string="Advance Payments" editable="bottom">
 		    <field name="date" optional="show"/>
+		    <field name="slip_id" optional="hide"/>
 		    <field name="employee_id" optional="show"/>
 		    <field name="employee_vat" optional="show"/>
 		    <field name="department_id" optional="show"/>
@@ -86,6 +98,11 @@
 		    <field name="total_accrued" optional="show"/>
 		    <field name="total_deduction" optional="show"/>
 		    <field name="total_net" optional="show"/>
+
+		    <field name="foreign_total_basic" optional="hide"/>
+		    <field name="foreign_total_accrued" optional="hide"/>
+		    <field name="foreign_total_deduction" optional="hide"/>
+		    <field name="foreign_total_net" optional="hide"/>
 		</tree>
 	    </field>
 	</record>
@@ -96,12 +113,16 @@
 	    <field name="arch" type="xml">
 		<tree string="Benefits Payments" editable="bottom">
 		    <field name="date" optional="show"/>
+		    <field name="slip_id" optional="hide"/>
 		    <field name="employee_id" optional="show"/>
 		    <field name="employee_vat" optional="show"/>
 		    <field name="department_id" optional="show"/>
 		    <field name="employee_job_id" optional="show"/>
 		    <field name="advance_of_benefits" optional="show"/>
 		    <field name="total_net" optional="show"/>
+
+		    <field name="foreign_advance_of_benefits" optional="hide"/>
+		    <field name="foreign_total_net" optional="hide"/>
 		</tree>
 	    </field>
 	</record>
@@ -112,12 +133,16 @@
 	    <field name="arch" type="xml">
 		<tree string="Profit Sharing Payments" editable="bottom">
 		    <field name="date" optional="show"/>
+		    <field name="slip_id" optional="hide"/>
 		    <field name="employee_id" optional="show"/>
 		    <field name="employee_vat" optional="show"/>
 		    <field name="department_id" optional="show"/>
 		    <field name="employee_job_id" optional="show"/>
 		    <field name="profit_sharing_payment" optional="show"/>
 		    <field name="total_net" optional="show"/>
+
+		    <field name="foreign_profit_sharing_payment" optional="hide"/>
+		    <field name="foreign_total_net" optional="hide"/>
 		</tree>
 	    </field>
 	</record>
@@ -128,6 +153,7 @@
 	    <field name="arch" type="xml">
 		<tree string="Liquidation Payments" editable="bottom">
 		    <field name="date" optional="show"/>
+		    <field name="slip_id" optional="hide"/>
 		    <field name="employee_id" optional="show"/>
 		    <field name="employee_prefix_vat" optional="show"/>
 		    <field name="employee_vat" optional="show"/>
@@ -146,6 +172,16 @@
 		    <field name="total_vacation_bonus" optional="show"/>
 		    <field name="profit_sharing_payment" optional="show"/>
 		    <field name="total_net" optional="show"/>
+
+		    <field name="foreign_total_basic" optional="hide"/>
+		    <field name="foreign_total_deduction" optional="hide"/>
+		    <field name="foreign_total_accrued" optional="hide"/>
+		    <field name="foreign_total_assig" optional="hide"/>
+		    <field name="foreign_benefits_payment" optional="hide"/>
+		    <field name="foreign_total_vacation" optional="hide"/>
+		    <field name="foreign_total_vacation_bonus" optional="hide"/>
+		    <field name="foreign_profit_sharing_payment" optional="hide"/>
+		    <field name="foreign_total_net" optional="hide"/>
 		</tree>
 	    </field>
 	</record>
@@ -155,6 +191,7 @@
 	    <field name="model">hr.payroll.move</field>
 	    <field name="arch" type="xml">
 		<pivot string="Payroll Payments">
+		    <field name="slip_id" optional="hide"/>
 		    <field name="employee_id" type="row"/>
 		    <field name="employee_vat" optional="show"/>
 		    <field name="department_id" type="row"/>
@@ -170,6 +207,14 @@
 		    <field name="vacation_days" type="measure"/>
 		    <field name="consumed_vacation_days" type="measure"/>
 		    <field name="total_vacation" type="measure"/>
+
+		    <field name="foreign_total_basic" type="measure" optional="hide"/>
+		    <field name="foreign_total_deduction" type="measure" optional="hide"/>
+		    <field name="foreign_total_accrued" type="measure" optional="hide"/>
+		    <field name="foreign_total_net" type="measure" optional="hide"/>
+		    <field name="foreign_total_assig" type="measure" optional="hide"/>
+		    <field name="foreign_advance_of_benefits" type="measure" optional="hide"/>
+		    <field name="foreign_total_vacation" type="measure" optional="hide"/>
 		</pivot>
 	    </field>
 	</record>

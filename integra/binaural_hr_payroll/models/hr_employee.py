@@ -1,5 +1,5 @@
+from dateutil.relativedelta import relativedelta
 from datetime import date, datetime
-from dateutil import relativedelta
 from math import floor
 
 from odoo import api, fields, models, _
@@ -18,7 +18,7 @@ class HrEmployee(models.Model):
     vat = fields.Char(string="ID")
     vat_rif = fields.Char(string="RIF")
 
-    entry_date = fields.Date(required=True, tracking=True)
+    entry_date = fields.Date(tracking=True)
     seniority = fields.Char(compute="_compute_seniority")
 
     allowance_line_ids = fields.One2many(
@@ -60,7 +60,7 @@ class HrEmployee(models.Model):
         from_date = self.entry_date
         to_date = self.departure_date if self.departure_date else fields.Date.today()
 
-        return relativedelta.relativedelta(to_date, from_date)
+        return relativedelta(to_date, from_date)
 
     def get_all_payroll_moves(self):
         self._cr.execute(

@@ -13,7 +13,7 @@
             </field>
 
 	    <field name="work_email" position="after">
-		<field name="entry_date"/>
+		<field name="entry_date" required="1"/>
 	    </field>
 
 	    <notebook position="inside">
