@@ -52,7 +52,7 @@ class GenerateCommission(models.TransientModel):
             new_vals = dict()
             new_vals = default_invoice_data(invoice)
             new_vals["invoice_line_ids"] = self._prepare_commission_line_vals(
-                balance, invoice
+                invoice.total_commission + invoice.commission_discount, invoice
             )
             new_vals["origin_commission_invoice"] = [invoice.id]
             vals.append(new_vals)
