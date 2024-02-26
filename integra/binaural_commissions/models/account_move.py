@@ -275,6 +275,8 @@ class AccountMove(models.Model):
     def is_valid_to_compute_commission(self):
         """Check if the invoice is valid to compute commission."""
         self.ensure_one()
+        if self.move_type != "out_invoice":
+            return False
         if (
             self.compute_commission_when == "invoice_is_fully_paid"
             and not self.currency_id.is_zero(self.amount_residual)

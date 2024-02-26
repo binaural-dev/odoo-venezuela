@@ -30,6 +30,13 @@ class CommissionPolicy(models.Model):
     commission_line_ids = fields.One2many("commission.policy.line", "policy_id")
     commission_product_item_ids = fields.One2many("commission.product.item", "commission_policy_id")
 
+    @api.onchange("policy_type")
+    def _onchange_policy_type(self):
+        if self.clients_id:
+            raise ValidationError(_("You can't change the policy type if there are clients assigned"))
+        if self.commission_product_item_ids:
+            raise ValidationError(_("You can't change the policy type if there are products assigned"))
+
     def unlink(self):
         for record in self:
             unlink(record.commission_product_item_ids.ids)
