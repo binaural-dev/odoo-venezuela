@@ -28,7 +28,9 @@ odoo.define('binaural_pos_hr.ProductScreen', function(require) {
           await super._updateSelectedOrderline(...arguments)
         }
 
-        if (this.env.pos.numpadMode === 'quantity' && event.detail.key === "Backspace") {
+        let keys = ["Backspace","+", "-"]
+
+        if (this.env.pos.numpadMode === 'quantity' && keys.includes(event.detail.key)) {
           const { confirmed } = await this.showPopup("SupervisorPopup", {
             title: _t("Insert Supervisor's Password"),
           });

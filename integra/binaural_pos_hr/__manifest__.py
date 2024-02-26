@@ -1,6 +1,6 @@
 {
     "name": "Binaural POS HR",
-    "version": "16.0.0.0.9",
+    "version": "16.0.1.0.0",
     "category": "Accounting",
     "summary": "Binaural POS HR",
     "sequence": "1",
