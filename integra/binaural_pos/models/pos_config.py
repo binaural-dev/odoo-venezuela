@@ -16,7 +16,7 @@ class PosConfig(models.Model):
     )
     receipt_journal_id = fields.Many2one("account.journal")
     always_invoice = fields.Boolean(default=True)
-
+    keep_journal = fields.Boolean(default=False)
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
@@ -29,6 +29,13 @@ class PosConfig(models.Model):
     )
     pos_search_cne = fields.Boolean(related="company_id.pos_search_cne")
     amount_to_zero = fields.Boolean("Amount to zero")
+
+    def change_always_receipt(self, is_receipt):
+        if not self.keep_journal:
+            return 
+
+        if self.always_invoice == is_receipt:
+            self.always_invoice = not self.always_invoice
 
     @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")
     def _compute_rate(self):
