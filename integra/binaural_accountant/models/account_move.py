@@ -95,6 +95,17 @@ class AccountMove(models.Model):
 
     detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
 
+    foreign_debit = fields.Monetary(compute="_compute_total_debit_credit", currency_field="foreign_currency_id")
+    foreign_credit = fields.Monetary(compute="_compute_total_debit_credit", currency_field="foreign_currency_id")
+    foreign_balance = fields.Monetary(compute="_compute_total_debit_credit", currency_field="foreign_currency_id")
+
+    @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
+    def _compute_total_debit_credit(self):
+        for move in self:
+            move.foreign_debit = sum(move.line_ids.mapped("foreign_debit"))
+            move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
+            move.foreign_balance = move.foreign_debit - move.foreign_credit
+
     @api.depends("invoice_line_ids","tax_totals")
     def _compute_detailed_amounts(self):
         for record in self:

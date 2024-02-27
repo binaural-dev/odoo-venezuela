@@ -1,6 +1,9 @@
 from odoo import models, fields, api, _, Command
 from odoo.exceptions import UserError
 
+import logging
+_logger = logging.getLogger(__name__)
+
 
 class AccountMoveRetention(models.Model):
     _inherit = "account.move"
@@ -231,3 +234,26 @@ class AccountMoveRetention(models.Model):
             self.filtered(lambda i: i.move_type in ("out_invoice", "out_refund"))
         )
         return res
+
+    @api.depends("move_type", "line_ids.amount_residual")
+    def _compute_payments_widget_reconciled_info(self):
+        res = super()._compute_payments_widget_reconciled_info()
+        for record in self:
+            if not record.invoice_payments_widget:
+                continue
+
+            for payment in record.invoice_payments_widget.get("content"):
+                if not payment.get("account_payment_id", False):
+                    payment["is_retention"] = False
+                    continue
+                payment_id = self.env["account.payment"].browse(payment["account_payment_id"])
+                payment["is_retention"] = payment_id.is_retention
+
+        return res
+
+    @api.model
+    def validate_payment(self, payment):
+        """This function is used to not add withholding in the calculation of the last payment date"""
+        if payment.get("is_retention", False):
+            return False
+        return True

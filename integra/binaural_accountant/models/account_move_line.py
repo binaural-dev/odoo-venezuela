@@ -71,17 +71,22 @@ class AccountMoveLine(models.Model):
                 and not line.move_id.is_invoice(True)
                 and not self.env.is_protected(self._fields["balance"], line)
             ):
-                line.balance = line.company_id.currency_id.round(
-                    line.amount_currency / line.foreign_rate
+                rate = (
+                    line.foreign_inverse_rate
+                    if line.currency_id in (self.env.ref("base.VEF"), self.env.ref("base.USD"))
+                    else line.currency_rate
                 )
+                line.balance = line.company_id.currency_id.round(line.amount_currency / rate)
             elif (
                 line.currency_id != line.company_id.currency_id
                 and not line.move_id.is_invoice(True)
                 and line.move_id.payment_id
             ):
-                line.balance = line.company_id.currency_id.round(
-                    line.amount_currency / line.move_id.payment_id.foreign_inverse_rate
-                )
+                if line.move_id.payment_id.foreign_inverse_rate != 0 and line.amount_currency != 0:
+                    line.balance = line.company_id.currency_id.round(
+                        line.amount_currency / line.move_id.payment_id.foreign_inverse_rate
+                    )
+                raise UserError (_("The rate should be greater than zero"))
 
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):

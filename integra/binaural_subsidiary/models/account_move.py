@@ -1,4 +1,4 @@
-from odoo import api, fields, models, _
+from odoo import _, api, fields, models
 
 
 class AccountMove(models.Model):
@@ -10,17 +10,26 @@ class AccountMove(models.Model):
         domain=lambda self: (
             f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
         ),
-        default=lambda self: self.env.user.subsidiary_id,
+        compute="_compute_account_analytic_id",
+        store=True,
+        readonly=False,
+        tracking=True,
     )
 
     company_subsidiary = fields.Boolean(
-        related='company_id.subsidiary'
+        related='company_id.subsidiary', store=True, string="Company Subsidiary",
     )
     
     # It's needed to inherit the create and write methods to update the analytic distribution of the
     # lines when the analytic account is changed. The compute method isn't used because it is
     # called before the write method and we need the old analytic account to update the analytic
     # distribution.
+    @api.depends('company_subsidiary')
+    def _compute_account_analytic_id(self):
+        for record in self:
+            if record.account_analytic_id:
+                continue
+            record.account_analytic_id = self.env.user.subsidiary_id  if record.company_subsidiary else None
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -103,3 +112,13 @@ class AccountMove(models.Model):
                 )
                 if purchase_order:
                     invoice.account_analytic_id = purchase_order.account_analytic_id
+
+    def correccion_subsidiary(self):
+        for move in self:
+            if move.invoice_line_ids:
+                subsidiary_id = move.invoice_line_ids[0].analytic_distribution
+                if subsidiary_id:
+                    subsidiary_id = subsidiary_id.keys()
+                    for subsidiary in subsidiary_id:
+                        subsidiary_id = subsidiary
+                    move.account_analytic_id = self.env['account.analytic.account'].search([('id', '=', subsidiary_id)])
