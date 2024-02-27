@@ -870,7 +870,7 @@ msgstr ""
 #: code:addons/binaural_commissions/models/commission_policy_line.py:0
 #, python-format
 msgid "The date from must be lower than the date to!"
-msgstr "La fecha desde debe ser menor que la fecha hasta"
+msgstr "La cantidad de días en la columna 'Desde' debe ser menor que la cantidad de días en la columna 'Hasta'"
 
 #. module: binaural_commissions
 #. odoo-python
