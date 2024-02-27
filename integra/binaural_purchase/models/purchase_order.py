@@ -253,16 +253,24 @@ class PurchaseOrder(models.Model):
             )
 
     def action_create_invoice(self):
-        # Update the foreign rate and foreign inverse rate of the invoice
+        """
+        Inherits the original method to set the value of the following fields on the invoice based
+        on the ones from the order:
+            - filter_partner
+            - manually_set_rate
+            - foreign_rate
+            - foreign_inverse_rate
+        """
         res = super().action_create_invoice()
         if not self.env.company.use_invoice_rate_from_purchase_order:
             return res
         for order in self:
             order.invoice_ids.write(
                 {
+                    "filter_partner": order.filter_partner,
+                    "manually_set_rate": order.manually_set_rate,
                     "foreign_rate": order.foreign_rate,
                     "foreign_inverse_rate": order.foreign_inverse_rate,
-                    "filter_partner": order.filter_partner,
                 }
             )
         return res

@@ -272,7 +272,10 @@ class SaleOrder(models.Model):
 
     def _prepare_invoice(self):
         invoice_vals = super()._prepare_invoice()
+        invoice_vals["manually_set_rate"] = self.manually_set_rate
         invoice_vals["filter_partner"] = self.filter_partner
+        invoice_vals["foreign_rate"] = self.foreign_rate
+        invoice_vals["foreign_inverse_rate"] = self.foreign_inverse_rate
         return invoice_vals
 
     def _update_invoices_rate(self):
