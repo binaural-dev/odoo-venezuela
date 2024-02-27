@@ -232,7 +232,8 @@ class PurchaseOrder(models.Model):
             rate_values = Rate.compute_rate(
                 purchase.foreign_currency_id.id, date_order or fields.Date.today()
             )
-            purchase.update(rate_values)
+            purchase.foreign_rate = rate_values["foreign_rate"]
+            purchase.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -250,7 +251,6 @@ class PurchaseOrder(models.Model):
                 if purchase.foreign_currency_id.id == base_usd_id
                 else purchase.foreign_rate
             )
-            purchase.manually_set_rate = True
 
     def action_create_invoice(self):
         # Update the foreign rate and foreign inverse rate of the invoice

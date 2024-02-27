@@ -6,10 +6,6 @@ from collections import defaultdict
 from odoo.tools.misc import formatLang
 from odoo.tools import float_compare
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -95,9 +91,15 @@ class AccountMove(models.Model):
 
     detailed_amounts = fields.Binary(compute="_compute_detailed_amounts")
 
-    foreign_debit = fields.Monetary(compute="_compute_total_debit_credit", currency_field="foreign_currency_id")
-    foreign_credit = fields.Monetary(compute="_compute_total_debit_credit", currency_field="foreign_currency_id")
-    foreign_balance = fields.Monetary(compute="_compute_total_debit_credit", currency_field="foreign_currency_id")
+    foreign_debit = fields.Monetary(
+        compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
+    )
+    foreign_credit = fields.Monetary(
+        compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
+    )
+    foreign_balance = fields.Monetary(
+        compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
+    )
 
     @api.depends("line_ids.foreign_debit", "line_ids.foreign_credit")
     def _compute_total_debit_credit(self):
@@ -106,14 +108,16 @@ class AccountMove(models.Model):
             move.foreign_credit = sum(move.line_ids.mapped("foreign_credit"))
             move.foreign_balance = move.foreign_debit - move.foreign_credit
 
-    @api.depends("invoice_line_ids","tax_totals")
+    @api.depends("invoice_line_ids", "tax_totals")
     def _compute_detailed_amounts(self):
         for record in self:
             discount_amount = 0
             if not record.tax_totals:
                 record.detailed_amounts = dict()
                 return
-            amount_taxed = record.tax_totals.get("amount_total",0) - record.tax_totals.get("amount_untaxed",0)
+            amount_taxed = record.tax_totals.get("amount_total", 0) - record.tax_totals.get(
+                "amount_untaxed", 0
+            )
             total = 0
 
             for line in record.invoice_line_ids:
@@ -140,7 +144,6 @@ class AccountMove(models.Model):
                     "formatted_taxes_amount": formatLang(
                         self.env, amount_taxed, currency_obj=self.currency_id
                     ),
-
                 }
             )
 
@@ -314,7 +317,7 @@ class AccountMove(models.Model):
             if move.currency_id.id != self.env.company.currency_id.id:
                 raise ValidationError(
                     _("You cannot place a currency other than the base of the system.")
-                    )
+                )
 
     def compute_line_ids_foreign_debit_and_credit(self):
         """
@@ -429,10 +432,24 @@ class AccountMove(models.Model):
                 subtotal_found = False
                 if is_invoice and line_name in subtotals_by_name:
                     for subtotals in subtotals_by_name[line_name]:
-                        if float_compare(line.debit,subtotals["price_subtotal"],precision_digits=currency_id.decimal_places) == 0:
+                        if (
+                            float_compare(
+                                line.debit,
+                                subtotals["price_subtotal"],
+                                precision_digits=currency_id.decimal_places,
+                            )
+                            == 0
+                        ):
                             line.foreign_debit = subtotals["foreign_subtotal"]
                             subtotal_found = True
-                        if float_compare(line.credit,subtotals["price_subtotal"], precision_digits=currency_id.decimal_places) == 0:
+                        if (
+                            float_compare(
+                                line.credit,
+                                subtotals["price_subtotal"],
+                                precision_digits=currency_id.decimal_places,
+                            )
+                            == 0
+                        ):
                             line.foreign_credit = subtotals["foreign_subtotal"]
                             subtotal_found = True
                         if subtotal_found:
@@ -606,10 +623,9 @@ class AccountMove(models.Model):
         """
         Rate = self.env["res.currency.rate"]
         for move in self:
-            if not bool(move.foreign_rate):
+            if not move.foreign_rate:
                 return
             move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
-            move.manually_set_rate = True
 
     def action_register_payment(self):
         """
@@ -651,7 +667,9 @@ class AccountMove(models.Model):
                             round(invoice.partner_id.credit, invoice.currency_id.decimal_places),
                             round(invoice.amount_residual, invoice.currency_id.decimal_places),
                             round(total_pay, invoice.currency_id.decimal_places),
-                            round(invoice.partner_id.credit_limit, invoice.currency_id.decimal_places),
+                            round(
+                                invoice.partner_id.credit_limit, invoice.currency_id.decimal_places
+                            ),
                         )
                     )
         return res
