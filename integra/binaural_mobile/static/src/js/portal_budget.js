@@ -5,7 +5,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
     const ajax = require('web.ajax');
     const { _t } = require('web.core');
     
-    publicWidget.registry.portalBudgetForm = publicWidget.Widget.extend({
+    const portalBudgetForm = publicWidget.Widget.extend({
         selector: '.o_portal_budget_form',
         events: {
             "keyup #search_text": "_onKeyupSearchText",
@@ -895,6 +895,10 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
         },
 
     })
+
+    publicWidget.registry.portalBudgetForm = portalBudgetForm
+
+    return portalBudgetForm;
 });
 
 const selectedPartner = (partners, selected_partner) => {
