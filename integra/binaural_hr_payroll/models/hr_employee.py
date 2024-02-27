@@ -18,6 +18,16 @@ class HrEmployee(models.Model):
     vat = fields.Char(string="ID")
     vat_rif = fields.Char(string="RIF")
 
+    porc_ari = fields.Float(
+        string="ARI Percentage",
+        help="ISLR Retention Percentage",
+        digits=(5, 2),
+        default=0.0,
+    )
+    no_ivss = fields.Boolean(string="Does not quote IVSS")
+    no_faov = fields.Boolean(string="Does not quote FAOV")
+    no_pmpf = fields.Boolean(string="Does not quote forced unemployment")
+
     entry_date = fields.Date(tracking=True)
     seniority = fields.Char(compute="_compute_seniority")
 
