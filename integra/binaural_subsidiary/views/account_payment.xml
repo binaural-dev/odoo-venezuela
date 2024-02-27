@@ -10,10 +10,10 @@
                     <field name="account_analytic_id"/>
                 </field>
                 <filter name="transfers_filter" position="after">
-                <filter string="Analytic Account" name="analytic_account_filter" domain="[('account_analytic_id', '!=', False)]"/>
+                <filter string="Sucursal" name="analytic_account_filter" domain="[('account_analytic_id', '!=', False)]"/>
                 </filter>
                 <filter name="company" position="after">
-                    <filter string="Analytic Account" name="analytic_account" domain="[]" context="{'group_by': 'account_analytic_id'}"/>
+                    <filter string="Sucursal" name="analytic_account" domain="[]" context="{'group_by': 'account_analytic_id'}"/>
                 </filter>
             </field>
         </record>
@@ -27,7 +27,8 @@
                     <field name="company_subsidiary" invisible='1'/>   
                     <field name="account_analytic_id"
                         attrs="{'invisible': [('company_subsidiary', '=', False)],
-                                'required': [('company_subsidiary', '=', True)]}"/>
+                                'required': [('company_subsidiary', '=', True)],
+                                'readonly': [('state', '!=', 'draft')]}"/>
                 </field>
             </field>
         </record>

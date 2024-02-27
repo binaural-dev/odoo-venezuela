@@ -28,10 +28,11 @@
                 <label for="correlative"
                     style="font-weight: bold;"
                     attrs="{'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],}"/>
+                <!-- attrs of "correlative" is overwritten in binaural_commissions/account_move_views.xml -->
                 <field name="correlative"
                     attrs="{
                         'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],
-                        'readonly':  ['&amp;', '|', ('move_type', 'in', ['out_invoice', 'out_refund']), ('is_contingency', '=', False), ('state', '=', 'posted')],
+                        'readonly':  ['|', '&amp;', ('move_type', 'in', ['out_invoice', 'out_refund']), ('is_contingency', '=', False), ('state', '=', 'posted')],
                         'required':  [('move_type', 'in', ['in_invoice', 'in_refund'])]
                     }"/>
             </xpath>

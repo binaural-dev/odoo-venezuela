@@ -9,8 +9,24 @@
                 <field name="company_subsidiary" invisible='1'/>   
                 <field name="account_analytic_id" 
                 attrs="{'invisible': [('company_subsidiary', '=', False)],
-                        'required': [('company_subsidiary', '=', True)]}"/>
+                        'required': [('company_subsidiary', '=', True)],
+                        'readonly': [('state', '!=', 'draft')]}"/>
             </xpath>
+        </field>
+    </record>
+
+    <record id="binaural_subsidiary_purchase_order_search_inherit" model="ir.ui.view">
+        <field name="name">sbinaural.subsidiary.purchase.search.inherit</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.view_purchase_order_filter"/>
+        <field name="arch" type="xml">
+            <search>
+                <field name="account_analytic_id" string="Sucursal"/>
+                <group string="Group by">
+                    <filter name="account_analytic_id" string="Sucursal" context="{'group_by': 'account_analytic_id'}"/>
+                </group>
+                <filter name="account_analytic_id" string="Sucursal" domain="[('account_analytic_id', '!=' , False)]"/>
+            </search>
         </field>
     </record>
 </odoo>

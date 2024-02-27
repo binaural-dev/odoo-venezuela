@@ -80,7 +80,7 @@ class PurchaseOrder(models.Model):
             if move.currency_id.id != self.env.company.currency_id.id:
                 raise ValidationError(
                     _("You cannot place a currency other than the base of the system.")
-                    )
+                )
 
     @api.onchange("journal_invoice_id")
     def _onchange_journal_invoice_id(self):
@@ -260,8 +260,9 @@ class PurchaseOrder(models.Model):
         for order in self:
             order.invoice_ids.write(
                 {
-                    "foreign_rate": self.foreign_rate,
-                    "foreign_inverse_rate": self.foreign_inverse_rate,
+                    "foreign_rate": order.foreign_rate,
+                    "foreign_inverse_rate": order.foreign_inverse_rate,
+                    "filter_partner": order.filter_partner,
                 }
             )
         return res

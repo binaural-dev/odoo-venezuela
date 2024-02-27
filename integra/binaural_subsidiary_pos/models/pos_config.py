@@ -10,3 +10,7 @@ class PosConfig(models.Model):
             f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
         ),
     )
+
+    subsidiary = fields.Boolean(
+        related='company_id.subsidiary'
+    )
