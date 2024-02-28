@@ -119,7 +119,7 @@ class ArcvReport(models.TransientModel):
         ), lines in retentions_by_month_and_percentage_fees.items():
             retentions_data.append(
                 {
-                    # "currency": lines[0].currency_id  # PARA MULTIMONEDA
+                    "currency": lines[0].company_currency_id.id,
                     "period": f"{month}/{year}",
                     "percentage_fees": percentage_fees,
                     "invoice_paid_amount_not_related_with_retentions": (

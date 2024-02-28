@@ -130,11 +130,10 @@
 											<tr>
 												<td class="text-center"><span t-out="line['period']"/></td>
 												<td style="text-align: center"><span t-out="line['invoice_paid_amount_not_related_with_retentions']" t-options='{"widget": "monetary", "display_currency": currency}'>--</span></td>
-												<!-- VALIDACION PARA MULTIMONEDA -->
-												<!-- <t t-if="currency != line['currency_id']"> -->
-														
-													<t t-set="invoice_paid_amount_not_related_with_retentions"
+												<t t-set="invoice_paid_amount_not_related_with_retentions"
 													t-value="invoice_paid_amount_not_related_with_retentions + line['invoice_paid_amount_not_related_with_retentions']"/>
+												<t t-if="currency.id != line['currency']">
+														
 		
 													<td style="text-align: center"><span t-out="line['total_foreign_invoice_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
 													<t t-set="total_invoice_amount"
@@ -146,11 +145,8 @@
 													<t t-set="total_retention_amount"
 														t-value="total_retention_amount + line['total_foreign_retention_amount']"/>
 		
-												<!-- </t>
-												<t t-else=""> -->
-		
-													<!-- <t t-set="invoice_paid_amount_not_related_with_retentions"
-													t-value="invoice_paid_amount_not_related_with_retentions + line['invoice_paid_amount_not_related_with_retentions']"/>
+												</t>
+												<t t-else="">
 		
 													<td style="text-align: center"><span t-out="line['total_invoice_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/><t t-out="line['']"/></td>
 													<t t-set="total_invoice_amount"
@@ -160,9 +156,9 @@
 		
 													<td style="text-align: right"><span t-out="line['total_retention_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
 													<t t-set="total_retention_amount"
-														t-value="total_retention_amount + line['total_retention_amount']"/> -->
+														t-value="total_retention_amount + line['total_retention_amount']"/>
 		
-												<!-- </t> -->
+												</t>
 											</tr>
 										</t>
 										
