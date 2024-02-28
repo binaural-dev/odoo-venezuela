@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="picking_cart_print_barcode" model="ir.actions.report">
+        <field name="name">Print Barcode Cart</field>
+        <field name="model">stock.picking.cart</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">binaural_stock_barcode.cart_print_barcode</field>
+        <field name="report_file">binaural_stock_barcode.cart_print_barcode</field>
+        <field name="print_report_name">'[%s] Código de Barras' % (object.name).replace('/', '')</field>
+        <field name="binding_model_id" ref="model_stock_picking_cart" /> 
+        <field name="paperformat_id" ref="binaural_stock_barcode.carts_paperformat"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="cart_print_barcode">
+        <t t-call="web.basic_layout">
+            <t t-foreach="pages" t-as="page">
+                <div class="page" style="page-break-after:always">
+                    <t t-foreach="page" t-as="row">
+                        <div class="row">
+                            <t t-foreach="row" t-as="cart">
+                                <div class="col-5" style="margin: 10px;">
+                                    <div class="o_label_data" style="border: 1pt solid black; border-collapse:separate; border-radius:8pt;padding: 10px">
+                                        <div class="text-center o_label_left_column">
+                                            <h5 class="text-nowrap" t-field="cart.name"/>
+                                            <img 
+                                                alt="barcode" 
+                                                t-if="cart.barcode" 
+                                                t-att-src="'/report/barcode/?barcode_type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', cart.barcode, 600, 120)" style="max-height:50pt;max-width:100%;" 
+                                                align="center"/>
+                                            <span class="text-center" t-out="cart.barcode"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </t>        
+    </template>
+
+</odoo>

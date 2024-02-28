@@ -1,4 +1,5 @@
 from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 import logging
 
@@ -9,6 +10,16 @@ class StockMoveLine(models.Model):
     _inherit = "stock.move.line"
 
     demanded_qty = fields.Float(compute="_compute_demand_quantities")
+
+    @api.constrains("qty_done")
+    def _check_qty_done(self):
+        for move_line in self:
+            _logger.info(move_line.qty_done)
+            _logger.info(move_line.demanded_qty)
+            if move_line.demanded_qty > 0 and move_line.qty_done > move_line.demanded_qty:
+                raise ValidationError(
+                    _("The quantity done cannot be greater than the demanded quantity.")
+                )
 
     @api.depends("move_id")
     def _compute_demand_quantities(self):

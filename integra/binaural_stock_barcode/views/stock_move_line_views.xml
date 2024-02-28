@@ -10,4 +10,18 @@
             </xpath>
        </field>
    </record>
+
+    <record id="stock_move_line_product_selector" model="ir.ui.view">
+        <field name="name">stock.product.selector</field>
+        <field name="model">stock.move.line</field>
+        <field name="inherit_id" ref="stock_barcode.stock_move_line_product_selector"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_stock_quant_ids']/../.." position="attributes">
+                <attribute name="groups">base.group_no_one</attribute>
+            </xpath>
+            <xpath expr="//div[@groups='stock.group_stock_multi_locations']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
 </odoo>

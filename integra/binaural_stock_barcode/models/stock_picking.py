@@ -8,7 +8,6 @@ _logger = logging.getLogger(__name__)
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
-    _order = "create_date desc"
 
     picker_id = fields.Many2one(
         "hr.employee", string="Picker", domain=[("role_picking", "=", "picker")]
@@ -99,6 +98,7 @@ class StockPicking(models.Model):
                             ("type_delivery_step", "=", "pick"),
                             ("picker_id", "=", False),
                         ],
+                        order="create_date asc",
                         limit=1,
                     )
                     if new_pick:

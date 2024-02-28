@@ -8,8 +8,10 @@
             <tree>
                 <field name="name"/>
                 <field name="barcode"/>
-                <field name="pick_id"/>
-                <field name="pack_id"/>
+                <field name="warehouse_id" invisible="1"/>
+                <field name="delivery_steps" invisible="1"/>
+                <field name="pick_id" attrs="{'invisible':[('delivery_steps', 'in',['ship_only'])]}"/>
+                <field name="pack_id" attrs="{'invisible':[('delivery_steps', 'in',['ship_only','pick_ship'])]}"/>
                 <field name="out_id"/>
             </tree>
         </field>
@@ -21,18 +23,21 @@
         <field name="arch" type="xml">
             <form>
                 <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="CART001"/>
+                        </h1>
+                    </div>
                     <group>
                         <group>
-                        <field name="name"/>
                             <field name="barcode"/>
-                            <button name="set_new_barcode" 
-                                string="Generate barcode" 
-                                class="btn btn-link" 
-                                type="object" />
+                            <button name="%(binaural_stock_barcode.picking_cart_print_barcode)d" string="Print Barcode Cart" class="btn btn-link" type="action" attrs="{'invisible': [('barcode','=',False)]}" />
                         </group>
                         <group>
-                            <field name="pick_id"/>
-                            <field name="pack_id"/>
+                            <field name="warehouse_id" invisible="1"/>
+                            <field name="delivery_steps" invisible="1"/>
+                            <field name="pick_id" attrs="{'invisible':[('delivery_steps', 'in',['ship_only'])]}"/>
+                            <field name="pack_id" attrs="{'invisible':[('delivery_steps', 'in',['ship_only','pick_ship'])]}"/>
                             <field name="out_id"/>
                         </group>
                     </group>
@@ -51,5 +56,6 @@
         id="menu_stock_picking_cart_list" 
         name="Carts" 
         parent="stock.menu_warehouse_config"
+        groups="binaural_stock_barcode.show_stock_carts"
         action="action_stock_picking_cart_list"/>
 </odoo>

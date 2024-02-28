@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="MainMenu" t-inherit="stock_barcode.MainMenu" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('o_main_menu_buttons')]" position="replace">
+        </xpath>
+    </t>
+</templates>

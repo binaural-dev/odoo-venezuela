@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="picker_id" attrs="{'invisible': [('type_delivery_step','!=','pick')]}"/>
+                <field name="picker_id" />
                 <field name="cart_id"/>
                 <field name="operation_start_date"/>
                 <field name="operation_pause_date"/>
@@ -18,8 +18,10 @@
                 <field name="supervisor_approve_to_edit_id" invisible="1" />
                 <field name="supervisor_approve_for_incomplete_qty_id" invisible="1" />
 
-                <field name="supervisor_approve_to_edit_id" attrs="{'invisible': ['|',('type_delivery_step','!=','pick'),('supervisor_approve_to_edit_id','=', False)]}"/>
-                <field name="supervisor_approve_for_incomplete_qty_id" attrs="{'invisible': ['|',('type_delivery_step','!=','pick'),('supervisor_approve_for_incomplete_qty_id','=', False)]}"/>
+                <field name="supervisor_approve_to_edit_id" 
+                    attrs="{'invisible': 
+                    ['|',('type_delivery_step','not in',['pick','out','pack']),('supervisor_approve_to_edit_id','=', False)]}"/>
+                <field name="supervisor_approve_for_incomplete_qty_id" attrs="{'invisible': ['|',('type_delivery_step','not in',['pick','out','pack']),('supervisor_approve_for_incomplete_qty_id','=', False)]}"/>
             </xpath>
             <xpath expr="//div[@name='button_box']/button[@name='action_view_stock_valuation_layers']"
                    position="before">
@@ -84,8 +86,8 @@
                 <field name="name"/>
                 <field name="cart_active_id"/>
                 <field name="active_pick_id"/>
-                <field name="pending_pick_id" domain="[('type_delivery_step','=','pick'),('operation_state', '=', 'ready')]" />
-                <field name="pick_ids"/>
+                <field name="pending_pick_id" domain="[('type_delivery_step','=','pick'),('operation_state', '=', 'ready'),('picker_id','=',False)]" />
+                <field name="pick_ids" widget="many2many_tags"/>
             </tree>
         </field>
     </record>
@@ -118,14 +120,6 @@
         </field>
     </record>
 
-    <record id="view_stock_picking_tree_operation" model="ir.actions.act_window">
-        <field name="name">Operation Report</field>
-        <field name="res_model">stock.picking</field>
-        <field name="view_mode">tree,form</field>
-        <field name="view_id" ref="binaural_stock_barcode.view_tree_stock_picking_tree_operation"/>
-        <field name="domain">['&amp;',('operation_state', 'in', ['paused','in_process','finished']),('type_delivery_step','in', ['pick','pack','out'])]</field>
-    </record>
-
     <menuitem 
         id="menu_picking_operation" 
         name="Operation Report" 
@@ -133,14 +127,8 @@
         action="view_stock_picking_tree_operation"/>
 
     <menuitem 
-        id="menu_picking_waiting" 
-        name="Pick Assignation" 
-        parent="stock.menu_stock_warehouse_mgmt"
-        action="view_stock_picking_tree_waiting"/>
-
-    <menuitem 
         id="menu_picking_waiting_hr_employee" 
-        name="Pick Assignation (Employee)" 
+        name="Pick Assignation" 
         parent="stock.menu_stock_warehouse_mgmt"
         action="view_stock_picking_hr_employee_tree_waiting"/>
 

@@ -9,10 +9,10 @@ class ResUsers(models.Model):
 
     role_picking = fields.Selection(
         [
-            ("picker", "Picker"),
-            ("packer", "Packer"),
-            ("out", "checker"),
-            ("supervisor", "Supervisor"),
+            ("picker", "Role Picker"),
+            ("packer", "Role Packer"),
+            ("out", "Role Checker"),
+            ("supervisor", "Role Supervisor"),
         ],
         default=False,
     )

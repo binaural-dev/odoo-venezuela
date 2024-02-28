@@ -1,6 +1,7 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 import logging
+
 _logger = logging.getLogger(__name__)
 
 
@@ -27,34 +28,46 @@ class HrEmployee(models.Model):
     active_pick_id = fields.Many2one("stock.picking", compute="_compute_pick_state_id")
     paused_pick_id = fields.Many2one("stock.picking", compute="_compute_pick_state_id")
 
+    def get_pick_states(self):
+        return {
+            "paused_pick_id": self.pick_ids.filtered(lambda x: x.operation_state == "paused"),
+            "pending_pick_id": self.pick_ids.filtered(lambda x: x.operation_state == "ready"),
+            "active_pick_id": self.pick_ids.filtered(lambda x: x.operation_state == "in_process"),
+        }
+
+    def remove_picking_from_employee(self, picking_id):
+        """
+        This function removes the picking from the employee
+        """
+        self.pick_ids -= picking_id
+
     @api.depends("pick_ids")
     def _compute_pick_state_id(self):
         for record in self:
-            paused_pick = record.pick_ids.filtered(lambda x: x.operation_state == "paused")
-            pending_pick = record.pick_ids.filtered(lambda x: x.operation_state == "ready")
-            active_pick = record.pick_ids.filtered(lambda x: x.operation_state == "in_process")
-
-            record.paused_pick_id = False
-            record.pending_pick_id = False
-            record.active_pick_id = False
-
-            if active_pick:
-                record.active_pick_id = active_pick
-
-            if pending_pick:
-                record.pending_pick_id = pending_pick
-
-            if paused_pick:
-                record.paused_pick_id = paused_pick
+            values = record.get_pick_states()
+            record.active_pick_id = values.get("active_pick_id")
+            record.pending_pick_id = values.get("pending_pick_id")
+            record.paused_pick_id = values.get("paused_pick_id")
 
     def inverse_pending_pick_id(self):
         for record in self:
+            values = record.get_pick_states()
+
+            if not record.pending_pick_id and values.get("pending_pick_id", False):
+                record.remove_picking_from_employee(values["pending_pick_id"])
+
+            if values.get("active_pick_id", False):
+                raise ValidationError(
+                    _("You cannot assign a pending pick if you have an active pick")
+                )
+
+            if record.pending_pick_id.picker_id:
+                record.pending_pick_id.picker_id = False
+
             if record.pending_pick_id:
-                _logger.info("inverse_pending_pick_id")
                 pick_ids = record.pick_ids.filtered(lambda x: x.operation_state != "ready")
                 pick_ids |= record.pending_pick_id
                 record.pick_ids = pick_ids
-                
 
     @api.depends("pick_ids", "active_pick_id")
     def _compute_cart_active_id(self):

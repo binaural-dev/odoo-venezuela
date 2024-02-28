@@ -22,7 +22,6 @@
                 <span class="source-location" t-esc="line.location_id.display_name"/>
                 <i class="fa fa-fw fa-long-arrow-right"/>
                 <span>Reservado: </span>
-                <t t-log="line"/>
                 <t t-if="!line.fake_line">
                     <span class="reseved-qty font-weight-bold" t-esc="line.reserved_uom_qty" />
                 </t>
@@ -36,6 +35,8 @@
     <t t-name="LineComponent" t-inherit="stock_barcode.LineComponent" t-inherit-mode="extension" owl="1">
         <xpath expr="//t[@t-call='stock_barcode.LineQuantity']" position="before">
             <t t-call="LineReserved"/>
+        </xpath>
+        <xpath expr="//button[@name='incrementButton']/.." position="replace">
         </xpath>
     </t>
 </templates>

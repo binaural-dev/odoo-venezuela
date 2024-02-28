@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 import random
 
@@ -12,13 +12,17 @@ class StockPickingCart(models.Model):
     def _default_barcode(self):
         return self.generate_random_barcode()
 
-    name = fields.Char(string="Description", required=True)
-    barcode = fields.Char(string="Barcode", required=True, default=_default_barcode)
+    name = fields.Char(string="Description", required=True, copy=False)
+    barcode = fields.Char(string="Barcode", required=True, default=_default_barcode, copy=False)
     company_id = fields.Many2one(default=lambda self: self.env.company.id)
 
-    pick_id = fields.Many2one("stock.picking", string="PICK")
-    pack_id = fields.Many2one("stock.picking", string="PACK")
-    out_id = fields.Many2one("stock.picking", string="OUT")
+    pick_id = fields.Many2one("stock.picking", string="PICK", copy=False)
+    pack_id = fields.Many2one("stock.picking", string="PACK", copy=False)
+    out_id = fields.Many2one("stock.picking", string="OUT", copy=False)
+    warehouse_id = fields.Many2one(
+        "stock.warehouse", default=lambda self: self.env.company.main_warehouse_id
+    )
+    delivery_steps = fields.Selection(related="warehouse_id.delivery_steps")
 
     @api.onchange("barcode")
     def _onchange_barcode(self):
@@ -31,7 +35,12 @@ class StockPickingCart(models.Model):
         return str(pattern) + str(random_barcode)
 
     def set_new_barcode(self):
-        self.barcode = self.generate_random_barcode()
+        barcode = False
+        while not barcode:
+            gen_barcode = self.generate_random_barcode()
+            if not (self.search([("barcode", "=", barcode)]) - self):
+                barcode = gen_barcode
+        self.barcode = barcode
 
     def clear_cart(self):
         self.pick_id = False
