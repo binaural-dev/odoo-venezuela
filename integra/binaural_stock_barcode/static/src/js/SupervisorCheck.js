@@ -19,8 +19,8 @@ export default class SupervisorCheck extends Component {
       try {
         const action = await this.orm.call(
           "res.users",
-          "search_read",
-          [[['role_picking', '=', 'supervisor']], ['name', 'role_picking','pin','barcode']],
+          "get_supervisor_ids",
+          [],
         );
         this.supervisor_ids = action;
       } catch (e) {

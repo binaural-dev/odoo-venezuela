@@ -314,7 +314,7 @@ class StockPicking(models.Model):
         pickings_incomplete = self._check_incomplete()
         if (
             pickings_incomplete
-            and pickings_incomplete.type_delivery_step == "out"
+            and pickings_incomplete.type_delivery_step in ["pick", "out", "pack"]
             and not self.env.context.get("skip_incomplete_qty")
         ):
             return pickings_incomplete._action_picking_incomplete_wizard()
