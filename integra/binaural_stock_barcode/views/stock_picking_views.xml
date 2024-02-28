@@ -120,6 +120,14 @@
         </field>
     </record>
 
+    <record id="view_stock_picking_tree_operation" model="ir.actions.act_window">
+        <field name="name">Operation Report</field>
+        <field name="res_model">stock.picking</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="binaural_stock_barcode.view_tree_stock_picking_tree_operation"/>
+        <field name="domain">['&amp;',('operation_state', 'in', ['paused','in_process','finished']),('type_delivery_step','in', ['pick','pack','out'])]</field>
+    </record>
+
     <menuitem 
         id="menu_picking_operation" 
         name="Operation Report" 
