@@ -6,9 +6,15 @@
     "author": "Binauraldev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.0.1.0.0",
+    "version": "16.0.2.0.0",
     # any module necessary for this one to work correctly
-    "depends": ["base", "point_of_sale", "pos_sale","binaural_pos", "pos_sale_product_configurator"],
+    "depends": [
+        "base",
+        "point_of_sale",
+        "binaural_pos",
+        "pos_sale",
+        "pos_sale_product_configurator",
+    ],
     # always loaded
     "data": ["views/res_config_settings_views.xml"],
     "images": ["static/description/icon.png"],

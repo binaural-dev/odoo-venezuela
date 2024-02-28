@@ -17,7 +17,7 @@ class AccountMove(models.Model):
     )
 
     company_subsidiary = fields.Boolean(
-        related='company_id.subsidiary', store=True,
+        related='company_id.subsidiary', store=True, string="Company Subsidiary",
     )
     
     # It's needed to inherit the create and write methods to update the analytic distribution of the

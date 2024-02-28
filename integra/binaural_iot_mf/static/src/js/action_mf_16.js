@@ -46,6 +46,7 @@ export class IoTFiscalMachineComponent extends Widget {
       "test": _t("Test"),
       "command": _t("Send Command"),
       "print_resume_date": _t("Print Resume"),
+      "configure_device": _t("Configure Device"),
     }
     this.state = useState({
       action: this[this.props.action] || this.not_function,
@@ -92,7 +93,7 @@ export class IoTFiscalMachineComponent extends Widget {
       .then(data => {
         onIoTActionResult(data, this.env)
       })
-      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   async payment_method() {
@@ -234,6 +235,34 @@ export class IoTFiscalMachineComponent extends Widget {
       .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
 
   }
+  async configure_device() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    const device = this.props.record.resId
+
+    const request = await this.env.services.rpc("web/dataset/call_kw/iot.device/configure_device", {
+      model: 'iot.device',
+      method: 'configure_device',
+      args: [device],
+      kwargs: {},
+    })
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+    });
+
+    this.iotDevice.action({
+      action: "configure_device",
+      data: request,
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+  }
   async test() {
     if (!this.device) {
       this.showFailedConnection()
@@ -320,7 +349,7 @@ export class IoTFiscalMachineComponent extends Widget {
       .then(data => {
         onIoTActionResult(data, this.env)
       })
-      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   async generate_report_x() {
@@ -339,7 +368,7 @@ export class IoTFiscalMachineComponent extends Widget {
       .then(data => {
         onIoTActionResult(data, this.env)
       })
-      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   async programacion() {
@@ -359,7 +388,7 @@ export class IoTFiscalMachineComponent extends Widget {
         console.log(data)
         onIoTActionResult(data, this.env)
       })
-      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.ip));
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
   }
 
   async print_out_invoice() {

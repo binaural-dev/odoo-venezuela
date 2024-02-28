@@ -35,13 +35,28 @@
         <field name="inherit_id" ref="account.view_account_invoice_filter"/>
         <field name="arch" type="xml">
             <search>
-                <field name="account_analytic_id" string="Cuenta Analitica"/>
+                <field name="account_analytic_id" string="Sucursal"/>
                 <group string="Group by">
-                    <filter name="account_analytic_id" string="Cuenta Analitica" context="{'group_by': 'account_analytic_id'}"/>
+                    <filter name="account_analytic_id" string="Sucursal" context="{'group_by': 'account_analytic_id'}"/>
                 </group>
-                <filter name="account_analytic_id" string="Cuenta Analitica" domain="[('account_analytic_id', '!=' , False)]"/>
+                <filter name="account_analytic_id" string="Sucursal" domain="[('account_analytic_id', '!=' , False)]"/>
             </search>
         </field>
     </record>
+
+        <record id="view_account_move_filter_inherit_binaural_subsidiary" model="ir.ui.view">
+            <field name="name">account.move.view.search.inherit</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_account_move_filter"/>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="account_analytic_id" string="Sucursal"/>
+                    <group string="Group by">
+                        <filter name="account_analytic_id" string="Sucursal" context="{'group_by': 'account_analytic_id'}"/>
+                    </group>
+                    <filter name="account_analytic_id" string="Sucursal" domain="[('account_analytic_id', '!=' , False)]"/>
+                </search>
+            </field>
+        </record>
 
 </odoo>
