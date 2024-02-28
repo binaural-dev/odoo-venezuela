@@ -565,19 +565,33 @@ class AccountMove(models.Model):
                 vat = str(move.partner_id.vat)
             move.vat = vat.upper()
 
-    @api.depends("invoice_date")
+    @api.depends("date", "invoice_date")
     def _compute_rate(self):
         """
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
         """
+        self._compute_rate_for_documents(
+            self.filtered(lambda m: m.is_sale_document(include_receipts=True)), is_sale=True
+        )
+        self._compute_rate_for_documents(
+            self.filtered(lambda m: not m.is_sale_document(include_receipts=True)), is_sale=False
+        )
+
+    @api.model
+    def _compute_rate_for_documents(self, documents, is_sale):
+        """
+        Compute the rate for a set of documents (either sale invoices or purchase invoices/moves).
+        """
         Rate = self.env["res.currency.rate"]
-        for move in self:
+
+        for move in documents:
             if move.manually_set_rate:
                 continue
-            rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
-            )
-            move.update(rate_values)
+            date_field = "invoice_date" if is_sale else "date"
+            rate_date = getattr(move, date_field)
+            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
+            move.foreign_rate = rate_values["foreign_rate"]
+            move.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
