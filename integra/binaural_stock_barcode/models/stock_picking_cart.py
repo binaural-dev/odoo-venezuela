@@ -27,7 +27,7 @@ class StockPickingCart(models.Model):
     @api.onchange("barcode")
     def _onchange_barcode(self):
         if self.barcode and self.env["stock.picking.cart"].search([("barcode", "=", self.barcode)]):
-            raise ValidationError("Barcode already exists")
+            raise ValidationError(_("Barcode already exists"))
 
     def generate_random_barcode(self):
         pattern = self.env.ref("binaural_stock_barcode.picking_cart_rule").pattern

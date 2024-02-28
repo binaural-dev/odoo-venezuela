@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240214\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-17 22:08+0000\n"
-"PO-Revision-Date: 2024-02-17 22:08+0000\n"
+"POT-Creation-Date: 2024-02-28 23:00+0000\n"
+"PO-Revision-Date: 2024-02-28 23:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -49,7 +49,14 @@ msgstr "Codigo de Barras"
 #. module: binaural_stock_barcode
 #: model:ir.model,name:binaural_stock_barcode.model_barcode_rule
 msgid "Barcode Rule"
-msgstr "Regla de código de barras"
+msgstr "Regla del código de barras"
+
+#. module: binaural_stock_barcode
+#. odoo-python
+#: code:addons/binaural_stock_barcode/models/stock_picking_cart.py:0
+#, python-format
+msgid "Barcode already exists"
+msgstr "El código de barras ya existe"
 
 #. module: binaural_stock_barcode
 #: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.view_stock_picking_cart_form
@@ -312,14 +319,9 @@ msgstr ""
 
 #. module: binaural_stock_barcode
 #: model:ir.actions.act_window,name:binaural_stock_barcode.view_stock_picking_hr_employee_tree_waiting
-#: model:ir.ui.menu,name:binaural_stock_barcode.menu_picking_waiting
+#: model:ir.ui.menu,name:binaural_stock_barcode.menu_picking_waiting_hr_employee
 msgid "Pick Assignation"
 msgstr "Asignacion de PICK"
-
-#. module: binaural_stock_barcode
-#: model:ir.ui.menu,name:binaural_stock_barcode.menu_picking_waiting_hr_employee
-msgid "Pick Assignation (Employee)"
-msgstr "Asignacion de Picks (Por empleado)"
 
 #. module: binaural_stock_barcode
 #: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.view_employee_form
@@ -355,7 +357,7 @@ msgstr "Imprimir Codigo de Barras del Carrito"
 #. module: binaural_stock_barcode
 #: model:ir.model,name:binaural_stock_barcode.model_stock_move_line
 msgid "Product Moves (Stock Move Line)"
-msgstr "Movimientos de Producto (Stock Move Line)"
+msgstr "Movimientos de producto (línea de movimiento de inventario)"
 
 #. module: binaural_stock_barcode
 #: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.view_picking_form
@@ -382,7 +384,7 @@ msgstr "Resumen"
 #. module: binaural_stock_barcode
 #: model:ir.model.fields.selection,name:binaural_stock_barcode.selection__res_users__role_picking__out
 msgid "Role Checker"
-msgstr "Chequeador"
+msgstr "Checkeador"
 
 #. module: binaural_stock_barcode
 #: model:ir.model.fields.selection,name:binaural_stock_barcode.selection__res_users__role_picking__packer
@@ -428,7 +430,7 @@ msgstr "Inicio"
 #. module: binaural_stock_barcode
 #: model:ir.model,name:binaural_stock_barcode.model_stock_move
 msgid "Stock Move"
-msgstr "Movimiento stock"
+msgstr "Movimiento de inventario"
 
 #. module: binaural_stock_barcode
 #: model:ir.actions.act_window,name:binaural_stock_barcode.view_stock_picking_tree_waiting
@@ -451,12 +453,12 @@ msgstr "Tipo de Picking"
 #. module: binaural_stock_barcode
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_stock_picking__supervisor_approve_for_incomplete_qty_id
 msgid "Supervisor Approve For Incomplete Qty"
-msgstr "Supervisor aprobador de Cantidades Incompletas"
+msgstr "Supervisor aprovador de Cantidades Incompletas"
 
 #. module: binaural_stock_barcode
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_stock_picking__supervisor_approve_to_edit_id
 msgid "Supervisor Approve To Edit"
-msgstr "Supervisor aprobador de Edicion"
+msgstr "Supervisor aprovador de Edicion"
 
 #. module: binaural_stock_barcode
 #: model:ir.model.fields,field_description:binaural_stock_barcode.field_hr_employee__supervisor_barcode_password
@@ -489,6 +491,13 @@ msgid "The product you are trying to scan does not have reserved quantities"
 msgstr ""
 "El producto que intentas escanear no tiene cantidades reservadasEl producto "
 "que estás intentando escanear no tiene cantidades reservadas"
+
+#. module: binaural_stock_barcode
+#. odoo-python
+#: code:addons/binaural_stock_barcode/models/stock_move_line.py:0
+#, python-format
+msgid "The quantity done cannot be greater than the demanded quantity."
+msgstr "La cantidad hecha no puede ser mayor que la cantidad demandada."
 
 #. module: binaural_stock_barcode
 #. odoo-javascript
@@ -579,6 +588,13 @@ msgstr "Se espera que usted escanee uno o más productos"
 msgid "You cannot add more products than the limit"
 msgstr ""
 "No puedes agregar más productos que el límite o que no esten en la lista"
+
+#. module: binaural_stock_barcode
+#. odoo-python
+#: code:addons/binaural_stock_barcode/models/hr_employee.py:0
+#, python-format
+msgid "You cannot assign a pending pick if you have an active pick"
+msgstr "No puedes asignar un pick pendiente si tienes un pick activo"
 
 #. module: binaural_stock_barcode
 #. odoo-python
