@@ -57,11 +57,12 @@ export default class SupervisorCheck extends Component {
       if(this.props.type == "validate"){
         function_to_call = "set_supervisor_for_incomplete_qty"
       }
+
       if (function_to_call !== "" ){
         await this.orm.call(
-          "stock.picking",
+          "stock.move.line",
           function_to_call,
-          [parseInt(this.props.component.env.model.record.id), parseInt(this.supervisorEl.el.value)],
+          [parseInt(this.props.component.state.EditLineArgs.line.id), parseInt(this.supervisorEl.el.value)],
         );
       }
 

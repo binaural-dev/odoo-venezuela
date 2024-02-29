@@ -16,7 +16,6 @@ class StockPicking(models.Model):
     picking_time_ids = fields.One2many("stock.picking.time", "pick_id")
     cart_id = fields.Many2one("stock.picking.cart", string="Cart")
 
-    supervisor_approve_to_edit_id = fields.Many2one("hr.employee", readonly=False)
     supervisor_approve_for_incomplete_qty_id = fields.Many2one("hr.employee", readonly=False)
 
     pick_move_line_ids = fields.One2many(
@@ -62,10 +61,6 @@ class StockPicking(models.Model):
             picking_report.total_lines = len(
                 [line for line in picking_report.mapped("move_line_ids_without_package")]
             )
-
-    def set_supervisor_to_edit(self, supervisor_id):
-        user_id = self.env["res.users"].sudo().browse(supervisor_id)
-        self.supervisor_approve_to_edit_id = user_id.employee_id
 
     def set_supervisor_for_incomplete_qty(self, supervisor_id):
         user_id = self.env["res.users"].sudo().browse(supervisor_id)

@@ -14,12 +14,7 @@
             </xpath>
 
             <xpath expr="//field[@name='origin']" position="after">
-                <field name="supervisor_approve_to_edit_id" invisible="1" />
                 <field name="supervisor_approve_for_incomplete_qty_id" invisible="1" />
-
-                <field name="supervisor_approve_to_edit_id" 
-                    attrs="{'invisible': 
-                    ['|',('type_delivery_step','not in',['pick','out','pack']),('supervisor_approve_to_edit_id','=', False)]}"/>
                 <field name="supervisor_approve_for_incomplete_qty_id" attrs="{'invisible': ['|',('type_delivery_step','not in',['pick','out','pack']),('supervisor_approve_for_incomplete_qty_id','=', False)]}"/>
             </xpath>
             <xpath expr="//div[@name='button_box']/button[@name='action_view_stock_valuation_layers']"

@@ -8,6 +8,7 @@ _logger = logging.getLogger(__name__)
 
 class ProductTemplate(models.Model):
     _inherit = "product.template"
+    _order = "priority_location asc"
 
     quantity = fields.Float(
         compute="_compute_available_quantity",
@@ -19,6 +20,11 @@ class ProductTemplate(models.Model):
     alternate_code = fields.Char(
         string="Alternate Code",
         help="Alternate code for the product",
+    )
+    physical_location = fields.Many2one("stock.location", string="Physical Location")
+
+    priority_location = fields.Integer(
+        string="Priority", related="physical_location.priority", store=True
     )
 
     price_with_tax = fields.Float(compute="_compute_prices_with_tax")

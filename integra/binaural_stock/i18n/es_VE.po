@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240214\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-28 22:56+0000\n"
-"PO-Revision-Date: 2024-02-28 22:56+0000\n"
+"POT-Creation-Date: 2024-02-29 15:54+0000\n"
+"PO-Revision-Date: 2024-02-29 15:54+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -34,6 +34,31 @@ msgstr "<span class=\"o_stat_text\">Cantidad Disponible para Vender</span>"
 #, python-format
 msgid "A packaging already uses the barcode"
 msgstr "Un empaque ya usa el código de barras"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_needaction
+msgid "Action Needed"
+msgstr "Acción Necesaria"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_ids
+msgid "Activities"
+msgstr "Actividades"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Decoración de Excepción de Actividad"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_state
+msgid "Activity State"
+msgstr "Estado de la Actividad"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "Tipo de Actividad Icono"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -76,6 +101,11 @@ msgstr "Còdigo alterno para el producto"
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Artículo"
 msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_attachment_count
+msgid "Attachment Count"
+msgstr "Cantidad de Adjuntos"
 
 #. module: binaural_stock
 #. odoo-python
@@ -153,6 +183,21 @@ msgid "Fecha:"
 msgstr ""
 
 #. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_follower_ids
+msgid "Followers"
+msgstr "Seguidores"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "Seguidores (Partner)"
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr ""
+
+#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__group_product_available_quantity_on_sale
 msgid "Group Product Available Quantity On Sale"
 msgstr "Grupo de Cantidad Disponible para Vender"
@@ -161,6 +206,11 @@ msgstr "Grupo de Cantidad Disponible para Vender"
 #: model:res.groups,name:binaural_stock.group_product_available_quantity_on_sale
 msgid "Group Product Available Quantity on Sale"
 msgstr "Grupo de Cantidad Disponible para Vender"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__has_message
+msgid "Has Message"
+msgstr "Tiene Mensaje"
 
 #. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_hide_cancel_button_from_inventory_transfers
@@ -211,9 +261,45 @@ msgid "INT"
 msgstr ""
 
 #. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_exception_icon
+msgid "Icon"
+msgstr "Icono"
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__activity_exception_icon
+msgid "Icon to indicate an exception activity."
+msgstr "Icono para indicar una actividad de excepción."
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr "si está marcado, los nuevos mensajes requieren su atención."
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__message_has_error
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr "Si está marcado, algunos mensajes tienen un error de entrega."
+
+#. module: binaural_stock
+#: model:ir.model,name:binaural_stock.model_stock_location
+msgid "Inventory Locations"
+msgstr "Ubicaciones de Inventario"
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Inventory:"
 msgstr "Inventario:"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_is_follower
+msgid "Is Follower"
+msgstr "Es Seguidor"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_main_attachment_id
+msgid "Main Attachment"
+msgstr "Adjunto Principal"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__main_warehouse_id
@@ -224,6 +310,56 @@ msgstr "Almacén Principal"
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Marca"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_has_error
+msgid "Message Delivery error"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_ids
+msgid "Messages"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_summary
+msgid "Next Activity Summary"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_type_id
+msgid "Next Activity Type"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_needaction_counter
+msgid "Number of Actions"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_has_error_counter
+msgid "Number of errors"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__message_has_error_counter
+msgid "Number of messages with delivery error"
 msgstr ""
 
 #. module: binaural_stock
@@ -275,6 +411,12 @@ msgid "Packs Count"
 msgstr "Cantidad de Packs"
 
 #. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_product_product__physical_location
+#: model:ir.model.fields,field_description:binaural_stock.field_product_template__physical_location
+msgid "Physical Location"
+msgstr "Ubicacion Física"
+
+#. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_picking_type
 msgid "Picking Type"
 msgstr "Tipo de albarán"
@@ -300,6 +442,13 @@ msgstr "Precio con Impuestos"
 #: model:ir.model.fields,field_description:binaural_stock.field_product_template__price_without_tax
 msgid "Price Without Tax"
 msgstr "Precio sin impuestos"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_product_product__priority_location
+#: model:ir.model.fields,field_description:binaural_stock.field_product_template__priority_location
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__priority
+msgid "Priority"
+msgstr "Prioridad"
 
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_product_template
@@ -338,6 +487,16 @@ msgid "Rango:"
 msgstr ""
 
 #. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_user_id
+msgid "Responsible User"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr ""
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_tree_view
 msgid "Sales Price"
 msgstr "Precio de Venta + Impuesto"
@@ -351,6 +510,15 @@ msgstr "Mostrar la Cantidad Disponible en Todos los Almacenes."
 #: model:res.groups,name:binaural_stock.group_show_standard_price
 msgid "Show standard price on the product form view"
 msgstr "Mostrar costo en la vista del producto"
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -372,6 +540,13 @@ msgstr "Configuraciones de Inventario"
 #: model:ir.model.fields,help:binaural_stock.field_product_template__quantity
 msgid "The Availability of the product to sell."
 msgstr "La Disponibilidad del Producto para la Venta."
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_location.py:0
+#, python-format
+msgid "The priority must be greater than 0."
+msgstr "La prioridad debe ser mayor que 0."
 
 #. module: binaural_stock
 #. odoo-python
@@ -401,6 +576,11 @@ msgid "Type Steps"
 msgstr "Operación"
 
 #. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr ""
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Ultimo Costo"
 msgstr ""
@@ -427,6 +607,16 @@ msgid "Warehouse Search"
 msgstr "Buscar en Almacen"
 
 #. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__website_message_ids
+msgid "Website Messages"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__website_message_ids
+msgid "Website communication history"
+msgstr ""
+
+#. module: binaural_stock
 #. odoo-python
 #: code:addons/binaural_stock/models/stock_picking.py:0
 #: code:addons/binaural_stock/models/stock_picking.py:0
@@ -446,7 +636,8 @@ msgstr "No puedes hacer que las transferencias sean mayor que la demanda"
 #: code:addons/binaural_stock/models/stock_picking.py:0
 #, python-format
 msgid "You cannot make transfers larger than the reserved quantity"
-msgstr "No puedes hacer que las transferencias sean mayor que la cantidad reservada"
+msgstr ""
+"No puedes hacer que las transferencias sean mayor que la cantidad reservada"
 
 #. module: binaural_stock
 #. odoo-python

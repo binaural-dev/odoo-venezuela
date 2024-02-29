@@ -52,9 +52,9 @@ export default class BinauralMainComponent extends MainComponent {
     if (!this.env.model.config.supervisor_required_to_edit) {
       return await super._onEditLine(...arguments)
     }
-    this.ShowSupervisorPopup(this);
     this.state.EditLineArgs = ev;
     this.state.type_supervisor = "edit"
+    this.ShowSupervisorPopup(this);
   }
 
   async validate(ev) {
@@ -62,9 +62,9 @@ export default class BinauralMainComponent extends MainComponent {
       || !!this.highlightValidateButton) {
       return await super.validate(...arguments)
     }
-    this.ShowSupervisorPopup(this)
     this.state.EditLineArgs = ev;
     this.state.type_supervisor = "validate"
+    this.ShowSupervisorPopup(this)
   }
 
   async ShowSupervisorPopup(self) {

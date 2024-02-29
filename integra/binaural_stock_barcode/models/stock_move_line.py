@@ -10,6 +10,11 @@ class StockMoveLine(models.Model):
     _inherit = "stock.move.line"
 
     demanded_qty = fields.Float(compute="_compute_demand_quantities")
+    supervisor_approve_to_edit_id = fields.Many2one("hr.employee", readonly=False)
+
+    def set_supervisor_to_edit(self, supervisor_id):
+        user_id = self.env["res.users"].sudo().browse(supervisor_id)
+        self.supervisor_approve_to_edit_id = user_id.employee_id
 
     @api.constrains("qty_done")
     def _check_qty_done(self):
