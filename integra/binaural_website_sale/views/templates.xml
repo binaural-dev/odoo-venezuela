@@ -62,7 +62,7 @@
 					t-options="{'widget': 'monetary', 'display_currency': website.currency_id}"/>					
 			</t>
 			<t t-else="">
-				<span></span>
+				<span class='oe_price'></span>
 			</t>
 		</xpath>
 
