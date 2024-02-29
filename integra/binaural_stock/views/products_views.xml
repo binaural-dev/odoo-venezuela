@@ -59,7 +59,7 @@
 	    </div>
         <xpath expr="//group[@name='inventory']" position="inside">
             <group>
-                <field name="physical_location"/>
+                <field name="physical_location" options="{'no_create': True}"/>
             </group>
         </xpath>
 	</field>
