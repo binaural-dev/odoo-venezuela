@@ -1,6 +1,7 @@
 from odoo import api, fields, models, _
 from odoo.tools import html2plaintext, is_html_empty
 from odoo.tools.float_utils import float_compare
+from odoo.exceptions import ValidationError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -41,6 +42,20 @@ class StockPicking(models.Model):
     total_time_elapsed = fields.Float(string="Total time elapsed", compute="_compute_time_elapsed")
     total_lines = fields.Integer(compute="_compute_total_lines")
 
+    def set_time_operation(self, operation_type, employee_id=False):
+        if not employee_id:
+            employee_id = self.picker_id
+        values = self.env["stock.picking.time"]
+        for record in self:
+            if operation_type == "pause":
+                record.assign_new_pick_to_employee()
+
+
+            values = values.create(
+                {"pick_id": record.id, "employee_id": employee_id.id, "type": operation_type}
+            )
+        return values
+
     @api.depends("move_line_ids_without_package")
     def _compute_total_lines(self):
         for picking_report in self:
@@ -70,6 +85,11 @@ class StockPicking(models.Model):
                     start_time = line.create_date
                 if line.type == "end":
                     end_time = line.create_date
+                if line.type == "pause":
+                    pause_time = line.create_date
+                if line.type == "resume":
+                    start_time = line.create_date
+                    pause_time = False
 
             record.operation_start_date = start_time
             record.operation_pause_date = pause_time
@@ -82,6 +102,23 @@ class StockPicking(models.Model):
             else:
                 record.total_time_elapsed = False
 
+
+    def assign_new_pick_to_employee(self):
+        if self.picker_id.pick_ids.filtered(lambda x: x.operation_state in ["ready"]):
+            return
+
+        new_pick = self.search(
+            [
+                ("operation_state", "=", "ready"),
+                ("type_delivery_step", "=", "pick"),
+                ("picker_id", "=", False),
+            ],
+            order="create_date asc",
+            limit=1,
+        )
+        if new_pick:
+            new_pick.picker_id = self.picker_id
+
     def button_validate(self):
         res = super().button_validate()
         for record in self:
@@ -92,17 +129,7 @@ class StockPicking(models.Model):
                 )
 
                 if record.type_delivery_step == "pick":
-                    new_pick = self.search(
-                        [
-                            ("operation_state", "=", "ready"),
-                            ("type_delivery_step", "=", "pick"),
-                            ("picker_id", "=", False),
-                        ],
-                        order="create_date asc",
-                        limit=1,
-                    )
-                    if new_pick:
-                        new_pick.picker_id = record.picker_id
+                    record.assign_new_pick_to_employee()
 
                 if record.type_delivery_step == "out":
                     record.cart_id.pick_id = False
@@ -119,24 +146,23 @@ class StockPicking(models.Model):
     @api.depends("operation_start_date", "operation_pause_date", "operation_end_date", "state")
     def _compute_operation_state(self):
         for picking in self:
+            if picking.state == "done":
+                picking.operation_state = "finished"
+                continue 
+            if picking.state == "cancel":
+                picking.operation_state = "cancel"
+                continue
             if picking.operation_state in ["ready", "paused"] and picking.operation_start_date:
                 picking.operation_state = "in_process"
-                return
+                continue
             if picking.operation_state == "in_process" and picking.operation_pause_date:
                 picking.operation_state = "paused"
-                return
+                continue
             if picking.operation_state == "in_process" and (
                 picking.operation_end_date or picking.state == "done"
             ):
                 picking.operation_state = "finished"
-                return
-
-            if picking.state == "done":
-                picking.operation_state = "finished"
-                return
-            if picking.state == "cancel":
-                picking.operation_state = "cancel"
-                return
+                continue
 
     def action_confirm(self):
         res = super().action_confirm()

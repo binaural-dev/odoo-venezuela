@@ -66,6 +66,12 @@ class StockBarcodeControllerInherit(StockBarcodeController):
                     )
                 }
             if cart_picking.pick_id and cart_picking.pick_id.state != "done":
+                if cart_picking.pick_id.operation_state == "paused":
+                    if cart_picking.pick_id.picker_id.pick_ids.filtered(lambda x: x.operation_state in ["in_process"]):
+                        _logger.info("You have ANOTHER")
+                        return {"warning": _("You have another operation in process")}
+                    cart_picking.pick_id.set_time_operation("resume")
+
                 return self._open_stock_picking(cart_picking.pick_id)
 
             picking_id = self.get_pick_assigned(employee_id)
@@ -80,7 +86,7 @@ class StockBarcodeControllerInherit(StockBarcodeController):
                 picking_id.write({"cart_id": cart_picking.id})
                 cart_picking.write({"pick_id": picking_id.id, "out_id": out_id.id})
 
-                self.start_time_operation(picking_id, employee_id)
+                picking_id.set_time_operation("start", employee_id)
                 return self._open_stock_picking(picking_id)
 
             return {"warning": _("You do not currently have a pick assigned")}
@@ -94,7 +100,7 @@ class StockBarcodeControllerInherit(StockBarcodeController):
                 }
 
             if self.is_cart_available_open_out(cart_picking):
-                self.start_time_operation(cart_picking.out_id, employee_id)
+                cart_picking.out_id.set_time_operation("start", employee_id)
                 cart_picking.out_id.write({"cart_id": cart_picking.id, "picker_id": employee_id.id})
                 return self._open_stock_picking(cart_picking.out_id)
 

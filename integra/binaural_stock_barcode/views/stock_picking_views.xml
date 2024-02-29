@@ -9,7 +9,6 @@
                 <field name="picker_id" />
                 <field name="cart_id"/>
                 <field name="operation_start_date"/>
-                <field name="operation_pause_date"/>
                 <field name="operation_end_date"/>
                 <field name="total_time_elapsed" widget="float_time" />
             </xpath>
@@ -44,8 +43,8 @@
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Timelapse Picking">
-                    <field name="picking_time_ids">
-                        <tree>
+                    <field name="picking_time_ids" mode="tree">
+                        <tree delete="0" create="0" edit="0">
                             <field name="create_date" />
                             <field name="employee_id" />
                             <field name="type"/>
@@ -85,9 +84,16 @@
             <tree create="0" editable="bottom" string="Stock Picking (Waiting)">
                 <field name="name"/>
                 <field name="cart_active_id"/>
+                <button name="pause_operation" 
+                    type="object" 
+                    string="Pause Operation" 
+                    class="oe_highlight" 
+                    icon="fa-pause" 
+                    attrs="{'invisible': [('active_pick_id','=',False)]}"/>
                 <field name="active_pick_id"/>
+                <field name="paused_pick_ids" widget="many2many_tags"/>
                 <field name="pending_pick_id" domain="[('type_delivery_step','=','pick'),('operation_state', '=', 'ready'),('picker_id','=',False)]" />
-                <field name="pick_ids" widget="many2many_tags"/>
+                <field name="pick_ids" widget="many2many_tags" optional="hide" groups="base.group_no_one"/>
             </tree>
         </field>
     </record>

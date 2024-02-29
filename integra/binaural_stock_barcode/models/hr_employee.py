@@ -26,11 +26,14 @@ class HrEmployee(models.Model):
         inverse="inverse_pending_pick_id",
     )
     active_pick_id = fields.Many2one("stock.picking", compute="_compute_pick_state_id")
-    paused_pick_id = fields.Many2one("stock.picking", compute="_compute_pick_state_id")
+    paused_pick_ids = fields.Many2many("stock.picking", compute="_compute_pick_state_id")
+
+    def pause_operation(self):
+        self.active_pick_id.set_time_operation("pause")
 
     def get_pick_states(self):
         return {
-            "paused_pick_id": self.pick_ids.filtered(lambda x: x.operation_state == "paused"),
+            "paused_pick_ids": self.pick_ids.filtered(lambda x: x.operation_state == "paused"),
             "pending_pick_id": self.pick_ids.filtered(lambda x: x.operation_state == "ready"),
             "active_pick_id": self.pick_ids.filtered(lambda x: x.operation_state == "in_process"),
         }
@@ -41,13 +44,13 @@ class HrEmployee(models.Model):
         """
         self.pick_ids -= picking_id
 
-    @api.depends("pick_ids")
+    @api.depends("pick_ids.operation_state")
     def _compute_pick_state_id(self):
         for record in self:
             values = record.get_pick_states()
             record.active_pick_id = values.get("active_pick_id")
             record.pending_pick_id = values.get("pending_pick_id")
-            record.paused_pick_id = values.get("paused_pick_id")
+            record.paused_pick_ids = values.get("paused_pick_ids")
 
     def inverse_pending_pick_id(self):
         for record in self:
