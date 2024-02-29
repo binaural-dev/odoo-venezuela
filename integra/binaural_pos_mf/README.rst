@@ -21,6 +21,9 @@ Este modulo permite hacer las conexiones a la maquina fiscal desde el modulo de 
 * Permite descargar el Libro de ventas Agrupado por Rango de Facturas
 * En caso de ser un Recibo este no manda a imprimirse el documento
 * Se creo wizard para imprimir el LIbro de Ventas Agrupados
+* Al momento de tener el check de la caja registradora intentara abrirla en cuanto se seleccione un metodo de pago con el tipo de diario efectivo y en cuanto se haga click en el boton de control de efectivo
+* Se elimino el boton de abrir caja nativa de odoo.
+  configuracion
 
 ## Campos
 
