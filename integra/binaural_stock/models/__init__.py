@@ -6,6 +6,7 @@ from . import (
     res_config_settings,
     stock_picking,
     stock_picking_type,
+    stock_move,
     stock_move_line,
     stock_location
 )
