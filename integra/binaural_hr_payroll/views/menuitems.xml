@@ -57,5 +57,11 @@
 	parent="hr_payroll.menu_hr_payroll_report"
     />
 
-
+    <menuitem
+        id="menu_hr_payslip_payment_methods"
+        name="Payment Methods"
+	action="action_view_hr_payslip_payment_methods"
+        parent="hr_payroll.menu_hr_payroll_report"
+	sequence="70"
+    />
 </odoo>
