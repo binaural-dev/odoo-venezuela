@@ -9,8 +9,9 @@
     "category": "Technical",
     "version": "16.0.1.0.0",
     # any module necessary for this one to work correctly
-    "depends": ["binaural_rate","currency_rate_live"],
+    "depends": ["binaural_rate", "currency_rate_live"],
     # always loaded
     "data": [
+        "views/res_config_settings.xml",
     ],
 }

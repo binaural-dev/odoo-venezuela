@@ -19,6 +19,11 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.currency_foreign_id",
         readonly=False,
     )
+    
+    can_update_habil_days = fields.Boolean(
+        related="company_id.can_update_habil_days",
+        readonly=False
+    )
 
     @api.constrains("currency_foreign_id")
     def _check_currency_foreign_id(self):

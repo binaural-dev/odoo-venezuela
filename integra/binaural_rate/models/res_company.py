@@ -13,23 +13,20 @@ class ResCompany(models.Model):
     currency_foreign_id = fields.Many2one(
         "res.currency",
         string="Currency Foreign",
-        help="Currency Foreign for the company"
+        help="Currency Foreign for the company",
     )
 
-    @api.model
-    def _parse_bcv_data(self, availible_currencies):
-        usd_rate_bcv = binaural_bcv_query.get_usd_rate_of_the_day_bcv(self)
-        
-        return {
-            "USD": (1, usd_rate_bcv[1]),
-            "VEF": usd_rate_bcv
-        }
-    
     def write(self, vals):
         before_currency = self.currency_foreign_id
         res = super().write(vals)
-        if "currency_foreign_id" in vals and before_currency :
-            lines = self.env["account.move.line"].search([("foreign_currency_id", "=", before_currency.id)])
+        if "currency_foreign_id" in vals and before_currency:
+            lines = self.env["account.move.line"].search(
+                [("foreign_currency_id", "=", before_currency.id)]
+            )
             if lines:
-                raise ValidationError(_("The currency already has accounting movements, you cannot deactivate this foreign currency"))
+                raise ValidationError(
+                    _(
+                        "The currency already has accounting movements, you cannot deactivate this foreign currency"
+                    )
+                )
         return res
