@@ -9,7 +9,7 @@
                 <field name="demanded_qty" />
             </xpath>
             <xpath expr="//tree/field[@name='qty_done']" position="after">
-                <field name="supervisor_approve_to_edit_id" optional="hide" />
+                <field name="supervisor_approve_to_edit_id" optional="hide" readonly="1"/>
             </xpath>
        </field>
    </record>
