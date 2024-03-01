@@ -140,9 +140,8 @@ class SaleOrderBudget(http.Controller):
                             data.update(
                                 {
                                     "status": 400, 
-                                    "msg": (_("La cuenta %s es de %s mas %s en presupuesto da un total de %s superando el limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el limite de crédito del cliente.",
-                                            sale.partner_id.property_account_receivable_id.display_name, sale.partner_id.credit_limit, sale.amount_total, total_pay, sale.partner_id.credit_limit)
-                                    )
+                                    "msg": (_("La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
+                                            round(sale.partner_id.credit, sale.currency_id.decimal_places), round(sale.amount_total, sale.currency_id.decimal_places), total_pay, round(sale.partner_id.credit_limit, sale.currency_id.decimal_places)))
                                 }
                             )
                             return data
