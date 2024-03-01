@@ -13,7 +13,7 @@ class ResCompany(models.Model):
     currency_foreign_id = fields.Many2one(
         "res.currency",
         string="Currency Foreign",
-        help="Currency Foreign for the company",
+        help="Currency Foreign for the company"
     )
 
     def write(self, vals):
