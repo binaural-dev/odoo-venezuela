@@ -108,6 +108,7 @@
         </xpath>
     </template>
 
+	<!-- Cantidad Maxima en vista de carrito -->
 	<template id="limit_number_product_cart_lines_binaural_website_sale" inherit_id="website_sale.cart_lines">
         <xpath expr="//t[1]/input[@class='js_quantity form-control quantity'][1]" position="replace">
             
