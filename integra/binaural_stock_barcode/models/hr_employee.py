@@ -10,9 +10,6 @@ class HrEmployee(models.Model):
 
     role_picking = fields.Selection(related="user_id.role_picking", readonly=False)
 
-    supervisor_barcode_password = fields.Char(
-        related="user_id.supervisor_barcode_password", readonly=False
-    )
     pick_ids = fields.One2many(
         "stock.picking",
         "picker_id",
@@ -71,6 +68,12 @@ class HrEmployee(models.Model):
                 pick_ids = record.pick_ids.filtered(lambda x: x.operation_state != "ready")
                 pick_ids |= record.pending_pick_id
                 record.pick_ids = pick_ids
+
+    @api.model
+    def get_supervisor_ids(self):
+        return self.sudo().search_read(
+            [("role_picking", "=", "supervisor")], ["name", "role_picking", "pin", "barcode"]
+        )
 
     @api.depends("pick_ids", "active_pick_id")
     def _compute_cart_active_id(self):

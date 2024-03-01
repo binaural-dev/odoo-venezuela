@@ -21,10 +21,15 @@ class ProductTemplate(models.Model):
         string="Alternate Code",
         help="Alternate code for the product",
     )
-    physical_location = fields.Many2one("stock.location", string="Physical Location")
+    physical_location_id = fields.Many2one(
+        "stock.location",
+        string="Physical Location",
+        domain=[("usage", "=", "internal")],
+        tracking=True,
+    )
 
     priority_location = fields.Integer(
-        string="Priority", related="physical_location.priority", store=True
+        string="Priority", related="physical_location_id.priority", store=True
     )
 
     price_with_tax = fields.Float(compute="_compute_prices_with_tax")

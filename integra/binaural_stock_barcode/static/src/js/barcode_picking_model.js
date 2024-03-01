@@ -8,6 +8,11 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
     super(...arguments);
   }
 
+  _sortLine(lines) {
+      return lines.sort((l1, l2) => {
+          return l1.priority_location > l2.priority_location ? 1 : -1;
+      });
+  }
   _createLinesState() {
     const lines = [];
     const picking = this.cache.getRecord(this.params.model, this.params.id);

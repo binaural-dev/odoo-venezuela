@@ -7,8 +7,12 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='coach_id']" position="after">
                 <field name="role_picking" />
-                <field name="supervisor_barcode_password" 
-                    attrs="{'invisible': [('role_picking','!=', 'supervisor')]}"/>
+            </xpath>
+            <xpath expr="//field[@name='pin']" position="attributes">
+                <attribute name="password">True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='barcode']" position="attributes">
+                <attribute name="password">True</attribute>
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Pick Information" attrs="{'invisible': [('role_picking','!=', 'picker')]}">

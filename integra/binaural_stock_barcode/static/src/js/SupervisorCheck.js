@@ -18,7 +18,7 @@ export default class SupervisorCheck extends Component {
     onWillStart(async () => {
       try {
         const action = await this.orm.call(
-          "res.users",
+          "hr.employee",
           "get_supervisor_ids",
           [],
         );
@@ -29,8 +29,11 @@ export default class SupervisorCheck extends Component {
     });
   }
 
-  async onEnter(ev){
-    if(ev.key ==  "Enter" || ev.key == "NumLock"){
+  async onEnter(ev) {
+    if (ev.key == "CapsLock" && this.passwordEl.el.value != "") {
+      await this.checkSupervisor();
+    }
+    if (ev.key == "Enter" || ev.key == "NumLock") {
       await this.checkSupervisor();
     }
   }
@@ -41,28 +44,37 @@ export default class SupervisorCheck extends Component {
   }
 
   async checkSupervisor() {
-    const action = await this.orm.call(
-      "res.users",
-      "check_password_supervisor",
-      [parseInt(this.supervisorEl.el.value), this.passwordEl.el.value],
-    );
-    if (action) {
-      this.supervisor_ids = action;
+
+    let supervisor_id = this.supervisor_ids.find((el) => {
+      if (el.barcode === this.passwordEl.el.value) {
+        return true
+      }
+      return false
+    })
+
+    if(!supervisor_id){
+      supervisor_id = this.supervisor_ids.find((el) => {
+        if (el.id === parseInt(this.supervisorEl.el.value) && el.pin === this.passwordEl.el.value) {
+          return true
+        }
+        return false
+      })
+    }
+
+    if (!!supervisor_id) {
       this.props.setDisplay(false);
-      let function_to_call = ""
-
-      if(this.props.type == "edit"){
-        function_to_call = "set_supervisor_to_edit"
-      }
-      if(this.props.type == "validate"){
-        function_to_call = "set_supervisor_for_incomplete_qty"
-      }
-
-      if (function_to_call !== "" ){
+      if (this.props.type == "edit") {
         await this.orm.call(
           "stock.move.line",
-          function_to_call,
-          [parseInt(this.props.component.state.EditLineArgs.line.id), parseInt(this.supervisorEl.el.value)],
+          "set_supervisor_to_edit",
+          [parseInt(this.props.component.state.EditLineArgs.line.id), parseInt(supervisor_id.id)],
+        );
+      }
+      if (this.props.type == "validate") {
+        await this.orm.call(
+          "stock.picking",
+          "set_supervisor_for_incomplete_qty",
+          [parseInt(this.props.component.env.model.record.id), parseInt(supervisor_id.id)],
         );
       }
 

@@ -8,5 +8,6 @@ from . import (
     stock_picking_type,
     stock_move,
     stock_move_line,
-    stock_location
+    stock_location,
+    stock_quant,
 )

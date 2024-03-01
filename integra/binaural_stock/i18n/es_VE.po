@@ -411,8 +411,8 @@ msgid "Packs Count"
 msgstr "Cantidad de Packs"
 
 #. module: binaural_stock
-#: model:ir.model.fields,field_description:binaural_stock.field_product_product__physical_location
-#: model:ir.model.fields,field_description:binaural_stock.field_product_template__physical_location
+#: model:ir.model.fields,field_description:binaural_stock.field_product_product__physical_location_id
+#: model:ir.model.fields,field_description:binaural_stock.field_product_template__physical_location_id
 msgid "Physical Location"
 msgstr "Ubicacion Física"
 

@@ -16,14 +16,3 @@ class ResUsers(models.Model):
         ],
         default=False,
     )
-    supervisor_barcode_password = fields.Char(string="Supervisor Barcode Password")
-
-    @api.model
-    def get_supervisor_ids(self):
-        return self.sudo().search_read([('role_picking', '=', 'supervisor')],['name', 'role_picking','pin','barcode'])
-
-    def check_password_supervisor(self, password):
-        """
-        Validate if the password is correct for the supervisor
-        """
-        return self.supervisor_barcode_password == password

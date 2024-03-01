@@ -109,10 +109,17 @@ class StockPicking(models.Model):
     def create(self, vals_list):
         for val in vals_list:
             self.validate_block_transfers_expedition(vals=val)
-        return super().create(vals_list)
+        res = super().create(vals_list)
+        self.move_line_ids_without_package.sorted(key=lambda x: x.priority_location)
+        self.move_line_ids.sorted(key=lambda x: x.priority_location)
+        self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
+        return res
     
     def write(self,vals):
         res = super().write(vals)
+        self.move_line_ids_without_package.sorted(key=lambda x: x.priority_location)
+        self.move_line_ids.sorted(key=lambda x: x.priority_location)
+        self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
         keys_to_check = [
             "move_line_ids_without_package",
             "move_line_nosuggest_ids",

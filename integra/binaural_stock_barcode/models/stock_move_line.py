@@ -13,14 +13,11 @@ class StockMoveLine(models.Model):
     supervisor_approve_to_edit_id = fields.Many2one("hr.employee", readonly=False)
 
     def set_supervisor_to_edit(self, supervisor_id):
-        user_id = self.env["res.users"].sudo().browse(supervisor_id)
-        self.supervisor_approve_to_edit_id = user_id.employee_id
+        self.supervisor_approve_to_edit_id = supervisor_id
 
     @api.constrains("qty_done")
     def _check_qty_done(self):
         for move_line in self:
-            _logger.info(move_line.qty_done)
-            _logger.info(move_line.demanded_qty)
             if move_line.demanded_qty > 0 and move_line.qty_done > move_line.demanded_qty:
                 raise ValidationError(
                     _("The quantity done cannot be greater than the demanded quantity.")

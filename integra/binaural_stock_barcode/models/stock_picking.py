@@ -63,8 +63,7 @@ class StockPicking(models.Model):
             )
 
     def set_supervisor_for_incomplete_qty(self, supervisor_id):
-        user_id = self.env["res.users"].sudo().browse(supervisor_id)
-        self.supervisor_approve_for_incomplete_qty_id = user_id.employee_id
+        self.supervisor_approve_for_incomplete_qty_id = supervisor_id
 
     @api.depends("picking_time_ids")
     def _compute_time_elapsed(self):
@@ -236,16 +235,20 @@ class StockPicking(models.Model):
             )
             package_types = package_types.search([])
 
+        _logger.info(move_lines.sorted(key=lambda x: x.priority_location).read(
+                    move_lines._get_fields_stock_barcode(), load=False
+                ))
+
         data = {
             "records": {
                 "stock.picking": self.read(self._get_fields_stock_barcode(), load=False),
                 "stock.picking.type": self.picking_type_id.read(
                     self.picking_type_id._get_fields_stock_barcode(), load=False
                 ),
-                "stock.move.line": move_lines.read(
+                "stock.move.line": move_lines.sorted(key=lambda x: x.priority_location).read(
                     move_lines._get_fields_stock_barcode(), load=False
                 ),
-                "stock.move": self.move_ids.read(
+                "stock.move": self.move_ids.sorted(key=lambda x: x.priority_location).read(
                     self.move_ids._get_fields_stock_barcode(), load=False
                 ),
                 # `self` can be a record set (e.g.: a picking batch), set only the first partner in the context.

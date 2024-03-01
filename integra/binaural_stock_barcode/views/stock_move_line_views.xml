@@ -7,7 +7,9 @@
        <field name="arch" type="xml">
             <xpath expr="//tree/field[@name='reserved_uom_qty']" position="before">
                 <field name="demanded_qty" />
-                <field name="supervisor_approve_to_edit_id" optional="hide"/>
+            </xpath>
+            <xpath expr="//tree/field[@name='qty_done']" position="after">
+                <field name="supervisor_approve_to_edit_id" optional="hide" />
             </xpath>
        </field>
    </record>
