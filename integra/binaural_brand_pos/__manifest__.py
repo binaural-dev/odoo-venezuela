@@ -14,4 +14,5 @@
         "views/sale_report_view.xml",
     ],
     "application": True,
+    "auto_install": True,
 }
