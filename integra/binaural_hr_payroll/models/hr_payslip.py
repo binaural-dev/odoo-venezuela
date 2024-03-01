@@ -45,6 +45,12 @@ class HrPayslip(models.Model):
         states={"draft": [("readonly", False)], "verify": [("readonly", False)]},
     )
 
+    employee_prefix_vat = fields.Selection(related="employee_id.prefix_vat")
+    employee_vat = fields.Char(related="employee_id.vat")
+    employee_bank_account_id = fields.Many2one(
+        "res.partner.bank", related="employee_id.bank_account_id"
+    )
+
     _sql_constraints = [
         (
             "payslip_vacation_period_entry_start_before_end",
