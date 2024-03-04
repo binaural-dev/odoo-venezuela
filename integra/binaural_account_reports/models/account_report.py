@@ -627,7 +627,6 @@ class AccountReport(models.Model):
         """
         if not get_is_foreign_currency(self.env):
             return super()._compute_totals_no_batch_aggregation(
-                self,
                 column_group_options,
                 formulas_dict,
                 other_current_report_expr_totals,
