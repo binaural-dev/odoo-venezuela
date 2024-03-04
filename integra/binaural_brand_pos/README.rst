@@ -14,23 +14,28 @@ Binaural Marca en POS
 
 |badge1|
 
-#Binaural Marca en POS
-Este modulo se encarga de mostrar la marca en la linea de de pedidos del punto de venta,
-ademas permite agrupar y filtrar por marca en los informe de pedidos del punto de venta
+#Binaural Marca
 
-Modelos Heredados:
+Este modulo se encarga de asignarle una marca a los productos desde la ficha de producto, reportes 
+de inventario compras y ventas.
 
-#Linea de pedido de punto de venta (pos.order.line)
+Modelos agregado:
 
-* Marca
+##Marca de producto (product.brand)
 
-Este añade el campo marca en la linea de pedido del punto de venta
+* Nombre
+* Compañia 
+* Activo
 
-#Informe de pedidos del punto de venta (report.pos.order)
+Este añade los siguientes campos a los modelos existentes:
 
-* Marca
+## Asientos contables (account.move.line), Líneas de orden de compra  (purchase.order.line), Líneas de orden de venta (sale.order.line), Líneas de movimiento de inventario (stock.move.line)
 
-Este añade el campo marca en el informe de pedidos del punto de venta para permitir agrupar y filtrar por marca
+* Marca del producto
+
+##Punto de pedido del almacén de existencias (stock.warehouse.orderpoint), Ficha de producto (product.template), Reporte de ventas (sale.report), Movimiento en inventario (stock.move), Picking de Inventario(stock.picking), Cantidad en Inventario (stock.quant)
+
+* Marca del producto
 
 
 **Tabla de Contenidos**
