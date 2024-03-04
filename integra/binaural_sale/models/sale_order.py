@@ -370,7 +370,7 @@ class SaleOrder(models.Model):
                     decimal_places = order.currency_id.decimal_places
                     raise ValidationError(
                         _(
-                            "La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
+                            "No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
                             round(order.partner_id.credit, decimal_places),
                             round(order.amount_total, decimal_places),
                             round(total_pay, decimal_places),
