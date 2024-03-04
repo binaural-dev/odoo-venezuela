@@ -11,6 +11,9 @@
 		    <field name="foreign_currency_id" invisible="1"/>
 		    <field name="wage_field_to_use" invisible="1"/>
 		</div>
+		<field name="structure_type_id" position="after">
+		    <field name="salary_type"/>
+		</field>
 		<label for="wage" position="attributes">
                     <attribute name="attrs">{'invisible': [('wage_field_to_use', '!=', 'wage')]}</attribute>
 	    	</label>

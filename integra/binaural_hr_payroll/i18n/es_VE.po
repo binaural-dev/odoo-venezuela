@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240226\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240304\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-01 15:56+0000\n"
-"PO-Revision-Date: 2024-03-01 15:56+0000\n"
+"POT-Creation-Date: 2024-03-04 14:36+0000\n"
+"PO-Revision-Date: 2024-03-04 14:36+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -261,6 +261,11 @@ msgstr "Banco"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__employee_bank_account_id
 msgid "Bank Account Number"
 msgstr "Número de cuenta bancaría"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__name
+msgid "Bank Name"
+msgstr "Nombre del Banco"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__compute_payroll_using__base_wage
@@ -653,6 +658,11 @@ msgid "First Year Vacation Days must be a positive number"
 msgstr "Días de Vacaciones del Primer Año debe ser positivo"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__salary_type__fixed
+msgid "Fixed"
+msgstr "Fijo"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_follower_ids
 msgid "Followers"
 msgstr ""
@@ -783,6 +793,11 @@ msgstr "Agrupar por"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__has_message
 msgid "Has Message"
 msgstr "Tiene Mensaje"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__holidays_accrued
+msgid "Holidays Accrued"
+msgstr "Devengado para vacaciones"
 
 #. module: binaural_hr_payroll
 #: model:hr.work.entry.type,name:binaural_hr_payroll.hr_work_entry_binaural_horas_laboradas
@@ -1119,8 +1134,8 @@ msgid "Payslip Worked Days"
 msgstr "Días trabajados en el recibo de nómina"
 
 #. module: binaural_hr_payroll
-#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payslip_payment_methods_view_form
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__payslip_ids
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payslip_payment_methods_view_form
 msgid "Payslips"
 msgstr "Recibos"
 
@@ -1292,6 +1307,11 @@ msgid "Salary Structure"
 msgstr "Estructura salarial"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_contract__salary_type
+msgid "Salary Type"
+msgstr "Tipo de Salario"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__seniority
 msgid "Seniority"
 msgstr "Anitgüedad"
@@ -1299,7 +1319,9 @@ msgstr "Anitgüedad"
 #. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_hr_payslip_payment_methods
 msgid "Show a report of the payment methods used on the payslips"
-msgstr "Muestra un reporte de los métodos de pago utilizados en los recibos de nómina"
+msgstr ""
+"Muestra un reporte de los métodos de pago utilizados en los recibos de "
+"nómina"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__slip_id
@@ -1487,6 +1509,11 @@ msgid "Value"
 msgstr "Valor"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__salary_type__variable
+msgid "Variable"
+msgstr "Variable"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__wage_field_to_use__wage
 msgid "Wage"
 msgstr "Salario"
@@ -1571,11 +1598,6 @@ msgstr "Años"
 msgid "You can't disable this allowance because it's binded to an employee."
 msgstr ""
 "No puedes archivar este complemento porque ya está asociado a un empleado."
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__name
-msgid "Bank Name"
-msgstr "Nombre del Banco"
 
 #. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_report_binaural_hr_payroll_report_pre_payslip_run
