@@ -1,8 +1,9 @@
 from dateutil.relativedelta import relativedelta
 from datetime import date, datetime
-from math import floor
+from math import ceil, floor
 
 from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 
 
 class HrEmployee(models.Model):
@@ -36,6 +37,7 @@ class HrEmployee(models.Model):
     )
 
     holidays_accrued = fields.Float(compute="_compute_holidays_accrued")
+    average_annual_wage = fields.Float()
 
     @api.depends("entry_date", "departure_date")
     def _compute_seniority(self):
@@ -105,25 +107,6 @@ class HrEmployee(models.Model):
                         + third_to_last_month_accrued
                     ) / 3
 
-    def get_all_payroll_moves(self):
-        self._cr.execute(
-            """
-                SELECT
-                    EXTRACT(MONTH FROM date) AS month,
-                    SUM(total_basic) as total_basic,
-                    SUM(total_accrued) as total_accrued
-                FROM hr_payroll_move as move
-                WHERE
-                    employee_id = %s AND
-                    move_type = 'salary'
-                GROUP BY month
-                ORDER BY month asc;
-            """,
-            (self.id,),
-        )
-        moves = self._cr.dictfetchall()
-        return moves
-
     def get_vacation_bonus_days_alicuot(self):
         self.ensure_one()
         vacation_bonus_days = self.get_vacation_bonus_days()
@@ -160,6 +143,108 @@ class HrEmployee(models.Model):
         profit_sharing_days = self.company_id.profit_sharing_days_qty
         moves = self.get_all_payroll_moves()
         return (profit_sharing_days / 360) * (moves[-1]["total_accrued"] / 30)
+
+    def get_all_payroll_moves(self):
+        self._cr.execute(
+            """
+                SELECT
+                    EXTRACT(MONTH FROM date) AS month,
+                    SUM(total_basic) as total_basic,
+                    SUM(total_accrued) as total_accrued
+                FROM hr_payroll_move as move
+                WHERE
+                    employee_id = %s AND
+                    move_type = 'salary'
+                GROUP BY month
+                ORDER BY month asc;
+            """,
+            (self.id,),
+        )
+        moves = self._cr.dictfetchall()
+        return moves
+
+    def get_profit_sharing_wage(self):
+        self.ensure_one()
+        if self.company_id.profit_sharing_type == "annual_avg":
+            return self._compute_employee_average_wage() / 30
+
+        moves = self.get_all_payroll_moves()
+        if not moves:
+            raise UserError(_("There are no payslips for the employee: %s", self.name))
+        return moves[-1]["total_accrued"] / 30
+
+    def _compute_employee_average_wage(self):
+        self.ensure_one()
+        moves = self._get_payroll_moves_grouped_by_months_of_a_specific_year()
+        if not moves:
+            return 0
+
+        last_month = int(moves[-1]["month"])
+        last_month_wage = moves[-1]["total_accrued"]
+        for month in range(last_month + 1, 13):
+            moves.append(
+                {
+                    "month": month,
+                    "total_accrued": last_month_wage,
+                }
+            )
+        annual_average = sum(move["total_accrued"] for move in moves) / len(moves)
+
+        self.average_annual_wage = annual_average
+        return annual_average
+
+    def _get_payroll_moves_grouped_by_months_of_a_specific_year(self, year=datetime.today().year):
+        self.ensure_one()
+        self._cr.execute(
+            """
+                SELECT
+                    EXTRACT(MONTH FROM date) AS month,
+                    SUM(total_basic) as total_basic,
+                    SUM(total_accrued) as total_accrued
+                FROM hr_payroll_move as move
+                WHERE
+                    employee_id = %s AND
+                    move_type = 'salary' AND
+                    EXTRACT(YEAR FROM date) = %s
+                GROUP BY month
+                ORDER BY month asc;
+            """,
+            (self.id, year),
+        )
+        return self._cr.dictfetchall()
+
+    def get_profit_sharing_days(self, liquidation=False) -> int:
+        self.ensure_one()
+        profit_sharing_days_conf = self.company_id.profit_sharing_days_qty
+        seniority_in_years = self._get_seniority_in_years()
+
+        if seniority_in_years >= 1 and not liquidation:
+            return profit_sharing_days_conf
+
+        seniority_in_months = self.get_seniority_months_since_first_day_of_year()
+        return ceil(profit_sharing_days_conf / 12 * seniority_in_months)
+
+    def _get_seniority_in_years(self):
+        self.ensure_one()
+        seniority = 0
+        if self.entry_date:
+            from_date = self.entry_date
+            to_date = self.departure_date if self.departure_date else fields.Date.today()
+
+            diff = relativedelta(to_date, from_date)
+            seniority = diff.years
+        return seniority
+
+    def get_seniority_months_since_first_day_of_year(self):
+        self.ensure_one()
+        seniority = self._get_seniority()
+        if seniority is None:
+            return 0
+        first_day_of_year = date.today().replace(month=1, day=1)
+        if self.entry_date >= first_day_of_year:
+            return self.get_seniority_in_months()
+        seniority_in_months = relativedelta(datetime.today(), first_day_of_year).months
+        return seniority_in_months
 
     def _get_vacation_bonus_days_of_previous_moves(self):
         self.ensure_one()
