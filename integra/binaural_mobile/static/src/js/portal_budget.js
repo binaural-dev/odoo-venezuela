@@ -22,6 +22,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             "change #same_address": "_onChangeSameAddress",
             "change #qtyProduct": "_onChangeProductQty",
             "click #qtyProduct": "_onClickProductQty",
+            "click #openCreateAddressContact": "_onClickCreateDeliveryContact",
+            "click #openClient": "_onClickCreateClient",
             "click #registerClient": "_onClickRegisterClient",
             "change #identification": "_onChangeVatPrefix",
             "change #countryClient": "_onChangeCountry",
@@ -47,7 +49,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                     url: '/budget/client',
                     dataType: 'json',
                     data:  term => ({query: term}),
-                    results: data => {
+                    results: (data) => {
                         const { status, data:dt } = data;
                         const is400e = status === 400;
                         if (is400e) return 
@@ -65,11 +67,14 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                             });
                             self.partners.push(client); 
                         });
+
+                        self._loadContactSelectOptions(dt, $('#client').val())
+
                         return {results: ret};
                     }
                     
                 },
-            }); 
+            });
 
             ['#numberPhone', '#nameClient',  '#emailClient', "#identification", "#streetDirection"].forEach(function (id) {
                 $(id).on('paste', function (e) {
@@ -141,20 +146,52 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             this._onProductModalScroll(self);
 
         },
-
         _onClickOpenProduct: function () {
             this._renderProducts(this);
         },
-        
-        _onChangeClient: function(ev) {
+        _getClients: async () => {
+            const clients = $.ajax({
+                type: "GET",
+                dataType: 'json',
+                url: '/budget/client',
+                contentType: "application/json; charset=utf-8",
+                data: JSON.stringify({'query': ""}),
+            });
+
+            return clients;
+
+        },
+        _onClickCreateDeliveryContact: () => {
+            $("#typeContactCreateClientModal").val("delivery")
+        },
+        _onClickCreateClient: () => {
+            $("#typeContactCreateClientModal").val("contact")
+        },
+        _onChangeClient: async function ({target}) {
+            this._loadContactSelectOptions(this.partners, target.value);
+        },
+        _loadContacts: async function () {
+            const {data, status } = await this._getClients()
+
+            const is400e = status === 400;
+
+            if (is400e) return 
+
+            this.partners = data;
+
+            this._loadContactSelectOptions(this.partners, $('#client').val());
+        },
+        _loadContactSelectOptions: (partners, value) => {
             const $addressSelections = $("select.address_selection");
             const labelFee = $("#fee")
             const labelPayTerms = $("#payment_terms")
 
-            const client = selectedPartner(this.partners, parseInt(ev.target.value));
+            if (!Boolean(value)) return
+
+            const client = selectedPartner(partners, parseInt(value));
             const { property_product_pricelist, property_payment_term_id } = client;
 
-            $.each($addressSelections, function (index, addressSelection) {
+            $.each($addressSelections, (index, addressSelection) => {
                 const $selection = $(addressSelection);
                 const addr_type = $selection.data("address");
                 const partner_child = getDirection([ ...client.child_ids ], addr_type);
@@ -177,6 +214,15 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             $("#openProduct").attr('disabled', false)
             $("#same_address").attr('disabled', false)
             $("#openClient").remove()
+
+            if (Boolean($("#client").val())) {
+                $("#openCreateAddressContact").attr('disabled', false)
+                $("#openCreateAddressContact").removeClass('d-none')
+            }
+            else {
+                $("#openCreateAddressContact").attr('disabled', true)
+                $("#openCreateAddressContact").addClass('d-none')
+            }
         },
 
         _onChangeFee: async function(ev){
@@ -787,6 +833,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                     "state": $("#stateClient").val(),
                     "municipality": $("#municipalityClient").val(),
                     "parish": $("#parishClient").val(),
+                    "type": $("#typeContactCreateClientModal").val(),
+                    "parent_id": $("#client").val()
                 })
                 const { status, msg } = registerClient;
                 if (status == 400 || status == 409){
@@ -795,10 +843,13 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 } 
                 $(".register-client").val('')
                 $("#createClient").modal('hide')
+
+                this._loadContacts();
                 return
             }
             let msgValidate = 'Debes de llenar los campos obligarios del formulario.'
             this._msgErrorRegisterClient(msgValidate)
+
         },
 
         _msgErrorRegisterClient: function(msg){
