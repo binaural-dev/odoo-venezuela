@@ -39,8 +39,73 @@
                         </div>
                     </div>
 
+                    <div
+                        class="col-12 col-lg-6 o_setting_box"
+                        id="close_session_require_supervisor_key"
+                    >
+                        <div class="o_setting_left_pane">
+                            <field name="pos_close_session_require_supervisor_key"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="pos_close_session_require_supervisor_key"/>
+                            <div class="text-muted">
+                Display popup to type supervisor pin to close session 
+                            </div>
+                            <field name="pos_type_close_require_supervisor_key" 
+                                widget="radio" 
+                                attrs="{'invisible': [('pos_close_session_require_supervisor_key','!=',True)]}"/>
+                        </div>
+                    </div>
+
+                    <div
+                        class="col-12 col-lg-6 o_setting_box"
+                        id="remove_line_require_supervisor_key"
+                    >
+                        <div class="o_setting_left_pane">
+                            <field name="pos_remove_orderline_require_supervisor_key"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="pos_remove_orderline_require_supervisor_key"/>
+                            <div class="text-muted">
+                Display popup to type supervisor pin to close session 
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="col-12 col-lg-6 o_setting_box"
+                        id="invoice_receipt_require_supervisor_key"
+                    >
+                        <div class="o_setting_left_pane">
+                            <field name="pos_change_receipt_require_supervisor_key"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="pos_change_receipt_require_supervisor_key"/>
+                            <div class="text-muted">
+                Display popup to type supervisor pin to change invoice/receipt 
+                            </div>
+                        </div>
+                    </div>
+
+                </xpath>
+
+                <xpath expr="//label[@for='receipt_journal_id']/../../.." position="after">
+                    <div class="col-12 o_setting_box">
+
+                        <div class="o_setting_left_pane">
+                            <field name="pos_cashmove_require_supervisor_key"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="pos_cashmove_require_supervisor_key"/>
+                            <div class="text-muted">
+                                Display popup to type supervisor pin to cash moves
+                            </div>
+                        </div>
+                    </div>
                 </xpath>
             </field>
+
+
         </record>
     </data>
 </odoo>

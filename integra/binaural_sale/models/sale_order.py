@@ -271,6 +271,11 @@ class SaleOrder(models.Model):
             invoice.compute_line_ids_foreign_debit_and_credit()
         return invoices
 
+    def _prepare_invoice(self):
+        invoice_vals = super()._prepare_invoice()
+        invoice_vals["filter_partner"] = self.filter_partner
+        return invoice_vals
+
     def _update_invoices_rate(self):
         """
         Syncs the rates of the invoices with the rates of the order.

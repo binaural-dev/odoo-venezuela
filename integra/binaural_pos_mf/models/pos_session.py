@@ -10,7 +10,7 @@ class PosSession(models.Model):
     report_z = fields.Char()
 
     def set_report_z(self, values):
-        self.write({"report_z": int(values["data"]["_numberOfLastZReport"]) + 1})
+        self.write({"report_z": int(values["data"]["_dailyClosureCounter"]) + 1})
 
     def _loader_params_pos_payment_method(self):
         res = super()._loader_params_pos_payment_method()
