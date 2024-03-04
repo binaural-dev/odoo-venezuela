@@ -1,8 +1,20 @@
-from odoo import models
+from odoo import api, models, _
+from odoo.exceptions import UserError
 
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
+
+    @api.constrains("analytic_distribution")
+    def _check_one_subsidiary_per_analytic_distribution(self):
+        for line in (line for line in self if line.move_id.is_invoice(include_receipts=True)):
+            if not line.analytic_distribution:
+                continue
+            analytic_accounts = self.env["account.analytic.account"].browse(
+                (int(account_id) for account_id in line.analytic_distribution.keys())
+            )
+            if len([account for account in analytic_accounts if account.is_subsidiary]) > 1:
+                raise UserError(_("The invoice's lines should have just one subsidairy"))
 
     def reconcile(self):
         self._distribute_subsidiaries_analytic_accounts()

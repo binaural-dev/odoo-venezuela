@@ -54,14 +54,18 @@ class AccountMoveInh(models.Model):
         return True
 
     def report_z(self, serial, response):
-        account_moves = self.env["account.move"].search(
-            ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
-        )
+        data = response.get("data", False)
+
         if not response.get("valid", False):
             raise ValidationError(response.get("message", "No se pudo imprimir el reporte Z"))
 
-        data = response.get("data", False)
-        _numberOfLastZReport = data.get("_numberOfLastZReport", False)
+        serial = data.get("_registeredMachineNumber")
+
+        account_moves = self.env["account.move"].search(
+            ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
+        )
+
+        _numberOfLastZReport = data.get("_dailyClosureCounter", False)
         if False in [data, _numberOfLastZReport]:
             _logger.info("NO SE RECUPERO EL Z DE LA MAQUINA: %s", serial)
             _numberOfLastZReport = self._get_z_and_add_one(serial)

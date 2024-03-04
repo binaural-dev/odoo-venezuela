@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230915\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-09 20:03+0000\n"
-"PO-Revision-Date: 2023-10-09 20:03+0000\n"
+"POT-Creation-Date: 2024-01-26 15:55+0000\n"
+"PO-Revision-Date: 2024-01-26 15:55+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -17,7 +17,19 @@ msgstr ""
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__flag_21__00
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__flag_24__00
 msgid "00"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__flag_21__01
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__flag_24__01
+msgid "01"
+msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields.selection,name:binaural_iot_mf.selection__iot_device__flag_21__02
+msgid "02"
 msgstr ""
 
 #. module: binaural_iot_mf
@@ -107,6 +119,16 @@ msgid "All"
 msgstr "Todos"
 
 #. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_box__blacklist
+msgid "Blacklist"
+msgstr "Lista Negra"
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_box__blacklist_port_ids
+msgid "Blacklist Port"
+msgstr "Puertos De Lista negra"
+
+#. module: binaural_iot_mf
 #. odoo-python
 #: code:addons/binaural_iot_mf/models/account_move.py:0
 #, python-format
@@ -135,6 +157,13 @@ msgstr "Revisa si la maquina fiscal esta conectada"
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__command
 msgid "Command"
 msgstr "Commando"
+
+#. module: binaural_iot_mf
+#. odoo-javascript
+#: code:addons/binaural_iot_mf/static/src/js/action_mf_16.js:0
+#, python-format
+msgid "Configure Device"
+msgstr "Configurar Dispositivo"
 
 #. module: binaural_iot_mf
 #. odoo-javascript
@@ -196,6 +225,13 @@ msgstr ""
 "                                y es usado para pagar facturas y notas de credito"
 
 #. module: binaural_iot_mf
+#. odoo-python
+#: code:addons/binaural_iot_mf/iot_handlers/drivers/SerialFiscalDriver.py:0
+#, python-format
+msgid "Error while reading %s"
+msgstr "Error mientras %s"
+
+#. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_tax__fiscal_code
 msgid "Fiscal Code"
 msgstr "Código en Maquina fiscal"
@@ -229,6 +265,11 @@ msgstr "Serial de maquina fiscal"
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__flag_21
 msgid "Flag 21"
 msgstr "Bandera 21"
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__flag_24
+msgid "Flag 24"
+msgstr "Bandera 24"
 
 #. module: binaural_iot_mf
 #. odoo-javascript
@@ -273,6 +314,11 @@ msgid "Get Status 1"
 msgstr "Obtener Status 1"
 
 #. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__has_cashbox
+msgid "Has Cashbox"
+msgstr "Tiene Caja Registradora?"
+
+#. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_box__has_fiscal_machine
 msgid "Has Fiscal Machine"
 msgstr "¿Tiene maquina fiscal? (Windows)"
@@ -310,6 +356,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_port__iot_box_ids
 msgid "Iot Box"
 msgstr ""
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_port__iot_box_blacklist_ids
+msgid "Iot Box Blacklist"
+msgstr "Iot Lista negra"
 
 #. module: binaural_iot_mf
 #: model:ir.model.fields,field_description:binaural_iot_mf.field_account_bank_statement_line__is_credit
@@ -403,13 +454,6 @@ msgstr ""
 #, python-format
 msgid "No device connected"
 msgstr "Dispositivo no se ha conectado"
-
-#. module: binaural_iot_mf
-#. odoo-python
-#: code:addons/binaural_iot_mf/models/account_move.py:0
-#, python-format
-msgid "No hay facturas disponibles para el reporte Z"
-msgstr ""
 
 #. module: binaural_iot_mf
 #. odoo-javascript
@@ -701,6 +745,11 @@ msgstr "Serial de la maquina fiscal"
 #, python-format
 msgid "Set Payment Method"
 msgstr "Establecer método de pago"
+
+#. module: binaural_iot_mf
+#: model:ir.model.fields,field_description:binaural_iot_mf.field_iot_device__show_version
+msgid "Show Version"
+msgstr "Mostrar Version"
 
 #. module: binaural_iot_mf
 #. odoo-javascript
