@@ -8,10 +8,12 @@ odoo.define('binaural_pos_hr.SupervisorPopup', function(require) {
   const PosComponent = require('point_of_sale.PosComponent');
   const { useBarcodeReader } = require('point_of_sale.custom_hooks');
   const { _t } = require('web.core');
+  const NumberBuffer = require("point_of_sale.NumberBuffer");
 
   class SupervisorPopup extends SelectCashierMixin(PosComponent) {
     setup() {
       super.setup();
+      NumberBuffer.reset() // Reset numpad widget values to avoid inconsistency
       this.inputRef = useRef('input');
       useBarcodeReader({cashier: this.barcodeCashierAction}, true);
 
