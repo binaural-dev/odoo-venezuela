@@ -35,6 +35,8 @@ class HrEmployee(models.Model):
         "hr.allowance.line", "employee_id", string="Salary Allowances", tracking=True
     )
 
+    holidays_accrued = fields.Float(compute="_compute_holidays_accrued")
+
     @api.depends("entry_date", "departure_date")
     def _compute_seniority(self):
         for employee in self:
@@ -71,6 +73,37 @@ class HrEmployee(models.Model):
         to_date = self.departure_date if self.departure_date else fields.Date.today()
 
         return relativedelta(to_date, from_date)
+
+    @api.depends("contract_id.salary_type")
+    def _compute_holidays_accrued(self):
+        for employee in self:
+            if not employee.contract_id:
+                continue
+            salary_type = employee.contract_id.salary_type
+            employee.holidays_accrued = 0
+            employee_salary_payments = employee.get_all_payroll_moves()
+
+            if salary_type and employee_salary_payments:
+                if salary_type == "fixed":
+                    employee.holidays_accrued = employee_salary_payments[-1]["total_accrued"]
+                else:
+                    last_month_accrued = employee_salary_payments[-1]["total_accrued"]
+                    second_to_last_month_accrued = (
+                        employee_salary_payments[-2]["total_accrued"]
+                        if len(employee_salary_payments) > 1
+                        else 0
+                    )
+                    third_to_last_month_accrued = (
+                        employee_salary_payments[-3]["total_accrued"]
+                        if len(employee_salary_payments) > 2
+                        else 0
+                    )
+
+                    employee.holidays_accrued = (
+                        last_month_accrued
+                        + second_to_last_month_accrued
+                        + third_to_last_month_accrued
+                    ) / 3
 
     def get_all_payroll_moves(self):
         self._cr.execute(

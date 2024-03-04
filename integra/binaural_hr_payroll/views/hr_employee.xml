@@ -37,6 +37,10 @@
                         <field name="no_pmpf" nolabel="1"/>
                     </div>
                 </group>
+
+		<group name="holidays_config" string="Vacations">
+                    <field name="holidays_accrued"/>
+                </group>
             </div>
 
 	    <notebook position="inside">
