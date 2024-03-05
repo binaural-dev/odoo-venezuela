@@ -1,5 +1,4 @@
 from odoo import api, fields, models, _
-from ...tools import binaural_bcv_query
 from odoo.exceptions import UserError, ValidationError
 
 import logging

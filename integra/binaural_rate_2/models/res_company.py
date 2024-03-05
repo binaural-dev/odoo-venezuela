@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from ...tools import binaural_bcv_query
 
 class ResCompany(models.Model):
     _inherit = "res.company"
