@@ -87,7 +87,8 @@ class AccountMoveLine(models.Model):
                     line.balance = line.company_id.currency_id.round(
                         line.amount_currency / line.move_id.payment_id.foreign_inverse_rate
                     )
-                raise UserError (_("The rate should be greater than zero"))
+                else:
+                    raise UserError (_("The rate should be greater than zero"))
 
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
