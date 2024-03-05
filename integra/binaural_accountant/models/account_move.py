@@ -660,7 +660,7 @@ class AccountMove(models.Model):
                     decimal_places = invoice.currency_id.decimal_places
                     raise ValidationError(
                         _(
-                            "No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta por cobrar del cliente es de %s más %s en factura da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
+                            "No se ha confirmado la factura. Límite de crédito excedido. La cuenta por cobrar del cliente es de %s más %s en factura da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
                             round(invoice.partner_id.credit, decimal_places),
                             round(invoice.amount_residual, decimal_places),
                             round(total_pay, decimal_places),
