@@ -18,7 +18,7 @@ msgstr ""
 #. module: binaural_rate_2
 #: model_terms:ir.ui.view,arch_db:binaural_rate_2.res_config_settings_view_form_inherit_currency_rate_live
 msgid "<span><b>only update in habil days</b></span>"
-msgstr "<span><b>Para los días no habiles, utilice la tarifa del último día habil.</b></span>"
+msgstr "<span><b>Para los días no hábiles, utilice la tasa del último día hábil.</b></span>"
 
 #. module: binaural_rate_2
 #: model:ir.model.fields,field_description:binaural_rate_2.field_res_company__can_update_habil_days
