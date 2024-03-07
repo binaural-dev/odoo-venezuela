@@ -1,7 +1,7 @@
 {
-    "name": "Binaural Tasa de Cambio 2",
+    "name": "Binaural Sincronización de Tasa",
     "summary": """
-        Módulo para establecer la tasa oficial de venecuela "tasa bvc" de manera automatica
+        Módulo para establecer la tasa oficial de venecuela "tasa BCV" de manera automatica
     """,
     "license": "LGPL-3",
     "author": "Binauraldev",

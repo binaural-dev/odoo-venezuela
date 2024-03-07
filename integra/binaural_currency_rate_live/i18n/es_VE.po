@@ -1,6 +1,6 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
-# 	* binaural_rate_2
+# 	* binaural_currency_rate_live
 #
 msgid ""
 msgstr ""
@@ -15,27 +15,27 @@ msgstr ""
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
 
-#. module: binaural_rate_2
-#: model_terms:ir.ui.view,arch_db:binaural_rate_2.res_config_settings_view_form_inherit_currency_rate_live
+#. module: binaural_currency_rate_live
+#: model_terms:ir.ui.view,arch_db:binaural_currency_rate_live.res_config_settings_view_form_inherit_currency_rate_live
 msgid "<span><b>only update in habil days</b></span>"
 msgstr "<span><b>Para días no hábiles, usar la tasa del último día hábil</b></span>"
 
-#. module: binaural_rate_2
-#: model:ir.model.fields,field_description:binaural_rate_2.field_res_company__can_update_habil_days
+#. module: binaural_currency_rate_live
+#: model:ir.model.fields,field_description:binaural_currency_rate_live.field_res_company__can_update_habil_days
 msgid "Can Update Habil Days"
 msgstr "<span><b>Para los días no habiles, utilice la tarifa del último día habil.</b></span>"
 
-#. module: binaural_rate_2
-#: model:ir.model,name:binaural_rate_2.model_res_company
+#. module: binaural_currency_rate_live
+#: model:ir.model,name:binaural_currency_rate_live.model_res_company
 msgid "Companies"
 msgstr "Compañías"
 
-#. module: binaural_rate_2
-#: model:ir.model.fields,field_description:binaural_rate_2.field_res_company__currency_provider
+#. module: binaural_currency_rate_live
+#: model:ir.model.fields,field_description:binaural_currency_rate_live.field_res_company__currency_provider
 msgid "Service Provider"
 msgstr "Proveedor de servicio"
 
-#. module: binaural_rate_2
-#: model:ir.model.fields.selection,name:binaural_rate_2.selection__res_company__currency_provider__bcv
+#. module: binaural_currency_rate_live
+#: model:ir.model.fields.selection,name:binaural_currency_rate_live.selection__res_company__currency_provider__bcv
 msgid "Venezuelan Central Bank"
 msgstr "Banco Central de Venezuela"

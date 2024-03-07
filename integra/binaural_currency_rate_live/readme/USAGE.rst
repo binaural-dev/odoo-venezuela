@@ -6,4 +6,4 @@ Para configurar en la tasa automatica con la opcion de bcv, sigue estos pasos:
 4. A continuación, Selecciona el servicio 'BCV', el intervalo de ejecucion y la proxima ejecucion.
 5. Guarda los cambios realizados.
 
-Una vez configurada la tasa automatica con la opcion de bcv podra tener la actulizacion automatica por el intervalo establacido
+Una vez configurada la tasa automatica con la opcion de bcv podra tener la actulizacion automatica por el intervalo establecido
