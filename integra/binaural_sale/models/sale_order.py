@@ -381,9 +381,9 @@ class SaleOrder(models.Model):
     
     @api.depends('pos_order_count')
     def _compute_invoice_status(self):
+        res = super()._compute_invoice_status()
         for order in self:
             if self.env['ir.module.module'].search([('name', '=', 'pos_sale'), ('state', '=', 'installed')]):
                 if order.pos_order_count > 0:
                     order.invoice_status = "invoiced"
-            else:
-                super()._compute_invoice_status()
+        return res
