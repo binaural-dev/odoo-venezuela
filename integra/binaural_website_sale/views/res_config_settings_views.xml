@@ -20,7 +20,7 @@
                             <field name="people_not_being_able_to_see_prices" />
                         </div>
                         <div class="o_setting_right_pane">
-                            <label string="Public user not being able to see prices" for="people_not_being_able_to_see_prices"/>
+                            <label string="Public users cannot see the Price of the products" for="people_not_being_able_to_see_prices"/>
                         </div>
                     </div>
                     <div class="col-12 col-lg-6 o_setting_box">
@@ -28,7 +28,7 @@
                             <field name="people_not_being_able_to_see_available" />
                         </div>
                         <div class="o_setting_right_pane">
-                            <label string="people_not_being_able_to_see_available" for="people_not_being_able_to_see_available"/>
+                            <label string="Public users cannot see Available Quantities of products" for="people_not_being_able_to_see_available"/>
                         </div>
                     </div>
                     <div class="col-12 col-lg-6 o_setting_box">
@@ -38,7 +38,7 @@
                         <div class="o_setting_right_pane">
                             <span>Send Quotation</span>
                             <div class="text-muted">
-                                Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. 
+                                Send quatation teext
                             </div>
                         </div>
                     </div>
@@ -46,32 +46,5 @@
             </div>
         </field>
     </record>
-
-    <!-- <record id="binaural_website_sale_res_config_settings_view_form" model="ir.ui.view">
-        <field name="name">binaural.website.sale.res.config.settings.view.form</field>
-        <field name="model">res.config.settings</field>
-        <field name="priority" eval="100"/>
-        <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
-        <field name="arch" type="xml">
-            
-            <xpath expr="//div[@name='Binaural_warehouse_settings']" position="after">
-                <h2>Website Sale Config</h2>
-                <div class="row mt16 o_settings_container" >
-                    <div class="col-12 col-lg-6 o_setting_box" name="budget_send_panel">
-                        <div class="o_setting_left_pane">
-                            <field name="budget_send" />
-                        </div>
-                        <div class="o_setting_right_pane">
-                            <span>Send Quotation</span>
-                            <div class="text-muted">
-                                Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. 
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </xpath>
-
-        </field>
-    </record> -->
 
 </odoo>
