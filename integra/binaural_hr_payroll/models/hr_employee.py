@@ -1,6 +1,9 @@
 from dateutil.relativedelta import relativedelta
 from datetime import date, datetime
 from math import ceil, floor
+import logging
+
+_logger = logging.getLogger(__name__)
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
@@ -76,9 +79,10 @@ class HrEmployee(models.Model):
 
         return relativedelta(to_date, from_date)
 
-    @api.depends("contract_id.salary_type")
+    @api.depends("contract_id")
     def _compute_holidays_accrued(self):
         for employee in self:
+            employee.holidays_accrued = 0
             if not employee.contract_id:
                 continue
             salary_type = employee.contract_id.salary_type
