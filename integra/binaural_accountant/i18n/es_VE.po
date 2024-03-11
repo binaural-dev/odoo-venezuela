@@ -483,7 +483,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_move__manually_set_rate
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__manually_set_rate
 msgid "Manually Set Rate"
-msgstr "Tasa manual"
+msgstr "Actualizar Tasa Manualmente"
 
 #. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.financial_all_payments
