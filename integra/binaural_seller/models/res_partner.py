@@ -31,10 +31,13 @@ class ResPartnerInherit(models.Model):
         return res
 
     @api.model_create_multi
-    def create(self, vals_list):
-        partner = super().create(vals_list)
-        partner.sellers_validate()
-        return partner
+    def create(self, vals_list): 
+        if not 'seller_ids' in vals_list:
+            for vals in vals_list:
+                vals['seller_ids'] = [(6, 0, self.env.company.initial_seller.ids)]
+        partners = super().create(vals_list)
+        partners.sellers_validate()
+        return partners
 
     def write(self, vals):
         res = super().write(vals)

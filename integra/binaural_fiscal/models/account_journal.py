@@ -7,4 +7,5 @@ class AccountJournal(models.Model):
     fiscal = fields.Boolean(
         help="If the journal is fiscal",
         default=False,
+        tracking=True,
     )

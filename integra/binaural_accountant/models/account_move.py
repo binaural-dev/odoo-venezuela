@@ -10,6 +10,9 @@ from odoo.tools import float_compare
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    def _get_fields_to_compute_lines(self):
+        return ["invoice_line_ids", "line_ids", "foreign_inverse_rate", "foreign_rate"]
+
     def default_alternate_currency(self):
         """
         This method is used to get the foreign currency of the company and set it as the default
@@ -278,6 +281,11 @@ class AccountMove(models.Model):
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
         the move is edited.
         """
+        available_to_compute_lines = False
+        for field in self._get_fields_to_compute_lines():
+            if field in vals:
+                available_to_compute_lines = True
+
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
@@ -294,7 +302,8 @@ class AccountMove(models.Model):
                     )
                     % ({"rate": move.foreign_rate, "last_rate": move.last_foreign_rate})
                 )
-            move.compute_line_ids_foreign_debit_and_credit()
+            if available_to_compute_lines:
+                move.compute_line_ids_foreign_debit_and_credit()
         return res
 
     @api.constrains("invoice_line_ids")
@@ -385,6 +394,9 @@ class AccountMove(models.Model):
             for line in self.line_ids:
                 # If the line is an adjustment line, the foreign debit and foreign credit will be
                 # the foreign debit and foreign credit adjustment fields.
+                if line.not_foreign_recalculate:
+                    continue
+
                 if (line.foreign_debit_adjustment + line.foreign_credit_adjustment) != 0:
                     line.foreign_debit = abs(line.foreign_debit_adjustment)
                     line.foreign_credit = abs(line.foreign_credit_adjustment)
@@ -675,15 +687,15 @@ class AccountMove(models.Model):
             ):
                 total_pay = invoice.partner_id.credit + invoice.amount_residual
                 if total_pay > invoice.partner_id.credit_limit:
+                    decimal_places = invoice.currency_id.decimal_places
                     raise ValidationError(
                         _(
-                            "La cuenta por cobrar del cliente es de %s más %s en factura da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
-                            round(invoice.partner_id.credit, invoice.currency_id.decimal_places),
-                            round(invoice.amount_residual, invoice.currency_id.decimal_places),
-                            round(total_pay, invoice.currency_id.decimal_places),
-                            round(
-                                invoice.partner_id.credit_limit, invoice.currency_id.decimal_places
-                            ),
+                            "No se ha confirmado la factura. Límite de crédito excedido. La cuenta por cobrar del cliente es de %s más %s en factura da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
+                            round(invoice.partner_id.credit, decimal_places),
+                            round(invoice.amount_residual, decimal_places),
+                            round(total_pay, decimal_places),
+                            round(invoice.partner_id.credit_limit, decimal_places),
                         )
                     )
         return res
+

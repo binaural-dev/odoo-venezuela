@@ -369,13 +369,14 @@ class SaleOrder(models.Model):
             ):
                 total_pay = order.partner_id.credit + order.amount_total
                 if total_pay > order.partner_id.credit_limit:
+                    decimal_places = order.currency_id.decimal_places
                     raise ValidationError(
                         _(
-                            "La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
-                            round(order.partner_id.credit, order.currency_id.decimal_places),
-                            round(order.amount_total, order.currency_id.decimal_places),
-                            total_pay,
-                            round(order.partner_id.credit_limit, order.currency_id.decimal_places),
+                            "No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
+                            round(order.partner_id.credit, decimal_places),
+                            round(order.amount_total, decimal_places),
+                            round(total_pay, decimal_places),
+                            round(order.partner_id.credit_limit, decimal_places),
                         )
                     )
         return super().action_confirm()
