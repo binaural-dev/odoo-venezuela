@@ -16,7 +16,8 @@ Binaural Sincronización de Tasa
 
 El módulo "Binaural Sincronización de Tasa" es una herramienta que te permite agregar a la tasa de cambio automatica la opcion del 'bcv' la cual es la tasa oficial de venezuela. 
 Este módulo es utilizado por el modulo de binaural tasa de cambio.
-Este modulo es necesario para activar entre la opciones de tasa de cambio automatica tener disponible la opcion del bcv
+Este modulo es necesario para activar entre la opciones de tasa de cambio automatica y tener disponible la opcion del bcv
+
 
 **Tabla de Contenidos**
 
@@ -34,7 +35,8 @@ Para configurar en la tasa automatica con la opcion de bcv, sigue estos pasos:
 4. A continuación, Selecciona el servicio 'BCV', el intervalo de ejecucion y la proxima ejecucion.
 5. Guarda los cambios realizados.
 
-Una vez configurada la tasa automatica con la opcion de bcv podra tener la actulizacion automatica por el intervalo establacido
+Una vez configurada la tasa automatica con la opcion de bcv podra tener la actulizacion automatica por el intervalo establecido
+
 Créditos
 ========
 
