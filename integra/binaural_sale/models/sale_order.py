@@ -2,7 +2,6 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from lxml import etree
 from odoo.tools.float_utils import float_is_zero
-from odoo.osv import expression
 
 
 class SaleOrder(models.Model):
@@ -173,7 +172,7 @@ class SaleOrder(models.Model):
         """
         self._compute_rate()
 
-    @api.depends("date_order")
+    @api.depends("foreign_currency_id", "date_order")
     def _compute_rate(self):
         """
         Compute the rate of the sale order using the compute_rate method of the res.currency.rate
@@ -192,7 +191,8 @@ class SaleOrder(models.Model):
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id, sale.date_order.date() or fields.Date.today()
             )
-            sale.update(rate_values)
+            sale.foreign_rate = rate_values["foreign_rate"]
+            sale.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -210,7 +210,6 @@ class SaleOrder(models.Model):
                 if sale.foreign_currency_id.id == base_usd_id
                 else sale.foreign_rate
             )
-            sale.manually_set_rate = True
 
     def _create_invoices(self, grouped=False, final=False, date=None):
         """
@@ -273,7 +272,10 @@ class SaleOrder(models.Model):
 
     def _prepare_invoice(self):
         invoice_vals = super()._prepare_invoice()
+        invoice_vals["manually_set_rate"] = self.manually_set_rate
         invoice_vals["filter_partner"] = self.filter_partner
+        invoice_vals["foreign_rate"] = self.foreign_rate
+        invoice_vals["foreign_inverse_rate"] = self.foreign_inverse_rate
         return invoice_vals
 
     def _update_invoices_rate(self):
@@ -360,7 +362,7 @@ class SaleOrder(models.Model):
                             line.product_uom_qty,
                         )
                         raise ValidationError(msg)
-                    
+
             if (
                 order.company_id.account_use_credit_limit
                 and order.partner_id.use_partner_credit_limit_order

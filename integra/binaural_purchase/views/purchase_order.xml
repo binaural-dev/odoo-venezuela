@@ -9,7 +9,7 @@
             <xpath expr="//field[@name='partner_id']" position="before">
                 <field name="partner_id_domain" invisible="1"/>
                 <field name="filter_partner"/>
-                <field name="manually_set_rate" invisible="1"/>
+                <field name="manually_set_rate"/>
             </xpath>
 
             <xpath expr="//field[@name='date_order']" position="before">
