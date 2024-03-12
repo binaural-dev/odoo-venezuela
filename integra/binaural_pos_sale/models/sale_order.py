@@ -3,7 +3,7 @@ from odoo import fields, models, api
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
-    @api.depends('state','pos_order_count')
+    @api.depends('state','order_line.invoice_status','pos_order_count')
     def _compute_invoice_status(self):
         res = super()._compute_invoice_status()
         for order in self:
