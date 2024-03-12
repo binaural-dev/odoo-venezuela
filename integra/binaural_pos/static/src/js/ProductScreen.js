@@ -61,11 +61,13 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 				let lines = order.get_orderlines();
 				let pos_config = self.env.pos.config;				
 				let call_super = true;
+        let validation_negative = true;
         if(order.is_refund){
 					return super._onClickPay();
         }
 
         var is_out = _t(' is out of stock.');
+        var is_negative = _t('the quantity cannot be negative');
         let title_wrning = ""
         let wrning = []
 
@@ -80,6 +82,10 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
             if (this.is_discount_product(prd)){
               return
             }
+            if (line.quantity <= 0){
+              validation_negative = false;
+              title_wrning = _t('Deny Order');
+            }
 
 						if(line.quantity > prd.qty_available || prd.qty_available <= 0){
               call_super = false;
@@ -87,6 +93,13 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
               wrning.push(prd.display_name)
             }	
 					});
+				}
+        if(!validation_negative){
+          let message = _t(is_negative);
+          return self.showPopup('ErrorPopup', {
+            title: title_wrning,
+            body: message,
+          });
 				}
 
 				if(!call_super){
