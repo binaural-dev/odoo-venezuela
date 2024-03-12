@@ -25,6 +25,13 @@ class HrEmployee(models.Model):
     active_pick_id = fields.Many2one("stock.picking", compute="_compute_pick_state_id")
     paused_pick_ids = fields.Many2many("stock.picking", compute="_compute_pick_state_id")
 
+    @api.onchange("role_picking")
+    def _onchange_role_picking(self):
+        if not self.role_picking:
+            return
+        if not self.user_id:
+            raise ValidationError(_("You must have a user assigned to the employee"))
+
     def pause_operation(self):
         self.active_pick_id.set_time_operation("pause")
 
