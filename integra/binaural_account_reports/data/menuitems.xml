@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <menuitem id="account_reports.menu_action_account_report_balance_sheet" active="False"/>
+
+    <menuitem id="account_reports.menu_action_account_report_profit_and_loss" active="False"/>
+
     <menuitem
 	id="menu_action_account_report_cash_flow_usd"
 	name="Cash Flow Statement USD"
@@ -26,6 +30,7 @@
 	name="Profit and Loss USD"
 	action="action_account_report_pl_usd"
 	parent="account.account_reports_legal_statements_menu"
+	active="False"
     />
 
     <menuitem
