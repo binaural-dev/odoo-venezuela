@@ -95,11 +95,13 @@ class AccountPayment(models.Model):
     @api.depends("retention_line_ids")
     def _compute_retention_foreign_amount(self):
         for payment in self:
-            payment.retention_foreign_amount = sum(
-                payment.retention_line_ids.mapped(
-                    lambda l: float_round(
-                        l.foreign_retention_amount,
-                        precision_digits=l.retention_id.foreign_currency_id.decimal_places,
+            payment.retention_foreign_amount = abs(
+                sum(
+                    payment.retention_line_ids.mapped(
+                        lambda l: float_round(
+                            l.foreign_retention_amount,
+                            precision_digits=l.retention_id.foreign_currency_id.decimal_places,
+                        )
                     )
                 )
             )
