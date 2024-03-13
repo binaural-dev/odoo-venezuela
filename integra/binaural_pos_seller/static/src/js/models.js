@@ -9,16 +9,17 @@ odoo.define("binaural_pos_seller.models", function (require) {
             async _processData(loadedData) {
                 await super._processData(loadedData);
                 const employeeIds = this.env.pos.config.employee_ids;
-                if(employeeIds){
-                    this.employees = loadedData['hr.employee'].filter((employee) => {
+                let employees = !!loadedData['hr.employee'] ? loadedData['hr.employee'] : [];
+                if(!!employeeIds){
+                    this.employees = employees.filter((employee) => {
                         return (
                             employeeIds.includes(employee.id)
                         );
                     });
                 }else{
-                    this.employees = loadedData['hr.employee']
+                    this.employees = employees; 
                 }
-                this.sellers = loadedData['hr.employee'].filter((employee) => employee.is_seller !== false);
+                this.sellers = employees.filter((employee) => employee.is_seller !== false);
             }
         };
 
