@@ -24,6 +24,7 @@ class ProductTemplate(models.Model):
     physical_location_id = fields.Many2one(
         "stock.location",
         string="Physical Location",
+        default=lambda self: self.env.company.main_warehouse_id.lot_stock_id.id,
         domain=[("usage", "=", "internal")],
         tracking=True,
     )
