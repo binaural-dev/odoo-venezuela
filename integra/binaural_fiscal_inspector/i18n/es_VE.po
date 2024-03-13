@@ -36,11 +36,6 @@ msgid "Audit Reports"
 msgstr "Informes de auditoría"
 
 #. module: binaural_fiscal_inspector
-#: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_balance_sheet_fiscal
-msgid "Balance Sheet"
-msgstr "Balance de Situación"
-
-#. module: binaural_fiscal_inspector
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_financial_situation_statement_fiscal
 msgid "Financial situation statement"
 msgstr "Estado de Situación Financiera"
@@ -78,4 +73,4 @@ msgstr "Informes de declaración"
 #. module: binaural_fiscal_inspector
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_coa_fiscal
 msgid "Trial Balance"
-msgstr "Balance General"
+msgstr "Balance de Comprobación"
