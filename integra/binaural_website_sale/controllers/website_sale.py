@@ -5,7 +5,9 @@ from werkzeug.exceptions import NotFound
 from odoo.addons.website_sale.controllers.main import WebsiteSale
 from odoo.addons.website.models.ir_http import sitemap_qs2dom
 from odoo.addons.http_routing.models.ir_http import slug
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class BinauralWebsiteSale(WebsiteSale):
     # TODO Arreglar campo de ciudad, no se esta guardando ni en el formulario del usuario ni en el
@@ -212,8 +214,41 @@ class BinauralWebsiteSale(WebsiteSale):
             })
         return res
 
-      def _get_search_order(self, post):
+    def _get_search_order(self, post):
         # OrderBy will be parsed in orm and so no direct sql injection
         # id is added to be sure that order is a unique sort key
         order = 'quantity desc'
         return 'is_published desc, %s' % order
+
+    @http.route(['/shop/cart/update_json'], type='json', auth="public", methods=['POST'], website=True, csrf=False)
+    def cart_update_json(
+        self, product_id, line_id=None, add_qty=None, set_qty=None, display=True,
+        product_custom_attribute_values=None, no_variant_attribute_values=None, **kw
+    ):
+        product_qty = request.env["product.template"].search(
+            [
+                ('id', '=', product_id)
+            ]
+        ).quantity
+        sale_order = request.website.sale_get_order(force_create=True)
+        
+        order_line_qty = sale_order.order_line[0].product_uom_qty if sale_order.order_line else 0
+
+        if add_qty:
+            max_add_qty = product_qty - order_line_qty
+            add_qty = min(add_qty, max_add_qty) if max_add_qty > 0 else 0
+
+        if set_qty:
+            set_qty = min(set_qty, product_qty)
+        
+        return super().cart_update_json(
+            product_id, 
+            line_id, 
+            add_qty, 
+            set_qty, 
+            display,
+            product_custom_attribute_values, 
+            no_variant_attribute_values, 
+            **kw
+        )
+        

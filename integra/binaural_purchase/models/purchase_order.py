@@ -80,7 +80,7 @@ class PurchaseOrder(models.Model):
             if move.currency_id.id != self.env.company.currency_id.id:
                 raise ValidationError(
                     _("You cannot place a currency other than the base of the system.")
-                    )
+                )
 
     @api.onchange("journal_invoice_id")
     def _onchange_journal_invoice_id(self):
@@ -232,7 +232,8 @@ class PurchaseOrder(models.Model):
             rate_values = Rate.compute_rate(
                 purchase.foreign_currency_id.id, date_order or fields.Date.today()
             )
-            purchase.update(rate_values)
+            purchase.foreign_rate = rate_values["foreign_rate"]
+            purchase.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -250,18 +251,26 @@ class PurchaseOrder(models.Model):
                 if purchase.foreign_currency_id.id == base_usd_id
                 else purchase.foreign_rate
             )
-            purchase.manually_set_rate = True
 
     def action_create_invoice(self):
-        # Update the foreign rate and foreign inverse rate of the invoice
+        """
+        Inherits the original method to set the value of the following fields on the invoice based
+        on the ones from the order:
+            - filter_partner
+            - manually_set_rate
+            - foreign_rate
+            - foreign_inverse_rate
+        """
         res = super().action_create_invoice()
         if not self.env.company.use_invoice_rate_from_purchase_order:
             return res
         for order in self:
             order.invoice_ids.write(
                 {
-                    "foreign_rate": self.foreign_rate,
-                    "foreign_inverse_rate": self.foreign_inverse_rate,
+                    "filter_partner": order.filter_partner,
+                    "manually_set_rate": order.manually_set_rate,
+                    "foreign_rate": order.foreign_rate,
+                    "foreign_inverse_rate": order.foreign_inverse_rate,
                 }
             )
         return res

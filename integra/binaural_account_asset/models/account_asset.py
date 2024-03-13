@@ -36,6 +36,17 @@ class AccountAsset(models.Model):
         readonly=False,
     )
 
+    @api.onchange("foreign_rate")
+    def _onchange_foreign_rate(self):
+        """
+        Onchange the foreign rate and compute the foreign inverse rate
+        """
+        Rate = self.env["res.currency.rate"]
+        for asset in self.sudo():
+            if not asset.foreign_rate:
+                return
+            asset.foreign_inverse_rate = Rate.compute_inverse_rate(asset.foreign_rate)
+
     @api.model_create_multi
     def create(self, vals_list):
         """
@@ -66,6 +77,7 @@ class AccountAsset(models.Model):
         for asset in self:
             asset.depreciation_move_ids.write(
                 {
+                    "manually_set_rate": True,
                     "foreign_rate": asset.foreign_rate,
                     "foreign_inverse_rate": asset.foreign_inverse_rate,
                 }

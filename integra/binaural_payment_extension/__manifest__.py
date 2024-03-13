@@ -6,10 +6,11 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "16.0.19.0.1",
+    "version": "16.0.19.0.5",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
+        "account",
         "binaural_rate",
         "binaural_accountant",
         "binaural_invoice",

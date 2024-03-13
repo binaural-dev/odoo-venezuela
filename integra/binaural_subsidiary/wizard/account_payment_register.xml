@@ -6,11 +6,13 @@
             <field name="model">account.payment.register</field>
             <field name="inherit_id" ref="account.view_account_payment_register_form"/>
             <field name="arch" type="xml">
-		<field name="payment_method_line_id" position="after">
-		    <field name="account_analytic_id"/>
-		</field>
+                <field name="payment_method_line_id" position="after">
+                    <field name="company_subsidiary" invisible='1'/>   
+                    <field name="account_analytic_id"
+                        attrs="{'invisible': [('company_subsidiary', '=', False)],
+                                'required': [('company_subsidiary', '=', True)]}"/>
+                </field>
             </field>
         </record>
     </data>
 </odoo>
-
