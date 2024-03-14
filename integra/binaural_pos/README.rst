@@ -25,6 +25,7 @@ Este añade los siguientes campos:
 
 * Impuestos incluidos (No alternar impuestos entre facturas/recibos)
 * Facturar siempre : Seleccionar por defecto facturas o recibos para generar asientos contables
+* Mantener Factura/Recibo: Al momento de cambiar el tipo de documento en el pos, este se mantiene para la proxima orden
 * Mostrar cantidades disponibles en stock
 * Mostrar solamente los productos disponibles: Eliminar automáticamente los productos sin disponibilidad del POS
 * Cantidad en 0 : No permitir ventas si no hay disponibilidad suficiente

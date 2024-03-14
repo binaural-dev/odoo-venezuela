@@ -9,7 +9,7 @@
             <xpath expr="//field[@name='partner_id']" position="before">
                 <field name="partner_id_domain" invisible="1"/>
                 <field name="filter_partner"/>
-                <field name="manually_set_rate" invisible="1"/>
+                <field name="manually_set_rate"/>
             </xpath>
 
             <xpath expr="//field[@name='date_order']" position="before">
@@ -28,8 +28,7 @@
             </xpath>
             <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']" position="after">
                 <field name="foreign_subtotal"/>
-                <field name="foreign_rate" optional="hide"/>
-                <field name="foreign_rate" optional="hide"/>
+                    <field name="foreign_rate" optional="hide"/>
                 <field
                     name="foreign_inverse_rate"
                     groups="base.group_no_one"

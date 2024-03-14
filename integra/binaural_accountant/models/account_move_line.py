@@ -12,6 +12,7 @@ _logger = logging.getLogger(__name__)
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
+    not_foreign_recalculate = fields.Boolean()
     foreign_currency_id = fields.Many2one(related="move_id.foreign_currency_id", store=True)
     foreign_rate = fields.Float(related="move_id.foreign_rate", store=True)
     foreign_inverse_rate = fields.Float(
@@ -82,9 +83,12 @@ class AccountMoveLine(models.Model):
                 and not line.move_id.is_invoice(True)
                 and line.move_id.payment_id
             ):
-                line.balance = line.company_id.currency_id.round(
-                    line.amount_currency / line.move_id.payment_id.foreign_inverse_rate
-                )
+                if line.move_id.payment_id.foreign_inverse_rate != 0 and line.amount_currency != 0:
+                    line.balance = line.company_id.currency_id.round(
+                        line.amount_currency / line.move_id.payment_id.foreign_inverse_rate
+                    )
+                else:
+                    raise UserError (_("The rate should be greater than zero"))
 
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):
@@ -483,3 +487,15 @@ class AccountMoveLine(models.Model):
         if credit_fully_matched:
             res["credit_vals"] = None
         return res
+
+    @api.model
+    def abs_amount_lines_ids_adjust(self):
+        for line in self:
+            line.write(
+                {
+                    "foreign_debit_adjustment": abs(line.foreign_debit_adjustment),
+                    "foreign_credit_adjustment": abs(line.foreign_credit_adjustment),
+                    "foreign_debit": abs(line.foreign_debit),
+                    "foreign_credit": abs(line.foreign_credit),
+                }
+            )
