@@ -242,21 +242,13 @@
                                 <p><t t-out="p.date.strftime('%d/%m/%Y')"/></p>
                             </div>
                             <div class="col-2 text-center">
-                                <p>
-                                    <t t-out="p.currency_id.symbol" t-if="p.currency_id.position == 'before'"/>
-                                    <t t-out="p.amount_signed"/>
-                                    <t t-set="total_amont_payment" t-value="p.amount + total_amont_payment"/>
-                                    <t t-out="p.currency_id.symbol" t-if="p.currency_id.position == 'after'"/>
-                                </p>
+                                <p t-field="p.amount_signed"/>
                             </div>
                         </div>
                     </t>
                     <div class="row border-bottoms" name="total_term_payments">
-                        <div class="col-2">
+                        <div class="col-5">
                             <strong>Total <t t-out="journal_id['name']"/> </strong>
-                        </div>
-                        <div class="col-3 text-center">
-                            <p></p>
                         </div>
                         <div class="col-3 text-center">
                             <p></p>
@@ -266,9 +258,7 @@
                         </div>
                         <div class="col-2 text-center">
                             <strong>
-                                <t t-out="p.journal_id.currency_id.symbol" t-if="p.journal_id.currency_id and p.journal_id.currency_id.position == 'before'"/>
-                                <t t-out="total_amont_payment"/>
-                                <t t-out="p.journal_id.currency_id.symbol" t-if="p.journal_id.currency_id and p.journal_id.currency_id.position == 'after'"/>
+                                <t t-out="payments['totals_'+journal]['formatted_amount']"/>
                             </strong>
                         </div>
                     </div>
