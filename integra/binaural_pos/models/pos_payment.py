@@ -55,10 +55,24 @@ class PosPayment(models.Model):
                 'account_id': accounting_partner.with_company(order.company_id).property_account_receivable_id.id,  # The field being company dependant, we need to make sure the right value is received.
                 'partner_id': accounting_partner.id,
                 'move_id': payment_move.id,
+                'not_foreign_recalculate': True,
+                'foreign_debit': abs(payment.foreign_amount)
+                if payment.foreign_amount < 0
+                else 0,
+                'foreign_credit': abs(payment.foreign_amount)
+                if payment.foreign_amount > 0
+                else 0,
             }, amounts['amount'], amounts['amount_converted'])
             debit_line_vals = pos_session._debit_amounts({
                 'account_id': pos_session.company_id.account_default_pos_receivable_account_id.id,
                 'move_id': payment_move.id,
+                'not_foreign_recalculate': True,
+                'foreign_debit': abs(payment.foreign_amount)
+                if payment.foreign_amount > 0
+                else 0,
+                'foreign_credit': abs(payment.foreign_amount)
+                if payment.foreign_amount < 0
+                else 0,
             }, amounts['amount'], amounts['amount_converted'])
             self.env['account.move.line'].with_context(check_move_validity=False).create([credit_line_vals, debit_line_vals])
             payment_move._post()
