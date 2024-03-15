@@ -36,7 +36,7 @@ class AccountPayment(models.Model):
         Override the original method to change the analytic account (subidiary) of the payment using
         the one from the move.
         """
-        res = super()._synchronize_to_moves(changed_fields)
+        res = super()._synchronize_from_moves(changed_fields)
         for payment in self.with_context(skip_account_move_synchronization=True):
             move = payment.move_id
             if move.statement_line_id:
