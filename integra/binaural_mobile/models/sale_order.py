@@ -1,5 +1,6 @@
 import logging
 import copy
+from bs4 import BeautifulSoup
 
 from odoo import _, api, fields, models
 
@@ -8,6 +9,34 @@ JOURNAL_DOMAIN = [("active", "=", True), ("type", "=", "sale"),]
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        for record in res:
+            record.manage_note_app()
+    
+    def write(self, vals):
+        res = super().write(vals)
+        if "note" in vals:
+            self.manage_note_app()
+        return res
+
+    def manage_note_app(self):
+        for record in self:
+            note = BeautifulSoup(record.note).get_text()
+            line_note = record.order_line.filtered(lambda line: line.display_type == "line_note")
+            if line_note and note == "":
+                line_note.unlink()
+                continue
+            if record.note:
+                if line_note:
+                    line_note.write({"name": note})
+                else:
+                    record.order_line += record.order_line.new(
+                        {"name": note, "display_type": "line_note"}
+                    )
+
 
     def _get_default_journal(self):
         domain = copy.deepcopy(JOURNAL_DOMAIN)
