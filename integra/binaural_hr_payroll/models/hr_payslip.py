@@ -92,6 +92,10 @@ class HrPayslip(models.Model):
             payslip.foreign_rate = rate_values["foreign_rate"]
             payslip.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
 
+    def _get_base_is_vef(self):
+        self.ensure_one()
+        return self.currency_id == self.env.ref("base.VEF")
+
     def _get_foreign_paid_amount(self):
         self.ensure_one()
         if self.env.context.get("no_paid_amount"):
@@ -257,6 +261,7 @@ class HrPayslip(models.Model):
     def _get_localdict(self):
         localdict = super()._get_localdict()
         localdict["foreign_inverse_rate"] = self.foreign_inverse_rate
+        localdict["base_is_vef"] = self._get_base_is_vef()
         return localdict
 
     def action_payslip_done(self):
