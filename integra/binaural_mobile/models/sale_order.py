@@ -15,6 +15,7 @@ class SaleOrder(models.Model):
         res = super().create(vals_list)
         for record in res:
             record.manage_note_app()
+        return res
     
     def write(self, vals):
         res = super().write(vals)
@@ -24,6 +25,9 @@ class SaleOrder(models.Model):
 
     def manage_note_app(self):
         for record in self:
+            if not record.note:
+                continue
+
             note = BeautifulSoup(record.note).get_text()
             line_note = record.order_line.filtered(lambda line: line.display_type == "line_note")
             if line_note and note == "":
