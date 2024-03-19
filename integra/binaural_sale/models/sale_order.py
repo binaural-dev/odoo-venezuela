@@ -348,7 +348,8 @@ class SaleOrder(models.Model):
             self._recompute_prices()
 
     def action_confirm(self):
-        if self.env.company.not_allow_sell_products:
+        skip_not_allow_sell_products_validation = self.env.context.get("skip_not_allow_sell_products_validation", False)
+        if self.env.company.not_allow_sell_products and not skip_not_allow_sell_products_validation:
             for order in self:
                 for line in order.order_line:
                     if (

@@ -138,7 +138,7 @@ class ResPartnerBudget(http.Controller):
                 if exist_partner:
                     data.update({"status": 409, "msg": _("This customer is already registered with another seller")})
                     return data
-                
+
                 created_partner = request.env["res.partner"].create({
                     "name": name,
                     "prefix_vat": prefix,
@@ -147,12 +147,11 @@ class ResPartnerBudget(http.Controller):
                     "country_id": country,
                     "state_id": state,
                     "municipality": municipality,
-                    # "parish": parish,
                     "email": email,
                     "phone": number,
                     "type": type,
                     "is_public":True,
-                    "seller_ids": request.env.user.employee_id,
+                    "seller_ids": [request.env.user.employee_id.id],
                     "parent_id": parent_id
                 })
                 

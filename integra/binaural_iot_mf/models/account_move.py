@@ -26,9 +26,13 @@ class AccountMoveInh(models.Model):
     iot_box = fields.Many2one(
         "iot.box", string="IoT Box", related="iot_mf.iot_id", default=False, copy=False
     )
-    mf_serial = fields.Char(string="Fiscal machine serial", default=False, copy=False)
-    mf_invoice_number = fields.Char(string="Sequence number", default=False, copy=False)
-    mf_reportz = fields.Char(string="Report number Z", default=False, copy=False)
+    mf_serial = fields.Char(
+        string="Fiscal machine serial", default=False, copy=False, tracking=True
+    )
+    mf_invoice_number = fields.Char(
+        string="Sequence number", default=False, copy=False, tracking=True
+    )
+    mf_reportz = fields.Char(string="Report number Z", default=False, copy=False, tracking=True)
 
     def has_printed(self, invoice_number):
         """

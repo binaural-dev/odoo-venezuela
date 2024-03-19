@@ -4,6 +4,10 @@ import xlsxwriter
 from odoo import _, api, models
 from odoo.osv import expression
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class WizardAccountingReports(models.TransientModel):
     _inherit = "wizard.accounting.reports"
@@ -11,33 +15,72 @@ class WizardAccountingReports(models.TransientModel):
     def _determinate_resume_retention_books(self, moves):
         retention_resume_lines = []
         retention_moves = moves.filtered(lambda m: bool(m.retention_iva_line_ids.ids))
-        credit_notes = retention_moves.filtered(lambda m: m.move_type in ["out_refund", "in_refund"])
+        credit_notes = retention_moves.filtered(
+            lambda m: m.move_type in ["out_refund", "in_refund"]
+        )
         retention_moves -= credit_notes
 
         retention_resume_lines.append(0.0)
-        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted" and not self._check_future_retention_dates(x.retention_id.date_accounting))) for move in retention_moves]))
+        retention_resume_lines.append(
+            sum(
+                [
+                    self._sum_retention_total(
+                        move.retention_iva_line_ids.filtered(
+                            lambda x: x.retention_id.state == "emitted"
+                            and not self._check_future_retention_dates(
+                                x.retention_id.date_accounting
+                            )
+                        )
+                    )
+                    for move in retention_moves
+                ]
+            )
+        )
         retention_resume_lines.append(0.0)
-        retention_resume_lines.append(sum([self._sum_retention_total(move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted" and not self._check_future_retention_dates(x.retention_id.date_accounting))) * -1 for move in credit_notes]))
+        retention_resume_lines.append(
+            sum(
+                [
+                    self._sum_retention_total(
+                        move.retention_iva_line_ids.filtered(
+                            lambda x: x.retention_id.state == "emitted"
+                            and not self._check_future_retention_dates(
+                                x.retention_id.date_accounting
+                            )
+                        )
+                    )
+                    * -1
+                    for move in credit_notes
+                ]
+            )
+        )
 
         return retention_resume_lines
 
     def _resume_sale_book_fields(self, moves):
         res_book = super()._resume_sale_book_fields(moves)
-        res_book.extend([{
-            "name": "Total Retenciones",
-            "format": "number",
-            "values": self._determinate_resume_retention_books(moves)
-        }])
+        res_book.extend(
+            [
+                {
+                    "name": "Total Retenciones",
+                    "format": "number",
+                    "values": self._determinate_resume_retention_books(moves),
+                }
+            ]
+        )
 
         return res_book
 
     def _resume_purchase_book_fields(self, moves):
         res_book = super()._resume_purchase_book_fields(moves)
-        res_book.extend([{
-            "name": "Total Retenciones",
-            "format": "number",
-            "values": self._determinate_resume_retention_books(moves)
-        }])
+        res_book.extend(
+            [
+                {
+                    "name": "Total Retenciones",
+                    "format": "number",
+                    "values": self._determinate_resume_retention_books(moves),
+                }
+            ]
+        )
         return res_book
 
     def sale_book_fields(self):
@@ -105,7 +148,7 @@ class WizardAccountingReports(models.TransientModel):
         res_moves |= moves
 
         return res_moves
-    
+
     def parse_sale_book_data(self):
         data = super().parse_sale_book_data()
         for move in data:
@@ -116,14 +159,16 @@ class WizardAccountingReports(models.TransientModel):
                     datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()
                 )
             ):
-                move.update({
-                    "total_sales_iva": 0,
-                    "total_sales_not_iva": 0,
-                    "amount_reduced_aliquot": 0,
-                    "amount_general_aliquot": 0,
-                    "tax_base_reduced_aliquot": 0,
-                    "tax_base_general_aliquot": 0,
-                })
+                move.update(
+                    {
+                        "total_sales_iva": 0,
+                        "total_sales_not_iva": 0,
+                        "amount_reduced_aliquot": 0,
+                        "amount_general_aliquot": 0,
+                        "tax_base_reduced_aliquot": 0,
+                        "tax_base_general_aliquot": 0,
+                    }
+                )
             retention_data = self.get_retention_iva_values(move.get("_id"))
             move.update(retention_data)
 
@@ -134,16 +179,18 @@ class WizardAccountingReports(models.TransientModel):
         for move in data:
             move_date = datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()
             if self._check_future_retention_dates(move_date):
-                move.update({
-                    "total_purchases_iva": 0,
-                    "total_purchases_not_iva": 0,
-                    "amount_reduced_aliquot": 0,
-                    "amount_general_aliquot": 0,
-                    "amount_extend_aliquot": 0,
-                    "tax_base_reduced_aliquot": 0,
-                    "tax_base_general_aliquot": 0,
-                    "tax_base_extend_aliquot": 0,
-                })
+                move.update(
+                    {
+                        "total_purchases_iva": 0,
+                        "total_purchases_not_iva": 0,
+                        "amount_reduced_aliquot": 0,
+                        "amount_general_aliquot": 0,
+                        "amount_extend_aliquot": 0,
+                        "tax_base_reduced_aliquot": 0,
+                        "tax_base_general_aliquot": 0,
+                        "tax_base_extend_aliquot": 0,
+                    }
+                )
             retention_data = self.get_retention_iva_values(move.get("_id"))
             move.update(retention_data)
 
@@ -153,7 +200,11 @@ class WizardAccountingReports(models.TransientModel):
         move = self.env["account.move"].browse(move_id)
         is_purchase = self.report == "purchase"
         multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
-        ret_lines = move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted")
+        ret_lines = (
+            move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted")
+            if move.state == "posted"
+            else move.retention_iva_line_ids
+        )
         retention = ret_lines.mapped("retention_id")
         ret_vals = dict()
 
@@ -173,7 +224,11 @@ class WizardAccountingReports(models.TransientModel):
 
         ret_vals["date_retention"] = self._format_date(ret_lines.mapped("retention_id").date)
         ret_vals["number_retention"] = move.iva_voucher_number
-        ret_vals["iva_retained"] = self._sum_retention_total(ret_lines) * multiplier
+        ret_vals["iva_retained"] = (
+            self._sum_retention_total(ret_lines) * multiplier
+            if ret_lines.move_id.state != "cancel"
+            else 0
+        )
 
         return ret_vals
 
@@ -185,6 +240,7 @@ class WizardAccountingReports(models.TransientModel):
             self.report == "purchase"
             and retention
             and self._check_future_retention_dates(retention.date)
+            or lines.move_id.state == "cancel"
         ):
             return 0.0
         if not is_check_currency_system:

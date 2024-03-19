@@ -34,7 +34,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
         init: function(parent, options) {
             this._super.apply(this, arguments);
             this.partners = [];
-            this.limit = 5;
+            this.limit = 15;
             this.offsetTimes = 0;
             this.products = []
         },
@@ -390,7 +390,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 const productCode = $('#search_text').val()
                 
                 $('#search_product').attr('disabled', true)
-                $('#search_text').val('')
 
                 self.offsetTimes = 0;
                 self.products = [];
@@ -414,7 +413,10 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                     const productCount = self.products.length;
 
                     self.offsetTimes += 1;
-                    self._renderProducts(self)
+
+                    const productCode = $('#search_text').val()
+                    
+                    self._renderProducts(self, productCode)
 
                     const diffCount = productCount - self.products.length;
 
