@@ -2,6 +2,7 @@
 # Copyright (C) Softhealer Technologies.
 
 from odoo import models, api
+from odoo.tools import float_round
 import numpy as np
 import logging
 _logger = logging.getLogger(__name__)
@@ -18,6 +19,10 @@ class ProductCatalogReport(models.AbstractModel):
         
     @api.model
     def _prepare_product_dict(self, record, price, data, currency_id):
+        def get_price(self, price):
+            return self.product_tmpl_id.taxes_id.compute_all(price, currency_id, 1)["total_included"]
+
+        price = float_round(price, precision_digits=currency_id.decimal_places)
         return {
             "id": record.id,
             "default_code": record.default_code,
