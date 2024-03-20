@@ -165,9 +165,7 @@
                             <label for="assetlink"/>
                             <div class="text-muted">
                                 <p>
-                                    Set the custom assetslinks.json content. <br />
-                                    1. Generate using PWA Builder and search inside the .zip the assetslinks.json file and pase the content here. <br />
-                                    2. After publish the pwa app on play console, navigate to "side bar menu/settings/app signing/" and add the "sha256_cert_fingerprints" fingerprint.
+                                    Set the custom assetslinks.json with sha256_cert_fingerprints in play console side bar menu/settings/app signing/ after publish.
                                 </p>
                             </div>
                             <div class="content-group">
