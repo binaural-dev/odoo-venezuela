@@ -159,8 +159,28 @@
                         </div>
                     </div>
                 </div>
+                <div class="row mt16 o_settings_container">
+                    <div class="col-12 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="o_setting_right_pane">
+                            <label for="assetlink"/>
+                            <div class="text-muted">
+                                <p>
+                                    Set the custom assetslinks.json content. <br />
+                                    1. Generate using PWA Builder and search inside the .zip the assetslinks.json file and pase the content here. <br />
+                                    2. After publish the pwa app on play console, navigate to "side bar menu/settings/app signing/" and add the "sha256_cert_fingerprints" fingerprint.
+                                </p>
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="assetlink" style="width: 100%;" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </xpath>
 
         </field>
     </record>
+
 </odoo>
