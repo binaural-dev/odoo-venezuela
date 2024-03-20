@@ -61,3 +61,33 @@ class BinThemePrimePWA(ThemePrimePWA):
             data=json.dumps(manifest_data),
             headers=[('Content-Type', 'application/json')]
         )
+    
+
+    @http.route('/.well-known/assetlinks.json', type='http', auth='public', website=True)
+    def get_pwa_manifest(self, **kargs):
+        website = request.website
+        assetlinks_data = [
+            {
+                "relation": ["delegate_permission/common.handle_all_urls"],
+                "target": {
+                    "namespace": "android_app",
+                    "package_name": "com.odoo.binaural_dev_ferremundo.twa",
+                    "sha256_cert_fingerprints": ["ADD FINGERPRINT HERE"]
+                }
+            }
+        ]
+
+        assetlink = website.company_id.assetlink
+
+        try:
+            json_assetlink = json.loads(assetlink)
+
+            assetlinks_data = json_assetlink
+
+        except:
+            website.company_id.write({"assetlink": json.dumps(assetlinks_data)})
+
+        return request.make_response(
+            data=json.dumps(assetlinks_data),
+            headers=[('Content-Type', 'application/json')]
+        )

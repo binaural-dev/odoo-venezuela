@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-20 20:10+0000\n"
-"PO-Revision-Date: 2024-03-20 20:10+0000\n"
+"POT-Creation-Date: 2024-03-20 22:40+0000\n"
+"PO-Revision-Date: 2024-03-20 22:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -477,6 +477,12 @@ msgstr "Pagos de la APP"
 #: code:addons/binaural_mobile/utils/utils_retention.py:0
 #, python-format
 msgid "April"
+msgstr ""
+
+#. module: binaural_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_company__assetlink
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_config_settings__assetlink
+msgid "Assetlink"
 msgstr ""
 
 #. module: binaural_mobile
@@ -1022,6 +1028,16 @@ msgstr "Tasa foranea"
 #: model:ir.model.fields,field_description:binaural_mobile.field_res_config_settings__retentions_draft_or_published
 msgid "Generate customer retentions in status"
 msgstr "Generar retenciones de clientes en estado:"
+
+#. module: binaural_mobile
+#: model:ir.model.fields,help:binaural_mobile.field_res_company__assetlink
+#: model:ir.model.fields,help:binaural_mobile.field_res_config_settings__assetlink
+msgid ""
+"Generate using PWA Builder and search inside the .zip generate the "
+"assetslinks.json file and pase the content here."
+msgstr ""
+"Generar usando PWA Builder y buscar dentro del .zip el archivo "
+"assetslinks.json and coloca el contenido aquí."
 
 #. module: binaural_mobile
 #: model:ir.model.fields.selection,name:binaural_mobile.selection__res_company__shop_catalog_view_mode__grid
@@ -1581,7 +1597,9 @@ msgstr ""
 #: model:ir.model.fields,help:binaural_mobile.field_res_company__custom_manifest
 #: model:ir.model.fields,help:binaural_mobile.field_res_config_settings__custom_manifest
 msgid "Open the url /pwa/1/manifest.json then use the content as template"
-msgstr "Abrir la url /pwa/1/manifest.json, luego utilizar el contenido como referencia."
+msgstr ""
+"Abrir la url /pwa/1/manifest.json, luego utilizar el contenido como "
+"referencia."
 
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_res_company__order_payment
@@ -2084,6 +2102,15 @@ msgstr "Servicio"
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
 msgid "Set default shop catalog view mode"
 msgstr "Establece la vista predeterminada del catálogo de la tienda"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
+msgid ""
+"Set the custom assetslinks.json with sha256_cert_fingerprints in play "
+"console side bar menu/settings/app signing/ after publish."
+msgstr ""
+"Configure los enlaces de activos assetlink.json con sha256_cert_fingerprints en play "
+"console Menú de la barra lateral/configuración/firma de aplicaciones/después de la publicación."
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form

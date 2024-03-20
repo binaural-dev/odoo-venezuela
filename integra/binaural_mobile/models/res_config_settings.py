@@ -8,8 +8,6 @@ _logger = logging.getLogger(__name__)
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
-    custom_manifest = fields.Text(related="company_id.custom_manifest", readonly=False)
-
     product_type_consu = fields.Boolean(
         string="Product search by type Consumable for sellers",
         related="company_id.product_type_consu",
@@ -74,3 +72,6 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.group_stock_packaging',
         readonly=False
         )
+
+    custom_manifest = fields.Text(related="company_id.custom_manifest", readonly=False)
+    assetlink = fields.Text(related="company_id.assetlink", readonly=False)
