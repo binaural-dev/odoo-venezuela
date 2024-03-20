@@ -3,6 +3,7 @@
 
 from odoo import models, api
 from odoo.tools import float_round
+from odoo.tools.misc import formatLang
 import numpy as np
 import logging
 _logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class ProductCatalogReport(models.AbstractModel):
             "name": record.name,
             "cat_name": record.categ_id.name,
             "image": record.image_1920,
-            "price": format(price, "." + str(data["sh_price_decimal_places"]) + "f"),
+            "price": formatLang(self.env, get_price(record, price), currency_obj=currency_id, digits=data["sh_price_decimal_places"]),
             "description": record.description_sale,
             "template_id": record.product_tmpl_id.id,
             "currency_id": currency_id.symbol,
