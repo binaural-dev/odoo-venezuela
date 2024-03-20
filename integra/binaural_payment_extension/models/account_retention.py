@@ -1,10 +1,13 @@
 from odoo import api, models, fields, Command, _
 from datetime import datetime
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
 import json
 from odoo.tools.float_utils import float_round
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountRetention(models.Model):
@@ -443,6 +446,12 @@ class AccountRetention(models.Model):
         if vals.get("retention_line_ids", False):
             self._create_payments_from_retention_lines()
         return res
+    
+    def unlink(self):
+        for record in self:
+            if record.state == "emitted":
+                raise ValidationError(_("You cannot delete a hold linked to a posted entry. It is necessary to cancel the retention before being deleted"))
+        return super().unlink()
 
     def _create_payments_from_retention_lines(self):
         """
@@ -584,9 +593,6 @@ class AccountRetention(models.Model):
             if not retention.date:
                 retention.date = today
 
-            if retention.type in ["in_invoice", "in_refund", "in_debit"]:
-                retention._set_sequence()
-
             move_ids = retention.mapped("retention_line_ids.move_id")
             if retention.type_retention == "iva":
                 move_ids.write({"iva_voucher_number": retention.number})
@@ -600,6 +606,11 @@ class AccountRetention(models.Model):
 
         self.payment_ids.write({"date": self.date_accounting})
         self._reconcile_all_payments()
+        for retention in self:
+
+            if retention.type in ["in_invoice", "in_refund", "in_debit"]:
+                retention._set_sequence()
+
         self.write({"state": "emitted"})
 
     def action_print_municipal_retention_xlsx(self):
