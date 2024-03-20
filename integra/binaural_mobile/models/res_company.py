@@ -1,6 +1,5 @@
 from odoo import models, fields, api
-from odoo.http import request
-
+from odoo.addons.theme_prime.controllers.main import ThemePrimePWA
 
 class ResCompany(models.Model):
     _inherit = "res.company"
@@ -41,3 +40,4 @@ class ResCompany(models.Model):
     dairy_no_fiscal = fields.Many2one("account.journal")
     app_sales_diaries = fields.Many2many("account.journal", relation="app_sales_diaries_rel")
     group_stock_packaging = fields.Boolean('Product Packagings')
+    custom_manifest = fields.Text(help="Open the url /pwa/1/manifest.json then use the content as template")

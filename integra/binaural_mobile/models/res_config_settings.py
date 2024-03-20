@@ -8,6 +8,8 @@ _logger = logging.getLogger(__name__)
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
+    custom_manifest = fields.Text(related="company_id.custom_manifest", readonly=False)
+
     product_type_consu = fields.Boolean(
         string="Product search by type Consumable for sellers",
         related="company_id.product_type_consu",
