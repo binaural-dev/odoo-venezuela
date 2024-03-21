@@ -1,5 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.tools.float_utils import float_compare, float_is_zero
+import traceback
 
 import logging
 
@@ -44,7 +45,9 @@ class StockQuan(models.Model):
         owner_id=None,
         strict=False,
     ):
-        if not self.env.company.use_physical_location:
+        if not self.env.company.use_physical_location or self._context.get(
+            "skip_physical_location", False
+        ):
             return super()._update_reserved_quantity(
                 product_id, location_id, quantity, lot_id, package_id, owner_id, strict
             )

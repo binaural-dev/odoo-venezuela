@@ -8,10 +8,6 @@ _logger = logging.getLogger(__name__)
 from odoo.exceptions import ValidationError
 from odoo.exceptions import UserError
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 class StockPicking(models.Model):
     _inherit = "stock.picking"
 
@@ -171,3 +167,8 @@ class StockPicking(models.Model):
                                                 raise UserError(_("You cannot make transfers larger than the reserved quantity"))
                             
                 else: raise UserError(_("You do not have permission to make shipment-type transfers"))
+
+    def action_assign(self):
+        if self.type_delivery_step != "pick":
+            self = self.with_context(skip_physical_location=True)
+        return super().action_assign()
