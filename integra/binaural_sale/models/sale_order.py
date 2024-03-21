@@ -373,7 +373,7 @@ class SaleOrder(models.Model):
             
             if block_order_invoice_payment_state:
                 if invoice_id.payment_state == block_order_invoice_payment_state:
-                    raise UserError(_("Before confirm, The invoice %s must not have state neither Not paid or In payment process.") % (invoice_id.name))
+                    raise UserError(_("Before confirm, The state of invoice %s can not be neither Not paid or In payment process.") % (invoice_id.name))
 
             if block_order_invoice_payment_state and not invoice_id.amount_total:
                 if invoice_id.amount_total > block_order_invoice_total_amount:
