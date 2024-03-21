@@ -49,7 +49,6 @@ class StockPicking(models.Model):
             if operation_type == "pause":
                 record.assign_new_pick_to_employee()
 
-
             values = values.create(
                 {"pick_id": record.id, "employee_id": employee_id.id, "type": operation_type}
             )
@@ -96,7 +95,6 @@ class StockPicking(models.Model):
             else:
                 record.total_time_elapsed = False
 
-
     def assign_new_pick_to_employee(self):
         if self.picker_id.pick_ids.filtered(lambda x: x.operation_state in ["ready"]):
             return
@@ -132,7 +130,11 @@ class StockPicking(models.Model):
 
                     order = self.env["sale.order"].search([("name", "=", record.origin)])
                     wizard = self.env["sale.advance.payment.inv"].create(
-                        {"sale_order_ids": order.ids, "advance_payment_method": "delivered"}
+                        {
+                            "sale_order_ids": order.ids,
+                            "advance_payment_method": "delivered",
+                            "company_id": self.env.company.id,
+                        }
                     )
                     wizard._create_invoices(wizard.sale_order_ids)
         return res
@@ -142,7 +144,7 @@ class StockPicking(models.Model):
         for picking in self:
             if picking.state == "done":
                 picking.operation_state = "finished"
-                continue 
+                continue
             if picking.state == "cancel":
                 picking.operation_state = "cancel"
                 continue
@@ -235,9 +237,11 @@ class StockPicking(models.Model):
             )
             package_types = package_types.search([])
 
-        _logger.info(move_lines.sorted(key=lambda x: x.priority_location).read(
-                    move_lines._get_fields_stock_barcode(), load=False
-                ))
+        _logger.info(
+            move_lines.sorted(key=lambda x: x.priority_location).read(
+                move_lines._get_fields_stock_barcode(), load=False
+            )
+        )
 
         data = {
             "records": {
