@@ -128,12 +128,14 @@ class StockPicking(models.Model):
                     record.cart_id.out_id = False
                     record.cart_id.pack_id = False
 
+
+
+                    _logger.info("SALE ORDER %s", record.sale_id)
                     order = self.env["sale.order"].search([("name", "=", record.origin)])
                     wizard = self.env["sale.advance.payment.inv"].create(
                         {
                             "sale_order_ids": order.ids,
                             "advance_payment_method": "delivered",
-                            "company_id": self.env.company.id,
                         }
                     )
                     wizard._create_invoices(wizard.sale_order_ids)
