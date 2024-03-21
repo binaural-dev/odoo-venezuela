@@ -7,7 +7,6 @@ patch(SaleOrderFetcher, "binaural_pos_mobile", {
   get searchFields() {
     let res = this._super();
     res.push('tax_included');
-    console.log(res)
     return res
   }
 });

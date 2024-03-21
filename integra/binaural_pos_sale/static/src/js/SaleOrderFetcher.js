@@ -6,7 +6,6 @@ import { patch } from "web.utils";
 patch(SaleOrderFetcher, "binaural_pos_sale", {
   async _getOrderIdsForCurrentPage(limit, offset) {
     let domain = [['currency_id', '=', this.comp.env.pos.currency.id]].concat(this.searchDomain || []);
-    console.log(this.searchFields)
     const saleOrders = await this.rpc({
       model: 'sale.order',
       method: 'search_read',

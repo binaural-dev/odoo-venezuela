@@ -4,6 +4,7 @@ odoo.define('binaural_pos_sale.SaleOrderManagementScreen', function(require) {
   const Registries = require("point_of_sale.Registries")
   const { _t } = require('web.core');
   const { Orderline } = require('point_of_sale.models');
+  const { Gui } = require("point_of_sale.Gui");
 
   const BinauralSaleOrderManagementScreen = (SaleOrderManagementScreen) =>
     class extends SaleOrderManagementScreen {

@@ -20,10 +20,10 @@ msgstr ""
 #: code:addons/binaural_pos_sale/static/src/js/SaleOrderManagementScreen.js:0
 #, python-format
 msgid ""
-"Are you sure to process the order with ${sale_order[0].pricelist_id[0]} "
+"Are you sure to process the order with ${sale_order[0].pricelist_id[1]} "
 "since your checkout currently does not allow that rate?"
 msgstr ""
-"¿Esta seguro de procesar el pedido con la ${sale_order[0].pricelist_id[0]} "
+"¿Esta seguro de procesar el pedido con la ${sale_order[0].pricelist_id[1]} "
 "dado que su caja actualmente no tiene permitida dicha tarifa?"
 
 #. module: binaural_pos_sale
