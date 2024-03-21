@@ -373,11 +373,11 @@ class SaleOrder(models.Model):
             
             if block_order_invoice_payment_state:
                 if invoice_id.payment_state == block_order_invoice_payment_state:
-                    raise UserError(_("Before confirm, The state of invoice %s can not be neither Not paid or In payment process.") % (invoice_id.name))
+                    raise UserError(_("The state of invoice %s can not be neither Not paid or In payment process.") % (invoice_id.name))
 
             if block_order_invoice_total_amount and invoice_id.amount_total:
                 if invoice_id.amount_total > block_order_invoice_total_amount:
-                    raise UserError(_("Before confirm, The invoice %s must not have amount total greater than %s %s.") % (invoice_id.name, block_order_invoice_total_amount, invoice_id.currency_id.name))
+                    raise UserError(_("The invoice %s must not have amount total greater than %s %s.") % (invoice_id.name, block_order_invoice_total_amount, invoice_id.currency_id.name))
 
     def action_confirm(self):
         skip_not_allow_sell_products_validation = self.env.context.get("skip_not_allow_sell_products_validation", False)

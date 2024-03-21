@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-21 20:42+0000\n"
-"PO-Revision-Date: 2024-03-21 20:42+0000\n"
+"POT-Creation-Date: 2024-03-21 20:51+0000\n"
+"PO-Revision-Date: 2024-03-21 20:51+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -21,28 +21,6 @@ msgstr ""
 #, python-format
 msgid "All products must contain only one tax."
 msgstr "Todos los productos deben contener solo un impuesto."
-
-#. module: binaural_sale
-#. odoo-python
-#: code:addons/binaural_sale/models/sale_order.py:0
-#, python-format
-msgid ""
-"Before confirm, The invoice %s must not have amount total greater than %s "
-"%s."
-msgstr ""
-"Antes de confirmar, la factura %s no debe tener un monto total mayor a %s "
-"%s."
-
-#. module: binaural_sale
-#. odoo-python
-#: code:addons/binaural_sale/models/sale_order.py:0
-#, python-format
-msgid ""
-"Before confirm, The state of invoice %s can not be neither Not paid or In "
-"payment process."
-msgstr ""
-"Antes de confirmar, el estado de la factura %s no puede ser No pagado o En "
-"proceso de pago."
 
 #. module: binaural_sale
 #: model:res.groups,name:binaural_sale.edit_product_line_pricing_sale_order_group
@@ -361,6 +339,13 @@ msgstr "Ver Normas de Precio"
 #. module: binaural_sale
 #. odoo-python
 #: code:addons/binaural_sale/models/sale_order.py:0
+#, python-format
+msgid "The invoice %s must not have amount total greater than %s %s."
+msgstr "La factura %s no debe tener un monto total mayor a %s %s."
+
+#. module: binaural_sale
+#. odoo-python
+#: code:addons/binaural_sale/models/sale_order.py:0
 #: code:addons/binaural_sale/models/sale_order.py:0
 #, python-format
 msgid "The rate has been updated from %(last_rate)s to %(rate)s "
@@ -373,6 +358,15 @@ msgstr ""
 #: model:ir.model.fields,help:binaural_sale.field_sale_order_line__foreign_rate
 msgid "The rate that is gonna be always shown to the user."
 msgstr "La tasa que se va a mostrar siempre al usuario."
+
+#. module: binaural_sale
+#. odoo-python
+#: code:addons/binaural_sale/models/sale_order.py:0
+#, python-format
+msgid ""
+"The state of invoice %s can not be neither Not paid or In payment process."
+msgstr ""
+"El estado de la factura %s no puede ser No pagado o En proceso de pago."
 
 #. module: binaural_sale
 #: model_terms:ir.ui.view,arch_db:binaural_sale.view_sale_order_form_binaural_sales
