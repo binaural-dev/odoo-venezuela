@@ -33,7 +33,7 @@ odoo.define("binaural_pos_seller.OrderState", function(require) {
             }
             get rate_from_lines() {
                 let rate = super.rate_from_lines
-                if (this.pos.config.use_seller_from_order != "form_order"){
+                if (this.pos.config.use_seller_from_order != "from_order"){
                   return rate
                 }
                 let seller = false
