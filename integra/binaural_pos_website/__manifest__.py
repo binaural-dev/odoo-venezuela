@@ -15,7 +15,7 @@
         "website",
         "sales_team",
         "binaural_pos",
-        "binaural_pos_website",
+        "binaural_pos_sale",
     ],
     # always loaded
     "data": ["views/res_config_settings.xml"],
