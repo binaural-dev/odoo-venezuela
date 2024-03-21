@@ -2,6 +2,9 @@
 odoo.define('binaural_pos.ProductScreen', function(require) {
 	"use strict";
 
+  const rpc = require('web.rpc');
+  const ajax = require('web.ajax');
+
 	const Registries = require('point_of_sale.Registries');
 	const ProductScreen = require('point_of_sale.ProductScreen');
   const NumberBuffer = require('point_of_sale.NumberBuffer');
@@ -72,28 +75,27 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
         let wrning = []
 
 				if(pos_config.amount_to_zero){
-          lines.forEach((line) => {
+          for (let line of lines) {
+              let prd = line.product;
+              if(prd.type != "product"){
+                  continue;
+              }
+  
+              if (this.is_discount_product(prd)){
+                  continue;
+              }
+  
+              let can_sell_product = await this.validate_products(prd.id,line.quantity);
+              
+              // if(line.quantity > prd.qty_available || prd.qty_available <= 0){ Validacion OFFLINE
+              if(can_sell_product == false){
+                  call_super = false;
+                  title_wrning = _t('Deny Order');
+                  wrning.push(prd.display_name)
+              }	
+          }
+      }
 
-						let prd = line.product;
-            if(prd.type != "product"){
-              return
-            }
-
-            if (this.is_discount_product(prd)){
-              return
-            }
-            if (line.quantity <= 0){
-              validation_negative = false;
-              title_wrning = _t('Deny Order');
-            }
-
-						if(line.quantity > prd.qty_available || prd.qty_available <= 0){
-              call_super = false;
-              title_wrning = _t('Deny Order');
-              wrning.push(prd.display_name)
-            }	
-					});
-				}
         if(!validation_negative){
           let message = _t(is_negative);
           return self.showPopup('ErrorPopup', {
@@ -111,6 +113,25 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 				}
         return super._onClickPay();
 			}
+
+      async validate_products(product_id, qty){
+        let can_sell_product = true;
+        try {
+          const products = await ajax.jsonRpc('/validate_products_order', 'call',
+            {
+              "line" :product_id,
+              "qty" : qty,
+            }
+          )
+          const { can_sell } = products;
+          can_sell_product = can_sell
+
+          return can_sell_product
+
+        } catch (error) {
+          return false
+        }
+      }
 		};
 
 	Registries.Component.extend(ProductScreen, BinauralProductScreen);
