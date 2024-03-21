@@ -112,10 +112,17 @@ class HrPayslip(models.Model):
         for r in worked_day_lines:
             if r["work_entry_type_id"] == work_entry_basic:
                 february_day = 29 if isleap(self.date_from.year) else 28
+                february_day_quincenal = 14 if isleap(self.date_from.year) else 13
                 if worked_days_sum > (30 if self.date_from.month != 2 else february_day):
                     r["number_of_days"] -= worked_days_sum - (
                         30 if self.date_from.month != 2 else 28
                     )
+                if self.date_from.day == 16 and worked_days_sum > (15 if self.date_from.month != 2 else february_day_quincenal):
+                    r["number_of_days"] -= worked_days_sum - (
+                        15 if self.date_from.month != 2 else 13
+                    )
+                if self.date_from.day == 16 and self.date_from.month == 2:
+                    r["number_of_days"] += 15 - worked_days_sum
                 if worked_days_sum >= february_day and self.date_from.month == 2:
                     r["number_of_days"] += 30 - worked_days_sum
 
