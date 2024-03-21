@@ -4,6 +4,9 @@ from lxml import etree
 from odoo.tools.float_utils import float_is_zero
 from odoo.osv import expression
 
+import logging
+_logger = logging.getLogger(__name__)
+
 
 class SaleOrder(models.Model):
     _name = "sale.order"
@@ -221,6 +224,9 @@ class SaleOrder(models.Model):
         It also sends the custom rate of the order to the invoice
         """
         limit = self.company_id.max_product_invoice
+        _logger.info("Limit: %s", limit)
+        _logger.info("company_id: %s", self.company_id)
+        _logger.info("self: %s", self)
         group = len(self._get_invoiceable_lines(final)) / limit
         invoices = self.env["account.move"]
         invoice_vals = self._prepare_invoice()
