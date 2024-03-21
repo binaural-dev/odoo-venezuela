@@ -33,12 +33,14 @@ Este añade los siguientes campos:
 * Diario de ventas disponibles para la app
 * (res.group) Grupo para vendedores que puedan editar tarifas
 * (res.group) Grupo para vendedores que puedan crear contactos
+* Activar opcion de sin exitencia continuar venta en la configuraciones de sitio web(Solo si vendera productos que no tiene existencia)
 
 ## Validaciones
 
 * Cualquier pago que venga proveniente de la app se saltará la validación del no conciliar pagos con distintos diarios
 * Productos que se le mostrarán al vendedor por configuración
 * Sí la configuración de empaquetado está activado, validará que cuando un producto tenga un empaquetado en la lista por si se activa el empaquetado en la ficha del producto 
+* Al tener apagado la opcion de sin existencia continuar venta, no podra hacer busqueda de producto, tampoco le permitira vender mas de la cantidad disponible
 
 ##Pagos (account.payment)
 

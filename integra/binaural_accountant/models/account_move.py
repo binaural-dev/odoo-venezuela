@@ -600,7 +600,7 @@ class AccountMove(models.Model):
             if move.manually_set_rate:
                 continue
             date_field = "invoice_date" if is_sale else "date"
-            rate_date = getattr(move, date_field)
+            rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values["foreign_rate"]
             move.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
@@ -698,4 +698,3 @@ class AccountMove(models.Model):
                         )
                     )
         return res
-

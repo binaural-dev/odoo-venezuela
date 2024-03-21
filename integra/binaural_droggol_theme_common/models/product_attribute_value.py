@@ -8,6 +8,7 @@ class ProductAttribute(models.Model):
     _check_company_auto = True
 
 
+    active = fields.Boolean("Active", default=True)
     company_id = fields.Many2one(
             "res.company",
             string="Company",

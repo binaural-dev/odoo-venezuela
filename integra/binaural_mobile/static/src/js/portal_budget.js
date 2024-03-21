@@ -34,7 +34,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
         init: function(parent, options) {
             this._super.apply(this, arguments);
             this.partners = [];
-            this.limit = 5;
+            this.limit = 15;
             this.offsetTimes = 0;
             this.products = []
         },
@@ -256,7 +256,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             }
         },
 
-        _appendProduct: (self, products, stock_packaging, tbody) => {
+        _appendProduct: (self, products, allow_out_of_stock_order,stock_packaging, tbody) => {
 
             if (!products) return;
 
@@ -267,7 +267,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             const symbol = $("#symbolB").val()
             let symbolAfter = ""
             let symbolBefore = ""
-            let decimalPlaces = +$("#decimal").val()
+            let decimalPlaces = +$("#decimal").val()          
 
             if($("#positionS").val() == "after"){
                 symbolAfter = symbol
@@ -284,7 +284,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             products.forEach(product => {
                 let { display_name, list_price, image, quantity, id, msg_price, uom_id, type, packaged_product } = product
                 let displayQtyOrType = ""
-                if(quantity == 0){
+                if(quantity == 0 && !allow_out_of_stock_order && type != "product") {
                     displayQtyOrType = type
                 }else{
                     displayQtyOrType = quantity.toFixed(2) + ' ' + uom_id[1]
@@ -372,8 +372,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
         },
         _renderProducts: async (self, productCode = '', reset = false) => {
             const resp = await self._getProducts(self, productCode);
-            const { data: products, stock_packaging } = resp;
-
+            const { data: products, stock_packaging, allow_out_of_stock_order } = resp;
+            
             const tbody = $("#table_inside");
 
             if (reset) {
@@ -382,7 +382,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
             if (self._renderNotFoundProducts(self, tbody, productCode)) return;
 
-            self._appendProduct(self, products, stock_packaging, tbody)
+            self._appendProduct(self, products, allow_out_of_stock_order, stock_packaging, tbody)
         },
         _onClickSearchProduct: async function(ev) {
             if($('#search_text').val() != ''){
@@ -390,7 +390,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 const productCode = $('#search_text').val()
                 
                 $('#search_product').attr('disabled', true)
-                $('#search_text').val('')
 
                 self.offsetTimes = 0;
                 self.products = [];
@@ -414,7 +413,10 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                     const productCount = self.products.length;
 
                     self.offsetTimes += 1;
-                    self._renderProducts(self)
+
+                    const productCode = $('#search_text').val()
+                    
+                    self._renderProducts(self, productCode)
 
                     const diffCount = productCount - self.products.length;
 
@@ -549,21 +551,25 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             $('#save_products').attr('disabled', true)
         },
 
-        _onChangeProductQty: function(ev){
+        _onChangeProductQty: async function(ev) {
             let tr = ev.target.closest('tr');
             let productQtyPack = tr.querySelector('#product_qty_pack') ? tr.querySelector('#product_qty_pack').value : 1
             let productQtyInsert = tr.querySelector('#qtyProduct').value;
             let productQtyAvailable = tr.querySelector("#qtyAvailable").value
-            
-            if(+productQtyInsert > +productQtyAvailable){
-                tr.querySelector('#qtyProduct').value = productQtyAvailable 
+        
+            const response = await ajax.jsonRpc('/validation_available', 'call', {});
+            const allowOutOfStockOrder = response.allow_out_of_stock_order;
+            console.log('allowOutOfStockOrder', allowOutOfStockOrder);
+        
+            if (+productQtyInsert > +productQtyAvailable && !allowOutOfStockOrder) {
+                tr.querySelector('#qtyProduct').value = productQtyAvailable
                 this.showError()
             }
             if (+productQtyAvailable < +productQtyPack){
                 this.validateInputEmpty()
                 return
             }
-            
+        
             if(productQtyInsert % productQtyPack != 0){
                 tr.querySelector('#qtyProduct').value = ''
                 this.showError()
@@ -593,7 +599,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             }
         },
 
-        build_table_products: function(data,buildTax) {
+        build_table_products: async function(data,buildTax) {
             if(buildTax && $("#invoice").is(":checked")){
                 this.includeTax()
                 return
@@ -607,6 +613,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             let symbolAfter = ""
             let symbolBefore = ""
             let decimalPlaces = +$("#decimal").val()
+            const response = await ajax.jsonRpc('/validation_available', 'call', {});
+            const allowOutOfStockOrder = response.allow_out_of_stock_order;
 
             if($("#positionS").val() == "after"){
                 symbolAfter = symbol
@@ -624,7 +632,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                     tax = tax_id[1]
                     taxValue = tax_id[2]
                 }
-                if(product_uom_qty > qty_available){
+                if(product_uom_qty > qty_available && !allowOutOfStockOrder){
                     msgDeletProduct = `<label class='alert-danger form-text'>Verifique cantidad disponible de productos</label><br/>`
                 }
                 let trash = `<button type="button" class="fa fa-trash-o delete_product cancel_confirmed_input" 
