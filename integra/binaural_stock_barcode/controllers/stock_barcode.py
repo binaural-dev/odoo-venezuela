@@ -72,6 +72,10 @@ class StockBarcodeControllerInherit(StockBarcodeController):
                         return {"warning": _("You have another operation in process")}
                     cart_picking.pick_id.set_time_operation("resume")
 
+                if cart_picking.pick_id.picker_id != employee_id:
+                    return {"warning": _("The pick is already assigned to another picker")}
+
+
                 return self._open_stock_picking(cart_picking.pick_id)
 
             picking_id = self.get_pick_assigned(employee_id)
