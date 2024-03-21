@@ -20,3 +20,15 @@ class ResCompany(models.Model):
         "Dont allow sell products without quantity", default=False
     )
 
+    block_order_invoice_payment_state = fields.Selection(
+        string="Payment State",
+        selection=[
+            ('not_paid', 'Not paid'),
+            ('in_payment', 'In payment process')
+        ]
+    )
+
+    block_order_invoice_total_amount = fields.Float(
+        string="Total amount"
+    )
+    

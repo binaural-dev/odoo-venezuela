@@ -1,7 +1,9 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from lxml import etree
 from odoo.tools.float_utils import float_is_zero
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class SaleOrder(models.Model):
@@ -347,6 +349,36 @@ class SaleOrder(models.Model):
         except:
             self._recompute_prices()
 
+    def _block_valid_confirm(self):
+        self.ensure_one()
+
+        block_order_invoice_payment_state = self.company_id.block_order_invoice_payment_state
+        block_order_invoice_total_amount = self.company_id.block_order_invoice_total_amount
+
+        if not (block_order_invoice_payment_state or block_order_invoice_total_amount):
+            return None
+
+        invoice_ids =  self.env["account.move"].search([
+            ("partner_id", "=", self.partner_id.id),
+            ("amount_total", ">", 0),
+            "|",
+            ("payment_state", "=", block_order_invoice_payment_state),
+            ("amount_total", ">", block_order_invoice_total_amount),
+        ])
+
+        if not any(invoice_ids):
+            return None
+
+        for invoice_id in invoice_ids:
+            
+            if block_order_invoice_payment_state:
+                if invoice_id.payment_state == block_order_invoice_payment_state:
+                    raise UserError(_("Before confirm, The invoice %s must not have state neither Not paid or In payment process.") % (invoice_id.name))
+
+            if block_order_invoice_payment_state and not invoice_id.amount_total:
+                if invoice_id.amount_total > block_order_invoice_total_amount:
+                    raise UserError(_("Before confirm, The invoice %s must not have amount total greater than %s.") % (invoice_id.name, block_order_invoice_total_amount))
+
     def action_confirm(self):
         skip_not_allow_sell_products_validation = self.env.context.get("skip_not_allow_sell_products_validation", False)
         if self.env.company.not_allow_sell_products and not skip_not_allow_sell_products_validation:
@@ -380,5 +412,7 @@ class SaleOrder(models.Model):
                             round(order.partner_id.credit_limit, decimal_places),
                         )
                     )
+                
+        self._block_valid_confirm()
+
         return super().action_confirm()
-    

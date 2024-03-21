@@ -22,3 +22,12 @@ class ResConfigSettings(models.TransientModel):
     )
     not_allow_sell_products = fields.Boolean(related='company_id.not_allow_sell_products', readonly=False)
 
+    block_order_invoice_payment_state = fields.Selection(
+        related='company_id.block_order_invoice_payment_state',
+        readonly=False
+    )
+
+    block_order_invoice_total_amount = fields.Float(
+        related='company_id.block_order_invoice_total_amount',
+        readonly=False
+    )
