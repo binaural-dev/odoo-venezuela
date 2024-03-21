@@ -16,6 +16,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return res
         res.append(("mf_invoice_number", "!=", False))
         res.append(("mf_reportz", "!=", False))
+        res.append(("mf_serial", "!=", False))
         return res
 
     def search_moves(self):
@@ -24,7 +25,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         move_model = self.env["account.move"]
         domain = self._get_domain()
-        moves = move_model.search(domain, order="mf_invoice_number asc")
+        moves = move_model.search(domain).sorted(lambda m: int(m.mf_invoice_number))
         return moves
 
     def sale_book_fields(self):
@@ -102,10 +103,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         cumulative = init_cumulative.copy()
 
         for move in moves:
-            if not agrouped_by_report_z.get(move.mf_reportz):
-                agrouped_by_report_z[move.mf_reportz] = move
+            if not agrouped_by_report_z.get(str(move.mf_serial)+"_"+str(move.mf_reportz)):
+                agrouped_by_report_z[str(move.mf_serial)+"_"+str(move.mf_reportz)] = move
             else:
-                agrouped_by_report_z[move.mf_reportz] |= move
+                agrouped_by_report_z[str(move.mf_serial)+"_"+str(move.mf_reportz)] |= move
 
         for report in agrouped_by_report_z.items():
             range_start = 0

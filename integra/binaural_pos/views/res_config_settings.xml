@@ -130,7 +130,7 @@
                             </div>
                         </div>
 
-                        <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="col-12 col-lg-6 o_setting_box" id="receipt_journal_id_pane">
                             <div class="o_setting_right_pane">
                                 <div>
                                     <label for="receipt_journal_id"/>
@@ -140,6 +140,20 @@
                                     </div>
                                     <div class="content-group mt16">
                                         <field name="receipt_journal_id" colspan="4" nolabel="1" domain="[('type','=','sale')]"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="keep_journal">
+                            <div class="o_setting_left_pane">
+                                <field name="pos_keep_journal"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <div>
+                                    <label for="pos_keep_journal"/>
+                                    <div class="text-muted">
+                                        Keep the last journal used in POS
                                     </div>
                                 </div>
                             </div>

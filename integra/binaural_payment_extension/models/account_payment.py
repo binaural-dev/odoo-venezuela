@@ -66,13 +66,15 @@ class AccountPayment(models.Model):
             if not all((payment.retention_line_ids, payment.retention_id.number)):
                 continue
             move = payment.move_id
-            vals_to_change = {
-                "name": (
-                    account_move_name_by_retention_type[payment.retention_id.type_retention]
-                    + f"-{payment.retention_id.number}"
-                    + f"-{payment.retention_line_ids[0].move_id.name}"
-                )
-            }
+            move_name = (
+                account_move_name_by_retention_type[payment.retention_id.type_retention]
+                + f"-{payment.retention_id.number}"
+                + f"-{payment.retention_line_ids[0].move_id.name}"
+            )
+            if payment.retention_id.type_retention == "islr":
+                move_name += f"-{payment.retention_line_ids[0].payment_concept_id.name[:5]}"
+
+            vals_to_change = {"name": move_name}
             move.write(vals_to_change)
             move.line_ids.write(vals_to_change)
         return res
@@ -95,11 +97,13 @@ class AccountPayment(models.Model):
     @api.depends("retention_line_ids")
     def _compute_retention_foreign_amount(self):
         for payment in self:
-            payment.retention_foreign_amount = sum(
-                payment.retention_line_ids.mapped(
-                    lambda l: float_round(
-                        l.foreign_retention_amount,
-                        precision_digits=l.retention_id.foreign_currency_id.decimal_places,
+            payment.retention_foreign_amount = abs(
+                sum(
+                    payment.retention_line_ids.mapped(
+                        lambda l: float_round(
+                            l.foreign_retention_amount,
+                            precision_digits=l.retention_id.foreign_currency_id.decimal_places,
+                        )
                     )
                 )
             )

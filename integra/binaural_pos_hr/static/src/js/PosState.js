@@ -11,19 +11,14 @@ odoo.define("binaural_pos_hr.PosState", function(require) {
       }
 
       async load_supervisors_data() {
-        const domain = [['pos_employee_type', '=', 'supervisor']];
-        const fields = ['name', 'pos_employee_type', 'pin', 'barcode'];
         const params = {
           model: 'hr.employee',
-          method: 'search_read',
-          kwargs: {
-            domain,
-            fields
-          },
+          method: 'get_pos_hr_employee',
         };
 
         const supervisor_ids = await this.env.services.rpc(params);
         this.supervisor_ids = supervisor_ids;
+
       }
 
       async after_load_server_data(){

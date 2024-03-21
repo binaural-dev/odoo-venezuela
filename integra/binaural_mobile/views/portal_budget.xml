@@ -122,17 +122,26 @@
                                 <label class="form-label" t-out="budget.partner_shipping_id.name"/>
                             </t>
                             <t t-else="">
-                                <select class="form-control address_selection cancel_confirmed_input" t-attf-data-address="delivery" id="project">
-                                    <t t-if="budget">
-                                        <t t-foreach="budget.partner_invoice_id.child_ids" t-as="budget_partner">
-                                            <option selected="1" t-if="budget.partner_shipping_id.id == budget_partner.id" t-att-value="budget_partner.id"> <t t-out="budget_partner.name" /></option>
-                                            <option t-if="budget.partner_shipping_id.id != budget_partner.id" t-att-value="budget_partner.id"> <t t-out="budget_partner.name" /></option>
+                                <div class="input-group">
+
+                                    <select class="form-control address_selection cancel_confirmed_input" t-attf-data-address="delivery" id="project">
+                                        <t t-if="budget">
+                                            <t t-foreach="budget.partner_invoice_id.child_ids" t-as="budget_partner">
+                                                <option selected="1" t-if="budget.partner_shipping_id.id == budget_partner.id" t-att-value="budget_partner.id"> <t t-out="budget_partner.name" /></option>
+                                                <option t-if="budget.partner_shipping_id.id != budget_partner.id" t-att-value="budget_partner.id"> <t t-out="budget_partner.name" /></option>
+                                            </t>
                                         </t>
+                                        <t t-else="">
+                                            <option value="">Select a shipping address</option>
+                                        </t>
+                                    </select>
+
+                                    <t t-if="not budget">
+                                        <button type="button" class="fa fa-plus d-none" disabled="true" style="background-color: transparent;border: none; color:green;"
+                                        data-bs-toggle="modal" data-bs-target="#createClient" id="openCreateAddressContact" t-if="create_client_address" />
                                     </t>
-                                    <t t-else="">
-                                        <option value="">Select a shipping address</option>
-                                    </t>
-                                </select>
+
+                                </div>
                             </t>
                         </div>
                         <div class="col-sm-2">
@@ -432,6 +441,8 @@
                                                 <input type="email" class="register-client form-control" id="emailClient" placeholder="test@gmail.com"/>
                                             </div>
                                         </div>
+
+                                        <input type="hidden" value="contact" id="typeContactCreateClientModal" />
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

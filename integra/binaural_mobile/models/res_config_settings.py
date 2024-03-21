@@ -72,3 +72,6 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.group_stock_packaging',
         readonly=False
         )
+
+    custom_manifest = fields.Text(related="company_id.custom_manifest", readonly=False)
+    assetlink = fields.Text(related="company_id.assetlink", readonly=False)

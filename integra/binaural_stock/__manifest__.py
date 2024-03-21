@@ -15,6 +15,7 @@
         "security/security_binaural_stock.xml",
         "security/binaural_stock_groups.xml",
         "data/inventory_valuation_paperformat.xml",
+        "data/ir_actions_server.xml",
         "report/inventory_valuation_report.xml",
         "views/product_category_views.xml",
         "views/products_views.xml",

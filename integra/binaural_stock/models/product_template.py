@@ -60,9 +60,21 @@ class ProductTemplate(models.Model):
             product.price_with_tax = taxes["total_included"]
             product.price_without_tax = taxes["total_excluded"]
 
-    @api.depends("qty_available", "outgoing_qty")
+    @api.depends("qty_available")
     def _compute_available_quantity(self):
         for product in self:
-            variants_free = product.product_variant_ids.mapped("free_qty")
-            total_available: float = sum(variants_free)
-            product.update({"quantity": total_available})
+            stock_quant = self.env["stock.quant"].search(
+                [
+                    ("product_tmpl_id", "=", product.id),
+                    ("on_hand", "=", True),
+                    ("product_tmpl_id.type", "!=", "service"),
+                ]
+            )
+            quantity_available = 0.0
+            for quant in stock_quant:
+                if (
+                    quant.warehouse_id.lot_stock_id == quant.location_id
+                    or quant.warehouse_id.lot_stock_id == quant.location_id.location_id
+                ):
+                    quantity_available += quant.available_quantity
+            product.update({"quantity": quantity_available if quantity_available >= 0 else 0})

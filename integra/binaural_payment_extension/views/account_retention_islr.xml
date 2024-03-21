@@ -155,7 +155,8 @@
                                 <tree string="Payments" editable="bottom">
                                     <field name="date"/>
                                     <field name="name"/>
-                                    <field name="amount"/>
+                                    <field name="currency_id" invisible="1"/>
+                                    <field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 </tree>
                             </field>
                         </page>
