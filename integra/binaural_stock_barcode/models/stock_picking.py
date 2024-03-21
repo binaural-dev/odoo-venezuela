@@ -130,8 +130,7 @@ class StockPicking(models.Model):
 
 
 
-                    _logger.info("SALE ORDER %s", record.sale_id)
-                    order = self.env["sale.order"].search([("name", "=", record.origin)])
+                    order = record.sale_id
                     wizard = self.env["sale.advance.payment.inv"].create(
                         {
                             "sale_order_ids": order.ids,
@@ -238,12 +237,6 @@ class StockPicking(models.Model):
                 ._get_usable_packages()
             )
             package_types = package_types.search([])
-
-        _logger.info(
-            move_lines.sorted(key=lambda x: x.priority_location).read(
-                move_lines._get_fields_stock_barcode(), load=False
-            )
-        )
 
         data = {
             "records": {
