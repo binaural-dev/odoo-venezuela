@@ -42,6 +42,8 @@ class ResPartnerInherit(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
+        if not self.seller_ids:
+            self.sellers_validate()
         if "seller_ids" in vals:
             for partner in self:
                 partner.sellers_validate()
