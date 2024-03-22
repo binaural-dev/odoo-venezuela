@@ -56,10 +56,10 @@
                             <br/>
                             <div class="o_setting_right_pane">
                                 <group colspan="4" col="4">
-                                    <field name="block_order_invoice_total_amount"/>
+                                    <field name="block_order_invoice_total_amount_overdue"/>
                                 </group>
                                 <div class="text-muted">
-                                    Block order confirmation action with invoices with a total amount greater than specified.
+                                    Block order confirmation action with invoices overdue with a total amount greater than specified.
                                 </div> 
                             </div>
                         </div>

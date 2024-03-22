@@ -28,7 +28,7 @@ class ResCompany(models.Model):
         ]
     )
 
-    block_order_invoice_total_amount = fields.Float(
-        string="Total amount"
+    block_order_invoice_total_amount_overdue = fields.Float(
+        string="Total amount overdue"
     )
     

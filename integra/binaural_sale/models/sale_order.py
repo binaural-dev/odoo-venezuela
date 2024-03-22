@@ -353,31 +353,48 @@ class SaleOrder(models.Model):
         self.ensure_one()
 
         block_order_invoice_payment_state = self.company_id.block_order_invoice_payment_state
-        block_order_invoice_total_amount = self.company_id.block_order_invoice_total_amount
+        block_order_invoice_total_amount_overdue = self.company_id.block_order_invoice_total_amount_overdue
 
-        if not (block_order_invoice_payment_state or block_order_invoice_total_amount):
-            return None
+        today_date = fields.Date.today()
 
         invoice_ids =  self.env["account.move"].search([
             ("partner_id", "=", self.partner_id.id),
             ("amount_total", ">", 0),
             "|",
             ("payment_state", "=", block_order_invoice_payment_state),
-            ("amount_total", ">", block_order_invoice_total_amount),
+            ("invoice_date_due", "<", today_date)
         ])
 
         if not any(invoice_ids):
             return None
 
+        invoice_count_payment_state = 0
+        invoice_count_date_expired = 0
+        amount_total_overdue = 0
+
         for invoice_id in invoice_ids:
-            
+
             if block_order_invoice_payment_state:
                 if invoice_id.payment_state == block_order_invoice_payment_state:
-                    raise UserError(_("The state of invoice %s can not be neither Not paid or In payment process.") % (invoice_id.name))
+                    invoice_count_payment_state += 1
 
-            if block_order_invoice_total_amount and invoice_id.amount_total:
-                if invoice_id.amount_total > block_order_invoice_total_amount:
-                    raise UserError(_("The invoice %s must not have amount total greater than %s %s.") % (invoice_id.name, block_order_invoice_total_amount, invoice_id.currency_id.name))
+            if invoice_id.invoice_date_due < today_date:
+                amount_total_overdue += invoice_id.amount_total
+                invoice_count_date_expired +=1
+
+        if invoice_count_payment_state:
+
+            payment_state_labels = {
+                "not_paid": 'Not Paid',
+                "in_payment": 'In Payment Process',
+            }
+
+            raise UserError(_("Payment state of invoices (%s) must not be %s.") % (invoice_count_payment_state, payment_state_labels[block_order_invoice_payment_state]))
+
+        if block_order_invoice_total_amount_overdue:
+            if amount_total_overdue > block_order_invoice_total_amount_overdue:
+                raise UserError(_("Amount total overdue (%s) of invoices must not be greater than %s %s.") % (amount_total_overdue, block_order_invoice_total_amount_overdue, invoice_id.currency_id.name))
+
 
     def action_confirm(self):
         skip_not_allow_sell_products_validation = self.env.context.get("skip_not_allow_sell_products_validation", False)

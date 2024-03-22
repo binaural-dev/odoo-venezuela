@@ -27,7 +27,7 @@ class ResConfigSettings(models.TransientModel):
         readonly=False
     )
 
-    block_order_invoice_total_amount = fields.Float(
-        related='company_id.block_order_invoice_total_amount',
+    block_order_invoice_total_amount_overdue = fields.Float(
+        related='company_id.block_order_invoice_total_amount_overdue',
         readonly=False
     )
