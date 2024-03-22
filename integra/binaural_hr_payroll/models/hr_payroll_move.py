@@ -21,15 +21,20 @@ class HrPayrollMove(models.Model):
         string="Type",
         default="salary",
     )
-    slip_id = fields.Many2one("hr.payslip", required=True)
-    employee_id = fields.Many2one("hr.employee", related="slip_id.employee_id", store=True)
-    employee_name = fields.Char(string="Name", related="employee_id.name", store=True)
-    employee_prefix_vat = fields.Selection(related="employee_id.prefix_vat", store=True)
-    employee_vat = fields.Char(string="Document", related="employee_id.vat", store=True)
-    employee_job_id = fields.Many2one("hr.job", related="employee_id.job_id")
+    slip_id = fields.Many2one("hr.payslip")
+    employee_id = fields.Many2one(
+        "hr.employee", compute="_compute_payslip_fields", store=True, readonly=False
+    )
+    employee_name = fields.Char(
+        string="Name", compute="_compute_payslip_fields", store=True, readonly=False
+    )
+    employee_vat = fields.Char(
+        string="Document", compute="_compute_payslip_fields", store=True, readonly=False
+    )
+    employee_job_id = fields.Many2one("hr.job", compute="_compute_payslip_fields", readonly=False)
     date = fields.Date(string="Payslip Date", default=fields.Date.today())
     department_id = fields.Many2one(
-        "hr.department", related="employee_id.department_id", store=True
+        "hr.department", compute="_compute_payslip_fields", store=True, readonly=False
     )
 
     total_basic = fields.Float(string="Basic salary")
@@ -45,7 +50,7 @@ class HrPayrollMove(models.Model):
     date_from_vacation = fields.Date()
     date_to_vacation = fields.Date()
 
-    vacational_period = fields.Char(compute="_compute_vacational_period")
+    vacational_period = fields.Char(compute="_compute_vacational_period", store=True)
     vacation_days = fields.Integer()
     vacation_bonus_days = fields.Integer()
     consumed_vacation_days = fields.Integer()
@@ -65,6 +70,14 @@ class HrPayrollMove(models.Model):
 
     foreign_total_vacation_bonus = fields.Float()
     foreign_total_vacation = fields.Float()
+
+    @api.depends("slip_id")
+    def _compute_payslip_fields(self):
+        for move in self.filtered(lambda m: m.slip_id):
+            move.employee_id = move.slip_id.employee_id
+            move.employee_vat = move.employee_id.vat
+            move.employee_job_id = move.employee_id.job_id
+            move.department_id = move.employee_id.department_id
 
     @api.depends("date_from_vacation", "date_to_vacation")
     def _compute_vacational_period(self):
