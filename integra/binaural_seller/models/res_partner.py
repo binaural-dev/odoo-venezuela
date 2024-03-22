@@ -43,14 +43,15 @@ class ResPartnerInherit(models.Model):
     def write(self, vals):
         res = super().write(vals)
         if not self.seller_ids:
-            self.sellers_validate()
+            for partner in self:
+                partner.sellers_validate()
         if "seller_ids" in vals:
             for partner in self:
                 partner.sellers_validate()
         return res
 
     def sellers_validate(self):
-        for partner in self:
+        for partner in self.filtered(lambda p: p != self.env.ref("binaural_seller.res_partner_1")):
             employee_seller = self.env["hr.employee"].search(
                 [
                     ("company_id", "=", self.env.company.id), 
