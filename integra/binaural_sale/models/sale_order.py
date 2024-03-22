@@ -385,15 +385,15 @@ class SaleOrder(models.Model):
         if invoice_count_payment_state:
 
             payment_state_labels = {
-                "not_paid": 'Not Paid',
-                "in_payment": 'In Payment Process',
+                "not_paid": _('Not Paid'),
+                "in_payment": _('In Payment Process',)
             }
 
-            raise UserError(_("Payment state of invoices (%s) must not be %s.") % (invoice_count_payment_state, payment_state_labels[block_order_invoice_payment_state]))
+            raise UserError(_("The budget cannot be confirmed. You have %s Invoices (%s).") % (invoice_count_payment_state, payment_state_labels[block_order_invoice_payment_state]))
 
         if block_order_invoice_total_amount_overdue:
             if amount_total_overdue > block_order_invoice_total_amount_overdue:
-                raise UserError(_("Amount total overdue (%s) of invoices must not be greater than %s %s.") % (amount_total_overdue, block_order_invoice_total_amount_overdue, invoice_id.currency_id.name))
+                raise UserError(_("The budget cannot be confirmed. Has an overdue amount of (%s) that cannot be greater than %s %s.") % (amount_total_overdue, block_order_invoice_total_amount_overdue, invoice_id.currency_id.name))
 
 
     def action_confirm(self):
