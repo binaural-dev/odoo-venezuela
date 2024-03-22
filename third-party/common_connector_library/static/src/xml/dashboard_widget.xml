@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<template>
+    <t t-name="graph_dashboard_ept">
+        <select class="border-0 h7 position-absolute" id="sort_order_data">
+            <option value="week"
+                    t-att-selected="widget.graph_data.sort_on == 'week' ? 'selected' : undefined">
+                Current Week
+            </option>
+            <option value="month"
+                    t-att-selected="widget.graph_data.sort_on == 'month' ? 'selected' : undefined">
+                Current Month
+            </option>
+            <option value="year"
+                    t-att-selected="widget.graph_data.sort_on == 'year' ? 'selected' : undefined">
+                Current Year
+            </option>
+            <option value="all"
+                    t-att-selected="widget.graph_data.sort_on == 'all' ? 'selected' : undefined">All
+            </option>
+        </select>
+        <div class="container o_kanban_card_content p-0 ep_kanban_graph">
+            <div class="row mt8 mb8 mx-0 align-items-center ep_graph_details">
+                <div class="col-3 pr-2">
+                    <p class="mb0">Sales</p>
+                    <h4 class="mb0">
+                        <b>
+                            <span>
+                                <t t-esc="widget.graph_data.currency_symbol + widget.graph_data.total_sales"/>
+                            </span>
+                        </b>
+                    </h4>
+                </div>
+                <div class="col-5 text-center p-0">
+                    <a style="border: 1px solid #eaeaea;border-radius: 5px;padding:5px 10px;color:#cccccf;">
+                        Average Order Value :
+                        <b>
+                            <t t-if="widget.graph_data.total_sales and widget.graph_data.order_data.order_count">
+                                <t t-if="widget.graph_data.order_data.order_count != 0">
+                                    <t t-esc="widget.graph_data.currency_symbol + Math.round(widget.graph_data.total_sales / widget.graph_data.order_data.order_count)"/>
+                                </t>
+                                <t t-else="">
+                                    <t t-esc="widget.graph_data.currency_symbol+ widget.graph_data.order_data.order_count"/>
+                                </t>
+                            </t>
+                        </b>
+                    </a>
+                </div>
+                <div class="col-4 pl-0 text-right">
+                    <t t-if="widget.graph_data and widget.graph_data.graph_sale_percentage and widget.graph_data.sort_on != 'all'">
+                        <div class="d-inline-flex align-items-center">
+                            <h1>
+                                <t t-esc="growth_color"></t>
+                            </h1>
+                            <!-- When sales growth is up -->
+                            <img class="img img-responsive m-auto" style="width: 30px;"
+                                 t-att-src="widget.graph_data.graph_sale_percentage.type == 'positive' ? '/common_connector_library/static/src/img/growth-up.svg' : '/common_connector_library/static/src/img/growth-down.svg'"/>
+                            <!-- When sales growth is down
+                            <img class="img img-responsive m-auto" src="/common_connector_library/static/src/img/growth-down.svg" style="width: 30px;" />-->
+                            <h4 class="mb0 ml8"
+                                t-att-style="widget.graph_data.graph_sale_percentage.type == 'positive' ? 'color:#5cbc2a' : 'color:#ff5a5a'"><!-- When sales growth is down - color code is: #ff5a5a -->
+                                <b>
+                                    <span>
+                                        <t t-esc="widget.graph_data.graph_sale_percentage.value"></t>
+                                    </span>
+                                    <span>%</span>
+                                </b>
+                            </h4>
+
+                        </div>
+                    </t>
+                    <!--                    <div class="text-left" style="display: inline-block;">-->
+                    <!-- <p class="mb0">Last 30 days</p>-->
+                    <!--                        <select class="border-0 h7" id="sort_order_data_shopify" style="overflow: hidden;text-overflow: ellipsis;max-width: 99%;">-->
+                    <!--                            <option value="month" t-att-selected="widget.graph_data.sort_on == 'month' ? 'selected' : undefined">this Month</option>-->
+                    <!--                            <option value="year" t-att-selected="widget.graph_data.sort_on == 'year' ? 'selected' : undefined">this Year</option>-->
+                    <!--                            <option value="all" t-att-selected="widget.graph_data.sort_on == 'all' ? 'selected' : undefined">All</option>-->
+                    <!--                        </select>-->
+                    <!--                        <h4 class="mb0"-->
+                    <!--                            style="color:#5cbc2a;">&lt;!&ndash; When sales growth is down - color code is: #ff5a5a &ndash;&gt;-->
+                    <!--                            <b>37.48%</b>-->
+                    <!--                        </h4>-->
+                    <!--                    </div>-->
+                </div>
+            </div>
+            <div class="graph_ept">
+
+            </div>
+            <!--                <t t-if="journal_type == 'bank' || journal_type == 'cash' || journal_type == 'sale' || journal_type == 'purchase'">-->
+            <!--t-call="JournalBodyGraph"-->
+            <!--                            <field name="kanban_dashboard_graph"-->
+            <!--                                   t-att-graph_type="_.contains(['cash','bank'],journal_type) ? 'line' : 'line'"-->
+            <!--                                   widget="ept_dashboard_graph"/>-->
+            <!--                </t>-->
+            <!--            </div>-->
+        </div>
+
+        <div class="row">
+            <div class="col-12 mt4 ep_kanban_records">
+                <a id="instance_product" class="ep-bg-2">
+                    <p class="text-center mb0 font-weight-bold">
+                        <t t-if="widget.graph_data.product_date">
+                            <t t-esc="widget.graph_data.product_date.product_count"/>
+                        </t>
+                    </p>
+                    <p class="text-center mb0">Products</p>
+                </a>
+                <a id="instance_customer" class="ep-bg-1">
+                    <t t-if="widget.graph_data.customer_data">
+                        <p class="text-center mb0 font-weight-bold">
+                            <t t-esc="widget.graph_data.customer_data.customer_count"/>
+                        </p>
+                    </t>
+                    <p class="text-center mb0">Customers</p>
+                </a>
+                <a id="instance_order" class="ep-bg-4">
+                    <t t-if="widget.graph_data.order_data">
+                        <p class="text-center mb0 font-weight-bold">
+                            <t t-esc="widget.graph_data.order_data.order_count"/>
+                        </p>
+                    </t>
+                    <p class="text-center mb0">Orders</p>
+                </a>
+                <a id="instance_order_shipped" class="ep-bg-5">
+                    <t t-if="widget.graph_data.order_shipped">
+                        <p class="text-center mb0 font-weight-bold">
+                            <t t-esc="widget.graph_data.order_shipped.order_count"/>
+                        </p>
+                    </t>
+                    <p class="text-center mb0">Order Shipped</p>
+                </a>
+                <a id="instance_refund" class="ep-bg-7">
+                    <t t-if="widget.graph_data.refund_data">
+                        <p class="text-center mb0 font-weight-bold">
+                            <t t-esc="widget.graph_data.refund_data.refund_count"/>
+                        </p>
+                    </t>
+                    <p class="text-center mb0">Refund</p>
+                </a>
+                <!--<a type="action" class="ep-bg-3">
+                    <p class="text-center mb0 font-weight-bold">7</p>
+                    <p class="text-center mb0">Collections</p>
+                </a>
+                <a type="action" class="ep-bg-6">
+                    <p class="text-center mb0 font-weight-bold">200</p>
+                    <p class="text-center mb0">Open Orders</p>
+                </a>-->
+            </div>
+        </div>
+        <div class="row o_kanban_record_top">
+            <div class="col-12 mt4">
+                <div id="shopify_left" class="float-left o_kanban_top_left">
+                    <div id="perform_operation" class="o_kanban_record_headings">
+                        <button class="btn btn-primary ep-btn-primary">
+                            <span>Perform Operation</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="o_kanban_primary_bottom ep_o_kanban_setting">
+                    <div>
+                        <a id="instance_log">
+                            <span class="mr4">
+                                <img class="img img-responsive m-auto"
+                                     src="/common_connector_library/static/src/img/log.svg"
+                                     style="width: 16px;display: inline-block;"/>
+                            </span>
+                            <span class=" font-weight-bold">Logs</span>
+                        </a>
+                        <a id="instance_report">
+                            <span class="mr4">
+                                <img class="img img-responsive m-auto"
+                                     src="/common_connector_library/static/src/img/report.svg"
+                                     style="width: 16px;display: inline-block;"/>
+                            </span>
+                            <span class=" font-weight-bold">Report</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</template>
