@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-22 21:09+0000\n"
-"PO-Revision-Date: 2024-03-22 21:09+0000\n"
+"POT-Creation-Date: 2024-03-22 21:15+0000\n"
+"PO-Revision-Date: 2024-03-22 21:15+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -224,6 +224,13 @@ msgid "If you have more than the quantity on stock dont allow sell."
 msgstr "Si usted tiene más de la cantidad en stock no permiten vender."
 
 #. module: binaural_sale
+#. odoo-python
+#: code:addons/binaural_sale/models/sale_order.py:0
+#, python-format
+msgid "In Payment Process"
+msgstr "En Proceso de Pago"
+
+#. module: binaural_sale
 #: model:ir.model.fields.selection,name:binaural_sale.selection__res_company__block_order_invoice_payment_state__in_payment
 msgid "In payment process"
 msgstr "En proceso de pago"
@@ -249,6 +256,13 @@ msgid ""
 "comuníquese con el administrador para aumentar el límite de crédito del "
 "cliente."
 msgstr ""
+
+#. module: binaural_sale
+#. odoo-python
+#: code:addons/binaural_sale/models/sale_order.py:0
+#, python-format
+msgid "Not Paid"
+msgstr "No Pagadas"
 
 #. module: binaural_sale
 #: model:ir.model.fields.selection,name:binaural_sale.selection__res_company__block_order_invoice_payment_state__not_paid
@@ -344,15 +358,15 @@ msgid ""
 "The budget cannot be confirmed. Has an overdue amount of (%s) that cannot be"
 " greater than %s %s."
 msgstr ""
-"No se puede confirmar el presupuesto. Tiene un monto vencido de (%s) que no puede ser"
-" mayor a %s %s."
+"No se puede confirmar el presupuesto. Tiene un monto vencido de (%s) que no "
+"puede ser mayor a %s %s."
 
 #. module: binaural_sale
 #. odoo-python
 #: code:addons/binaural_sale/models/sale_order.py:0
 #, python-format
-msgid "The budget cannot be confirmed. You have %s Invoices in (%s)."
-msgstr "No se puede confirmar el presupuesto. Tiene %s Facturas en (%s)."
+msgid "The budget cannot be confirmed. You have %s Invoices (%s)."
+msgstr "No se puede confirmar el presupuesto. Tiene %s Facturas (%s)."
 
 #. module: binaural_sale
 #. odoo-python
