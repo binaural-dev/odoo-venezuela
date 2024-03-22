@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_shopify_common_log_line_ept" model="ir.actions.act_window">
+        <field name="name">Log Lines</field>
+        <field name="res_model">common.log.lines.ept</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('module', '=', 'shopify_ept')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No mismatch log lines are there!
+            </p>
+            <p>If any import/export/update process has got issue, log lines will be shown here.</p>
+        </field>
+    </record>
+
+    <record id="common_log_line_view_tree" model="ir.ui.view">
+        <field name="name">common.log.line.tree.view</field>
+        <field name="model">common.log.lines.ept</field>
+        <field name="inherit_id" ref="common_connector_library.common_log_line_view_tree"/>
+        <field name="arch" type="xml">
+            <field name="model_id" position="before">
+                <field name="activity_ids" widget="list_activity"/>
+            </field>
+        </field>
+    </record>
+
+    <menuitem id="shopify_log_line_ept" name="Log Lines"
+              parent="shopify_ept.shopify_data_log_menu"
+              action="shopify_ept.action_shopify_common_log_line_ept"
+              sequence="7"/>
+</odoo>

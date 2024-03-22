@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--This is a common view for queue process wizard -->
+    <record id="view_queue_process_action" model="ir.ui.view">
+        <field name="name">Queue Process Action</field>
+        <field name="model">shopify.queue.process.ept</field>
+        <field name="priority">11</field>
+        <field name="arch" type="xml">
+            <form string="Manually Queue Process">
+                <sheet>
+                    <group name='shopify_process_queue_manually'>
+                        <p colspan="2" class="alert alert-warning" role="alert">
+                            <b>
+                                <ol>
+                                    <li>
+                                        You can use this option:
+                                        <br/>
+                                        - If you don't want to wait for the cron to execute the queue
+                                        and want to process the queue instantly.
+                                        <br/>
+                                        - If a queue line failed for any reason and if you
+                                        think by
+                                        making required changes in Odoo it can process it
+                                        successfully, you can try this option.
+                                    </li>
+                                    <li>
+                                        This will not fetch any data from the Shopify store to
+                                        reprocess
+                                        it.
+                                    </li>
+                                    <li>
+                                        This process might take some time to complete.
+                                    </li>
+                                </ol>
+                            </b>
+                        </p>
+                    </group>
+                    <footer>
+                        <button string="Process Queues Manually"
+                                class="oe_highlight" type="object" name="manual_queue_process"
+                                invisible="context.get('queue_process','') not in ['process_product_queue_manually','process_customer_queue_manually','process_order_queue_manually','process_export_stock_queue_manually']"/>
+                        <button string="Cancel" class="oe_highlight"
+                                special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!--This is a common view for set completed queue -->
+    <record id="view_set_to_completed_queue_process_action"
+            model="ir.ui.view">
+        <field name="name">Set To Completed Queue Action</field>
+        <field name="model">shopify.queue.process.ept</field>
+        <field name="priority">11</field>
+        <field name="arch" type="xml">
+            <form string="Set To Completed">
+                <sheet>
+                    <div name='set_to_completed_queue'>
+                        <div style="color:#000000">
+                            <p class="alert alert-warning" role="alert">
+                                <u>
+                                    <h3 style="font-weight:bold;color:#7d5a29">Note :</h3>
+                                </u>
+                                <li>
+                                    It will cancel all queue lines which are in draft and failed
+                                    state.
+                                </li>
+                            </p>
+                        </div>
+                    </div>
+                    <footer>
+                        <button string="Set To Completed Manually"
+                                class="oe_highlight" type="object" name="set_to_completed_queue"/>
+                        <button string="Cancel" class="oe_highlight"
+                                special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_active_archive_shopify_instance" model="ir.ui.view">
+        <field name="name">shopify.active.archive.instance.wizard</field>
+        <field name="model">shopify.queue.process.ept</field>
+        <field name="arch" type="xml">
+            <form>
+                <p colspan="2" class="alert alert-warning" role="alert">
+                    <u>
+                        <h3 style="font-weight:bold;color:#7d5a29">Note :</h3>
+                    </u>
+                    <b>
+                        <ol>
+                            When instance is archived, it will archive/delete below data:
+                            <br/>
+                            1) It deletes all Queues and Webhooks related to the instance.
+                            <br/>
+                            2) Archives Shopify layer Products and it's Variants.
+                            <br/>
+                            3) Deactivates related Cron Jobs(Scheduled Actions).
+                            <br/>
+                            4) Archives related Payment Gateways and Financial Statuses.
+                        </ol>
+                        <ol>
+                            When instance is activated, it will affect below:
+                            <br/>
+                            1) Checks the Connection between Odoo and Shopify store.
+                            <br/>
+                            2) Activate Shopify layer Products and it's Variants.
+                        </ol>
+                    </b>
+                </p>
+                <footer>
+                    <button name="instance_active_archive" string="OK" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!--Action for product queue process manually-->
+    <record id="action_sync_product_queue_data" model="ir.actions.act_window">
+        <field name="name">Process Queue Manually</field>
+        <field name="res_model">shopify.queue.process.ept</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_queue_process_action"/>
+        <field name="context">{'queue_process':'process_product_queue_manually'}</field>
+    </record>
+
+    <!--Action for customer queue process manually-->
+    <record id="action_wizard_shopify_import_customer" model="ir.actions.act_window">
+        <field name="name">Process Queue Manually</field>
+        <field name="res_model">shopify.queue.process.ept</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_queue_process_action"/>
+        <field name="context">{'queue_process':'process_customer_queue_manually'}</field>
+    </record>
+
+    <!--Action for order queue process manually-->
+    <record id="action_wizard_shopify_import_order" model="ir.actions.act_window">
+        <field name="name">Process Queue Manually</field>
+        <field name="res_model">shopify.queue.process.ept</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_queue_process_action"/>
+        <field name="context">{'queue_process':'process_order_queue_manually'}</field>
+    </record>
+
+    <!--Action for export stock queue process manually-->
+    <record id="action_sync_export_stock_queue" model="ir.actions.act_window">
+        <field name="name">Process Queue Manually</field>
+        <field name="res_model">shopify.queue.process.ept</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_queue_process_action"/>
+        <field name="context">{'queue_process':'process_export_stock_queue_manually'}</field>
+    </record>
+
+    <!--Action for the manually set to completed product queue-->
+    <record id="action_wizard_set_to_completed_product_queue" model="ir.actions.act_window">
+        <field name="name">Set To Completed</field>
+        <field name="res_model">shopify.queue.process.ept</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_set_to_completed_queue_process_action"/>
+        <field name="context">{'queue_process':'set_to_completed_product_queue'}</field>
+    </record>
+
+    <!--Action for the manually set to completed customer queue-->
+    <record id="action_wizard_set_to_completed_customer_queue" model="ir.actions.act_window">
+        <field name="name">Set To Completed</field>
+        <field name="res_model">shopify.queue.process.ept</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_set_to_completed_queue_process_action"/>
+        <field name="context">{'queue_process':'set_to_completed_customer_queue'}</field>
+    </record>
+
+    <!--Action for the manually set to completed order queue-->
+    <record id="action_wizard_set_to_completed_order_queue" model="ir.actions.act_window">
+        <field name="name">Set To Completed</field>
+        <field name="res_model">shopify.queue.process.ept</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_set_to_completed_queue_process_action"/>
+        <field name="context">{'queue_process':'set_to_completed_order_queue'}</field>
+    </record>
+
+    <!--Action for the manually set to completed stock export queue-->
+    <record id="action_wizard_set_to_completed_stock_export" model="ir.actions.act_window">
+        <field name="name">Set To Completed</field>
+        <field name="res_model">shopify.queue.process.ept</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_set_to_completed_queue_process_action"/>
+        <field name="context">{'queue_process':'set_to_completed_export_stock_queue'}</field>
+    </record>
+
+</odoo>
