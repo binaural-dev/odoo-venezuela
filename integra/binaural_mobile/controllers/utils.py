@@ -293,7 +293,7 @@ def set_order_line(sale_order: list, tax_included: bool):
 
         product_id = int(product_id) if type(product_id) is str else product_id
 
-        if tax_included:
+        if tax_included or request.env.company.mobile_tax_include:
             product_taxes_id = browse_model_data("product.product", product_id).taxes_id
 
             if any(product_taxes_id):

@@ -35,6 +35,8 @@ FIELD_ORDER_LINE = [
     "name",
     "product_uom_qty",
     "price_unit",
+    "price_unit_with_tax",
+    "price_total",
     "tax_id",
     "price_subtotal",
     "product_id",
@@ -290,6 +292,11 @@ class SaleOrderBudget(http.Controller):
             for order_line in sale_order["order_line"]:
                 product_qty = request.env["product.template"].search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
                 order_line["qty_available"] = product_qty
+
+            if request.env.company.mobile_show_tax_type == "include_tax":
+                for line in sale_order["order_line"]:
+                    line["price_unit"] = line["price_unit_with_tax"]
+                    line["price_subtotal"] = line["price_total"]
             
             if tax_included:
                 for line in sale_order["order_line"]:

@@ -103,3 +103,21 @@ class SaleOrder(models.Model):
                 state_seller = _("Sale Order")
 
             sale.state_seller = state_seller
+
+class SaleOrderLine(models.Model):
+    _inherit = "sale.order.line"
+
+    price_unit_with_tax = fields.Float(
+        compute="_compute_price_unit_with_tax", store=True
+    )
+    @api.depends("price_unit", "tax_id")
+    def _compute_price_unit_with_tax(self):
+        for line in self:
+            price_unit = line.price_unit
+            taxes = line.tax_id.compute_all(
+                price_unit,
+                line.order_id.currency_id,
+                1,
+                product=line.product_id,
+            )
+            line.price_unit_with_tax = taxes["total_included"]
