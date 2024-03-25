@@ -7,13 +7,32 @@ _logger = logging.getLogger(__name__)
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    def _get_domain_seller(self):
+        return (
+            "[('is_seller', '=',True)]" if not self.env.company.restrict_seller
+            else "[('id', 'in', sellers_available)]"
+        )
+
+    sellers_available = fields.Many2many(
+        "hr.employee",
+        compute="_compute_sellers_available"
+    )
+        
     seller_id = fields.Many2one(
         "hr.employee",
         string="Seller",
         tracking=True,
         store=True,
-        help="Partner's seller reference."
+        help="Partner's seller reference.",
+        domain=_get_domain_seller,
     )
+
+    @api.depends("partner_id")
+    def _compute_sellers_available(self):
+        for sale in self:
+            if not sale.partner_id:
+                sale.sellers_available = False
+            sale.sellers_available = sale.partner_id.seller_ids
 
     def action_confirm(self):
         res = super().action_confirm()
@@ -35,7 +54,7 @@ class SaleOrder(models.Model):
                     )
                 else:
                     seller_name = ""
-                    for seller in order.partner_id.seller_ids:
+                    for seller in order.sellers_available:
                         seller_name += seller.name + ", "
                     raise UserError(
                         _(

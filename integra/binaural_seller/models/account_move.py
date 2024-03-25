@@ -5,13 +5,32 @@ from odoo.exceptions import UserError
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    def _get_domain_seller(self):
+        return (
+            "[('is_seller', '=',True)]" if not self.env.company.restrict_seller
+            else "[('id', 'in', sellers_available)]"
+        )
+    
+    sellers_available = fields.Many2many(
+        "hr.employee",
+        compute="_compute_sellers_available"
+    )
+
     seller_id = fields.Many2one(
         "hr.employee",
         string="Seller",
         tracking=True,
         store=True,
         help="Partner's seller reference.",
+        domain=_get_domain_seller,
     )
+
+    @api.depends("partner_id")
+    def _compute_sellers_available(self):
+        for invoice in self:
+            if not invoice.partner_id:
+                invoice.sellers_available = False
+            invoice.sellers_available = invoice.partner_id.seller_ids
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -51,7 +70,7 @@ class AccountMove(models.Model):
                         if invoice.seller_id:
                             return
                         seller_name = ""
-                        for seller in invoice.partner_id.seller_ids:
+                        for seller in invoice.seller_available:
                             seller_name += seller.name + ", "
                         raise UserError(
                             _(

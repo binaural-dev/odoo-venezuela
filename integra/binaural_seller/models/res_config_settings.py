@@ -15,3 +15,8 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.multiple_sellers',
         readonly=False
     )
+
+    restrict_seller = fields.Boolean(
+        related='company_id.restrict_seller',
+        readonly=False
+    )

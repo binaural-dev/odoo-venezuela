@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231030\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240325\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-03 19:35+0000\n"
-"PO-Revision-Date: 2023-11-03 19:35+0000\n"
+"POT-Creation-Date: 2024-03-25 21:37+0000\n"
+"PO-Revision-Date: 2024-03-25 21:37+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -89,6 +89,17 @@ msgid "Public Employee"
 msgstr "Empleado público"
 
 #. module: binaural_seller
+#: model:ir.model.fields,field_description:binaural_seller.field_res_company__restrict_seller
+#: model:ir.model.fields,field_description:binaural_seller.field_res_config_settings__restrict_seller
+msgid "Restrict Seller"
+msgstr "Restringir el vendedor"
+
+#. module: binaural_seller
+#: model_terms:ir.ui.view,arch_db:binaural_seller.binaural_movil_seller_res_config_settings_view_form
+msgid "Restrict selection of sellers according to customer file"
+msgstr "Restringir selección de vendedores según ficha del cliente"
+
+#. module: binaural_seller
 #: model:ir.model,name:binaural_seller.model_sale_order
 msgid "Sales Order"
 msgstr "Pedido de venta"
@@ -97,8 +108,6 @@ msgstr "Pedido de venta"
 #: model:ir.model.fields,field_description:binaural_seller.field_account_bank_statement_line__seller_id
 #: model:ir.model.fields,field_description:binaural_seller.field_account_move__seller_id
 #: model:ir.model.fields,field_description:binaural_seller.field_account_payment__seller_id
-#: model:ir.model.fields,field_description:binaural_seller.field_res_partner__seller_id
-#: model:ir.model.fields,field_description:binaural_seller.field_res_users__seller_id
 #: model:ir.model.fields,field_description:binaural_seller.field_sale_order__seller_id
 msgid "Seller"
 msgstr "Vendedor"
@@ -114,6 +123,14 @@ msgstr "Configuración de Vendedores"
 #: model_terms:ir.ui.view,arch_db:binaural_seller.binaural_seller_partner_inherit_view_form
 msgid "Sellers"
 msgstr "Vendedores"
+
+#. module: binaural_seller
+#: model:ir.model.fields,field_description:binaural_seller.field_account_bank_statement_line__sellers_available
+#: model:ir.model.fields,field_description:binaural_seller.field_account_move__sellers_available
+#: model:ir.model.fields,field_description:binaural_seller.field_account_payment__sellers_available
+#: model:ir.model.fields,field_description:binaural_seller.field_sale_order__sellers_available
+msgid "Sellers Available"
+msgstr "Vendedores disponibles"
 
 #. module: binaural_seller
 #: model:ir.model.fields,help:binaural_seller.field_res_partner__seller_ids
