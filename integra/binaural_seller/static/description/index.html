@@ -375,10 +375,12 @@ ul.auto-toc {
 <ul class="simple">
 <li>Vendedor por defecto</li>
 <li>Multiples vendedores</li>
+<li>Restringir Vendedores</li>
 </ul>
 <p>## Validaciones</p>
 <ul class="simple">
 <li>Al agregar uno o más vendedores en la ficha del contacto se verificará de que la configuración de Multiples vendedores esté encendida para así identificar cuantos vendedores debe de asignar.</li>
+<li>El campo vendedores esta condicionado al campo de Configuracion de Restringir Vendedores, el cual si esta activado este mostrara los vendedores que tiene asignado el cliente, sino mostrara los vendedores registrados</li>
 <li>Al confirmar un presupuesto se le agregará el vendedor que tiene asignado y sí posee más de un vendedor y la configuración de Multiples vendedores está apagado, no le permitirá continuar con el flujo.</li>
 <li>al confirmar una Factura de cliente  se le asignará el vendedor al seleccionar el cliente, en dado caso que posea más de uno este informará que vendedores puede seleccionar.</li>
 </ul>
@@ -393,10 +395,12 @@ ul.auto-toc {
 <p>##Orden de venta (sale.order)</p>
 <ul class="simple">
 <li>Vendedor</li>
+<li>Vendedores Disponibles</li>
 </ul>
 <p>##Facturación (account.move)</p>
 <ul class="simple">
 <li>Vendedor</li>
+<li>Vendedores Disponibles</li>
 </ul>
 <p><strong>Tabla de Contenidos</strong></p>
 <div class="contents local topic" id="contents">
