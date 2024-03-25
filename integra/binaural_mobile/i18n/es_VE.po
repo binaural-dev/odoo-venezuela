@@ -2557,7 +2557,7 @@ msgstr "tasa no encontrada"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
-msgid "set always tax in sale/invoice"
+msgid "set always tax in sale"
 msgstr "Colocar siempre impuesto en venta/factura"
 
 #. module: binaural_mobile
