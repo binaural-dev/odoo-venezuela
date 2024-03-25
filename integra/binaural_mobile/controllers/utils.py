@@ -260,7 +260,7 @@ def get_order_line(sale_order: list, fields: list):
     for order in sale_order:
         order_line = order.get("order_line", [])
         if order_line:
-            domain = [("id", "in", order_line)]
+            domain = [("id", "in", order_line),('display_type', '=', False)]
             order_cpy = order.copy()
             line = get_model_data("sale.order.line", domain, fields)
             order_cpy.update({"order_line": line})

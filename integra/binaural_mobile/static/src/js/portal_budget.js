@@ -16,6 +16,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             "click .delete_product": "_onClickDeleteProduct",
             "click #save_products": "_onClickSaveProducts",
             "change #invoice": "_onChangeInvoice",
+            "blur #note": "_onChangeNote",
             "click .cancel-btn": "_onClickCancel",
             "click .confirm-btn": "_onClickConfirm",
             "click #dowload_pdf": "_onClickDowloadPdf",
@@ -698,12 +699,18 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             this.includeTax()
         },
 
+        _onChangeNote: function(ev) {
+            this.includeTax()
+        },
+
         includeTax: async function(){
             if ($("#number_order_value").val() == '') return
             const tax_included = $("#invoice").prop('checked')
+            const note = $("#note").val()
             const products = await ajax.jsonRpc('/budget/include_tax', 'call', {
                 "sale_id" : parseInt($("#number_order_value").val()),
-                "tax_included" : tax_included
+                "tax_included" : tax_included,
+                "note": note
             })
             const { status, data } = products;
             const is409 = status === 409;

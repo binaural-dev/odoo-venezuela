@@ -25,11 +25,15 @@ class SaleOrder(models.Model):
 
     def manage_note_app(self):
         for record in self:
+            line_note = record.order_line.filtered(lambda line: line.display_type == "line_note")
+            if not record.note and line_note:
+                line_note.unlink()
+                continue
+
             if not record.note:
                 continue
 
             note = BeautifulSoup(record.note).get_text()
-            line_note = record.order_line.filtered(lambda line: line.display_type == "line_note")
             if line_note and note == "":
                 line_note.unlink()
                 continue
