@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <!-- This template is for a table at the top of purchase views that shows some KPIs. -->
+    <t t-name="queue_line_ept.Dashboard">
+        <div class="o_queue_line_dashboard container">
+            <div class="row">
+                <div class="col-sm-5" style="padding-top: 15px;">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr style="font-weight:bold;">
+                                <!-- can't use th tag due to list rendering error when no values in list... -->
+                                <td class="o_text" rowspan="2">
+                                    <div>All Queue Lines</div>
+                                </td>
+                                <td class="o_main" title="Draft Queue Lines">
+                                    <a href="#">
+                                        Draft
+                                    </a>
+                                </td>
+                                <td class="o_main" title="Failed Queue Lines">
+                                    <a href="#">
+                                        Failed
+                                    </a>
+                                </td>
+                                <td class="o_main" title="Done Queue Lines">
+                                    <a href="#">
+                                        Done
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="o_main o_dashboard_action" title="Draft Queue Lines"
+                                    context='{"action": "all_draft"}'
+                                    rowspan="2">
+                                    <a href="#">
+                                        <t t-esc="values['all_draft'][0]"/>
+                                    </a>
+                                </td>
+                                <td class="o_main o_dashboard_action" title="Failed Queue Lines"
+                                    context='{"action": "all_failed"}'
+                                    rowspan="2">
+                                    <a href="#">
+                                        <t t-esc="values['all_failed'][0]"/>
+                                    </a>
+                                </td>
+                                <td class="o_main o_dashboard_action" title="Done Queue Lines"
+                                    context='{"action": "all_done"}'
+                                    rowspan="2">
+                                    <a href="#">
+                                        <t t-esc="values['all_done'][0]"/>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-sm-7">
+                    <table class="table table-sm">
+                        <!-- thead needed to avoid list view rendering error for some reason -->
+                        <thead>
+                            <tr style="font-weight:bold;">
+                                <td class="o_text" rowspan="2"/>
+                                <!-- can't use th tag due to list rendering error when no values in list... -->
+                                <td class="o_main" title="Draft Queue Lines">
+                                    <a href="#">
+                                        Created
+                                    </a>
+                                </td>
+                                <td class="o_main" title="Draft Queue Lines">
+                                    <a href="#">
+                                        Draft
+                                    </a>
+                                </td>
+                                <td class="o_main" title="Failed Queue Lines">
+                                    <a href="#">
+                                        Failed
+                                    </a>
+                                </td>
+                                <td class="o_main" title="Done Queue Lines">
+                                    <a href="#">
+                                        Done
+                                    </a>
+                                </td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="o_text">
+                                    <div>Today's Queue Lines</div>
+                                </td>
+                                <td class="o_main o_dashboard_action" title="Today's Created Queue Lines"
+                                    context='{"action": "today"}'>
+                                    <a href="#">
+                                        <t t-esc="values['today'][0]"/>
+                                    </a>
+                                </td>
+                                <td class="o_main o_dashboard_action" title="Today's Draft Queue Lines"
+                                    context='{"action": "today_draft"}'>
+                                    <a href="#">
+                                        <t t-esc="values['today_draft'][0]"/>
+                                    </a>
+                                </td>
+                                <td class="o_main o_dashboard_action" title="Today's Failed Queue Lines"
+                                    context='{"action": "today_failed"}'>
+                                    <a href="#">
+                                        <t t-esc="values['today_failed'][0]"/>
+                                    </a>
+                                </td>
+                                <td class="o_main o_dashboard_action" title="Today's Done Queue Lines"
+                                    context='{"action": "today_done"}'>
+                                    <a href="#">
+                                        <t t-esc="values['today_done'][0]"/>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="o_text">
+                                    <div>Yesterday's Queue Lines</div>
+                                </td>
+                                <td class="o_main o_dashboard_action" title="Yesterday's Created Queue Lines"
+                                    context='{"action": "yesterday"}'>
+                                    <a href="#">
+                                        <t t-esc="values['yesterday'][0]"/>
+                                    </a>
+                                </td>
+                                <td class="o_main o_dashboard_action" title="Yesterday's Draft Queue Lines"
+                                    context='{"action": "yesterday_draft"}'>
+                                    <a href="#">
+                                        <t t-esc="values['yesterday_draft'][0]"/>
+                                    </a>
+                                </td>
+                                <td class="o_main o_dashboard_action" title="Yesterday's Failed Queue Lines"
+                                    context='{"action": "yesterday_failed"}'>
+                                    <a href="#">
+                                        <t t-esc="values['yesterday_failed'][0]"/>
+                                    </a>
+                                </td>
+                                <td class="o_main o_dashboard_action" title="Yesterday's Done Queue Lines"
+                                    context='{"action": "yesterday_done"}'>
+                                    <a href="#">
+                                        <t t-esc="values['yesterday_done'][0]"/>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

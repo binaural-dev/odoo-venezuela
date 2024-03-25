@@ -47,10 +47,10 @@ class ResPartnerBudget(http.Controller):
             symbol_currency = request.env.company.currency_id
 
             for group in user.groups_id:
-                if group.name == "Portal / Vendedores que puedan editar tarifas":
+                if group.id == request.env.ref("binaural_mobile.group_sellers_edit_fee").id:
                     edit_fee = True
                     price_lists = request.env["product.pricelist"].sudo().search([("selectable", "=" , True), ("active", "=", True)])
-                if group.name == "Portal / Vendedores que puedan crear contactos":
+                if group.id == request.env.ref("binaural_mobile.group_sellers_create_contact").id:
                     create_client = True
                 if group.id == request.env.ref('binaural_mobile.group_sellers_create_contact_address').id:
                     create_client_address = True
@@ -81,10 +81,13 @@ class ResPartnerBudget(http.Controller):
         seller_portal_id = request.env.user.employee_id.id
         domain = [
             ('name', '=ilike', "%" + (query or '') + "%"),
-            ('seller_ids', '=', seller_portal_id),
             ('is_public', '=', True),
             ("type", "=", "contact")
             ]
+
+        if not request.env.user.has_group("binaural_mobile.group_sellers_show_all_client"):
+            domain += [('seller_ids', '=', seller_portal_id)]
+
         partners = get_model_data("res.partner", domain, FIELDNAMES)
 
         if not partners:

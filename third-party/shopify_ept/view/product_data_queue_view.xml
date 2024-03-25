@@ -1,0 +1,259 @@
+<?xml version="1.0" ?>
+<odoo>
+    <!--Tree view of product data queue-->
+    <record id="product_queue_data_tree_view_ept"
+            model="ir.ui.view">
+        <field name="name">Product Queue Data Tree View</field>
+        <field name="model">shopify.product.data.queue.ept</field>
+        <field name="arch" type="xml">
+            <tree create="0" default_order="name desc" sample="1" decoration-primary="is_process_queue==True"
+                  js_class="queue_line_ept_dashboard">
+                <header>
+                    <button
+                            name="%(shopify_ept.action_sync_product_queue_data)d"
+                            string="Process Queue" type="action"/>
+                </header>
+                <field name="name"/>
+                <field name="shopify_instance_id"/>
+                <field name="create_date"/>
+                <field name="state" decoration-success="state == 'completed'" decoration-info="state == 'draft'"
+                       decoration-warning="state == 'partially_completed'" decoration-danger="state == 'failed'"
+                       widget="badge"/>
+                <field name="is_action_require" invisible="1"/>
+                <button title="Need manual interaction"
+                        icon="fa-exclamation-triangle text-danger"
+                        attrs="{'invisible': ['|',('is_action_require','=',False),('state','=','completed')]}"
+                        special="cancel"/>
+                <field name="is_process_queue" invisible="1"/>
+                <field name="running_status"
+                       attrs="{'invisible':[('is_process_queue', '=', False)]}"/>
+                <field name="activity_ids" widget="list_activity"/>
+            </tree>
+        </field>
+    </record>
+
+    <!--Form view of product data queue-->
+    <record id="product_synced_data_form_view_ept"
+            model="ir.ui.view">
+        <field name="name">Product Queue Data Form View</field>
+        <field name="model">shopify.product.data.queue.ept</field>
+        <field name="arch" type="xml">
+            <form string="Product Synced Data" create="0" edit="0" duplicate="0">
+                <header>
+                    <button
+                            name="%(shopify_ept.action_sync_product_queue_data)d"
+                            string="Process Queue Manually" type="action" class="btn-primary"
+                            attrs="{'invisible':['|',('is_process_queue', '=', True),('state','in',('completed'))]}"/>
+                    <button
+                            name="%(shopify_ept.action_wizard_set_to_completed_product_queue)d"
+                            string="Set To Completed" type="action" class="btn-primary"
+                            attrs="{'invisible':['|',('is_process_queue', '=', True),('state','in',('completed'))]}"/>
+                    <field name="state" widget="statusbar"/>
+                    <field name="is_process_queue" invisible="1"/>
+                </header>
+                <div class="alert alert-danger" role="alert"
+                     style="margin-bottom:0px;"
+                     attrs="{'invisible': ['|',('is_action_require','=',False),('state','=','completed')]}">
+                    <strong>
+                        - Need to process this queue manually.
+                        There are 3 attempts been made by automated action to process this queue,
+                        but due to some reason it couldn't process it.
+                        <br/>
+                        - Ignore, if this queue is already processed.
+                    </strong>
+                </div>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button id="queue_line_total" class="oe_stat_button" icon="fa-database" disabled="1">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="queue_line_total_records"/>
+                                </span>
+                                <span class="o_stat_text">Records</span>
+                            </div>
+                        </button>
+
+                        <button id="queue_line_draft" class="oe_stat_button" icon="fa-info" disabled="1">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="queue_line_draft_records"/>
+                                </span>
+                                <span class="o_stat_text">Draft</span>
+                            </div>
+                        </button>
+                        <button id="queue_line_fail" class="oe_stat_button" icon="fa-times" disabled="1"
+                                attrs="{'invisible':[('state', 'in', ['partially_completed'])]}">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="queue_line_fail_records"/>
+                                </span>
+                                <span class="o_stat_text">Failed</span>
+                            </div>
+                        </button>
+                        <button id="queue_line_fail_sub" class="oe_stat_button" disabled="1"
+                                attrs="{'invisible':[('state', 'not in', ['partially_completed'])]}">
+                            <span class="fa-stack fa-lg"
+                                  style="padding-top: 6px; margin-left:2px; margin-top:2PX; font-size: 22px; color:#ff0000;">
+                                <i class="fa fa-times-circle" title="Time Circle"
+                                   style="margin-left:18px;"/>
+                            </span>
+                            <field name="queue_line_fail_records" widget="statinfo"
+                                   string="Failed"/>
+                        </button>
+                        <button id="queue_line_done" class="oe_stat_button" icon="fa-check" disabled="1"
+                                attrs="{'invisible':[('state', 'in', ['completed'])]}">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="queue_line_done_records"/>
+                                </span>
+                                <span class="o_stat_text">Done</span>
+                            </div>
+                        </button>
+                        <button id="queue_line_done_sub" class="oe_stat_button" disabled="1"
+                                attrs="{'invisible':[('state', 'not in', ['completed'])]}">
+                            <span class="fa-stack fa-lg"
+                                  style="padding-top: 6px; margin-left:15px; color:#00ff00;">
+                                <i class="fa fa-check fa-stack-1x" style="margin-left:4px;"
+                                   title="Stack 1x"/>
+                                <i class="fa fa-check fa-inverse fa-stack-1x"
+                                   style="margin-left:-3px;" title="Stack Inverse 1x"/>
+                                <i class="fa fa-check  fa-stack-1x" style="margin-left:-4px"
+                                   title="Stack 1x"/>
+                            </span>
+                            <field name="queue_line_done_records" widget="statinfo"
+                                   string="Done"/>
+                        </button>
+                        <button id="queue_line_cancel" class="oe_stat_button" icon="fa-ban" disabled="1">
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="queue_line_cancel_records"/>
+                                </span>
+                                <span class="o_stat_text">cancelled</span>
+                            </div>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" text="Processed"
+                            attrs="{'invisible': [('state','!=','completed')]}"/>
+                    <widget name="web_ribbon" text="Processing..."
+                            attrs="{'invisible':[('is_process_queue', '=', False)]}"/>
+                    <div>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group name="shopify_instance_id">
+                        <group>
+                            <field name="shopify_instance_id" readonly="1"/>
+                            <field name="create_date" string="Created On" readonly="1"/>
+                            <field name="queue_process_count" invisible="1"/>
+                            <field name="is_action_require" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="skip_existing_product" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Product Data line">
+                            <field name="product_data_queue_lines" readonly="True">
+                                <tree create="false" editable="bottom"
+                                      decoration-danger="state=='failed'"
+                                      decoration-success="state=='done'"
+                                      decoration-info="state=='draft'">
+                                    <field name="product_data_id" string="Product Data ID"/>
+                                    <field name="name"/>
+                                    <field name="write_date" string="Last Updated On"/>
+                                    <field name="shopify_image_import_state" string="Image Import State" widget="badge"
+                                           decoration-success="state == 'done'"
+                                           decoration-warning="state == 'pending'"/>
+                                    <field name="synced_product_data" invisible="1"/>
+                                    <field name="state"/>
+                                    <button name="replace_product_response"
+                                            string="- It will again fetch the data from the Shopify store, update the queue line with the latest data and process it."
+                                            type="object" class="oe_stat_button" icon="fa-refresh"
+                                            attrs="{'invisible':[('state', 'not in', ['failed'])]}">
+                                    </button>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Log Lines">
+                            <field name="common_log_lines_ids">
+                                <tree create="false" editable="bottom">
+                                    <field name="shopify_product_data_queue_line_id"/>
+                                    <field name="message"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" groups="base.group_user"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!--Search view of product data queue-->
+    <record id="product_queue_data_filter" model="ir.ui.view">
+        <field name="name">shopify.synced.data.filter</field>
+        <field name="model">shopify.product.data.queue.ept</field>
+        <field name="arch" type="xml">
+            <search string="Filter State Wise">
+                <field name="name"
+                       filter_domain="['|',('product_data_queue_lines.name', 'ilike', self),('name', 'ilike', self)]"/>
+                <field name="state"/>
+                <field name="is_process_queue" invisible="1"/>
+                <filter string="Created by Sync Process"
+                        domain="[('created_by', '=', 'import')]" name="created_by_import"/>
+                <filter string="Created by Webhook"
+                        domain="[('created_by', '=', 'webhook')]"
+                        name="created_by_webhook"/>
+                <filter string="Running Queue"
+                        domain="[('is_process_queue', '=', 'True')]" name="running_queue"/>
+                <separator/>
+                <filter string="Draft" domain="[('state', '=', 'draft')]"
+                        name="draft_queue"/>
+                <filter string="Partially Completed"
+                        domain="[('state', '=', 'partially_completed')]"
+                        name="partially_completed"/>
+                <filter string="Completed"
+                        domain="[('state', '=', 'completed')]" name="complete_queue"/>
+                <filter string="Failed" name="failed"
+                        domain="[('state', '=', 'failed')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Instance" name="instance" domain="[]"
+                            context="{'group_by': 'shopify_instance_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!--Action of product data queue-->
+    <record id="action_shopify_product_data_queue"
+            model="ir.actions.act_window">
+        <field name="name">Product Data Queues</field>
+        <field name="res_model">shopify.product.data.queue.ept</field>
+        <field name="view_id" ref="product_queue_data_tree_view_ept"/>
+        <field name="search_view_id"
+               ref="shopify_ept.product_queue_data_filter"/>
+        <field name="context">{'search_default_draft_queue':
+            1,'search_default_partially_completed': 2,'search_default_failed':
+            3}
+        </field>
+        <field name="help" type="html">
+            <div class="oe_empty_shopify_instance">
+                <br/>
+                <br/>
+                <br/>
+                <p>
+                    <b>There is No Synced Data yet...</b>
+                </p>
+            </div>
+        </field>
+    </record>
+
+    <menuitem name="Products Queue" id="shopify_data_menu"
+              parent="shopify_ept.shopify_data_log_menu" sequence="3"
+              action="action_shopify_product_data_queue"/>
+</odoo>

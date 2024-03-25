@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!--Create a shopify product tag for use import buy with prime orders-->
+        <record id="shopify_product_tag_buy_with_prime" model="shopify.tags">
+            <field name="name">Buy with Prime</field>
+            <field name="sequence">1</field>
+        </record>
+    </data>
+</odoo>
+
+

@@ -2,6 +2,10 @@
 <odoo>
 
     <data>
+
+        <record model="res.groups" id="group_sellers_show_all_client">
+            <field name="name">Portal / Vendedores que pueden visualizar todos los clientes</field>
+        </record>
     
         <record model="res.groups" id="group_sellers_edit_fee">
             <field name="name">Portal / Vendedores que puedan editar tarifas</field>

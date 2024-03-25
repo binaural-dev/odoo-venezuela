@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record model="ir.ui.view" id="view_quant_package_inherit_ept_form">
+        <field name="name">stock.quant.package.inherit.ept.form</field>
+        <field name="model">stock.quant.package</field>
+        <field name="inherit_id" ref="stock.view_quant_package_form"/>
+        <field name="arch" type="xml">
+            <field name="location_id" position="after">
+                <field name="tracking_no"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="quant_package_search_view" model="ir.ui.view">
+        <field name="name">stock.quant.package.search</field>
+        <field name="model">stock.quant.package</field>
+        <field eval="10" name="priority"/>
+        <field name="inherit_id" ref="stock.quant_package_search_view"/>
+        <field name="arch" type="xml">
+            <field name="name" String="Package Name" position="after">
+                <field name="tracking_no"/>
+            </field>
+        </field>
+    </record>
+</odoo>
