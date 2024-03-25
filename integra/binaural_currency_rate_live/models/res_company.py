@@ -12,15 +12,17 @@ class ResCompany(models.Model):
 
     @api.model
     def _parse_bcv_data(self, availible_currencies):
-        can_update_habil_days = self.can_update_habil_days
-        current_date = fields.Date.context_today(self)
-        day = current_date.isoweekday()
-        is_habil_day = day <= 5
-        invalid_update_in_habil_day = not is_habil_day and can_update_habil_days
-        if invalid_update_in_habil_day:
-            return
-        usd_rate_bcv = binaural_bcv_query.get_usd_rate_of_the_day_bcv(self)
-        is_valid_update_date = str(usd_rate_bcv[1]) == str(current_date)
-        if not is_valid_update_date:
-            return
-        return {"USD": (1, usd_rate_bcv[1]), "VEF": usd_rate_bcv}
+        companies = self.env['res.company'].search([])
+        for company in companies:
+            can_update_habil_days = company.can_update_habil_days
+            current_date = fields.Date.context_today(self)
+            day = current_date.isoweekday()
+            is_habil_day = day <= 5
+            invalid_update_in_habil_day = not is_habil_day and can_update_habil_days
+            if invalid_update_in_habil_day:
+                return
+            usd_rate_bcv = binaural_bcv_query.get_usd_rate_of_the_day_bcv(self)
+            is_valid_update_date = str(usd_rate_bcv[1]) == str(current_date)
+            if not is_valid_update_date:
+                return
+            return {"USD": (1, usd_rate_bcv[1]), "VEF": usd_rate_bcv}
