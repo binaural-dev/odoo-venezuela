@@ -18,7 +18,8 @@ odoo.define("binaural_pos_hr.ProductScreen", function (require) {
         if (
           this.env.pos.numpadMode === "quantity" &&
           ((inputValue === "" && currentQuantity === 0) ||
-            newQuantity < currentQuantity)
+            newQuantity < currentQuantity) &&
+          this.env.pos.config.pos_remove_orderline_require_supervisor_key
         ) {
           const confirmed = await this._requireSupervisorApproval();
           if (!confirmed) {
