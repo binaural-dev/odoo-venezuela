@@ -33,7 +33,6 @@
                 <group>
                     <group>
                         <field name="policy_type"/>
-                        <field name="is_report_range" />
                     </group>
                     <group>
                     </group>
@@ -41,6 +40,20 @@
                 <notebook>
                     <page string="Commissions Range">
                         <field name="commission_line_ids"/>
+                        <group col="3" string="Legend (Type of Commission)">
+                            <group>
+                                <span colspan="2" class="oe_title">Type of commmission and properties</span>
+                                <span colspan="2">- Product (Priority 1)</span>
+                                <span colspan="2">- Client (Priority 2)</span>
+                                <span colspan="2">- General (Priority 3)</span>
+                            </group>
+                            <group>
+                                <span colspan="2" class="oe_title">Product Commission, apply to</span>
+                                <span colspan="2">- Product (Priority 1)</span>
+                                <span colspan="2">- Marca (Priority 2)</span>
+                                <span colspan="2">- Category (Priority 3)</span>
+                            </group>
+                        </group>
                     </page>
                     <page string="Products" attrs="{'invisible': [('policy_type', '!=','product')]}">
                     <field name="commission_product_item_ids" mode="tree" options="{'no_create': True, 'no_create_edit':True}">

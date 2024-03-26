@@ -26,10 +26,21 @@ class CommissionPolicy(models.Model):
         string="Commission Type",
         required=True,
     )
-    is_report_range = fields.Boolean(groups="base.group_no_one", copy=False)
     clients_id = fields.Many2many("res.partner", "commission_policy_client_rel", string="Clients")
     commission_line_ids = fields.One2many("commission.policy.line", "policy_id")
     commission_product_item_ids = fields.One2many("commission.product.item", "commission_policy_id")
+
+    @api.onchange("policy_type")
+    def _onchange_policy_type(self):
+        if self.clients_id:
+            raise ValidationError(_("You can't change the policy type if there are clients assigned"))
+        if self.commission_product_item_ids:
+            raise ValidationError(_("You can't change the policy type if there are products assigned"))
+
+    def unlink(self):
+        for record in self:
+            unlink(record.commission_product_item_ids.ids)
+        return super().unlink()
 
     @api.depends("policy_type", "name")
     def _compute_display_name(self):
@@ -38,21 +49,6 @@ class CommissionPolicy(models.Model):
                 commission.policy_type
             )
             commission.display_name = f"{policy_type}" f" ({commission.name})"
-
-    @api.constrains("commission_line_ids")
-    def _check_previous_range_date_to(self):
-        for commission in self:
-            if len(commission.commission_line_ids) > 1:
-                commission_lines_list = sorted(
-                    commission.commission_line_ids, key=lambda x: x.date_from
-                )
-                if commission_lines_list[-1].date_from <= commission_lines_list[-2].date_to:
-                    raise ValidationError(
-                        _(
-                            "The commission date from must be lower or equal to the "
-                            "latest commission date to."
-                        )
-                    )
 
     def create_image_lines(self):
         commission_lines = self.commission_line_ids
