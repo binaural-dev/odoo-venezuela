@@ -30,6 +30,7 @@ class GenerateProductCatalogWizard(models.TransientModel):
         
         return products_templates.mapped('product_variant_id')
 
+    order_by_name = fields.Boolean(string="Ordernar por nombre")
     style = fields.Selection(
         [
             ('style_1', 'Style 1'),

@@ -19,6 +19,9 @@ class SaleOrder(models.Model):
         res = super().action_confirm()
         multiple_seller_config = self.env.company.multiple_sellers
         for order in self:
+            if order.seller_id:
+                continue
+
             if not order.partner_id.seller_ids:
                     raise UserError(_("The customer must have at least one salesperson assigned"))
             if len(order.partner_id.seller_ids) == 1:
@@ -31,8 +34,6 @@ class SaleOrder(models.Model):
                         )
                     )
                 else:
-                    if order.seller_id:
-                        return
                     seller_name = ""
                     for seller in order.partner_id.seller_ids:
                         seller_name += seller.name + ", "

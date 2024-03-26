@@ -137,14 +137,15 @@ class SaleOrderBudget(http.Controller):
                     if sale.company_id.account_use_credit_limit and sale.partner_id.use_partner_credit_limit_order:
                         total_pay = sale.partner_id.credit + sale.amount_total
                         if total_pay > sale.partner_id.credit_limit:
+                            decimal_places = sale.currency_id.decimal_places
                             data.update(
                                 {
                                     "status": 400, 
-                                    "msg": (_("La cuenta %s es de %s mas %s en presupuesto da un total de %s superando el limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el limite de crédito del cliente.",
-                                            sale.partner_id.property_account_receivable_id.display_name, sale.partner_id.credit_limit, sale.amount_total, total_pay, sale.partner_id.credit_limit)
-                                    )
+                                    "msg": (_("La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
+                                            round(sale.partner_id.credit, decimal_places), round(sale.amount_total, decimal_places), round(total_pay,decimal_places), round(sale.partner_id.credit_limit, decimal_places)))
                                 }
                             )
+                            return data
                     sale.action_confirm()
                     sale._create_analytic_account()
                 elif confirm == "cancel":
@@ -306,6 +307,12 @@ class SaleOrderBudget(http.Controller):
         except Exception as e:
             data.update({"status": 409, "msg": _("There was an error handling the request"), "error": str(e)})
             return data
+
+    @http.route("/validation_available", type="json", methods=["POST", "PUT"], auth="public", website=False, sitemap=False)
+    def validation_available(self, **kwargs):
+        settings = request.env['res.config.settings'].sudo().create({})  # Crear una instancia temporal de res.config.settings
+        allow_out_of_stock_order = settings.allow_out_of_stock_order
+        return {"allow_out_of_stock_order": allow_out_of_stock_order}
 
     @http.route(
         "/budget/create/order/line",
@@ -535,8 +542,10 @@ class SaleOrderBudget(http.Controller):
             warehouse_id = line.warehouse_id.id
             lang = line.order_id.partner_id.lang or request.env.user.lang or "es_VE"
             product = line.product_id.with_context(warehouse=warehouse_id, lang=lang)
+            settings = request.env['res.config.settings'].sudo().create({})  # Crear una instancia temporal de res.config.settings
+            allow_out_of_stock_order = settings.allow_out_of_stock_order
 
-            if product.free_qty < line.product_uom_qty:
+            if product.free_qty < line.product_uom_qty and not allow_out_of_stock_order:
                 message = _(
                     "Estás tratando de vender %(uom_qty).2f %(uom)s de %(product_name)s Pero solo tienes %(product_quantity).2f %(uom)s disponible en %(warehouse)s."
                 ) % {

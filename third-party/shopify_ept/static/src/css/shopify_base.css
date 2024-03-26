@@ -1,0 +1,20 @@
+@charset "UTF-8";
+.o_shopify_ept {
+    padding-right: 0px !important;
+    padding-left: 0px !important;
+}
+.o_settings_container_shopify_config{
+    padding: 0 30px 0 30px !important;
+}
+
+.o_shopify_cell{
+    width:100% !important;
+}
+
+.o_settings_container_shopify{
+      padding: 0 25px 0 17px !important;
+}
+
+.table-responsive{
+        overflow-x: inherit;
+}

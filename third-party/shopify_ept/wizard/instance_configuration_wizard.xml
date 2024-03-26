@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="shopify_on_board_instance_configuration_wizard" model="ir.ui.view">
+            <field name="name">Configure Instance</field>
+            <field name="model">res.config.shopify.instance</field>
+            <field name="arch" type="xml">
+                <form string="Configure Instance" class="o_shopify_ept">
+                    <group class="o_onboard_padding">
+                        <group>
+                            <field name="name" required="1" placeholder="My Shopify Store"
+                                   readonly="context.get('is_already_instance_created', False)"/>
+                            <field name='shopify_host'
+                                   placeholder="https://my-shopify-store.myshopify.com" required="1"
+                                   readonly="context.get('is_already_instance_created', False)"/>
+                            <field name="shopify_company_id" required="1" string="Company"
+                                   options="{'no_create':True, 'no_create_edit':True}"
+                                   readonly="context.get('is_already_instance_created', False)"/>
+                        </group>
+                        <group>
+                            <field name='shopify_api_key' required="1"
+                                   placeholder="473bcd1db339245a7eea2e60d430995ec5"
+                                   readonly="context.get('is_already_instance_created', False)"/>
+                            <field name='shopify_password' class="o_onboard_password" required="1" password="1"
+                                   placeholder="●●●●●●●●●●●●●●●●●●●●●●●●●"
+                                   readonly="context.get('is_already_instance_created', False)" string="Access Token"/>
+                            <field name='shopify_shared_secret' required="1"
+                                   placeholder="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d4"
+                                   readonly="context.get('is_already_instance_created', False)"/>
+                        </group>
+                    </group>
+                    <group class="o_onboard_padding">
+                        <style>
+                            .embed-responsive-item {
+                            width: 25rem !important;
+                            min-height: 15rem !important;
+                            }
+                        </style>
+                        <div name="row" style="display: flex;">
+                            <div class='col-md-6' style="display: contents;">
+                                <field name="shopify_api_video_url" invisible="1"/>
+                                <div class="p-2">
+                                    <field name="shopify_api_video_embed_code" class="mt-2"/>
+                                </div>
+                            </div>
+                            <div class='col-md-6' style="display: contents;">
+                                <field name="shopify_instance_video_url" invisible="1"/>
+                                <div class="p-2">
+                                    <field name="shopify_instance_video_embed_code" class="mt-2"/>
+                                </div>
+                            </div>
+                        </div>
+                    </group>
+                    <group invisible="context.get('is_calling_from_onboarding_panel', False)" class="o_onboard_padding">
+                        <p colspan="2" class="alert alert-warning" role="alert">
+                            <div style="color:#ff0000; font-size:15px;">
+                                <b>Important Note:</b>
+                            </div>
+                            <div class="d-inline-block w-100">
+                                <div class="row">
+                                    <div class="col-11 p-0">
+                                        <ul>
+                                            <li>
+                                                After creating the instance, please make sure you
+                                                complete all
+                                                the other
+                                                necessary configurations such as Tax,
+                                                Warehouse, Pricelist etc. from
+                                                the Shopify setting screen.
+                                            </li>
+                                            <li>
+                                                Shopify =&gt; Configurations =&gt; Settings
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </p>
+                    </group>
+                    <footer>
+                        <button string="Create" type="object"
+                                name="shopify_test_connection" class="oe_highlight o_onboard_button"
+                                invisible="context.get('is_already_instance_created', False)"/>
+                        <button class="oe_highlight o_onboard_button_white" special="cancel"
+                                string="Cancel"/>
+                    </footer>
+                    <script>
+                        $('document').ready(function(){
+                        $('div.o_form_nosheet.o_shopify_ept').parents('div.modal-content').addClass('on_board_custom_form');
+                        $('div.on_board_custom_form').find('table.o_group').find('label').addClass('on_board_field_label');
+                        $('div.on_board_custom_form').find('table.o_group').find('td').find('span').addClass('on_board_field');
+                        $('div.on_board_custom_form').find('table.o_group').find('td').find('a').addClass('on_board_field');
+                        $('div.on_board_custom_form').find('table.o_group').find('td').find('a').find('span').removeClass('on_board_field');
+                        });
+                    </script>
+                </form>
+            </field>
+        </record>
+
+        <record id="shopify_on_board_instance_configuration_action"
+                model="ir.actions.act_window">
+            <field name="name">Instances</field>
+            <field name="res_model">res.config.shopify.instance</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="shopify_on_board_instance_configuration_wizard"/>
+        </record>
+    </data>
+</odoo>

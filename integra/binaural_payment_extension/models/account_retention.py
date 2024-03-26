@@ -1,5 +1,4 @@
 from odoo import api, models, fields, Command, _
-from odoo.tests import Form
 from datetime import datetime
 from odoo.exceptions import UserError
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
@@ -676,7 +675,7 @@ class AccountRetention(models.Model):
                 }
             )
         return sequence
-    
+
     def clear_islr_retention_number(self):
         for line in self.retention_line_ids:
             if line.move_id.islr_voucher_number:
@@ -753,7 +752,10 @@ class AccountRetention(models.Model):
                 }
             )
 
-        payments = Payment.create(payment_vals)
+        # payments = Payment.create(payment_vals)
+        payments = self.env["account.payment"]
+        for vals in payment_vals:
+            payments += Payment.create(vals)
         payments.compute_retention_amount_from_retention_lines()
 
         return payments

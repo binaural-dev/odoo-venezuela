@@ -1,0 +1,844 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--Wizard for perform opration.-->
+    <record id="view_shopify_process_import_export_ept"
+            model="ir.ui.view">
+        <field name="name">Process Import/Export</field>
+        <field name="model">shopify.process.import.export</field>
+        <field name="priority">11</field>
+        <field name="arch" type="xml">
+            <form string="Import/Export">
+                <sheet>
+                    <style>
+                        .embed-responsive-item {
+                        width: 25rem !important;
+                        min-height: 15rem !important;
+                        }
+                    </style>
+                    <div style="padding-left:5px;">
+
+                        <group name='shopify_instance'>
+                            <group>
+                                <field name='shopify_instance_id'
+                                       options="{'no_create':True,'no_create_edit': True,'no_open': True}"
+                                       required="1" domain="[('active','=',True)]"/>
+                            </group>
+                            <group>
+                                <field name='shopify_operation' string="Operations" required="1"/>
+                            </group>
+                        </group>
+                        <div name="msg_opr_main">
+                            <div attrs="{'invisible':[('shopify_operation','!=','sync_product')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                Sync product starts fetching product data from
+                                                Shopify store and will
+                                                just add that data in Product Queue for processing.
+                                                (Shopify &gt;
+                                                Processes &gt; Queues Logs &gt; Products)
+                                            </li>
+                                            <li>
+                                                A Scheduled/Cron Job, running in background will
+                                                start processing Queues
+                                                one by one.
+                                            </li>
+                                            <li>
+                                                It will fetch the products for the specified range
+                                                of Create/Update
+                                                Date in 'From Date' and 'To Date' fields below.
+                                            </li>
+                                            <li>
+                                                The default value for 'From Date' will be the last
+                                                execution date of
+                                                this operation. It will be blank if the last
+                                                execution date is not
+                                                found.
+                                            </li>
+                                            <li>
+                                                The default value for 'To Date' will be current date
+                                                and time.
+                                            </li>
+                                            <li>
+                                                You can find the details of last execution of this
+                                                operation in Menu
+                                                Shopify > Configuration > Settings > Select an
+                                                instance.
+                                            </li>
+                                            <li>
+                                                For more details please check
+                                                <a href='https://docs.emiprotechnologies.com/shopify-odoo-connector/v15/shopify-configurations-in-odoo/product-configuration.html'
+                                                   target="_blank">
+                                                    User Guide
+                                                </a>
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','sync_product_by_remote_ids')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                Sync product starts fetching product data from
+                                                Shopify store based on
+                                                defined shopify product template ids and will just
+                                                add that data in
+                                                Product Queue and also process it.
+                                            </li>
+                                            <li>
+                                                Please define shopify product template ids with
+                                                comma separated values
+                                                without any write quotes.
+                                            </li>
+                                            <li>
+                                                Please not use any special symbols Like:
+                                                ~,!,@,#,$,%,^,*,?,/,\,;,.,=,+,-,
+                                            </li>
+                                            <li>
+                                                Example of define shopify product template ids:
+                                                4341100314679,4341100314680,4341100314678,4341100314658
+                                            </li>
+                                            <li>
+                                                For more details please check
+                                                <a href='https://docs.emiprotechnologies.com/shopify-odoo-connector/v15/shopify-configurations-in-odoo/product-configuration.html'
+                                                   target="_blank">
+                                                    User Guide
+                                                </a>
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','import_unshipped_orders')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                It will start fetching Order data from Shopify store
+                                                and will just add
+                                                that data in Order Queue for processing. (Shopify
+                                                &gt; Processes &gt;
+                                                Queues Logs &gt; Unshipped Orders)
+                                            </li>
+                                            <li>
+                                                It will fetch the orders for the dates specified in
+                                                'From Date' and
+                                                'To Date' fields below.
+                                            </li>
+                                            <li>
+                                                The default value for 'From Date' will be the last
+                                                execution date of
+                                                this operation. It will be blank if the last
+                                                execution date is not
+                                                found.
+                                            </li>
+                                            <li>
+                                                The default value for 'To Date' will be current date
+                                                and time.
+                                            </li>
+                                            <li>
+                                                Connector only imports those orders which have
+                                                created after a given
+                                                date(Shopify > Configuration > Settings > Last Date
+                                                Of Import Process)
+                                                in the configuration.
+                                            </li>
+                                            <li>
+                                                For more details please check
+                                                <a href='https://docs.emiprotechnologies.com/shopify-odoo-connector/v15/shopify-orders-management/import-unshipped-order.html'
+                                                   target="_blank">
+                                                    User Guide
+                                                </a>
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','not in',['import_shipped_orders','import_buy_with_prime_orders'])]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                It will start fetching Order data from Shopify store
+                                                and will just add
+                                                that data in Order Queue for processing. (Shopify
+                                                &gt; Processes &gt;
+                                                Queues Logs &gt; Shipped Orders)
+                                            </li>
+                                            <li>
+                                                A Scheduled/Cron Job, running in background will
+                                                start processing Queues
+                                                one by one.
+                                            </li>
+                                            <li>
+                                                It will fetch the orders for the dates specified in
+                                                'From Date' and 'To
+                                                Date' fields below.
+                                            </li>
+                                            <li>
+                                                The default value for 'From Date' will be the last
+                                                execution date of
+                                                this operation. It will be blank if the last
+                                                execution date is not
+                                                found.
+                                            </li>
+                                            <li>
+                                                The default value for 'To Date' will be current date
+                                                and time.
+                                            </li>
+                                            <li>
+                                                Connector only imports those orders which have
+                                                created after a given
+                                                date(Shopify > Configuration > Settings > Import
+                                                Order After Date) in
+                                                the configuration.
+                                            </li>
+                                            <li>
+                                                For more details please check
+                                                <a href='https://docs.emiprotechnologies.com/shopify-odoo-connector/v15/shopify-orders-management/import-shipped-order.html'
+                                                   target="_blank">
+                                                    User Guide
+                                                </a>
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','import_cancel_orders')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                It will start fetching Cancel Order data from Shopify store
+                                                and will cancel imported orders if imported orders are canceled on
+                                                Shopify store.
+                                            </li>
+                                            <li>
+                                                It will fetch the cancel orders for the dates specified in
+                                                'From Date' and 'To Date' fields below.
+                                            </li>
+                                            <li>
+                                                The default value for 'From Date' will be the last
+                                                execution date of this operation. It will be blank if the last
+                                                execution date is not found.
+                                            </li>
+                                            <li>
+                                                The default value for 'To Date' will be current date
+                                                and time.
+                                            </li>
+                                            <li>
+                                                For more details please check
+                                                <a href='https://docs.emiprotechnologies.com/shopify-odoo-connector/v15/shopify-orders-management/import-cancel-order.html'
+                                                   target="_blank">
+                                                    User Guide
+                                                </a>
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','import_orders_by_remote_ids')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                It will start fetching order data from Shopify store
+                                                based on
+                                                Shopify order ids provided below and and will just
+                                                add that data in
+                                                Order Queue and also process it..
+                                            </li>
+                                            <li>
+                                                Please provide comma seperated list of Shopify order
+                                                ids as
+                                                mentioned below.
+                                            </li>
+                                            <li>
+                                                Sample list of Shopify order ids:
+                                                1966465679415,1966465679446,1966465679416
+                                            </li>
+                                            <li>
+                                                Please do not use any special symbols like:
+                                                ~,!,@,#,$,%,^,*,?,/,\,;,.,=,+,-,
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','import_customers')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :</h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                Import customers starts fetching customers data from
+                                                Shopify store
+                                                and will just add that data in Customer Queue for
+                                                processing.
+                                                (Shopify &gt; Processes &gt; Queues Logs &gt;
+                                                Customers)
+                                            </li>
+                                            <li>
+                                                A Scheduled/Cron Job, running in background will
+                                                start processing
+                                                Queues one by one.
+                                            </li>
+                                            <li>
+                                                It fetches only those Customers which are updated
+                                                after
+                                                the last execution date of this operation.
+                                            </li>
+                                            <li>
+                                                If last execution date is not found, it will fetch
+                                                all the
+                                                customers.
+                                            </li>
+                                            <li>
+                                                You can find the details of last execution of this
+                                                operation under a
+                                                particular instance.
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','export_stock')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                Export stock allows to export product stock to
+                                                Shopify store for
+                                                configured Shopify Locations, for a given instance
+                                            </li>
+                                            <li>
+                                                Stock will be exported from warehouses as per the
+                                                configuration
+                                                under Shopify > Configuration > Shopify Locations >
+                                                Export Stock
+                                                section.
+                                            </li>
+                                            <li>
+                                                It will export stock of only those products
+                                                which are
+                                                already synchronized with Shopify.
+                                            </li>
+                                            <li>
+                                                It will try to export stock of those products
+                                                whose stock
+                                                is updated since last execution of
+                                                this operation.
+                                            </li>
+                                            <li>
+                                                If last execution details are not available, it
+                                                will
+                                                consider those products whose stock is
+                                                updated since last 30
+                                                days.
+                                            </li>
+                                            <li>
+                                                For more details please check
+                                                <a href='https://docs.emiprotechnologies.com/shopify-odoo-connector/v15/shopify-product-management/update-export-product-and-stock.html'
+                                                   target="_blank">
+                                                    User Guide
+                                                </a>
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','import_stock')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                Import stock allows to import product stock from
+                                                Shopify
+                                                store to Odoo.
+                                            </li>
+                                            <li>
+                                                Stock will be imported to warehouse as per the
+                                                configuration under
+                                                Shopify > Configuration > Shopify Locations > Import
+                                                Stock
+                                                section.
+                                            </li>
+                                            <li>
+                                                This operation will generate Inventory
+                                                Adjustment record under Inventory >
+                                                Operations > Inventory Adjustments.
+                                            </li>
+                                            <li>
+                                                Stock will be applied automatically by enable Auto
+                                                apply inventory adjustment
+                                                configuration, Otherwise you need to process
+                                                inventory adjustment
+                                                transaction record manually to bring stock changes
+                                                effect.
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','update_order_status')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                The Update Order Shipping Status allows you to
+                                                update order fulfillment and tracking reference
+                                                details to Shopify store.
+                                            </li>
+                                            <li>
+                                                An order's status gets updated only once to
+                                                Shopify store.
+                                            </li>
+                                            <li>
+                                                For more details please check
+                                                <a href='https://docs.emiprotechnologies.com/shopify-odoo-connector/v15/shopify-orders-management/update-order-shipping-status.html'
+                                                   target="_blank">
+                                                    User Guide
+                                                </a>
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','import_payout_report')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                Import payout report allows to import payout
+                                                transaction
+                                                report from Shopify store to Odoo.
+                                            </li>
+                                            <li>
+                                                Payout Report record will be added under Shopify >
+                                                Sales >
+                                                Invoices &amp; Payout > Payout Reports.
+                                            </li>
+                                            <li>
+                                                For more details please check
+                                                <a href='https://docs.emiprotechnologies.com/shopify-odoo-connector/v15/shopify-payouts.html'
+                                                   target="_blank">
+                                                    User Guide
+                                                </a>
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','import_products_from_csv')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :
+                                            </h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                This operation allows to import Odoo Products to
+                                                Shopify layer.
+                                            </li>
+                                            <li>
+                                                You can export the products into csv from Sales >
+                                                Products >
+                                                Products. Select Multiple Products or Open a product
+                                                and click on
+                                                the 'Shopify - Export Products' action from Action
+                                                menu. Select
+                                                Export Method > Export in CSV file.
+                                            </li>
+
+                                            <li>
+                                                You can export the products into xlsx from Sales >
+                                                Products >
+                                                Products. Select Multiple Products or Open a product
+                                                and click on
+                                                the 'Shopify - Export Products' action from Action
+                                                menu. Select
+                                                Export Method > Export in XLSX file.
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div attrs="{'invisible':[('shopify_operation','!=','import_location')]}">
+                                <p colspan="2" class="alert alert-warning" role="alert">
+                                    <b>
+                                        <u>
+                                            <h3 style="font-weight:bold;color:#7d5a29">Note :</h3>
+                                        </u>
+                                        <ol>
+                                            <li>
+                                                Import location allows to import shopify location
+                                                from Shopify store
+                                                to
+                                                Odoo.
+                                            </li>
+                                            <li>
+                                                It will fetch the active/deactivate locations.
+                                            </li>
+                                            <li>
+                                                This operation will create location record under
+                                                Shopify >
+                                                Configuration
+                                                > Shopify Locations.
+                                            </li>
+                                            <li>
+                                                For more details please check
+                                                <a href='https://docs.emiprotechnologies.com/shopify-odoo-connector/v15/sale-auto-workflow-payment-gateway-and-financial-status-configurations/shopify-locations.html'
+                                                   target="_blank">
+                                                    User Guide
+                                                </a>
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                            <div class='row' style="display: contents;"
+                                 attrs="{'invisible':[('shopify_operation','not in',['import_customers','update_order_status','import_location'])]}">
+                                <field name="shopify_video_embed_code" string="Shopify Operation Video" nolable="1"/>
+                            </div>
+                            <div attrs="{'invisible':[('cron_process_notification','=',False)]}">
+                                <p colspan="2" class="alert alert-info" role="alert">
+                                    <b>
+                                        <ol>
+
+                                            <field name="cron_process_notification" readonly="1"/>
+
+                                        </ol>
+                                    </b>
+                                </p>
+                            </div>
+                        </div>
+                        <notebook
+                                attrs="{'invisible': [('shopify_operation', 'not in', ['sync_product','import_shipped_orders','import_unshipped_orders','import_orders_by_remote_ids','sync_product_by_remote_ids','export_stock','import_stock','import_payout_report','import_products_from_csv','import_cancel_orders','import_buy_with_prime_orders'])]}">
+                            <page string='Sync Option'>
+                                <div class="row">
+                                    <div class='col-md-6'>
+                                        <group name='sync_order_date_wise'
+                                               attrs="{'invisible':[('shopify_operation','not in',['import_shipped_orders','import_unshipped_orders','sync_product','import_cancel_orders','import_buy_with_prime_orders'])]}">
+                                            <field name="import_products_based_on_date"
+                                                   attrs="{'invisible':[('shopify_operation','!=','sync_product')],'required':[('shopify_operation','=','sync_product')]}"/>
+                                            <field name='orders_from_date' style="width:60%" widget="daterange"
+                                                   placeholder="From Date"
+                                                   options="{'related_end_date': 'orders_to_date'}"
+                                                   attrs="{'required':[('shopify_operation','in',['import_shipped_orders','import_unshipped_orders','sync_product','import_cancel_orders','import_buy_with_prime_orders'])]}"/>
+                                            <field name='orders_to_date' style="width:60%" widget="daterange"
+                                                   placeholder="To Date"
+                                                   options="{'related_start_date': 'orders_from_date'}"
+                                                   attrs="{'required':[('shopify_operation','in',['import_shipped_orders','import_unshipped_orders','sync_product','import_cancel_orders','import_buy_with_prime_orders'])]}"/>
+                                            <field name="skip_existing_product"
+                                                   attrs="{'invisible':[('shopify_operation','!=','sync_product')]}"/>
+                                            <field name="is_import_draft_product"
+                                                   attrs="{'invisible':[('shopify_operation','!=','sync_product')]}"/>
+                                        </group>
+                                        <group name="export_stock_by_date"
+                                               attrs="{'invisible':[('shopify_operation','!=','export_stock')]}">
+                                            <field name="export_stock_from"
+                                                   attrs="{'required':[('shopify_operation','=','export_stock')]}"/>
+                                        </group>
+                                        <group name="is_auto_validate_inventory"
+                                               attrs="{'invisible':[('shopify_operation','!=','import_stock')]}">
+                                            <field name="is_auto_validate_inventory"
+                                                   string="Auto apply inventory adjustment"
+                                                   attrs="{'required':[('shopify_operation','=','import_stock')]}"/>
+                                        </group>
+
+                                        <group name="import_products_from_csv"
+                                               attrs="{'invisible':[('shopify_operation','!=','import_products_from_csv')]}">
+                                            <field name="file_name" invisible="1"/>
+                                            <field name="csv_file" filename="file_name" string="Choose File"
+                                                   attrs="{'required':[('shopify_operation','=','import_products_from_csv')]}"/>
+                                        </group>
+                                    </div>
+                                    <div class="col-md-6"
+                                         attrs="{'invisible':[('shopify_operation','in',['import_cancel_orders','import_orders_by_remote_ids','sync_product_by_remote_ids','import_payout_report'])]}">
+                                        <field name="shopify_video_embed_code" string="Shopify Operation Video"/>
+                                    </div>
+                                </div>
+                                <div class="row"
+                                     attrs="{'invisible': [('shopify_operation', 'not in', ['import_orders_by_remote_ids','sync_product_by_remote_ids','import_payout_report'])]}">
+                                    <group name='sync_order_based_on_template_ids'
+                                           attrs="{'invisible':[('shopify_operation','!=','import_orders_by_remote_ids')]}">
+                                        <field name='shopify_order_ids' string="Order IDs"
+                                               placeholder="1966465679415,1966465679446,1966465679416"
+                                               attrs="{'required':[('shopify_operation','=','import_orders_by_remote_ids')]}"/>
+                                    </group>
+                                    <group name='sync_product_based_on_template_ids'
+                                           attrs="{'invisible':[('shopify_operation','!=','sync_product_by_remote_ids')]}">
+                                        <field name='shopify_template_ids'
+                                               placeholder="4341100314679,4341100314680,4341100314678,4341100314658"
+                                               attrs="{'required':[('shopify_operation','=','sync_product_by_remote_ids')]}"/>
+                                    </group>
+                                    <group name='import_payout_report'
+                                           attrs="{'invisible':[('shopify_operation','!=','import_payout_report')]}">
+                                        <field name='payout_start_date' style="width:19%" widget="daterange"
+                                               placeholder="From Date"
+                                               options="{'related_end_date': 'payout_end_date'}"
+                                               attrs="{'required':[('shopify_operation','=','import_payout_report')]}"/>
+                                        <field name='payout_end_date' style="width:19%" widget="daterange"
+                                               placeholder="To Date"
+                                               options="{'related_start_date': 'payout_start_date'}"
+                                               attrs="{'required':[('shopify_operation','=','import_payout_report')]}"/>
+                                    </group>
+                                </div>
+                            </page>
+                        </notebook>
+                        <footer>
+                            <field name="is_hide_operation_execute_button" invisible="1"/>
+                            <button string="Execute" class="oe_highlight"
+                                    type="object" name="shopify_execute"
+                                    attrs="{'invisible':[('is_hide_operation_execute_button','=', True)]}"/>
+                            <button string="Cancel" class="oe_highlight"
+                                    special="cancel"/>
+                        </footer>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for shopify oprations-->
+    <record id="action_wizard_shopify_import_orders_in_shopify_ept"
+            model="ir.actions.act_window">
+        <field name="name">Shopify Operations</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">shopify.process.import.export</field>
+        <field name="view_mode">form</field>
+        <field name="view_id"
+               ref="view_shopify_process_import_export_ept"/>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Below action used to redirect operation wizard from the instance kanban view-->
+    <record
+            id="action_wizard_shopify_instance_import_export_operations"
+            model="ir.actions.act_window">
+        <field name="name">Shopify Operations</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">shopify.process.import.export</field>
+        <field name="view_mode">form</field>
+        <field name="view_id"
+               ref="shopify_ept.view_shopify_process_import_export_ept"/>
+        <field name="context">{'default_shopify_instance_id':active_id}</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Below view used from shopify layer products to export stock-->
+    <record id="view_export_stock_process_manual"
+            model="ir.ui.view">
+        <field name="name">Export Stock manual</field>
+        <field name="model">shopify.process.import.export</field>
+        <field name="priority">10</field>
+        <field name="arch" type="xml">
+            <form string="Export Stock">
+                <sheet>
+                    <div name='shopify_export_stock_manual'>
+                        <div style="color:#000000">
+                            <p class="alert alert-warning" role="alert">
+                                <u>
+                                    <h3 style="font-weight:bold;color:#7d5a29">Note :</h3>
+                                </u>
+                                <b>
+                                    <ol>
+                                        <li>
+                                            This process will export selected Product(s)
+                                            Stock from
+                                            Odoo to Shopify store, as per the
+                                            configuration of shopify
+                                            location and stock field
+                                            under Shopify instance
+                                            configurations.
+                                        </li>
+                                    </ol>
+                                </b>
+                            </p>
+                        </div>
+                    </div>
+                    <footer>
+                        <button string="Export Stock Manually"
+                                class="oe_highlight" type="object"
+                                name="shopify_selective_product_stock_export"/>
+                        <button string="Cancel" class="oe_highlight"
+                                special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Below view used for export products-->
+    <record id="view_export_product_process_manual"
+            model="ir.ui.view">
+        <field name="name">Export Product manual</field>
+        <field name="model">shopify.process.import.export</field>
+        <field name="arch" type="xml">
+            <form string="Export Product">
+                <sheet>
+                    <p colspan="2" class="alert alert-danger" role="alert">
+                        <b>
+                            <u>
+                                <h3 style="font-weight:bold;color:#7d5a29">Important Note:</h3>
+                            </u>
+                            <ol>
+                                <li>
+                                    If multiple products are selected, a maximum of 80 products
+                                    can be processed at a time.
+                                </li>
+                                <li>
+                                    Already exported products will be skipped.
+                                </li>
+
+                            </ol>
+                        </b>
+                    </p>
+                    <group name='Export Product'>
+                        <group>
+                            <field name="shopify_is_set_basic_detail" readonly="1"/>
+                            <field name='shopify_is_set_price'/>
+                        </group>
+                        <group>
+                            <field name='shopify_is_set_image'/>
+                            <field name='shopify_is_publish' required="1"/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button string="Export Product" class="oe_highlight"
+                                type="object" name="manual_export_product_to_shopify"/>
+                        <button string="Cancel" class="oe_highlight"
+                                special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Below view used for update products-->
+    <record id="view_update_product_process_manual"
+            model="ir.ui.view">
+        <field name="name">Update Product manual</field>
+        <field name="model">shopify.process.import.export</field>
+        <field name="arch" type="xml">
+            <form string="Update Product">
+                <sheet>
+                    <p colspan="2" class="alert alert-danger" role="alert">
+                        <b>
+                            <u>
+                                <h3 style="font-weight:bold;color:#7d5a29">Important Note:</h3>
+                            </u>
+
+                            <ol>
+                                <li>
+                                    If multiple products are selected, a maximum of 80 products
+                                    can be processed at a time.
+                                </li>
+                            </ol>
+                        </b>
+                    </p>
+                    <group name='Export Product'>
+                        <group>
+                            <field name="shopify_is_update_basic_detail"/>
+                            <field name='shopify_is_set_price' string="Update Price ?"/>
+                        </group>
+                        <group>
+                            <field name='shopify_is_set_image' string="Update Image ?"/>
+                            <field name='shopify_is_publish'/>
+                        </group>
+                    </group>
+                    <footer>
+                        <button string="Update Product" class="oe_highlight"
+                                type="object" name="manual_update_product_to_shopify"/>
+                        <button string="Cancel" class="oe_highlight"
+                                special="cancel"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Below action used for export product-->
+    <record id="action_wizard_shopify_product_for_export"
+            model="ir.actions.act_window">
+        <field name="name">Export New Product to Shopify</field>
+        <field name="res_model">shopify.process.import.export</field>
+        <field name="binding_model_id" ref="model_shopify_product_template_ept"/>
+        <field name="binding_view_types">form,list</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_export_product_process_manual"/>
+    </record>
+
+    <!-- Below action used for update product-->
+    <record id="action_wizard_shopify_product_for_update"
+            model="ir.actions.act_window">
+        <field name="name">Update Existing Product in Shopify</field>
+        <field name="res_model">shopify.process.import.export</field>
+        <field name="binding_model_id" eval="False"/>
+        <field name="binding_view_types">form,list</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_update_product_process_manual"/>
+    </record>
+
+    <!-- Below action used for update stock-->
+    <record id="action_wizard_shopify_update_stock"
+            model="ir.actions.act_window">
+        <field name="name">Export Stock in Shopify</field>
+        <field name="res_model">shopify.process.import.export</field>
+        <field name="binding_model_id" eval="False"/>
+        <field name="binding_view_types">form,list</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="shopify_ept.view_export_stock_process_manual"/>
+    </record>
+
+    <menuitem id="menu_shopify_processes_ept"
+              parent="shopify_ept.shopify_instance_menu_item" name="Operations"
+              action="action_wizard_shopify_import_orders_in_shopify_ept" sequence="4"/>
+
+</odoo>

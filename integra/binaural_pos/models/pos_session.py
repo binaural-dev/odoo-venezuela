@@ -84,7 +84,7 @@ class PosSession(models.Model):
         if not self.env.company.pos_show_just_products_with_available_qty:
             return products
 
-        return sorted(products, key=lambda x: x["qty_available"],reverse=True)
+        return sorted(products, key=lambda x: x["qty_available"], reverse=True)
 
     def _get_pos_ui_res_currency(self, params):
         """
@@ -102,9 +102,9 @@ class PosSession(models.Model):
         return res
 
     def is_user_authorized(self):
-        is_group = self.env.user.has_group('binaural_pos.group_authorized_discount_pos')
+        is_group = self.env.user.has_group("binaural_pos.group_authorized_discount_pos")
         return is_group
-    
+
     def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
         # OVERWRITE
         # Inside this method the payment session is created, here set de foreign_rate because lines dont have foreign debit and credit
@@ -146,28 +146,74 @@ class PosSession(models.Model):
         # Inside this method the payment session is created, here set de foreign_rate because lines dont have foreign debit and credit
         payment_method = payment.payment_method_id
         if not payment_method.journal_id:
-            return self.env['account.move.line']
-        outstanding_account = payment_method.outstanding_account_id or self.company_id.account_journal_payment_debit_account_id
+            return self.env["account.move.line"]
+        outstanding_account = (
+            payment_method.outstanding_account_id
+            or self.company_id.account_journal_payment_debit_account_id
+        )
         accounting_partner = self.env["res.partner"]._find_accounting_partner(payment.partner_id)
         destination_account = accounting_partner.property_account_receivable_id
 
-        if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
+        if float_compare(amounts["amount"], 0, precision_rounding=self.currency_id.rounding) < 0:
             # revert the accounts because account.payment doesn't accept negative amount.
             outstanding_account, destination_account = destination_account, outstanding_account
 
-        account_payment = self.env['account.payment'].create({
-            'amount': abs(amounts['amount']),
-            'partner_id': payment.partner_id.id,
-            'journal_id': payment_method.journal_id.id,
-            "foreign_rate": payment.foreign_rate,
-            "foreign_inverse_rate": payment.foreign_rate,
-            'force_outstanding_account_id': outstanding_account.id,
-            'destination_account_id': destination_account.id,
-            'ref': _('%s POS payment of %s in %s') % (payment_method.name, payment.partner_id.display_name, self.name),
-            'pos_payment_method_id': payment_method.id,
-            'pos_session_id': self.id,
-        })
+        account_payment = self.env["account.payment"].create(
+            {
+                "amount": abs(amounts["amount"]),
+                "partner_id": payment.partner_id.id,
+                "journal_id": payment_method.journal_id.id,
+                "foreign_rate": payment.foreign_rate,
+                "foreign_inverse_rate": payment.foreign_rate,
+                "force_outstanding_account_id": outstanding_account.id,
+                "destination_account_id": destination_account.id,
+                "ref": _("%s POS payment of %s in %s")
+                % (payment_method.name, payment.partner_id.display_name, self.name),
+                "pos_payment_method_id": payment_method.id,
+                "pos_session_id": self.id,
+            }
+        )
         account_payment.action_post()
 
-        return account_payment.move_id.line_ids.filtered(lambda line: line.account_id == account_payment.destination_account_id)
+        return account_payment.move_id.line_ids.filtered(
+            lambda line: line.account_id == account_payment.destination_account_id
+        )
 
+    def _create_account_move(
+        self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None
+    ):
+        """
+        This function was overwritten to assign the cash rate since it was previously assigned
+        after creation.
+
+        Additionally, the execution of the function: "compute_line_ids_foreign_debit_and_credit"
+        is added so that it can calculate it
+        """
+        account_move = self.env["account.move"].create(
+            {
+                "journal_id": self.config_id.journal_id.id,
+                "date": fields.Date.context_today(self),
+                # >> Binaural
+                "foreign_rate": self.config_id.foreign_rate,
+                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                # << Binaural
+                "ref": self.name,
+            }
+        )
+        self.write({"move_id": account_move.id})
+
+        data = {"bank_payment_method_diffs": bank_payment_method_diffs or {}}
+        data = self._accumulate_amounts(data)
+        data = self._create_non_reconciliable_move_lines(data)
+        data = self._create_bank_payment_moves(data)
+        data = self._create_pay_later_receivable_lines(data)
+        data = self._create_cash_statement_lines_and_cash_move_lines(data)
+        data = self._create_invoice_receivable_lines(data)
+        data = self._create_stock_output_lines(data)
+        if balancing_account and amount_to_balance:
+            data = self._create_balancing_line(data, balancing_account, amount_to_balance)
+
+        # >> Binaural
+        account_move.compute_line_ids_foreign_debit_and_credit()
+        # << Binaural
+        return data
