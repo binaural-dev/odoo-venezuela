@@ -1,0 +1,314 @@
+<?xml version="1.0" ?>
+<odoo>
+    <!--Tree view of the instance-->
+    <record id="shopify_instance_tree_view_ept" model="ir.ui.view">
+        <field name="name">Shopify Instance</field>
+        <field name="model">shopify.instance.ept</field>
+        <field name="arch" type="xml">
+            <tree create="false" sample="1">
+                <field name="name"/>
+                <field name="shopify_host"/>
+                <field name="shopify_company_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Instance search view -->
+    <record id="shopify_instance_search_view_ept"
+            model="ir.ui.view">
+        <field name="name">Shopify Instance Search View</field>
+        <field name="model">shopify.instance.ept</field>
+        <field name="type">search</field>
+        <field name="arch" type="xml">
+            <search string="Shopify Instance">
+                <field name="name"/>
+                <filter name="archive" string="Archived"
+                        domain="[('active','=',False)]"/>
+                <group expand="0" string="Group By...">
+                    <filter name="warehouse" string="Warehouse"
+                            icon="terp-personal"
+                            context="{'group_by':'shopify_warehouse_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!--Form view of the instance-->
+    <record id="shopify_instance_form_view_ept" model="ir.ui.view">
+        <field name="name">Shopify Instance</field>
+        <field name="model">shopify.instance.ept</field>
+        <field name="arch" type="xml">
+            <form string="Shopify Instance" create="false" duplicate="1">
+                <header>
+                    <button name="shopify_test_connection"
+                            string="Check Connection" class="oe_highlight" type="object"
+                            attrs="{'invisible': [('active','=',True)]}"/>
+                </header>
+                <sheet>
+                    <field name="active" invisible="1"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button type="object" style="width:16% !important"
+                                name="open_reset_credentials_wizard" class="oe_stat_button"
+                                groups="base.group_system" icon="fa-undo"
+                                attrs="{'invisible': [('active','=',False)]}">
+                            <span class="o_stat_text">Reset Credentials</span>
+                        </button>
+                        <button type="object" style="width:16% !important"
+                                name="cron_configuration_action" class="oe_stat_button"
+                                groups="base.group_system" icon="fa-wrench"
+                                attrs="{'invisible': [('active','=',False)]}">
+                            <span class="o_stat_text">Configure Schedulers</span>
+                        </button>
+                        <button type="object" name="action_redirect_to_ir_cron"
+                                class="oe_stat_button" icon="fa-play-circle"
+                                groups="base.group_system"
+                                attrs="{'invisible': [('active','=',False)]}">
+                            <span class="o_stat_text">Active Schedulers</span>
+                        </button>
+                        <button class="oe_stat_button"
+                                name="action_shopify_active_archive_instance" icon="fa-lock"
+                                type="object" attrs="{'invisible': [('active','=',False)]}">
+                            <span class="o_stat_text" style="color:#2dab2d">Active</span>
+                        </button>
+                        <button class="oe_stat_button"
+                                name="action_shopify_active_archive_instance" icon="fa-unlock"
+                                type="object" attrs="{'invisible': [('active','=',True)]}">
+                            <span class="o_stat_text" style="color:#da3434">Archive</span>
+                        </button>
+                    </div>
+                    <div class="ribbon ribbon-top-right"
+                         attrs="{'invisible': [('active','=',True)]}">
+                        <span class="bg-danger"
+                              style="left: -4px !important;top: 20px !important">Archived
+                        </span>
+                    </div>
+                    <div>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group string="ERP Configuration">
+                        <group>
+                            <field name="shopify_company_id" widget="selection"
+                                   readonly="1" groups="base.group_multi_company"/>
+                            <field name="shopify_warehouse_id" required="1"
+                                   readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="shopify_lang_id" required="1"
+                                   attrs="{'readonly':[('active','=',True)]}"/>
+                        </group>
+                    </group>
+                    <group string="Shopify Site Info">
+                        <group>
+                            <field name="shopify_host"
+                                   attrs="{'readonly': [('active','=',True)]}"/>
+                            <field name="shopify_store_time_zone" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="shopify_api_key"
+                                   attrs="{'readonly': [('active','=',True)]}"/>
+                            <field name="shopify_password" password="1" string="Access Token"
+                                   attrs="{'readonly': [('active','=',True)]}"/>
+                            <field name="shopify_shared_secret"
+                                   attrs="{'readonly': [('active','=',True)]}"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Last Operation Details"
+                              name="last_operation_detail">
+                            <group>
+                                <group>
+                                    <field name="shopify_last_date_product_import"/>
+                                    <field name="last_date_order_import"/>
+                                    <field name="payout_last_import_date"/>
+                                    <field name="last_buy_with_prime_order_import_date"/>
+                                </group>
+                                <group>
+                                    <field name="shopify_last_date_customer_import"/>
+                                    <field name="last_shipped_order_import_date"/>
+                                    <field name="shopify_last_date_update_stock"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page name="webhook" string="Webhooks">
+                            <div class="alert alert-warning" role="alert">
+                                <div style="padding:5px;">
+                                    <h5 style="color:#7d5a29;">
+                                        <b>
+                                            <u>Note:</u>
+                                        </b>
+                                    </h5>
+                                    <b>
+                                        <ol>
+                                            <li>
+                                                Shopify has implemented a five second timeout
+                                                period and
+                                                a retry
+                                                period for subscriptions. Shopify waits five
+                                                seconds
+                                                for a response
+                                                to each request to a webhook. If there is no
+                                                response, or an error
+                                                is returned, then Shopify retries the
+                                                connection
+                                                19 times over the
+                                                next 48 hours. If there are 19
+                                                consecutive
+                                                failures, then the
+                                                webhook subscription is
+                                                deleted. A warning that
+                                                the subscription
+                                                will be deleted is
+                                                sent to the app's emergency
+                                                developer email
+                                                address.
+                                            </li>
+                                            <li>
+                                                If you observe any such discrepancy, please use
+                                                refresh
+                                                button shown below, to get the updated status of
+                                                the
+                                                webhooks.
+                                            </li>
+                                            <li>
+                                                If an instance is deactivated, the related
+                                                webhooks will
+                                                be 'Inactive' automatically.
+                                            </li>
+                                            <li>
+                                                If an instance is reactivated, the related
+                                                webhooks will
+                                                not be activated automatically and needs to be
+                                                activated
+                                                manually.
+                                            </li>
+                                            <li>
+                                                The Webhooks created using the API do not show
+                                                up in the
+                                                Shopify
+                                                admin.
+                                            </li>
+                                            <li>
+                                                Only instances having SSL connection (https://)
+                                                are
+                                                permitted.
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </div>
+                            </div>
+                            <button string="Refresh" name="refresh_webhooks"
+                                    type="object" class="oe_right btn-outline-primary"/>
+
+                            <field name="webhook_ids" nolabel="1" mode="tree">
+                                <tree editable="bottom"
+                                      decoration-success="state=='active'">
+                                    <field name="webhook_name" required="1"/>
+                                    <field name="webhook_action" required="1"/>
+                                    <field name="state" required="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Payout Configurations" name="payout_configurations">
+                            <div class="alert alert-warning" role="alert">
+                                <div style="padding:5px;">
+                                    <h5 style="color:#7d5a29;">
+                                        <b>
+                                            <u>Note:</u>
+                                        </b>
+                                    </h5>
+                                    <b>
+                                        <ol>
+                                            <li>
+                                                The user does not need to configure charges or
+                                                refunds. Both types of transactions will be
+                                                reconciled with the invoice and the refund,
+                                                respectively.
+                                            </li>
+                                        </ol>
+                                    </b>
+                                </div>
+                            </div>
+                            <div name="payout_transaction">
+                                <field name="transaction_line_ids" colspan="4" nolabel="1">
+                                    <tree nolabel="1" editable='bottom'>
+                                        <field name="transaction_type" required="1"/>
+                                        <field name="account_id" required="1"
+                                               options="{'no_create':True,'no_create_edit': True}"/>
+                                    </tree>
+                                </field>
+                            </div>
+                        </page>
+                        <page string="Default products" name="default_order_product">
+                            <group name="group_default_order_product">
+                                <group name="default_product">
+                                    <field name="discount_product_id"
+                                           options="{'no_quick_create':True,'no_create_edit':True,'no_open': True,}"/>
+                                    <field name="shipping_product_id" string="Shipping"
+                                           options="{'no_quick_create':True,'no_create_edit':True,'no_open': True,}"/>
+                                    <field name="gift_card_product_id" string="Gift Card"
+                                           options="{'no_quick_create':True,'no_create_edit':True,'no_open': True,}"/>
+                                    <field name="tip_product_id"
+                                           options="{'no_quick_create':True,'no_create_edit':True,'no_open': True,}"/>
+                                    <field name="duties_product_id"
+                                           options="{'no_quick_create':True,'no_create_edit':True,'no_open': True,}"/>
+                                </group>
+                                <group>
+                                    <field name="custom_service_product_id"
+                                           string="Custom Service Item"
+                                           options="{'no_quick_create':True,'no_create_edit':True,'no_open': True,}"/>
+                                    <field name="custom_storable_product_id"
+                                           string="Custom Storable Item"
+                                           options="{'no_quick_create':True,'no_create_edit':True,'no_open': True,}"/>
+                                    <field name="refund_adjustment_product_id"
+                                           options="{'no_quick_create':True,'no_create_edit':True,'no_open': True,}"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!--Action of shopify instance-->
+    <record id="action_shopify_instance_ept"
+            model="ir.actions.act_window">
+        <field name="name">Shopify Instance</field>
+        <field name="res_model">shopify.instance.ept</field>
+        <field name="view_id" ref="shopify_instance_tree_view_ept"/>
+        <field name="help" type="html">
+            <div class="oe_empty_shopify_instance">
+                <p class="o_view_nocontent_smiling_face">
+                    <b>There is no any Shopify Instance configured yet.</b>
+                </p>
+                <p>
+                    To add your first Shopify Instance, go to Configuration menu and
+                    then open Settings, you can create new Instance from there. At
+                    there you can define one or more Shopify Instances and configure
+                    extended options per Instance test.
+                </p>
+                <p>
+                    You can't create new Shopify Instance from here. This menu is
+                    just to check and verify Shopify account credentials and sync
+                    history from ERP to Shopify.
+                </p>
+            </div>
+        </field>
+    </record>
+
+
+    <menuitem id="shopify_instance_menu_item" name="Shopify"
+              sequence="7" groups="shopify_ept.group_shopify_ept"
+              web_icon="shopify_ept,static/description/icon.png"/>
+
+    <menuitem id="menu_configuration_ept" name="Configuration"
+              parent="shopify_instance_menu_item" sequence="7"
+              groups="shopify_ept.group_shopify_manager_ept"/>
+
+    <menuitem id="shopify_instance_menu_item_instance"
+              name="Instances" parent="shopify_ept.menu_configuration_ept"
+              sequence="2" action="action_shopify_instance_ept"/>
+</odoo>
