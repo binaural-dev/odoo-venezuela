@@ -12,12 +12,15 @@ odoo.define("binaural_pos_hr.ProductScreen", function (require) {
         const order = this.env.pos.get_order();
         const selectedLine = order.get_selected_orderline();
         const currentQuantity = selectedLine.get_quantity();
-        const newQuantity = parse.float(inputValue);
+        const newQuantity = isNaN(inputValue)
+          ? inputValue
+          : parseFloat(inputValue);
 
         // Supervisor check for removing an item or reducing quantity
         if (
           this.env.pos.numpadMode === "quantity" &&
           ((inputValue === "" && currentQuantity === 0) ||
+            isNaN(newQuantity) ||
             newQuantity < currentQuantity) &&
           this.env.pos.config.pos_remove_orderline_require_supervisor_key
         ) {
@@ -25,11 +28,11 @@ odoo.define("binaural_pos_hr.ProductScreen", function (require) {
           if (!confirmed) {
             return super._setValue(currentQuantity);
           }
-          if (inputValue === "" && currentQuantity === 0) {
-            return super._setValue("remove");
-          }
         }
 
+        if (inputValue === "" && currentQuantity === 0) {
+          return super._setValue("remove");
+        }
         return super._setValue(...arguments);
       }
 
