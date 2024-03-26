@@ -13,16 +13,6 @@ class SaleOrder(models.Model):
     compute_commission_when = fields.Char(readonly=True, copy=False)
 
     @api.model
-    def fields_to_read_from_commission_policy_line(self):
-        return [
-            "date_from",
-            "date_to",
-            "commission",
-            "policy_type",
-            "infinite",
-        ]
-
-    @api.model
     def _get_commission_product_items(self, lines):
         lines_with_commission = self.env["sale.order.line"]
         line_comission = []
@@ -96,53 +86,35 @@ class SaleOrder(models.Model):
 
     def assing_commission_policy_line_images_to_order_lines(self):
         """
-        Create and assign commission policy line images to order lines depending on the commission
-        policy of the product of each line and the client of the order.
+        This function assigns the commissions available for the lines.
 
-        The priority for assigning commission policy line images for each line is:
-            1. Commission policy of the product of the line.
-            2. Commission policy of the client of the order.
-            3. Commission of type "all".
+        Generating an exact copy of the commission lines so that when the invoice is 
+        created they can be calculated.
 
-        This means that if a product has a commission policy assigned, the commission policy of the
-        client of the order will be ignored for that product. If the product does not have a
-        commission policy assigned, the commission policy of the client of the order will be
-        assigned to the line. If the product and the client of the order do not have a commission
-        policy assigned, the commission policy of type "all" will be assigned to the line.
+        Depending on the configuration, the order will depend.
 
-        The commission policy line images are created from the commission policy lines of the
-        corresponding commission policy. The commission policy line images are created only once
-        for each commission policy and are assigned to all the lines to which that commission policy
-        applies.
-
-        This method is called when the order is confirmed, so the commission policy line images are
-        assigned to the order lines only once.
-
-        TODO: We have to think what to do when the order is cancelled. (Maybe we should delete the
-        commission policy line images of the order lines in that case.)
-
-        Returns
-        -------
-        None
+        1. Product
+        2. XXX
+        3. XXX
+        4. XXX
+        5. General
         """
         CommissionPolicy = self.env["commission.policy"]
         CommissionPolicyLineImage = self.env["commission.policy.line.image"]
 
+        lines_without_notes = self.order_line.filtered(lambda x: not x.display_type)
+
         (
             lines_with_commissions_type_product,
             lines_commissions,
-        ) = self._get_commission_product_items(self.order_line)
-
-        fields_to_read_from_commission_policy_line = (
-            self.fields_to_read_from_commission_policy_line()
-        )
+        ) = self._get_commission_product_items(lines_without_notes)
 
         policy_line_images_grouped_by_commission_policy = defaultdict(
             lambda: self.env["sale.order.line"]
         )
 
-        lines_with_commissions_types_other_than_product = (
-            self.order_line - lines_with_commissions_type_product
+        lines_without_commissions_type_product = (
+            lines_without_notes - lines_with_commissions_type_product
         )
 
         for line_commission in lines_commissions:
@@ -151,36 +123,29 @@ class SaleOrder(models.Model):
 
             commission_policy_id = commission_item.commission_policy_id
 
+
             if commission_policy_id in policy_line_images_grouped_by_commission_policy:
                 line.commission_policy_line_image_ids = (
                     policy_line_images_grouped_by_commission_policy[commission_policy_id]
                 )
                 continue
-            commission_policy_lines = commission_policy_id.commission_line_ids.read(
-                fields_to_read_from_commission_policy_line
+
+            commission_policy_lines = (
+                commission_policy_id.commission_line_ids._prepare_commission_line_image()
             )
             images = CommissionPolicyLineImage.create(commission_policy_lines)
             line.commission_policy_line_image_ids = images.ids
             policy_line_images_grouped_by_commission_policy[commission_policy_id] = images
 
-        client_policies = CommissionPolicy.search([("policy_type", "=", "client")])
+        policies = CommissionPolicy.search([("policy_type_id.policy_type", "!=", "product")])
 
-        for policy in client_policies:
-            if self.partner_id in policy.clients_id:
-                images = CommissionPolicyLineImage.create(
-                    policy.commission_line_ids.read(fields_to_read_from_commission_policy_line)
+        for policy in policies:
+            lines_without_commissions_type_product -= (
+                policy.available_to_policy_type_and_create_image(
+                    lines_without_commissions_type_product
                 )
-                lines_with_commissions_types_other_than_product.write(
-                    {"commission_policy_line_image_ids": [(4, image.id) for image in images]}
-                )
-                return
-        all_policy = CommissionPolicy.search([("policy_type", "=", "all")], limit=1)
-        images = CommissionPolicyLineImage.create(
-            all_policy.commission_line_ids.read(fields_to_read_from_commission_policy_line)
-        )
-        lines_with_commissions_types_other_than_product.write(
-            {"commission_policy_line_image_ids": [(4, image.id) for image in images]}
-        )
+            )
+
         return
 
     def set_company_settings(self):

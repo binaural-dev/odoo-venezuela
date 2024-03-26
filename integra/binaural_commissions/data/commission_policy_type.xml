@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="commission_policy_type_product" model="commission.policy.type">
+        <field name="name">Product</field>
+        <field name="policy_type">product</field>
+        <field name="sequence">1</field>
+    </record>
+
+    <record id="commission_policy_type_client" model="commission.policy.type">
+        <field name="name">Client</field>
+        <field name="policy_type">client</field>
+        <field name="sequence">2</field>
+    </record>
+
+    <record id="commission_policy_type_pricelist" model="commission.policy.type">
+        <field name="name">Pricelist</field>
+        <field name="policy_type">pricelist</field>
+        <field name="sequence">3</field>
+            
+    </record>
+
+    <record id="commission_policy_type_general" model="commission.policy.type">
+        <field name="name">General</field>
+        <field name="policy_type">all</field>
+        <field name="sequence">10</field>
+    </record>
+</odoo>
