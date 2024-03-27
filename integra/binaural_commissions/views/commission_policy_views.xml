@@ -58,7 +58,7 @@
                             </group>
                         </group>
                     </page>
-                    <page string="Products" attrs="{'invisible': [('policy_type', '!=','product')]}">
+                    <page string="Products" attrs="{'invisible': [('policy_type_name', '!=','product')]}">
                     <field name="commission_product_item_ids" mode="tree" options="{'no_create': True, 'no_create_edit':True}">
                         <tree>
                             <field name="applied_on"/>
