@@ -44,7 +44,7 @@ msgstr "<span class=\"o_form_label\">Diario de Comisión</span>"
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
 msgid "<span class=\"o_form_label\">Commission Product</span>"
-msgstr "<span class=\"o_form_label\">Produco de Comisión</span>"
+msgstr "<span class=\"o_form_label\">Producto de Comisión</span>"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
@@ -355,7 +355,7 @@ msgstr "Opciones de configuración"
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
 msgid "Configure the order of commissions assignment"
-msgstr "Configurar el orden de asignación de comisiones"
+msgstr "Prioridad que se asignará a los tipos de comisiones"
 
 #. module: binaural_commissions
 #: model_terms:ir.actions.act_window,help:binaural_commissions.commission_policy_action
