@@ -50,7 +50,7 @@ class CommissionPolicy(models.Model):
             unlink(record.commission_product_item_ids.ids)
         return super().unlink()
 
-    @api.depends("policy_type", "name")
+    @api.depends("policy_type_name", "name")
     def _compute_display_name(self):
         for commission in self:
             commission.display_name = f"{commission.policy_type_id.name}" f" ({commission.name})"
@@ -63,7 +63,7 @@ class CommissionPolicy(models.Model):
         lines_applied = self.env["sale.order.line"]
 
         for record in self:
-            if record.policy_type == "client":
+            if record.policy_type_name == "client":
                 # CASE CLIENT
                 for partner in lines.order_id.partner_id:
                     partner_lines = lines.filtered(lambda x: x.order_id.partner_id.id == partner.id)
@@ -77,7 +77,7 @@ class CommissionPolicy(models.Model):
                         )
                 return lines_applied
 
-            if record.policy_type == "pricelist":
+            if record.policy_type_name == "pricelist":
                 # CASE CLIENT
                 for pricelist_id in lines.order_id.pricelist_id:
                     pricelist_lines = lines.filtered(lambda x: x.order_id.pricelist_id.id == pricelist_id.id)
@@ -91,7 +91,7 @@ class CommissionPolicy(models.Model):
                         )
                 return lines_applied
 
-            if record.policy_type == "all":
+            if record.policy_type_name == "all":
                 images = CommissionPolicyLineImage.create(
                     record.commission_line_ids._prepare_commission_line_image()
                 )

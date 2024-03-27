@@ -6,11 +6,12 @@
         <field name="arch" type="xml">
             <tree string="Commission Policy">
                 <field name="display_name"/>
-                <field name="policy_type" 
+                <field name="policy_type_name" 
                     widget="badge" 
-                    decoration-primary="policy_type=='client'"
-                    decoration-success="policy_type=='product'" 
-                    decoration-warning="policy_type=='all'"/>
+                    decoration-primary="policy_type_name=='client'"
+                    decoration-success="policy_type_name=='product'" 
+                    decoration-danger="policy_type_name=='pricelist'" 
+                    decoration-warning="policy_type_name=='all'"/>
                 <field name="commission_line_ids"/>
             </tree>
         </field>
