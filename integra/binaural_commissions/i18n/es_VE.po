@@ -40,7 +40,7 @@ msgstr "%s Este producto ya pertenece a otra política de producto"
 #. odoo-python
 #: code:addons/binaural_commissions/models/commission_policy.py:0
 #, python-format
-msgid "- %s (Prioridad %s)\n"
+msgid "- %s (Priority %s)\n"
 msgstr "- %s (Prioridad %s)\n"
 
 #. module: binaural_commissions

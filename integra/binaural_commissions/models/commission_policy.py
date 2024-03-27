@@ -42,7 +42,7 @@ class CommissionPolicy(models.Model):
         policies = self.env["commission.policy.type"].search([])
         text = _("""Policy Type Priority:\n""")
         for policy in policies:
-            text += _("- %s (Prioridad %s)\n" % (policy.name, policy.sequence))
+            text += _("- %s (Priority %s)\n" % (policy.name, policy.sequence))
 
         for record in self:
             record.text_priority = text
