@@ -264,6 +264,10 @@ def get_order_line(sale_order: list, fields: list):
             order_cpy = order.copy()
             line = get_model_data("sale.order.line", domain, fields)
             order_cpy.update({"order_line": line})
+            if request.env.company.mobile_show_tax_type == "include_tax":
+                for line in order_cpy["order_line"]:
+                    line["price_unit"] = line["price_unit_with_tax"]
+                    line["price_subtotal"] = line["price_total"]
             sale_orders.append(order_cpy)
 
     return sale_orders or sale_order
