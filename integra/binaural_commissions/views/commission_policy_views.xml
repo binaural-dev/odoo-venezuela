@@ -48,10 +48,7 @@
                         <field name="commission_line_ids"/>
                         <group col="3" string="Legend (Type of Commission)">
                             <group>
-                                <span colspan="2" class="oe_title">Type of commmission and properties</span>
-                                <span colspan="2">- Product (Priority 1)</span>
-                                <span colspan="2">- Client (Priority 2)</span>
-                                <span colspan="2">- General (Priority 3)</span>
+                                <field colspan="2" name="text_priority" nolabel="1"/>
                             </group>
                             <group>
                                 <span colspan="2" class="oe_title">Product Commission, apply to</span>

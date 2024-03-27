@@ -26,6 +26,7 @@ class AccountMove(models.Model):
     discount_invoice_ids = fields.Many2many("account.move", compute="_compute_discount_invoice")
     commission_invoice_date_field = fields.Char(readonly=True, copy=False)
     compute_commission_when = fields.Char(readonly=True, copy=False)
+    priority_commission_policy_type = fields.Char(readonly=True, copy=False)
     label_commission_invoice_date_field = fields.Char(compute="_compute_field_settings")
     label_commission_when = fields.Char(compute="_compute_field_settings")
     is_commission_invoice = fields.Boolean(readonly=True, copy=False)

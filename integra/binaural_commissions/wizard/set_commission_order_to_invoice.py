@@ -30,6 +30,7 @@ class SetCommissionOrderToInvoice(models.Model):
         data_write = {
             "commission_invoice_date_field": self.company_id.commission_invoice_date_field,
             "compute_commission_when": self.company_id.compute_commission_when,
+            "priority_commission_policy_type": "/".join(self.env["commission.policy.type"].search([]).mapped("name"))
         }
         
         if self.sale_order_ids.filtered(lambda x: x.state not in ["done","sale"]):

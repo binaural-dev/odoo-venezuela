@@ -35,6 +35,17 @@ class CommissionPolicy(models.Model):
     clients_id = fields.Many2many("res.partner", "commission_policy_client_rel", string="Clients")
     commission_line_ids = fields.One2many("commission.policy.line", "policy_id")
     commission_product_item_ids = fields.One2many("commission.product.item", "commission_policy_id")
+    text_priority = fields.Text(compute="_compute_text_priority")
+
+    @api.depends("text_priority")
+    def _compute_text_priority(self):
+        policies = self.env["commission.policy.type"].search([])
+        text = _("""Policy Type Priority:\n""")
+        for policy in policies:
+            text += _("- %s (Prioridad %s)\n" % (policy.name, policy.sequence))
+
+        for record in self:
+            record.text_priority = text
 
     @api.onchange("policy_type_id")
     def _onchange_policy_type_id(self):

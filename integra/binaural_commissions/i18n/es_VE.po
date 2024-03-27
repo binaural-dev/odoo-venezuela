@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240326\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-26 20:39+0000\n"
-"PO-Revision-Date: 2024-03-26 20:39+0000\n"
+"POT-Creation-Date: 2024-03-27 20:14+0000\n"
+"PO-Revision-Date: 2024-03-27 20:14+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -37,6 +37,13 @@ msgid "%s This product already belongs to another product policy"
 msgstr "%s Este producto ya pertenece a otra política de producto"
 
 #. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/commission_policy.py:0
+#, python-format
+msgid "- %s (Prioridad %s)\n"
+msgstr "- %s (Prioridad %s)\n"
+
+#. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
 msgid "<span class=\"o_form_label\">Commission Journal</span>"
 msgstr "<span class=\"o_form_label\">Diario de Comisión</span>"
@@ -63,19 +70,6 @@ msgstr ""
 "                                <span colspan=\"2\">- Producto (Prioridad 1)</span>\n"
 "                                <span colspan=\"2\">- Marca (Prioridad 2)</span>\n"
 "                                <span colspan=\"2\">- Categoría (Prioridad 3)</span>"
-
-#. module: binaural_commissions
-#: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_policy_form_view
-msgid ""
-"<span colspan=\"2\" class=\"oe_title\">Type of commmission and properties</span>\n"
-"                                <span colspan=\"2\">- Product (Priority 1)</span>\n"
-"                                <span colspan=\"2\">- Client (Priority 2)</span>\n"
-"                                <span colspan=\"2\">- General (Priority 3)</span>"
-msgstr ""
-"<span colspan=\"2\" class=\"oe_title\">Tipos de comisiones y sus prioridades:</span>\n"
-"                                <span colspan=\"2\">- Producto (Prioridad 1)</span>\n"
-"                                <span colspan=\"2\">- Cliente (Prioridad 2)</span>\n"
-"                                <span colspan=\"2\">- General (Prioridad 3)</span>"
 
 #. module: binaural_commissions
 #. odoo-python
@@ -589,7 +583,7 @@ msgstr "Asiento contable"
 #. module: binaural_commissions
 #: model:ir.model,name:binaural_commissions.model_account_move_line
 msgid "Journal Item"
-msgstr "Apunte contable"
+msgstr "Partida individual"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
@@ -776,6 +770,7 @@ msgstr "Imágenes de Línea de Política"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_move_line__policy_type_id
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move_line__policy_type_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__policy_type_id
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__policy_type_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__policy_type_id
@@ -783,6 +778,13 @@ msgstr "Imágenes de Línea de Política"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type__policy_type
 msgid "Policy Type"
 msgstr "Tipo de Política"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/commission_policy.py:0
+#, python-format
+msgid "Policy Type Priority:\n"
+msgstr "Prioridad de tipo de política:\n"
 
 #. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__res_company__in_invoice_status_commission__posted
@@ -806,6 +808,14 @@ msgstr "Tarifas"
 #, python-format
 msgid "Primera fecha de pago"
 msgstr ""
+
+#. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__priority_commission_policy_type
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move__priority_commission_policy_type
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__priority_commission_policy_type
+#: model:ir.model.fields,field_description:binaural_commissions.field_sale_order__priority_commission_policy_type
+msgid "Priority Commission Policy Type"
+msgstr "Prioridad de Tipo de Política de Comisión"
 
 #. module: binaural_commissions
 #: model:ir.model,name:binaural_commissions.model_product_template
@@ -914,6 +924,11 @@ msgstr "Asignar política y parametrós de comisiones a presupuestos"
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_product_item_form_view
 msgid "Show Products"
 msgstr "Mostrar Productos"
+
+#. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__text_priority
+msgid "Text Priority"
+msgstr "Prioridad de Comisiones"
 
 #. module: binaural_commissions
 #. odoo-python

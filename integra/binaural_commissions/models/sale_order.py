@@ -11,6 +11,7 @@ class SaleOrder(models.Model):
 
     commission_invoice_date_field = fields.Char(readonly=True, copy=False)
     compute_commission_when = fields.Char(readonly=True, copy=False)
+    priority_commission_policy_type = fields.Char(readonly=True, copy=False)
 
     @api.model
     def _get_commission_product_items(self, lines):
@@ -88,7 +89,7 @@ class SaleOrder(models.Model):
         """
         This function assigns the commissions available for the lines.
 
-        Generating an exact copy of the commission lines so that when the invoice is 
+        Generating an exact copy of the commission lines so that when the invoice is
         created they can be calculated.
 
         Depending on the configuration, the order will depend.
@@ -123,7 +124,6 @@ class SaleOrder(models.Model):
 
             commission_policy_id = commission_item.commission_policy_id
 
-
             if commission_policy_id in policy_line_images_grouped_by_commission_policy:
                 line.commission_policy_line_image_ids = (
                     policy_line_images_grouped_by_commission_policy[commission_policy_id]
@@ -151,6 +151,9 @@ class SaleOrder(models.Model):
     def set_company_settings(self):
         self.commission_invoice_date_field = self.company_id.commission_invoice_date_field
         self.compute_commission_when = self.company_id.compute_commission_when
+        self.priority_commission_policy_type = (
+            "/".join(self.env["commission.policy.type"].search([]).mapped("name"))
+        )
 
     def _prepare_invoice(self):
         """
@@ -162,6 +165,7 @@ class SaleOrder(models.Model):
         res = super()._prepare_invoice()
         res["commission_invoice_date_field"] = self.commission_invoice_date_field
         res["compute_commission_when"] = self.compute_commission_when
+        res["priority_commission_policy_type"] = self.priority_commission_policy_type
         return res
 
     def action_confirm(self):

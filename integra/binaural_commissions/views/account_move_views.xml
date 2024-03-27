@@ -58,6 +58,7 @@
                 <field name="is_commission_invoice" invisible="1"/>
                 <field name="label_commission_invoice_date_field"/>
                 <field name="label_commission_when"/>
+                <field name="priority_commission_policy_type"/>
             </group>
         </xpath>
         <xpath expr="//notebook" position="inside">
