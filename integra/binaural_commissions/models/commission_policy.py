@@ -81,7 +81,7 @@ class CommissionPolicy(models.Model):
                 # CASE CLIENT
                 for pricelist_id in lines.order_id.pricelist_id:
                     pricelist_lines = lines.filtered(lambda x: x.order_id.pricelist_id.id == pricelist_id.id)
-                    if pricelist_id in record.pricelist_id:
+                    if pricelist_id in record.pricelist_ids:
                         images = CommissionPolicyLineImage.create(
                             record.commission_line_ids._prepare_commission_line_image()
                         )
