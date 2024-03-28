@@ -19,11 +19,11 @@ class AccountMove(models.Model):
     _inherit = "account.move"
 
     origin_commission_invoice = fields.One2many("account.move", "commission_invoice")
-    collection_days = fields.Integer(compute="_compute_collection_days")
+    collection_days = fields.Integer(compute="_compute_collection_days", store=True, copy=False)
     total_commission = fields.Float(
         compute="_compute_total_commission_of_invoice", store=True, copy=False
     )
-    discount_invoice = fields.Many2many("account.move", compute="_compute_discount_invoice")
+    discount_invoice_ids = fields.Many2many("account.move", compute="_compute_discount_invoice")
     commission_invoice_date_field = fields.Char(readonly=True, copy=False)
     compute_commission_when = fields.Char(readonly=True, copy=False)
     label_commission_invoice_date_field = fields.Char(compute="_compute_field_settings")
@@ -162,19 +162,19 @@ class AccountMove(models.Model):
                 not record.currency_id.is_zero(record.amount_residual)
                 or record.move_type != "out_invoice"
             ):
-                record.discount_invoice = False
+                record.discount_invoice_ids = False
                 record.commission_discount = False
                 continue
 
             if not record.invoice_payments_widget:
-                record.discount_invoice = False
+                record.discount_invoice_ids = False
                 record.commission_discount = False
                 continue
 
             discount_invoice_ids, commission_discount = record.get_discount_invoice(
                 record.invoice_payments_widget
             )
-            record.discount_invoice = discount_invoice_ids
+            record.discount_invoice_ids = discount_invoice_ids
             record.commission_discount = abs(commission_discount) * -1
 
     # ---------------------
@@ -230,6 +230,13 @@ class AccountMove(models.Model):
     # ~ Methods
     # ---------------------
 
+    def calculate_commission(self):
+        for invoice in self:
+            invoice._compute_field_settings()
+            invoice._compute_collection_days()
+            invoice._compute_discount_invoice()
+            invoice._compute_total_commission_of_invoice()
+
     def is_valid_to_generate_commission(self):
         invoices_not_paid = []
         invoices_with_commission_invoice = []
@@ -243,7 +250,6 @@ class AccountMove(models.Model):
 
             if record.amount_residual > 0:
                 invoices_not_paid.append(record.name)
-
 
         if len(invoices_with_commission_invoice) > 0:
             raise ValidationError(
@@ -267,28 +273,24 @@ class AccountMove(models.Model):
     def is_valid_to_compute_commission(self):
         """Check if the invoice is valid to compute commission."""
         self.ensure_one()
+        if self.move_type != "out_invoice":
+            return False
         if (
             self.compute_commission_when == "invoice_is_fully_paid"
             and not self.currency_id.is_zero(self.amount_residual)
         ):
-            _logger.info("DIOS")
             return False
         if self.compute_commission_when == "invoice_first_payment" and not self.first_payment_date:
-            _logger.info("POR")
             return False
         if self.compute_commission_when == "invoice_is_fully_paid" and not self.last_payment_date:
-            _logger.info(self.name)
-            _logger.info("YA")
             return False
         if self.collection_days == 0 and (
             self._get_commission_date_from()
             and self._get_commission_date_to()
             and self._get_commission_date_from() != self._get_commission_date_to()
         ):
-            _logger.info("HERE")
             return False
         if self.state != "posted":
-            _logger.info("POSTE")
             return False
         return True
 
@@ -345,7 +347,13 @@ class AccountMove(models.Model):
                     out_refund_id.currency_id.decimal_places,
                 )
 
-            total_commission += amount_total
+            percentaje = float_round(
+                (payment.get("amount", 0) * 100) / out_refund_id.amount_total,
+                precision_digits=self.currency_id.decimal_places,
+            )
+            total_commission += float_round(
+                amount_total * (percentaje / 100), precision_digits=self.currency_id.decimal_places
+            )
             invoice_ids |= out_refund_id
 
         return invoice_ids, total_commission
