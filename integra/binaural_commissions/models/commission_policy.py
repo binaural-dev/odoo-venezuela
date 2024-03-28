@@ -58,7 +58,7 @@ class CommissionPolicy(models.Model):
 
     def unlink(self):
         for record in self:
-            unlink(record.commission_product_item_ids.ids)
+            record.commission_product_item_ids.unlink()
         return super().unlink()
 
     @api.depends("policy_type_name", "name")
@@ -89,9 +89,9 @@ class CommissionPolicy(models.Model):
                 return lines_applied
 
             if record.policy_type_name == "pricelist":
-                # CASE CLIENT
-                for pricelist_id in lines.order_id.pricelist_id:
-                    pricelist_lines = lines.filtered(lambda x: x.order_id.pricelist_id.id == pricelist_id.id)
+                # CASE PRICELIST
+                for pricelist_id in lines.pricelist_item_id.pricelist_id:
+                    pricelist_lines = lines.filtered(lambda x: x.pricelist_item_id.pricelist_id.id == pricelist_id.id)
                     if pricelist_id in record.pricelist_ids:
                         images = CommissionPolicyLineImage.create(
                             record.commission_line_ids._prepare_commission_line_image()
