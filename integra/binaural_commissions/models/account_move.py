@@ -371,3 +371,10 @@ class AccountMove(models.Model):
             total_commission = float_round(total, precision_digits=currency_id.decimal_places)
 
         return total_commission
+
+    def set_reversed(self):
+        for record in self:
+            if record.ref:
+                record.reversed_entry_id = record.env["account.move"].search(
+                    [("name", "=", record.ref)]
+                )
