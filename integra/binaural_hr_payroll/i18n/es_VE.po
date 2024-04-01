@@ -1151,7 +1151,6 @@ msgstr "Reporte pre-nómina"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__prefix_vat
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__employee_prefix_vat
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__employee_prefix_vat
 msgid "Prefix Vat"
 msgstr "Prefijo de la Cédula"
