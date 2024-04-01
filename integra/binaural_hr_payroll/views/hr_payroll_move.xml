@@ -161,7 +161,6 @@
 		    <field name="date" optional="show"/>
 		    <field name="slip_id" optional="hide"/>
 		    <field name="employee_id" optional="show"/>
-		    <field name="employee_prefix_vat" optional="show"/>
 		    <field name="employee_vat" optional="show"/>
 		    <field name="department_id" optional="show"/>
 		    <field name="employee_job_id" optional="show"/>
