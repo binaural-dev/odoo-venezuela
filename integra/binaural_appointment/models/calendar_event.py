@@ -28,7 +28,7 @@ class CalendarEventCrm(models.Model):
             product_id = self.env["product.product"].browse([int(product_id_id)])
 
             unit = product_id.uom_id
-            amount_unit = product_id.price_compute('standard_price', uom=unit)[product_id.id]
+            amount_unit = product_id.price_compute('lst_price', uom=unit)[product_id.id]
 
             invoice_data = {
                 'move_type': 'out_invoice',
