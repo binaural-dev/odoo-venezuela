@@ -45,6 +45,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 maximumInputLength: 35,
                 minimumInputLength: 0,
                 maximumSelectionSize: 1,
+                allowClear: true,
                 ajax: {
                     url: '/budget/client',
                     dataType: 'json',
@@ -67,8 +68,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                             });
                             self.partners.push(client); 
                         });
-
-                        self._loadContactSelectOptions(dt, $('#client').val())
 
                         return {results: ret};
                     }
