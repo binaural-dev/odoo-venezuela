@@ -320,7 +320,7 @@ class AccountRetention(models.Model):
             self.env["account.move"], search_domain
         ).filtered(
             lambda i: not any(
-                i.retention_iva_line_ids.filtered(lambda l: l.state in ("draf", "emitted"))
+                i.retention_iva_line_ids.filtered(lambda l: l.state in ("draft", "emitted"))
             )
         )
         if not any(invoices_with_taxes):
@@ -603,14 +603,11 @@ class AccountRetention(models.Model):
             if not retention.payment_ids:
                 payments = retention.create_payment_from_retention_form()
                 retention.payment_ids = payments.ids
-
-        self.payment_ids.write({"date": self.date_accounting})
-        self._reconcile_all_payments()
-        for retention in self:
-
             if retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._set_sequence()
 
+        self.payment_ids.write({"date": self.date_accounting})
+        self._reconcile_all_payments()
         self.write({"state": "emitted"})
 
     def action_print_municipal_retention_xlsx(self):
