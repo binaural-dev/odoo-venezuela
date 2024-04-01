@@ -339,14 +339,31 @@ class AccountMove(models.Model):
             out_invoice_id = out_refund_id.reversed_entry_id
 
             for out_refund_line in out_refund_id.invoice_line_ids:
-                out_invoice_line = out_invoice_id.invoice_line_ids.filtered(
-                    lambda inv: inv.product_id.id == out_refund_line.product_id.id
-                )
-                amount_total += self.calculate_commission_product(
-                    out_refund_line.price_subtotal,
-                    out_invoice_line.commission_image_id.commission,
-                    out_refund_id.currency_id.decimal_places,
-                )
+                if out_refund_line.product_id.id in out_invoice_id.invoice_line_ids.product_id.ids:
+                    out_invoice_line = out_invoice_id.invoice_line_ids.filtered(
+                        lambda inv: inv.product_id.id == out_refund_line.product_id.id
+                    )
+                    amount_total += self.calculate_commission_product(
+                        out_refund_line.price_subtotal,
+                        out_invoice_line.commission_image_id.commission,
+                        out_refund_id.currency_id.decimal_places,
+                    )
+                else:
+                    subtotal = sum(
+                        out_invoice_id.invoice_line_ids.filtered(
+                            lambda line: line.commission_image_id
+                        ).mapped("price_subtotal")
+                    )
+                    if not subtotal:
+                        continue
+
+                    percentaje = float_round(
+                        (out_refund_line.price_subtotal * 100) / subtotal,
+                        self.currency_id.decimal_places,
+                    )
+
+                    discount = out_invoice_id.total_commission * percentaje / 100
+                    amount_total += discount 
 
             percentaje = float_round(
                 (payment.get("amount", 0) * 100) / out_refund_id.amount_total,
