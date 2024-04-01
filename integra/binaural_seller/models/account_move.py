@@ -70,7 +70,7 @@ class AccountMove(models.Model):
                         if invoice.seller_id:
                             return
                         seller_name = ""
-                        for seller in invoice.seller_available:
+                        for seller in invoice.sellers_available:
                             seller_name += seller.name + ", "
                         raise UserError(
                             _(
