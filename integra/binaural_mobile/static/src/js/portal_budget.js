@@ -224,7 +224,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             
             $("#openProduct").attr('disabled', false)
             $("#same_address").attr('disabled', false)
-            $("#openClient").remove()
 
             if (Boolean($("#client").val())) {
                 $("#openCreateAddressContact").attr('disabled', false)
