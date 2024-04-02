@@ -45,6 +45,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 maximumInputLength: 35,
                 minimumInputLength: 0,
                 maximumSelectionSize: 1,
+                allowClear: true,
                 ajax: {
                     url: '/budget/client',
                     dataType: 'json',
@@ -67,8 +68,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                             });
                             self.partners.push(client); 
                         });
-
-                        self._loadContactSelectOptions(dt, $('#client').val())
 
                         return {results: ret};
                     }
@@ -169,6 +168,17 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
         },
         _onChangeClient: async function ({target}) {
             this._loadContactSelectOptions(this.partners, target.value);
+            if($("#number_order_value").val()){
+                const partner = await ajax.jsonRpc('/budget/update_partner', 'call',
+                    {
+                        "budget" :$("#number_order_value").val(),
+                        "partner" : $("#client").val(),
+                    }
+                )
+                const { status:st, msg } = partner;
+                const is400 = st === 400;
+                if (is400) alert(msg)  
+            }
         },
         _loadContacts: async function () {
             const {data, status } = await this._getClients()
@@ -213,7 +223,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             
             $("#openProduct").attr('disabled', false)
             $("#same_address").attr('disabled', false)
-            $("#openClient").remove()
 
             if (Boolean($("#client").val())) {
                 $("#openCreateAddressContact").attr('disabled', false)
@@ -519,7 +528,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $("#note").val("")
                 $("#product_head").show()
                 $("#number").show()
-                $("input[id='client']").select2("enable", false);
                 $("#number_order").text(data[0].name)
                 $("#number_order_value").val(data[0].id)
                 $("#same_address").attr('disabled', true)
