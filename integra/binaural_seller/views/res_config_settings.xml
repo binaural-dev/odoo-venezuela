@@ -38,6 +38,21 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane">
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="restrict_seller"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="restrict_seller"/>
+                            <div class="text-muted">
+                                Restrict selection of sellers according to customer file
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </xpath>
 

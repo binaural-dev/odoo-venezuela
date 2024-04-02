@@ -7,3 +7,5 @@ class ResCompany(models.Model):
     initial_seller = fields.Many2one('hr.employee')
 
     multiple_sellers = fields.Boolean()
+
+    restrict_seller = fields.Boolean()
