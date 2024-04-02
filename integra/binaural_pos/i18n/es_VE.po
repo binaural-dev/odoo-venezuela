@@ -590,6 +590,13 @@ msgid "Taxes:"
 msgstr "Impuestos:"
 
 #. module: binaural_pos
+#. odoo-python
+#: code:addons/binaural_pos/controllers/controller.py:0
+#, python-format
+msgid "The product's '%s' is not found in warehouse %s"
+msgstr "El producto '%s' no se encuentra en el almacén %s."
+
+#. module: binaural_pos
 #: model:ir.model.fields,help:binaural_pos.field_pos_payment__foreign_rate
 msgid "The rate that is gonna be always shown to the user."
 msgstr "La tarifa que siempre se mostrará al usuario."
@@ -630,6 +637,13 @@ msgstr ""
 #, python-format
 msgid "Validate"
 msgstr "Validar"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
+#, python-format
+msgid "Validate Product in Warehouse"
+msgstr "Validar el producto en el almacén"
 
 #. module: binaural_pos
 #. odoo-javascript
