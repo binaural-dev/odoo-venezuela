@@ -16,6 +16,7 @@ class AppointmentType(models.Model):
     invoice_ids = fields.Many2many(
         "account.move",
         compute="_compute_invoice_ids",
+        store=True
     )
 
     prefix_vat = fields.Selection(

@@ -78,7 +78,7 @@ class AppointmentController(AppointmentController):
 
 
         partner = self._get_customer_partner()
-        partner_data = partner.read(fields=['name', 'mobile', 'email', 'prefix_vat', 'vat'])[0] if partner else {}
+        partner_data = partner.read(fields=['name', 'phone', 'email', 'prefix_vat', 'vat'])[0] if partner else {}
         date_time_object = datetime.strptime(date_time, dtf)
         day_name = format_datetime(date_time_object, 'EEE', locale=get_lang(request.env).code)
         date_formated = format_date(date_time_object.date(), locale=get_lang(request.env).code)
@@ -159,8 +159,8 @@ class AppointmentController(AppointmentController):
         if Partner:
             if not Partner.calendar_verify_availability(date_start, date_end):
                 return request.redirect('/appointment/%s?%s' % (appointment_type.id, keep_query('*', state='failed-partner')))
-            if not Partner.mobile:
-                Partner.write({'mobile': phone})
+            if not Partner.phone:
+                Partner.write({'phone': phone})
             if not Partner.email:
                 Partner.write({'email': email})
             if not Partner.prefix_vat:
@@ -170,7 +170,7 @@ class AppointmentController(AppointmentController):
         else:
             Partner = Partner.create({
                 'name': name,
-                'mobile': Partner._phone_format(phone, country=self._get_customer_country()),
+                'phone': Partner._phone_format(phone, country=self._get_customer_country()),
                 'email': email,
                 "prefix_vat": prefix_vat,
                 "vat": vat,
@@ -202,7 +202,7 @@ class AppointmentController(AppointmentController):
         description = ''
 
         if phone:
-            description_bits.append(_('Mobile: %s', phone))
+            description_bits.append(_('Phone: %s', phone))
         if email:
             description_bits.append(_('Email: %s', email))
 
