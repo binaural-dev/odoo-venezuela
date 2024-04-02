@@ -94,7 +94,15 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
                   wrning.push(prd.display_name)
               }	
           }
-      }
+        }
+
+        let msg = await this.validateProductsInWarehouse(lines, pos_config)
+        if(msg){
+          return self.showPopup('ErrorPopup', {
+            title: _t("Validate Product in Warehouse"),
+            body: msg,
+          });
+        }
 
         if(!validation_negative){
           let message = _t(is_negative);
@@ -127,6 +135,29 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
           can_sell_product = can_sell
 
           return can_sell_product
+
+        } catch (error) {
+          return false
+        }
+      }
+
+      async validateProductsInWarehouse(lines, pos_config){
+        try {
+          let product_ids = []
+          for (let line of lines) {
+            let prd = line.product.id
+            product_ids.push(prd)
+          }
+          const products = await ajax.jsonRpc('/validate_products_in_warehouse', 'call',
+            {
+              "product_ids" :product_ids,
+              "picking_type_id": pos_config.picking_type_id
+            }
+          )
+          const { msg_error } = products;
+
+          return msg_error
+          
 
         } catch (error) {
           return false
