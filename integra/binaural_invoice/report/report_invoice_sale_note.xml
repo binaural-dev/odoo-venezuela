@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <data noupdate="1">
+    <data>
         <record id="action_invoice_sale_note_binaural_invoice" model="ir.actions.report">
             <field name="name">Sale Note</field>
             <field name="model">account.move</field>
