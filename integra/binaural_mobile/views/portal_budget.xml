@@ -415,23 +415,25 @@
                                                     <option value="">Select State</option>
                                                 </select>
                                             </div>
+                                            <label class="form-text col-sm-2">City</label>
+                                            <div class="col-sm-4">
+                                                <select class="form-control register-client" id="cityClient">
+                                                    <option value="">Select City</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
                                             <label class="form-text col-sm-2">Municipality</label>
                                             <div class="col-sm-4">
                                                 <select class="form-control register-client" id="municipalityClient">
                                                     <option value="">Select Municipality</option>
                                                 </select>
                                             </div>
-                                        </div>
-                                        <div class="row mb-2">
                                             <label class="form-text col-sm-2">Parish</label>
                                             <div class="col-sm-4">
                                                 <select class="form-control register-client" id="parishClient">
                                                     <option value="">Select Parish</option>
                                                 </select>
-                                            </div>
-                                            <label class="form-text col-sm-2">Number phone</label>
-                                            <div class="col-sm-4">
-                                                <input type="text" class="register-client form-control" id="numberPhone" placeholder="0426-123-1234"/>
                                             </div>
                                         </div>
                                         <div class="row mb-2">
@@ -439,6 +441,10 @@
                                             <label class="form-text col-sm-2">Email</label>
                                             <div class="col-sm-4 igtf_input">
                                                 <input type="email" class="register-client form-control" id="emailClient" placeholder="test@gmail.com"/>
+                                            </div>
+                                            <label class="form-text col-sm-2">Number phone</label>
+                                            <div class="col-sm-4">
+                                                <input type="text" class="register-client form-control" id="numberPhone" placeholder="0426-123-1234"/>
                                             </div>
                                         </div>
 

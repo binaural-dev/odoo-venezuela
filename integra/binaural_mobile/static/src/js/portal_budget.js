@@ -848,6 +848,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                     "country": $("#countryClient").val(),
                     "state": $("#stateClient").val(),
                     "municipality": $("#municipalityClient").val(),
+                    "city": $("#cityClient").val(),
                     "parish": $("#parishClient").val(),
                     "type": $("#typeContactCreateClientModal").val(),
                     "parent_id": $("#client").val()
@@ -912,17 +913,30 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             if($("#stateClient").val()!=""){
                 const filter = $("#stateClient").val();
                 const model = $("#stateClient").attr("name");
-                const tag = "#municipalityClient";
-                const namemodel = "3"
-                const data  = {
+                const municipalityTag = "#municipalityClient";
+                const cityTag = "#cityClient";
+                const municipalityNamemodel = "3";
+                const cityNamemodel = "5";
+                
+                const municipalityData = {
                     filter,
                     model,
                     target: "municipality_id",
-                    namemodel,
+                    namemodel: municipalityNamemodel,
                     field: "name",
                     ref: "state_id",
-                }
-                this.SearchFilterInputs(data, tag)
+                };
+                this.SearchFilterInputs(municipalityData, municipalityTag);
+                
+                const cityData = {
+                    filter,
+                    model,
+                    target: "city_id",
+                    namemodel: cityNamemodel,
+                    field: "name",
+                    ref: "state_id",
+                };
+                this.SearchFilterInputs(cityData, cityTag);
             }
         },
 
