@@ -186,6 +186,17 @@ msgstr ""
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid ""
+"<select class=\"form-control register-client\" id=\"cityClient\">\n"
+"                                                    <option value=\"\">Select City</option>\n"
+"                                                </select>"
+msgstr ""
+"<select class=\"form-control register-client\" id=\"cityClient\">\n"
+"                                                    <option value=\"\">Seleccionar ciudad</option>\n"
+"                                                </select>"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid ""
 "<select class=\"form-control register-client\" id=\"parishClient\">\n"
 "                                                    <option value=\"\">Select Parish</option>\n"
 "                                                </select>"
@@ -2169,7 +2180,12 @@ msgstr "Estado"
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "State *"
-msgstr "State"
+msgstr "Estado"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "City"
+msgstr "Ciudad"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_invoices_1

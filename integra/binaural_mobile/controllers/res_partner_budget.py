@@ -132,6 +132,7 @@ class ResPartnerBudget(http.Controller):
         email='', number='', 
         state=False, municipality=False, 
         parish=False, parent_id=False,
+        city=False,
         type="contact", **kwargs
         ):
         
@@ -154,6 +155,7 @@ class ResPartnerBudget(http.Controller):
                     "street": street,
                     "country_id": country,
                     "state_id": state,
+                    "city_id": city,
                     "municipality": municipality,
                     "email": email,
                     "phone": number,
@@ -192,6 +194,7 @@ class ResPartnerBudget(http.Controller):
         "2": "res.country.state",
         "3": "res.country.municipality",
         "4": "res.country.parish",
+        "5": "res.country.city",
         }
         model_name = kw.get('namemodel')
         if model_name not in models_allowed.keys():
