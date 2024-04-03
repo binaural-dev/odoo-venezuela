@@ -16,11 +16,12 @@ odoo.define('binaural_appointment.appointment_form', function (require) {
                     customer_id: customerId
                 }).then(function (data) {
                     // Actualiza los campos en tu formulario con la información recibida
-                    $('#vat').val(data.vat || '').attr('readonly', true);
-                    $('#prefix_vat').val(data.prefix_vat || '').attr('readonly', true);
-                    $('input[name="name"]').val(data.name || '');
-                    $('input[name="phone"]').val(data.phone || '');
-                    $('input[name="email"]').val(data.email || '');
+                    $('#vat').val(data.vat || '').attr('readonly', Boolean(data.vat));
+                    $('#prefix_vat').val(data.prefix_vat || '').css('pointer-events', Boolean(data.vat) ? 'none': 'all');
+                    $('input[name="name"]').val(data.name || '').attr('readonly', Boolean(data.name));
+                    $('input[name="phone"]').val(data.phone || '').attr('readonly', Boolean(data.phone));
+                    $('input[name="email"]').val(data.email || '').attr('readonly', Boolean(data.email));
+
                 });
             }
         },
