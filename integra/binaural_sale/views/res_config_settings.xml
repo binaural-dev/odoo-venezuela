@@ -7,8 +7,8 @@
             <field name="priority" eval="100"/>
             <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
             <field name="arch" type="xml">
-		<xpath expr="//div[@name='binaural_rate_settings']" position="after">
-		    <h2>Sales Configuration</h2>
+                <xpath expr="//div[@name='binaural_rate_settings']" position="after">
+                    <h2>Sales Configuration</h2>
                     <div class="row mt16 o_settings_container" name="binaural_sale_settings">
                         <div class="o_setting_right_pane">
                             <group colspan="4" col="4">
@@ -41,9 +41,32 @@
                             </div>
                         </div>
 		            </div>
+
+                    <div name="binaural_block_confirm">
+                        <h2>Block order confirmationn</h2>
+                        <div class="row mt16 o_settings_container">
+                            <div class="o_setting_right_pane">
+                                <group colspan="4" col="4">
+                                    <field name="block_order_invoice_payment_state"/>
+                                </group>
+                                <div class="text-muted">
+                                    Block order confirmation action with invoices in payment status Not Paid / In payment process.
+                                </div> 
+                            </div>
+                            <br/>
+                            <div class="o_setting_right_pane">
+                                <group colspan="4" col="4">
+                                    <field name="block_order_invoice_total_amount_overdue"/>
+                                </group>
+                                <div class="text-muted">
+                                    Block order confirmation action with invoices overdue with a total amount greater than specified.
+                                </div> 
+                            </div>
+                        </div>
+                    </div>
+
                 </xpath>
             </field>
         </record>
     </data>
 </odoo>
-

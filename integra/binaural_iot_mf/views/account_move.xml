@@ -42,4 +42,16 @@
         </xpath>
       </field>
     </record>
+
+    <record id="view_account_move_search_mf" model="ir.ui.view">
+        <field name="name">view.account.move.search.mf</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name='mf_invoice_number'/>
+                <field name='mf_serial'/>
+            </field>
+        </field>
+    </record>
 </odoo>
