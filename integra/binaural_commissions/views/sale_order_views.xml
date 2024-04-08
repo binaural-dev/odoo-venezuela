@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='payment_term_id']" position="after">
-                <field name="has_invoices_paid"/>
+                <field name="has_invoices_paid" optional="hide"/>
             </xpath>
             <xpath expr="//tree/field[@name='tax_id']" position="after">
                 <field 
@@ -25,7 +25,7 @@
         <field name="inherit_id" ref="sale.view_quotation_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='user_id']" position="before">
-                <field name="has_invoices_paid"/>
+                <field name="has_invoices_paid" invisible="1"/>
             </xpath>
         </field>
     </record>
