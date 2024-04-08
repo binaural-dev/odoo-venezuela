@@ -12,6 +12,14 @@ class SaleOrder(models.Model):
     commission_invoice_date_field = fields.Char(readonly=True, copy=False)
     compute_commission_when = fields.Char(readonly=True, copy=False)
     priority_commission_policy_type = fields.Char(readonly=True, copy=False)
+    has_invoices_paid = fields.Boolean(compute="_compute_has_invoices_paid",store=True)
+
+    @api.depends("invoice_ids", "has_invoices_paid", "invoice_ids.commission_payment_state")
+    def _compute_has_invoices_paid(self):
+        for order in self:
+            order.has_invoices_paid = any(
+                not invoice._can_recompute_commission() for invoice in order.invoice_ids
+            )
 
     @api.model
     def _get_commission_product_items(self, lines):

@@ -17,11 +17,7 @@ class SetCommissionOrderToInvoice(models.Model):
         invoice_message = []
         invoice_paid_message = []
 
-        invoices_paid = self.sale_order_ids.invoice_ids.filtered(
-            lambda x: x._can_recompute_commission()
-        )
-
-        available_orders = self.sale_order_ids.filtered(lambda x: invoices_paid in x.invoice_ids)
+        available_orders = self.sale_order_ids.filtered(lambda x: not x.has_invoices_paid)
 
         if self.overwrite_commission:
             order_message = available_orders.order_line.filtered(
@@ -89,7 +85,7 @@ class SetCommissionOrderToInvoice(models.Model):
             "params": {
                 "title": _("Action complete, but..."),
                 "type": "warning",
-                "message": "\n".join(message),
+                "message": ",\n".join(message),
                 "sticky": True,
             },
         }
