@@ -8,13 +8,18 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
     super(...arguments);
   }
 
+  _lineIsNotComplete(line) {
+    if(line.fake_line){
+      return true
+    }
+    return super._lineIsNotComplete(line);
+  }
   _sortLine(lines) {
-      return lines.sort((l1, l2) => {
-          return l1.priority_location > l2.priority_location ? 1 : -1;
-      });
+    return lines.sort((l1, l2) => {
+      return l1.priority_location > l2.priority_location ? 1 : -1;
+    });
   }
   _createLinesState() {
-    const lines = [];
     const picking = this.cache.getRecord(this.params.model, this.params.id);
     if (picking.picks_count == 0) {
       return super._createLinesState();
@@ -24,12 +29,29 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
 
     for (const id of picking.move_ids) {
       const smlData = this.cache.getRecord('stock.move', id);
+      let base = {
+        "location_id": {},
+        "qty_done": 0,
+        "owner_id": false,
+        "lot_id": false,
+        "lot_name": false,
+        "package_id": false,
+        "result_package_id": false,
+        "dummy_id": "",
+        "product_packaging_id": false,
+        "product_packaging_uom_qty": 0,
+        "move_id": 81,
+        "priority_location": 9999,
+        "demanded_qty": 1,
+        "fake_line": false,
+      }
       if (!products.includes(smlData.product_id)) {
-        let base = { "dummy_id": false, "virual_id": false, "package_id": false }
+        smlData.id = id;
         smlData.product_id = this.cache.getRecord('product.product', smlData.product_id);
         smlData.location_id = this.cache.getRecord('stock.location', smlData.location_id);
         smlData.fake_line = true;
         smlData.qty_done = 0;
+        smlData.virtual_id = id;
         let newLine = Object.assign(base, smlData)
         res.push(newLine);
       }

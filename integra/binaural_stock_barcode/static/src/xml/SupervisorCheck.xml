@@ -4,6 +4,7 @@
         <div class="popup-container">
             <div class="popup-supervisor">
                 <select class="o_input" t-ref="supervisor_id">
+                    <option/>
                     <t t-foreach="supervisor_ids" t-as="supervisor" t-key="supervisor.id">
                         <option t-att-value='supervisor.id'>
                             <t t-out="supervisor.name" />

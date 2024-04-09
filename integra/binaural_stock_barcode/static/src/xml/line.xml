@@ -38,5 +38,14 @@
         </xpath>
         <xpath expr="//button[@name='incrementButton']/.." position="replace">
         </xpath>
+        <xpath expr="//button[@t-on-click='edit']/.." position="replace">
+            <t t-if="!line.fake_line">
+                <button t-on-click="edit" class="o_line_button o_edit btn"
+                    t-att-class="this.env.model.lineCanBeEdited(line) ? 'btn-secondary' : ''"
+                    t-att-disabled="!this.env.model.lineCanBeEdited(line)">
+                    <i class="fa fa-2x fa-pencil"/>
+                </button>
+            </t>
+        </xpath>
     </t>
 </templates>
