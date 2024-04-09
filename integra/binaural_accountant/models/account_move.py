@@ -5,6 +5,9 @@ from lxml import etree
 from collections import defaultdict
 from odoo.tools.misc import formatLang
 from odoo.tools import float_compare
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
@@ -391,7 +394,7 @@ class AccountMove(models.Model):
                 if line.currency_id == self.env.company.currency_foreign_id
             ]
 
-            for line in self.line_ids:
+            for line in self.line_ids.sorted(lambda l: l.tax_ids, reverse=True):
                 # If the line is an adjustment line, the foreign debit and foreign credit will be
                 # the foreign debit and foreign credit adjustment fields.
                 if line.not_foreign_recalculate:
@@ -476,6 +479,10 @@ class AccountMove(models.Model):
                     line.foreign_debit = line.debit * self.foreign_inverse_rate
                     line.foreign_credit = line.credit * self.foreign_inverse_rate
                     continue
+                _logger.warning(
+                    "Lines with same tax: %s",
+                    lines_with_same_tax.read(["name", "foreign_debit", "foreign_credit"]),
+                )
 
                 line.foreign_debit = (
                     sum(lines_with_same_tax.mapped("foreign_debit"))
@@ -563,6 +570,7 @@ class AccountMove(models.Model):
                     "foreign_subtotal": abs(line.foreign_subtotal),
                 }
             )
+        _logger.warning("Subtotals by name: %s", subtotals_by_name)
         return subtotals_by_name
 
     @api.depends("partner_id")
