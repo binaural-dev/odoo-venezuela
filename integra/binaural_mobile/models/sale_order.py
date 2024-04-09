@@ -2,6 +2,7 @@ import logging
 import copy
 
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 JOURNAL_DOMAIN = [("active", "=", True), ("type", "=", "sale"),]
@@ -31,6 +32,13 @@ class SaleOrder(models.Model):
         default=_get_default_journal,
         help="Journal used when a invoice is generated with or without taxes.",
     )
+
+    def write(self, vals):
+        if "order_line" in vals and self.env.user.employee_id.is_seller:
+            raise UserError(_("You can't modify this order, beceause it isn't in draft."))
+        res = super().write(vals)
+        return res
+
 
     def _create_invoices(self, grouped=False, final=False, date=None):
         res = super()._create_invoices(grouped, final, date) #contingence?
