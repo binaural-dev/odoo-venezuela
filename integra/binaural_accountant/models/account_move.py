@@ -563,7 +563,6 @@ class AccountMove(models.Model):
                     "foreign_subtotal": abs(line.foreign_subtotal),
                 }
             )
-        _logger.warning("Subtotals by name: %s", subtotals_by_name)
         return subtotals_by_name
 
     @api.depends("partner_id")
