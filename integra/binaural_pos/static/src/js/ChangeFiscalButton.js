@@ -1,4 +1,4 @@
-odoo.define('onprotec_pos.ChangeFiscalButton', function(require) {
+odoo.define('binaural_pos.ChangeFiscalButton', function(require) {
   'use strict';
 
   const PosComponent = require('point_of_sale.PosComponent');

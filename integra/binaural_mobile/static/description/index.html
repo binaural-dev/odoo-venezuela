@@ -384,12 +384,14 @@ ul.auto-toc {
 <li>Diario de ventas disponibles para la app</li>
 <li>(res.group) Grupo para vendedores que puedan editar tarifas</li>
 <li>(res.group) Grupo para vendedores que puedan crear contactos</li>
+<li>Activar opcion de sin exitencia continuar venta en la configuraciones de sitio web(Solo si vendera productos que no tiene existencia)</li>
 </ul>
 <p>## Validaciones</p>
 <ul class="simple">
 <li>Cualquier pago que venga proveniente de la app se saltará la validación del no conciliar pagos con distintos diarios</li>
 <li>Productos que se le mostrarán al vendedor por configuración</li>
 <li>Sí la configuración de empaquetado está activado, validará que cuando un producto tenga un empaquetado en la lista por si se activa el empaquetado en la ficha del producto</li>
+<li>Al tener apagado la opcion de sin existencia continuar venta, no podra hacer busqueda de producto, tampoco le permitira vender mas de la cantidad disponible</li>
 </ul>
 <p>##Pagos (account.payment)</p>
 <ul class="simple">

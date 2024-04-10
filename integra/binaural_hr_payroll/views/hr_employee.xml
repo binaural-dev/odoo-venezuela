@@ -13,8 +13,35 @@
             </field>
 
 	    <field name="work_email" position="after">
-		<field name="entry_date"/>
+		<field name="entry_date" required="1"/>
+		<field name="seniority"/>
 	    </field>
+
+	    <div id="o_work_employee_main" position="inside">
+                <group string="ISLR">
+                    <label for="porc_ari"/>
+                    <div>
+                        <field name="porc_ari" nolabel="1" class="oe_inline"/>
+                        <span>%</span>
+                    </div>
+                    <label for="no_ivss"/>
+                    <div>
+                        <field name="no_ivss" nolabel="1"/>
+                    </div>
+                    <label for="no_faov"/>
+                    <div>
+                        <field name="no_faov" nolabel="1"/>
+                    </div>
+                    <label for="no_pmpf"/>
+                    <div>
+                        <field name="no_pmpf" nolabel="1"/>
+                    </div>
+                </group>
+
+		<group name="holidays_config" string="Vacations">
+                    <field name="holidays_accrued"/>
+                </group>
+            </div>
 
 	    <notebook position="inside">
 		<page name="allowances" string="Salary Allowances">
@@ -49,8 +76,9 @@
         <field name="model">hr.employee</field>
         <field name="inherit_id" ref="hr.hr_kanban_view_employees"/>
         <field name="arch" type="xml">
-            <field name="name" position="after">
-                <field name="vat"/>
+            <field name="name" position="before">
+                <field name="prefix_vat"/> <field name="vat"/>
+		<br/>
             </field>
             <field name="job_title" position="after">
                 / <field name="department_id"/>

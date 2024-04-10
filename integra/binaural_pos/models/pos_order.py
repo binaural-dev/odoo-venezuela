@@ -13,6 +13,12 @@ class PosOrder(models.Model):
     foreign_currency_rate = fields.Float(readonly=True, required=True)
     to_receipt = fields.Boolean(readonly=True)
 
+    def _process_order(self, order, draft, existing_order):
+        res = super()._process_order(order, draft, existing_order)
+        order = self.browse(res)
+        order.config_id.change_always_receipt(order.to_receipt)
+        return res
+
     @api.model
     def _order_fields(self, ui_order):
         res = super()._order_fields(ui_order)

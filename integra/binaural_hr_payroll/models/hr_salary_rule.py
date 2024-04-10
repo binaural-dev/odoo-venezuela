@@ -29,6 +29,7 @@ class HrSalaryRule(models.Model):
             # tipo_calculo_intereses_prestaciones_config: str con el tipo de cálculo de intereses de prestaciones
             # compute_payroll_using: str conteniendo la información de como se va a calcular el
                                      salario. Los valores posibles son ("base_wage", "foreign_wage")
+            # base_is_vef: Booleano que dice si la moneda base es BS
 
 
             # Note: returned value have to be set in the variable 'result'

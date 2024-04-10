@@ -1,5 +1,6 @@
 from calendar import isleap
-from datetime import date
+from datetime import date, datetime
+from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models, _
 from odoo.addons.hr_payroll.models.browsable_object import BrowsableObject
@@ -28,6 +29,35 @@ class HrPayslip(models.Model):
         readonly=False,
         index=True,
     )
+
+    struct_category = fields.Selection(related="struct_id.category")
+
+    date_from_vacation = fields.Date(
+        readonly=True,
+        default=lambda self: fields.Date.to_string(date.today().replace(day=1)),
+        states={"draft": [("readonly", False)], "verify": [("readonly", False)]},
+    )
+    date_to_vacation = fields.Date(
+        readonly=True,
+        default=lambda self: fields.Date.to_string(
+            (datetime.now() + relativedelta(months=+1, day=1, days=-1)).date()
+        ),
+        states={"draft": [("readonly", False)], "verify": [("readonly", False)]},
+    )
+
+    employee_prefix_vat = fields.Selection(related="employee_id.prefix_vat")
+    employee_vat = fields.Char(related="employee_id.vat")
+    employee_bank_account_id = fields.Many2one(
+        "res.partner.bank", related="employee_id.bank_account_id"
+    )
+
+    _sql_constraints = [
+        (
+            "payslip_vacation_period_entry_start_before_end",
+            "check (date_to_vacation > date_from_vacation)",
+            "Starting time of vacation period should be before end time.",
+        )
+    ]
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -62,6 +92,10 @@ class HrPayslip(models.Model):
             payslip.foreign_rate = rate_values["foreign_rate"]
             payslip.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
 
+    def _get_base_is_vef(self):
+        self.ensure_one()
+        return self.currency_id == self.env.ref("base.VEF")
+
     def _get_foreign_paid_amount(self):
         self.ensure_one()
         if self.env.context.get("no_paid_amount"):
@@ -78,10 +112,17 @@ class HrPayslip(models.Model):
         for r in worked_day_lines:
             if r["work_entry_type_id"] == work_entry_basic:
                 february_day = 29 if isleap(self.date_from.year) else 28
+                february_day_quincenal = 14 if isleap(self.date_from.year) else 13
                 if worked_days_sum > (30 if self.date_from.month != 2 else february_day):
                     r["number_of_days"] -= worked_days_sum - (
                         30 if self.date_from.month != 2 else 28
                     )
+                if self.date_from.day == 16 and worked_days_sum > (15 if self.date_from.month != 2 else february_day_quincenal):
+                    r["number_of_days"] -= worked_days_sum - (
+                        15 if self.date_from.month != 2 else 13
+                    )
+                if self.date_from.day == 16 and self.date_from.month == 2:
+                    r["number_of_days"] += 15 - worked_days_sum
                 if worked_days_sum >= february_day and self.date_from.month == 2:
                     r["number_of_days"] += 30 - worked_days_sum
 
@@ -92,6 +133,9 @@ class HrPayslip(models.Model):
         return self.contract_id._get_contract_foreign_wage()
 
     def _get_payslip_lines(self):
+        """
+        Overrides the original method to add the foreign amount computation on for each rule.
+        """
         line_vals = []
         for payslip in self:
             if not payslip.contract_id:
@@ -214,7 +258,6 @@ class HrPayslip(models.Model):
                 "dias_prestaciones_mes_config": self.company_id.benefits_days_per_month,
                 "tipo_calculo_intereses_prestaciones_config": self.company_id.benefits_interest_computation_type,
                 "compute_payroll_using": self.company_id.compute_payroll_using,
-                # TODO Complemtentos Salariales
                 "allowances": BrowsableObject(
                     self.employee_id.id, allowances_values_per_code, self.env
                 ),
@@ -225,6 +268,7 @@ class HrPayslip(models.Model):
     def _get_localdict(self):
         localdict = super()._get_localdict()
         localdict["foreign_inverse_rate"] = self.foreign_inverse_rate
+        localdict["base_is_vef"] = self._get_base_is_vef()
         return localdict
 
     def action_payslip_done(self):
@@ -244,12 +288,11 @@ class HrPayslip(models.Model):
         move_params["move_type"] = payroll_structure_category
         move_params["employee_id"] = self.employee_id.id
         move_params["date"] = self.date_to
+        move_params["slip_id"] = self.id
 
-        # TODO: Vacaciones
-
-        #         if payroll_structure_category == "vacation":
-        #             move_params["date_from_vacation"] = self.date_from_vacation
-        #             move_params["date_to_vacation"] = self.date_to_vacation
+        if payroll_structure_category == "vacation":
+            move_params["date_from_vacation"] = self.date_from_vacation
+            move_params["date_to_vacation"] = self.date_to_vacation
 
         total_basic = 0
         total_deduction = 0
@@ -265,17 +308,33 @@ class HrPayslip(models.Model):
         consumed_vacation_days = 0
         total_vacation = 0
 
+        foreign_total_basic = 0
+        foreign_total_deduction = 0
+        foreign_total_accrued = 0
+        foreign_total_net = 0
+        foreign_total_assig = 0
+        foreign_advance_of_benefits = 0
+        foreign_benefits_payment = 0
+        foreign_profit_sharing_payment = 0
+        foreign_total_vacation_bonus = 0
+        foreign_total_vacation = 0
+
         for line in self.line_ids:
             if line.category_id.code == "DED":
                 total_deduction += line.total
+                foreign_total_deduction += line.foreign_total
             if line.category_id.code == "ASIG":
                 total_assig += line.total
+                foreign_total_assig += line.foreign_total
             if line.category_id.code == "BASIC":
                 total_basic += line.total
+                foreign_total_basic += line.foreign_total
             if line.category_id.code == "DEV":
                 total_accrued += line.total
+                foreign_total_accrued += line.foreign_total
             if line.category_id.code == "NET":
                 total_net += line.total
+                foreign_total_net += line.foreign_total
 
             if line.code == "DDBVM":
                 vacation_days += line.total
@@ -283,28 +342,36 @@ class HrPayslip(models.Model):
                 consumed_vacation_days += line.total
             if line.code == "PDDVM":
                 total_vacation += line.total
+                foreign_total_vacation += line.foreign_total
             if line.code == "DDBVM":
                 vacation_bonus_days += line.total
             if line.code == "PDDBVM":
                 total_vacation_bonus += line.total
+                foreign_total_vacation_bonus += line.foreign_total
             if line.code == "UTIL":
                 profit_sharing_payment += line.total
+                foreign_profit_sharing_payment += line.foreign_total
             if line.code == "ADPRESTA":
                 advance_of_benefits += line.total
+                foreign_advance_of_benefits += line.foreign_total
 
             if payroll_structure_category == "liquidation":
                 if line.code == "DDVMLIQ":
                     vacation_days += line.total
                 if line.code == "PDDVMLIQ":
                     total_vacation += line.total
+                    foreign_total_vacation += line.foreign_total
                 if line.code == "DDVBMLIQ":
                     vacation_bonus_days += line.total
                 if line.code == "PDDVBMLIQ":
                     total_vacation_bonus += line.total
+                    foreign_total_vacation_bonus += line.foreign_total
                 if line.code == "UTILLIQ":
                     profit_sharing_payment += line.total
+                    foreign_profit_sharing_payment += line.foreign_total
                 if line.code == "PRESTA":
                     benefits_payment += line.total
+                    foreign_benefits_payment += line.foreign_total
 
         move_params["total_basic"] = total_basic
         move_params["total_deduction"] = total_deduction
@@ -319,6 +386,17 @@ class HrPayslip(models.Model):
         move_params["total_vacation_bonus"] = total_vacation_bonus
         move_params["consumed_vacation_days"] = consumed_vacation_days
         move_params["total_vacation"] = total_vacation
+
+        move_params["foreign_total_basic"] = foreign_total_basic
+        move_params["foreign_total_deduction"] = foreign_total_deduction
+        move_params["foreign_total_accrued"] = foreign_total_accrued
+        move_params["foreign_total_net"] = foreign_total_net
+        move_params["foreign_total_assig"] = foreign_total_assig
+        move_params["foreign_advance_of_benefits"] = foreign_advance_of_benefits
+        move_params["foreign_benefits_payment"] = foreign_benefits_payment
+        move_params["foreign_profit_sharing_payment"] = foreign_profit_sharing_payment
+        move_params["foreign_total_vacation_bonus"] = foreign_total_vacation_bonus
+        move_params["foreign_total_vacation"] = foreign_total_vacation
 
         return self.env["hr.payroll.move"].create(move_params)
 

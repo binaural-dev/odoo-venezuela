@@ -11,6 +11,11 @@ odoo.define("binaural_pos.PosState", function(require) {
         this.foreign_currency = null;
         this.prefix_vats = []
       }
+      open_cashbox() {
+        if (this.env.pos.config.iface_cashdrawer){
+          this.env.proxy.printer.open_cashbox();
+        }
+      }
 
       // @override
       async _processData(loadedData) {

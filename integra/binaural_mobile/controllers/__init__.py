@@ -10,3 +10,4 @@ from . import payments_portal
 from . import account_move_payments
 from . import account_payment_payments
 from . import portal
+from . import theme_prime_pwa

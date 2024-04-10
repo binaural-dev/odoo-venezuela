@@ -32,12 +32,12 @@ class StockPicking(models.Model):
         )
     )
 
-    def button_validate(self):
+    def _action_done(self):
         """
         Creates and posts the valuation move when the picking is an internal transfer, after the
         picking is validated.
         """
-        res = super().button_validate()
+        res = super()._action_done()
 
         # The context is used to tell the create method of the account move that the subsidiaries
         # do not require to be setted on the move lines as the _generate_valuation_lines_data

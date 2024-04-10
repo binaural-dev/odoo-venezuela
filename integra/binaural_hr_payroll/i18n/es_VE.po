@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240205\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240304\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-20 20:00+0000\n"
-"PO-Revision-Date: 2024-02-20 20:00+0000\n"
+"POT-Creation-Date: 2024-03-04 14:36+0000\n"
+"PO-Revision-Date: 2024-03-04 14:36+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,9 +26,26 @@ msgid ""
 msgstr ""
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payslip_line__slip_state
+msgid ""
+"* When the payslip is created the status is 'Draft'\n"
+"                \n"
+"* If the payslip is under verification, the status is 'Waiting'.\n"
+"                \n"
+"* If the payslip is confirmed then status is set to 'Done'.\n"
+"                \n"
+"* When user cancel payslip the status is 'Rejected'."
+msgstr ""
+
+#. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
 msgid "<span> / month</span>"
 msgstr "<span> / mes</span>"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.view_employee_form
+msgid "<span>%</span>"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_contract_form
@@ -149,6 +166,11 @@ msgid "<strong>Total</strong>"
 msgstr ""
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__porc_ari
+msgid "ARI Percentage"
+msgstr "Porcentaje ARI"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_needaction
 msgid "Action Needed"
 msgstr "Acción Neceasria"
@@ -229,6 +251,21 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_attachment_count
 msgid "Attachment Count"
 msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__bank_id
+msgid "Bank"
+msgstr "Banco"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__employee_bank_account_id
+msgid "Bank Account Number"
+msgstr "Número de cuenta bancaría"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__name
+msgid "Bank Name"
+msgstr "Nombre del Banco"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__compute_payroll_using__base_wage
@@ -316,6 +353,7 @@ msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_structure__category
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__struct_category
 msgid "Category"
 msgstr "Categoría"
 
@@ -384,6 +422,7 @@ msgstr "Salario Alterno del Contrato"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__create_uid
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__create_uid
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__create_uid
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__create_uid
 msgid "Created by"
 msgstr "Creado por"
 
@@ -391,6 +430,7 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__create_date
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__create_date
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__create_date
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__create_date
 msgid "Created on"
 msgstr "Creado en"
 
@@ -418,12 +458,24 @@ msgid "Date"
 msgstr "Fecha"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__date_from
+msgid "Date From"
+msgstr "Desde"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__date_from_vacation
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__date_from_vacation
 msgid "Date From Vacation"
 msgstr "Fecha Desde Vacaciones"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__date_to
+msgid "Date To"
+msgstr "Hasta"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__date_to_vacation
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__date_to_vacation
 msgid "Date To Vacation"
 msgstr "Fecha Hasta Vacaciones"
 
@@ -479,6 +531,7 @@ msgstr "Descripción"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__display_name
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__display_name
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__display_name
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__display_name
 msgid "Display Name"
 msgstr ""
 
@@ -488,6 +541,21 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.view_employee_tree
 msgid "Document"
 msgstr "Documento"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__no_faov
+msgid "Does not quote FAOV"
+msgstr "No cotiza FAOV"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__no_ivss
+msgid "Does not quote IVSS"
+msgstr "No cotiza IVSS"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__no_pmpf
+msgid "Does not quote forced unemployment"
+msgstr "No cotiza paro forzoso"
 
 #. module: binaural_hr_payroll
 #: model:hr.work.entry.type,name:binaural_hr_payroll.hr_work_entry_binaural_vacation_weekend
@@ -543,6 +611,11 @@ msgid "Employee VAT"
 msgstr "CI del Empleado"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_payslip__employee_bank_account_id
+msgid "Employee bank account to pay salaries"
+msgstr "Cuenta bancaría del empleado para pagar salarios"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__entry_date
 msgid "Entry Date"
 msgstr "Fecha de Ingreso"
@@ -585,6 +658,11 @@ msgid "First Year Vacation Days must be a positive number"
 msgstr "Días de Vacaciones del Primer Año debe ser positivo"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__salary_type__fixed
+msgid "Fixed"
+msgstr "Fijo"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_follower_ids
 msgid "Followers"
 msgstr ""
@@ -606,6 +684,11 @@ msgid "Forced Unemployment Wage Treshold"
 msgstr "Tope Salario Paro Forzoso"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_advance_of_benefits
+msgid "Foreign Advance Of Benefits"
+msgstr "Anticipo de Prestaciones Alterno"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__foreign_amount
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_worked_days__foreign_amount
 msgid "Foreign Amount"
@@ -622,6 +705,16 @@ msgid "Foreign Amount Percentage Base"
 msgstr "Porcentaje Basado en (alterno)"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_total_basic
+msgid "Foreign Basic salary"
+msgstr "Salario Básico alterno"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_benefits_payment
+msgid "Foreign Benefits Payment"
+msgstr "Pago de Prestaciones Alterno"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_contract__foreign_hourly_wage
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__wage_field_to_use__foreign_hourly_wage
 msgid "Foreign Hourly Wage"
@@ -632,6 +725,11 @@ msgstr "Salario Por Hora Alterno"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_run__foreign_inverse_rate
 msgid "Foreign Inverse Rate"
 msgstr "Tasa Alterna Inversa"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_profit_sharing_payment
+msgid "Foreign Profit Sharing Payment"
+msgstr "Pago de Utilidades Alterno"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__foreign_rate
@@ -645,11 +743,46 @@ msgid "Foreign Total"
 msgstr "Total Alterno"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_total_accrued
+msgid "Foreign Total Accrued"
+msgstr "Total Devengado Alterno"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_total_assig
+msgid "Foreign Total Assig"
+msgstr "Total Asignaciones Alterno"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_total_deduction
+msgid "Foreign Total Deduction"
+msgstr "Total Deducciones Alterno"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_total_net
+msgid "Foreign Total Net"
+msgstr "Total Neto Alterno"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_total_vacation
+msgid "Foreign Total Vacation"
+msgstr "Total Vacaciones Alterno"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_total_vacation_bonus
+msgid "Foreign Total Vacation Bonus"
+msgstr "Total Bono Vacacional Alterno"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_contract__foreign_wage
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__wage_field_to_use__foreign_wage
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__compute_payroll_using__foreign_wage
 msgid "Foreign Wage"
 msgstr "Salario Alterno"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payslip_payment_methods_view_form
+msgid "Generate TXT"
+msgstr "Generar TXT"
 
 #. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payslip_allowance_line_search
@@ -660,6 +793,11 @@ msgstr "Agrupar por"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__has_message
 msgid "Has Message"
 msgstr "Tiene Mensaje"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__holidays_accrued
+msgid "Holidays Accrued"
+msgstr "Devengado para vacaciones"
 
 #. module: binaural_hr_payroll
 #: model:hr.work.entry.type,name:binaural_hr_payroll.hr_work_entry_binaural_horas_laboradas
@@ -696,9 +834,21 @@ msgstr "Salario Por Hora"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__id
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__vat
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__id
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__employee_vat
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__employee_vat
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__id
 msgid "ID"
 msgstr "CI"
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.view_employee_form
+msgid "ISLR"
+msgstr ""
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,help:binaural_hr_payroll.field_hr_employee__porc_ari
+msgid "ISLR Retention Percentage"
+msgstr "Porcentaje de retención ISLR"
 
 #. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
@@ -757,6 +907,7 @@ msgstr "Puesto de Trabajo"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance____last_update
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line____last_update
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move____last_update
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods____last_update
 msgid "Last Modified on"
 msgstr ""
 
@@ -764,6 +915,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__write_uid
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__write_uid
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__write_uid
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__write_uid
 msgid "Last Updated by"
 msgstr ""
 
@@ -771,6 +923,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__write_date
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__write_date
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__write_date
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__write_date
 msgid "Last Updated on"
 msgstr ""
 
@@ -937,6 +1090,14 @@ msgid "Pay Slip"
 msgstr "Recibo de nómina"
 
 #. module: binaural_hr_payroll
+#: model:ir.actions.act_window,name:binaural_hr_payroll.action_view_hr_payslip_payment_methods
+#: model:ir.ui.menu,name:binaural_hr_payroll.menu_hr_payslip_payment_methods
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payslip_payment_methods_view_form
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payslip_payment_methods_view_tree
+msgid "Payment Methods"
+msgstr "Métodos de Pago"
+
+#. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
 msgid "Payroll Configuration"
 msgstr "Configuración de Nómina"
@@ -973,6 +1134,12 @@ msgid "Payslip Worked Days"
 msgstr "Días trabajados en el recibo de nómina"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__payslip_ids
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payslip_payment_methods_view_form
+msgid "Payslips"
+msgstr "Recibos"
+
+#. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
 msgid "Periodo:"
 msgstr ""
@@ -984,9 +1151,9 @@ msgstr "Reporte pre-nómina"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__prefix_vat
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__employee_prefix_vat
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__employee_prefix_vat
 msgid "Prefix Vat"
-msgstr ""
+msgstr "Prefijo de la Cédula"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_move__move_type__profit_sharing
@@ -1114,7 +1281,7 @@ msgstr "Complementos Salariales"
 #. module: binaural_hr_payroll
 #: model:ir.ui.menu,name:binaural_hr_payroll.menu_hr_payslip_allowance_lines_report
 msgid "Salary Allowances Report"
-msgstr ""
+msgstr "Reporte de Complementos Salariales"
 
 #. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_hr_allowance_line
@@ -1139,9 +1306,32 @@ msgid "Salary Structure"
 msgstr "Estructura salarial"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_contract__salary_type
+msgid "Salary Type"
+msgstr "Tipo de Salario"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__seniority
 msgid "Seniority"
 msgstr "Anitgüedad"
+
+#. module: binaural_hr_payroll
+#: model:ir.model,name:binaural_hr_payroll.model_hr_payslip_payment_methods
+msgid "Show a report of the payment methods used on the payslips"
+msgstr ""
+"Muestra un reporte de los métodos de pago utilizados en los recibos de "
+"nómina"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__slip_id
+msgid "Slip"
+msgstr "Recibo"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.constraint,message:binaural_hr_payroll.constraint_hr_payslip_payslip_vacation_period_entry_start_before_end
+msgid "Starting time of vacation period should be before end time."
+msgstr ""
+"La fecha de inicio del período vacacional debe ser antes de la fecha de fin."
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__slip_state
@@ -1199,6 +1389,11 @@ msgid ""
 msgstr ""
 "No hay un contrato establecido en el recibo de nómina %s para %s. Compruebe "
 "que hay por lo menos un contrato establecido en el formulario de empleado."
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_payment_methods__total
+msgid "Total"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__total_accrued
@@ -1286,6 +1481,7 @@ msgstr "Pagos de Vacaciones"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__vacational_period
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.view_hr_payslip_form
 msgid "Vacational Period"
 msgstr "Período Vacacional"
 
@@ -1310,6 +1506,11 @@ msgstr "Pagos de Vacaciones"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance_line__value
 msgid "Value"
 msgstr "Valor"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__salary_type__variable
+msgid "Variable"
+msgstr "Variable"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__wage_field_to_use__wage

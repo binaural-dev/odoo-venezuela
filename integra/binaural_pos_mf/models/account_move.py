@@ -30,9 +30,12 @@ class AccountMoveInh(models.Model):
 
     def report_z(self, serial, response):
         res = super().report_z(serial, response)
+        data = response.get("data", False)
+        serial = data.get("_registeredMachineNumber")
         pos_order_ids = self.env["pos.order"].search(
             ["&", ("fiscal_machine", "=", serial), ("mf_reportz", "=", False)]
         )
+        _logger.info(pos_order_ids)
 
         for order in pos_order_ids:
             order.write({"mf_reportz": int(res) + 1})

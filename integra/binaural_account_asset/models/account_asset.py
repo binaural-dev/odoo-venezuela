@@ -77,6 +77,7 @@ class AccountAsset(models.Model):
         for asset in self:
             asset.depreciation_move_ids.write(
                 {
+                    "manually_set_rate": True,
                     "foreign_rate": asset.foreign_rate,
                     "foreign_inverse_rate": asset.foreign_inverse_rate,
                 }

@@ -1,0 +1,19 @@
+/* Copyright (c) 2016-Present Webkul Software Pvt. Ltd. (<https://webkul.com/>) */
+/* See LICENSE file for full copyright and licensing details. */
+/* License URL : <https://store.webkul.com/license.html/> */
+.overlay{
+    background-color:#272727 !important;
+    z-index: 999;
+}
+.overlay_header{
+    background-color: white !important;
+    z-index: 999;
+}
+.hidden_tags{
+    display: none;
+    color: #e2e2e2;
+}
+.hidden_tags_header{
+    display: none;
+    color: #292929;
+}

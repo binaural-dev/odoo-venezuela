@@ -4,7 +4,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Payroll Localization",
-    "version": "16.0.2.0.0",
+    "version": "16.0.0.6.7",
     # any module necessary for this one to work correctly
     "depends": ["hr", "hr_payroll", "hr_work_entry_contract_enterprise", "binaural_rate"],
     # always loaded
@@ -20,6 +20,7 @@
         "views/hr_payroll_move.xml",
         "views/hr_payroll_structure.xml",
         "views/hr_payslip.xml",
+        "views/hr_payslip_payment_method.xml",
         "views/hr_payslip_run.xml",
         "views/hr_payslip_run_report_templates.xml",
         "views/hr_payslip_run_report_views.xml",

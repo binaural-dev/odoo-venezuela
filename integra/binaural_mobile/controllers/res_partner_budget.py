@@ -41,6 +41,7 @@ class ResPartnerBudget(http.Controller):
         if user.employee_id.is_seller:
             edit_fee = False
             create_client = False
+            create_client_address = False
             price_lists = False
             budget = False
             symbol_currency = request.env.company.currency_id
@@ -51,7 +52,9 @@ class ResPartnerBudget(http.Controller):
                     price_lists = request.env["product.pricelist"].sudo().search([("selectable", "=" , True), ("active", "=", True)])
                 if group.name == "Portal / Vendedores que puedan crear contactos":
                     create_client = True
-            
+                if group.id == request.env.ref('binaural_mobile.group_sellers_create_contact_address').id:
+                    create_client_address = True
+
             type_document = request.env['res.partner']._fields['prefix_vat'].selection
             country_ids = request.env["res.country"].search([])
 
@@ -63,6 +66,7 @@ class ResPartnerBudget(http.Controller):
                 "currency": symbol_currency,
                 "edit_fee": edit_fee,
                 "create_client": create_client,
+                "create_client_address": create_client_address,
                 "pricelists": price_lists,
                 "quotation": True,
                 "no_footer":True,
@@ -119,7 +123,8 @@ class ResPartnerBudget(http.Controller):
         street='', name='', 
         email='', number='', 
         state=False, municipality=False, 
-        parish=False, **kwargs
+        parish=False, parent_id=False,
+        type="contact", **kwargs
         ):
         
         data = {"status": 200, "msg": _("Success")}
@@ -133,7 +138,7 @@ class ResPartnerBudget(http.Controller):
                 if exist_partner:
                     data.update({"status": 409, "msg": _("This customer is already registered with another seller")})
                     return data
-                
+
                 created_partner = request.env["res.partner"].create({
                     "name": name,
                     "prefix_vat": prefix,
@@ -142,12 +147,12 @@ class ResPartnerBudget(http.Controller):
                     "country_id": country,
                     "state_id": state,
                     "municipality": municipality,
-                    # "parish": parish,
                     "email": email,
                     "phone": number,
-                    "type": "contact",
+                    "type": type,
                     "is_public":True,
-                    "seller_ids": request.env.user.employee_id,
+                    "seller_ids": [request.env.user.employee_id.id],
+                    "parent_id": parent_id
                 })
                 
                 return data
