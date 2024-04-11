@@ -1,6 +1,6 @@
 from odoo import fields, models
 
-class AccountMoveBrandProduct(models.Model):
+class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
     brand_id = fields.Many2one(
