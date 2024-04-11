@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_common_log_book_ept_tree" model="ir.ui.view">
+        <field name="name">common.log.book.ept.view.tree</field>
+        <field name="model">common.log.book.ept</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">
+            <tree string="Common Log Book" create="false">
+                <field name="name"/>
+                <field name="type"/>
+                <field name="module"/>
+                <field name="create_date"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_common_log_book_ept_form" model="ir.ui.view">
+        <field name="name">common.log.book.ept.view.form</field>
+        <field name="model">common.log.book.ept</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Common Log Book" create="false" edit="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="type"/>
+                            <field name="module"/>
+                            <field name="model_id"/>
+                        </group>
+                        <group>
+                            <field name="create_date"/>
+                            <field name="active"/>
+                            <field name="res_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Common Logs">
+                            <field name="log_lines" readonly="True">
+                                <tree create="false" editable="bottom" decoration-danger="log_line_type=='fail'"
+                                      decoration-success="log_line_type=='success'">
+                                    <field name="product_id"/>
+                                    <field name="order_ref"/>
+                                    <field name="default_code"/>
+                                    <field name="message"/>
+                                    <field name="model_id"/>
+                                    <field name="res_id"/>
+                                    <field name="log_line_type" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"
+                           groups="base.group_user"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                    <field name="activity_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_common_log_book_ept" model="ir.actions.act_window">
+        <field name="name">Common Log Book</field>
+        <field name="res_model">common.log.book.ept</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No mismatch details are found.
+            </p>
+        </field>
+    </record>
+
+<!--    <menuitem id="menu_log_book_ept" name="Log Book" parent="sale.menu_sale_config"/>-->
+
+<!--    <menuitem id="mainmenu_common_log_book" name="Common Logs" action="action_common_log_book_ept"-->
+<!--              parent="menu_log_book_ept" sequence="21"/>-->
+
+</odoo>

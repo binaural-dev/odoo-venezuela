@@ -655,3 +655,10 @@ msgstr ""
 #, python-format
 msgid "You want to refund all products"
 msgstr "Desea reembolsar todos los productos"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
+#, python-format
+msgid "the quantity cannot be negative"
+msgstr "La cantidad no puede ser negativa"

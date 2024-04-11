@@ -24,8 +24,6 @@
     parent="account_accountant.menu_accounting" groups="binaural_fiscal_inspector.group_fiscal_inspectorate">
         <menuitem id="statement_report_fiscal_menu" name="Statement Reports" 
         groups="binaural_fiscal_inspector.group_fiscal_inspectorate" sequence="1">
-            <menuitem id="menu_action_account_report_balance_sheet_fiscal" name="Balance Sheet" 
-            action="account_reports.action_account_report_bs" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
             <menuitem id="menu_action_account_report_result_statement_fiscal" name="Result Statement"
             action="binaural_account_reports.action_account_report_rs" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
             <menuitem id="menu_action_account_report_financial_situation_statement_fiscal" name="Financial situation statement"
@@ -46,7 +44,38 @@
             action="account_reports.action_account_report_general_ledger" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>    
             <menuitem id="menu_action_account_report_coa_fiscal" name="Trial Balance" 
             action="account_reports.action_account_report_coa" groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
-        </menuitem>        
+        </menuitem>     
+        
+        <menuitem id="account_report_menu_fiscal" name="Account Reports"
+        groups="binaural_fiscal_inspector.group_fiscal_inspectorate" sequence="4">
+
+            <menuitem action="binaural_invoice.action_accounting_report_purchase" id="account_report_purchase_menu_fiscal" 
+            groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        
+            <menuitem action="binaural_invoice.action_accounting_report_sale" id="account_report_sale_menu_fiscal"
+            groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        
+        </menuitem>
+
+        <menuitem id="seniat_reports_fiscal" name="Seniat Reports"
+        groups="binaural_fiscal_inspector.group_fiscal_inspectorate" sequence="5">
+            
+            <menuitem action="binaural_payment_extension.action_generate_txt" id="txt_report_fiscal"
+            groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+            
+            <menuitem id="xml_retention_islr_fiscal" action="binaural_payment_extension.action_retention_islr" 
+            groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        
+        </menuitem>
+
+        <menuitem id="retention_line_report_fiscal" name="Administracion"
+        groups="binaural_fiscal_inspector.group_fiscal_inspectorate" sequence="6">
+
+            <menuitem action="binaural_payment_extension.action_retention_line_report" id="action_retention_line_report_fiscal" 
+            groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        
+        </menuitem>
+        
     </menuitem>
 
 </odoo>

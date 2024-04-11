@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!--Below view used for display the company name field-->
+    <record id="view_res_partner_form_extended" model="ir.ui.view">
+        <field name="name">res.partner.inherit.view</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="company_name"/>
+            </xpath>
+            <xpath expr="//form[1]/sheet[1]/notebook[1]/page[@name='contact_addresses']/field[@name='child_ids']/form[1]/sheet[1]/group[1]/group[2]/field[@name='mobile']"
+                   position="after">
+                <field name="company_name"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

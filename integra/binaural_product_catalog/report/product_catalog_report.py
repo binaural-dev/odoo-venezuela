@@ -2,6 +2,8 @@
 # Copyright (C) Softhealer Technologies.
 
 from odoo import models, api
+from odoo.tools import float_round
+from odoo.tools.misc import formatLang
 import numpy as np
 import logging
 _logger = logging.getLogger(__name__)
@@ -16,6 +18,25 @@ class ProductCatalogReport(models.AbstractModel):
         
         return final_product_list[0] if len(final_product_list) > 0 else final_product_dic
         
+    @api.model
+    def _prepare_product_dict(self, record, price, data, currency_id):
+        def get_price(self, price):
+            return self.product_tmpl_id.taxes_id.compute_all(price, currency_id, 1)["total_included"]
+
+        price = float_round(price, precision_digits=currency_id.decimal_places)
+        return {
+            "id": record.id,
+            "default_code": record.default_code,
+            "name": record.name,
+            "cat_name": record.categ_id.name,
+            "image": record.image_1920,
+            "price": formatLang(self.env, get_price(record, price), currency_obj=currency_id, digits=data["sh_price_decimal_places"]),
+            "description": record.description_sale,
+            "template_id": record.product_tmpl_id.id,
+            "currency_id": currency_id.symbol,
+            "uom": record.uom_id.name,
+            "quantity": record.quantity,
+        }
 
     @api.model
     def _get_catalog_report_values(self, docids, data=None):
@@ -46,19 +67,7 @@ class ProductCatalogReport(models.AbstractModel):
                                     search_product, 1.0)
                             else:
                                 price = search_product.list_price
-                            product_dic = {
-                                'id': search_product.id,
-                                'default_code': search_product.default_code,
-                                'name': search_product.name,
-                                'cat_name': search_product.categ_id.name,
-                                'image': search_product.image_1920,
-                                'price': format(price, '.'+str(data['sh_price_decimal_places'])+"f"),
-                                'description': search_product.description_sale,
-                                'template_id': search_product.product_tmpl_id.id,
-                                'currency_id': currency_id.symbol,
-                                'uom': search_product.uom_id.name,
-                                'quantity': search_product.quantity,
-                            }
+                            product_dic = self._prepare_product_dict(search_product, price, data, currency_id) 
                             product_dict_list.append(product_dic)
                             count = count + 1
                             total_product = total_product - 1
@@ -103,19 +112,7 @@ class ProductCatalogReport(models.AbstractModel):
                                     rec, 1.0)
                             else:
                                 price = rec.list_price
-                            product_dic = {
-                                'default_code': rec.default_code,
-                                'name': rec.name,
-                                'cat_name': rec.categ_id.name,
-                                'image': rec.image_1920,
-                                'price': format(price, '.'+str(data['sh_price_decimal_places'])+"f"),
-                                'description': rec.description_sale or '',
-                                'template_id': rec.product_tmpl_id.id,
-                                'currency_id': currency_id.symbol,
-                                'id': rec.id,
-                                'uom': rec.uom_id.name,
-                                'quantity': rec.quantity,
-                            }
+                            product_dic = self._prepare_product_dict(rec, price, data, currency_id) 
                             product_list.append(product_dic)
                             count = count + 1
                             total_product = total_product - 1
@@ -150,6 +147,8 @@ class ProductCatalogReport(models.AbstractModel):
                         final_product_dic.update(
                             {search_category.name: product_list})
 
+        if data.get("order_by_name", False):
+            product_dict_list = list(sorted(product_dict_list, key=lambda x: x["name"]))
         data = {
             'catalog_type': data['catalog_type'],
             'price': data['price'],

@@ -308,6 +308,12 @@ class SaleOrderBudget(http.Controller):
             data.update({"status": 409, "msg": _("There was an error handling the request"), "error": str(e)})
             return data
 
+    @http.route("/validation_available", type="json", methods=["POST", "PUT"], auth="public", website=False, sitemap=False)
+    def validation_available(self, **kwargs):
+        settings = request.env['res.config.settings'].sudo().create({})  # Crear una instancia temporal de res.config.settings
+        allow_out_of_stock_order = settings.allow_out_of_stock_order
+        return {"allow_out_of_stock_order": allow_out_of_stock_order}
+
     @http.route(
         "/budget/create/order/line",
         type="json",
@@ -435,6 +441,31 @@ class SaleOrderBudget(http.Controller):
 
         return data
 
+    @http.route(
+            '/budget/update_partner', type="json", auth="public", website=False, sitemap=False
+    )
+    def update_partner(self, budget=False, partner=False, **kw):
+        data = {"status": 200, "msg": _("Success")}
+        
+        if not budget or not partner:
+            data.update(
+                {"status": 204, "msg": _("No Found Budget or partner"),  "data": False}
+            )
+            return json.dumps(data)
+        
+        try:
+            sale_id = int(budget)
+            sale_order = request.env["sale.order"].sudo().search([("id", "=", sale_id)])
+            sale_order.update({
+                "partner_id": int(partner)
+            })
+        except Exception as e:
+            data.update({"status": 400, "msg": str(e)})
+            return data
+
+        return data
+
+
     def check_lines_validations(self, lines):
         """Evaluates if the sale order lines have available quantities
         and the quantity meet the sales policy requirement.
@@ -536,8 +567,10 @@ class SaleOrderBudget(http.Controller):
             warehouse_id = line.warehouse_id.id
             lang = line.order_id.partner_id.lang or request.env.user.lang or "es_VE"
             product = line.product_id.with_context(warehouse=warehouse_id, lang=lang)
+            settings = request.env['res.config.settings'].sudo().create({})  # Crear una instancia temporal de res.config.settings
+            allow_out_of_stock_order = settings.allow_out_of_stock_order
 
-            if product.free_qty < line.product_uom_qty:
+            if product.free_qty < line.product_uom_qty and not allow_out_of_stock_order:
                 message = _(
                     "Estás tratando de vender %(uom_qty).2f %(uom)s de %(product_name)s Pero solo tienes %(product_quantity).2f %(uom)s disponible en %(warehouse)s."
                 ) % {

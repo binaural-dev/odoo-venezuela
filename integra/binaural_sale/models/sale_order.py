@@ -1,8 +1,9 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from lxml import etree
 from odoo.tools.float_utils import float_is_zero
-from odoo.osv import expression
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class SaleOrder(models.Model):
@@ -173,7 +174,7 @@ class SaleOrder(models.Model):
         """
         self._compute_rate()
 
-    @api.depends("date_order")
+    @api.depends("foreign_currency_id", "date_order")
     def _compute_rate(self):
         """
         Compute the rate of the sale order using the compute_rate method of the res.currency.rate
@@ -192,7 +193,8 @@ class SaleOrder(models.Model):
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id, sale.date_order.date() or fields.Date.today()
             )
-            sale.update(rate_values)
+            sale.foreign_rate = rate_values["foreign_rate"]
+            sale.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -210,7 +212,6 @@ class SaleOrder(models.Model):
                 if sale.foreign_currency_id.id == base_usd_id
                 else sale.foreign_rate
             )
-            sale.manually_set_rate = True
 
     def _create_invoices(self, grouped=False, final=False, date=None):
         """
@@ -273,7 +274,10 @@ class SaleOrder(models.Model):
 
     def _prepare_invoice(self):
         invoice_vals = super()._prepare_invoice()
+        invoice_vals["manually_set_rate"] = self.manually_set_rate
         invoice_vals["filter_partner"] = self.filter_partner
+        invoice_vals["foreign_rate"] = self.foreign_rate
+        invoice_vals["foreign_inverse_rate"] = self.foreign_inverse_rate
         return invoice_vals
 
     def _update_invoices_rate(self):
@@ -345,8 +349,56 @@ class SaleOrder(models.Model):
         except:
             self._recompute_prices()
 
+    def _block_valid_confirm(self):
+        self.ensure_one()
+
+        block_order_invoice_payment_state = self.company_id.block_order_invoice_payment_state
+        block_order_invoice_total_amount_overdue = self.company_id.block_order_invoice_total_amount_overdue
+
+        today_date = fields.Date.today()
+
+        invoice_ids =  self.env["account.move"].search([
+            ("partner_id", "=", self.partner_id.id),
+            ("amount_total", ">", 0),
+            "|",
+            ("payment_state", "=", block_order_invoice_payment_state),
+            ("invoice_date_due", "<", today_date)
+        ])
+
+        if not any(invoice_ids):
+            return None
+
+        invoice_count_payment_state = 0
+        invoice_count_date_expired = 0
+        amount_total_overdue = 0
+
+        for invoice_id in invoice_ids:
+
+            if block_order_invoice_payment_state:
+                if invoice_id.payment_state == block_order_invoice_payment_state:
+                    invoice_count_payment_state += 1
+
+            if invoice_id.invoice_date_due < today_date:
+                amount_total_overdue += invoice_id.amount_total
+                invoice_count_date_expired +=1
+
+        if invoice_count_payment_state:
+
+            payment_state_labels = {
+                "not_paid": _('Not Paid'),
+                "in_payment": _('In Payment Process',)
+            }
+
+            raise UserError(_("The budget cannot be confirmed. You have %s Invoices (%s).") % (invoice_count_payment_state, payment_state_labels[block_order_invoice_payment_state]))
+
+        if block_order_invoice_total_amount_overdue:
+            if amount_total_overdue > block_order_invoice_total_amount_overdue:
+                raise UserError(_("The budget cannot be confirmed. Has an overdue amount of (%s) that cannot be greater than %s %s.") % (amount_total_overdue, block_order_invoice_total_amount_overdue, invoice_id.currency_id.name))
+
+
     def action_confirm(self):
-        if self.env.company.not_allow_sell_products:
+        skip_not_allow_sell_products_validation = self.env.context.get("skip_not_allow_sell_products_validation", False)
+        if self.env.company.not_allow_sell_products and not skip_not_allow_sell_products_validation:
             for order in self:
                 for line in order.order_line:
                     if (
@@ -360,7 +412,7 @@ class SaleOrder(models.Model):
                             line.product_uom_qty,
                         )
                         raise ValidationError(msg)
-                    
+
             if (
                 order.company_id.account_use_credit_limit
                 and order.partner_id.use_partner_credit_limit_order
@@ -377,4 +429,7 @@ class SaleOrder(models.Model):
                             round(order.partner_id.credit_limit, decimal_places),
                         )
                     )
+                
+        self._block_valid_confirm()
+
         return super().action_confirm()
