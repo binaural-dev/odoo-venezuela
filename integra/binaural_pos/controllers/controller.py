@@ -65,7 +65,7 @@ class ValidateQtyProducts(http.Controller):
                         warehouse_ids += quant.warehouse_id
                         quantity_available += quant.available_quantity
 
-                    if qty[product_qty_position] > quantity_available:
+                    if qty[product_qty_position] >= quantity_available:
                         data.update(
                             {
                                 "msg_error": _(
