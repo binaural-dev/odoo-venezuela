@@ -26,6 +26,8 @@ class HrContract(models.Model):
 
     salary_type = fields.Selection([("fixed", "Fixed"), ("variable", "Variable")], default="fixed")
 
+    structure_type_id = fields.Many2one(required=True)
+
     @api.depends("wage_type", "compute_payroll_using")
     def _compute_wage_field_to_use(self):
         conditions_for_fields = {
