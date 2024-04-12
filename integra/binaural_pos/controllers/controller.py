@@ -7,6 +7,7 @@ from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
 
+
 class ValidateQtyProducts(http.Controller):
     @http.route(
         "/validate_products_order", type="json", auth="public", website=False, sitemap=False
@@ -42,13 +43,9 @@ class ValidateQtyProducts(http.Controller):
         if product_ids:
             product_qty_position = 0
             for product in product_ids:
-                product_id = (
-                    request.env["product.product"].browse(product).product_tmpl_id
-                )
+                product_id = request.env["product.product"].browse(product).product_tmpl_id
                 warehouse_id_pos = (
-                    request.env["stock.picking.type"]
-                    .browse(picking_type_id[0])
-                    .warehouse_id
+                    request.env["stock.picking.type"].browse(picking_type_id[0]).warehouse_id
                 )
 
                 if product_id:
@@ -59,13 +56,16 @@ class ValidateQtyProducts(http.Controller):
                             ("product_tmpl_id.type", "!=", "service"),
                         ]
                     )
-                    warehouse_ids = request.env["stock.warehouse"]
+                    product_in_warehouse_pos = False
                     quantity_available = 0.0
                     for quant in stock_quant:
-                        warehouse_ids += quant.warehouse_id
-                        quantity_available += quant.available_quantity
+                        if warehouse_id_pos == quant.warehouse_id:
+                            product_in_warehouse_pos = True
+                            quantity_available += (
+                                quant.available_quantity if quant.available_quantity > 0 else 0
+                            )
 
-                    if qty[product_qty_position] >= quantity_available:
+                    if qty[product_qty_position] > quantity_available:
                         data.update(
                             {
                                 "msg_error": _(
@@ -76,9 +76,10 @@ class ValidateQtyProducts(http.Controller):
                             }
                         )
                         return data
-                    if warehouse_id_pos not in warehouse_ids:
+                    if not product_in_warehouse_pos:
                         products_name += f"{product_id.name} ,"
                     product_qty_position += 1
+
         if products_name:
             data.update(
                 {
