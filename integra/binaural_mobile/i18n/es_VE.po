@@ -16,6 +16,11 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_mobile
+#: model:res.groups,name:binaural_mobile.group_sellers_show_quantity_available
+msgid "Portal / Dont show quantity available"
+msgstr "Portal / No mostrar cantidad disponible a vendedores"
+
+#. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.products
 msgid "\" category."
 msgstr ""
