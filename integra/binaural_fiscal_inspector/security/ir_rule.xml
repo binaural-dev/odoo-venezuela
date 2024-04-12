@@ -33,7 +33,16 @@
             <field name="perm_unlink" eval="False"/>
         </record>
 
-
+        <record id="access_only_fiscal_dairy" model="ir.rule">
+            <field name="name">Only Fiscal Dairy Access Rights</field>
+            <field name="model_id" ref="account.model_account_journal"/>
+            <field name="domain_force">[('fiscal', '=',True)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal_inspector.group_fiscal_inspectorate'))]"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        
         <record id="access_only_fiscal_invoices_editable" model="ir.rule">
             <field name="name">Only Fiscal Invoices Access Rights (Group editable)</field>
             <field name="model_id" ref="account.model_account_move"/>
@@ -63,6 +72,17 @@
             <field name="perm_create" eval="False"/>
             <field name="perm_unlink" eval="False"/>
         </record>
+
+        <record id="access_only_fiscal_dairy_editable" model="ir.rule">
+            <field name="name">Only Fiscal dairy Access Rights (Group editable)</field>
+            <field name="model_id" ref="account.model_account_journal"/>
+            <field name="domain_force">[('fiscal', '=',True)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal_inspector.group_fiscal_inspectorate_editable'))]"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        
         
     </data>
     
