@@ -31,7 +31,7 @@
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" id="csrf_token" />
                     <t t-if="budget">
                         <t t-if="budget.state == 'draft'">
-                            <div class="d-flex justify-content-center">
+                            <div class="d-flex justify-content-center" t-if="not not_confirm_quotes">
                                 <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
                                 <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                             </div>
@@ -41,7 +41,7 @@
                         </t>
                     </t>
                     <t t-else="">
-                        <div class="d-flex justify-content-center">
+                        <div class="d-flex justify-content-center" t-if="not not_confirm_quotes">
                             <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
                             <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                         </div>
@@ -326,7 +326,7 @@
                     <br />
                     <t t-if="budget">
                         <t t-if="budget.state == 'draft'">
-                            <div class="d-flex justify-content-center">
+                            <div class="d-flex justify-content-center" t-if="not not_confirm_quotes">
                                 <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
                                 <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                             </div>
@@ -336,7 +336,7 @@
                         </t>
                     </t>
                     <t t-else="">
-                        <div class="d-flex justify-content-center">
+                        <div class="d-flex justify-content-center" t-if="not not_confirm_quotes">
                             <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
                             <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                         </div>
