@@ -284,6 +284,7 @@ class SerialFiscalDriver(SerialDriver):
                 "status": self.get_status_machine,
                 "status1": self.GetS1PrinterData,
                 "logger": self.logger,
+                "logger_multi": self.logger_multi,
                 "programacion": self.programacion,
                 "print_out_invoice": self.print_out_invoice,
                 "print_out_refund": self.print_out_refund,
@@ -377,6 +378,13 @@ class SerialFiscalDriver(SerialDriver):
     def logger(self, data):
         self.SendCmd(str(data["data"]))
         _logger.info(data["data"])
+        self.data["value"] = {"status": "true"}
+        event_manager.device_changed(self)
+
+    def logger_multi(self, data):
+        lines = data.get("data", [])
+        for line in lines:
+            self.SendCmd(str(line))
         self.data["value"] = {"status": "true"}
         event_manager.device_changed(self)
 

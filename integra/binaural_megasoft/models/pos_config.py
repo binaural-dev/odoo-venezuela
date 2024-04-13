@@ -12,3 +12,4 @@ class PosConfig(models.Model):
         string="IoT Device",
         help="When setting a device here, the exchange be printed through this device",
     )
+    pre_close = fields.Boolean()
