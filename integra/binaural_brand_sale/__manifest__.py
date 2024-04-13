@@ -7,13 +7,13 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Stock/Inventory",
-    "version": "16.0.0.0",
+    "version": "16.0.0.1",
     "depends": ["stock", "sale", "binaural_brand"],
     "data": [
         "views/sale_order_views.xml",
         "views/sale_report_view.xml",
         "reports/report_sale.xml",
     ],
-    "auto_install": True,
+    "auto_install": False,
     "application": True,
 }

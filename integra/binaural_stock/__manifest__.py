@@ -9,8 +9,8 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.16.0.9",
-    "depends": ["stock","binaural_tax", "binaural_rate", "delivery", "binaural_brand"],
+    "version": "16.0.16.0.10",
+    "depends": ["stock", "product", "binaural_rate", "delivery"],
     "data": [
         "security/security_binaural_stock.xml",
         "security/binaural_stock_groups.xml",

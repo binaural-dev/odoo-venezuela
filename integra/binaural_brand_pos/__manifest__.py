@@ -7,12 +7,12 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Point of Sale",
-    "version": "16.0.1.0.0",
+    "version": "16.0.1.0.1",
     "depends": ["point_of_sale", "binaural_brand"],
     "data": [
         "views/pos_order_views.xml",
         "views/sale_report_view.xml",
     ],
     "application": True,
-    "auto_install": True,
+    "auto_install": False,
 }

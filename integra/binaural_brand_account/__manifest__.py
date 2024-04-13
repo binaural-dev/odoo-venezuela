@@ -7,12 +7,12 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Stock/Inventory",
-    "version": "16.0.0.0",
+    "version": "16.0.0.1",
     "depends": ["stock", "stock_account", "account", "binaural_brand"],
     "data": [
         "views/account_move_views.xml",
         "views/stock_valuation_layer_views.xml",
     ],
-    "auto_install": True,
+    "auto_install": False,
     "application": True,
 }

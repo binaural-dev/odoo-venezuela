@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.1.0.15",
+    "version": "16.0.1.0.16",
     "depends": ["stock", "barcodes", "stock_barcode", "hr", "binaural_stock"],
     "data": [
         "security/ir.model.access.csv",
@@ -20,6 +20,7 @@
         "views/action_print_barcode_cart.xml",
         "views/stock_picking_cart_views.xml",
         "views/stock_move_line_views.xml",
+        "views/stock_location_views.xml",
         "wizard/operation_supervisor_views.xml",
         "wizard/stock_picking_incomplete.xml",
     ],
