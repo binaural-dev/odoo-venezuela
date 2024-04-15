@@ -1,9 +1,5 @@
 from odoo import api, fields, models
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class OperationSupervisor(models.TransientModel):
     _name = "stock.operation.supervisor"

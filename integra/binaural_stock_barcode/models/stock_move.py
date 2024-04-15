@@ -1,9 +1,5 @@
 from odoo import _, api, fields, models
 
-import logging
-
-_logger = logging.getLogger()
-
 
 class StockMoveLine(models.Model):
     _inherit = "stock.move"

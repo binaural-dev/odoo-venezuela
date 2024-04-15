@@ -11,10 +11,6 @@ from odoo.tools import pdf, split_every
 from odoo.tools.misc import file_open
 from odoo.addons.stock_barcode.controllers.stock_barcode import StockBarcodeController
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class StockBarcodeControllerInherit(StockBarcodeController):
     @http.route("/stock_barcode/scan_from_main_menu", type="json", auth="user")
@@ -58,44 +54,13 @@ class StockBarcodeControllerInherit(StockBarcodeController):
 
         model_stock_picking = request.env["stock.picking"]
 
-        if role_picking == "picker":
-            if not self.is_cart_available_to_assign(cart_picking):
-                return {
-                    "warning": _(
-                        "You cannot assign the pick to this cart because there is an OUT in process"
-                    )
-                }
-            if cart_picking.pick_id and cart_picking.pick_id.state != "done":
-                if cart_picking.pick_id.operation_state == "paused":
-                    if cart_picking.pick_id.picker_id.pick_ids.filtered(lambda x: x.operation_state in ["in_process"]):
-                        _logger.info("You have ANOTHER")
-                        return {"warning": _("You have another operation in process")}
-                    cart_picking.pick_id.set_time_operation("resume")
+        type_delivery_step = request.env.company.main_warehouse_id.delivery_steps
 
-                if cart_picking.pick_id.picker_id != employee_id:
-                    return {"warning": _("The pick is already assigned to another picker")}
+        init_operation = cart_picking.pick_id
+        if type_delivery_step == "ship_only":
+            init_operation = cart_picking.out_id
 
-
-                return self._open_stock_picking(cart_picking.pick_id)
-
-            picking_id = self.get_pick_assigned(employee_id)
-
-            if picking_id:
-                if picking_id.cart_id:
-                    return {"warning": _("The pick is already assigned to another cart")}
-
-                out_id = model_stock_picking.search(
-                    ["&", ("origin", "=", picking_id.origin), ("type_delivery_step", "=", "out")]
-                )
-                picking_id.write({"cart_id": cart_picking.id})
-                cart_picking.write({"pick_id": picking_id.id, "out_id": out_id.id})
-
-                picking_id.set_time_operation("start", employee_id)
-                return self._open_stock_picking(picking_id)
-
-            return {"warning": _("You do not currently have a pick assigned")}
-
-        if role_picking == "out":
+        if type_delivery_step != "ship_only" and role_picking == "out":
             if cart_picking.pick_id and cart_picking.pick_id.state != "done":
                 return {
                     "warning": _(
@@ -110,11 +75,49 @@ class StockBarcodeControllerInherit(StockBarcodeController):
 
             return {"warning": _("This cart does not have any OUT assigned")}
 
-        return {
-            "warning": _(
-                "Your user is not configured with any role to be able to take an operation"
-            )
-        }
+        # Init Process Assign Cart
+
+        if not self.is_cart_available_to_assign(cart_picking):
+            return {
+                "warning": _(
+                    "You cannot assign the pick to this cart because there is an operation in process"
+                )
+            }
+
+        if init_operation and init_operation.state != "done":
+            if init_operation.operation_state == "paused":
+                if init_operation.picker_id.pick_ids.filtered(
+                    lambda x: x.operation_state in ["in_process"]
+                ):
+                    return {"warning": _("You have another operation in process")}
+                init_operation.set_time_operation("resume")
+
+            if init_operation.picker_id != employee_id:
+                return {"warning": _("The pick is already assigned to another picker")}
+
+            return self._open_stock_picking(init_operation)
+
+        picking_id = self.get_pick_assigned(employee_id)
+
+        if picking_id:
+            if picking_id.cart_id:
+                return {"warning": _("The pick is already assigned to another cart")}
+
+            if type_delivery_step == "ship_only":
+                cart_picking.write({"out_id": picking_id.id})
+            else:
+                out_id = model_stock_picking.search(
+                    ["&", ("origin", "=", picking_id.origin), ("type_delivery_step", "=", "out")]
+                )
+                cart_picking.write({"pick_id": picking_id.id, "out_id": out_id.id})
+                if type_delivery_step == "pick_pack_ship":
+                    cart_picking.write({"pack_id": picking_id.pack_id.id})
+
+            picking_id.write({"cart_id": cart_picking.id})
+            picking_id.set_time_operation("start", employee_id)
+            return self._open_stock_picking(picking_id)
+
+        return {"warning": _("You do not currently have a pick assigned")}
 
     def is_cart_available_open_out(self, cart):
         if (
@@ -127,17 +130,30 @@ class StockBarcodeControllerInherit(StockBarcodeController):
         return False
 
     def is_cart_available_to_assign(self, cart):
-        if not cart.pick_id and not cart.out_id:
+        if True not in (bool(cart.pick_id), bool(cart.out_id), bool(cart.pack_id)):
             return True
 
+        type_delivery_step = request.env.company.main_warehouse_id.delivery_steps
+        if type_delivery_step == "ship_only" and cart.out_id and cart.out_id.state != "done":
+            return True
         if (
-            cart.pick_id
+            type_delivery_step == "pick_ship"
+            and cart.pick_id
             and cart.pick_id.state != "done"
             and cart.out_id
             and cart.out_id.state != "done"
         ):
             return True
-
+        if (
+            type_delivery_step == "pick_pack_ship"
+            and cart.pick_id
+            and cart.pick_id.state != "done"
+            and cart.out_id
+            and cart.out_id.state != "done"
+            and cart.pack_id
+            and cart.pack_id.state != "done"
+        ):
+            return True
         return False
 
     def _open_stock_picking(self, stock_picking):

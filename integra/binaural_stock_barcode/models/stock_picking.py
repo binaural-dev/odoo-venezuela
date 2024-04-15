@@ -2,9 +2,6 @@ from odoo import api, fields, models, _
 from odoo.tools import html2plaintext, is_html_empty
 from odoo.tools.float_utils import float_compare
 from odoo.exceptions import ValidationError
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class StockPicking(models.Model):
@@ -99,10 +96,15 @@ class StockPicking(models.Model):
         if self.picker_id.pick_ids.filtered(lambda x: x.operation_state in ["ready"]):
             return
 
+        type_delivery_step = "pick"
+        if self.location_id.warehouse_id.delivery_steps == "ship_only":
+            type_delivery_step = "out"
+
+
         new_pick = self.search(
             [
                 ("operation_state", "=", "ready"),
-                ("type_delivery_step", "=", "pick"),
+                ("type_delivery_step", "=", type_delivery_step),
                 ("picker_id", "=", False),
             ],
             order="create_date asc",
@@ -120,15 +122,17 @@ class StockPicking(models.Model):
                     {"pick_id": record.id, "employee_id": user.employee_id.id, "type": "end"}
                 )
 
-                if record.type_delivery_step == "pick":
-                    record.assign_new_pick_to_employee()
+                type_delivery_step = "pick"
+                if record.location_id.warehouse_id.delivery_steps == "ship_only":
+                    type_delivery_step = "out"
 
                 if record.type_delivery_step == "out":
                     record.cart_id.pick_id = False
                     record.cart_id.out_id = False
                     record.cart_id.pack_id = False
 
-
+                if record.type_delivery_step == type_delivery_step:
+                    record.assign_new_pick_to_employee()
 
                     order = record.sale_id
                     wizard = self.env["sale.advance.payment.inv"].create(
@@ -164,12 +168,18 @@ class StockPicking(models.Model):
     def action_confirm(self):
         res = super().action_confirm()
         for record in self:
-            if record.type_delivery_step == "pick":
+            type_delivery_step = "pick"
+            if record.location_id.warehouse_id.delivery_steps == "ship_only":
+                type_delivery_step = "out"
+            if record.type_delivery_step == type_delivery_step:
                 record.picker_id = record.get_available_picker()
         return res
 
     def get_available_picker(self):
-        picker_ids = self.env["hr.employee"].search([("role_picking", "=", "picker")])
+        init_role_picking = "picker"
+        if self.env.company.main_warehouse_id.delivery_steps == "ship_only":
+            init_role_picking = "out"
+        picker_ids = self.env["hr.employee"].search([("role_picking", "=", init_role_picking)])
         for picker in picker_ids:
             if picker.available_to_assing_picking():
                 return picker.id

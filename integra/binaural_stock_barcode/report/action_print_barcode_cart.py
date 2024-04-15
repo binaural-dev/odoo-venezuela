@@ -2,9 +2,6 @@ from odoo import models, api, _
 from odoo.exceptions import ValidationError
 
 
-import logging
-_logger = logging.getLogger(__name__)
-
 class BinauralPaymentExtensionRetentionIvaVoucher(models.AbstractModel):
     _name = "report.binaural_stock_barcode.cart_print_barcode"
 

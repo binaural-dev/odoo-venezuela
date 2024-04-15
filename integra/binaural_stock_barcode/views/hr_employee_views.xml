@@ -15,7 +15,7 @@
                 <attribute name="password">True</attribute>
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Pick Information" attrs="{'invisible': [('role_picking','!=', 'picker')]}">
+                <page string="Pick Information" attrs="{'invisible': [('role_picking', 'in', [False, 'supervisor'])]}">
                     <field 
                         name="pick_ids" 
                         editable="bottom" 

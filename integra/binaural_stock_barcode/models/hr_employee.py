@@ -1,8 +1,5 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class HrEmployee(models.Model):

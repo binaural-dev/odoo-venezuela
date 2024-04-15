@@ -2,10 +2,6 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.models import TransientModel
 from odoo import api, fields, models, _
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class StockBackorderConfirmation(models.TransientModel):
     _name = "stock.picking.incomplete"
@@ -26,7 +22,6 @@ class StockBackorderConfirmation(models.TransientModel):
         pickings_to_validate_ids = self.env.context.get("button_validate_picking_ids")
         if pickings_to_validate_ids:
             pickings_to_validate = self.env["stock.picking"].browse(pickings_to_validate_ids)
-            _logger.info(pickings_to_validate)
             return pickings_to_validate.with_context(
                 skip_incomplete_qty=True
             ).button_validate()
