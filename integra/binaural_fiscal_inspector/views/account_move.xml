@@ -46,4 +46,15 @@
         </field>
     </record>
 
+    <record id="account_invoice_form_inherit_binaural_fiscal_sale" model="ir.ui.view">
+        <field name="name">account.move.binaural.fiscal.inspector.view.form.inherit</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="sale.account_invoice_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_view_source_sale_orders']" position="attributes">
+                <attribute name="groups">!binaural_fiscal_inspector.group_fiscal_inspectorate_editable,!binaural_fiscal_inspector.group_fiscal_inspectorate</attribute>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>
