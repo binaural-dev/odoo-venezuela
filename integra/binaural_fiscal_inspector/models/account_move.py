@@ -13,3 +13,9 @@ class AccountMove(models.Model):
     invoice_payments_widget = fields.Binary(
         groups="account.group_account_invoice,account.group_account_readonly,binaural_fiscal_inspector.group_fiscal_inspectorate,binaural_fiscal_inspector.group_fiscal_inspectorate_editable",
     )
+
+    def _post(self, soft=True):
+        if self.env.user.has_group('binaural_fiscal_inspector.group_fiscal_inspectorate_editable'):
+            self = self.sudo()
+            return super()._post(soft)
+        return super()._post(soft)
