@@ -225,17 +225,17 @@ class PosSession(models.Model):
         for session in self:
             for payment in session:
                 for order in payment.order_ids:
-                    for payment in order.payment_ids:
+                    for order_payment in order.payment_ids:
                         if (
-                            payment.payment_method_id.cross_account_journal
-                            and payment.payment_method_id.cross_journal
+                            order_payment.payment_method_id.cross_account_journal
+                            and order_payment.payment_method_id.cross_journal
                         ):
-                            if payment.amount < 0:
-                                line_vals = session._line_vals_move_cross_outgoing(payment)
+                            if order_payment.amount < 0:
+                                line_vals = session._line_vals_move_cross_outgoing(order_payment)
                             else:
-                                line_vals = session._line_vals_move_cross_incoming(payment)
+                                line_vals = session._line_vals_move_cross_incoming(order_payment)
 
-                            session._create_cross_move(payment, line_vals)
+                            session._create_cross_move(order_payment, line_vals)
 
     def _line_vals_move_cross_incoming(self, payment):
         """
