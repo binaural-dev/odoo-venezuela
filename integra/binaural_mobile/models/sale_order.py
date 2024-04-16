@@ -34,7 +34,7 @@ class SaleOrder(models.Model):
     )
 
     def write(self, vals):
-        if "order_line" in vals and self.env.user.employee_id.is_seller:
+        if "order_line" in vals and self.env.user.employee_id.is_seller and self.state in ["sale","done"]:
             raise UserError(_("You can't modify this order, beceause it isn't in draft."))
         res = super().write(vals)
         return res
