@@ -1,4 +1,4 @@
-from odoo import models, fields, api, _
+from odoo import models, fields, api, _, Command
 from odoo.tools import float_is_zero, float_compare
 from odoo.osv.expression import AND, OR
 
@@ -217,3 +217,143 @@ class PosSession(models.Model):
         account_move.compute_line_ids_foreign_debit_and_credit()
         # << Binaural
         return data
+
+
+    def _validate_cross_move(self):
+        """This function validate cross move, the proposal of this function is the transitory account be zero"""
+
+        for session in self:
+            for payment in session:
+                for order in payment.order_ids:
+                    for order_payment in order.payment_ids:
+                        if (
+                            order_payment.payment_method_id.cross_account_journal
+                            and order_payment.payment_method_id.cross_journal
+                        ):
+                            if order_payment.amount < 0:
+                                line_vals = session._line_vals_move_cross_outgoing(order_payment)
+                            else:
+                                line_vals = session._line_vals_move_cross_incoming(order_payment)
+
+                            session._create_cross_move(order_payment, line_vals)
+
+    def _line_vals_move_cross_incoming(self, payment):
+        """
+        This method creates the move_lines for the move_cross when the payment is incoming.
+
+        Args:
+            payment (account.payment): payment generate from PoS
+
+        Returns:
+            account.move.line: move line to move cross
+        """
+        credit_account = 0
+        debit_account = 0
+        for account in payment.payment_method_id:
+            credit_account = account.outstanding_account_id.id
+
+        for account in payment.payment_method_id.cross_journal:
+            debit_account = account.inbound_payment_method_line_ids.payment_account_id.id
+
+            
+            return [
+                Command.create(
+                    {
+                        "name": _("PoS Payment Method Adjustment"),
+                        "account_id": credit_account,
+                        "partner_id": payment.partner_id.id,
+                        "credit": payment.amount,
+                        "debit": 0.0,
+                        "foreign_rate": payment.foreign_rate,
+                    }
+                ),
+                Command.create(
+                    {
+                        "name": _("PoS Payment Method Adjustment"),
+                        "account_id": debit_account,
+                        "partner_id": payment.partner_id.id,
+                        "debit": payment.amount,
+                        "credit": 0.0,
+                        "foreign_rate": payment.foreign_rate,
+                    }
+                ),
+            ]
+
+    def _line_vals_move_cross_outgoing(self, payment):
+        """
+        This method creates the move_lines for the move_cross when the payment is outgoing (is change).
+
+        Args:
+            payment (pos.payment): payment generate from PoS
+
+        Returns:
+            account.move.line: move line to move cross
+        """
+        credit_account = 0
+        debit_account = 0
+        for account in payment.payment_method_id:
+            debit_account = account.outstanding_account_id.id
+
+        for account in payment.payment_method_id.cross_journal:
+            credit_account = account.outbound_payment_method_line_ids.payment_account_id.id
+
+            return [
+                Command.create(
+                    {
+                        "name": _("PoS Payment Method Adjustment"),
+                        "account_id": debit_account,
+                        "partner_id": payment.partner_id.id,
+                        "credit": 0.0,
+                        "debit": payment.amount,
+                        "foreign_rate": payment.foreign_rate,
+                    }
+                ),
+                Command.create(
+                    {
+                        "name": _("PoS Payment Method Adjustment"),
+                        "account_id": credit_account,
+                        "partner_id": payment.partner_id.id,
+                        "debit": 0.0,
+                        "credit": payment.amount,
+                        "foreign_rate": payment.foreign_rate,
+                    }
+                ),
+            ]
+
+    def _create_cross_move(self, payment, line_vals):
+        """
+         This method create the move for the transitory account sets zero.
+
+        Args:
+            payment (pos.payment): payment from PoS
+            line_vals (account.move.line): move line to move cross
+
+        Returns:
+            account.move: Pos payment method adjustment move.
+        """
+        move = self.env["account.move"].create(
+            {
+                "name": _("PoS Payment Method Adjustment"),
+                "date": payment.create_date,
+                "journal_id": payment.payment_method_id.cross_account_journal.id,
+                "state": "draft",
+                "line_ids": line_vals,
+                "foreign_currency_id": payment.foreign_currency_id.id,
+                "foreign_rate": payment.foreign_rate,
+                "company_id": self.company_id.id,
+            }
+        )
+        return move
+
+    def action_pos_session_close(
+        self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None
+    ):
+        """
+        When the session is closed, the cross move is created.
+        """
+        res = super().action_pos_session_close(
+            balancing_account, amount_to_balance, bank_payment_method_diffs
+        )
+        for session in self:
+            session._validate_cross_move()
+        return res

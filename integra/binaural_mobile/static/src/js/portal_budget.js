@@ -266,7 +266,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             }
         },
 
-        _appendProduct: (self, products, allow_out_of_stock_order,stock_packaging, tbody) => {
+        _appendProduct: async (self, products, allow_out_of_stock_order,stock_packaging, tbody) => {
 
             if (!products) return;
 
@@ -291,13 +291,28 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 symbolBefore = symbol
             }
 
+            let dont_show_quantity_available = false
+            try{
+              dont_show_quantity_available = await self._rpc(
+                {
+                  "model": "res.users",
+                  "method":"has_group",
+                  "args": ['binaural_mobile.group_sellers_show_quantity_available']
+                }
+              )
+            }catch(e){}
+
+
             products.forEach(product => {
                 let { display_name, list_price, image, quantity, id, msg_price, uom_id, type, packaged_product } = product
                 let displayQtyOrType = ""
-                if(quantity == 0 && !allow_out_of_stock_order && type != "product") {
-                    displayQtyOrType = type
-                }else{
-                    displayQtyOrType = quantity.toFixed(2) + ' ' + uom_id[1]
+
+                if(!dont_show_quantity_available){
+                  if(quantity == 0 && !allow_out_of_stock_order && type != "product") {
+                      displayQtyOrType = type
+                  }else{
+                      displayQtyOrType = quantity.toFixed(2) + ' ' + uom_id[1]
+                  }
                 }
 
                 if(stock_packaging){
@@ -318,7 +333,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                             <input type="hidden" class="val_product" value="${id}"/>
                             <label class="form-text">${priceLabel}:</label>
                             <label class="form-text price_product" style="font-weight: bolder;">${symbolBefore} ${list_price} ${symbolAfter}</label><br/>
-                            <label class="form-text" style="font-weight: bolder;">${displayQtyOrType}</label><input type='hidden' id="qtyAvailable" value='${quantity}'/>
+                            <label class="form-text" style="font-weight: bolder;">${displayQtyOrType || ""}</label><input type='hidden' id="qtyAvailable" value='${quantity}'/>
                         </td>
                         <td style="width: 150px;">
                             <input type="text" class="form-control qty_product" id='qtyProduct' placeholder="${qtyLabel}"/>
