@@ -43,6 +43,10 @@
                 binaural_fiscal_inspector.group_fiscal_inspectorate"/>
             </xpath>
 
+            <xpath expr="//button[@name='open_reconcile_view']" position="attributes">
+                <attribute name="groups">!binaural_fiscal_inspector.group_fiscal_inspectorate_editable,!binaural_fiscal_inspector.group_fiscal_inspectorate</attribute>
+            </xpath>
+
         </field>
     </record>
 
@@ -52,6 +56,17 @@
         <field name="inherit_id" ref="sale.account_invoice_form"/>
         <field name="arch" type="xml">
             <xpath expr="//button[@name='action_view_source_sale_orders']" position="attributes">
+                <attribute name="groups">!binaural_fiscal_inspector.group_fiscal_inspectorate_editable,!binaural_fiscal_inspector.group_fiscal_inspectorate</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_move_form_inherit_inherit_binaural_fiscal_accountant" model="ir.ui.view">
+        <field name="name">account.move.view.form.inherit</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account_accountant.view_move_form_inherit"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_open_bank_reconciliation_widget']" position="attributes">
                 <attribute name="groups">!binaural_fiscal_inspector.group_fiscal_inspectorate_editable,!binaural_fiscal_inspector.group_fiscal_inspectorate</attribute>
             </xpath>
         </field>
