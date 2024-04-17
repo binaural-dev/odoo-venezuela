@@ -4,6 +4,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
     const publicWidget = require('web.public.widget');
     const ajax = require('web.ajax');
     const { _t } = require('web.core');
+    var Dialog = require('web.Dialog');
     
     const portalBudgetForm = publicWidget.Widget.extend({
         selector: '.o_portal_budget_form',
@@ -557,10 +558,12 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 const products = await ajax.jsonRpc('/budget/create/order/line', 'call',
                         {"sale_orders" :orders.withValues}
                     )
-                const { status:st, data:dt } = products;
+                const { status:st, data:dt, msg } = products;
                 const is400 = st === 400;
                 if (is400){
                     $("#save_products").attr('disabled', false)
+                    this._onClickExitProducts()
+                    Dialog.alert(this,msg, { title: 'Error' });
                     return 
                 }
                 this.build_table_products(dt,true)
