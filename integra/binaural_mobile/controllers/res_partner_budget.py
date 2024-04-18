@@ -1,12 +1,12 @@
 import json
+import logging
 
-from odoo import http, _
+from odoo import _, http
 from odoo.http import request
-from .utils import get_model_count, get_model_data, get_search_domain, browse_model_data
-from ...tools import binaural_cne_query
 from odoo.osv import expression
 
-import logging
+from ...tools import binaural_cne_query
+from .utils import browse_model_data, get_model_count, get_model_data, get_search_domain
 
 _logger = logging.getLogger(__name__)
 
@@ -40,12 +40,15 @@ class ResPartnerBudget(http.Controller):
     def portal_budget(self, budget_id=False, **kw):
         user = request.env.user
         if user.employee_id.is_seller:
+            company = request.env.company
             edit_fee = False
             create_client = False
             create_client_address = False
             price_lists = False
             budget = False
             symbol_currency = request.env.company.currency_id
+            tax_included = company.dairy_fiscal
+            is_optional_tax_included = company.dairy_fiscal and company.dairy_no_fiscal
 
             for group in user.groups_id:
                 if group.id == request.env.ref("binaural_mobile.group_sellers_edit_fee").id:
@@ -61,6 +64,7 @@ class ResPartnerBudget(http.Controller):
 
             if budget_id:
                 budget = request.env["sale.order"].search([("id", "=", budget_id)])
+                tax_included = budget.tax_included
 
             return request.render("binaural_mobile.portal_budget_form", {
                 "budget": budget,
@@ -73,7 +77,9 @@ class ResPartnerBudget(http.Controller):
                 "no_footer":True,
                 "type_document": type_document,
                 "countries": country_ids,
-                "not_confirm_quotes": user.has_group("binaural_mobile.group_sellers_cant_confirm_quotation")
+                "not_confirm_quotes": user.has_group("binaural_mobile.group_sellers_cant_confirm_quotation"),
+                "tax_included": tax_included,
+                "is_optional_tax_included": is_optional_tax_included
             })
         return request.redirect("/my/home")
     

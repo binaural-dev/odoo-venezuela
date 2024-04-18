@@ -193,7 +193,8 @@
                         </div>
                         <div class="col-sm-2">
                             <div class="form-check">
-                                <t t-if="budget">
+
+                                <t t-if="budget and is_optional_tax_included">
                                     <t t-if="budget.state in ['cancel', 'sale']">
                                         <input class="form-check-input cancel_confirmed_input" type="checkbox" id="invoice" t-if="budget.tax_included" checked="True" disabled="disabled"/>
                                         <input class="form-check-input cancel_confirmed_input" type="checkbox" id="invoice" t-else="" disabled="disabled"/>
@@ -204,11 +205,12 @@
                                     </t>
                                 </t>
                                 <t t-else="">
-                                    <input class="form-check-input cancel_confirmed_input" type="checkbox" id="invoice" disabled="disabled"/>
+                                    <input class="form-check-input cancel_confirmed_input" type="checkbox" id="invoice" disabled="disabled" t-attf-style="{{'' if is_optional_tax_included else  'display: none'}}"/>
                                 </t>
-                                <label class="form-check-label" style="font-weight: bolder;">
+                                <label class="form-check-label" style="font-weight: bolder;" t-if="is_optional_tax_included">
                                     Invoice required
                                 </label>
+
                             </div>
                         </div>
                         <label class="col-sm-2 form-text">Note</label>
