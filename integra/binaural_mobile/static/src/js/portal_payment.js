@@ -1,147 +1,149 @@
-odoo.define('binaural_mobile.payments_portal_form', function(require) {
-    'use strict';
+odoo.define("binaural_mobile.payments_portal_form", function (require) {
+  "use strict";
 
-    const publicWidget = require('web.public.widget');
-    const ajax = require('web.ajax');
-    const { _t } = require('web.core');
+  const publicWidget = require("web.public.widget");
+  const ajax = require("web.ajax");
+  const { _t } = require("web.core");
 
-    publicWidget.registry.PaymentsPortalForm = publicWidget.Widget.extend({
-        selector: '.payments_portal_form',
-        events: {
-            "change #clients": "_onChangeClients",
-            "change #diary": "_onChangeFiscal",
-            "change #diary_pay" : "_onChangeDairy_payment",
-            "click #exit_payment": "_onClickExit_payment",
-            "click #save_payment": "_onClickSave_payment",
-            "change .select_invoice": "_onChangeSelectInvoice",
-            "click .delete_payment": "_onClickDelete_payment",
-            "click .edit_payment": "_onClickEdit_payment",
-            "click #process_payment": "_onClickProcess_payment",
-            "change #use_credit": "onClickUse_credit",
-            "change #attach_input": "onChangeAttachment",
-            "click #remove_attach": "onClickRemoveAttach",
-            "change #payday": "_onChangeDateCurrency",
-            "change #amount_to_payment": "_onChangeAmountPayment",
-        },
-        init: function(parent, options) {
-            this._super.apply(this, arguments);
-            this.partners = [];
-        },
-        start: function() {
-            const self = this;
+  publicWidget.registry.PaymentsPortalForm = publicWidget.Widget.extend({
+    selector: ".payments_portal_form",
+    events: {
+      "change #clients": "_onChangeClients",
+      "change #diary": "_onChangeFiscal",
+      "change #diary_pay": "_onChangeDairy_payment",
+      "click #exit_payment": "_onClickExit_payment",
+      "click #save_payment": "_onClickSave_payment",
+      "change .select_invoice": "_onChangeSelectInvoice",
+      "click .delete_payment": "_onClickDelete_payment",
+      "click .edit_payment": "_onClickEdit_payment",
+      "click #process_payment": "_onClickProcess_payment",
+      "change #use_credit": "onClickUse_credit",
+      "change #attach_input": "onChangeAttachment",
+      "click #remove_attach": "onClickRemoveAttach",
+      "change #payday": "_onChangeDateCurrency",
+      "change #amount_to_payment": "_onChangeAmountPayment",
+    },
+    init: function (parent, options) {
+      this._super.apply(this, arguments);
+      this.partners = [];
+    },
+    start: function () {
+      const self = this;
 
-            this.fields_clear()
-            this.ClearTotalRetentions()
-            this.Empty_inputs()
-            $("#diary").val("")    
+      this.fields_clear();
+      this.ClearTotalRetentions();
+      this.Empty_inputs();
+      $("#diary").val("");
 
-            $('#clients').select2({
-                maximumInputLength: 35,
-                minimumInputLength: 0,
-                maximumSelectionSize: 1,
-                ajax: {
-                    url: '/payments/client',
-                    dataType: 'json',
-                    data:  term => ({query: term}),
-                    results: data => {
-                        const { status, data:dt } = data;
-                        const is400e = status === 400;
-                        if (is400e) return 
-                        const ret = [];
-                        _.each(dt, function (client) {
-                            const { id: clientId } = client
-                            const isExistclient = ret.find(client => client.id === clientId);
+      $("#clients").select2({
+        maximumInputLength: 35,
+        minimumInputLength: 0,
+        maximumSelectionSize: 1,
+        ajax: {
+          url: "/payments/client",
+          dataType: "json",
+          data: (term) => ({ query: term }),
+          results: (data) => {
+            const { status, data: dt } = data;
+            const is400e = status === 400;
+            if (is400e) return;
+            const ret = [];
+            _.each(dt, function (client) {
+              const { id: clientId } = client;
+              const isExistclient = ret.find(
+                (client) => client.id === clientId
+              );
 
-                            if (isExistclient) return;
+              if (isExistclient) return;
 
-                            ret.push({
-                                id: client.id,
-                                text: client.display_name,
-                                isNew: false,
-                            });
-                            self.partners.push(client); 
-                        });
-                        return {results: ret};
-                    }
-                },
+              ret.push({
+                id: client.id,
+                text: client.display_name,
+                isNew: false,
+              });
+              self.partners.push(client);
             });
-            
-            ['#payday'].forEach(function (id) {
-                const today = new Date().toISOString().slice(0,10);
-                $(id).val(today);
-                $(id).attr('max', today);
-                $(id).attr('min', '2000-01-01');
-            });
-
-            $('#reference_number').attr('maxlength', '20');
-
-            ['#amount_to_payment'].forEach(function (id) {
-                $(id).attr('maxlength', '10');
-                $(id).keypress(function (e) {
-                    var currentValue = $(this).val();
-                    var regex = new RegExp("^[0-9]*([.][0-9]*)?$");
-                    var str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
-                    if (regex.test(currentValue + str)) {
-                        if (str === "." && currentValue.indexOf(".") !== -1) {
-                            e.preventDefault();
-                            return false;
-                        }
-                        return true;
-                    }
-                    e.preventDefault();
-                    return false;
-                });
-            });
+            return { results: ret };
+          },
         },
+      });
 
-        fields_clear: function(){
-            $(".table-clear").empty();
-            $(".label-clear").text("0.00")
-            $(".value-clear").val(0)
-            $("#use_credit").prop("checked",false);
-            $("#remove_attach").attr("disabled",true)
-            $(".hidden_pay").hide()
-        },
+      ["#payday"].forEach(function (id) {
+        const today = new Date().toISOString().slice(0, 10);
+        $(id).val(today);
+        $(id).attr("max", today);
+        $(id).attr("min", "2000-01-01");
+      });
 
-        _onChangeClients: function(ev){
-            if ($("#clients").val() != ""){
-                let decimal_number = +$("#decimal").val()
-                let client = selectedPartner(this.partners, parseInt(ev.target.value));
-                this.fields_clear()
-                let { credit_partner } = client
-                if (credit_partner < 0){
-                    const amountPartner = (credit_partner * -1).toFixed(decimal_number)
-                    $("#positive_balance_l").text(amountPartner)
-                    $("#positive_balance").val(amountPartner)
-                }
-                $("#diary").val("")            
-                $(".disabled-input").attr("disabled",false)
-                this.CalculateRemainingAmount()
+      $("#reference_number").attr("maxlength", "20");
+
+      ["#amount_to_payment"].forEach(function (id) {
+        $(id).attr("maxlength", "10");
+        $(id).keypress(function (e) {
+          var currentValue = $(this).val();
+          var regex = new RegExp("^[0-9]*([.][0-9]*)?$");
+          var str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
+          if (regex.test(currentValue + str)) {
+            if (str === "." && currentValue.indexOf(".") !== -1) {
+              e.preventDefault();
+              return false;
             }
-        },
+            return true;
+          }
+          e.preventDefault();
+          return false;
+        });
+      });
+    },
 
-        ClearTotalRetentions:function(){
-            $(".clear-total-retention").val(0)
-            $(".clear-total-retention-l").text("0.00")
-        },
+    fields_clear: function () {
+      $(".table-clear").empty();
+      $(".label-clear").text("0.00");
+      $(".value-clear").val(0);
+      $("#use_credit").prop("checked", false);
+      $("#remove_attach").attr("disabled", true);
+      $(".hidden_pay").hide();
+    },
 
-        _onChangeFiscal: async function(ev){
-            if($("#diary").val() != ''){
-                const partner_id = $("#clients").val()
-                const type_dairy = $("#diary").val()
-                const invoices = await ajax.jsonRpc('/payments/account_move', 'call', {
-                    "partner_id": partner_id,
-                    "type_dairy": type_dairy,
-                })
-                this.ClearTotalRetentions()
-                $("#requireReceipt").val('')
-                const { data, status} = invoices
-                const is204 = status === 204;
-                if (is204) {
-                    const tbody = $("#notes_invoices_results")
-                    tbody.empty()
-                    let msg_error = _t("No se han encontrado resultados.")
-                    tbody.append(`
+    _onChangeClients: function (ev) {
+      if ($("#clients").val() != "") {
+        let decimal_number = +$("#decimal").val();
+        let client = selectedPartner(this.partners, parseInt(ev.target.value));
+        this.fields_clear();
+        let { credit_partner } = client;
+        if (credit_partner < 0) {
+          const amountPartner = (credit_partner * -1).toFixed(decimal_number);
+          $("#positive_balance_l").text(amountPartner);
+          $("#positive_balance").val(amountPartner);
+        }
+        $("#diary").val("");
+        $(".disabled-input").attr("disabled", false);
+        this.CalculateRemainingAmount();
+      }
+    },
+
+    ClearTotalRetentions: function () {
+      $(".clear-total-retention").val(0);
+      $(".clear-total-retention-l").text("0.00");
+    },
+
+    _onChangeFiscal: async function (ev) {
+      if ($("#diary").val() != "") {
+        const partner_id = $("#clients").val();
+        const type_dairy = $("#diary").val();
+        const invoices = await ajax.jsonRpc("/payments/account_move", "call", {
+          partner_id: partner_id,
+          type_dairy: type_dairy,
+        });
+        this.ClearTotalRetentions();
+        $("#requireReceipt").val("");
+        const { data, status } = invoices;
+        const is204 = status === 204;
+        if (is204) {
+          const tbody = $("#notes_invoices_results");
+          tbody.empty();
+          let msg_error = _t("No se han encontrado resultados.");
+          tbody.append(`
                     <tr>
                         <td>
                             <div class="d-flex justify-content-center">
@@ -151,43 +153,52 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
                             </div>
                         </td>
                     </tr>
-                    `)
-                    return
-                }
-                const requireReceipt = data[0]["journal_id"][2]
-                const removeProof = requireReceipt ? true : false;
-                $("#remove-proof").toggle(removeProof);
-                $("#requireReceipt").val(requireReceipt)
-                this.CalculateRemainingAmount()
-                this.build_table_invoices(data)
-            }
-        },
+                    `);
+          return;
+        }
+        const requireReceipt = data[0]["journal_id"][2];
+        const removeProof = requireReceipt ? true : false;
+        $("#remove-proof").toggle(removeProof);
+        $("#requireReceipt").val(requireReceipt);
+        this.CalculateRemainingAmount();
+        this.build_table_invoices(data);
+      }
+    },
 
-        build_table_invoices: function(invoices){
-            const tbody = $("#notes_invoices_results")
-            tbody.empty()
-            let decimal_number = +$("#decimal").val()
-            const symbol = $("#symbol").val()
-            let symbolAfter = ""
-            let symbolBefore = ""
+    build_table_invoices: function (invoices) {
+      const tbody = $("#notes_invoices_results");
+      tbody.empty();
+      let decimal_number = +$("#decimal").val();
+      const symbol = $("#symbol").val();
+      let symbolAfter = "";
+      let symbolBefore = "";
 
-            if($("#position").val() == "after"){
-                symbolAfter = symbol
-            }else{
-                symbolBefore = symbol
-            }
+      if ($("#position").val() == "after") {
+        symbolAfter = symbol;
+      } else {
+        symbolBefore = symbol;
+      }
 
-            const amountL = _t("Importe adeudado:")
-            const taxableBaseL = _t("Base imponible: ")
-            const amountDetailedL = _t("Monto retenido: ")
-            const ivaDifL = _t("Diferencia de IVA:")
-            const note = _t("Nota:")
-            
-            invoices.forEach(line =>{
-                let { amount_total, amount_untaxed, amount_tax, id , name, journal_id, amount_residual, foreign_rate } = line
-                amount_residual = amount_residual.toFixed(decimal_number)
-                amount_total = amount_total.toFixed(decimal_number)
-                let tr_open = ` 
+      const amountL = _t("Importe adeudado:");
+      const taxableBaseL = _t("Base imponible: ");
+      const amountDetailedL = _t("Monto retenido: ");
+      const ivaDifL = _t("Diferencia de IVA:");
+      const note = _t("Nota:");
+
+      invoices.forEach((line) => {
+        let {
+          amount_total,
+          amount_untaxed,
+          amount_tax,
+          id,
+          name,
+          journal_id,
+          amount_residual,
+          foreign_rate,
+        } = line;
+        amount_residual = amount_residual.toFixed(decimal_number);
+        amount_total = amount_total.toFixed(decimal_number);
+        let tr_open = ` 
                         <tr>
                         <td id="invoice">
                             <div class="d-flex justify-content-between">
@@ -195,6 +206,12 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
                                     <input class="form-check-input mx-auto select_invoice" type="checkbox"/>
                                     <label class="form-label ">${name}</label>
                                     <input type="hidden" id="invoice_id" value="${id}">
+
+																		<br/>
+																		
+																		<label class="form-label">Importe adeudado dela primera cuota: </label>
+                                    <label class="form-text text-primary">${symbolBefore}</label>
+																		<label class="form-text text-primary">333,55 ()</label>
                                 </div>
                                 <div>
                                     <label class="form-text ">Total: </label>
@@ -210,51 +227,77 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
                                     <label class="form-text text-primary">${symbolAfter}</label>
                                 </div>    
                             </div>
-                            `
+                            `;
 
-                let tr_close = `</td>                </tr>`
+        let tr_close = `</td></tr>`;
 
-                $("#notes_invoices").text(_t("Notas:"))
+        $("#notes_invoices").text(_t("Notas:"));
 
-                if (journal_id[2]){
-                    const { currency_foreign, is_foreign, foreign_total_billed, foreign_taxable_income } = line
-                    let retencion = parseFloat($("#withholding").val())
-                    let amount_detained = amount_tax * retencion / 100
-                    amount_detained = amount_detained.toFixed(decimal_number)
-                    let dif_iva =  amount_tax - amount_detained
-                    dif_iva = dif_iva.toFixed(decimal_number)
-                    amount_tax = amount_tax.toFixed(decimal_number)
-                    amount_untaxed = amount_untaxed.toFixed(decimal_number)
-                    let amount_detained_vef, dif_iva_vef = null
-                    let amount_detained_vef_line, dif_iva_vef_line, amount_tax_vef_line,amount_untaxed_vef_line = ``
+        if (journal_id[2]) {
+          const {
+            currency_foreign,
+            is_foreign,
+            foreign_total_billed,
+            foreign_taxable_income,
+          } = line;
+          let retencion = parseFloat($("#withholding").val());
+          let amount_detained = (amount_tax * retencion) / 100;
+          amount_detained = amount_detained.toFixed(decimal_number);
+          let dif_iva = amount_tax - amount_detained;
+          dif_iva = dif_iva.toFixed(decimal_number);
+          amount_tax = amount_tax.toFixed(decimal_number);
+          amount_untaxed = amount_untaxed.toFixed(decimal_number);
+          let amount_detained_vef,
+            dif_iva_vef = null;
+          let amount_detained_vef_line,
+            dif_iva_vef_line,
+            amount_tax_vef_line,
+            amount_untaxed_vef_line = ``;
 
-                    if(!is_foreign){
-                        let decimal_places = +$("#currency_foreign_id").val()
-                        let iva_vef = (foreign_total_billed - foreign_taxable_income).toFixed(decimal_places)
-                        amount_detained_vef = (iva_vef * retencion / 100).toFixed(decimal_places)
-                        dif_iva_vef = (iva_vef - amount_detained_vef).toFixed(decimal_places)
-                        amount_untaxed_vef_line = `
+          if (!is_foreign) {
+            let decimal_places = +$("#currency_foreign_id").val();
+            let iva_vef = (
+              foreign_total_billed - foreign_taxable_income
+            ).toFixed(decimal_places);
+            amount_detained_vef = ((iva_vef * retencion) / 100).toFixed(
+              decimal_places
+            );
+            dif_iva_vef = (iva_vef - amount_detained_vef).toFixed(
+              decimal_places
+            );
+            amount_untaxed_vef_line = `
                             <label class="form-text" style="opacity:0;">${taxableBaseL}</label>
-                            <label class="form-text text-secondary">${foreign_taxable_income.toFixed(decimal_places).replace('.', ',')}</label>
+                            <label class="form-text text-secondary">${foreign_taxable_income
+                              .toFixed(decimal_places)
+                              .replace(".", ",")}</label>
                             <label class="form-text text-secondary">${currency_foreign}</label>
-                        `
-                        amount_tax_vef_line = `
-                            <label class="form-text text-secondary">${iva_vef.replace('.', ',')}</label>
+                        `;
+            amount_tax_vef_line = `
+                            <label class="form-text text-secondary">${iva_vef.replace(
+                              ".",
+                              ","
+                            )}</label>
                             <label class="form-text text-secondary">${currency_foreign}</label>
-                        `
-                        amount_detained_vef_line = `
+                        `;
+            amount_detained_vef_line = `
                             <label class="form-text" style="opacity:0;">${amountDetailedL}</label>
-                            <label class="form-text text-secondary">${amount_detained_vef.replace('.', ',')}</label>
+                            <label class="form-text text-secondary">${amount_detained_vef.replace(
+                              ".",
+                              ","
+                            )}</label>
                             <label class="form-text text-secondary">${currency_foreign}</label>
                             <input type="hidden" id="amount_retention_vef" value="${amount_detained_vef}"/>
-                        `
-                        dif_iva_vef_line = `
-                            <label class="form-text text-secondary">${dif_iva_vef.replace('.', ',')}</label>
+                        `;
+            dif_iva_vef_line = `
+                            <label class="form-text text-secondary">${dif_iva_vef.replace(
+                              ".",
+                              ","
+                            )}</label>
                             <label class="form-text text-secondary">${currency_foreign}</label>
-                        `
-                    }
-                    
-                    let tr_selected = `<div id="to_pay" style="display: none;">
+                        `;
+          }
+
+          let tr_selected = `<div id="to_pay" style="display: none;">
                                         <hr width="100%" />
                                         <div class="d-flex justify-content-between">
                                             <div>
@@ -309,152 +352,187 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
                                                 <input type="text" class="form-control" id="note_payment"/>
                                             </div>
                                         </div>
-                                    </div>`
-                    tr_open += tr_selected
-                    $("#notes_invoices").text(_t("Facturas:"))
-                }
+                                    </div>`;
+          tr_open += tr_selected;
+          $("#notes_invoices").text(_t("Facturas:"));
+        }
 
-                let tr_add = tr_open + tr_close
-                tbody.append(tr_add)
-            })
+        let tr_add = tr_open + tr_close;
+        tbody.append(tr_add);
+      });
+    },
 
-        },
+    _onChangeDairy_payment: function (ev) {
+      this.SetSymbolCurrencyInput();
+    },
 
-        _onChangeDairy_payment: function(ev){
-            this.SetSymbolCurrencyInput()
-        },
+    SetSymbolCurrencyInput: async function () {
+      const dairy = $("#diary_pay").val();
+      if (dairy != "") {
+        const dairySym = await ajax.jsonRpc(
+          "/payments/get_symbol_currency",
+          "call",
+          {
+            dairy_id: dairy,
+            exist_igtf: $("#igtf_pay").length,
+          }
+        );
+        const { data, status } = dairySym;
+        const is400 = status === 400;
+        if (is400) return;
 
-        SetSymbolCurrencyInput: async function(){
-            const dairy = $("#diary_pay").val()
-            if(dairy != ""){
-                const dairySym = await ajax.jsonRpc('/payments/get_symbol_currency', 'call', {
-                    "dairy_id": dairy,
-                    "exist_igtf": $("#igtf_pay").length,
-                })
-                const { data, status} = dairySym
-                const is400 = status === 400;
-                if(is400) return
-                
-                $("#currency").val(data[0])
-                $("#symbol-dairy").text(data[1])
-                $("#position_symbol").val(data[2])
-                $("#required_igtf").val(data[3])
-                $(".disabled-pay").attr("disabled",false)
-                if ($("#igtf_pay").length){
-                    if(data[1] == "$" && $("#requireReceipt").val() == "true" && data[3]){
-                        $(".igtf_input").show()
-                        this.CalculateIGTF()
-                    }else{
-                        $(".igtf_input").hide()
-                        $("#igtf_pay").val("")
-                    }
-                }
-            }else{
-                $(".disabled-pay").attr("disabled",true)
-                this.Empty_inputs()
+        $("#currency").val(data[0]);
+        $("#symbol-dairy").text(data[1]);
+        $("#position_symbol").val(data[2]);
+        $("#required_igtf").val(data[3]);
+        $(".disabled-pay").attr("disabled", false);
+        if ($("#igtf_pay").length) {
+          if (
+            data[1] == "$" &&
+            $("#requireReceipt").val() == "true" &&
+            data[3]
+          ) {
+            $(".igtf_input").show();
+            this.CalculateIGTF();
+          } else {
+            $(".igtf_input").hide();
+            $("#igtf_pay").val("");
+          }
+        }
+      } else {
+        $(".disabled-pay").attr("disabled", true);
+        this.Empty_inputs();
+      }
+      this.SetRateCurrency();
+    },
+
+    _onChangeAmountPayment: function (ev) {
+      this.CalculateIGTF();
+    },
+
+    _onChangeDateCurrency: function (ev) {
+      this.SetRateCurrency();
+    },
+
+    SetRateCurrency: async function () {
+      const currencyDay = await ajax.jsonRpc(
+        "/payments/get_currency_rate",
+        "call",
+        {
+          date_pay: $("#payday").val(),
+          currency: $("#currency").val(),
+        }
+      );
+      const { data, status } = currencyDay;
+      const is400 = status === 400;
+      if (is400) return;
+
+      $("#rate-day").val(data[0] > data[1] ? data[0] : data[1]);
+    },
+
+    Empty_inputs: function () {
+      [
+        "#diary_pay",
+        "#amount_to_payment",
+        "#reference_number",
+        "#pay_edit",
+        "#currency",
+        "#position_symbol",
+        "#igtf_pay",
+        "#required_igtf",
+      ].forEach(function (id) {
+        $(id).val("");
+      });
+      $("#symbol-dairy").text("-");
+      $(".igtf_input").hide();
+    },
+
+    Set_day_today: function () {
+      const today = new Date().toISOString().slice(0, 10);
+      $("#payday").val(today);
+    },
+
+    _onClickExit_payment: function (ev) {
+      this.Empty_inputs();
+      this.Set_day_today();
+      $(".disabled-pay").attr("disabled", true);
+    },
+
+    _onClickSave_payment: async function (ev) {
+      if (
+        $("#diary_pay").val() != "" &&
+        $("#amount_to_payment").val() != "" &&
+        $("#reference_number").val() != ""
+      ) {
+        const tbody = $("#pay_methods");
+        let decimal_number = +$("#decimal").val();
+        const text = $("#diary_pay").find(":selected").text();
+        const text_val = $("#diary_pay").find(":selected").val();
+        let payment = parseFloat(+$("#amount_to_payment").val()).toFixed(
+          decimal_number
+        );
+        const reference = $("#reference_number").val();
+        const date = $("#payday").val();
+        const $symbol = $("#symbol");
+        const currency = $("#currency").val();
+        const positionSymbol = $("#position").val();
+        const igtfAmount = +$("#igtf_pay").val();
+        let igtf_include = ``;
+        let convert = "";
+        let convert_symbol = "";
+
+        const symbolAfter = positionSymbol === "after" ? $symbol.val() : "";
+        const symbolBefore = positionSymbol === "before" ? $symbol.val() : "";
+
+        if ($("#currency_id").val() != currency) {
+          const convertedCurrency = await ajax.jsonRpc(
+            "/payments/convert_currency",
+            "call",
+            {
+              currency: currency,
+              amount: payment,
             }
-            this.SetRateCurrency()
-        },
+          );
+          let { data, status } = convertedCurrency;
+          const is400 = status === 400;
+          if (is400) return;
 
-        _onChangeAmountPayment: function(ev){
-            this.CalculateIGTF()
-        },
+          convert = parseFloat(+$("#amount_to_payment").val()).toFixed(
+            +$("#currency_foreign_id").val()
+          );
 
-        _onChangeDateCurrency: function(ev){
-            this.SetRateCurrency()
-        },
+          payment = data.toFixed(decimal_number);
 
-        SetRateCurrency: async function(){
-            const currencyDay = await ajax.jsonRpc('/payments/get_currency_rate', 'call', {
-                "date_pay": $("#payday").val(),
-                "currency": $("#currency").val(),
-            })
-            const { data, status} = currencyDay
-            const is400 = status === 400;
-            if(is400) return
+          const symbolConverted = $("#symbol-dairy").text();
+          const positionConverted = $("#position_symbol").val();
 
-            $("#rate-day").val(data[0] > data[1] ? data[0]: data[1])
-        },
+          const symbolAfterConverted =
+            positionConverted === "after" ? symbolConverted : "";
+          const symbolBeforeConverted =
+            positionConverted === "before" ? symbolConverted : "";
 
-        Empty_inputs: function(){
-            ['#diary_pay','#amount_to_payment', '#reference_number','#pay_edit', "#currency","#position_symbol","#igtf_pay","#required_igtf"].forEach(function(id){
-                $(id).val("")
-            })
-            $("#symbol-dairy").text("-")
-            $(".igtf_input").hide()
-        },
+          convert_symbol = `${symbolBeforeConverted} ${convert} ${symbolAfterConverted}`;
+        }
 
-        Set_day_today:function(){
-            const today = new Date().toISOString().slice(0,10);
-            $('#payday').val(today);
-        },
+        const paySymbol = `${symbolBefore} ${payment} ${symbolAfter}`;
 
-        _onClickExit_payment: function(ev){
-            this.Empty_inputs()
-            this.Set_day_today()
-            $(".disabled-pay").attr("disabled",true)
-        },
+        if ($("#pay_edit").val() != "") {
+          const trPosition = +$("#pay_edit").val();
+          const $table = $("#pay_methods");
+          const $cell = $table.find("tr").eq(trPosition);
+          $cell.remove();
+        }
 
-        _onClickSave_payment: async function(ev){
-            if(($("#diary_pay").val() != "") && ($("#amount_to_payment").val() != "") && ($("#reference_number").val() != "")){
-                const tbody = $("#pay_methods")
-                let decimal_number = +$("#decimal").val()
-                const text = $("#diary_pay").find(':selected').text()
-                const text_val = $("#diary_pay").find(':selected').val()
-                let payment = parseFloat(+$("#amount_to_payment").val()).toFixed(decimal_number)
-                const reference = $("#reference_number").val()
-                const date = $("#payday").val()
-                const $symbol = $("#symbol");
-                const currency = $("#currency").val();
-                const positionSymbol = $("#position").val();
-                const igtfAmount = +$("#igtf_pay").val()
-                let igtf_include = ``
-                let convert = ""
-                let convert_symbol = ""
-
-                const symbolAfter = positionSymbol === "after" ? $symbol.val() : "";
-                const symbolBefore = positionSymbol === "before" ? $symbol.val() : "";
-
-                if($("#currency_id").val() != currency){
-                    const convertedCurrency = await ajax.jsonRpc('/payments/convert_currency', 'call', {
-                        "currency": currency,
-                        "amount": payment,
-                    })
-                    let { data, status} = convertedCurrency
-                    const is400 = status === 400;
-                    if (is400) return
-
-                    convert = parseFloat(+$("#amount_to_payment").val()).toFixed(+$("#currency_foreign_id").val())
-
-                    payment = data.toFixed(decimal_number)
-
-                    const symbolConverted = $("#symbol-dairy").text();
-                    const positionConverted = $("#position_symbol").val();
-
-                    const symbolAfterConverted = positionConverted === "after" ? symbolConverted : "";
-                    const symbolBeforeConverted = positionConverted === "before" ? symbolConverted : "";
-
-                    
-                    convert_symbol = `${symbolBeforeConverted} ${convert} ${symbolAfterConverted}`
-                }
-
-                const paySymbol = `${symbolBefore} ${payment} ${symbolAfter}`;
-
-                if($("#pay_edit").val() != ""){
-                    const trPosition = +$("#pay_edit").val()
-                    const $table = $("#pay_methods")
-                    const $cell = $table.find("tr").eq(trPosition);
-                    $cell.remove()
-                } 
-
-                if(igtfAmount != "" && $("#requireReceipt").val() == "true"){
-                    igtf_include = `
+        if (igtfAmount != "" && $("#requireReceipt").val() == "true") {
+          igtf_include = `
                     <br/>
-                    <label class="form-text" style="padding-left:87px;">IGTF Sugerido: $ ${igtfAmount.toFixed(decimal_number)}</label>
+                    <label class="form-text" style="padding-left:87px;">IGTF Sugerido: $ ${igtfAmount.toFixed(
+                      decimal_number
+                    )}</label>
                     <input type="hidden" id="igtf_amount" value="${igtfAmount}"/>
-                    `
-                }
-                tbody.append(`
+                    `;
+        }
+        tbody.append(`
                 <tr>
                     <td>
                         <div class="d-flex justify-content-between">
@@ -477,424 +555,480 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
                         </div>
                     </td>
                 </tr>
-                `)
-                
-                this.Empty_inputs()
-                this.Set_day_today()
-                this.CalculateTotal()
-                this.validate_payment_method_invoices()
-                $(".hidden_pay").show()
-                $(".disabled-pay").attr("disabled",true)
-                $("#payment_method").modal("hide")
+                `);
 
-            }
-        },
+        this.Empty_inputs();
+        this.Set_day_today();
+        this.CalculateTotal();
+        this.validate_payment_method_invoices();
+        $(".hidden_pay").show();
+        $(".disabled-pay").attr("disabled", true);
+        $("#payment_method").modal("hide");
+      }
+    },
 
-        CalculateTotal: function() {
-            let decimal_number = +$("#decimal").val()
+    CalculateTotal: function () {
+      let decimal_number = +$("#decimal").val();
 
-            let tableBody = $('#pay_methods');
-            let totalPayment = 0;
+      let tableBody = $("#pay_methods");
+      let totalPayment = 0;
 
-            if(tableBody){
-                tableBody.find('tr').each(function() {
-                    let paymentValue = parseFloat($(this).find('#payment').val());
+      if (tableBody) {
+        tableBody.find("tr").each(function () {
+          let paymentValue = parseFloat($(this).find("#payment").val());
 
-                    totalPayment += paymentValue;
-                })
-            }
+          totalPayment += paymentValue;
+        });
+      }
 
-            if(+$("#total_retention").val() > 0){
-                let total_retention = +$("#total_retention").val()
-                totalPayment += total_retention
-            }
+      if (+$("#total_retention").val() > 0) {
+        let total_retention = +$("#total_retention").val();
+        totalPayment += total_retention;
+      }
 
-            $('#total_payment_l').text(totalPayment.toFixed(decimal_number))
-            $('#total_payment').val(totalPayment.toFixed(decimal_number))
+      $("#total_payment_l").text(totalPayment.toFixed(decimal_number));
+      $("#total_payment").val(totalPayment.toFixed(decimal_number));
 
-            if($("#use_credit").is(":checked")){
-                this.CalculateUseCredit(false)
-            }
-            this.CalculateRemainingAmount()
-        },
+      if ($("#use_credit").is(":checked")) {
+        this.CalculateUseCredit(false);
+      }
+      this.CalculateRemainingAmount();
+    },
 
-        CalculateRemainingAmount: function(){
-            const decimal = +$("#decimal").val()
-            const decimal_places_foreign = +$("#currency_foreign_id").val()
-            const currency_foreign_rate = +$("#currency_foreign_rate").val()
-            const amount_to_pay = +$("#amount_total_pay").val()
-            const total_payment =  +$('#total_payment').val()
-            const remainingAmount = (amount_to_pay - total_payment).toFixed(decimal)
-            const remainingAmountForeign = +(remainingAmount * currency_foreign_rate).toFixed(decimal_places_foreign)
-            if(remainingAmount < 0){
-                $("#remainingAmount").text((+0).toFixed(decimal))
-                $("#remainingAmountForeign").text((0).toFixed(decimal_places_foreign))
-            }else{
-                $("#remainingAmount").text(remainingAmount)
-                $("#remainingAmountForeign").text(remainingAmountForeign)
-            }
-        },
+    CalculateRemainingAmount: function () {
+      const decimal = +$("#decimal").val();
+      const decimal_places_foreign = +$("#currency_foreign_id").val();
+      const currency_foreign_rate = +$("#currency_foreign_rate").val();
+      const amount_to_pay = +$("#amount_total_pay").val();
+      const total_payment = +$("#total_payment").val();
+      const remainingAmount = (amount_to_pay - total_payment).toFixed(decimal);
+      const remainingAmountForeign = +(
+        remainingAmount * currency_foreign_rate
+      ).toFixed(decimal_places_foreign);
+      if (remainingAmount < 0) {
+        $("#remainingAmount").text((+0).toFixed(decimal));
+        $("#remainingAmountForeign").text((0).toFixed(decimal_places_foreign));
+      } else {
+        $("#remainingAmount").text(remainingAmount);
+        $("#remainingAmountForeign").text(remainingAmountForeign);
+      }
+    },
 
-        CalculateIGTF: async function(){
-            if($("#igtf_pay").length){
-                if($("#symbol-dairy").text() == "$" && $("#requireReceipt").val() == "true" &&
-                $("#amount_to_payment").val() != "" && $("#required_igtf").val() == "true"){
-                    const amount = +$("#amount_to_payment").val()
-                    const valueIGTF = await ajax.jsonRpc('/payments/get_value_igtf', 'call', {})
-                    let { data, status} = valueIGTF
-                    const is400 = status === 400;
-                    if (is400) return
-                    let percentage = data / 100 
-                    let igtf = (amount * percentage).toFixed(+$("#decimal").val())
-                    $("#igtf_pay").val(igtf)
-                }else{
-                    $("#igtf_pay").val("")
-                }
-            }
-        },
+    CalculateIGTF: async function () {
+      if ($("#igtf_pay").length) {
+        if (
+          $("#symbol-dairy").text() == "$" &&
+          $("#requireReceipt").val() == "true" &&
+          $("#amount_to_payment").val() != "" &&
+          $("#required_igtf").val() == "true"
+        ) {
+          const amount = +$("#amount_to_payment").val();
+          const valueIGTF = await ajax.jsonRpc(
+            "/payments/get_value_igtf",
+            "call",
+            {}
+          );
+          let { data, status } = valueIGTF;
+          const is400 = status === 400;
+          if (is400) return;
+          let percentage = data / 100;
+          let igtf = (amount * percentage).toFixed(+$("#decimal").val());
+          $("#igtf_pay").val(igtf);
+        } else {
+          $("#igtf_pay").val("");
+        }
+      }
+    },
 
-        _onChangeSelectInvoice: function(ev){
-            const selectInvoice = ev.target;
-            const decimal = +$("#decimal").val()
-            const decimal_places_foreign = +$("#currency_foreign_id").val()
-            const toPay = selectInvoice.closest("td").querySelector("#to_pay")
-            const amount_residual = selectInvoice.closest("td").querySelector("#amount_r")
+    _onChangeSelectInvoice: function (ev) {
+      const selectInvoice = ev.target;
+      const decimal = +$("#decimal").val();
+      const decimal_places_foreign = +$("#currency_foreign_id").val();
+      const toPay = selectInvoice.closest("td").querySelector("#to_pay");
+      const amount_residual = selectInvoice
+        .closest("td")
+        .querySelector("#amount_r");
 
-            if (!selectInvoice.checked) {
-                let amount_to_pay = +$("#amount_total_pay").val()
-                let amount_select = amount_residual.value
-                amount_to_pay -= parseFloat(amount_select)
-                console.log(amount_to_pay)
-                $("#amount_total_pay").val(amount_to_pay.toFixed(decimal))
-                $("#amount_total_l").text(amount_to_pay.toFixed(decimal))
-                if(toPay){
-                    toPay.style.display = "none";
-                    const amount_retention = selectInvoice.closest("td").querySelector("#amount_retention")
-                    let retention = parseFloat(amount_retention.textContent)
-                    let total_retention = +$("#total_retention").val()
-                    total_retention -= retention
+      if (!selectInvoice.checked) {
+        let amount_to_pay = +$("#amount_total_pay").val();
+        let amount_select = amount_residual.value;
+        amount_to_pay -= parseFloat(amount_select);
+        console.log(amount_to_pay);
+        $("#amount_total_pay").val(amount_to_pay.toFixed(decimal));
+        $("#amount_total_l").text(amount_to_pay.toFixed(decimal));
+        if (toPay) {
+          toPay.style.display = "none";
+          const amount_retention = selectInvoice
+            .closest("td")
+            .querySelector("#amount_retention");
+          let retention = parseFloat(amount_retention.textContent);
+          let total_retention = +$("#total_retention").val();
+          total_retention -= retention;
 
-                    $("#total_retention").val(total_retention.toFixed(decimal))
-                    $("#total_retention_l").text(total_retention.toFixed(decimal))
+          $("#total_retention").val(total_retention.toFixed(decimal));
+          $("#total_retention_l").text(total_retention.toFixed(decimal));
 
+          const amount_retention_vef = selectInvoice
+            .closest("td")
+            .querySelector("#amount_retention_vef");
+          let retention_vef = parseFloat(amount_retention_vef.value);
+          let total_retention_vef = +$("#total_retention_vef").val();
+          total_retention_vef -= retention_vef;
+          $("#total_retention_vef").val(
+            total_retention_vef.toFixed(decimal_places_foreign)
+          );
+          $("#total_retention_l_vef").text(
+            total_retention_vef
+              .toFixed(decimal_places_foreign)
+              .replace(".", ",")
+          );
 
-                    const amount_retention_vef = selectInvoice.closest("td").querySelector("#amount_retention_vef")
-                    let retention_vef = parseFloat(amount_retention_vef.value)
-                    let total_retention_vef = +$("#total_retention_vef").val()
-                    total_retention_vef -= retention_vef
-                    $("#total_retention_vef").val(total_retention_vef.toFixed(decimal_places_foreign))
-                    $("#total_retention_l_vef").text(total_retention_vef.toFixed(decimal_places_foreign).replace('.', ','))
-                    
-                    if(+$("#total_retention").val() == 0) $(".hidden_retention").hide()
-                }
-                this.validate_payment_method_invoices()
-                this.CalculateTotal()
-                return
-            }
-            
-            let amount_to_pay = +$("#amount_total_pay").val()
-            let amount_select = amount_residual.value
-            amount_to_pay += parseFloat(amount_select)
-            $("#amount_total_pay").val(amount_to_pay.toFixed(decimal))
-            $("#amount_total_l").text(amount_to_pay.toFixed(decimal))
+          if (+$("#total_retention").val() == 0) $(".hidden_retention").hide();
+        }
+        this.validate_payment_method_invoices();
+        this.CalculateTotal();
+        return;
+      }
 
-            if(toPay){
-                toPay.style.display = ""
-                $(".hidden_retention").show()
-                const amount_retention = selectInvoice.closest("td").querySelector("#amount_retention")
-                let retention = parseFloat(amount_retention.textContent)
-                let total_retention = +$("#total_retention").val()
-                total_retention += retention
-                $("#total_retention").val(total_retention.toFixed(decimal))
-                $("#total_retention_l").text(total_retention.toFixed(decimal))
-                
-                const amount_retention_vef = selectInvoice.closest("td").querySelector("#amount_retention_vef")
-                let retention_vef = parseFloat(amount_retention_vef.value)
-                let total_retention_vef = +$("#total_retention_vef").val()
-                total_retention_vef += retention_vef
-                $("#total_retention_vef").val(total_retention_vef.toFixed(decimal_places_foreign))
-                $("#total_retention_l_vef").text(total_retention_vef.toFixed(decimal_places_foreign).replace('.', ','))
-            }
+      let amount_to_pay = +$("#amount_total_pay").val();
+      let amount_select = amount_residual.value;
+      amount_to_pay += parseFloat(amount_select);
+      $("#amount_total_pay").val(amount_to_pay.toFixed(decimal));
+      $("#amount_total_l").text(amount_to_pay.toFixed(decimal));
 
-            this.validate_payment_method_invoices()
-            this.CalculateTotal()
-            
-        },
+      if (toPay) {
+        toPay.style.display = "";
+        $(".hidden_retention").show();
+        const amount_retention = selectInvoice
+          .closest("td")
+          .querySelector("#amount_retention");
+        let retention = parseFloat(amount_retention.textContent);
+        let total_retention = +$("#total_retention").val();
+        total_retention += retention;
+        $("#total_retention").val(total_retention.toFixed(decimal));
+        $("#total_retention_l").text(total_retention.toFixed(decimal));
 
-        _onClickDelete_payment: function(ev){
-            const amount_to_edit = ev.target;
-            const $tr = $(amount_to_edit).closest('tr');
-            const payment = $tr.find('#payment').val();
-            let total_payment = +$("#total_payment").val()
-            total_payment -= payment
-            let decimal_number = +$("#decimal").val()
-            total_payment = total_payment.toFixed(decimal_number)
-            $("#total_payment").val(total_payment)
-            $("#total_payment_l").text(total_payment)
-            ev.target.closest("tr").remove()
-            this.CalculateTotal()
-            
-            let numTr = $("#pay_methods tr").length;
-            if(numTr == 0){
-                $(".hidden_pay").hide()
-                $("#total_payment_l").text("0")
-                $("#total_payment").val(0)
-                $(".disabled-input-pay").attr("disabled",true)
-            }
-        },
-        
-        _onClickEdit_payment: function(ev){
-            const amount_to_edit = ev.target;
-            const $tr = $(amount_to_edit).closest('tr');
-            const numTr = $tr.index();
-            const payment = $tr.find("#payment_convert").val() !== "" ? $tr.find("#payment_convert").val() : $tr.find("#payment").val();
-            const reference = $tr.find('#reference').val();
-            const date_to_pay = $tr.find('#date_to_pay').val();
-            const text_val = +$tr.find('#dairy_val').val();
-            let symbolAfter = $tr.find('#symbolAfter').text()
-            let symbolBefore = $tr.find('#symbolBefore').text()
+        const amount_retention_vef = selectInvoice
+          .closest("td")
+          .querySelector("#amount_retention_vef");
+        let retention_vef = parseFloat(amount_retention_vef.value);
+        let total_retention_vef = +$("#total_retention_vef").val();
+        total_retention_vef += retention_vef;
+        $("#total_retention_vef").val(
+          total_retention_vef.toFixed(decimal_places_foreign)
+        );
+        $("#total_retention_l_vef").text(
+          total_retention_vef.toFixed(decimal_places_foreign).replace(".", ",")
+        );
+      }
 
-            const symbolCurrency = symbolAfter + symbolBefore
+      this.validate_payment_method_invoices();
+      this.CalculateTotal();
+    },
 
-            $("#diary_pay").val(text_val);
-            $("#amount_to_payment").val(payment);
-            $("#reference_number").val(reference);
-            $("#payday").val(date_to_pay);
-            $("#pay_edit").val(numTr)
-            $("#symbol-dairy").text(symbolCurrency)
-            this.SetSymbolCurrencyInput()
+    _onClickDelete_payment: function (ev) {
+      const amount_to_edit = ev.target;
+      const $tr = $(amount_to_edit).closest("tr");
+      const payment = $tr.find("#payment").val();
+      let total_payment = +$("#total_payment").val();
+      total_payment -= payment;
+      let decimal_number = +$("#decimal").val();
+      total_payment = total_payment.toFixed(decimal_number);
+      $("#total_payment").val(total_payment);
+      $("#total_payment_l").text(total_payment);
+      ev.target.closest("tr").remove();
+      this.CalculateTotal();
 
-            $(".disabled-pay").attr("disabled",false)
-            $("#payment_method").modal("show");
-            this.CalculateIGTF()
-        },
+      let numTr = $("#pay_methods tr").length;
+      if (numTr == 0) {
+        $(".hidden_pay").hide();
+        $("#total_payment_l").text("0");
+        $("#total_payment").val(0);
+        $(".disabled-input-pay").attr("disabled", true);
+      }
+    },
 
-        onClickUse_credit: function(ev){
-            this.CalculateUseCredit(true)
-        },
+    _onClickEdit_payment: function (ev) {
+      const amount_to_edit = ev.target;
+      const $tr = $(amount_to_edit).closest("tr");
+      const numTr = $tr.index();
+      const payment =
+        $tr.find("#payment_convert").val() !== ""
+          ? $tr.find("#payment_convert").val()
+          : $tr.find("#payment").val();
+      const reference = $tr.find("#reference").val();
+      const date_to_pay = $tr.find("#date_to_pay").val();
+      const text_val = +$tr.find("#dairy_val").val();
+      let symbolAfter = $tr.find("#symbolAfter").text();
+      let symbolBefore = $tr.find("#symbolBefore").text();
 
-        CalculateUseCredit:function(passPay){
-            let decimal_number = +$("#decimal").val()
-            let balance = +$("#positive_balance").val();
-            let total_amount = +$("#total_payment").val()
-            if($("#use_credit").is(":checked")){
-                total_amount += balance 
-                $("#total_payment").val(total_amount.toFixed(decimal_number))
-                $("#total_payment_l").text(total_amount.toFixed(decimal_number))
-                $(".hidden_pay").show()
-                $("#credit_apply").show()
-                if(+$("#amount_to_pay").val() > 0 || +$("#amount_to_pay").val() != ""){
-                    $(".disabled-input-pay").attr("disabled",false)
-                }
-            }
-            else{
-                $("#credit_apply").hide()
-                if(passPay){
-                    total_amount = (total_amount - balance).toFixed(decimal_number) 
-                    $("#total_payment").val(total_amount)
-                    $("#total_payment_l").text(total_amount)
-                }
-                if(total_amount == 0){
-                    $(".hidden_pay").hide()
-                    $(".disabled-input-pay").attr("disabled",true)
-                }
-            }
-            this.CalculateRemainingAmount()
-        },
+      const symbolCurrency = symbolAfter + symbolBefore;
 
-        validate_payment_method_invoices: function(){
-            let numTrpays = $("#pay_methods tr").length;
-            let checkboxes = $("input[type='checkbox'].select_invoice");
-            let selects_check = checkboxes.filter(":checked").length;
-            if($("#use_credit").is(":checked")){
-                $(".disabled-input-pay").attr("disabled",false)
-            } else if(selects_check > 0 && numTrpays > 0) {
-                $(".disabled-input-pay").attr("disabled",false)
-            }else{
-                $(".disabled-input-pay").attr("disabled",true)
-            }
-        },
+      $("#diary_pay").val(text_val);
+      $("#amount_to_payment").val(payment);
+      $("#reference_number").val(reference);
+      $("#payday").val(date_to_pay);
+      $("#pay_edit").val(numTr);
+      $("#symbol-dairy").text(symbolCurrency);
+      this.SetSymbolCurrencyInput();
 
-        _onClickProcess_payment: async function (ev){
-            $("#process_payment").attr("disabled", true)
-            const amountTotal = +$("#amount_total_pay").val()
-            let notProof = false
-            let msg_error = ""
+      $(".disabled-pay").attr("disabled", false);
+      $("#payment_method").modal("show");
+      this.CalculateIGTF();
+    },
 
-            if(amountTotal > 0){
-                let totalPay = +$("#total_payment").val()
-                const paymentTotalPartial = await ajax.jsonRpc('/payment_total_or_partial', 'call', {})
-                let { data } = paymentTotalPartial
-                if(data == 1){
-                    this.validateInputs(notProof)
-                }
-                if(data == 0){
-                    if(amountTotal <= totalPay){
-                        this.validateInputs(notProof)
-                        return
-                    }
-                    this.errorValidation(notProof)
-                }
-            }
-        },
+    onClickUse_credit: function (ev) {
+      this.CalculateUseCredit(true);
+    },
 
-        validateInputs: function(notProof, ){
-            if(!notProof){
-                if($("#requireReceipt").val() == "false"){
-                    this.ProcessPayment()
-                    return
-                }
-                
-                if($("#attach_input").val() != "" && $("#requireReceipt").val() == "true"){
-                    this.ProcessPayment()
-                    return
-                }
-                notProof = true
-            }
-            this.errorValidation(notProof)
-            
-        },
+    CalculateUseCredit: function (passPay) {
+      let decimal_number = +$("#decimal").val();
+      let balance = +$("#positive_balance").val();
+      let total_amount = +$("#total_payment").val();
+      if ($("#use_credit").is(":checked")) {
+        total_amount += balance;
+        $("#total_payment").val(total_amount.toFixed(decimal_number));
+        $("#total_payment_l").text(total_amount.toFixed(decimal_number));
+        $(".hidden_pay").show();
+        $("#credit_apply").show();
+        if (
+          +$("#amount_to_pay").val() > 0 ||
+          +$("#amount_to_pay").val() != ""
+        ) {
+          $(".disabled-input-pay").attr("disabled", false);
+        }
+      } else {
+        $("#credit_apply").hide();
+        if (passPay) {
+          total_amount = (total_amount - balance).toFixed(decimal_number);
+          $("#total_payment").val(total_amount);
+          $("#total_payment_l").text(total_amount);
+        }
+        if (total_amount == 0) {
+          $(".hidden_pay").hide();
+          $(".disabled-input-pay").attr("disabled", true);
+        }
+      }
+      this.CalculateRemainingAmount();
+    },
 
-        errorValidation: function(notProof){
-            let msg_error = notProof ? _t("Debe de agregar un comprobante antes de ser procesado el pago.") : _t("El monto del pago excede el monto registrado en el pago métodos.");
-                
-            const error = `<div class="alert alert-danger" role="alert">
+    validate_payment_method_invoices: function () {
+      let numTrpays = $("#pay_methods tr").length;
+      let checkboxes = $("input[type='checkbox'].select_invoice");
+      let selects_check = checkboxes.filter(":checked").length;
+      if ($("#use_credit").is(":checked")) {
+        $(".disabled-input-pay").attr("disabled", false);
+      } else if (selects_check > 0 && numTrpays > 0) {
+        $(".disabled-input-pay").attr("disabled", false);
+      } else {
+        $(".disabled-input-pay").attr("disabled", true);
+      }
+    },
+
+    _onClickProcess_payment: async function (ev) {
+      $("#process_payment").attr("disabled", true);
+      const amountTotal = +$("#amount_total_pay").val();
+      let notProof = false;
+      let msg_error = "";
+
+      if (amountTotal > 0) {
+        let totalPay = +$("#total_payment").val();
+        const paymentTotalPartial = await ajax.jsonRpc(
+          "/payment_total_or_partial",
+          "call",
+          {}
+        );
+        let { data } = paymentTotalPartial;
+        if (data == 1) {
+          this.validateInputs(notProof);
+        }
+        if (data == 0) {
+          if (amountTotal <= totalPay) {
+            this.validateInputs(notProof);
+            return;
+          }
+          this.errorValidation(notProof);
+        }
+      }
+    },
+
+    validateInputs: function (notProof) {
+      if (!notProof) {
+        if ($("#requireReceipt").val() == "false") {
+          this.ProcessPayment();
+          return;
+        }
+
+        if (
+          $("#attach_input").val() != "" &&
+          $("#requireReceipt").val() == "true"
+        ) {
+          this.ProcessPayment();
+          return;
+        }
+        notProof = true;
+      }
+      this.errorValidation(notProof);
+    },
+
+    errorValidation: function (notProof) {
+      let msg_error = notProof
+        ? _t("Debe de agregar un comprobante antes de ser procesado el pago.")
+        : _t(
+            "El monto del pago excede el monto registrado en el pago métodos."
+          );
+
+      const error = `<div class="alert alert-danger" role="alert">
                                 <h5 class="text-danger">${msg_error}</h5>
-                            </div>`
-            $("#error_success_info").html(error)
-            $("#error_success_in_pay").modal("show")
+                            </div>`;
+      $("#error_success_info").html(error);
+      $("#error_success_in_pay").modal("show");
 
-            $("#process_payment").attr("disabled", false)
-        },
+      $("#process_payment").attr("disabled", false);
+    },
 
-        ProcessPayment: async function(){
-            let paysTr = $("#pay_methods tr")
-            let invoiceSelected = $("#notes_invoices_results tr")
+    ProcessPayment: async function () {
+      let paysTr = $("#pay_methods tr");
+      let invoiceSelected = $("#notes_invoices_results tr");
 
-            const amountTotal = +$("#amount_total_pay").val()
-            
-            // if(paysTr.length > 0){
-            const { length: le, prevObject: prev, ...payments } = paysTr.map((_, payment) => {
-                const paymentNode = payment.children[0].children[0]
-                const idDairy = paymentNode.children[0].children[2].value;
-                const reference = paymentNode.children[0].children[4].value;
-                const dateToPay = paymentNode.children[0].children[5].value
-                let igtf_amount = 0
-                if ($("#requireReceipt").val() == "true" && paymentNode.children[0].children[8]) {
-                    igtf_amount = paymentNode.children[0].children[8].value
-                }
+      const amountTotal = +$("#amount_total_pay").val();
 
-                const currencyId = paymentNode.children[1].children[0].value
-                let paymentAmount = paymentNode.children[1].children[2].value
-                const paymentConvert = paymentNode.children[1].children[5].value
-                
+      // if(paysTr.length > 0){
+      const {
+        length: le,
+        prevObject: prev,
+        ...payments
+      } = paysTr.map((_, payment) => {
+        const paymentNode = payment.children[0].children[0];
+        const idDairy = paymentNode.children[0].children[2].value;
+        const reference = paymentNode.children[0].children[4].value;
+        const dateToPay = paymentNode.children[0].children[5].value;
+        let igtf_amount = 0;
+        if (
+          $("#requireReceipt").val() == "true" &&
+          paymentNode.children[0].children[8]
+        ) {
+          igtf_amount = paymentNode.children[0].children[8].value;
+        }
 
-                if(paymentConvert != ""){
-                    paymentAmount = paymentConvert
-                }
+        const currencyId = paymentNode.children[1].children[0].value;
+        let paymentAmount = paymentNode.children[1].children[2].value;
+        const paymentConvert = paymentNode.children[1].children[5].value;
 
-                return {
-                    idDairy,
-                    reference,
-                    dateToPay,
-                    paymentAmount,
-                    currencyId,
-                    igtf_amount
-                }
-            });
-            // }
+        if (paymentConvert != "") {
+          paymentAmount = paymentConvert;
+        }
 
-            const { length,  prevObject, ...invoices } = invoiceSelected.map((_,invoice) => {
-                const invoiceNode = invoice.children[0].children[0]
-                const invoiceSelect = invoiceNode.children[0].children[0]
+        return {
+          idDairy,
+          reference,
+          dateToPay,
+          paymentAmount,
+          currencyId,
+          igtf_amount,
+        };
+      });
+      // }
 
-                if (invoiceSelect.checked){
-                    const idInvoice = invoiceNode.children[0].children[2].value
+      const { length, prevObject, ...invoices } = invoiceSelected.map(
+        (_, invoice) => {
+          const invoiceNode = invoice.children[0].children[0];
+          const invoiceSelect = invoiceNode.children[0].children[0];
 
-                    return {
-                        idInvoice,
-                    }
-                }
-                return
-            })
+          if (invoiceSelect.checked) {
+            const idInvoice = invoiceNode.children[0].children[2].value;
 
-            const useCredit = $("#use_credit").prop('checked')
-            const dairy = +$("#diary").val()
-            const partnerId = $("#clients").val()
-            const attachId = $("#attach_id").val() == "0" ? false : $("#attach_id").val();
+            return {
+              idInvoice,
+            };
+          }
+          return;
+        }
+      );
 
-            const responsePayment = await ajax.jsonRpc('/payments/register_payment', 'call', {
-                "use_credit": useCredit,
-                "dairy_type": dairy,
-                "amount_total": amountTotal,
-                "invoices": invoices,
-                "payments": payments,
-                "partner_id": partnerId,
-                "file": attachId,
-            })
-            
-            console.log(responsePayment)
-            const { status, msg } = responsePayment
-            const is400 = status === 400;
-            if (is400) {
-                alert("Payment ERROR" + msg)
-                $("#process_payment").attr("disabled", false)
-                return
-            }
-            
-            const msg_success = _t("Los pagos han sido registrados exitosamente")
-            const success = `<div class="alert alert-success" role="alert">
+      const useCredit = $("#use_credit").prop("checked");
+      const dairy = +$("#diary").val();
+      const partnerId = $("#clients").val();
+      const attachId =
+        $("#attach_id").val() == "0" ? false : $("#attach_id").val();
+
+      const responsePayment = await ajax.jsonRpc(
+        "/payments/register_payment",
+        "call",
+        {
+          use_credit: useCredit,
+          dairy_type: dairy,
+          amount_total: amountTotal,
+          invoices: invoices,
+          payments: payments,
+          partner_id: partnerId,
+          file: attachId,
+        }
+      );
+
+      console.log(responsePayment);
+      const { status, msg } = responsePayment;
+      const is400 = status === 400;
+      if (is400) {
+        alert("Payment ERROR" + msg);
+        $("#process_payment").attr("disabled", false);
+        return;
+      }
+
+      const msg_success = _t("Los pagos han sido registrados exitosamente");
+      const success = `<div class="alert alert-success" role="alert">
                                 <h5 class="text-success">${msg_success}</h5>
-                            </div>`
-            $("#error_success_info").html(success)
-            $("#error_success_in_pay").modal("show")
-            $('#diary').val("")
-            $("#attach_id").val("")
-            $("#attach_input").val("")
-            $(".disabled-input-pay").attr("disabled", true)
-            $(".hidden_retention").hide()
-            this.fields_clear()
+                            </div>`;
+      $("#error_success_info").html(success);
+      $("#error_success_in_pay").modal("show");
+      $("#diary").val("");
+      $("#attach_id").val("");
+      $("#attach_input").val("");
+      $(".disabled-input-pay").attr("disabled", true);
+      $(".hidden_retention").hide();
+      this.fields_clear();
 
-            return
-        },
+      return;
+    },
 
-        onChangeAttachment: function(ev){
-            $("#remove_attach").attr("disabled", false)
-            var attachments = ev.target.files
-            for(let i = 0; i < attachments.length; i++){
-                var reader = new FileReader();
-                reader.readAsDataURL(attachments[i]);
-                reader.onload = async function(e){
-                    await ajax.jsonRpc('/upload_attachment', 'call', {
-                        'attachments': e.target.result,
-                        'attachment_name': attachments[i].name
-                    }).then(function(data){
-                        const { data:dt, status } = data
-                        const is400 = status === 400;
-                        if (is400) {
-                            $("#attach_input").val("")
-                            return
-                        }
-                        $("#attach_id").val(dt)
-                    });
-                }
-            }
-        },
+    onChangeAttachment: function (ev) {
+      $("#remove_attach").attr("disabled", false);
+      var attachments = ev.target.files;
+      for (let i = 0; i < attachments.length; i++) {
+        var reader = new FileReader();
+        reader.readAsDataURL(attachments[i]);
+        reader.onload = async function (e) {
+          await ajax
+            .jsonRpc("/upload_attachment", "call", {
+              attachments: e.target.result,
+              attachment_name: attachments[i].name,
+            })
+            .then(function (data) {
+              const { data: dt, status } = data;
+              const is400 = status === 400;
+              if (is400) {
+                $("#attach_input").val("");
+                return;
+              }
+              $("#attach_id").val(dt);
+            });
+        };
+      }
+    },
 
-        onClickRemoveAttach: async function(ev){
-            if($("#attach_id").val() != ''){
-                const attachId = $("#attach_id").val()
-                const deleteAttach = await ajax.jsonRpc('/delete_attachment', 'call', {
-                    'attach_id': attachId,
-                })
-                const { status } = deleteAttach
-                const is400 = status === 400;
-                if (is400) return
-                $("#attach_input").val("")
-                $("#attach_id").val("")
-                $("#remove_attach").attr("disabled", true)
-            }
-        },
-
-    });
+    onClickRemoveAttach: async function (ev) {
+      if ($("#attach_id").val() != "") {
+        const attachId = $("#attach_id").val();
+        const deleteAttach = await ajax.jsonRpc("/delete_attachment", "call", {
+          attach_id: attachId,
+        });
+        const { status } = deleteAttach;
+        const is400 = status === 400;
+        if (is400) return;
+        $("#attach_input").val("");
+        $("#attach_id").val("");
+        $("#remove_attach").attr("disabled", true);
+      }
+    },
+  });
 });

@@ -68,6 +68,14 @@
                                     <field name="process_payments_invoices" class="o_light_label" widget="radio" options="{'horizontal': true}"/>
                                 </div>
                             </div>
+			    <br/>
+			    <div class="col-12" attrs="{'invisible': [('process_payments_invoices', '=', '0')]}">
+                        	<label for="allow_installment_payments" class="p-0 col-4 o_light_label"/>
+                            	<field name="allow_installment_payments" class=" w-auto"/>
+                            	<div class="text-muted">
+                                    Check this if you want to allow payments by installments on the app.
+                            	</div>
+		    	    </div>
                         </div>
                     </div>
                     <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
