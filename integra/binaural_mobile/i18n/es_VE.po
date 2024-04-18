@@ -4,6 +4,7 @@
 #
 msgid ""
 msgstr ""
+
 "Project-Id-Version: Odoo Server 16.0+e-20240401\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-04-10 15:07+0000\n"
@@ -1227,7 +1228,7 @@ msgstr "Diario"
 #. module: binaural_mobile
 #: model:ir.model,name:binaural_mobile.model_account_move_line
 msgid "Journal Item"
-msgstr "Apunte contable"
+msgstr "Partida individual"
 
 #. module: binaural_mobile
 #: model:ir.model.fields,help:binaural_mobile.field_sale_order__journal_id
@@ -1408,6 +1409,12 @@ msgstr "Nombre"
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Name *"
 msgstr "Nombre *"
+
+#. module: binaural_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile__activity_calendar_event_id
+#: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_igtf__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr ""
 
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile__activity_date_deadline
@@ -2521,6 +2528,13 @@ msgstr ""
 #, python-format
 msgid "You can only reconcile posted entries."
 msgstr "Solo puedes conciliar los asientos publicados."
+
+#. module: binaural_mobile
+#. odoo-python
+#: code:addons/binaural_mobile/models/sale_order.py:0
+#, python-format
+msgid "You can't modify this order, beceause it isn't in draft."
+msgstr "No puedes modificar la orden porque no esta en estado borrador"
 
 #. module: binaural_mobile
 #. odoo-python
