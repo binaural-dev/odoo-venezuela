@@ -154,9 +154,8 @@ odoo.define('binaural_mobile.payments_portal_form', function(require) {
                     `)
                     return
                 }
+
                 const requireReceipt = data[0]["journal_id"][2]
-                const removeProof = requireReceipt ? true : false;
-                $("#remove-proof").toggle(removeProof);
                 $("#requireReceipt").val(requireReceipt)
                 this.CalculateRemainingAmount()
                 this.build_table_invoices(data)
