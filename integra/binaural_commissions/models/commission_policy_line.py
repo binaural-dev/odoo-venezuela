@@ -16,6 +16,7 @@ class CommissionPolicyLine(models.Model):
     date_to = fields.Integer(required=True)
     commission = fields.Float(required=True, help="Commission percentage")
     policy_id = fields.Many2one("commission.policy", required=True, ondelete="cascade")
+    policy_type_id = fields.Many2one("commission.policy.type", related="policy_id.policy_type_id")
     policy_type = fields.Selection(related="policy_id.policy_type")
     infinite = fields.Boolean()
 
@@ -29,6 +30,18 @@ class CommissionPolicyLine(models.Model):
     def _onchange_infinite(self):
         if self.infinite:
             self.date_to = False
+
+    def _prepare_commission_line_image(self):
+        lines = []
+        for record in self:
+            lines.append( {
+                "date_from": record.date_from,
+                "date_to": record.date_to,
+                "commission": record.commission,
+                "policy_type_id": record.policy_type_id.id,
+                "infinite": record.infinite,
+            })
+        return lines
 
     @api.constrains("date_from", "date_to", "infinite")
     def _check_date_range(self):
