@@ -18,6 +18,8 @@ Este añade los siguientes campos:
 * (res.group) Grupo para vendedores que puedan editar tarifas
 * (res.group) Grupo para vendedores que puedan crear contactos
 * Activar opcion de sin exitencia continuar venta en la configuraciones de sitio web(Solo si vendera productos que no tiene existencia)
+* Incluir impuestos en el Precio y Subtotal de la linea del Presupuesto
+* (Modo debug) No cambiar el impuesto al cambiar Requiere Factuar : Impuestos incluidos Siempre
 
 ## Validaciones
 

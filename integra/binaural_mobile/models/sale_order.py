@@ -1,5 +1,6 @@
 import logging
 import copy
+from bs4 import BeautifulSoup
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
@@ -9,6 +10,42 @@ JOURNAL_DOMAIN = [("active", "=", True), ("type", "=", "sale"),]
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        for record in res:
+            record.manage_note_app()
+        return res
+    
+    def write(self, vals):
+        res = super().write(vals)
+        if "note" in vals:
+            self.manage_note_app()
+        return res
+
+    def manage_note_app(self):
+        for record in self:
+            line_note = record.order_line.filtered(lambda line: line.display_type == "line_note")
+            if not record.note and line_note:
+                line_note.unlink()
+                continue
+
+            if not record.note:
+                continue
+
+            note = BeautifulSoup(record.note).get_text()
+            if line_note and note == "":
+                line_note.unlink()
+                continue
+            if record.note:
+                if line_note:
+                    line_note.write({"name": note})
+                else:
+                    record.order_line += record.order_line.new(
+                        {"name": note, "display_type": "line_note"}
+                    )
+
 
     def _get_default_journal(self):
         domain = copy.deepcopy(JOURNAL_DOMAIN)
@@ -78,3 +115,21 @@ class SaleOrder(models.Model):
                 state_seller = _("Sale Order")
 
             sale.state_seller = state_seller
+
+class SaleOrderLine(models.Model):
+    _inherit = "sale.order.line"
+
+    price_unit_with_tax = fields.Float(
+        compute="_compute_price_unit_with_tax", store=True
+    )
+    @api.depends("price_unit", "tax_id")
+    def _compute_price_unit_with_tax(self):
+        for line in self:
+            price_unit = line.price_unit
+            taxes = line.tax_id.compute_all(
+                price_unit,
+                line.order_id.currency_id,
+                1,
+                product=line.product_id,
+            )
+            line.price_unit_with_tax = taxes["total_included"]
