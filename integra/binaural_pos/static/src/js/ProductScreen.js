@@ -96,13 +96,13 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
           }
         }
 
-        let msg = await this.validateProductsInWarehouse(lines, pos_config)
-        if(msg){
-          return self.showPopup('ErrorPopup', {
-            title: _t("Validate Product in Warehouse"),
-            body: msg,
-          });
-        }
+        //let msg = await this.validateProductsInWarehouse(lines, pos_config)
+        //if(msg){
+        //  return self.showPopup('ErrorPopup', {
+        //    title: _t("Validate Product in Warehouse"),
+        //    body: msg,
+        //  });
+        //}
 
         if(!validation_negative){
           let message = _t(is_negative);
