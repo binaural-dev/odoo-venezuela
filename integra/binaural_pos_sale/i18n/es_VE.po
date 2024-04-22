@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240116\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-24 21:15+0000\n"
-"PO-Revision-Date: 2024-01-24 21:15+0000\n"
+"POT-Creation-Date: 2024-04-01 15:07+0000\n"
+"PO-Revision-Date: 2024-04-01 15:07+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -19,12 +19,8 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/binaural_pos_sale/static/src/js/SaleOrderManagementScreen.js:0
 #, python-format
-msgid ""
-"Are you sure to process the order with ${sale_order[0].pricelist_id[1]} "
-"since your checkout currently does not allow that rate?"
-msgstr ""
-"¿Esta seguro de procesar el pedido con la ${sale_order[0].pricelist_id[1]} "
-"dado que su caja actualmente no tiene permitida dicha tarifa?"
+msgid "Are you sure to process the order with "
+msgstr "Esta seguro de procesar el pedido con la Tarifa "
 
 #. module: binaural_pos_sale
 #: model:ir.model,name:binaural_pos_sale.model_res_company
@@ -64,9 +60,14 @@ msgid "Pos Use Rate From Order"
 msgstr "Usar Tasa desde Pedido de Venta"
 
 #. module: binaural_pos_sale
+#: model:ir.model,name:binaural_pos_sale.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
+
+#. module: binaural_pos_sale
 #: model:ir.model,name:binaural_pos_sale.model_sale_order_line
 msgid "Sales Order Line"
-msgstr "Línea pedido de venta"
+msgstr "Línea de pedido de venta"
 
 #. module: binaural_pos_sale
 #. odoo-javascript
@@ -88,3 +89,10 @@ msgstr "Usar la Tasa desde el Presupuesto"
 #, python-format
 msgid "You already contain this sales order"
 msgstr "Ya esta orden contiene este pedido de ventas."
+
+#. module: binaural_pos_sale
+#. odoo-javascript
+#: code:addons/binaural_pos_sale/static/src/js/SaleOrderManagementScreen.js:0
+#, python-format
+msgid " since your checkout currently does not allow that rate?"
+msgstr " dado que su caja actualmente no tiene permitida dicha tarifa?"

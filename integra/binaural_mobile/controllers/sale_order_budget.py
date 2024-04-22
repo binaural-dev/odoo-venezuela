@@ -450,6 +450,31 @@ class SaleOrderBudget(http.Controller):
 
         return data
 
+    @http.route(
+            '/budget/update_partner', type="json", auth="public", website=False, sitemap=False
+    )
+    def update_partner(self, budget=False, partner=False, **kw):
+        data = {"status": 200, "msg": _("Success")}
+        
+        if not budget or not partner:
+            data.update(
+                {"status": 204, "msg": _("No Found Budget or partner"),  "data": False}
+            )
+            return json.dumps(data)
+        
+        try:
+            sale_id = int(budget)
+            sale_order = request.env["sale.order"].sudo().search([("id", "=", sale_id)])
+            sale_order.update({
+                "partner_id": int(partner)
+            })
+        except Exception as e:
+            data.update({"status": 400, "msg": str(e)})
+            return data
+
+        return data
+
+
     def check_lines_validations(self, lines):
         """Evaluates if the sale order lines have available quantities
         and the quantity meet the sales policy requirement.

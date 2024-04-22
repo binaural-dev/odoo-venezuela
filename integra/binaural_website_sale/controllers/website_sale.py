@@ -220,16 +220,16 @@ class BinauralWebsiteSale(WebsiteSale):
         order = 'quantity desc'
         return 'is_published desc, %s' % order
 
-    @http.route(['/shop/cart/update_json'], type='json', auth="public", methods=['POST'], website=True, csrf=False)
+    @http.route()
     def cart_update_json(
         self, product_id, line_id=None, add_qty=None, set_qty=None, display=True,
         product_custom_attribute_values=None, no_variant_attribute_values=None, **kw
     ):
-        product_qty = request.env["product.template"].search(
+        product_qty = request.env["product.product"].search(
             [
                 ('id', '=', product_id)
             ]
-        ).quantity
+        ).product_tmpl_id.quantity
         sale_order = request.website.sale_get_order(force_create=True)
         
         order_line_qty = sale_order.order_line[0].product_uom_qty if sale_order.order_line else 0

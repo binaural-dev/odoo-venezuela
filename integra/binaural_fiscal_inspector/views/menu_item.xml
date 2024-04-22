@@ -67,6 +67,15 @@
             groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
         
         </menuitem>
+
+        <menuitem id="retention_line_report_fiscal" name="Administracion"
+        groups="binaural_fiscal_inspector.group_fiscal_inspectorate" sequence="6">
+
+            <menuitem action="binaural_payment_extension.action_retention_line_report" id="action_retention_line_report_fiscal" 
+            groups="binaural_fiscal_inspector.group_fiscal_inspectorate"/>
+        
+        </menuitem>
+        
     </menuitem>
 
 </odoo>

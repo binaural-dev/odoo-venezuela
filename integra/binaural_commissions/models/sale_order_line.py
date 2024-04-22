@@ -14,4 +14,6 @@ class SaleOrderLine(models.Model):
         for line in self.commission_policy_line_image_ids:
             if line.date_from <= days <= line.date_to:
                 return line
+            if line.infinite and line.date_from <= days:
+                return line
         return False

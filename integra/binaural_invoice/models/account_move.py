@@ -21,6 +21,28 @@ class AccountMove(models.Model):
     first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")
 
+    # @api.model
+    # def check_access_rights(self, operation, raise_exception=True):
+    #     if not self.env.context.get("params",False):
+    #         return super().check_access_rights(operation, raise_exception)
+
+    #     if not self.env.context.get("params").get("action", False):
+    #         return super().check_access_rights(operation, raise_exception)
+
+    #     action_id = self.env.ref("account.action_move_out_refund_type").id
+    #     action = self.env.context.get("params").get("action")
+    #     if action != action_id:
+    #         return super().check_access_rights(operation, raise_exception)
+
+    #     if self.env.user.has_group("binaural_invoice.create_out_refund"): 
+    #         self = self.with_context(create=1)
+    #     else:
+    #         self = self.with_context(create=0)
+
+    #     _logger.info("Context: %s", self.env.context)
+
+    #     return super().check_access_rights(operation, raise_exception)
+
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
         AccountMove = self.env["account.move"]

@@ -66,12 +66,16 @@ class AccountMovePayments(http.Controller):
         data = {"status": 200, "msg": "OK", "data":False}
         seller_portal_id = request.env.user.employee_id.id
         
-        domain = [
-            ("name", "=ilike", "%" + (query or "") + "%"),
-            ("seller_ids", "=", seller_portal_id),
-            ("is_public", "=", True),
-            ("type", "=", "contact"),
+        common_domain = [
+            ('seller_ids', '=', seller_portal_id),
+            ('is_public', '=', True),
+            ("type", "=", "contact")
         ]
+
+        domain_name = common_domain + [('name', '=ilike', "%" + (query or '') + "%")]
+        domain_vat = common_domain + [('vat', '=ilike', "%" + (query or '') + "%")]
+
+        domain = expression.OR([domain_name, domain_vat])
 
         partners = utils.get_model_data("res.partner", domain, FIELDPARTNER)
 

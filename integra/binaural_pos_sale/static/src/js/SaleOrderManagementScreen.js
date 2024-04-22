@@ -23,7 +23,9 @@ odoo.define('binaural_pos_sale.SaleOrderManagementScreen', function(require) {
           const { confirmed } = await Gui.showPopup(
             'ConfirmPopup',
             {
-              title: this.env._t(`Are you sure to process the order with ${sale_order[0].pricelist_id[0]} since your checkout currently does not allow that rate?`),
+              title: _t("Are you sure to process the order with ") 
+              + sale_order[0].pricelist_id[1]
+              + _t(" since your checkout currently does not allow that rate?"),
             }
           );
           if (!confirmed) {

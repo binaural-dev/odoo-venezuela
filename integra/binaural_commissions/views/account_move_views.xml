@@ -45,6 +45,7 @@
                    decoration-success="commission_payment_state == 'paid'" decoration-info="commission_payment_state == 'process'"
                    optional="show" string="Payment State (Commission)" attrs="{'invisible': [('move_type', '!=', 'out_invoice')]}"/>
             <field name="total_commission" widget="monetary" attrs="{'invisible': [('move_type', '!=', 'out_invoice')]}"/>
+            <field name="commission_discount" widget="monetary" attrs="{'invisible': [('move_type', '!=', 'out_invoice')]}"/>
         </xpath>
         <xpath expr="//group[@id='other_tab_group']" position="inside">
             <group string="Commissions" name="commission_info_group" attrs="{'invisible': [('move_type', '!=', 'out_invoice')]}">
@@ -53,9 +54,11 @@
                 <field name="last_payment_date" string="Last Payment Date"/>
                 <field name="first_payment_date" string="First Payment Date"/>
                 <field name="commission_invoice" readonly="1" />
+                <field name="discount_invoice_ids" widget="many2many_tags" readonly="1"/>
                 <field name="is_commission_invoice" invisible="1"/>
                 <field name="label_commission_invoice_date_field"/>
                 <field name="label_commission_when"/>
+                <field name="priority_commission_policy_type"/>
             </group>
         </xpath>
         <xpath expr="//notebook" position="inside">
@@ -104,6 +107,7 @@
             <button name="show_invoice_resume" icon="fa-list" string="Commissions" type="object"/> 
             <field name="total_commission" widget="monetary"/>
             <field name="commission_discount" widget="monetary"/>
+            <field name="discount_invoice_ids" widget="many2many_tags"/>
         </xpath>
 
         <xpath expr="//field[@name='invoice_date']" position="after">
