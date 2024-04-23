@@ -6,12 +6,13 @@
     "author": "Binauraldev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.0.0.0.6",
+    "version": "16.0.0.0.8",
     # any module necessary for this one to work correctly
     "depends": ["binaural_seller","binaural_pos_sale","binaural_pos","point_of_sale","pos_hr"],
     # always loaded
     "data": [
         "views/pos_order.xml",
+        "views/res_config_settings_views.xml",
     ],
     "images": ["static/description/icon.png"],
     'auto_install': True,

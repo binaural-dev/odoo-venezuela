@@ -54,7 +54,7 @@ class AppointmentType(models.Model):
         help="For each scheduled appointment, create a new invoices and assign it to the responsible user with state draft."
     )
 
-    @api.depends('meeting_ids')
+    @api.depends('meeting_ids.invoice_ids')
     def _compute_invoice_ids(self):
         for record in self:
             record.invoice_ids = record.meeting_ids.invoice_ids.ids
