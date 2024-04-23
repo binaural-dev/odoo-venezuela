@@ -1,6 +1,7 @@
 Este modulo se encarga de agregar las siguientes configuraciones:
 
 * Restriccion para agregar productos fuera de lo requerido en el movimiento (pick / pack / out)
+* Crear factura al validar las transferencias OUT
 
 Modelo nuevo llavado Carrito para almacenar el pick, pack, o out en curso, asi como 
 tambien su codigo de barra para poder iniciar las operaciones
