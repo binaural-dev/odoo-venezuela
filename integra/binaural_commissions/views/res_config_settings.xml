@@ -41,6 +41,7 @@
                     </div>
 		    <div class="row mt16 o_settings_container" name="binaural_commissions_settings_container_2">
                         <div id="compute_commission_when"
+                            invisible="1"
                              class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_right_pane">
                                 <label for="compute_commission_when"/>
@@ -49,7 +50,7 @@
                                 </div>
                                 <div class="content-group">
                                     <div class="mt16">
-                                        <field name="compute_commission_when" class="o_light_label" widget="radio"/>
+                                        <field name="compute_commission_when" class="o_light_label" widget="radio" />
                                     </div>
                                 </div>
                             </div>
@@ -83,9 +84,25 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 o_setting_box" id="commission_order">
+                            <div class="o_setting_left_pane"/>
+                            <div class="o_setting_right_pane">
+                                <span class="o_form_label">Order Commission</span>
+                                <div class="text-muted">
+                                    Configure the order of commissions assignment
+                                </div>
+                                <div class="mt16">
+                                    <button name="action_edit_commission_policy_type_order" 
+                                        type="object" 
+                                        icon="fa-level-down"
+                                        string="Commission Order"/>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 		    <div class="row mt16 o_settings_container" name="binaural_commissions_settings_container_3">
                         <div id="compute_commission_when"
+                            invisible="1"
                              class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_right_pane">
                                 <label for="commission_payment_through"/>

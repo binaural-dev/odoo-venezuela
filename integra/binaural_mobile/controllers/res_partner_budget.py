@@ -4,6 +4,7 @@ from odoo import http, _
 from odoo.http import request
 from .utils import get_model_count, get_model_data, get_search_domain, browse_model_data
 from ...tools import binaural_cne_query
+from odoo.osv import expression
 
 import logging
 
@@ -47,10 +48,10 @@ class ResPartnerBudget(http.Controller):
             symbol_currency = request.env.company.currency_id
 
             for group in user.groups_id:
-                if group.name == "Portal / Vendedores que puedan editar tarifas":
+                if group.id == request.env.ref("binaural_mobile.group_sellers_edit_fee").id:
                     edit_fee = True
                     price_lists = request.env["product.pricelist"].sudo().search([("selectable", "=" , True), ("active", "=", True)])
-                if group.name == "Portal / Vendedores que puedan crear contactos":
+                if group.id == request.env.ref("binaural_mobile.group_sellers_create_contact").id:
                     create_client = True
                 if group.id == request.env.ref('binaural_mobile.group_sellers_create_contact_address').id:
                     create_client_address = True
@@ -72,6 +73,7 @@ class ResPartnerBudget(http.Controller):
                 "no_footer":True,
                 "type_document": type_document,
                 "countries": country_ids,
+                "not_confirm_quotes": user.has_group("binaural_mobile.group_sellers_cant_confirm_quotation")
             })
         return request.redirect("/my/home")
     
@@ -79,12 +81,19 @@ class ResPartnerBudget(http.Controller):
     def get_clients(self, query="", **kw):
         data = {"status": 200, "msg": "OK", "data": False}
         seller_portal_id = request.env.user.employee_id.id
-        domain = [
-            ('name', '=ilike', "%" + (query or '') + "%"),
-            ('seller_ids', '=', seller_portal_id),
+        common_domain = [
             ('is_public', '=', True),
             ("type", "=", "contact")
-            ]
+        ]
+
+        if not request.env.user.has_group("binaural_mobile.group_sellers_show_all_client"):
+            common_domain += [('seller_ids', '=', seller_portal_id)]
+
+        domain_name = common_domain + [('name', '=ilike', "%" + (query or '') + "%")]
+        domain_vat = common_domain + [('vat', '=ilike', "%" + (query or '') + "%")]
+
+        domain = expression.OR([domain_name, domain_vat])
+        
         partners = get_model_data("res.partner", domain, FIELDNAMES)
 
         if not partners:
@@ -124,6 +133,7 @@ class ResPartnerBudget(http.Controller):
         email='', number='', 
         state=False, municipality=False, 
         parish=False, parent_id=False,
+        city=False,
         type="contact", **kwargs
         ):
         
@@ -146,6 +156,7 @@ class ResPartnerBudget(http.Controller):
                     "street": street,
                     "country_id": country,
                     "state_id": state,
+                    "city_id": city,
                     "municipality": municipality,
                     "email": email,
                     "phone": number,
@@ -184,6 +195,7 @@ class ResPartnerBudget(http.Controller):
         "2": "res.country.state",
         "3": "res.country.municipality",
         "4": "res.country.parish",
+        "5": "res.country.city",
         }
         model_name = kw.get('namemodel')
         if model_name not in models_allowed.keys():

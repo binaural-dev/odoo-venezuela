@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <data>
+        <function model="common.log.lines.ept" name='update_module'/>
+    </data>
+</odoo>

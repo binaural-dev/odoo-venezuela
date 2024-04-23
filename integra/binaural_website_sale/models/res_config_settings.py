@@ -13,3 +13,13 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.budget_send',
         readonly=False,
     )
+
+    people_not_being_able_to_see_prices = fields.Boolean(
+        related="website_id.people_not_being_able_to_see_prices",
+        readonly=False,
+    )
+
+    people_not_being_able_to_see_available = fields.Boolean(
+        related="website_id.people_not_being_able_to_see_available",
+        readonly=False,
+    )
