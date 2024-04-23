@@ -100,7 +100,6 @@ class StockPicking(models.Model):
         if self.location_id.warehouse_id.delivery_steps == "ship_only":
             type_delivery_step = "out"
 
-
         new_pick = self.search(
             [
                 ("operation_state", "=", "ready"),
@@ -134,6 +133,10 @@ class StockPicking(models.Model):
                 if record.type_delivery_step == type_delivery_step:
                     record.assign_new_pick_to_employee()
 
+                if (
+                    record.type_delivery_step == "out"
+                    and self.env.company.create_invoice_after_validate_out
+                ):
                     order = record.sale_id
                     wizard = self.env["sale.advance.payment.inv"].create(
                         {
@@ -177,7 +180,7 @@ class StockPicking(models.Model):
 
     def get_available_picker(self):
         init_role_picking = "picker"
-        if self.env.company.main_warehouse_id.delivery_steps == "ship_only":
+        if self.location_id.warehouse_id.delivery_steps == "ship_only":
             init_role_picking = "out"
         picker_ids = self.env["hr.employee"].search([("role_picking", "=", init_role_picking)])
         for picker in picker_ids:

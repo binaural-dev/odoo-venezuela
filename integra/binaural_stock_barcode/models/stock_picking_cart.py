@@ -20,7 +20,7 @@ class StockPickingCart(models.Model):
     pack_id = fields.Many2one("stock.picking", string="PACK", copy=False)
     out_id = fields.Many2one("stock.picking", string="OUT", copy=False)
     warehouse_id = fields.Many2one(
-        "stock.warehouse", default=lambda self: self.env.company.main_warehouse_id
+        "stock.warehouse", default=lambda self: self.env.user.property_warehouse_id or self.env.company.main_warehouse_id
     )
     delivery_steps = fields.Selection(related="warehouse_id.delivery_steps")
 

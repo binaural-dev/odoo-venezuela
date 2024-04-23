@@ -8,7 +8,6 @@
             <tree>
                 <field name="name"/>
                 <field name="barcode"/>
-                <field name="warehouse_id" invisible="1"/>
                 <field name="delivery_steps" invisible="1"/>
                 <field name="pick_id" attrs="{'invisible':[('delivery_steps', 'in',['ship_only'])]}" optional="hide" />
                 <field name="pack_id" attrs="{'invisible':[('delivery_steps', 'in',['ship_only','pick_ship'])]}" optional="hide"/>
@@ -42,7 +41,8 @@
                             <field name="barcode"/>
                         </group>
                         <group>
-                            <field name="warehouse_id" invisible="1"/>
+                            <field name="warehouse_id" groups="binaural_stock_barcode.editable_operation_carts"/>
+                            <field name="warehouse_id" readonly="1" groups="!binaural_stock_barcode.editable_operation_carts"/>
                             <field name="delivery_steps" invisible="1"/>
                             <!-- Fields editable -->
                             <field 
