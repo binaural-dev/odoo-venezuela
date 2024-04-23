@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<data>
+
+    <template id="account_report_document">
+
+        <style>
+
+            @font-face {
+                font-family: 'Courier';
+                src: url('/binaural_accountant/static/fonts/CourierPrime-Regular.ttf') format('truetype');
+            }
+
+            * {
+                font-family: Courier;
+                font-size: 19px !important;
+                word-spacing: -5px !important;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            h2 {
+                font-size: 16px;
+            }
+
+            .page {
+                font-size: 13px;
+                padding: 25px;
+
+            }
+
+            .table {
+                width: 100%;
+                margin-top: 30px;
+            }
+
+            tr, th, td {
+                border 0px;
+                font-size: 13px;
+            }
+
+            .table tr, .table td, .table th {
+                padding: 5px 15px;
+            }
+
+            .table thead th {
+                
+                font-size: 12px;
+                text-transform: uppercase;
+            }
+
+            .table thead tr {
+                border: 1px solid black !important;
+                border-right:0px !important;
+                border-left:0px !important;
+            }
+
+            .table tfoot .total_debit, .table tfoot .total_credit {
+                font-weight: bold;
+                font-size: 13px;
+            }
+            
+
+            .ml-6 {
+                margin-left: 20px;
+            }
+
+            .text-center {
+                text-align: center;
+            }
+
+            .header {
+                background: blue !important;
+            }
+
+            .main_table tbody tr td {
+                padding-top:5px;
+                padding-bottom:5px;
+            }
+
+            .main_table tbody tr td{ 
+                border-bottom: 1px solid black;
+            }
+
+            .total_table {
+                margin-top: 10px;
+            }
+
+            .row {
+                padding: 0px;
+                margin: 0px;
+            }
+        </style>
+        <div class="page" style="position: relative; padding:0px; margin:0px;border-top:white 1px solid;">
+
+            <t t-set="items_by_page" t-value="100"/>
+            <t t-set="docs_paginated" t-value="[docs[i:i+items_by_page] for i in range(0, len(docs), items_by_page)]"/>
+            <t t-set="paginate_count" t-value="len(docs_paginated)"/>
+            <t t-set="idx" t-value="0"/>
+            <t t-set="current_page" t-value="1"/>
+            <t t-set="current_month_name" t-value="time.strftime('%%m')
+                .replace('01','Enero')
+                .replace('02','Febrero')
+                .replace('03','Marzo')
+                .replace('04','Abril')
+                .replace('05','Mayo')
+                .replace('06','Junio')
+                .replace('07','Julio')
+                .replace('08','Agosto')
+                .replace('09','Septiembre')
+                .replace('10','Octubre')
+                .replace('11','Noviembre')
+                .replace('12','Diciembre')"
+            />
+            <t t-set="total_debit" t-value="0"/>
+            <t t-set="total_credit" t-value="0"/>
+
+            <div class="header" style="padding:0px; margin:0px;background:pink;">
+                <style>
+                    .table_header {
+                        border: 0px white solid;
+                    }
+
+                    .table_header tr:nth-child(n+2) {
+                        border: 2px solid black;
+                        border-radius: 5px;
+                    }
+
+                    .table_header tr:nth-child(n+2) td {
+                        text-transform: uppercase;
+                    }
+
+                    .table_main_header thead tr th{ 
+                        font-weigth: bold;
+                        border-top: 1px solid black;
+                        border-bottom: 1px solid black;
+                    }
+                </style>
+
+                <div class="row" style="padding:0px; margin:0px;background:yellow;">
+                    <div class="col-12 doc-header">
+                        <table class="table table_header">
+                            <tr>
+                                <td style="border-top:white 1px solid;">
+                                    <h1 class="text-center" style="font-size: 18px;"><strong><span t-esc="res_company.name" /></strong></h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <h2 class="text-center" style="font-size: 18px;" t-if="doc_title == ''"><span t-esc="current_month_name + time.strftime(' del %%Y')" /></h2>
+                                    <h2 class="text-center" style="font-size: 18px;" t-if="not doc_title == ''">
+                                        COMPROBANTE CONTABLE No. <span class="font-weight-bold" t-esc="doc_title" />
+                                    <span style="margin-left:45px;">FECHA: <span class="font-weight-bold" t-esc="doc_date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></span></h2> 
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height: 50px;max-height: 50px;">
+                                    <strong>Concepto:</strong> <span t-if="main_move_concept"><t t-esc="(main_move_concept[:217] + '...') if len(main_move_concept) > 220 else main_move_concept"/></span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="height: 50px;max-height: 50px;">
+                                    <strong>Concepto pago:</strong> <span t-if="main_move_payment_concept"><t t-esc="(main_move_payment_concept[:217] + '...') if len(main_move_payment_concept) > 220 else main_move_payment_concept"/></span>
+                                </td>
+                            </tr>
+                        </table>                            
+                        <div style="width: 1200px;">
+                            <table class="table table_main_header" style="width:1200px;" name="table" t-att-style="'margin-top: 50px' if current_page > 1 else ''">
+                                <thead>
+                                    <tr>
+                                        <th name="th_date" class="text-left font-weight-bold" style="padding: 10px 2px; min-width: 7px !important;max-width: 7px !important;width: 7px !important;font-size: 13px;text-transform:uppercase;">fecha</th>
+                                        <th name="th_account" class="text-center font-weight-bold" style="padding: 10px 2px;min-width: 7px !important;max-width: 7px !important;width: 7px !important;font-size: 13px;text-transform:uppercase;">cuenta</th>
+                                        <th name="th_ref" class="text-center font-weight-bold" style="padding: 10px 2px; min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 13px;text-transform:uppercase;">ref</th>
+                                        <th name="th_analytic_account" class="text-center font-weight-bold" style="padding: 10px 2px;min-width: 7px !important;max-width: 7px !important;width: 7px !important;font-size: 13px;text-transform:uppercase;">dpto</th>
+
+                                        <th name="th_account_name" class="text-left font-weight-bold" style="padding: 10px 2px; min-width: 10px !important;max-width: 10px !important;width: 10px !important;font-size: 13px;text-transform:uppercase;">nombre</th>
+                                        <th name="th_vat" class="text-left font-weight-bold" style="padding: 10px 2px;min-width: 9px !important;max-width: 9px !important;width: 9px !important;font-size: 13px;text-transform:uppercase;">ci/rif</th>
+
+                                        <th name="th_move_name" class="text-left font-weight-bold" style="padding: 10px 2px; min-width: 9px !important;max-width: 9px !important;width: 9px !important;font-size: 13px;text-transform:uppercase;">documento</th>
+                                        <th name="th_debit" class="text-right font-weight-bold" style="padding: 10px 2px; min-width: 10px !important;max-width: 10px !important;width: 10px !important;font-size: 13px;text-transform:uppercase;">débitos</th>
+                                        <th name="th_credit" class="text-right font-weight-bold" style="padding: 10px 2px; min-width: 10px !important;max-width: 10px !important;width: 10px !important;font-size: 13px;text-transform:uppercase;">créditos</th>
+                                    </tr>
+                                </thead>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+            <t t-foreach="docs_paginated" t-as="docs_by_page">
+
+
+                <div class="row" style="padding: 0px;margin: 0px;">
+
+                    <table class="table main_table" name="table" style="background:blue;position:relative;left:12px;padding: 0px;margin: 0px; max-width:100%;width:1103px;">
+                        <tbody class="tbody">
+
+                            <t t-foreach="docs_by_page" t-as="line">
+
+                                <t t-set="line" t-value="line.with_context(lang=lang)" />
+
+                                <tr>
+                                    <td class="text-left" style="padding: 2px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 13px !important;border-top: 0px solid black;"><t t-esc="line.move_id.date.strftime('%d/%m/%Y')"/></td>
+                                    <td class="text-center" style="padding: 2px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 13px !important;border-top: 0px solid black;"><t t-esc="line.account_id.code"/></td>
+                                    <td class="text-center" style="padding: 2px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 13px !important;border-top: 0px solid black;"><t t-esc="line.move_id.ref" t-if="line.move_id.ref != main_move_concept"/></td>
+                                    <td class="text-center" style="padding: 2px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 13px !important;border-top: 0px solid black;">
+                                        <t t-esc="', '.join(line.analytic_line_ids.mapped('account_id.code'))"/>
+                                    </td>
+
+                                    <td class="text-left" style="padding: 2px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 13px !important;border-top: 0px solid black;"><t t-esc="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
+                                    <td class="text-left" style="padding: 2px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 13px !important;border-top: 0px solid black;"><t t-esc="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
+                                    
+                                    <td class="text-left" style="padding: 2px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 13px !important;border-top: 0px solid black;"><t t-esc="line.move_id.name + '-' + main_move.get('name', '') if line.move_id.id in payment_related_move_ids else line.move_id.name"/></td>
+                                    <td class="text-right" style="padding: 2px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 13px !important;border-top: 0px solid black;"><t t-esc="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
+                                    <td class="text-right" style="padding: 2px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 13px !important;border-top: 0px solid black;"><t t-esc="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
+                                </tr>
+
+                                <t t-set="total_debit" t-value="total_debit + line.debit"/>
+                                <t t-set="total_credit" t-value="total_credit + line.credit"/>
+
+                            </t>
+
+                        </tbody>
+                    </table>
+                </div>
+
+                <t t-if="current_page &lt; paginate_count">
+                    <p style="page-break-before: always;" ></p>
+                </t>
+                <t t-set="current_page" t-value="current_page + 1"/>
+            </t>
+
+            <!-- top:-176px; -->
+            <!-- style="position:absolute;" -->
+            <div class="row" style="padding:0px; margin:0px;">
+                <table class="table total_table" name="table">
+                    <tfoot style="border-top: 0px white solid;">
+                        <tr style="border-top: 0px white solid;">
+                            <td style="min-width:785px;border-top: 0px solid white;"></td>
+                            <td class="text-right" style="border-top: 0px solid white;"><strong style="font-size: 13px !important;">Total</strong></td>
+                            <td style="min-width: 40px;border-top: 0px solid white;"></td>
+                            <td class="total_debit" style="border-top: 0px solid white;"><strong style="font-size: 13px !important;"><t t-esc="'{0:,.2f}'.format(float(total_debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
+                            <td style="min-width: 35px;border-top: 0px solid white;"></td>
+                            <td class="total_credit" style="border-top: 0px solid white;"><strong style="font-size: 13px !important;"><t t-esc="'{0:,.2f}'.format(float(total_credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="footer" style="background: green;">
+                <div class="row">
+                    <ul class="list-inline" style="position: absolute; top: 110px; right: 21px; ">
+                        <li style="display: inline-block;">Pag:</li>
+                        <li style="display: inline-block;"><span class="page"/></li>
+                        <li style="display: inline-block;">/</li>
+                        <li style="display: inline-block;"><span class="topage"/></li>
+                    </ul>
+                    <table class="table" style="position: relative;left:25px;width: 1098px;">
+                        <tbody>
+                            <tr class="table-bordered">
+                                <td class="pb-5 text-center" style="border: solid 1px black; font-size: 13px; width:100px;"><strong>Contabilizado</strong></td>
+                                <td class="pb-5 text-center" style="border: solid 1px black; font-size: 13px; width:100px;"><strong>Revisado</strong></td>
+                                <td class="pb-5 text-center" style="border: solid 1px black; font-size: 13px; width:100px;"><strong>Elaborado</strong></td>
+                                <td class="pb-5 text-center" style="border: solid 1px black; font-size: 13px; width:100px;"><strong>Revisado</strong></td>
+                            </tr>
+    
+                            <tr>
+                                <td class="text-center" colspan="2" style="border: none; font-size: 13px; width:100px;"><strong>Contabilidad</strong></td>
+                                <td class="text-center" colspan="2" style="border: none; font-size: 13px; width:100px;"><strong>Tesorería</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </template>
+
+    <template id="account_report_call">
+        <t t-call="web.basic_layout">
+
+            <t t-if="docs">
+                <t t-set="lang" t-value="docs[0].partner_id.lang"/>
+                <t t-call="binaural_accountant.account_report_document" t-lang="lang"/>
+            </t>
+
+        </t>
+    </template>
+
+</data>
+
+</odoo>

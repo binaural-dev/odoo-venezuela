@@ -6,6 +6,9 @@ from collections import defaultdict
 from odoo.tools.misc import formatLang
 from odoo.tools import float_compare
 
+import logging
+_logger = logging.getLogger(__name__)
+
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -655,6 +658,95 @@ class AccountMove(models.Model):
             if not move.foreign_rate:
                 return
             move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
+
+    def _get_payment_move_ids(self):
+        self.ensure_one()
+
+        payments = self.invoice_payments_widget['content']
+
+        payment_move_ids = [
+            payment["move_id"]
+            for payment in payments
+        ]
+
+        return payment_move_ids
+
+    def _get_payment_account_move_line_ids(self):
+        self.ensure_one()
+
+        payment_move_ids = self._get_payment_move_ids()
+
+        payment_account_move_ids = self.env["account.move"].browse(payment_move_ids)
+
+        payment_account_move_line_ids = payment_account_move_ids.mapped("line_ids")
+
+        return payment_account_move_line_ids
+
+    def _get_account_move_line_related(self):
+        self.ensure_one()
+
+        account_move_line_ids = []
+        
+        for line_id in self.line_ids:
+            if line_id.id in account_move_line_ids:
+                continue
+
+            account_move_line_ids.append(line_id.id)
+
+        payment_account_move_line_ids = self._get_payment_account_move_line_ids()
+        for payment_account_move_line_id in payment_account_move_line_ids:
+            if payment_account_move_line_id.id in account_move_line_ids:
+                continue
+
+            account_move_line_ids.append(payment_account_move_line_id.id)
+
+        return account_move_line_ids
+
+    def account_move_report_action(self):
+        self.ensure_one()
+
+        payment_move_ids = self._get_payment_move_ids()
+
+        payment_related = self.env['account.payment'].search([('move_id', 'in', payment_move_ids)], limit=1, order='id desc')
+
+        doc_title = ''
+        doc_date = ''
+        main_move_concept = self.ref
+        main_move_payment_concept = ''
+        payment_related_move_ids = []
+
+        main_move = {
+            'name': self.name,
+
+        }
+
+        if payment_related:
+            doc_date = payment_related.date
+
+            main_move_payment_concept = payment_related.concept
+            payment_related_move_ids = payment_related.mapped('move_id.id')
+
+            if self.amount_residual == 0:
+                doc_title = payment_related.name
+
+        # Used in the custom/binaural_accountant/report/account_report.py
+        data = {
+            "docids": self._get_account_move_line_related(),
+            'doc_title': doc_title,
+            'doc_date': doc_date,
+            'main_move': main_move,
+            'main_move_concept': main_move_concept,
+            'main_move_payment_concept': main_move_payment_concept,
+            'payment_related_move_ids': payment_related_move_ids
+        }
+
+        _logger.warning('---data------data--data---data-------')
+        _logger.warning(data)
+        _logger.warning('---------------------')
+
+        ref_report = "binaural_accountant.action_account_report"
+
+        return self.env.ref(ref_report).report_action(self, data=data, config=False)
 
     def action_register_payment(self):
         """

@@ -13,6 +13,10 @@
             </div>
         </xpath>
 
+        <xpath expr="//header/field[@name='state']" position="before">
+            <button name="account_move_report_action" string="Imprimir asientos contables" type="object" />
+        </xpath>
+
 	    <xpath expr="//header/button[@name='button_cancel']" position="after">
 		<button name="action_update_account_id" string="Update account lines" type="object"/>
 	    </xpath>
