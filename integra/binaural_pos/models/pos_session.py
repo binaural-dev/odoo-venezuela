@@ -1,5 +1,9 @@
 from odoo import models, fields, api, _, Command
 from odoo.tools import float_is_zero, float_compare
+from odoo.osv.expression import AND, OR
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class PosSession(models.Model):
@@ -131,14 +135,14 @@ class PosSession(models.Model):
         """
         credit_account = 0
         debit_account = 0
+        move_lines = []
         for account in payment.payment_method_id:
             credit_account = account.outstanding_account_id.id
 
         for account in payment.payment_method_id.cross_journal:
             debit_account = account.inbound_payment_method_line_ids.payment_account_id.id
-
-            
-            return [
+            move_lines.extend(
+            [   
                 Command.create(
                     {
                         "name": _("PoS Payment Method Adjustment"),
@@ -150,6 +154,7 @@ class PosSession(models.Model):
                         "foreign_debit": 0.0,
                         "not_foreign_recalculate": True,
                         "foreign_rate": payment.foreign_rate,
+                        "currency_id": account.currency_id.id if account.currency_id else self.env.company.currency_id.id
                     }
                 ),
                 Command.create(
@@ -163,10 +168,14 @@ class PosSession(models.Model):
                         "foreign_credit": 0.0,
                         "not_foreign_recalculate": True,
                         "foreign_rate": payment.foreign_rate,
+                        "currency_id": account.currency_id.id if account.currency_id else self.env.company.currency_id.id
+
                     }
                 ),
-            ]
+            ])
 
+            return move_lines
+          
     def _line_vals_move_cross_outgoing(self, payment):
         """
         This method creates the move_lines for the move_cross when the payment is outgoing (is change).
@@ -179,13 +188,16 @@ class PosSession(models.Model):
         """
         credit_account = 0
         debit_account = 0
+        move_lines = []
+
         for account in payment.payment_method_id:
-            debit_account = account.outstanding_account_id.id
+            debit_account = account.account.outstanding_account_id.id
 
         for account in payment.payment_method_id.cross_journal:
-            credit_account = account.outbound_payment_method_line_ids.payment_account_id.id
+            credit_account = account.outbound_payment_method_line_ids.payment_account_id.ids
 
-            return [
+            move_lines.extend(
+            [
                 Command.create(
                     {
                         "name": _("PoS Payment Method Adjustment"),
@@ -197,6 +209,7 @@ class PosSession(models.Model):
                         "foreign_debit": payment.foreign_amount,
                         "not_foreign_recalculate": True,
                         "foreign_rate": payment.foreign_rate,
+                        "currency_id": account.currency_id.id if account.currency_id else self.env.company.currency_id.id,
                     }
                 ),
                 Command.create(
@@ -210,9 +223,12 @@ class PosSession(models.Model):
                         "foreign_credit": payment.foreign_amount,
                         "not_foreign_recalculate": True,
                         "foreign_rate": payment.foreign_rate,
+                        "currency_id": account.currency_id.id if account.currency_id else self.env.company.currency_id.id,
                     }
                 ),
-            ]
+            ])
+
+            return move_lines
 
     def _create_cross_move(self, payment, line_vals):
         """
@@ -225,6 +241,7 @@ class PosSession(models.Model):
         Returns:
             account.move: Pos payment method adjustment move.
         """
+
         move = self.env["account.move"].create(
             {
                 "name": _("PoS Payment Method Adjustment"),
