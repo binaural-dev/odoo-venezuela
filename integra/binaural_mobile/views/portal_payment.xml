@@ -298,7 +298,7 @@
                                     </div>
                                 </div>
                                 <div class="row mb-2">
-                                    <t t-if="request.env.company.module_binaural_igtf">
+                                    <t t-if="request.env['ir.module.module'].sudo().search([('name', '=', 'binaural_igtf')]).state == 'installed'">
                                         <label class="form-text col-sm-2 igtf_input" style="display:none;">IGTF suggested</label>
                                         <div class="col-sm-4 igtf_input" style="display:none;">
                                             <input type="text" class="form-control" id="igtf_pay"  disabled="disabled"/>
