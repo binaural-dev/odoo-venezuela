@@ -8,7 +8,7 @@ class StockPicking(models.Model):
     _inherit = "stock.picking"
 
     picker_id = fields.Many2one(
-        "hr.employee", string="Picker", domain=[("role_picking", "=", "picker")]
+        "hr.employee", string="Picker", domain=[("role_picking", "!=", False)]
     )
     picking_time_ids = fields.One2many("stock.picking.time", "pick_id")
     cart_id = fields.Many2one("stock.picking.cart", string="Cart")

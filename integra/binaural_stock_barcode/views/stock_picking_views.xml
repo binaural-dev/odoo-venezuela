@@ -50,8 +50,6 @@
         </field>
     </record>
 
-    <!-- PICK OPERATION -->
-
     <record id="view_tree_stock_picking_tree_waiting" model="ir.ui.view">
         <field name="name">stock.picking.tree.waiting</field>
         <field name="model">stock.picking</field>
@@ -72,35 +70,6 @@
         <field name="view_id" ref="binaural_stock_barcode.view_tree_stock_picking_tree_waiting"/>
         <field name="domain">['&amp;',('state', 'in', ['confirmed','assigned']), ('type_delivery_step', '=','pick')]</field>
         <field name="help">Select stock pickings with status "waiting"</field>
-    </record>
-
-    <record id="view_tree_stock_picking_hr_employee_tree_waiting" model="ir.ui.view">
-        <field name="name">hr.employee.picking.tree.waiting</field>
-        <field name="model">hr.employee</field>
-        <field name="arch" type="xml">
-            <tree create="0" editable="bottom" string="Stock Picking (Waiting)">
-                <field name="name"/>
-                <field name="cart_active_id"/>
-                <button name="pause_operation" 
-                    type="object" 
-                    string="Pause Operation" 
-                    class="oe_highlight" 
-                    icon="fa-pause" 
-                    attrs="{'invisible': [('active_pick_id','=',False)]}"/>
-                <field name="active_pick_id"/>
-                <field name="paused_pick_ids" widget="many2many_tags"/>
-                <field name="pending_pick_id" domain="[('type_delivery_step','=','pick'),('operation_state', '=', 'ready'),('picker_id','=',False)]" />
-                <field name="pick_ids" widget="many2many_tags" optional="hide" groups="base.group_no_one"/>
-            </tree>
-        </field>
-    </record>
-
-    <record id="view_stock_picking_hr_employee_tree_waiting_picker" model="ir.actions.act_window">
-        <field name="name">Pick Assignation</field>
-        <field name="res_model">hr.employee</field>
-        <field name="view_mode">tree</field>
-        <field name="view_id" ref="binaural_stock_barcode.view_tree_stock_picking_hr_employee_tree_waiting"/>
-        <field name="domain">[('role_picking','=','picker')]</field>
     </record>
 
     <record id="view_tree_stock_picking_tree_operation" model="ir.ui.view">
@@ -137,49 +106,5 @@
         parent="stock.menu_warehouse_report"
         action="view_stock_picking_tree_operation"/>
 
-    <menuitem 
-        id="menu_picking_waiting_hr_employee_picker" 
-        name="Pick Assignation" 
-        parent="stock.menu_stock_warehouse_mgmt"
-        groups="binaural_stock_barcode.pick_transfer_manager"
-        action="view_stock_picking_hr_employee_tree_waiting_picker"/>
-
-
-    <!-- OUT OPERATION -->
-    <record id="view_tree_stock_picking_hr_employee_out_tree_waiting" model="ir.ui.view">
-        <field name="name">hr.employee.picking.tree.waiting</field>
-        <field name="model">hr.employee</field>
-        <field name="arch" type="xml">
-            <tree create="0" editable="bottom" string="Stock Picking (Waiting)">
-                <field name="name"/>
-                <field name="cart_active_id"/>
-                <button name="pause_operation" 
-                    type="object" 
-                    string="Pause Operation" 
-                    class="oe_highlight" 
-                    icon="fa-pause" 
-                    attrs="{'invisible': [('active_pick_id','=',False)]}"/>
-                <field name="active_pick_id"/>
-                <field name="paused_pick_ids" widget="many2many_tags"/>
-                <field name="pending_pick_id" domain="[('type_delivery_step','=','out'),('operation_state', '=', 'ready'),('picker_id','=',False)]" />
-                <field name="pick_ids" widget="many2many_tags" optional="hide" groups="base.group_no_one"/>
-            </tree>
-        </field>
-    </record>
-
-    <record id="view_stock_picking_hr_employee_tree_waiting_out" model="ir.actions.act_window">
-        <field name="name">Out Assignation</field>
-        <field name="res_model">hr.employee</field>
-        <field name="view_mode">tree</field>
-        <field name="view_id" ref="binaural_stock_barcode.view_tree_stock_picking_hr_employee_out_tree_waiting"/>
-        <field name="domain">[('role_picking','=','out')]</field>
-    </record>
-
-    <menuitem 
-        id="menu_picking_waiting_hr_employee_out" 
-        name="Out Assignation" 
-        parent="stock.menu_stock_warehouse_mgmt"
-        groups="binaural_stock_barcode.pick_transfer_manager"
-        action="view_stock_picking_hr_employee_tree_waiting_out"/>
 
 </odoo>
