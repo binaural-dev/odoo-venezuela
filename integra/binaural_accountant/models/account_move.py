@@ -662,7 +662,12 @@ class AccountMove(models.Model):
     def _get_payment_move_ids(self):
         self.ensure_one()
 
-        payments = self.invoice_payments_widget['content']
+        payments = self.invoice_payments_widget
+
+        if not payments:
+            return []
+
+        payments = payments['content']
 
         payment_move_ids = [
             payment["move_id"]
@@ -702,6 +707,27 @@ class AccountMove(models.Model):
 
         return account_move_line_ids
 
+    def _account_analytic_by_line_id(self, line_ids):
+        self.ensure_one()
+
+        account_analytic_by_line_id = {}
+
+        for line_id in line_ids:
+            if not line_id.analytic_distribution:
+                account_analytic_by_line_id[line_id.id] = ""
+                continue
+
+            account_analytic_ids_ids = [int(analytic_id) for analytic_id in line_id.analytic_distribution.keys()]
+            account_analytic_ids = self.env["account.analytic.account"].browse(account_analytic_ids_ids)
+            account_analytic_by_line_id[line_id.id] = ", ".join(account_analytic_ids.mapped("code"))
+
+        _logger.warning('---------_account_analytic_by_line_id------------')
+        _logger.warning(account_analytic_by_line_id)
+        _logger.warning('---------------------')
+
+        return account_analytic_by_line_id
+
+
     def account_move_report_action(self):
         self.ensure_one()
 
@@ -729,20 +755,24 @@ class AccountMove(models.Model):
             if self.amount_residual == 0:
                 doc_title = payment_related.name
 
+        docids = self._get_account_move_line_related()
+        docs = self.env['account.move.line'].browse(docids)
+
+        account_analytic_by_line_id = self._account_analytic_by_line_id(docs)
+
         # Used in the custom/binaural_accountant/report/account_report.py
         data = {
-            "docids": self._get_account_move_line_related(),
+            "docids": docids,
+            "docs": docs,
             'doc_title': doc_title,
             'doc_date': doc_date,
             'main_move': main_move,
             'main_move_concept': main_move_concept,
             'main_move_payment_concept': main_move_payment_concept,
-            'payment_related_move_ids': payment_related_move_ids
+            'payment_related_move_ids': payment_related_move_ids,
+            'account_analytic_by_line_id': account_analytic_by_line_id,
+            'group_analytic_accounting': self.env.user.has_group("analytic.group_analytic_accounting"),
         }
-
-        _logger.warning('---data------data--data---data-------')
-        _logger.warning(data)
-        _logger.warning('---------------------')
 
         ref_report = "binaural_accountant.action_account_report"
 

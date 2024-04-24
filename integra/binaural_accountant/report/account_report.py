@@ -1,5 +1,7 @@
 from odoo import api, models
 
+import logging
+_logger = logging.getLogger(__name__)
 
 class AccountReport(models.AbstractModel):
     _name = "report.binaural_accountant.account_report_call"
