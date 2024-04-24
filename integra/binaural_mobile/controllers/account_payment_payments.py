@@ -90,11 +90,11 @@ class AccountPaymentPayments(http.Controller):
                         ('name', "=", "binaural_advance_payment")
                     ], limit=1
                 )
-                advance_payment_installed = True if module_advance_payment.state == "installed" else False
+                advance_payment_installed = module_advance_payment.state == "installed"
                 advance_account_customer_ids = False
 
                 module_igtf = request.env["ir.module.module"].sudo().search([('name', "=", "binaural_igtf")])
-                igtf_installed = True if module_igtf.state == "installed" else False
+                igtf_installed = module_igtf.state == "installed"
 
                 if advance_payment_installed:
                     advance_account_customer_ids = [
