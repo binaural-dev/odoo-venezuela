@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240325\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-08 15:49+0000\n"
-"PO-Revision-Date: 2024-04-08 15:49+0000\n"
+"POT-Creation-Date: 2024-04-10 13:30+0000\n"
+"PO-Revision-Date: 2024-04-10 13:30+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,11 +16,33 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_hr_payroll_accountant
+#: model:ir.model.fields,field_description:binaural_hr_payroll_accountant.field_hr_contract__analytic_account_id
+#: model:ir.model.fields,field_description:binaural_hr_payroll_accountant.field_hr_department__analytic_account_id
+msgid "Analytic Account"
+msgstr "Cuenta analítica"
+
+#. module: binaural_hr_payroll_accountant
 #: model:ir.model.fields,field_description:binaural_hr_payroll_accountant.field_hr_payslip__date
 msgid "Date Account"
 msgstr "Fecha de la Cuenta"
 
 #. module: binaural_hr_payroll_accountant
+#: model:ir.model,name:binaural_hr_payroll_accountant.model_hr_department
+msgid "Department"
+msgstr "Departamento"
+
+#. module: binaural_hr_payroll_accountant
+#: model:ir.model,name:binaural_hr_payroll_accountant.model_hr_contract
+msgid "Employee Contract"
+msgstr "Contrato de empleado"
+
+#. module: binaural_hr_payroll_accountant
 #: model:ir.model.fields,help:binaural_hr_payroll_accountant.field_hr_payslip__date
 msgid "Keep empty to use the period of the validation(Payslip) date."
-msgstr "Deja en blanco para usar el periodo de la fecha de validación (nómina)."
+msgstr ""
+"Deja en blanco para usar el período de la fecha de validación (nómina)."
+
+#. module: binaural_hr_payroll_accountant
+#: model:ir.model,name:binaural_hr_payroll_accountant.model_hr_payslip
+msgid "Pay Slip"
+msgstr "Nómina"
