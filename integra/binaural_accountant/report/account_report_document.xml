@@ -328,7 +328,8 @@
                             </tr>
                         </tbody>
                     </table>
-                    <ul class="list-inline" style="position: absolute; top: 110px; right: -21px;">
+
+                    <ul class="list-inline" style="position: absolute; top: 110px;right: -21px;">
                         <li style="display: inline-block; font-size: 13px;">Pag:</li>
                         <li style="display: inline-block; font-size: 13px;"><span class="page"/></li>
                         <li style="display: inline-block; font-size: 13px;">/</li>
