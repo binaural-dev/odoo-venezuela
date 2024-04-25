@@ -3,9 +3,7 @@ from odoo.exceptions import ValidationError, UserError
 from lxml import etree
 from odoo.tools.float_utils import float_is_zero
 import logging
-_logger = logging.getLogger(__name__)
 
-import logging
 _logger = logging.getLogger(__name__)
 
 
@@ -196,8 +194,8 @@ class SaleOrder(models.Model):
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id, sale.date_order.date() or fields.Date.today()
             )
-            sale.foreign_rate = rate_values["foreign_rate"]
-            sale.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
+            sale.foreign_rate = rate_values.get("foreign_rate", 0)
+            sale.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -225,9 +223,6 @@ class SaleOrder(models.Model):
         It also sends the custom rate of the order to the invoice
         """
         limit = self.company_id.max_product_invoice
-        _logger.info("Limit: %s", limit)
-        _logger.info("company_id: %s", self.company_id)
-        _logger.info("self: %s", self)
         group = len(self._get_invoiceable_lines(final)) / limit
         invoices = self.env["account.move"]
         invoice_vals = self._prepare_invoice()
@@ -359,17 +354,21 @@ class SaleOrder(models.Model):
         self.ensure_one()
 
         block_order_invoice_payment_state = self.company_id.block_order_invoice_payment_state
-        block_order_invoice_total_amount_overdue = self.company_id.block_order_invoice_total_amount_overdue
+        block_order_invoice_total_amount_overdue = (
+            self.company_id.block_order_invoice_total_amount_overdue
+        )
 
         today_date = fields.Date.today()
 
-        invoice_ids =  self.env["account.move"].search([
-            ("partner_id", "=", self.partner_id.id),
-            ("amount_total", ">", 0),
-            "|",
-            ("payment_state", "=", block_order_invoice_payment_state),
-            ("invoice_date_due", "<", today_date)
-        ])
+        invoice_ids = self.env["account.move"].search(
+            [
+                ("partner_id", "=", self.partner_id.id),
+                ("amount_total", ">", 0),
+                "|",
+                ("payment_state", "=", block_order_invoice_payment_state),
+                ("invoice_date_due", "<", today_date),
+            ]
+        )
 
         if not any(invoice_ids):
             return None
@@ -379,31 +378,47 @@ class SaleOrder(models.Model):
         amount_total_overdue = 0
 
         for invoice_id in invoice_ids:
-
             if block_order_invoice_payment_state:
                 if invoice_id.payment_state == block_order_invoice_payment_state:
                     invoice_count_payment_state += 1
 
             if invoice_id.invoice_date_due < today_date:
                 amount_total_overdue += invoice_id.amount_total
-                invoice_count_date_expired +=1
+                invoice_count_date_expired += 1
 
         if invoice_count_payment_state:
-
             payment_state_labels = {
-                "not_paid": _('Not Paid'),
-                "in_payment": _('In Payment Process',)
+                "not_paid": _("Not Paid"),
+                "in_payment": _(
+                    "In Payment Process",
+                ),
             }
 
-            raise UserError(_("The budget cannot be confirmed. You have %s Invoices (%s).") % (invoice_count_payment_state, payment_state_labels[block_order_invoice_payment_state]))
+            raise UserError(
+                _("The budget cannot be confirmed. You have %s Invoices (%s).")
+                % (
+                    invoice_count_payment_state,
+                    payment_state_labels[block_order_invoice_payment_state],
+                )
+            )
 
         if block_order_invoice_total_amount_overdue:
             if amount_total_overdue > block_order_invoice_total_amount_overdue:
-                raise UserError(_("The budget cannot be confirmed. Has an overdue amount of (%s) that cannot be greater than %s %s.") % (amount_total_overdue, block_order_invoice_total_amount_overdue, invoice_id.currency_id.name))
-
+                raise UserError(
+                    _(
+                        "The budget cannot be confirmed. Has an overdue amount of (%s) that cannot be greater than %s %s."
+                    )
+                    % (
+                        amount_total_overdue,
+                        block_order_invoice_total_amount_overdue,
+                        invoice_id.currency_id.name,
+                    )
+                )
 
     def action_confirm(self):
-        skip_not_allow_sell_products_validation = self.env.context.get("skip_not_allow_sell_products_validation", False)
+        skip_not_allow_sell_products_validation = self.env.context.get(
+            "skip_not_allow_sell_products_validation", False
+        )
         if self.env.company.not_allow_sell_products and not skip_not_allow_sell_products_validation:
             for order in self:
                 for line in order.order_line:
@@ -435,7 +450,7 @@ class SaleOrder(models.Model):
                             round(order.partner_id.credit_limit, decimal_places),
                         )
                     )
-                
+
         self._block_valid_confirm()
 
         return super().action_confirm()

@@ -9,3 +9,5 @@ que se tiene disponible.
 
 Se agrega el numero de cajas visualizado en transferencias de tipo Expediciones (OUT) asi como
 tambien en la lista de transferencias.
+
+Se agrega la impresion de Etiquetas dependiendo de la cantidad de Cajas

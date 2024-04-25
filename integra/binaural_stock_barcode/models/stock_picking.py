@@ -178,6 +178,22 @@ class StockPicking(models.Model):
                 record.picker_id = record.get_available_picker()
         return res
 
+    def get_picker_operations(self):
+        stock_picking_ids = self
+        stock_picking_ids |= self._get_picks()
+        stock_picking_ids |= self._get_outs()
+        stock_picking_ids |= self._get_packs()
+        employees = []
+        for picking in stock_picking_ids:
+            if picking.type_delivery_step == "pick":
+                employees.append((_("Pick Operator"), picking.picker_id.name))
+            if picking.type_delivery_step == "out":
+                employees.append((_("Out Operator"), picking.picker_id.name))
+            if picking.type_delivery_step == "pack":
+                employees.append((_("Pack Operator"), picking.picker_id.name))
+
+        return employees
+
     def get_available_picker(self):
         init_role_picking = "picker"
         if self.location_id.warehouse_id.delivery_steps == "ship_only":

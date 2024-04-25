@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="packaging_picking_item" inherit_id="binaural_stock.packaging_picking_item">
+        <xpath expr="//div[@name='picking_info']" position="inside">
+            <t t-foreach="picking.get_picker_operations()" t-as="picker_id">
+                <div>
+                    <t t-out="picker_id[0]"/>: <t t-out="picker_id[1]"/>
+                </div>
+            </t>
+        </xpath>
+    </template>
+</odoo>
