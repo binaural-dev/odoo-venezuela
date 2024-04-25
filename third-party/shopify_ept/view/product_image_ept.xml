@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Form view for the Images-->
+    <record id="view_shopify_product_image_ept_form" model="ir.ui.view">
+        <field name="name">shopify.product.image.ept.form</field>
+        <field name="model">shopify.product.image.ept</field>
+        <field name="arch" type="xml">
+            <form string="Product Images" create="0">
+                <div class="row o_website_sale_image_modal">
+                    <div class="col-md-6 col-xl-5"
+                         invisible="context.get('default_shopify_variant_id',False)">
+                        <field name="shopify_template_id" invisible="1" readonly="1"/>
+                        <label for="shopify_variant_id" string="Product variant"/>
+                        <field name="shopify_variant_id"
+                               domain="[('shopify_template_id','=',shopify_template_id)]" readonly="1"/>
+                    </div>
+
+                    <div
+                            class="col-md-6 col-xl-7 text-center o_website_sale_image_modal_container">
+                        <div class="row">
+                            <div class="col">
+                                <field name="image" widget="image" readonly="1"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- kanban view for the Images-->
+    <record id="view_shopify_product_image_ept_kanban"
+            model="ir.ui.view">
+        <field name="name">shopify.product.image.ept.kanban</field>
+        <field name="model">shopify.product.image.ept</field>
+        <field name="arch" type="xml">
+            <kanban string="Product Images" create="0"
+                    default_order="sequence">
+                <field name="id"/>
+                <field name="image"/>
+                <field name="odoo_image_id"/>
+                <field name="sequence" widget="handle"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="card oe_kanban_global_click p-o">
+                            <div class="o_squared_image">
+                                <img alt="Product" class="card-img-top"
+                                     t-att-src="kanban_image('shopify.product.image.ept', 'image', record.id.raw_value)"/>
+                            </div>
+                            <div class="oe_kanban_details">
+                                <br/>
+                                <t t-set="size_status" t-value="'badge-success'"/>
+                                <span
+                                        t-attf-class="badge #{size_status} o_product_image_size"
+                                        t-esc="record.image.value" t-att-title="message"/>
+                            </div>
+                        </div>
+
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+</odoo>

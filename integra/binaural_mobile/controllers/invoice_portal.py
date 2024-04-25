@@ -101,10 +101,18 @@ class PortalAccount(PortalAccount):
         states = invoice._fields["payment_state"].selection
         payment_state = invoice.payment_state
         symbol_currency = request.env.company.currency_id
+        translations = {
+            "not_paid": "No pagadas",
+            "in_payment": "En proceso de pago",
+            "paid": "Pagado",
+            "partial": "Pagado Parcialmente",
+            "reversed": "Revertido",
+            "invoicing_legacy": "Factura Sistema Anterior"
+        }
 
         for state in states:
             if state[0] == payment_state:
-                payment_state = state[1]
+                payment_state = translations.get(state[0], state[1])
                 break
 
         return request.render(

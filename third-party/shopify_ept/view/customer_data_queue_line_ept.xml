@@ -1,0 +1,61 @@
+<?xml version="1.0" ?>
+<odoo>
+    <!--Tree view of customer data queue line which is use in queue line dashboard-->
+    <record id="view_customer_data_queue_line_tree" model="ir.ui.view">
+        <field name="name">shopify.customer.data.queue.line.ept.tree</field>
+        <field name="model">shopify.customer.data.queue.line.ept</field>
+        <field name="arch" type="xml">
+            <tree create="0" duplicate="0" edit="false" sample="1" decoration-danger="state=='failed'"
+                  decoration-success="state=='done'" decoration-info="state=='draft'">
+                <header>
+                    <button name="%(shopify_ept.action_wizard_shopify_import_customer)d"
+                            string="Process Queue Line"
+                            type="action"/>
+                </header>
+                <field name="name"/>
+                <field name="shopify_customer_data_id"/>
+                <field name="last_process_date"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <!--Form view of customer queue line.-->
+    <record id="shopify_shopify_customer_data_queue_line_ept_form_view" model="ir.ui.view">
+        <field name="name">Shopify Synced Customer Line</field>
+        <field name="model">shopify.customer.data.queue.line.ept</field>
+        <field name="arch" type="xml">
+            <form string="Shopify Synced Customer Line">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="shopify_instance_id" readonly="1"/>
+                            <field name="shopify_customer_data_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="synced_customer_queue_id" string="Customer Data Queue"
+                                   readonly="1"/>
+                            <field name="write_date" string="Last Updated On" readonly="1"/>
+                            <field name="state" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Log Lines">
+                            <field name="common_log_lines_ids">
+                                <tree create="false" editable="bottom">
+                                    <field name="message"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Customer Data">
+                            <group>
+                                <field string="Customer Data"
+                                       name="shopify_synced_customer_data" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

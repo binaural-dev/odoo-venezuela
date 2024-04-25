@@ -1,0 +1,144 @@
+<?xml version="1.0" ?>
+<odoo>
+    <!--Inherit view of stock picking-->
+    <record id="view_picking_form_ept" model="ir.ui.view">
+        <field name="name">stock.picking.form</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field eval="12" name="priority"/>
+        <field name="arch" type="xml">
+            <field name="move_type" position="after">
+                <field name="is_shopify_delivery_order" invisible="1"/>
+                <field name="updated_in_shopify"
+                       attrs="{'invisible':[('is_shopify_delivery_order','!=',True)]}" readonly="True"/>
+                <field name="shopify_instance_id" invisible="1"/>
+            </field>
+            <xpath expr="//header" position="inside">
+                <button name="manually_update_shipment"
+                        string="Update Order Shipping Status" class="oe_highlight" type="object"
+                        attrs="{'invisible': ['|','|','|',('updated_in_shopify','=',True),('is_shopify_delivery_order','!=',True),'&amp;',('state','!=','done'),('picking_type_code', 'in', ['outgoing','incoming']),'&amp;',('state','in',['draft','waiting','confirmed','assigned','done','cancel']),('picking_type_code', 'not in', ['outgoing','incoming'])]}"
+                        help="It will update order fulfillment and tracking reference details to Shopify store."/>
+            </xpath>
+        </field>
+    </record>
+
+    <!--Inherit tree view of stock picking-->
+    <record id="view_picking_tree_ept" model="ir.ui.view">
+        <field name="name">stock.picking.tree</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <field name="company_id" position="after">
+                <field name="is_shopify_delivery_order" invisible="1"/>
+                <field name="updated_in_shopify" optional="hide"
+                       attrs="{'invisible':[('is_shopify_delivery_order','!=',True)]}" readonly="True"/>
+            </field>
+        </field>
+    </record>
+
+    <!--Action of delivery orders -->
+    <record id="action_shopify_picking_instance_ept"
+            model="ir.actions.act_window">
+        <field name="name">Delivery Orders</field>
+        <field name="res_model">stock.picking</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('shopify_instance_id','=',active_id)]</field>
+        <field name="search_view_id"
+               ref="stock.view_picking_internal_search"/>
+    </record>
+
+    <!--Action delivery orders-->
+    <record id="action_picking_view_ept"
+            model="ir.actions.act_window">
+        <field name="name">Delivery Orders</field>
+        <field name="res_model">stock.picking</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('is_shopify_delivery_order','=','True')]</field>
+        <field name="search_view_id"
+               ref="stock.view_picking_internal_search"/>
+        <field name="help" type="html">
+            <div class="oe_empty_shopify_delivery_order">
+                <br/>
+                <br/>
+                <br/>
+                <p>
+                    There is no any Delivery Order created for any of Shopify Sale Orders.
+                    If your Shopify Instance's Invoice Policy is set to "Before
+                    Delivery", then
+                    after Invoice being
+                    totally paid, Delivery order for Shopify will be created automatically
+                    and
+                    it will be visible
+                    over here.
+                    From here, you can't manually create delivery order for Shopify. It
+                    must be
+                    created via Sale
+                    Order.
+                </p>
+            </div>
+        </field>
+    </record>
+
+    <!--Action, redirect delivery from the instance kanban view-->
+    <record id="action_picking_view_confirm_ept"
+            model="ir.actions.act_window">
+        <field name="name">Delivery Orders</field>
+        <field name="res_model">stock.picking</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">
+            [('is_shopify_delivery_order','=','True'),('state','=','confirmed'),('shopify_instance_id','=',active_id)]
+        </field>
+        <field name="search_view_id"
+               ref="stock.view_picking_internal_search"/>
+    </record>
+
+    <!--Action, redirect partially delivery from the instance kanban view-->
+    <record id="action_picking_view_partially_available_ept"
+            model="ir.actions.act_window">
+        <field name="name">Delivery Orders</field>
+        <field name="res_model">stock.picking</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">
+            [('is_shopify_delivery_order','=','True'),('state','=','partially_available'),('shopify_instance_id','=',active_id)]
+        </field>
+        <field name="search_view_id"
+               ref="stock.view_picking_internal_search"/>
+    </record>
+    <record id="action_picking_view_assigned_ept"
+            model="ir.actions.act_window">
+        <field name="name">Delivery Orders</field>
+        <field name="res_model">stock.picking</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">
+            [('is_shopify_delivery_order','=','True'),('state','=','assigned'),('shopify_instance_id','=',active_id)]
+        </field>
+        <field name="search_view_id"
+               ref="stock.view_picking_internal_search"/>
+    </record>
+
+    <!--Action, redirect done delivery from the instance kanban view-->
+    <record id="action_picking_view_done_ept"
+            model="ir.actions.act_window">
+        <field name="name">Delivery Orders</field>
+        <field name="res_model">stock.picking</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">
+            [('is_shopify_delivery_order','=','True'),('state','=','done'),('shopify_instance_id','=',active_id)]
+        </field>
+        <field name="search_view_id"
+               ref="stock.view_picking_internal_search"/>
+    </record>
+
+    <menuitem id="menu_item_shopify_delivery_order_ept"
+              name="Delivery Orders"
+              parent="shopify_ept.shopify_menu_item_sales"
+              action="action_picking_view_ept" sequence="4"/>
+
+
+</odoo>

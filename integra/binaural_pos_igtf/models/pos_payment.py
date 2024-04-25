@@ -21,18 +21,11 @@ class PosPayment(models.Model):
         res["foreign_igtf_amount"] = payment.foreign_igtf_amount
         return res
 
-    def _create_payment_moves(self):
+    def _create_payment_moves(self, is_reverse=False):
         result = self.env["account.move"]
-
         for payment in self:
+            order = payment.pos_order_id
             add_credit_line_vals = False
-            order = payment.pos_order_id
-            amount_igtf = float_round(
-                payment.igtf_amount,
-                precision_rounding=payment.currency_id.rounding,
-            )
-
-            order = payment.pos_order_id
             payment_method = payment.payment_method_id
             if payment_method.type == "pay_later" or float_is_zero(
                 payment.amount, precision_rounding=order.currency_id.rounding
@@ -49,16 +42,13 @@ class PosPayment(models.Model):
                 .create(
                     {
                         "journal_id": journal.id,
-                        "date": fields.Date.context_today(payment),
-                        "foreign_rate": payment.foreign_rate,
-                        "foreign_inverse_rate": payment.foreign_rate,
+                        "date": fields.Date.context_today(order, order.date_order),
                         "ref": _("Invoice payment for %s (%s) using %s")
                         % (order.name, order.account_move.name, payment_method.name),
                         "pos_payment_ids": payment.ids,
                     }
                 )
             )
-
             result |= payment_move
             payment.write({"account_move_id": payment_move.id})
             amounts = pos_session._update_amounts(
@@ -66,7 +56,10 @@ class PosPayment(models.Model):
                 {"amount": payment.amount},
                 payment.payment_date,
             )
-
+            amount_igtf = float_round(
+                payment.igtf_amount,
+                precision_rounding=payment.currency_id.rounding,
+            )
             if payment.include_igtf:
                 if not (amounts["amount"] - amount_igtf == 0):
                     amount_without_igtf = float_round(
@@ -128,10 +121,27 @@ class PosPayment(models.Model):
                     amounts["amount_converted"],
                 )
 
+            is_split_transaction = payment.payment_method_id.split_transactions
+            if is_split_transaction and is_reverse:
+                reversed_move_receivable_account_id = accounting_partner.with_company(
+                    order.company_id
+                ).property_account_receivable_id.id
+            elif is_reverse:
+                reversed_move_receivable_account_id = (
+                    payment.payment_method_id.receivable_account_id.id
+                    or self.company_id.account_default_pos_receivable_account_id.id
+                )
+            else:
+                reversed_move_receivable_account_id = (
+                    self.company_id.account_default_pos_receivable_account_id.id
+                )
             debit_line_vals = pos_session._debit_amounts(
                 {
-                    "account_id": pos_session.company_id.account_default_pos_receivable_account_id.id,
+                    "account_id": reversed_move_receivable_account_id,
                     "move_id": payment_move.id,
+                    "partner_id": accounting_partner.id
+                    if is_split_transaction and is_reverse
+                    else False,
                     "not_foreign_recalculate": True,
                     "foreign_debit": abs(payment.foreign_amount)
                     if payment.foreign_amount > 0
