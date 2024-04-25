@@ -511,6 +511,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             ("state", "in", ("posted", "cancel")),
             ("journal_id.fiscal", "=", True),
             ("move_type", "in", move_type),
+            ("correlative", "not in", ['/',False])
         ]
 
         return search_domain
@@ -699,13 +700,13 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             tax_totals.get(fields_taxed[0]) * -1
             if is_credit_note and tax_totals.get(fields_taxed[0])
             else tax_totals.get(fields_taxed[0])
-        )
+        ) if tax_totals else 0
 
         amount_taxed = (
             tax_totals.get(fields_taxed[1]) * -1
             if is_credit_note and tax_totals.get(fields_taxed[1])
             else tax_totals.get(fields_taxed[1])
-        )
+        ) if tax_totals else 0
 
         tax_result.update(
             {
@@ -721,6 +722,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "amount_extend_aliquot": 0,
             }
         )
+        if not tax_totals:
+            return tax_result
 
         is_currency_system = (
             "groups_by_subtotal"
