@@ -2,8 +2,8 @@
 <odoo>
   <data noupdate="1">
 
-    <record id="paperformat_account" model="report.paperformat">
-      <field name="name">Letter Account Move</field>
+    <record id="paperformat_account_related" model="report.paperformat">
+      <field name="name">Letter Account Move Related</field>
       <field name="default" eval="True" />
       <field name="format">Letter</field>
       <field name="page_height">0</field>
@@ -15,6 +15,21 @@
       <field name="margin_right">3</field>
       <field name="header_line" eval="False"/>
       <field name="header_spacing">58</field>
+    </record>
+
+    <record id="paperformat_account" model="report.paperformat">
+      <field name="name">Letter Account Move</field>
+      <field name="default" eval="True" />
+      <field name="format">Letter</field>
+      <field name="page_height">0</field>
+      <field name="page_width">0</field>
+      <field name="orientation">Portrait</field>
+      <field name="margin_top">53</field>
+      <field name="margin_bottom">40</field>
+      <field name="margin_left">3</field>
+      <field name="margin_right">3</field>
+      <field name="header_line" eval="False"/>
+      <field name="header_spacing">45</field>
     </record>
 
   </data>

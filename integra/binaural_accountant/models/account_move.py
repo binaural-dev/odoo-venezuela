@@ -739,7 +739,6 @@ class AccountMove(models.Model):
 
         main_move = {
             'name': self.name,
-
         }
 
         if payment_related:
@@ -762,7 +761,7 @@ class AccountMove(models.Model):
             "docs": docs,
             'doc_title': doc_title,
             'doc_date': doc_date,
-            'main_move': main_move,
+            'main_move': self,
             'main_move_concept': main_move_concept,
             'main_move_payment_concept': main_move_payment_concept,
             'payment_related_move_ids': payment_related_move_ids,

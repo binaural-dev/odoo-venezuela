@@ -108,12 +108,12 @@
         </style>
         <div class="page" style="position: relative; padding:0px; margin:0px;border-top:white 1px solid;">
 
-            <t t-set="items_by_page" t-value="100"/>
-            <t t-set="docs_paginated" t-value="[docs[i:i+items_by_page] for i in range(0, len(docs), items_by_page)]"/>
-            <t t-set="paginate_count" t-value="len(docs_paginated)"/>
+            
             <t t-set="idx" t-value="0"/>
             <t t-set="current_page" t-value="1"/>
-            <t t-set="current_month_name" t-value="time.strftime('%%m')
+            <t 
+                t-set="current_month_name" 
+                t-value="time.strftime('%%m')
                 .replace('01','Enero')
                 .replace('02','Febrero')
                 .replace('03','Marzo')
@@ -129,6 +129,24 @@
             />
             <t t-set="total_debit" t-value="0"/>
             <t t-set="total_credit" t-value="0"/>
+            
+            <t t-set="items_by_page" t-value="100"/>
+
+            <t t-if="show_related_account_move">
+                <t 
+                    t-set="docs_paginated" 
+                    t-value="[docs[i:i+items_by_page] for i in range(0, len(docs), items_by_page)]"
+                />
+            </t>
+            <t t-else="">
+                <t 
+                    t-set="docs_paginated" 
+                    t-value="[main_move_line_ids[i:i+items_by_page] for i in range(0, len(main_move_line_ids), items_by_page)]"
+                />
+                <t t-set="doc_title" t-value="main_move.name"/>
+            </t>
+
+            <t t-set="paginate_count" t-value="len(docs_paginated)"/>
 
             <t t-foreach="docs_paginated" t-as="docs_by_page">
 
@@ -183,7 +201,7 @@
                                         <h2 class="text-center" style="font-size: 14px;" t-if="doc_title == ''"><span t-out="current_month_name + time.strftime(' del %%Y')" /></h2>
                                         <h2 class="text-center" style="font-size: 14px;" t-if="not doc_title == ''">
                                             COMPROBANTE CONTABLE No. <span class="font-weight-bold" t-out="doc_title" />
-                                        <span style="margin-left:45px;">FECHA: <span class="font-weight-bold" t-out="doc_date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></span></h2> 
+                                        <span style="margin-left:45px;">FECHA: <span class="font-weight-bold" t-out="doc_date if show_related_account_move else main_move.date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></span></h2> 
                                     </td>
                                 </tr>
                                 <tr>
@@ -191,7 +209,7 @@
                                         <strong>Concepto:</strong> <span t-if="main_move_concept"><t t-out="(main_move_concept[:217] + '...') if len(main_move_concept) > 220 else main_move_concept"/></span>
                                     </td>
                                 </tr>
-                                <tr>
+                                <tr t-if="show_related_account_move">
                                     <td style="height: 40px;max-height: 40px;">
                                         <strong>Concepto pago:</strong> <span t-if="main_move_payment_concept"><t t-out="(main_move_payment_concept[:217] + '...') if len(main_move_payment_concept) > 220 else main_move_payment_concept"/></span>
                                     </td>
@@ -228,7 +246,7 @@
                         <tbody class="tbody">
 
                             <t t-foreach="docs_by_page" t-as="line">
-                                <t t-if="line.display_type == 'product'">
+                                <t t-if="line.display_type not in ['line_note', 'line_section']">
 
                                     <t t-set="line" t-value="line.with_context(lang=lang)" />
 
@@ -244,7 +262,7 @@
                                         <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
                                         
                                         <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
-                                            <t t-out="line.move_id.name + '-' + main_move.get('name', '') if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                            <t t-out="line.move_id.name + '-' + main_move.name if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
                                         </td>
                                         <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
                                         <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
@@ -254,7 +272,6 @@
                                     <t t-set="total_credit" t-value="total_credit + line.credit"/>
 
                                 </t>
-
                             </t>
 
                         </tbody>
@@ -347,13 +364,36 @@
 
     </template>
 
+    <template id="account_related_report_call">
+        <t t-call="web.basic_layout">
+
+            <t t-if="docs">
+                <t t-set="show_related_account_move" t-value="True"/>
+                <t t-set="doc_title" t-value="data['doc_title']"/>
+                <t t-set="doc_date" t-value="data['doc_date']"/>
+                <t t-set="main_move" t-value="data['main_move']"/>
+                <t t-set="main_move_line_ids" t-value="main_move.line_ids"/>
+                <t t-set="main_move_concept" t-value="data['main_move_concept']"/>
+                <t t-set="main_move_payment_concept" t-value="data['main_move_payment_concept']"/>
+                <t t-set="payment_related_move_ids" t-value="data['payment_related_move_ids']"/>
+                <t t-set="account_analytic_by_line_id" t-value="data['account_analytic_by_line_id']"/>
+                <t t-set="group_analytic_accounting" t-value="data['group_analytic_accounting']"/>
+                <t t-set="lang" t-value="docs[0].partner_id.lang"/>
+                <t t-call="binaural_accountant.account_report_document" t-lang="lang"/>
+            </t>
+
+        </t>
+    </template>
+
     <template id="account_report_call">
         <t t-call="web.basic_layout">
 
             <t t-if="docs">
+                <t t-set="show_related_account_move" t-value="False"/>
                 <t t-set="doc_title" t-value="data['doc_title']"/>
                 <t t-set="doc_date" t-value="data['doc_date']"/>
                 <t t-set="main_move" t-value="data['main_move']"/>
+                <t t-set="main_move_line_ids" t-value="main_move.line_ids"/>
                 <t t-set="main_move_concept" t-value="data['main_move_concept']"/>
                 <t t-set="main_move_payment_concept" t-value="data['main_move_payment_concept']"/>
                 <t t-set="payment_related_move_ids" t-value="data['payment_related_move_ids']"/>

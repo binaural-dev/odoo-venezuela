@@ -1,8 +1,5 @@
 from odoo import api, models, _
-
 from odoo.exceptions import UserError, ValidationError
-
-
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -18,12 +15,6 @@ class AccountReport(models.AbstractModel):
         
         data = current_invoice.get_account_move_report_data()
 
-        _logger.warning('---------model_name------------')
-        _logger.warning(self)
-        _logger.warning(docids)
-        _logger.warning(data)
-        _logger.warning('---------------------')
-
         return {
             "doc_ids": data["doc_ids"],
             "doc_model": "account.move.line",
@@ -31,4 +22,6 @@ class AccountReport(models.AbstractModel):
             "data": data,
         }
 
-        # return self.get_report_values("account.move.line", docids, data)
+class AccountReportRelated(models.AbstractModel):
+    _name = "report.binaural_accountant.account_related_report_call"
+    _inherit = ["report.binaural_accountant.account_report_call"]
