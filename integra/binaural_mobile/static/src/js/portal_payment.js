@@ -196,6 +196,8 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           amount_residual,
           foreign_rate,
         } = line;
+        let first_expired_line = line["line_ids"][0];
+
         amount_residual = amount_residual.toFixed(decimal_number);
         amount_total = amount_total.toFixed(decimal_number);
         let tr_open = ` 
@@ -209,9 +211,12 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
 
 																		<br/>
 																		
-																		<label class="form-label">Importe adeudado dela primera cuota: </label>
+																		<label class="form-label">Importe adeudado (cuota): </label>
                                     <label class="form-text text-primary">${symbolBefore}</label>
-																		<label class="form-text text-primary">333,55 ()</label>
+																		<label class="form-text text-primary">
+																			${first_expired_line["amount_residual"]} 
+																		</label>
+																		<label class="form-text">(${first_expired_line["date_maturity"]})</label>
                                 </div>
                                 <div>
                                     <label class="form-text ">Total: </label>
@@ -829,7 +834,6 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
       $("#process_payment").attr("disabled", true);
       const amountTotal = +$("#amount_total_pay").val();
       let notProof = false;
-      let msg_error = "";
 
       if (amountTotal > 0) {
         let totalPay = +$("#total_payment").val();
@@ -838,6 +842,11 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           "call",
           {}
         );
+        // const installmentPayments = await ajax.jsonrpc(
+        //   "/installment_payments",
+        //   "call",
+        //   {}
+        // );
         let { data } = paymentTotalPartial;
         if (data == 1) {
           this.validateInputs(notProof);
@@ -875,7 +884,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
       let msg_error = notProof
         ? _t("Debe de agregar un comprobante antes de ser procesado el pago.")
         : _t(
-            "El monto del pago excede el monto registrado en el pago métodos."
+            "El monto adeudado excede el monto registrado en los métodos de pago."
           );
 
       const error = `<div class="alert alert-danger" role="alert">
@@ -893,7 +902,6 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
 
       const amountTotal = +$("#amount_total_pay").val();
 
-      // if(paysTr.length > 0){
       const {
         length: le,
         prevObject: prev,

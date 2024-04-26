@@ -81,12 +81,14 @@ class PaymentMobile(models.Model):
                 lines.amount = 0
             total = 0
             payments = []
-            module_advance_payment = self.env["ir.module.module"].sudo().search(
-                [
-                    ('name', "=", "binaural_advance_payment")
-                ], limit=1
+            module_advance_payment = (
+                self.env["ir.module.module"]
+                .sudo()
+                .search([("name", "=", "binaural_advance_payment")], limit=1)
             )
-            advance_payment_installed = True if module_advance_payment.state == "installed" else False
+            advance_payment_installed = (
+                True if module_advance_payment.state == "installed" else False
+            )
             if advance_payment_installed:
                 company_id = self.env.company
                 advance_account_customer = company_id.advance_customer_account_id
@@ -95,10 +97,11 @@ class PaymentMobile(models.Model):
                 pass_advance_pay = False
                 if advance_payment_installed:
                     if (
-                        line.payment_related.destination_account_id == advance_account_customer or 
-                        line.payment_related.destination_account_id == advance_account_customer_igtf
+                        line.payment_related.destination_account_id == advance_account_customer
+                        or line.payment_related.destination_account_id
+                        == advance_account_customer_igtf
                     ):
-                        total+= line.amount
+                        total += line.amount
                         pass_advance_pay = True
                 if not line.payment_related.id in payments and not pass_advance_pay:
                     total += line.amount_payment_total
@@ -160,14 +163,14 @@ class PaymentMobileLine(models.Model):
     )
 
     amount = fields.Monetary(
-        compute="_compute_amount",
+        compute="_compute_amounts",
         store=True,
     )
     foreign_amount = fields.Monetary(
-        compute="_compute_amount_foreign",
+        compute="_compute_amounts",
         currency_field="foreign_currency_id",
         store=True,
-        digits='Tasa',
+        digits="Tasa",
     )
     amount_residual = fields.Monetary(
         string="Residual", related="invoice_id.amount_residual", currency_field="currency_id"
@@ -179,7 +182,7 @@ class PaymentMobileLine(models.Model):
     foreign_amount_payment_total = fields.Monetary(
         compute="_compute_foreign_amount_payment_total",
         currency_field="foreign_currency_id",
-        digits='Tasa',
+        digits="Tasa",
         store=True,
     )
     currency_id = fields.Many2one(
@@ -209,8 +212,7 @@ class PaymentMobileLine(models.Model):
     def create(self, vals_list):
         lines = super().create(vals_list)
         for line in lines:
-            line._compute_amount()
-            line._compute_amount_foreign()
+            line._compute_amounts()
         return lines
 
     def write(self, vals):
@@ -243,10 +245,10 @@ class PaymentMobileLine(models.Model):
             else:
                 line.foreign_amount_payment_total = line.payment_related.amount
 
-    @api.depends("payment_related")
-    def _compute_amount(self):
+    @api.depends("invoice_id", "payment_related")
+    def _compute_amounts(self):
         for line in self:
-            reconcile = self.env["account.partial.reconcile"].search(
+            reconciles = self.env["account.partial.reconcile"].search(
                 [
                     ("debit_move_id", "in", line.invoice_id.line_ids.ids),
                     ("credit_move_id", "in", line.payment_related.move_id.line_ids.ids),
@@ -255,29 +257,29 @@ class PaymentMobileLine(models.Model):
 
             reconcile_payments = line.invoice_id.invoice_payments_widget["content"]
 
-            for rec in reconcile_payments:
-                if rec["partial_id"] == reconcile.id:
-                    line.amount = rec["amount"]
+            # Create a dictionary for quick lookup by partial_id
+            payments_dict = {rec["partial_id"]: rec["amount"] for rec in reconcile_payments}
 
-    @api.depends("payment_related")
-    def _compute_amount_foreign(self):
-        for line in self:
-            reconcile = self.env["account.partial.reconcile"].search(
-                [
-                    ("debit_move_id", "in", line.invoice_id.line_ids.ids),
-                    ("credit_move_id", "in", line.payment_related.move_id.line_ids.ids),
-                ]
-            )
+            # Reset amounts to zero before calculations
+            line.amount = 0
+            line.foreign_amount = 0
 
-            reconcile_payments = line.invoice_id.invoice_payments_widget["content"]
-            for rec in reconcile_payments:
-                if rec["partial_id"] == reconcile.id:
-                    if line.payment_related.currency_id != line.foreign_currency_id:
-                        line.foreign_amount = rec["amount"] * reconcile.credit_move_id.foreign_rate
-                    else:
-                        line.foreign_amount = rec["amount"] * reconcile.credit_move_id.foreign_rate # bs
-                        if line.foreign_amount > line.foreign_amount_payment_total:
-                            line.foreign_amount = line.foreign_amount_payment_total
+            for reconcile in reconciles:
+                if not reconcile.id in payments_dict:
+                    continue
+
+                amount_to_add = payments_dict[reconcile.id]
+                line.amount += amount_to_add
+
+                if hasattr(reconcile.credit_move_id, "foreign_rate"):  # Ensure the attribute exists
+                    line.foreign_amount += amount_to_add * reconcile.credit_move_id.foreign_rate
+
+            # Check conditions specific to foreign_amount
+            if (
+                line.payment_related.currency_id == line.foreign_currency_id
+                and line.foreign_amount > line.foreign_amount_payment_total
+            ):
+                line.foreign_amount = line.foreign_amount_payment_total
 
 
 class PaymentMobileMethods(models.Model):

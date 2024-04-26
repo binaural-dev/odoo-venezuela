@@ -116,8 +116,10 @@ class AccountPaymentPayments(http.Controller):
 
                 if use_credit:
                     if advance_payment_installed:
-                        invoices = data_invoices.mapped("line_ids").filtered(
-                            lambda l: l.account_id.account_type == "asset_receivable"
+                        invoices = (
+                            data_invoices.mapped("line_ids")
+                            .filtered(lambda l: l.account_id.account_type == "asset_receivable")
+                            .sorted(lambda l: l.date_maturity)
                         )
                         domain_customer = [
                             ("partner_id", "=", int(partner_id)),
@@ -350,8 +352,10 @@ class AccountPaymentPayments(http.Controller):
 
             pays_registered += payment_create
 
-        invoices = data_invoices.mapped("line_ids").filtered(
-            lambda l: l.account_id.account_type == "asset_receivable"
+        invoices = (
+            data_invoices.mapped("line_ids")
+            .filtered(lambda l: l.account_id.account_type == "asset_receivable")
+            .sorted(lambda l: l.date_maturity)
         )
         pays = pays_registered.mapped("move_id.line_ids").filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
@@ -428,4 +432,11 @@ class AccountPaymentPayments(http.Controller):
         data = {"status": 200, "msg": "Success"}
         total_or_partial = request.env.company.process_payments_invoices
         data.update({"data": total_or_partial})
+        return data
+
+    @http.route("/installment_payments", type="json", auth="public", methods=["POST"], website=True)
+    def installment_payments(self, **kw):
+        data = {"status": 200, "msg": "Success"}
+        installment_payments = request.env.company.allow_installment_payments
+        data.update({"data": installment_payments})
         return data
