@@ -187,12 +187,12 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="height: 50px;max-height: 50px;">
+                                    <td style="height: 40px;max-height: 40px;">
                                         <strong>Concepto:</strong> <span t-if="main_move_concept"><t t-esc="(main_move_concept[:217] + '...') if len(main_move_concept) > 220 else main_move_concept"/></span>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="height: 50px;max-height: 50px;">
+                                    <td style="height: 40px;max-height: 40px;">
                                         <strong>Concepto pago:</strong> <span t-if="main_move_payment_concept"><t t-esc="(main_move_payment_concept[:217] + '...') if len(main_move_payment_concept) > 220 else main_move_payment_concept"/></span>
                                     </td>
                                 </tr>
@@ -204,7 +204,7 @@
                                             <th name="th_date" class="text-start font-weight-bold" style="padding: 10px 2px; min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px;text-transform:uppercase;">fecha</th>
                                             <th name="th_account" class="text-center font-weight-bold" style="padding: 10px 2px;min-width: 7px !important;max-width: 7px !important;width: 7px !important;font-size: 10px;text-transform:uppercase;">cuenta</th>
                                             <th name="th_ref" class="text-center font-weight-bold" style="padding: 10px 2px; min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px;text-transform:uppercase;">ref</th>
-                                            <th name="th_analytic_account" class="text-center font-weight-bold" style="padding: 10px 2px;min-width: 7px !important;max-width: 7px !important;width: 7px !important;font-size: 10px;text-transform:uppercase;">dpto</th>
+                                            <th name="th_analytic_account" class="text-center font-weight-bold" style="padding: 10px 2px;min-width: 7px !important;max-width: 7px !important;width: 7px !important;font-size: 10px;text-transform:uppercase;" t-if="group_analytic_accounting">dpto</th>
 
                                             <th name="th_account_name" class="text-start font-weight-bold" style="padding: 10px 2px; min-width: 10px !important;max-width: 10px !important;width: 10px !important;font-size: 10px;text-transform:uppercase;">nombre</th>
                                             <th name="th_vat" class="text-start font-weight-bold" style="padding: 10px 2px;min-width: 9px !important;max-width: 9px !important;width: 9px !important;font-size: 10px;text-transform:uppercase;">ci/rif</th>
@@ -236,13 +236,15 @@
                                     <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="line.account_id.code"/></td>
                                     <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="line.move_id.ref" t-if="line.move_id.ref != main_move_concept"/></td>
                                     <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
-                                        <t t-out="account_analytic_by_line_id[str(line.id)]"/>
+                                        <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
                                     </td>
 
                                     <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
                                     <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
                                     
-                                    <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="line.move_id.name + '-' + main_move.get('name', '') if line.move_id.id in payment_related_move_ids else line.move_id.name"/></td>
+                                    <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
+                                        <t t-esc="line.move_id.name + '-' + main_move.get('name', '') if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                    </td>
                                     <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
                                     <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
                                 </tr>
@@ -346,6 +348,12 @@
         <t t-call="web.basic_layout">
 
             <t t-if="docs">
+                <t t-set="main_move" t-value="data['main_move']"/>
+                <t t-set="main_move_concept" t-value="data['main_move_concept']"/>
+                <t t-set="main_move_payment_concept" t-value="data['main_move_payment_concept']"/>
+                <t t-set="payment_related_move_ids" t-value="data['payment_related_move_ids']"/>
+                <t t-set="account_analytic_by_line_id" t-value="data['account_analytic_by_line_id']"/>
+                <t t-set="group_analytic_accounting" t-value="data['group_analytic_accounting']"/>
                 <t t-set="lang" t-value="docs[0].partner_id.lang"/>
                 <t t-call="binaural_accountant.account_report_document" t-lang="lang"/>
             </t>

@@ -1,4 +1,7 @@
-from odoo import api, models
+from odoo import api, models, _
+
+from odoo.exceptions import UserError, ValidationError
+
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -6,23 +9,26 @@ _logger = logging.getLogger(__name__)
 class AccountReport(models.AbstractModel):
     _name = "report.binaural_accountant.account_report_call"
 
-    def get_report_values(
-        self,
-        model_name,
-        docids,
-        data=None,
-    ):
-        docs = self.env[model_name].browse(docids)
+    @api.model
+    def _get_report_values(self, docids, data=None):
+        if not docids:
+            raise ValidationError(_("docids empty"))
+
+        current_invoice = self.env["account.move"].browse(docids[0])
+        
+        data = current_invoice.get_account_move_report_data()
+
+        _logger.warning('---------model_name------------')
+        _logger.warning(self)
+        _logger.warning(docids)
+        _logger.warning(data)
+        _logger.warning('---------------------')
 
         return {
-            "doc_ids": docids,
-            "doc_model": model_name,
-            "docs": docs,
+            "doc_ids": data["doc_ids"],
+            "doc_model": "account.move.line",
+            "docs": data["docs"],
             "data": data,
         }
 
-    @api.model
-    def _get_report_values(self, docids, data=None):
-        docids = data["docids"]
-
-        return self.get_report_values("account.move.line", docids, data)
+        # return self.get_report_values("account.move.line", docids, data)

@@ -721,14 +721,10 @@ class AccountMove(models.Model):
             account_analytic_ids = self.env["account.analytic.account"].browse(account_analytic_ids_ids)
             account_analytic_by_line_id[line_id.id] = ", ".join(account_analytic_ids.mapped("code"))
 
-        _logger.warning('---------_account_analytic_by_line_id------------')
-        _logger.warning(account_analytic_by_line_id)
-        _logger.warning('---------------------')
-
         return account_analytic_by_line_id
 
 
-    def account_move_report_action(self):
+    def get_account_move_report_data(self):
         self.ensure_one()
 
         payment_move_ids = self._get_payment_move_ids()
@@ -762,7 +758,7 @@ class AccountMove(models.Model):
 
         # Used in the custom/binaural_accountant/report/account_report.py
         data = {
-            "docids": docids,
+            "doc_ids": docids,
             "docs": docs,
             'doc_title': doc_title,
             'doc_date': doc_date,
@@ -774,9 +770,7 @@ class AccountMove(models.Model):
             'group_analytic_accounting': self.env.user.has_group("analytic.group_analytic_accounting"),
         }
 
-        ref_report = "binaural_accountant.action_account_report"
-
-        return self.env.ref(ref_report).report_action(self, data=data, config=False)
+        return data
 
     def action_register_payment(self):
         """

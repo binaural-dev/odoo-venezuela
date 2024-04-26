@@ -11,7 +11,7 @@
       <field name="report_file">binaural_accountant.account_report_call</field>
       <field name="print_report_name">'Asientos contables %s' % (object.name)</field>
       <field name="binding_model_id" ref="account.model_account_move"/>
-      <field name="binding_type">action</field>
+      <field name="binding_type">report</field>
       <field name="paperformat_id" ref="binaural_accountant.paperformat_account"/> 
     </record>
 
