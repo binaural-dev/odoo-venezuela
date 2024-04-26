@@ -351,6 +351,8 @@
         <t t-call="web.basic_layout">
 
             <t t-if="docs">
+                <t t-set="doc_title" t-value="data['doc_title']"/>
+                <t t-set="doc_date" t-value="data['doc_date']"/>
                 <t t-set="main_move" t-value="data['main_move']"/>
                 <t t-set="main_move_concept" t-value="data['main_move_concept']"/>
                 <t t-set="main_move_payment_concept" t-value="data['main_move_payment_concept']"/>
