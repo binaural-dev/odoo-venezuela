@@ -168,32 +168,32 @@
 
                     <div class="row" style="padding:0px; margin:0px;">
                         <div class="col-12 doc-header">
-                            <!-- <h1 class="text-center" style="font-size: 16px;"><strong><span t-esc="res_company.name" /></strong></h1>
-                            <h2 class="text-center" style="font-size: 13px;" t-if="doc_title == ''"><span t-esc="current_month_name + time.strftime(' del %%Y')" /></h2>
-                            <h2 class="text-center" style="font-size: 13px;" t-if="not doc_title == ''">COMPROBANTE CONTABLE No. <span t-esc="doc_title" />  -  <span class='ml-6'>FECHA: <span t-esc="doc_date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></span></h2>  -->
+                            <!-- <h1 class="text-center" style="font-size: 16px;"><strong><span t-out="res_company.name" /></strong></h1>
+                            <h2 class="text-center" style="font-size: 13px;" t-if="doc_title == ''"><span t-out="current_month_name + time.strftime(' del %%Y')" /></h2>
+                            <h2 class="text-center" style="font-size: 13px;" t-if="not doc_title == ''">COMPROBANTE CONTABLE No. <span t-out="doc_title" />  -  <span class='ml-6'>FECHA: <span t-out="doc_date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></span></h2>  -->
 
                             <table class="table table_header">
                                 <tr>
                                     <td style="border-top:white 1px solid;">
-                                        <h1 class="text-center" style="font-size: 14px;"><strong><span t-esc="res_company.name" /></strong></h1>
+                                        <h1 class="text-center" style="font-size: 14px;"><strong><span t-out="res_company.name" /></strong></h1>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>
-                                        <h2 class="text-center" style="font-size: 14px;" t-if="doc_title == ''"><span t-esc="current_month_name + time.strftime(' del %%Y')" /></h2>
+                                        <h2 class="text-center" style="font-size: 14px;" t-if="doc_title == ''"><span t-out="current_month_name + time.strftime(' del %%Y')" /></h2>
                                         <h2 class="text-center" style="font-size: 14px;" t-if="not doc_title == ''">
-                                            COMPROBANTE CONTABLE No. <span class="font-weight-bold" t-esc="doc_title" />
-                                        <span style="margin-left:45px;">FECHA: <span class="font-weight-bold" t-esc="doc_date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></span></h2> 
+                                            COMPROBANTE CONTABLE No. <span class="font-weight-bold" t-out="doc_title" />
+                                        <span style="margin-left:45px;">FECHA: <span class="font-weight-bold" t-out="doc_date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></span></h2> 
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style="height: 40px;max-height: 40px;">
-                                        <strong>Concepto:</strong> <span t-if="main_move_concept"><t t-esc="(main_move_concept[:217] + '...') if len(main_move_concept) > 220 else main_move_concept"/></span>
+                                        <strong>Concepto:</strong> <span t-if="main_move_concept"><t t-out="(main_move_concept[:217] + '...') if len(main_move_concept) > 220 else main_move_concept"/></span>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td style="height: 40px;max-height: 40px;">
-                                        <strong>Concepto pago:</strong> <span t-if="main_move_payment_concept"><t t-esc="(main_move_payment_concept[:217] + '...') if len(main_move_payment_concept) > 220 else main_move_payment_concept"/></span>
+                                        <strong>Concepto pago:</strong> <span t-if="main_move_payment_concept"><t t-out="(main_move_payment_concept[:217] + '...') if len(main_move_payment_concept) > 220 else main_move_payment_concept"/></span>
                                     </td>
                                 </tr>
                             </table>                            
@@ -228,29 +228,32 @@
                         <tbody class="tbody">
 
                             <t t-foreach="docs_by_page" t-as="line">
+                                <t t-if="line.display_type == 'product'">
 
-                                <t t-set="line" t-value="line.with_context(lang=lang)" />
+                                    <t t-set="line" t-value="line.with_context(lang=lang)" />
 
-                                <tr>
-                                    <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="line.move_id.date.strftime('%d/%m/%Y')"/></td>
-                                    <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="line.account_id.code"/></td>
-                                    <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="line.move_id.ref" t-if="line.move_id.ref != main_move_concept"/></td>
-                                    <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
-                                        <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
-                                    </td>
+                                    <tr>
+                                        <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.date.strftime('%d/%m/%Y')"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.account_id.code"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.ref" t-if="line.move_id.ref != main_move_concept"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
+                                            <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
+                                        </td>
 
-                                    <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
-                                    <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
-                                    
-                                    <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
-                                        <t t-esc="line.move_id.name + '-' + main_move.get('name', '') if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
-                                    </td>
-                                    <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
-                                    <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-esc="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
-                                </tr>
+                                        <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
+                                        
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
+                                            <t t-out="line.move_id.name + '-' + main_move.get('name', '') if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
+                                    </tr>
 
-                                <t t-set="total_debit" t-value="total_debit + line.debit"/>
-                                <t t-set="total_credit" t-value="total_credit + line.credit"/>
+                                    <t t-set="total_debit" t-value="total_debit + line.debit"/>
+                                    <t t-set="total_credit" t-value="total_credit + line.credit"/>
+
+                                </t>
 
                             </t>
 
@@ -273,8 +276,8 @@
                         <tr>
                             <td style="min-width: 550px;"></td>
                             <td class="text-end"><strong style="font-size: 10px !important;">Total</strong></td>
-                            <td class="text-end total_debit"><strong style="font-size: 10px !important;"><t t-esc="'{0:,.2f}'.format(float(total_debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
-                            <td class="text-end total_credit" style="margin:0;"><strong style="font-size: 10px !important;"><t t-esc="'{0:,.2f}'.format(float(total_credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
+                            <td class="text-end total_debit"><strong style="font-size: 10px !important;"><t t-out="'{0:,.2f}'.format(float(total_debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
+                            <td class="text-end total_credit" style="margin:0;"><strong style="font-size: 10px !important;"><t t-out="'{0:,.2f}'.format(float(total_credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
                         </tr>
                     </tfoot>
                 </table>
