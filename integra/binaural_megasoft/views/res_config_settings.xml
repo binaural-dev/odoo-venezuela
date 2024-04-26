@@ -24,6 +24,9 @@
                             <group>
                             <field name="pdv_option" />
                             </group>
+                            <group>
+                                <field name="pre_close_megasoft" attrs="{'invisible': [('pdv_option', '!=', True)]}"/>
+                            </group>
                         </div>    
                     </div>
                 </div>
