@@ -1139,6 +1139,12 @@ msgid "Importe adeudado:"
 msgstr ""
 
 #. module: binaural_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_company__mobile_tax_include
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_config_settings__mobile_tax_include
+msgid "Include taxes in prices"
+msgstr "Impuesto incluido en los precios"
+
+#. module: binaural_mobile
 #: model:ir.model.fields,help:binaural_mobile.field_sale_order__tax_included
 msgid "Indicates if a sale order was includes taxes."
 msgstr "Indica si un pedido de venta incluye impuestos."
@@ -1360,6 +1366,12 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_igtf__message_ids
 msgid "Messages"
 msgstr ""
+
+#. module: binaural_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_company__mobile_show_tax_type
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_config_settings__mobile_show_tax_type
+msgid "Mobile Show Tax Type"
+msgstr "Mostrar Impuesto en Precio"
 
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_line__foreign_currency_id
@@ -1844,6 +1856,11 @@ msgid "Price"
 msgstr "Precio:"
 
 #. module: binaural_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_sale_order_line__price_unit_with_tax
+msgid "Price Unit With Tax"
+msgstr "Precio Unitario con Impuesto"
+
+#. module: binaural_mobile
 #: model:ir.model.fields.selection,name:binaural_mobile.selection__payment_mobile__state__process
 msgid "Procesado"
 msgstr ""
@@ -1945,11 +1962,6 @@ msgstr ""
 #, python-format
 msgid "Q4"
 msgstr ""
-
-#. module: binaural_mobile
-#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
-msgid "Qty:"
-msgstr "Cantidad:"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_quotations_1
@@ -2073,6 +2085,11 @@ msgstr "Diario de ventas"
 #: model:ir.model,name:binaural_mobile.model_sale_order
 msgid "Sales Order"
 msgstr "Pedido de venta"
+
+#. module: binaural_mobile
+#: model:ir.model,name:binaural_mobile.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Línea de pedido de venta"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_home_menu_budget
@@ -2202,6 +2219,11 @@ msgid "Shop catalog view mode"
 msgstr "Modo de vista de catálogo de tiendas"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
+msgid "Show tax in price in the seller app"
+msgstr "Mostrar impuestos en el precio en la App de vendedores"
+
+#. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_res_config_settings__order_payment
 msgid "Sort invoices by"
 msgstr "Ordenar facturas por"
@@ -2267,6 +2289,11 @@ msgstr "IVA"
 #: model:ir.model.fields,field_description:binaural_mobile.field_sale_order__tax_included
 msgid "Tax Included"
 msgstr "Requiere factura"
+
+#. module: binaural_mobile
+#: model:ir.model.fields.selection,name:binaural_mobile.selection__res_company__mobile_show_tax_type__include_tax
+msgid "Tax Included in the price"
+msgstr "Impuesto incluido en el precio"
 
 #. module: binaural_mobile
 #. odoo-python
@@ -2459,11 +2486,6 @@ msgid "Type of the exception activity on record."
 msgstr ""
 
 #. module: binaural_mobile
-#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
-msgid "Unit price:"
-msgstr "Precio unitario:"
-
-#. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_line__use_balance
 msgid "Use Balance"
 msgstr "Uso saldo a favor"
@@ -2581,6 +2603,16 @@ msgstr "no encontrada moneda"
 #, python-format
 msgid "not found rate"
 msgstr "tasa no encontrada"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
+msgid "set always tax in sale"
+msgstr "Colocar siempre impuesto en venta/factura"
+
+#. module: binaural_mobile
+#: model:ir.model.fields.selection,name:binaural_mobile.selection__res_company__mobile_show_tax_type__exclude_tax
+msgid "tax excluded from the price"
+msgstr "Impuesto excluido del precio"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
