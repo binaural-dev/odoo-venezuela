@@ -9,6 +9,7 @@ from odoo.osv import expression
 from . import utils
 
 _logger = logging.getLogger(__name__)
+
 SALE_STATES = ["draft", "sent"]
 FIELDNAMES = [
     "id",
@@ -277,7 +278,6 @@ class SaleOrderBudget(http.Controller):
         sale_id = kwargs.get("sale_id", False)
         tax_included = self._get_tax_included(kwargs)
         note = kwargs.get("note", False)
-
         try:
             sale = utils.browse_model_data("sale.order", int(sale_id))
             if not sale:

@@ -35,6 +35,15 @@ CHILD_TYPES = ["invoice", "delivery"]
 FIELDFILTERS = ["id", "name", "seller_ids"]
 
 class ResPartnerBudget(http.Controller):
+
+    def _get_tax_included(self, kwargs):
+        company = request.env.company
+        is_optional_tax_included = company.dairy_fiscal and company.dairy_no_fiscal
+
+        if is_optional_tax_included:
+            return kwargs.get("tax_included", False)
+
+        return any(company.dairy_fiscal)
     
     @http.route(['/budget','/budget-<int:budget_id>'], type='http', auth="user", website=True, csrf=False)
     def portal_budget(self, budget_id=False, **kw):
@@ -47,8 +56,8 @@ class ResPartnerBudget(http.Controller):
             price_lists = False
             budget = False
             symbol_currency = request.env.company.currency_id
-            tax_included = company.dairy_fiscal
             is_optional_tax_included = company.dairy_fiscal and company.dairy_no_fiscal
+            tax_included = self._get_tax_included(kw)
 
             for group in user.groups_id:
                 if group.id == request.env.ref("binaural_mobile.group_sellers_edit_fee").id:

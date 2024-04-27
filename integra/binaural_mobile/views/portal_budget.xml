@@ -205,7 +205,23 @@
                                     </t>
                                 </t>
                                 <t t-else="">
-                                    <input class="form-check-input cancel_confirmed_input" type="checkbox" id="invoice" disabled="disabled" t-attf-style="{{'' if is_optional_tax_included else  'display: none'}}"/>
+                                    <div t-attf-style="{{'' if is_optional_tax_included else  'display: none'}}">
+                                        <input 
+                                            class="form-check-input cancel_confirmed_input" 
+                                            type="checkbox" 
+                                            id="invoice" 
+                                            disabled="disabled"
+                                            t-if="tax_included"
+                                            checked="true"
+                                        />
+                                        <input 
+                                            class="form-check-input cancel_confirmed_input" 
+                                            type="checkbox" 
+                                            id="invoice" 
+                                            disabled="disabled" 
+                                            t-else=""
+                                        />
+                                    </div>
                                 </t>
                                 <label class="form-check-label" style="font-weight: bolder;" t-if="is_optional_tax_included">
                                     Invoice required
