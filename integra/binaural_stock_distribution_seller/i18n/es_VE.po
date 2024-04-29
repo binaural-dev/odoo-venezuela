@@ -1,0 +1,31 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_stock_distribution_seller
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20240214\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-04-29 21:12+0000\n"
+"PO-Revision-Date: 2024-04-29 21:12+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_stock_distribution_seller
+#: model:ir.model.fields,field_description:binaural_stock_distribution_seller.field_stock_picking_distribution__picking_seller_ids
+msgid "Picking"
+msgstr "Transferencias"
+
+#. module: binaural_stock_distribution_seller
+#: model:ir.model,name:binaural_stock_distribution_seller.model_stock_picking_distribution
+msgid "Picking Distribution"
+msgstr "Guía de Reparto"
+
+#. module: binaural_stock_distribution_seller
+#: model:ir.model.fields,field_description:binaural_stock_distribution_seller.field_stock_picking_distribution__seller_id
+msgid "Seller"
+msgstr "Vendedor"
