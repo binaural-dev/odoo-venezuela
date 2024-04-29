@@ -83,6 +83,15 @@
             <field name="perm_unlink" eval="False"/>
         </record>
         
+        <record id="access_only_fiscal_payment_register_editable" model="ir.rule">
+            <field name="name">Only Fiscal account payment register Access Rights (Group editable)</field>
+            <field name="model_id" ref="account.model_account_payment_register"/>
+            <field name="domain_force">[('journal_id.fiscal', '=',True)]</field>
+            <field name="groups" eval="[(4, ref('binaural_fiscal_inspector.group_fiscal_inspectorate_editable'))]"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
         
     </data>
     
