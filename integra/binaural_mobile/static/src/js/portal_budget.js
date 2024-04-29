@@ -4,6 +4,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
     const publicWidget = require('web.public.widget');
     const ajax = require('web.ajax');
     const { _t } = require('web.core');
+    var Dialog = require('web.Dialog');
     
     const portalBudgetForm = publicWidget.Widget.extend({
         selector: '.o_portal_budget_form',
@@ -16,6 +17,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             "click .delete_product": "_onClickDeleteProduct",
             "click #save_products": "_onClickSaveProducts",
             "change #invoice": "_onChangeInvoice",
+            "blur #note": "_onChangeNote",
             "click .cancel-btn": "_onClickCancel",
             "click .confirm-btn": "_onClickConfirm",
             "click #dowload_pdf": "_onClickDowloadPdf",
@@ -557,10 +559,12 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 const products = await ajax.jsonRpc('/budget/create/order/line', 'call',
                         {"sale_orders" :orders.withValues}
                     )
-                const { status:st, data:dt } = products;
+                const { status:st, data:dt, msg } = products;
                 const is400 = st === 400;
                 if (is400){
                     $("#save_products").attr('disabled', false)
+                    this._onClickExitProducts()
+                    Dialog.alert(this,msg, { title: 'Error' });
                     return 
                 }
                 this.build_table_products(dt,true)
@@ -721,12 +725,18 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             this.includeTax()
         },
 
+        _onChangeNote: function(ev) {
+            this.includeTax()
+        },
+
         includeTax: async function(){
             if ($("#number_order_value").val() == '') return
             const tax_included = $("#invoice").prop('checked')
+            const note = $("#note").val()
             const products = await ajax.jsonRpc('/budget/include_tax', 'call', {
                 "sale_id" : parseInt($("#number_order_value").val()),
-                "tax_included" : tax_included
+                "tax_included" : tax_included,
+                "note": note
             })
             const { status, data } = products;
             const is409 = status === 409;

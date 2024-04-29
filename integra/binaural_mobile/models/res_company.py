@@ -8,6 +8,14 @@ class ResCompany(models.Model):
     product_type_consu = fields.Boolean(string="Consumable")
     product_type_service = fields.Boolean(string="Service")
     product_type_product = fields.Boolean(string="Storable", default=True)
+    mobile_show_tax_type = fields.Selection(
+        selection=[
+            ("include_tax", "Tax Included in the price"),
+            ("exclude_tax", "tax excluded from the price"),
+        ],
+        default="include_tax",
+    )
+    mobile_tax_include = fields.Boolean(string="Include taxes in prices")
     retentions_draft_or_published = fields.Selection(
         [
             ("0", "Draft"),

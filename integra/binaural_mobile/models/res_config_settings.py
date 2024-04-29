@@ -67,3 +67,13 @@ class ResConfigSettings(models.TransientModel):
     assetlink = fields.Text(related="company_id.assetlink", readonly=False)
 
     allow_installment_payments = fields.Boolean()
+    
+    mobile_show_tax_type = fields.Selection(
+        related="company_id.mobile_show_tax_type", readonly=False
+    )
+
+    mobile_tax_include = fields.Boolean(
+        related="company_id.mobile_tax_include", 
+        string="Include taxes in prices",
+        readonly=False
+    )

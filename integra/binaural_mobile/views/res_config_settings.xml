@@ -110,6 +110,30 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_tax_settings">
+                        <div class="o_setting_left_pane">
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="mobile_show_tax_type"/>
+                            <div class="text-muted">
+                                Show tax in price in the seller app
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="mobile_show_tax_type" widget="radio"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_setting_left_pane"  groups="base.group_no_one">
+                            <field name="mobile_tax_include"/>
+                        </div>
+                        <div class="o_setting_right_pane"  groups="base.group_no_one">
+                            <label for="mobile_tax_include"/>
+                            <div class="text-muted">
+                                set always tax in sale
+                            </div>
+                        </div>
+                    </div>
                     <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_retentions_settings">
                         <div class="o_setting_right_pane">
                             <span>Customer billing journals</span>
