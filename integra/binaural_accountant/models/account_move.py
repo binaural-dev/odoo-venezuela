@@ -392,7 +392,9 @@ class AccountMove(models.Model):
                 if line.currency_id == self.env.company.currency_foreign_id
             ]
 
-            for line in self.line_ids:
+            for line in self.line_ids.sorted(lambda l: l.tax_ids, reverse=True):
+                # If the line is an adjustment line, the foreign debit and foreign credit will be
+                # the foreign debit and foreign credit adjustment fields.
                 if line.not_foreign_recalculate:
                     continue
 
