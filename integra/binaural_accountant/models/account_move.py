@@ -719,7 +719,20 @@ class AccountMove(models.Model):
 
             account_analytic_ids_ids = [int(analytic_id) for analytic_id in line_id.analytic_distribution.keys()]
             account_analytic_ids = self.env["account.analytic.account"].browse(account_analytic_ids_ids)
-            account_analytic_by_line_id[line_id.id] = ", ".join(account_analytic_ids.mapped("code"))
+
+            if not account_analytic_ids:
+                account_analytic_by_line_id[line_id.id] = ""
+                continue
+
+            analytic_codes = []
+
+            for code in account_analytic_ids.mapped("code"):
+                if not code:
+                    continue
+
+                analytic_codes.append(code)
+
+            account_analytic_by_line_id[line_id.id] = ", ".join(analytic_codes)
 
         return account_analytic_by_line_id
 
