@@ -36,20 +36,6 @@ class SaleOrder(models.Model):
         )
         return res
 
-    def _compute_warehouse_id(self):
-        for order in self:
-            main_warehouse_id = self.env.company.main_warehouse_id
-            user_warehouse_id = self.env.user.property_warehouse_id
-            if order.state in ["draft", "sent"] or not order.ids:
-                if not main_warehouse_id and not user_warehouse_id:
-                    res = super()._compute_warehouse_id()
-                    return
-                order.warehouse_id = (
-                    main_warehouse_id
-                    if main_warehouse_id and not user_warehouse_id
-                    else user_warehouse_id
-                )
-
     def correccion_subsidiary_order(self):
         for order in self:
             if order.warehouse_id:

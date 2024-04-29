@@ -369,7 +369,7 @@ class AccountMove(models.Model):
         subtotals_by_name = self.get_invoice_line_ids_subtotals_by_name()
         is_invoice = self.is_invoice(include_receipts=True)
         receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
-        self.line_ids.update({"foreign_debit": 0, "foreign_credit": 0})
+        # self.line_ids.update({"foreign_debit": 0, "foreign_credit": 0})
         payment = self.payment_id
 
         # If the move is a retention payment we need to use the retention_foreign_amount of the
@@ -380,6 +380,7 @@ class AccountMove(models.Model):
             and payment.is_retention
         ):
             for line in self.line_ids:
+                line.update({"foreign_debit": 0, "foreign_credit": 0})
                 if line.debit != 0:
                     line.foreign_debit = payment.retention_foreign_amount
                 if line.credit != 0:
@@ -397,6 +398,10 @@ class AccountMove(models.Model):
                 if line.not_foreign_recalculate:
                     continue
 
+                line.update({"foreign_debit": 0, "foreign_credit": 0})
+
+                # If the line is an adjustment line, the foreign debit and foreign credit will be
+                # the foreign debit and foreign credit adjustment fields.
                 if (line.foreign_debit_adjustment + line.foreign_credit_adjustment) != 0:
                     line.foreign_debit = abs(line.foreign_debit_adjustment)
                     line.foreign_credit = abs(line.foreign_credit_adjustment)
@@ -602,8 +607,8 @@ class AccountMove(models.Model):
             date_field = "invoice_date" if is_sale else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
-            move.foreign_rate = rate_values["foreign_rate"]
-            move.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
+            move.foreign_rate = rate_values.get("foreign_rate",0)
+            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate",0)
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):

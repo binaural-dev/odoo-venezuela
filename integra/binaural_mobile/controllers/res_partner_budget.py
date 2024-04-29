@@ -73,6 +73,7 @@ class ResPartnerBudget(http.Controller):
                 "no_footer":True,
                 "type_document": type_document,
                 "countries": country_ids,
+                "not_confirm_quotes": user.has_group("binaural_mobile.group_sellers_cant_confirm_quotation")
             })
         return request.redirect("/my/home")
     

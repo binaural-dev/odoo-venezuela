@@ -5,3 +5,7 @@ class PosPaymentMethod(models.Model):
     _inherit = "pos.payment.method"
 
     is_foreign_currency = fields.Boolean(default=False)
+
+    cross_account_journal = fields.Many2one("account.journal", domain=[("type", "=", "general")])
+
+    cross_journal = fields.Many2one("account.journal", domain=[("type", "in", ("bank", "cash"))])
