@@ -8,9 +8,9 @@
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="picker_id" />
                 <field name="cart_id"/>
-                <field name="operation_start_date"/>
-                <field name="operation_end_date"/>
-                <field name="total_time_elapsed" widget="float_time" />
+                <field name="operation_start_date" attrs="{'invisible': [('cart_id', '=', False)]}"/>
+                <field name="operation_end_date" attrs="{'invisible': [('cart_id', '=', False)]}"/>
+                <field name="total_time_elapsed" attrs="{'invisible': [('cart_id', '=', False)]}" widget="float_time" />
             </xpath>
 
             <xpath expr="//field[@name='origin']" position="after">
