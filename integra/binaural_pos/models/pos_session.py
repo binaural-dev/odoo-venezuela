@@ -282,11 +282,11 @@ class PosSession(models.Model):
         for line in account_payment.move_id.line_ids:
             if line.credit > 0 and amounts.get("foreign_amount", False):
                 line.not_foreign_recalculate = True
-                line.foreign_credit = amounts["foreign_amount"]
+                line.foreign_credit = abs(amounts["foreign_amount"])
 
             if line.debit > 0 and amounts.get("foreign_amount", False):
                 line.not_foreign_recalculate = True
-                line.foreign_debit = amounts["foreign_amount"]
+                line.foreign_debit = abs(amounts["foreign_amount"])
 
         return res
 
@@ -304,11 +304,11 @@ class PosSession(models.Model):
         for line in account_payment.move_id.line_ids:
             if line.credit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_credit = payment.foreign_amount
+                line.foreign_credit = abs(payment.foreign_amount)
 
             if line.debit > 0:
                 line.not_foreign_recalculate = True
-                line.foreign_debit = payment.foreign_amount
+                line.foreign_debit = abs(payment.foreign_amount)
 
         return res
 
@@ -515,7 +515,7 @@ class PosSession(models.Model):
             line.not_foreign_recalculate = True
             line.foreign_credit = abs(foreign_amount)
             if other_line and other_line.foreign_debit != line.foreign_credit:
-                other_line.foreign_debit = line.foreign_credit
+                other_line.foreign_debit = abs(line.foreign_credit)
         if (
             abs(line.debit) > 0
             and float_compare(line.debit, abs(amount), precision_rounding=self.currency_id.rounding)
@@ -524,4 +524,4 @@ class PosSession(models.Model):
             line.not_foreign_recalculate = True
             line.foreign_debit = abs(foreign_amount)
             if other_line and other_line.foreign_credit != line.foreign_debit:
-                other_line.foreign_credit = line.foreign_debit
+                other_line.foreign_credit = abs(line.foreign_debit)
