@@ -82,8 +82,8 @@
             }
 
             .main_table tbody tr td{
-                border-top: 1px solid white !important;
-                border-bottom: 1px solid black;
+                border-top: 1px solid black !important;
+                border-bottom: 0px solid white;
                 border-right: 1px solid white;
                 border-left: 1px solid white;
             }
@@ -105,6 +105,11 @@
                 padding: 0px;
                 margin: 0px;
             }
+
+            .font-weight-bold {
+                font-weight: bold;
+            }
+
         </style>
         <div class="page" style="position: relative; padding:0px; margin:0px;border-top:white 1px solid;">
 
@@ -173,23 +178,16 @@
                         .table_main_header thead tr th{ 
                             font-weigth: bold;
                             border-top: 1px solid black;
-                            border-bottom: 1px solid black;
+                            border-bottom: 1px solid white !important;
+                            <!-- border-bottom: 1px solid black; -->
                             border-right: 1px solid white;
                             border-left: 1px solid white;
                         }
-
-                        <!-- .table_main_header tr:nth-child(1) {
-                            border-top: 1px solid white !important;
-                        } -->
 
                     </style>
 
                     <div class="row" style="padding:0px; margin:0px;">
                         <div class="col-12 doc-header">
-                            <!-- <h1 class="text-center" style="font-size: 16px;"><strong><span t-out="res_company.name" /></strong></h1>
-                            <h2 class="text-center" style="font-size: 13px;" t-if="doc_title == ''"><span t-out="current_month_name + time.strftime(' del %%Y')" /></h2>
-                            <h2 class="text-center" style="font-size: 13px;" t-if="not doc_title == ''">COMPROBANTE CONTABLE No. <span t-out="doc_title" />  -  <span class='ml-6'>FECHA: <span t-out="doc_date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></span></h2>  -->
-
                             <table class="table table_header">
                                 <tr>
                                     <td style="border-top:white 1px solid;">
@@ -200,8 +198,8 @@
                                     <td>
                                         <h2 class="text-center" style="font-size: 14px;" t-if="doc_title == ''"><span t-out="current_month_name + time.strftime(' del %%Y')" /></h2>
                                         <h2 class="text-center" style="font-size: 14px;" t-if="not doc_title == ''">
-                                            COMPROBANTE CONTABLE No. <span class="font-weight-bold" t-out="doc_title" />
-                                        <span style="margin-left:45px;">FECHA: <span class="font-weight-bold" t-out="doc_date if show_related_account_move else main_move.date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></span></h2> 
+                                            COMPROBANTE CONTABLE No. <strong><span class="font-weight-bold" t-out="doc_title" /></strong>
+                                        <span style="margin-left:45px;">FECHA: <strong><span class="font-weight-bold" t-out="doc_date if show_related_account_move else main_move.date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></strong></span></h2> 
                                     </td>
                                 </tr>
                                 <tr>
@@ -253,7 +251,128 @@
                                     <tr>
                                         <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.date.strftime('%d/%m/%Y')"/></td>
                                         <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.account_id.code"/></td>
-                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.ref" t-if="line.move_id.ref != main_move_concept"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.move_id.ref[:26] + '...') if len(line.move_id.ref) > 25 else ''" t-if="line.move_id.ref != main_move_concept and line.move_id.ref"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
+                                            <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
+                                        </td>
+
+                                        <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
+                                        
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
+                                            <t t-out="line.move_id.name + '-' + main_move.name if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.date.strftime('%d/%m/%Y')"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.account_id.code"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.move_id.ref[:26] + '...') if len(line.move_id.ref) > 25 else ''" t-if="line.move_id.ref != main_move_concept and line.move_id.ref"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
+                                            <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
+                                        </td>
+
+                                        <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
+                                        
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
+                                            <t t-out="line.move_id.name + '-' + main_move.name if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.date.strftime('%d/%m/%Y')"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.account_id.code"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.move_id.ref[:26] + '...') if len(line.move_id.ref) > 25 else ''" t-if="line.move_id.ref != main_move_concept and line.move_id.ref"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
+                                            <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
+                                        </td>
+
+                                        <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
+                                        
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
+                                            <t t-out="line.move_id.name + '-' + main_move.name if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.date.strftime('%d/%m/%Y')"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.account_id.code"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.move_id.ref[:26] + '...') if len(line.move_id.ref) > 25 else ''" t-if="line.move_id.ref != main_move_concept and line.move_id.ref"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
+                                            <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
+                                        </td>
+
+                                        <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
+                                        
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
+                                            <t t-out="line.move_id.name + '-' + main_move.name if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.date.strftime('%d/%m/%Y')"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.account_id.code"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.move_id.ref[:26] + '...') if len(line.move_id.ref) > 25 else ''" t-if="line.move_id.ref != main_move_concept and line.move_id.ref"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
+                                            <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
+                                        </td>
+
+                                        <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
+                                        
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
+                                            <t t-out="line.move_id.name + '-' + main_move.name if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.date.strftime('%d/%m/%Y')"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.account_id.code"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.move_id.ref[:26] + '...') if len(line.move_id.ref) > 25 else ''" t-if="line.move_id.ref != main_move_concept and line.move_id.ref"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
+                                            <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
+                                        </td>
+
+                                        <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
+                                        
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
+                                            <t t-out="line.move_id.name + '-' + main_move.name if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.date.strftime('%d/%m/%Y')"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.account_id.code"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.move_id.ref[:26] + '...') if len(line.move_id.ref) > 25 else ''" t-if="line.move_id.ref != main_move_concept and line.move_id.ref"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
+                                            <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
+                                        </td>
+
+                                        <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
+                                        
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
+                                            <t t-out="line.move_id.name + '-' + main_move.name if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.date.strftime('%d/%m/%Y')"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.account_id.code"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.move_id.ref[:26] + '...') if len(line.move_id.ref) > 25 else ''" t-if="line.move_id.ref != main_move_concept and line.move_id.ref"/></td>
                                         <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
                                             <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
                                         </td>
