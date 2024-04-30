@@ -9,12 +9,12 @@
       <field name="page_height">0</field>
       <field name="page_width">0</field>
       <field name="orientation">Portrait</field>
-      <field name="margin_top">66</field>
+      <field name="margin_top">70</field>
       <field name="margin_bottom">40</field>
       <field name="margin_left">3</field>
       <field name="margin_right">3</field>
       <field name="header_line" eval="False"/>
-      <field name="header_spacing">58</field>
+      <field name="header_spacing">62</field>
     </record>
 
     <record id="paperformat_account" model="report.paperformat">
@@ -24,12 +24,12 @@
       <field name="page_height">0</field>
       <field name="page_width">0</field>
       <field name="orientation">Portrait</field>
-      <field name="margin_top">53</field>
+      <field name="margin_top">55</field>
       <field name="margin_bottom">40</field>
       <field name="margin_left">3</field>
       <field name="margin_right">3</field>
       <field name="header_line" eval="False"/>
-      <field name="header_spacing">45</field>
+      <field name="header_spacing">47</field>
     </record>
 
   </data>

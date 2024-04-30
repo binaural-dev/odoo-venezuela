@@ -206,12 +206,12 @@
                                 </tr>
                                 <tr>
                                     <td style="height: 50px;max-height: 50px;font-size: 14px !important;">
-                                        <strong>Concepto:</strong> <span t-if="main_move_concept"><t t-out="(main_move_concept[:217] + '...') if len(main_move_concept) > 220 else main_move_concept"/></span>
+                                        <strong>Concepto:</strong> <span t-if="main_move_concept"><t t-out="(main_move_concept[:185] + '...') if len(main_move_concept) > 185 else main_move_concept"/></span>
                                     </td>
                                 </tr>
                                 <tr t-if="show_related_account_move">
                                     <td style="height: 50px;max-height: 50px;font-size: 14px !important;">
-                                        <strong>Concepto pago:</strong> <span t-if="main_move_payment_concept"><t t-out="(main_move_payment_concept[:217] + '...') if len(main_move_payment_concept) > 220 else main_move_payment_concept"/></span>
+                                        <strong>Concepto pago:</strong> <span t-if="main_move_payment_concept"><t t-out="(main_move_payment_concept[:185] + '...') if len(main_move_payment_concept) > 185 else main_move_payment_concept"/></span>
                                     </td>
                                 </tr>
                             </table>                            
