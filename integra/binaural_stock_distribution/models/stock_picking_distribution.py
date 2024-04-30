@@ -6,15 +6,12 @@ class StockPickingDistribution(models.Model):
     _description = "Picking Distribution"
     _check_company_auto = True
 
-    name = fields.Char(
-        default=lambda self: self.env["ir.sequence"].next_by_code("stock.picking.distribution")
-        or _("Unknown Distribution")
-    )
+    name = fields.Char(default="/")
     state = fields.Selection(selection=[("draft", "Draft"), ("done", "Done")], default="draft")
     company_id = fields.Many2one("res.company", default=lambda self: self.env.company.id)
     expected_date = fields.Date()
     vehicle_id = fields.Many2one("fleet.vehicle")
-    driver_id = fields.Many2one("res.partner", related="vehicle_id.driver_id", store=True)
+    driver_id = fields.Many2one("res.partner")
     warehouse_id = fields.Many2one("stock.warehouse")
     stock_picking_type_id = fields.Many2one("stock.picking.type")
     picking_ids = fields.One2many("stock.picking", "distribution_id")
@@ -42,8 +39,15 @@ class StockPickingDistribution(models.Model):
         self.write(data)
         return True
 
+    @api.onchange("vehicle_id")
+    def _onchange_vehicle(self):
+        self.driver_id = self.vehicle_id.driver_id
+
     def action_confirm(self) -> bool:
-        data = {"state": "done"}
+        data = {
+            "state": "done",
+            "name": self.env["ir.sequence"].next_by_code("stock.picking.distribution"),
+        }
         if not self.expected_date:
             data["expected_date"] = fields.Date.today()
         self.write(data)

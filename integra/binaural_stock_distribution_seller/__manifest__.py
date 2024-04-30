@@ -5,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.1.0.0",
+    "version": "16.0.1.0.1",
     "depends": ["binaural_seller_stock", "binaural_stock_distribution"],
     "data": [
         "views/stock_picking_distribution_views.xml",
