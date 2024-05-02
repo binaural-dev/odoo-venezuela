@@ -115,6 +115,14 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
 
           invoice['invoice_lines'] = order.orderlines.map((el) => {
 
+            if (!!el.customerNote){
+              let split = el.customerNote.split("\n")
+              for (let i = 0; i < split.length; i++) {
+                invoice["info"].push(`${split[i]}`)
+              }
+            }
+
+
             let amount = vef_base ? el.price : el.get_foreign_unit_price()
 
             return {
