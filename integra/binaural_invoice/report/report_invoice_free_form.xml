@@ -33,7 +33,7 @@
                             <br/>
                             <span t-if="o.partner_id.vat"><strong>RIF/CI:</strong> <t t-out="o.partner_id.prefix_vat + o.partner_id.vat"/></span>
                             <br/>
-                            <span t-if="o.partner_id.phone"><strong>Telefono:</strong> <t t-out="o.partner_id.phone"/></span>
+                            <span t-if="o.partner_id.phone"><strong>Teléfono:</strong> <t t-out="o.partner_id.phone"/></span>
                         </div>
                         <div class="col-auto col-1 mw-100 mb-1">
                             
