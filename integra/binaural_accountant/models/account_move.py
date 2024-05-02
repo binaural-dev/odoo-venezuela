@@ -664,6 +664,10 @@ class AccountMove(models.Model):
 
         payments = self.invoice_payments_widget
 
+        _logger.warning('---------_get_payment_move_ids------------')
+        _logger.warning(payments)
+        _logger.warning('---------------------')
+
         if not payments:
             return []
 
@@ -691,19 +695,13 @@ class AccountMove(models.Model):
         self.ensure_one()
 
         account_move_line_ids = []
-        
-        for line_id in self.line_ids:
-            if line_id.id in account_move_line_ids:
-                continue
 
-            account_move_line_ids.append(line_id.id)
+        reconciled_lines = self.line_ids._all_reconciled_lines()
 
-        payment_account_move_line_ids = self._get_payment_account_move_line_ids()
-        for payment_account_move_line_id in payment_account_move_line_ids:
-            if payment_account_move_line_id.id in account_move_line_ids:
-                continue
+        if not reconciled_lines:
+            return account_move_line_ids
 
-            account_move_line_ids.append(payment_account_move_line_id.id)
+        account_move_line_ids = reconciled_lines.mapped("move_id.line_ids").ids
 
         return account_move_line_ids
 
