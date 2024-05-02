@@ -659,37 +659,17 @@ class AccountMove(models.Model):
                 return
             move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
 
-    def _get_payment_move_ids(self):
+    def _get_payments(self, line_ids):
         self.ensure_one()
 
-        payments = self.invoice_payments_widget
+        move_ids = line_ids.mapped('move_id.id')
 
-        _logger.warning('---------_get_payment_move_ids------------')
-        _logger.warning(payments)
-        _logger.warning('---------------------')
-
-        if not payments:
+        if not move_ids:
             return []
 
-        payments = payments['content']
+        payment_related = self.env['account.payment'].search([('move_id', 'in', move_ids)], order='id desc')
 
-        payment_move_ids = [
-            payment["move_id"]
-            for payment in payments
-        ]
-
-        return payment_move_ids
-
-    def _get_payment_account_move_line_ids(self):
-        self.ensure_one()
-
-        payment_move_ids = self._get_payment_move_ids()
-
-        payment_account_move_ids = self.env["account.move"].browse(payment_move_ids)
-
-        payment_account_move_line_ids = payment_account_move_ids.mapped("line_ids")
-
-        return payment_account_move_line_ids
+        return payment_related
 
     def _get_account_move_line_related(self):
         self.ensure_one()
@@ -738,10 +718,6 @@ class AccountMove(models.Model):
     def get_account_move_report_data(self):
         self.ensure_one()
 
-        payment_move_ids = self._get_payment_move_ids()
-
-        payment_related = self.env['account.payment'].search([('move_id', 'in', payment_move_ids)], limit=1, order='id desc')
-
         doc_title = ''
         doc_date = ''
         main_move_concept = self.ref
@@ -752,24 +728,26 @@ class AccountMove(models.Model):
             'name': self.name,
         }
 
-        if payment_related:
-            doc_date = payment_related.date
+        line_ids_ids = self._get_account_move_line_related()
+        line_ids = self.env['account.move.line'].browse(line_ids_ids)
+        account_analytic_by_line_id = self._account_analytic_by_line_id(line_ids)
 
-            main_move_payment_concept = payment_related.concept
-            payment_related_move_ids = payment_related.mapped('move_id.id')
+        payment_move_ids = self._get_payments(line_ids)
+
+        if payment_move_ids:
+            first_payment = payment_move_ids[0]
+            doc_date = first_payment.date
+
+            main_move_payment_concept = first_payment.concept
+            payment_related_move_ids = payment_move_ids.mapped('move_id.id')
 
             if self.amount_residual == 0:
-                doc_title = payment_related.name
-
-        docids = self._get_account_move_line_related()
-        docs = self.env['account.move.line'].browse(docids)
-
-        account_analytic_by_line_id = self._account_analytic_by_line_id(docs)
+                doc_title = first_payment.name
 
         # Used in the custom/binaural_accountant/report/account_report.py
         data = {
-            "doc_ids": docids,
-            "docs": docs,
+            "doc_ids": line_ids_ids,
+            "docs": line_ids,
             'doc_title': doc_title,
             'doc_date': doc_date,
             'main_move': self,
