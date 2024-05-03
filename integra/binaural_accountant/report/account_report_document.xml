@@ -28,7 +28,6 @@
             .page {
                 font-size: 13px;
                 padding: 25px;
-
             }
 
             .table {
@@ -112,8 +111,6 @@
 
         </style>
         <div class="page" style="position: relative; padding:0px; margin:0px;border-top:white 1px solid;">
-
-            
             <t t-set="idx" t-value="0"/>
             <t t-set="current_page" t-value="1"/>
             <t 
@@ -203,12 +200,12 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="height: 50px;max-height: 50px;font-size: 14px !important;">
+                                    <td style="height: 53px;max-height: 53px;font-size: 14px !important;">
                                         <strong>Concepto:</strong> <span t-if="main_move_concept"><t t-out="(main_move_concept[:185] + '...') if len(main_move_concept) > 185 else main_move_concept"/></span>
                                     </td>
                                 </tr>
                                 <tr t-if="show_related_account_move">
-                                    <td style="height: 50px;max-height: 50px;font-size: 14px !important;">
+                                    <td style="height: 53px;max-height: 53px;font-size: 14px !important;">
                                         <strong>Concepto pago:</strong> <span t-if="main_move_payment_concept"><t t-out="(main_move_payment_concept[:185] + '...') if len(main_move_payment_concept) > 185 else main_move_payment_concept"/></span>
                                     </td>
                                 </tr>
@@ -264,6 +261,11 @@
                                                 t-set="concat_move_name" 
                                                 t-value="line.move_id.id in payment_related_move_ids and line.move_id.id not in retention_payment_move_ids" 
                                             />
+                                            <t 
+                                                t-set="concat_move_name" 
+                                                t-value="line.move_id.name != main_move.name"
+                                                t-if="concat_move_name" 
+                                            />
                                             <t t-out="line.move_id.name + '-' + main_move.name if concat_move_name else line.move_id.name"/>
                                         </td>
                                         <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
@@ -291,10 +293,10 @@
                 <table class="table total_table table-borderless" name="table">
                     <tfoot>
                         <tr>
-                            <td style="min-width: 536px;" t-if="show_related_account_move and not group_analytic_accounting"></td>
-                            <td style="min-width: 568px;" t-if="show_related_account_move and group_analytic_accounting"></td>
-                            <td style="min-width: 532px;" t-if="not show_related_account_move and not group_analytic_accounting"></td>
-                            <td style="min-width: 565px;" t-if="not show_related_account_move and group_analytic_accounting"></td>
+                            <td style="min-width: 560px;" t-if="show_related_account_move and not group_analytic_accounting"></td>
+                            <td style="min-width: 588px;" t-if="show_related_account_move and group_analytic_accounting"></td>
+                            <td style="min-width: 558px;" t-if="not show_related_account_move and not group_analytic_accounting"></td>
+                            <td style="min-width: 588px;" t-if="not show_related_account_move and group_analytic_accounting"></td>
                             <td class="text-end"><strong style="font-size: 10px !important;">Total</strong></td>
                             <td class="text-end total_debit"><strong style="font-size: 10px !important;"><t t-out="'{0:,.2f}'.format(float(total_debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
                             <td class="text-end total_credit" style="margin:0;"><strong style="font-size: 10px !important;"><t t-out="'{0:,.2f}'.format(float(total_credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
