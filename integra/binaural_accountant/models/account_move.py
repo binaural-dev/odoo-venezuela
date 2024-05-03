@@ -715,6 +715,23 @@ class AccountMove(models.Model):
         return account_analytic_by_line_id
 
 
+    def _get_retention_payment_move_ids(self, line_ids):
+        self.ensure_one()
+
+        if not line_ids:
+            return []
+
+        retention_ids = line_ids.mapped("move_id.retention_islr_line_ids.retention_id")
+        retention_ids = retention_ids + line_ids.mapped("move_id.retention_iva_line_ids.retention_id")
+        retention_ids = retention_ids + line_ids.mapped("move_id.retention_municipal_line_ids.retention_id")
+
+        retention_payment_move_ids = retention_ids.payment_ids.mapped("move_id")
+
+        if not retention_payment_move_ids:
+            return []
+
+        return retention_payment_move_ids.ids
+
     def get_account_move_report_data(self):
         self.ensure_one()
 
@@ -733,6 +750,7 @@ class AccountMove(models.Model):
         account_analytic_by_line_id = self._account_analytic_by_line_id(line_ids)
 
         payment_move_ids = self._get_payments(line_ids)
+        retention_payment_move_ids = self._get_retention_payment_move_ids(line_ids)
 
         if payment_move_ids:
             first_payment = payment_move_ids[0]
@@ -754,6 +772,7 @@ class AccountMove(models.Model):
             'main_move_concept': main_move_concept,
             'main_move_payment_concept': main_move_payment_concept,
             'payment_related_move_ids': payment_related_move_ids,
+            'retention_payment_move_ids': retention_payment_move_ids,
             'account_analytic_by_line_id': account_analytic_by_line_id,
             'group_analytic_accounting': self.env.user.has_group("analytic.group_analytic_accounting"),
         }

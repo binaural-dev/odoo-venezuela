@@ -260,7 +260,11 @@
                                         <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
                                         
                                         <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
-                                            <t t-out="line.move_id.name + '-' + main_move.name if line.move_id.id in payment_related_move_ids else line.move_id.name"/>
+                                            <t 
+                                                t-set="concat_move_name" 
+                                                t-value="line.move_id.id in payment_related_move_ids and line.move_id.id not in retention_payment_move_ids" 
+                                            />
+                                            <t t-out="line.move_id.name + '-' + main_move.name if concat_move_name else line.move_id.name"/>
                                         </td>
                                         <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
                                         <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
@@ -372,6 +376,7 @@
                 <t t-set="main_move_concept" t-value="data['main_move_concept']"/>
                 <t t-set="main_move_payment_concept" t-value="data['main_move_payment_concept']"/>
                 <t t-set="payment_related_move_ids" t-value="data['payment_related_move_ids']"/>
+                <t t-set="retention_payment_move_ids" t-value="data['retention_payment_move_ids']"/>
                 <t t-set="account_analytic_by_line_id" t-value="data['account_analytic_by_line_id']"/>
                 <t t-set="group_analytic_accounting" t-value="data['group_analytic_accounting']"/>
                 <t t-set="lang" t-value="docs[0].partner_id.lang"/>
@@ -393,6 +398,7 @@
                 <t t-set="main_move_concept" t-value="data['main_move_concept']"/>
                 <t t-set="main_move_payment_concept" t-value="data['main_move_payment_concept']"/>
                 <t t-set="payment_related_move_ids" t-value="data['payment_related_move_ids']"/>
+                <t t-set="retention_payment_move_ids" t-value="data['retention_payment_move_ids']"/>
                 <t t-set="account_analytic_by_line_id" t-value="data['account_analytic_by_line_id']"/>
                 <t t-set="group_analytic_accounting" t-value="data['group_analytic_accounting']"/>
                 <t t-set="lang" t-value="docs[0].partner_id.lang"/>
