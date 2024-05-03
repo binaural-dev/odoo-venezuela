@@ -65,7 +65,7 @@ class ValidateQtyProducts(http.Controller):
                                 quant.available_quantity if quant.available_quantity > 0 else 0
                             )
 
-                    if qty[product_qty_position] > quantity_available:
+                    if qty[product_qty_position] > quantity_available and product_in_warehouse_pos:
                         data.update(
                             {
                                 "msg_error": _(
@@ -76,7 +76,7 @@ class ValidateQtyProducts(http.Controller):
                             }
                         )
                         return data
-                    if not product_in_warehouse_pos:
+                    if not product_in_warehouse_pos and quantity_available == 0:
                         products_name += f"{product_id.name} ,"
                     product_qty_position += 1
 
