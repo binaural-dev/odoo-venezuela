@@ -19,3 +19,8 @@ class AccountMove(models.Model):
             self = self.sudo()
             return super()._post(soft)
         return super()._post(soft)
+    
+    def write(self, vals):
+        if self.env.user.has_group('binaural_fiscal_inspector.group_fiscal_inspectorate'):
+            raise UserError(_("No tienes permiso para sobreescribir esta factura"))
+        return super().write(vals)
