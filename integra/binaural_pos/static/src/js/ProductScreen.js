@@ -93,13 +93,13 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
               // }	
           }
           
-          let product_without_stock = await this.validate_products(lines); // Validacion Online de productos disponibles
+          // let product_without_stock = await this.validate_products(lines); // Validacion Online de productos disponibles
               
-          if(product_without_stock){
-              call_super = false;
-              title_wrning = _t('Deny Order');
-              wrning.push(product_without_stock)
-          }	
+          // if(product_without_stock){
+          //     call_super = false;
+          //     title_wrning = _t('Deny Order');
+          //     wrning.push(product_without_stock)
+          // }	
           msg_warehouse = await this.validateProductsInWarehouse(lines, pos_config)
           
         }
