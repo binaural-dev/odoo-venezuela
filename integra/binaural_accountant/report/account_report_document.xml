@@ -291,7 +291,10 @@
                 <table class="table total_table table-borderless" name="table">
                     <tfoot>
                         <tr>
-                            <td style="min-width: 550px;"></td>
+                            <td style="min-width: 536px;" t-if="show_related_account_move and not group_analytic_accounting"></td>
+                            <td style="min-width: 568px;" t-if="show_related_account_move and group_analytic_accounting"></td>
+                            <td style="min-width: 532px;" t-if="not show_related_account_move and not group_analytic_accounting"></td>
+                            <td style="min-width: 565px;" t-if="not show_related_account_move and group_analytic_accounting"></td>
                             <td class="text-end"><strong style="font-size: 10px !important;">Total</strong></td>
                             <td class="text-end total_debit"><strong style="font-size: 10px !important;"><t t-out="'{0:,.2f}'.format(float(total_debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
                             <td class="text-end total_credit" style="margin:0;"><strong style="font-size: 10px !important;"><t t-out="'{0:,.2f}'.format(float(total_credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
