@@ -23,13 +23,29 @@
                     attrs="{'readonly': [('state','=', 'done')], 'invisible': [('seller_id', '=', False)]}"
                     domain="[('picking_type_id','=',stock_picking_type_id),('state','=','done'),('is_invoiced','=',True), ('seller_id','=',seller_id)]">
                     <tree>
+                        <!-- Dont remove readonly in this fields -->
+                        <!-- 
+                                ░░░░░░░░░░░█▀▀░░█░░░░░░
+                                ░░░░░░▄▀▀▀▀░░░░░█▄▄░░░░
+                                ░░░░░░█░█░░░░░░░░░░▐░░░
+                                ░░░░░░▐▐░░░░░░░░░▄░▐░░░
+                                ░░░░░░█░░░░░░░░▄▀▀░▐░░░
+                                ░░░░▄▀░░░░░░░░▐░▄▄▀░░░░
+                                ░░▄▀░░░▐░░░░░█▄▀░▐░░░░░
+                                ░░█░░░▐░░░░░░░░▄░█░░░░░
+                                ░░░█▄░░▀▄░░░░▄▀▐░█░░░░░
+                                ░░░█▐▀▀▀░▀▀▀▀░░▐░█░░░░░
+                                ░░▐█▐▄░░▀░░░░░░▐░█▄▄░░░
+                                ░░░▀▀▄░░░░░░░░▄▐▄▄▄▀░░░
+                                ░░░░░░░░░░░░░░░░░░░░░░░
+                        -->
                         <field name="name"/>
-                        <field name="partner_id"/>
-                        <field name="scheduled_date"/>
-                        <field name="seller_id"/>
-                        <field name="package_qty"/>
-                        <field name="amount_invoiced"/>
-                        <field name="origin"/>
+                        <field name="partner_id" readonly="1"/>
+                        <field name="scheduled_date" readonly="1"/>
+                        <field name="seller_id" readonly="1"/>
+                        <field name="package_qty" readonly="1"/>
+                        <field name="amount_invoiced" readonly="1"/>
+                        <field name="origin" readonly="1"/>
                     </tree>
                 </field>
             </xpath>
