@@ -11,7 +11,7 @@ class PurchaseOrderLine(models.Model):
     foreign_price = fields.Float(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
-        digits="Tasa",
+        digits="Foreign Product Price",
         store=True,
         readonly=False,
     )

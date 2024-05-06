@@ -39,18 +39,18 @@ class AccountTax(models.Model):
 
         taxes = []
 
-        for base_line in base_lines:                
-            is_exists_foreign_price = 'foreign_price' in base_line["record"]
-            
+        for base_line in base_lines:
+            is_exists_foreign_price = "foreign_price" in base_line["record"]
+
             if is_exists_foreign_price:
-                base_line["price_unit"] = base_line["record"].foreign_price 
+                base_line["price_unit"] = base_line["record"].foreign_price
                 base_line["price_subtotal"] = base_line["record"].foreign_subtotal
                 base_line["currency"] = foreign_currency
             else:
                 base_line["price_unit"] = base_line["record"].price_unit
                 base_line["price_subtotal"] = base_line["record"].price_subtotal
                 base_line["currency"] = base_line["record"].currency_id
-            
+
             if base_line["taxes"]:
                 taxes.append(
                     {
@@ -60,27 +60,19 @@ class AccountTax(models.Model):
                     }
                 )
 
+        tax_values_list = []
+        for base_line in base_lines:
+            tax_values_list += self._compute_taxes_for_single_line(base_line)[1]
+
         if tax_lines:
             for tax_line in tax_lines:
                 tax_line["currency"] = foreign_currency
                 tax_line["tax_amount"] = 0.0
-                for tax in taxes:
-                    if tax_line["tax_repartition_line"].tax_id.id == tax["tax"].id:
-                        tax_amount = tax_line["tax_repartition_line"].tax_id._compute_amount(
-                            float_round(tax["base"], precision_rounding=foreign_currency.rounding),
-                            tax["price"],
-                        )
-                        if self.env.company.tax_calculation_rounding_method == "round_globally":
-                            tax_line["tax_amount"] += tax_amount
-                        else:
-                            tax_line["tax_amount"] += float_round(
-                                tax_amount, precision_rounding=foreign_currency.rounding
-                            )
+                for tax in tax_values_list:
+                    if tax["tax_repartition_line"].id == tax_line["tax_repartition_line"].id:
+                        tax_line["tax_amount"] += tax["amount"]
 
-                tax_line["tax_amount"] = float_round(
-                    tax_line["tax_amount"], precision_rounding=foreign_currency.rounding
-                )
-                
+
         foreign_taxes = super()._prepare_tax_totals(base_lines, foreign_currency, tax_lines)
 
         res["groups_by_foreign_subtotal"] = foreign_taxes["groups_by_subtotal"]
@@ -90,3 +82,4 @@ class AccountTax(models.Model):
         res["foreign_formatted_amount_untaxed"] = foreign_taxes["formatted_amount_untaxed"]
         res["foreign_formatted_amount_total"] = foreign_taxes["formatted_amount_total"]
         return res
+
