@@ -5,8 +5,10 @@ from lxml import etree
 from collections import defaultdict
 from odoo.tools.misc import formatLang
 from odoo.tools import float_compare
+from odoo.tools.float_utils import float_round
 
 import logging
+
 _logger = logging.getLogger(__name__)
 
 
@@ -480,21 +482,32 @@ class AccountMove(models.Model):
                 lines_with_same_tax = self.line_ids.filtered(
                     lambda l: l.tax_ids and l.tax_ids.name == line_name
                 )
+
                 if not (lines_with_same_tax and line_name):
                     line.foreign_debit = line.debit * self.foreign_inverse_rate
                     line.foreign_credit = line.credit * self.foreign_inverse_rate
                     continue
 
-                line.foreign_debit = (
-                    sum(lines_with_same_tax.mapped("foreign_debit"))
-                    * lines_with_same_tax[0].tax_ids[0].amount
-                    / 100
-                )
-                line.foreign_credit = (
-                    sum(lines_with_same_tax.mapped("foreign_credit"))
-                    * lines_with_same_tax[0].tax_ids[0].amount
-                    / 100
-                )
+                def amount_by_line(lines, balance="debit"):
+                    amount = 0
+                    for line in lines:
+                        balance_amount = line.foreign_debit
+                        if balance == "credit":
+                            balance_amount = line.foreign_credit
+                        tax_amount = line.tax_ids._compute_amount(
+                            float_round(balance_amount, precision_rounding=line.foreign_currency_id.rounding),
+                            balance_amount,
+                        )
+                        if self.env.company.tax_calculation_rounding_method == "round_globally":
+                            amount += tax_amount
+                        else:
+                            amount += float_round(
+                                tax_amount, precision_rounding=line.foreign_currency_id.rounding
+                            )
+                    return amount
+
+                line.foreign_debit = amount_by_line(lines_with_same_tax,"debit")
+                line.foreign_credit = amount_by_line(lines_with_same_tax,"credit")
 
         account_payable_or_receivable_line = self.line_ids.filtered(
             lambda l: l.account_id.account_type in receivable_and_payable_account_types
@@ -610,8 +623,8 @@ class AccountMove(models.Model):
             date_field = "invoice_date" if is_sale else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
-            move.foreign_rate = rate_values.get("foreign_rate",0)
-            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate",0)
+            move.foreign_rate = rate_values.get("foreign_rate", 0)
+            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -664,12 +677,14 @@ class AccountMove(models.Model):
     def _get_payments(self, line_ids):
         self.ensure_one()
 
-        move_ids = line_ids.mapped('move_id.id')
+        move_ids = line_ids.mapped("move_id.id")
 
         if not move_ids:
             return []
 
-        payment_related = self.env['account.payment'].search([('move_id', 'in', move_ids)], order='id desc')
+        payment_related = self.env["account.payment"].search(
+            [("move_id", "in", move_ids)], order="id desc"
+        )
 
         return payment_related
 
@@ -697,8 +712,12 @@ class AccountMove(models.Model):
                 account_analytic_by_line_id[line_id.id] = ""
                 continue
 
-            account_analytic_ids_ids = [int(analytic_id) for analytic_id in line_id.analytic_distribution.keys()]
-            account_analytic_ids = self.env["account.analytic.account"].browse(account_analytic_ids_ids)
+            account_analytic_ids_ids = [
+                int(analytic_id) for analytic_id in line_id.analytic_distribution.keys()
+            ]
+            account_analytic_ids = self.env["account.analytic.account"].browse(
+                account_analytic_ids_ids
+            )
 
             if not account_analytic_ids:
                 account_analytic_by_line_id[line_id.id] = ""
@@ -716,7 +735,6 @@ class AccountMove(models.Model):
 
         return account_analytic_by_line_id
 
-
     def _get_retention_payment_move_ids(self, line_ids):
         self.ensure_one()
 
@@ -724,8 +742,12 @@ class AccountMove(models.Model):
             return []
 
         retention_ids = line_ids.mapped("move_id.retention_islr_line_ids.retention_id")
-        retention_ids = retention_ids + line_ids.mapped("move_id.retention_iva_line_ids.retention_id")
-        retention_ids = retention_ids + line_ids.mapped("move_id.retention_municipal_line_ids.retention_id")
+        retention_ids = retention_ids + line_ids.mapped(
+            "move_id.retention_iva_line_ids.retention_id"
+        )
+        retention_ids = retention_ids + line_ids.mapped(
+            "move_id.retention_municipal_line_ids.retention_id"
+        )
 
         retention_payment_move_ids = retention_ids.payment_ids.mapped("move_id")
 
@@ -737,18 +759,18 @@ class AccountMove(models.Model):
     def get_account_move_report_data(self):
         self.ensure_one()
 
-        doc_title = ''
-        doc_date = ''
+        doc_title = ""
+        doc_date = ""
         main_move_concept = self.ref
-        main_move_payment_concept = ''
+        main_move_payment_concept = ""
         payment_related_move_ids = []
 
         main_move = {
-            'name': self.name,
+            "name": self.name,
         }
 
         line_ids_ids = self._get_account_move_line_related()
-        line_ids = self.env['account.move.line'].browse(line_ids_ids)
+        line_ids = self.env["account.move.line"].browse(line_ids_ids)
         account_analytic_by_line_id = self._account_analytic_by_line_id(line_ids)
 
         payment_move_ids = self._get_payments(line_ids)
@@ -759,7 +781,7 @@ class AccountMove(models.Model):
             doc_date = first_payment.date
 
             main_move_payment_concept = first_payment.concept
-            payment_related_move_ids = payment_move_ids.mapped('move_id.id')
+            payment_related_move_ids = payment_move_ids.mapped("move_id.id")
 
             if self.amount_residual == 0:
                 doc_title = first_payment.name
@@ -768,15 +790,17 @@ class AccountMove(models.Model):
         data = {
             "doc_ids": line_ids_ids,
             "docs": line_ids,
-            'doc_title': doc_title,
-            'doc_date': doc_date,
-            'main_move': self,
-            'main_move_concept': main_move_concept,
-            'main_move_payment_concept': main_move_payment_concept,
-            'payment_related_move_ids': payment_related_move_ids,
-            'retention_payment_move_ids': retention_payment_move_ids,
-            'account_analytic_by_line_id': account_analytic_by_line_id,
-            'group_analytic_accounting': self.env.user.has_group("analytic.group_analytic_accounting"),
+            "doc_title": doc_title,
+            "doc_date": doc_date,
+            "main_move": self,
+            "main_move_concept": main_move_concept,
+            "main_move_payment_concept": main_move_payment_concept,
+            "payment_related_move_ids": payment_related_move_ids,
+            "retention_payment_move_ids": retention_payment_move_ids,
+            "account_analytic_by_line_id": account_analytic_by_line_id,
+            "group_analytic_accounting": self.env.user.has_group(
+                "analytic.group_analytic_accounting"
+            ),
         }
 
         return data
