@@ -132,11 +132,9 @@ class AccountMoveLine(models.Model):
                 sign = line.move_id.direction_sign
                 # This may be needed to be changed in the future, when taking into account
                 # moves that are not invoices.
-                _logger.info("This is an invoice")
                 line.foreign_balance = sign * line.foreign_subtotal
                 line._credit_debit_balance()
                 continue
-            _logger.info("This is not an invoice")
             line.foreign_balance = line.foreign_debit - line.foreign_credit
 
     def _inverse_foreign_balance(self):
