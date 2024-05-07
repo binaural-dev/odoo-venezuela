@@ -1,4 +1,9 @@
 from odoo import fields, models, _, api
+from odoo.exceptions import UserError
+
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
@@ -15,12 +20,18 @@ class AccountMove(models.Model):
     )
 
     def _post(self, soft=True):
-        if self.env.user.has_group('binaural_fiscal_inspector.group_fiscal_inspectorate_editable'):
+        if self.env.user.has_group("binaural_fiscal_inspector.group_fiscal_inspectorate_editable"):
             self = self.sudo()
             return super()._post(soft)
         return super()._post(soft)
-    
+
     def write(self, vals):
-        if self.env.user.has_group('binaural_fiscal_inspector.group_fiscal_inspectorate'):
-            raise UserError(_("No tienes permiso para sobreescribir esta factura"))
+        fields_computes = [
+            "needed_terms_dirty",
+            "message_main_attachment_id",
+            "invoice_has_outstanding",
+        ]
+        if not any(field in vals for field in fields_computes):
+            if self.env.user.has_group("binaural_fiscal_inspector.group_fiscal_inspectorate"):
+                raise UserError(_("No tienes permiso para sobreescribir esta factura"))
         return super().write(vals)
