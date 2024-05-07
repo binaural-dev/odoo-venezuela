@@ -22,7 +22,7 @@ class StockPicking(models.Model):
     
     def set_sale_pos_order(self):
         for stock in self:
-            if stock.origin:
+            if stock.origin and not stock.sale_order_id:
                 sale_order = self.env["sale.order"].search(
                     [
                         ("name", "=", stock.origin),

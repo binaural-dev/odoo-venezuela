@@ -17,16 +17,16 @@ class StockPicking(models.Model):
     def set_sale_pos_order(self):
         res = super().set_sale_pos_order()
         for stock in self:
-            pos_order = stock.sale_order_id.pos_order_line_ids.mapped('order_id')
-            if not pos_order:
+            pos_order_rec = stock.sale_order_id.pos_order_line_ids.mapped('order_id')
+            if pos_order_rec:
                 pos_order = self.env["pos.order"].search(
-                [
-                    ("name", "=", stock.origin),
-                    ("company_id", "=", self.env.company.id),
-                ]
-            )
-            if pos_order:
-                stock.pos_order_id = pos_order
-                stock.sale_order_id = False
+                    [
+                        ("name", "=", stock.origin),
+                        ("company_id", "=", self.env.company.id),
+                    ]
+                )
+                if pos_order:
+                    stock.pos_order_id = pos_order
+                    stock.sale_order_id = False
         return res
 
