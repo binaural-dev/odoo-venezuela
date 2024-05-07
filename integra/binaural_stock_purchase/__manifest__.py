@@ -11,6 +11,7 @@
     # any module necessary for this one to work correctly
     "depends": [
         "purchase",
+        "binaural_stock_sale",
     ],
     "data": [
         # "security/ir_rule.xml",
