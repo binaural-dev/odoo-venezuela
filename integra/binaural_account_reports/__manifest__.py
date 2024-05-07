@@ -12,6 +12,7 @@
     "depends": ["base", "account_reports", "binaural_accountant"],
     # always loaded
     "data": [
+        "security/security.xml",
         "data/daily_ledger.xml",
         "data/result_statement.xml",
         "data/financial_situation_statement.xml",
