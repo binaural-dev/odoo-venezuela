@@ -121,5 +121,69 @@ class TestAccountTax(BinauralAccountTestInvoicingCommon):
             if line.tax_line_id == self.tax3:
                 self.assertEqual(abs(line.foreign_balance), tax_3_amount)
 
+        payment_term = sum(
+            invoice.line_ids.filtered(lambda line: line.display_type == "payment_term").mapped("foreign_balance")
+        )
+
         self.assertEqual(invoice.tax_totals["foreign_amount_untaxed"], 49587.75)
         self.assertEqual(invoice.tax_totals["foreign_amount_total"], 51266.19)
+        self.assertEqual(payment_term, invoice.tax_totals["foreign_amount_total"])
+
+    def test_03(self):
+        """
+        Test taxes in foreign currency
+        """
+        self.change_tax_included()
+        lines = [
+            (9.97, self.tax1),
+            (123.33, self.tax2),
+            (99.98, self.tax3),
+            (0.45, self.tax0),
+            (1500.00, self.tax0),
+            (45, self.tax1),
+            (200, self.tax2),
+            (4.78, self.tax3),
+        ]
+        invoice = self._create_document_for_tax_totals_test(lines)
+
+        expected_tax_0_amount = 0
+        expected_tax_1_amount = 189.55
+        expected_tax_2_amount = 598.76
+        expected_tax_3_amount = 619.76
+
+        tax_0_amount = 0
+        tax_1_amount = 0
+        tax_2_amount = 0
+        tax_3_amount = 0
+
+        for tax in invoice.tax_totals["groups_by_foreign_subtotal"]["Base imponible"]:
+            if tax["tax_group_id"] == self.tax0.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_0_amount)
+                tax_0_amount = tax["tax_group_amount"]
+            if tax["tax_group_id"] == self.tax1.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_1_amount)
+                tax_1_amount = tax["tax_group_amount"]
+            if tax["tax_group_id"] == self.tax2.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_2_amount)
+                tax_2_amount = tax["tax_group_amount"]
+            if tax["tax_group_id"] == self.tax3.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_3_amount)
+                tax_3_amount = tax["tax_group_amount"]
+
+        for line in invoice.line_ids.filtered(lambda line: line.display_type == "tax"):
+            if line.tax_line_id == self.tax0:
+                self.assertEqual(abs(line.foreign_balance), tax_0_amount)
+            if line.tax_line_id == self.tax1:
+                self.assertEqual(abs(line.foreign_balance), tax_1_amount)
+            if line.tax_line_id == self.tax2:
+                self.assertEqual(abs(line.foreign_balance), tax_2_amount)
+            if line.tax_line_id == self.tax3:
+                self.assertEqual(abs(line.foreign_balance), tax_3_amount)
+
+        payment_term = sum(
+            invoice.line_ids.filtered(lambda line: line.display_type == "payment_term").mapped("foreign_balance")
+        )
+
+        self.assertEqual(invoice.tax_totals["foreign_amount_untaxed"], 48179.68)
+        self.assertEqual(invoice.tax_totals["foreign_amount_total"], 49587.75)
+        self.assertEqual(payment_term, invoice.tax_totals["foreign_amount_total"])

@@ -119,3 +119,13 @@ class BinauralAccountTestInvoicingCommon(AccountTestInvoicingCommon):
             }
         )
         return res
+
+    @classmethod
+    def change_tax_included(cls):
+        tax_ids = cls.tax0 + cls.tax1 + cls.tax2 + cls.tax3
+
+        if all(tax_ids.mapped("price_include")):
+            tax_ids.write({"price_include": False ,"include_base_amount": False})
+        else:
+            tax_ids.write({"price_include": True ,"include_base_amount": True})
+
