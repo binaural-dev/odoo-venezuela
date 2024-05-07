@@ -5,6 +5,7 @@ from lxml import etree
 from collections import defaultdict
 from odoo.tools.misc import formatLang
 from odoo.tools import float_compare
+from odoo.tools.float_utils import float_round
 
 import logging
 
@@ -559,21 +560,32 @@ class AccountMove(models.Model):
                 lines_with_same_tax = self.line_ids.filtered(
                     lambda l: l.tax_ids and l.tax_ids.name == line_name
                 )
+
                 if not (lines_with_same_tax and line_name):
                     line.foreign_debit = line.debit * self.foreign_inverse_rate
                     line.foreign_credit = line.credit * self.foreign_inverse_rate
                     continue
 
-                line.foreign_debit = (
-                    sum(lines_with_same_tax.mapped("foreign_debit"))
-                    * lines_with_same_tax[0].tax_ids[0].amount
-                    / 100
-                )
-                line.foreign_credit = (
-                    sum(lines_with_same_tax.mapped("foreign_credit"))
-                    * lines_with_same_tax[0].tax_ids[0].amount
-                    / 100
-                )
+                def amount_by_line(lines, balance="debit"):
+                    amount = 0
+                    for line in lines:
+                        balance_amount = line.foreign_debit
+                        if balance == "credit":
+                            balance_amount = line.foreign_credit
+                        tax_amount = line.tax_ids._compute_amount(
+                            float_round(balance_amount, precision_rounding=line.foreign_currency_id.rounding),
+                            balance_amount,
+                        )
+                        if self.env.company.tax_calculation_rounding_method == "round_globally":
+                            amount += tax_amount
+                        else:
+                            amount += float_round(
+                                tax_amount, precision_rounding=line.foreign_currency_id.rounding
+                            )
+                    return amount
+
+                line.foreign_debit = amount_by_line(lines_with_same_tax,"debit")
+                line.foreign_credit = amount_by_line(lines_with_same_tax,"credit")
 
         account_payable_or_receivable_line = self.line_ids.filtered(
             lambda l: l.account_id.account_type in receivable_and_payable_account_types
