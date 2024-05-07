@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231227\n"
+"Project-Id-Version: Odoo Server 16.0+e-20231105\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-12 21:12+0000\n"
-"PO-Revision-Date: 2024-01-12 21:12+0000\n"
+"POT-Creation-Date: 2024-03-13 01:59+0000\n"
+"PO-Revision-Date: 2024-03-13 01:59+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -97,6 +97,13 @@ msgstr "Contacto"
 #. odoo-python
 #: code:addons/binaural_account_reports/models/account_report.py:0
 #, python-format
+msgid "Could not expand term %s while evaluating formula %s"
+msgstr ""
+
+#. module: binaural_account_reports
+#. odoo-python
+#: code:addons/binaural_account_reports/models/account_report.py:0
+#, python-format
 msgid "Could not parse account_code formula from token '%s'"
 msgstr "No se pudo analizar la fórmula de la cuenta desde el token '%s'"
 
@@ -104,6 +111,11 @@ msgstr "No se pudo analizar la fórmula de la cuenta desde el token '%s'"
 #: model:account.report.column,name:binaural_account_reports.general_ledger_report_credit
 msgid "Credit"
 msgstr "Crédito"
+
+#. module: binaural_account_reports
+#: model:ir.model,name:binaural_account_reports.model_res_currency
+msgid "Currency"
+msgstr "Moneda"
 
 #. module: binaural_account_reports
 #: model:account.report,name:binaural_account_reports.daily_ledger_report
@@ -249,13 +261,26 @@ msgid "Show Amount in Currency in General Ledger"
 msgstr " Mostrar Importe en Moneda en Libro Mayor"
 
 #. module: binaural_account_reports
-#. odoo-python
-#: code:addons/binaural_account_reports/models/account_journal_report.py:0
-#, python-format
-msgid "T: %s"
-msgstr ""
+#: model:ir.actions.client,name:binaural_account_reports.action_account_report_coa_usd
+#: model:ir.ui.menu,name:binaural_account_reports.menu_action_account_report_coa_usd
+msgid "Trial Balance USD"
+msgstr "Balance de Comprobación $"
 
 #. module: binaural_account_reports
 #: model:ir.model.fields,field_description:binaural_account_reports.field_account_report__usd
 msgid "USD"
 msgstr ""
+
+#. module: binaural_account_reports
+#. odoo-python
+#: code:addons/binaural_account_reports/models/account_report.py:0
+#, python-format
+msgid "Wrong format for if_other_expr_above/if_other_expr_below formula: %s"
+msgstr ""
+
+#. module: account_reports
+#: model:account.report,name:account_reports.trial_balance_report
+#: model:ir.actions.client,name:account_reports.action_account_report_coa
+#: model:ir.ui.menu,name:account_reports.menu_action_account_report_coa
+msgid "Trial Balance"
+msgstr "Balance de Comprobación"

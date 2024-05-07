@@ -31,20 +31,24 @@ class ResPartnerInherit(models.Model):
         return res
 
     @api.model_create_multi
-    def create(self, vals_list):
-        partner = super().create(vals_list)
-        partner.sellers_validate()
-        return partner
+    def create(self, vals_list): 
+        for vals in vals_list:
+            default_seller = [(6, 0, self.env.company.initial_seller.ids)]
+            vals['seller_ids'] = vals.get('seller_ids', default_seller)
+
+        partners = super().create(vals_list)
+        partners.sellers_validate()
+        return partners
 
     def write(self, vals):
         res = super().write(vals)
-        if "seller_ids" in vals:
+        if not self.seller_ids or "seller_ids" in vals:
             for partner in self:
                 partner.sellers_validate()
         return res
 
     def sellers_validate(self):
-        for partner in self:
+        for partner in self.filtered(lambda p: p != self.env.ref("binaural_seller.res_partner_1")):
             employee_seller = self.env["hr.employee"].search(
                 [
                     ("company_id", "=", self.env.company.id), 

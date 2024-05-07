@@ -65,6 +65,8 @@ class ProductProductBudget(http.Controller):
             ]
         
         res_company = request.env["res.company"].sudo().search([])
+        settings = request.env['res.config.settings'].sudo().create({})
+        allow_out_of_stock_order = settings.allow_out_of_stock_order
         
         if len(res_company) > 1:
             domain = expression.AND([domain, [("company_id", "=", company_id.id)]])
@@ -84,7 +86,8 @@ class ProductProductBudget(http.Controller):
         if 'product' in product_type:
             product_product = product_ids.copy()
             product_consu_service = product_ids.copy()
-            product_product = list(filter(lambda product: (product.get('type') == "product" and product.get('quantity') > 0) , product_ids))
+            if not allow_out_of_stock_order:
+                product_product = list(filter(lambda product: (product.get('type') == "product" and product.get('quantity') > 0) , product_ids))
             product_consu_service = list(filter(lambda product: product.get('type') in ['consu', 'service'], product_ids))
 
             if len(product_product) > 0:
@@ -141,6 +144,7 @@ class ProductProductBudget(http.Controller):
             "count": product_count, 
             "total_count": all_product_count,
             "stock_packaging": company_user.group_stock_packaging,
+            "allow_out_of_stock_order": allow_out_of_stock_order,
             })
 
         return json.dumps(data)

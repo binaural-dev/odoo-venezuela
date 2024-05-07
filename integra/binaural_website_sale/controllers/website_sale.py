@@ -1,11 +1,14 @@
 from odoo.http import request
 from odoo import fields, http
 from werkzeug.exceptions import NotFound
-
+from odoo.tools.json import scriptsafe as json_scriptsafe
+from odoo.addons.payment import utils as payment_utils
 from odoo.addons.website_sale.controllers.main import WebsiteSale
 from odoo.addons.website.models.ir_http import sitemap_qs2dom
 from odoo.addons.http_routing.models.ir_http import slug
+import logging
 
+_logger = logging.getLogger(__name__)
 
 class BinauralWebsiteSale(WebsiteSale):
     # TODO Arreglar campo de ciudad, no se esta guardando ni en el formulario del usuario ni en el
@@ -217,3 +220,88 @@ class BinauralWebsiteSale(WebsiteSale):
         # id is added to be sure that order is a unique sort key
         order = 'quantity desc'
         return 'is_published desc, %s' % order
+
+    @http.route(["/shop/cart/update_json"],type="json",auth="public",methods=["POST"],website=True,csrf=False,)
+    def cart_update_json(
+        self, product_id, line_id=None, add_qty=None, set_qty=None, display=True,
+        product_custom_attribute_values=None, no_variant_attribute_values=None, **kw
+    ):
+        order = request.website.sale_get_order(force_create=True)
+        if order.state != "draft":
+            request.website.sale_reset()
+            if kw.get("force_create"):
+                order = request.website.sale_get_order(force_create=True)
+            else:
+                return {}
+
+        if product_custom_attribute_values:
+            product_custom_attribute_values = json_scriptsafe.loads(
+                product_custom_attribute_values
+            )
+
+        if no_variant_attribute_values:
+            no_variant_attribute_values = json_scriptsafe.loads(
+                no_variant_attribute_values
+            )
+
+        values = order._cart_update(
+            product_id=product_id,
+            line_id=line_id,
+            add_qty=add_qty,
+            set_qty=set_qty,
+            product_custom_attribute_values=product_custom_attribute_values,
+            no_variant_attribute_values=no_variant_attribute_values,
+            **kw
+        )
+
+        for line in order.order_line:
+            if line.product_id.id == product_id:
+                product_qty_available = line.product_id.quantity
+                order_line_qty = line.product_uom_qty
+
+                if add_qty:
+                    add_qty = (
+                        add_qty
+                        if add_qty <= product_qty_available
+                        else product_qty_available
+                    )
+
+                if set_qty:
+                    set_qty = min(set_qty, product_qty_available)
+
+                line.update({"product_uom_qty": add_qty if add_qty else set_qty})
+
+        request.session["website_sale_cart_quantity"] = order.cart_quantity
+
+        if not order.cart_quantity:
+            request.website.sale_reset()
+            return values
+
+        values["cart_quantity"] = order.cart_quantity
+        values["minor_amount"] = (
+            payment_utils.to_minor_currency_units(
+                order.amount_total, order.currency_id
+            ),
+        )
+        values["amount"] = order.amount_total
+
+        if not display:
+            return values
+
+        values["website_sale.cart_lines"] = request.env["ir.ui.view"]._render_template(
+            "website_sale.cart_lines",
+            {
+                "website_sale_order": order,
+                "date": fields.Date.today(),
+                "suggested_products": order._cart_accessories(),
+            },
+        )
+        values["website_sale.short_cart_summary"] = request.env[
+            "ir.ui.view"
+        ]._render_template(
+            "website_sale.short_cart_summary",
+            {
+                "website_sale_order": order,
+            },
+        )
+        return values

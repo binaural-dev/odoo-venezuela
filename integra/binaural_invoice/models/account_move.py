@@ -13,10 +13,35 @@ class AccountMove(models.Model):
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     invoice_reception_date = fields.Date(
-        "Reception Date", help="Indicates when the invoice was received by the client/company"
+        "Reception Date",
+        help="Indicates when the invoice was received by the client/company",
+        tracking=True,
     )
-    last_payment_date = fields.Date(compute="_compute_last_payment_date", store=True)
+    last_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
+    first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")
+
+    # @api.model
+    # def check_access_rights(self, operation, raise_exception=True):
+    #     if not self.env.context.get("params",False):
+    #         return super().check_access_rights(operation, raise_exception)
+
+    #     if not self.env.context.get("params").get("action", False):
+    #         return super().check_access_rights(operation, raise_exception)
+
+    #     action_id = self.env.ref("account.action_move_out_refund_type").id
+    #     action = self.env.context.get("params").get("action")
+    #     if action != action_id:
+    #         return super().check_access_rights(operation, raise_exception)
+
+    #     if self.env.user.has_group("binaural_invoice.create_out_refund"): 
+    #         self = self.with_context(create=1)
+    #     else:
+    #         self = self.with_context(create=0)
+
+    #     _logger.info("Context: %s", self.env.context)
+
+    #     return super().check_access_rights(operation, raise_exception)
 
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
@@ -48,65 +73,50 @@ class AccountMove(models.Model):
                 )
 
     @api.depends("amount_residual")
-    def _compute_last_payment_date(self):
+    def _compute_payment_dates(self):
+        def clear_dates(move):
+            move.last_payment_date = False
+            move.first_payment_date = False
+
         for move in self:
-            is_client_invoice = move.move_type == "out_invoice"
-            not_amount_residual = move.currency_id.is_zero(move.amount_residual)
-            is_invoice_payment_widget = move.invoice_payments_widget
+            if not move.is_invoice(include_receipts=True) and move.state != "posted":
+                clear_dates(move)
+                continue
 
-            is_valid_invoice = is_client_invoice and not_amount_residual
-            is_valid_invoice_payment = is_valid_invoice and is_invoice_payment_widget
+            is_invoice_payment_widget = bool(move.invoice_payments_widget)
+            if not is_invoice_payment_widget:
+                clear_dates(move)
+                continue
 
-            reconcilieds = move._get_reconciled_invoices_partials()
-            settlement_date = None
+            payments = move.invoice_payments_widget
+            if not payments or not payments.get("content", False):
+                clear_dates(move)
+                continue
 
-            if is_valid_invoice_payment:
-                settlement_date = self.get_max_payment_date(move.invoice_payments_widget)
+            last_date = False
+            first_date = False
 
-                settlement_date = fields.Date.from_string(settlement_date)
+            dates = list()
 
-                if not settlement_date:
-                    if reconcilieds:
-                        value = [
-                            invoice[0][2].date
-                            for invoice in reconcilieds
-                            if invoice and not isinstance(invoice[0], int)
-                        ]
-                        if value:
-                            settlement_date = max(value)
-            else:
-                if reconcilieds:
-                    value = [
-                        invoice[0][2].date
-                        for invoice in reconcilieds
-                        if invoice and not isinstance(invoice[0], int)
-                    ]
-                    if value:
-                        max_value = max(value)
-                        settlement_date = max_value
+            for payment in payments.get("content"):
+                if not self.validate_payment(payment):
+                    continue
 
-            move.last_payment_date = settlement_date
-
-    @staticmethod
-    def get_max_payment_date(payments):
-        dates = list()
-
-        have_payments = payments.get("content")
-        is_valid_process = have_payments and payments
-
-        settlement_date = False
-
-        if is_valid_process:
-            for payment in have_payments:
                 account_payment_id = payment.get("account_payment_id", False)
                 if account_payment_id:
                     dates.append(payment.get("date", False))
 
-        is_exist_dates = len(dates) > 0
-        if is_exist_dates:
-            settlement_date = max(dates)
+            if len(dates) > 0:
+                last_date = fields.Date.from_string(max(dates))
+                first_date = fields.Date.from_string(min(dates))
 
-        return settlement_date
+            move.last_payment_date = last_date
+            move.first_payment_date = first_date
+
+    @api.model
+    def validate_payment(self, payment):
+        """This function was created to validate payments through external modules"""
+        return True
 
     @api.onchange("invoice_line_ids")
     def _onchange_invoice_line_ids(self):

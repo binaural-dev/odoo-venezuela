@@ -1,11 +1,12 @@
 import json
-
-from odoo import http, _
-from odoo.http import request
-from .utils import get_model_count, get_model_data, get_search_domain, browse_model_data
-from ...tools import binaural_cne_query
-
 import logging
+
+from odoo import _, http
+from odoo.http import request
+from odoo.osv import expression
+
+from ...tools import binaural_cne_query
+from .utils import browse_model_data, get_model_count, get_model_data, get_search_domain
 
 _logger = logging.getLogger(__name__)
 
@@ -34,40 +35,60 @@ CHILD_TYPES = ["invoice", "delivery"]
 FIELDFILTERS = ["id", "name", "seller_ids"]
 
 class ResPartnerBudget(http.Controller):
+
+    def _get_tax_included(self, kwargs):
+        company = request.env.company
+        is_optional_tax_included = company.dairy_fiscal and company.dairy_no_fiscal
+
+        if is_optional_tax_included:
+            return kwargs.get("tax_included", False)
+
+        return any(company.dairy_fiscal)
     
     @http.route(['/budget','/budget-<int:budget_id>'], type='http', auth="user", website=True, csrf=False)
     def portal_budget(self, budget_id=False, **kw):
         user = request.env.user
         if user.employee_id.is_seller:
+            company = request.env.company
             edit_fee = False
             create_client = False
+            create_client_address = False
             price_lists = False
             budget = False
             symbol_currency = request.env.company.currency_id
+            is_optional_tax_included = company.dairy_fiscal and company.dairy_no_fiscal
+            tax_included = self._get_tax_included(kw)
 
             for group in user.groups_id:
-                if group.name == "Portal / Vendedores que puedan editar tarifas":
+                if group.id == request.env.ref("binaural_mobile.group_sellers_edit_fee").id:
                     edit_fee = True
                     price_lists = request.env["product.pricelist"].sudo().search([("selectable", "=" , True), ("active", "=", True)])
-                if group.name == "Portal / Vendedores que puedan crear contactos":
+                if group.id == request.env.ref("binaural_mobile.group_sellers_create_contact").id:
                     create_client = True
-            
+                if group.id == request.env.ref('binaural_mobile.group_sellers_create_contact_address').id:
+                    create_client_address = True
+
             type_document = request.env['res.partner']._fields['prefix_vat'].selection
             country_ids = request.env["res.country"].search([])
 
             if budget_id:
                 budget = request.env["sale.order"].search([("id", "=", budget_id)])
+                tax_included = budget.tax_included
 
             return request.render("binaural_mobile.portal_budget_form", {
                 "budget": budget,
                 "currency": symbol_currency,
                 "edit_fee": edit_fee,
                 "create_client": create_client,
+                "create_client_address": create_client_address,
                 "pricelists": price_lists,
                 "quotation": True,
                 "no_footer":True,
                 "type_document": type_document,
                 "countries": country_ids,
+                "not_confirm_quotes": user.has_group("binaural_mobile.group_sellers_cant_confirm_quotation"),
+                "tax_included": tax_included,
+                "is_optional_tax_included": is_optional_tax_included
             })
         return request.redirect("/my/home")
     
@@ -75,12 +96,19 @@ class ResPartnerBudget(http.Controller):
     def get_clients(self, query="", **kw):
         data = {"status": 200, "msg": "OK", "data": False}
         seller_portal_id = request.env.user.employee_id.id
-        domain = [
-            ('name', '=ilike', "%" + (query or '') + "%"),
-            ('seller_ids', '=', seller_portal_id),
+        common_domain = [
             ('is_public', '=', True),
             ("type", "=", "contact")
-            ]
+        ]
+
+        if not request.env.user.has_group("binaural_mobile.group_sellers_show_all_client"):
+            common_domain += [('seller_ids', '=', seller_portal_id)]
+
+        domain_name = common_domain + [('name', '=ilike', "%" + (query or '') + "%")]
+        domain_vat = common_domain + [('vat', '=ilike', "%" + (query or '') + "%")]
+
+        domain = expression.OR([domain_name, domain_vat])
+        
         partners = get_model_data("res.partner", domain, FIELDNAMES)
 
         if not partners:
@@ -119,7 +147,9 @@ class ResPartnerBudget(http.Controller):
         street='', name='', 
         email='', number='', 
         state=False, municipality=False, 
-        parish=False, **kwargs
+        parish=False, parent_id=False,
+        city=False,
+        type="contact", **kwargs
         ):
         
         data = {"status": 200, "msg": _("Success")}
@@ -133,7 +163,7 @@ class ResPartnerBudget(http.Controller):
                 if exist_partner:
                     data.update({"status": 409, "msg": _("This customer is already registered with another seller")})
                     return data
-                
+
                 created_partner = request.env["res.partner"].create({
                     "name": name,
                     "prefix_vat": prefix,
@@ -141,13 +171,14 @@ class ResPartnerBudget(http.Controller):
                     "street": street,
                     "country_id": country,
                     "state_id": state,
+                    "city_id": city,
                     "municipality": municipality,
-                    # "parish": parish,
                     "email": email,
                     "phone": number,
-                    "type": "contact",
+                    "type": type,
                     "is_public":True,
-                    "seller_ids": request.env.user.employee_id,
+                    "seller_ids": [request.env.user.employee_id.id],
+                    "parent_id": parent_id
                 })
                 
                 return data
@@ -179,6 +210,7 @@ class ResPartnerBudget(http.Controller):
         "2": "res.country.state",
         "3": "res.country.municipality",
         "4": "res.country.parish",
+        "5": "res.country.city",
         }
         model_name = kw.get('namemodel')
         if model_name not in models_allowed.keys():

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <data noupdate="1">
+    <data>
         <record id="action_invoice_free_form_binaural_invoice" model="ir.actions.report">
             <field name="name">Free Form</field>
             <field name="model">account.move</field>
@@ -97,10 +97,10 @@
                                         <td>
                                             <span t-field="line.product_id.default_code"/>
                                         </td>
-					<td name="account_invoice_line_name">
-					    <span t-field="line.name" t-options="{'widget': 'text'}"/>
-					    <t t-if="all(tax.amount == 0.0 for tax in line.tax_ids)">(E)</t>
-					</td>
+                                        <td name="account_invoice_line_name">
+                                            <span t-field="line.name" t-options="{'widget': 'text'}"/>
+                                            <t t-if="all(tax.amount == 0.0 for tax in line.tax_ids)">(E)</t>
+                                        </td>
                                         <td class="text-end">
                                             <span t-field="line.quantity"/>
                                             <span t-field="line.product_uom_id"  groups="uom.group_uom"/>

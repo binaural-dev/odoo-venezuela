@@ -1,8 +1,10 @@
 import re
 from odoo import api, fields, models, osv, _
-from odoo.tools import get_lang
-from odoo.tools.misc import formatLang, format_date
 from odoo.exceptions import UserError
+from odoo.tools import get_lang
+from odoo.tools.float_utils import float_round
+from odoo.tools.misc import formatLang, format_date
+from odoo.tools.safe_eval import expr_eval
 from ast import literal_eval
 from collections import defaultdict
 from ..tools.utils import get_is_foreign_currency
@@ -84,7 +86,6 @@ class AccountReport(models.Model):
 
         if self._context.get("no_format"):
             return value
-
         formatted_amount = formatLang(self.env, value, currency_obj=currency, digits=digits)
 
         if figure_type == "percentage":
@@ -192,7 +193,7 @@ class AccountReport(models.Model):
         This method was overwritten to be able to enter the foreign_balance variable
         from the analytical account line into sql
 
-        @BASE: 
+        @BASE:
 
         Prepare the analytic_temp_account_move_line
 
@@ -207,12 +208,15 @@ class AccountReport(models.Model):
         We also drop the NOT NULL constraints for fields who are not required in account_analytic_line.
         """
         self.env.cr.execute(
-            "SELECT 1 FROM information_schema.tables WHERE table_name='analytic_temp_account_move_line'")
+            "SELECT 1 FROM information_schema.tables WHERE table_name='analytic_temp_account_move_line'"
+        )
         if self.env.cr.fetchone():
             return
 
-        line_fields = self.env['account.move.line'].fields_get()
-        self.env.cr.execute("SELECT column_name FROM information_schema.columns WHERE table_name='account_move_line'")
+        line_fields = self.env["account.move.line"].fields_get()
+        self.env.cr.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_name='account_move_line'"
+        )
         stored_fields = set(f[0] for f in self.env.cr.fetchall())
         changed_equivalence_dict = {
             "id": sql.Identifier("id"),
@@ -231,29 +235,41 @@ class AccountReport(models.Model):
         selected_fields = []
         for fname in stored_fields:
             if fname in changed_equivalence_dict:
-                selected_fields.append(sql.SQL('{original} AS "account_move_line.{asname}"').format(
-                    original=changed_equivalence_dict[fname],
-                    asname=sql.SQL(fname),
-                ))
-            elif fname == 'analytic_distribution':
-                selected_fields.append(sql.SQL('to_jsonb(account_id) AS "account_move_line.analytic_distribution"'))
+                selected_fields.append(
+                    sql.SQL('{original} AS "account_move_line.{asname}"').format(
+                        original=changed_equivalence_dict[fname],
+                        asname=sql.SQL(fname),
+                    )
+                )
+            elif fname == "analytic_distribution":
+                selected_fields.append(
+                    sql.SQL('to_jsonb(account_id) AS "account_move_line.analytic_distribution"')
+                )
             else:
                 if line_fields[fname].get("translate"):
-                    typecast = sql.SQL('jsonb')
-                elif line_fields[fname].get("type") in ("many2one", "one2many", "many2many", "monetary"):
-                    typecast = sql.SQL('integer')
+                    typecast = sql.SQL("jsonb")
+                elif line_fields[fname].get("type") in (
+                    "many2one",
+                    "one2many",
+                    "many2many",
+                    "monetary",
+                ):
+                    typecast = sql.SQL("integer")
                 elif line_fields[fname].get("type") == "datetime":
-                    typecast = sql.SQL('date')
+                    typecast = sql.SQL("date")
                 elif line_fields[fname].get("type") == "selection":
-                    typecast = sql.SQL('text')
+                    typecast = sql.SQL("text")
                 else:
                     typecast = sql.SQL(line_fields[fname].get("type"))
-                selected_fields.append(sql.SQL('cast(NULL AS {typecast}) AS "account_move_line.{fname}"').format(
-                    typecast=typecast,
-                    fname=sql.SQL(fname),
-                ))
+                selected_fields.append(
+                    sql.SQL('cast(NULL AS {typecast}) AS "account_move_line.{fname}"').format(
+                        typecast=typecast,
+                        fname=sql.SQL(fname),
+                    )
+                )
 
-        query = sql.SQL("""
+        query = sql.SQL(
+            """
             -- Create a temporary table, dropping not null constraints because we're not filling those columns
             CREATE TEMPORARY TABLE IF NOT EXISTS analytic_temp_account_move_line () inherits (account_move_line) ON COMMIT DROP;
             ALTER TABLE analytic_temp_account_move_line NO INHERIT account_move_line;
@@ -263,9 +279,10 @@ class AccountReport(models.Model):
             INSERT INTO analytic_temp_account_move_line ({all_fields})
             SELECT {table}
             FROM (SELECT * FROM account_analytic_line WHERE general_account_id IS NOT NULL) AS account_analytic_line
-        """).format(
-            all_fields=sql.SQL(', ').join(sql.Identifier(fname) for fname in stored_fields),
-            table=sql.SQL(', ').join(selected_fields),
+        """
+        ).format(
+            all_fields=sql.SQL(", ").join(sql.Identifier(fname) for fname in stored_fields),
+            table=sql.SQL(", ").join(selected_fields),
         )
 
         # TODO gawa need to do the auditing of the lines
@@ -596,6 +613,252 @@ class AccountReport(models.Model):
                                 )
 
         return rslt
+
+    def _compute_totals_no_batch_aggregation(
+        self,
+        column_group_options,
+        formulas_dict,
+        other_current_report_expr_totals,
+        other_cross_report_expr_totals_by_scope,
+    ):
+        """
+        Inherits the original function to change the currency in which the value is rounded in case
+        the report is called on the foreign currency of the system.
+        """
+        if not get_is_foreign_currency(self.env):
+            return super()._compute_totals_no_batch_aggregation(
+                column_group_options,
+                formulas_dict,
+                other_current_report_expr_totals,
+                other_cross_report_expr_totals_by_scope,
+            )
+
+        def _resolve_subformula_on_dict(result, line_codes_expression_map, subformula):
+            split_subformula = subformula.split(".")
+            if len(split_subformula) > 1:
+                line_code, expression_label = split_subformula
+                return result[line_codes_expression_map[line_code][expression_label]]
+
+            if subformula.startswith("_expression:"):
+                expression_id = int(subformula.split(":")[1])
+                return result[expression_id]
+
+            # Wrong subformula; the KeyError is caught in the function below
+            raise KeyError()
+
+        def _check_is_float(to_test):
+            try:
+                float(to_test)
+                return True
+            except ValueError:
+                return False
+
+        current_report_eval_dict = {}  # {expression_id: value}
+        other_reports_eval_dict = {}  # {forced_date_scope: {expression_id: value}}
+        current_report_codes_map = {}  # {line_code: {expression_label: expression_id}}
+        other_reports_codes_map = (
+            {}
+        )  # {forced_date_scope: {line_code: {expression_label: expression_id}}}
+
+        for expression, expression_res in other_current_report_expr_totals.items():
+            # BINAURAL
+            current_report_eval_dict[expression.id] = self.env.company.currency_foreign_id.round(
+                expression_res["value"]
+            )
+            # BINAURAL
+            if expression.report_line_id.code:
+                current_report_codes_map.setdefault(expression.report_line_id.code, {})[
+                    expression.label
+                ] = expression.id
+
+        for forced_date_scope, scope_expr_totals in other_cross_report_expr_totals_by_scope.items():
+            for expression, expression_res in scope_expr_totals.items():
+                # BINAURAL
+                other_reports_eval_dict.setdefault(forced_date_scope, {})[
+                    expression.id
+                ] = self.env.company.currency_foreign_id.round(expression_res["value"])
+                # BINAURAL
+                if expression.report_line_id.code:
+                    other_reports_codes_map.setdefault(forced_date_scope, {}).setdefault(
+                        expression.report_line_id.code, {}
+                    )[expression.label] = expression.id
+
+        # Complete current_report_eval_dict with the formulas of uncomputed aggregation lines
+        aggregations_terms_to_evaluate = (
+            set()
+        )  # Those terms are part of the formulas to evaluate; we know they will get a value eventually
+        for (formula, forced_date_scope), expressions in formulas_dict.items():
+            for expression in expressions:
+                aggregations_terms_to_evaluate.add(
+                    f"_expression:{expression.id}"
+                )  # In case it needs to be called by sum_children
+
+                if expression.report_line_id.code:
+                    if expression.report_line_id.report_id == self:
+                        current_report_codes_map.setdefault(expression.report_line_id.code, {})[
+                            expression.label
+                        ] = expression.id
+                    else:
+                        other_reports_codes_map.setdefault(forced_date_scope, {}).setdefault(
+                            expression.report_line_id.code, {}
+                        )[expression.label] = expression.id
+
+                    aggregations_terms_to_evaluate.add(
+                        f"{expression.report_line_id.code}.{expression.label}"
+                    )
+
+                    if not expression.subformula:
+                        # Expressions with bounds cannot be replaced by their formula in formulas calling them (otherwize, bounds would be ignored).
+                        # Same goes for cross_report, otherwise the forced_date_scope will be ignored, leading to an impossibility to get evaluate the expression.
+                        if expression.report_line_id.report_id == self:
+                            eval_dict = current_report_eval_dict
+                        else:
+                            eval_dict = other_reports_eval_dict.setdefault(forced_date_scope, {})
+
+                        eval_dict[expression.id] = formula
+
+        rslt = {}
+        to_treat = [
+            (formula, formula, forced_date_scope)
+            for (formula, forced_date_scope) in formulas_dict.keys()
+        ]  # Formed like [(expanded formula, original unexpanded formula)]
+        term_separator_regex = r"(?<!\de)[+-]|[ ()/*]"
+        term_replacement_regex = r"(^|(?<=[ ()+/*-]))%s((?=[ ()+/*-])|$)"
+        while to_treat:
+            formula, unexpanded_formula, forced_date_scope = to_treat.pop(0)
+            # Evaluate the formula
+            terms_to_eval = [
+                term
+                for term in re.split(term_separator_regex, formula)
+                if term and not _check_is_float(term)
+            ]
+            if terms_to_eval:
+                # The formula can't be evaluated as-is. Replace the terms by their value or formula,
+                # and enqueue the formula back; it'll be tried anew later in the loop.
+                for term in terms_to_eval:
+                    try:
+                        expanded_term = _resolve_subformula_on_dict(
+                            {
+                                **current_report_eval_dict,
+                                **other_reports_eval_dict.get(forced_date_scope, {}),
+                            },
+                            {
+                                **current_report_codes_map,
+                                **other_reports_codes_map.get(forced_date_scope, {}),
+                            },
+                            term,
+                        )
+                    except KeyError:
+                        if term in aggregations_terms_to_evaluate:
+                            # Then, the term is probably an aggregation with bounds that still needs to be computed. We need to keep on looping
+                            continue
+                        else:
+                            raise UserError(
+                                _(
+                                    "Could not expand term %s while evaluating formula %s",
+                                    term,
+                                    unexpanded_formula,
+                                )
+                            )
+
+                    formula = re.sub(
+                        term_replacement_regex % re.escape(term), f"({expanded_term})", formula
+                    )
+
+                to_treat.append((formula, unexpanded_formula, forced_date_scope))
+
+            else:
+                # The formula contains only digits and operators; it can be evaluated
+                try:
+                    formula_result = expr_eval(formula)
+                except ZeroDivisionError:
+                    # Arbitrary choice; for clarity of the report. A 0 division could typically happen when there is no result in the period.
+                    formula_result = 0
+
+                for expression in formulas_dict[(unexpanded_formula, forced_date_scope)]:
+                    # Apply subformula
+                    if expression.subformula and expression.subformula.startswith("if_other_expr_"):
+                        other_expr_criterium_match = re.match(
+                            r"^(?P<criterium>\w+)\("
+                            r"(?P<line_code>\w+)[.](?P<expr_label>\w+),[ ]*"
+                            r"(?P<bound_params>.*)\)$",
+                            expression.subformula,
+                        )
+                        if not other_expr_criterium_match:
+                            raise UserError(
+                                _(
+                                    "Wrong format for if_other_expr_above/if_other_expr_below formula: %s",
+                                    expression.subformula,
+                                )
+                            )
+
+                        criterium_code = other_expr_criterium_match["line_code"]
+                        criterium_label = other_expr_criterium_match["expr_label"]
+                        criterium_expression_id = current_report_codes_map.get(
+                            criterium_code, {}
+                        ).get(criterium_label)
+                        criterium_val = current_report_eval_dict.get(criterium_expression_id)
+                        if not isinstance(criterium_val, float):
+                            # The criterium expression has not be evaluated yet. Postpone the evaluation of this formula, and skip this expression
+                            # for now. We still try to evaluate other expressions using this formula if any; this means those expressions will
+                            # be processed a second time later, giving the same result. This is a rare corner case, and not so costly anyway.
+                            to_treat.append((formula, unexpanded_formula, forced_date_scope))
+                            continue
+
+                        bound_subformula = other_expr_criterium_match["criterium"].replace(
+                            "other_expr_", ""
+                        )  # e.g. 'if_other_expr_above' => 'if_above'
+                        bound_params = other_expr_criterium_match["bound_params"]
+                        bound_value = self._aggregation_apply_bounds(
+                            column_group_options,
+                            f"{bound_subformula}({bound_params})",
+                            criterium_val,
+                        )
+                        expression_result = formula_result * int(bool(bound_value))
+
+                    else:
+                        expression_result = self._aggregation_apply_bounds(
+                            column_group_options, expression.subformula, formula_result
+                        )
+
+                    if column_group_options.get("integer_rounding_enabled"):
+                        expression_result = float_round(
+                            expression_result,
+                            precision_digits=0,
+                            rounding_method=column_group_options["integer_rounding"],
+                        )
+
+                    # Store result
+                    standardized_expression_scope = self._standardize_date_scope_for_date_range(
+                        expression.date_scope
+                    )
+                    if (
+                        forced_date_scope == standardized_expression_scope or not forced_date_scope
+                    ) and expression.report_line_id.report_id == self:
+                        # This condition ensures we don't return necessary subcomputations in the final result
+                        rslt[(unexpanded_formula, expression)] = {"result": expression_result}
+
+                    # Handle recursive aggregations (explicit or through the sum_children shortcut).
+                    # We need to make the result of our computation available to other aggregations, as they are still waiting in to_treat to be evaluated.
+                    if expression.report_line_id.report_id == self:
+                        current_report_eval_dict[expression.id] = expression_result
+                    else:
+                        other_reports_eval_dict.setdefault(forced_date_scope, {})[
+                            expression.id
+                        ] = expression_result
+
+        return rslt
+
+    def caret_option_open_general_ledger(self, options, params):
+        """
+        Inherits the original method so the general ledger report is called on the right currency
+        according to the context in which it's being called.
+        """
+        action_vals = super().caret_option_open_general_ledger(options, params)
+        context = literal_eval(action_vals["context"])
+        context["usd_report"] = self.env.context.get("usd_report", False)
+        action_vals["context"] = str(context)
+        return action_vals
 
 
 class AccountReportCustomHandler(models.AbstractModel):

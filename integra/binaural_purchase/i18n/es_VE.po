@@ -206,7 +206,7 @@ msgstr ""
 #. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__manually_set_rate
 msgid "Manually Set Rate"
-msgstr "Tasa actualizada manualmente"
+msgstr "Actualizar Tasa Manualmente"
 
 #. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_product_template_tariff__name

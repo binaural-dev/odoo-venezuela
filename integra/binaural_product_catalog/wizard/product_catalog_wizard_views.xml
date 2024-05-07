@@ -66,6 +66,7 @@
                 <field name="padding_top"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
                 <field name="padding_sides"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
                 <field name="border_width"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
+                <field name="order_by_name"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
             </field>
 
         </field>

@@ -293,6 +293,7 @@ class AccountPaymentPayments(http.Controller):
                         "amount": payments[payment]["paymentAmount"],
                         "journal_id": int(payments[payment]["idDairy"]),
                         "payment_date": pay_day_formatted,
+                        "communication": payments[payment]["reference"],
                     }
                 )
             )
