@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231227\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-26 14:48+0000\n"
-"PO-Revision-Date: 2024-02-26 14:48+0000\n"
+"POT-Creation-Date: 2024-04-29 22:27+0000\n"
+"PO-Revision-Date: 2024-04-29 22:27+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,14 +16,74 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_accountant
+#: model:ir.actions.report,print_report_name:binaural_accountant.action_account_report
+msgid "'Asiento contable %s' % (object.name)"
+msgstr ""
+
+#. module: binaural_accountant
+#: model:ir.actions.report,print_report_name:binaural_accountant.action_account_related_report
+msgid "'Asientos contables Relacionados %s' % (object.name)"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "<br/> ("
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "<strong style=\"font-size: 10px !important;\">Total</strong>"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "<strong>Concepto pago:</strong>"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "<strong>Concepto:</strong>"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "<strong>Contabilizado por</strong>"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.binaural_accountant_inherit_report_payment_receipt_document
+msgid "<strong>Cuenta Emisora: </strong>"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.binaural_accountant_inherit_report_payment_receipt_document
+msgid "<strong>Cuenta Receptora: </strong>"
+msgstr ""
+
+#. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.financial_all_payments
 msgid "<strong>Emisión :</strong>"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "<strong>Emitido el</strong>"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "<strong>Emitido por</strong>"
 msgstr ""
 
 #. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
 msgid "<strong>Payments</strong>"
 msgstr "<strong>Cobros</strong>"
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "<strong>Revisado por</strong>"
+msgstr ""
 
 #. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
@@ -43,6 +103,16 @@ msgid "Another entry with the same name already exists."
 msgstr "Ya existe un asiento con el mismo nombre."
 
 #. module: binaural_accountant
+#: model:ir.actions.report,name:binaural_accountant.action_account_report
+msgid "Asiento Contable"
+msgstr ""
+
+#. module: binaural_accountant
+#: model:ir.actions.report,name:binaural_accountant.action_account_related_report
+msgid "Asientos Contables Relacionados"
+msgstr ""
+
+#. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.financial_all_payments
 msgid "Autorizado por:<br/><br/>"
 msgstr ""
@@ -56,6 +126,11 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
 msgid "B.I/Discount"
 msgstr "B.I./Descuento"
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "COMPROBANTE CONTABLE No."
+msgstr ""
 
 #. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.form_wizard_all_payments
@@ -81,6 +156,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_invoices_details__company_id
 msgid "Company"
 msgstr "Compañia"
+
+#. module: binaural_accountant
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__concept
+msgid "Concept"
+msgstr "Concepto"
 
 #. module: binaural_accountant
 #: model:ir.model,name:binaural_accountant.model_res_partner
@@ -163,6 +243,11 @@ msgid "End Date"
 msgstr "Fecha de fin"
 
 #. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "FECHA:"
+msgstr ""
+
+#. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.financial_all_payments
 msgid "Fecha"
 msgstr ""
@@ -173,6 +258,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_accountant.field_account_payment__financial_document
 msgid "Financial Document"
 msgstr "Documento financiero"
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.binaural_accountant_inherit_report_payment_receipt_document
+msgid "Firma Autorizada"
+msgstr ""
 
 #. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.view_account_move_line_form_binaural_invoice
@@ -422,25 +512,8 @@ msgid "Journal Item"
 msgstr "Apunte contable"
 
 #. module: binaural_accountant
-#. odoo-python
-#: code:addons/binaural_accountant/models/account_move.py:0
-#, python-format
-msgid ""
-"La cuenta por cobrar del cliente es de %s más %s en factura da un total de "
-"%s superando el límite de ventas de %s. Por favor cancele el presupuesto o "
-"comuníquese con el administrador para aumentar el límite de crédito del "
-"cliente."
-msgstr ""
-
-#. module: binaural_accountant
-#. odoo-python
-#: code:addons/binaural_accountant/models/sale_order.py:0
-#, python-format
-msgid ""
-"La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total "
-"de %s superando el límite de ventas de %s. Por favor cancele el presupuesto "
-"o comuníquese con el administrador para aumentar el límite de crédito del "
-"cliente."
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.binaural_accountant_inherit_report_payment_receipt_document
+msgid "La cantidad de"
 msgstr ""
 
 #. module: binaural_accountant
@@ -496,6 +569,34 @@ msgid "Net Amount"
 msgstr "Monto neto"
 
 #. module: binaural_accountant
+#. odoo-python
+#: code:addons/binaural_accountant/models/sale_order.py:0
+#, python-format
+msgid ""
+"No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta "
+"por cobrar del cliente es de %s más %s en presupuesto da un total de %s "
+"superando el límite de ventas de %s. Por favor cancele el presupuesto o "
+"comuníquese con el administrador para aumentar el límite de crédito del "
+"cliente."
+msgstr ""
+
+#. module: binaural_accountant
+#. odoo-python
+#: code:addons/binaural_accountant/models/account_move.py:0
+#, python-format
+msgid ""
+"No se ha confirmado la factura. Límite de crédito excedido. La cuenta por "
+"cobrar del cliente es de %s más %s en factura da un total de %s superando el"
+" límite de ventas de %s. Por favor cancele la factura o comuníquese con el "
+"administrador para aumentar el límite de crédito del cliente."
+msgstr ""
+
+#. module: binaural_accountant
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_move_line__not_foreign_recalculate
+msgid "Not Foreign Recalculate"
+msgstr ""
+
+#. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
 msgid "Nº Documento"
 msgstr ""
@@ -504,6 +605,11 @@ msgstr ""
 #: model:ir.model.fields.selection,name:binaural_accountant.selection__payment_report__payment_type__outbound
 msgid "Outbound"
 msgstr "Enviado"
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "Pag:"
+msgstr ""
 
 #. module: binaural_accountant
 #: model:ir.model,name:binaural_accountant.model_account_partial_reconcile
@@ -618,6 +724,11 @@ msgstr "Pedido de venta"
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.report_account_invoices_details
 msgid "Sales Report"
 msgstr "Informe de Ventas"
+
+#. module: binaural_accountant
+#: model:ir.actions.server,name:binaural_accountant.abs_amount_line_ids_adjust
+msgid "Set Abs adjustment lines"
+msgstr ""
 
 #. module: binaural_accountant
 #: model:ir.actions.server,name:binaural_accountant.set_rate_payments_zero
@@ -771,8 +882,75 @@ msgid "You cannot place a currency other than the base of the system."
 msgstr "No puede colocar una moneda que no sea la base del sistema."
 
 #. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.binaural_accountant_inherit_report_payment_receipt_document
+msgid "____________________________________________"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "ci/rif"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "créditos"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "cuenta"
+msgstr ""
+
+#. module: binaural_accountant
+#. odoo-python
+#: code:addons/binaural_accountant/report/account_report.py:0
+#, python-format
+msgid "docids empty"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "documento"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "dpto"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "débitos"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "fecha"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "nombre"
+msgstr ""
+
+#. module: binaural_accountant
 #: model:ir.model,name:binaural_accountant.model_payment_report
 msgid "payment.report"
+msgstr ""
+
+#. module: binaural_accountant
+#: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
+msgid "ref"
+msgstr ""
+
+#. module: binaural_accountant
+#: model:ir.model,name:binaural_accountant.model_report_binaural_accountant_account_related_report_call
+msgid "report.binaural_accountant.account_related_report_call"
+msgstr ""
+
+#. module: binaural_accountant
+#: model:ir.model,name:binaural_accountant.model_report_binaural_accountant_account_report_call
+msgid "report.binaural_accountant.account_report_call"
 msgstr ""
 
 #. module: binaural_accountant

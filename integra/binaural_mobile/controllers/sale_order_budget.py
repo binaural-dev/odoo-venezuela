@@ -1,13 +1,15 @@
-import logging
 import json
+import logging
 from datetime import datetime
 
 from odoo import _, http
 from odoo.http import request
 from odoo.osv import expression
+
 from . import utils
 
 _logger = logging.getLogger(__name__)
+
 SALE_STATES = ["draft", "sent"]
 FIELDNAMES = [
     "id",
@@ -46,6 +48,16 @@ PARSE_FIELDS = ["validity_date", "date_order"]
 
 
 class SaleOrderBudget(http.Controller):
+
+    def _get_tax_included(self, kwargs):
+        company = request.env.company
+        is_optional_tax_included = company.dairy_fiscal and company.dairy_no_fiscal
+
+        if is_optional_tax_included:
+            return kwargs.get("tax_included", False)
+
+        return any(company.dairy_fiscal)
+
     @http.route(
         "/budget/order", type="http", methods=["GET"], auth="public", website=False, sitemap=False
     )
@@ -156,7 +168,7 @@ class SaleOrderBudget(http.Controller):
         except Exception as e:
             data.update({"status": 400, "msg": e})
             return data
-    
+
     @http.route(
         "/budget/order/create",
         type="json",
@@ -172,11 +184,10 @@ class SaleOrderBudget(http.Controller):
                 kwargs[key] = int(value)
         data = {"status": 200, "msg": "Success"}
         sale_order = kwargs.get("sale_order")
-        tax_included = kwargs.get("tax_included", False)
+        tax_included = self._get_tax_included(kwargs)
         sale_order["tax_included"] = tax_included
         seller_id = request.env.user.employee_id.id
         request.update_env(user=request.session.uid)
-
         lines = utils.set_order_line(sale_order, tax_included)
         sale_order["order_line"] = lines
         sale_order.update({
@@ -229,7 +240,7 @@ class SaleOrderBudget(http.Controller):
         
         data = {"status": 200, "msg": _("Success")}
         sale_order = kwargs.get("sale_order")
-        tax_included = kwargs.get("tax_included", False)
+        tax_included = self._get_tax_included(kwargs)
         sale_order["tax_included"] = tax_included
 
         sale_id = int(sale_order.pop("id", False))
@@ -265,7 +276,7 @@ class SaleOrderBudget(http.Controller):
 
         data = {"status": 200, "msg": _("Success")}
         sale_id = kwargs.get("sale_id", False)
-        tax_included = kwargs.get("tax_included", False)
+        tax_included = self._get_tax_included(kwargs)
         note = kwargs.get("note", False)
         try:
             sale = utils.browse_model_data("sale.order", int(sale_id))
@@ -345,7 +356,7 @@ class SaleOrderBudget(http.Controller):
             if utils.product_duplicate(sale_order):
                 data.update({"status": 400, "msg": _("There are duplicated products.")})
                 return data
-            tax_included = kwargs.get("tax_included", False)
+            tax_included = self._get_tax_included(kwargs)
             sale_order["tax_included"] = tax_included
             sale_id = sale_order.pop("id", False)
 

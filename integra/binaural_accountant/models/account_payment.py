@@ -37,6 +37,8 @@ class AccountPayment(models.Model):
         readonly=False,
     )
 
+    concept = fields.Char()
+
     @api.model_create_multi
     def create(self, vals_list):
         """
