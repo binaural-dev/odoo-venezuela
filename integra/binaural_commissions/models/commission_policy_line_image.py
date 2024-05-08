@@ -15,6 +15,7 @@ class CommissionPolicyLineImage(models.Model):
     date_from = fields.Integer(required=True, default=1)
     date_to = fields.Integer(required=True)
     commission = fields.Float(required=True, help="Commission percentage")
+    policy_type_id = fields.Many2one("commission.policy.type")
     policy_type = fields.Selection(
         selection=[("client", "Client"), ("product", "Product"), ("all", "General")],
         string="Commission Type",
@@ -27,6 +28,6 @@ class CommissionPolicyLineImage(models.Model):
             range_date = f"[{record.date_from}, {record.date_to if not record.infinite else '∞'}]"
             if record.date_to == record.date_from and not record.infinite:
                 range_date = f"[{record.date_from}]"
-            values.append((record.id, f"{POLICY_TYPE.get(record.policy_type,'')} {record.commission} % {range_date}"))
+            values.append((record.id, f"{record.policy_type_id.name} {record.commission} % {range_date}"))
         return values
 
