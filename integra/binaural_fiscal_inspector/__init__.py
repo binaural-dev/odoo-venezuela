@@ -1,6 +1,7 @@
 from odoo import SUPERUSER_ID, api
 
 from . import models
+from . import wizard
 
 
 def create_res_users_fiscal(cr, registry):
