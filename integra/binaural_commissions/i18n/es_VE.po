@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240326\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-08 13:55+0000\n"
-"PO-Revision-Date: 2024-04-08 13:55+0000\n"
+"POT-Creation-Date: 2024-04-22 16:12+0000\n"
+"PO-Revision-Date: 2024-04-22 16:12+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -77,6 +77,11 @@ msgstr ""
 #, python-format
 msgid "Action complete, but..."
 msgstr "Acción completada, pero..."
+
+#. module: binaural_commissions
+#: model:res.groups,name:binaural_commissions.group_commission_manager
+msgid "Administrator"
+msgstr "Administrador"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__applied_on
@@ -774,6 +779,11 @@ msgid "Policy"
 msgstr "Política"
 
 #. module: binaural_commissions
+#: model:ir.module.category,name:binaural_commissions.module_category_policy_commissions
+msgid "Policy Commissions"
+msgstr "Política de Comisiones"
+
+#. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_sale_order_line__commission_policy_line_image_ids
 msgid "Policy Line Images"
 msgstr "Imágenes de Línea de Política"
@@ -1085,6 +1095,11 @@ msgstr "Total de Comisión"
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
 msgid "Total discount"
 msgstr "Total de descuento"
+
+#. module: binaural_commissions
+#: model:res.groups,name:binaural_commissions.group_commission_user
+msgid "User"
+msgstr "Usuario"
 
 #. module: binaural_commissions
 #. odoo-python
