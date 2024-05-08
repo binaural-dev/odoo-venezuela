@@ -54,25 +54,6 @@ msgid ""
 msgstr ""
 
 #. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid ""
-"<span groups=\"account.group_show_line_subtotals_tax_excluded\">Amount</span>\n"
-"                                    <span groups=\"account.group_show_line_subtotals_tax_included\">Total Price</span>"
-msgstr ""
-"<span groups=\"account.group_show_line_subtotals_tax_excluded\">Monto</span>\n"
-"                                    <span groups=\"account.group_show_line_subtotals_tax_included\">Total</span>"
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<span>Code</span>"
-msgstr "Código"
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<span>Description</span>"
-msgstr "<span>Descripciòn</span>"
-
-#. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
 msgid "<span>Devolución Nª</span>"
 msgstr ""
@@ -89,28 +70,8 @@ msgstr ""
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<span>Quantity</span>"
-msgstr "<span>Cantidad</span>"
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<span>Taxes</span>"
-msgstr "<span>IVA</span>"
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<span>Unit Price</span>"
-msgstr "<span>Precio U.</span>"
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
 msgid "<strong class=\"mr16\">Subtotal</strong>"
 msgstr ""
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<strong>Business name:</strong>"
-msgstr "<strong>Cliente:</strong>"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
@@ -131,37 +92,6 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
 msgid "<strong>Incoterm: </strong>"
 msgstr ""
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<strong>NIF/VAT:</strong>"
-msgstr "<strong>CI/RIF:</strong>"
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<strong>Nro Document:</strong>"
-msgstr "<strong>Nro Documento:</strong>"
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.template_binaural_invoce_report_invoice_document
-msgid "<strong>Nro de Pedido:</strong>"
-msgstr ""
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<strong>Numero de Control:</strong>"
-msgstr ""
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<strong>Phone:</strong>"
-msgstr "<strong>Telefono:</strong>"
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
-msgid "<strong>Tax residence:</strong>"
-msgstr "<strong>Dirección:</strong>"
 
 #. module: binaural_invoice
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.report_freeform_document
@@ -601,8 +531,3 @@ msgstr "No puede agregar más de %s productos a la factura."
 #: model:ir.actions.act_window,name:binaural_invoice.ir_invoice_correlative
 msgid "control number"
 msgstr "Número de control"
-
-#. module: binaural_invoice
-#: model_terms:ir.ui.view,arch_db:binaural_invoice.tax_groups_totals
-msgid "on"
-msgstr "En"
