@@ -9,8 +9,8 @@
             
             <field name="backorder_id" position="after">
                 <field name="pos_order_id" invisible="1"/>
-                <field name="pos_user_id" string="Commercial" attrs="{'invisible':[('pos_order_id' ,'=', False)]}"/>
-                <field name="pos_invoice" string="N Invoice" attrs="{'invisible':[('pos_order_id' ,'=', False)]}"/>
+                <field name="pos_user_id" string="Comercial" attrs="{'invisible':[('pos_order_id' ,'=', False)]}"/>
+                <field name="pos_invoice" string="Nº Factura" attrs="{'invisible':[('pos_order_id' ,'=', False)]}"/>
             </field>
 
         </field>

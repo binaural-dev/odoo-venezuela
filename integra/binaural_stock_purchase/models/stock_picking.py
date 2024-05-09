@@ -11,8 +11,7 @@ class StockPicking(models.Model):
     _inherit = "stock.picking"
 
     purchase_order_id = fields.Many2one("purchase.order")
-    purchase_invoice = fields.Char(related='purchase_order_id.invoice_ids.name')
-    purchase_user_id = fields.Many2one(related='purchase_order_id.user_id')
+    purchase_invoice = fields.Char(compute="_compute_purchase_invoice")
 
     def set_sale_pos_order(self):
         res = super().set_sale_pos_order()
@@ -27,3 +26,18 @@ class StockPicking(models.Model):
                 if purchase_order:
                     stock.purchase_order_id = purchase_order
         return res
+    
+    def _compute_purchase_invoice(self):
+        for stock in self:
+            stock.purchase_invoice = ""
+            if stock.purchase_order_id:
+                if stock.purchase_order_id.invoice_ids:
+                    invoice_one = True
+                    name_invoice = ""
+                    for invoice in stock.purchase_order_id.invoice_ids:
+                        if not invoice_one:
+                            name_invoice += f", {invoice.name}"
+                            continue
+                        name_invoice = invoice.name
+                        invoice_one = False
+                    stock.purchase_invoice = name_invoice

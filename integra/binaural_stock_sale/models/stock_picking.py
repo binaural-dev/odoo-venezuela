@@ -11,7 +11,7 @@ class StockPicking(models.Model):
     _inherit = "stock.picking"
 
     sale_order_id = fields.Many2one("sale.order")
-    sale_invoice = fields.Char(related='sale_order_id.invoice_ids.name')
+    sale_invoice = fields.Char(compute="_compute_sale_invoice")
     sale_user_id = fields.Many2one(related='sale_order_id.user_id')
 
     @api.model_create_multi
@@ -31,3 +31,18 @@ class StockPicking(models.Model):
                 )
                 if sale_order:
                     stock.sale_order_id = sale_order
+
+    def _compute_sale_invoice(self):
+        for stock in self:
+            stock.sale_invoice = ""
+            if stock.sale_order_id:
+                if stock.sale_order_id.invoice_ids:
+                    invoice_one = True
+                    name_invoice = ""
+                    for invoice in stock.sale_order_id.invoice_ids:
+                        if not invoice_one:
+                            name_invoice += f", {invoice.name}"
+                            continue
+                        name_invoice = invoice.name
+                        invoice_one = False
+                    stock.sale_invoice = name_invoice
