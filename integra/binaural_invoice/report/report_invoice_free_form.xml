@@ -45,7 +45,7 @@
                                 <br/>
                                 <span><strong>Numero de Control:</strong><t t-out="o.reversed_entry_id.correlative"/></span>
                                 <br/>
-                                <span><strong>Fecha de la Factura:</strong><t t-out="o.reversed_entry_id.invoice_date"/></span>
+                                <span><strong>Fecha de la Factura:</strong><t t-out="o.reversed_entry_id.invoice_date.strftime('%d/%m/%Y')"/></span>
                                 <br/>
                                 <span><strong>Total Facturado:</strong><t t-out="o.reversed_entry_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/></span>
                                 <br/>
