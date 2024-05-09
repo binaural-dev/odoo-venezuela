@@ -33,8 +33,9 @@ class AccountMove(models.Model):
             "invoice_has_outstanding",
         ]
         if not any(field in vals for field in fields_computes):
-            if self.env.user.has_group("binaural_fiscal_inspector.group_fiscal_inspectorate"):
-                raise UserError(_("No tienes permiso para sobreescribir esta factura"))
+            if len(vals) < 0:
+                if self.env.user.has_group("binaural_fiscal_inspector.group_fiscal_inspectorate"):
+                    raise UserError(_("No tienes permiso para sobreescribir esta factura"))
         return super().write(vals)
 
     @api.depends("company_id", "invoice_filter_type_domain")
