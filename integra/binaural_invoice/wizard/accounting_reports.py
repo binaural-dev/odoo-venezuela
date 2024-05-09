@@ -580,7 +580,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     def _resume_sale_book_fields(self, moves):
         return [
             {
-                "name": "Ventas Internas no Grabadas",
+                "name": "Ventas Internas no Gravadas",
                 "format": "number",
                 "values": self._determinate_resume_books(moves, "exempt_aliquot"),
             },
@@ -613,13 +613,14 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "name": "Total Ventas y Débitos Fiscales del Periodo",
                 "format": "number",
                 "values": self._determinate_resume_books(moves),
+                "total": True,
             },
         ]
 
     def _resume_purchase_book_fields(self, moves):
         return [
             {
-                "name": "Compras Internas no Grabadas",
+                "name": "Compras Internas no Gravadas",
                 "format": "number",
                 "values": self._determinate_resume_books(moves, "exempt_aliquot"),
             },
@@ -657,6 +658,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "name": "Total Compras y Créditos Fiscales del Periodo",
                 "format": "number",
                 "values": self._determinate_resume_books(moves),
+                "total": True,
             },
         ]
 
@@ -951,6 +953,30 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             for idx_line, line in enumerate(resume.get("values")):
                 total_line = idx_line + 2
                 worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
+
+            if not is_purchase:
+                if resume.get("total"):
+                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
+                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
+
+                    worksheet.write_formula(
+                        row_resume, 2, total_c_formula, cell_formats.get("number")
+                    )
+                    worksheet.write_formula(
+                        row_resume, 3, total_d_formula, cell_formats.get("number")
+                    )
+
+            else:
+                if resume.get("total"):
+                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
+                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
+
+                    worksheet.write_formula(
+                        row_resume, 2, total_c_formula, cell_formats.get("number")
+                    )
+                    worksheet.write_formula(
+                        row_resume, 3, total_d_formula, cell_formats.get("number")
+                    )
 
             column_bi_range = (
                 f"C{row_resume + 1}:{utility.xl_col_to_name(total_line - 1)}{row_resume + 1}"
