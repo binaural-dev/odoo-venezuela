@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "16.0.0.1.7",
+    "version": "16.0.0.2.5",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -25,6 +25,9 @@
         "security/ir.model.access.csv",
         # "data/res_users.xml",
         "views/menu_item.xml",
+        "views/account_move.xml",
+        "views/account_payment.xml",
+        "views/account_retention.xml",
     ],
     "post_init_hook": "create_res_users_fiscal",
     "uninstall_hook": "inspector_uninstall_hook",
