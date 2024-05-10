@@ -7,10 +7,11 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "16.0.0.2.5",
+    "version": "16.0.0.2.6",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
+        "web",
         "account_accountant",
         "account",
         "account_reports",
