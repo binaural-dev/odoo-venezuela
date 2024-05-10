@@ -11,11 +11,11 @@
                             <field name="applied_on" widget="radio"/>
                         </group>
                         <group>
-                            <field name="product_id" domain="[('commission_item_ids', '=',False)]" attrs="{'invisible': [('applied_on','!=', '1_product')]}"/>
+                            <field name="product_id" options="{'no_create': True, 'no_open': True}" domain="[('commission_item_ids', '=',False)]" attrs="{'invisible': [('applied_on','!=', '1_product')]}"/>
                             <field name="excluded" attrs="{'invisible': [('applied_on','!=', '1_product')]}"/>
-                            <field name="brand_id" domain="[('commission_item_ids', '=',False)]" attrs="{'invisible': [('applied_on','!=', '2_brand')]}"/>
+                            <field name="brand_id" options="{'no_create': True, 'no_open': True}" domain="[('commission_item_ids', '=',False)]" attrs="{'invisible': [('applied_on','!=', '2_brand')]}"/>
                             <button name="show_products_brands" icon="fa-list" string="Show Products" type="object" attrs="{'invisible': [('applied_on','!=', '2_brand')]}"/> 
-                            <field name="category_id" domain="[('commission_item_ids', '=',False)]" attrs="{'invisible': [('applied_on','!=', '3_category')]}"/>
+                            <field name="category_id" options="{'no_create': True, 'no_open': True}" domain="[('commission_item_ids', '=',False)]" attrs="{'invisible': [('applied_on','!=', '3_category')]}"/>
                             <button name="show_products_categories" icon="fa-list" string="Show Products" type="object" attrs="{'invisible': [('applied_on','!=', '3_category')]}"/> 
                         </group>
                     </group>

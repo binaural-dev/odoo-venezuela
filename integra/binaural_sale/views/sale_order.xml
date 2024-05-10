@@ -13,7 +13,7 @@
                 <field name="filter_partner" invisible="1"
                 groups="binaural_sale.contact_filter_sale_order_group"/>
                 <field name="partner_id" domain="partner_id_domain" context="{'res_partner_search_mode': 'customer', 'show_address': 1}" options="{&quot;always_reload&quot;: True}"/>
-                <field name="manually_set_rate" invisible="1"/>
+                <field name="manually_set_rate"/>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="vat"/>
@@ -25,8 +25,7 @@
 
             <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']" position="after">
                 <field name="foreign_subtotal"/>
-                <field name="foreign_rate" optional="hide"/>
-                <field name="foreign_rate" optional="hide"/>
+                    <field name="foreign_rate" optional="hide"/>
                 <field
             name="foreign_inverse_rate"
         groups="base.group_no_one"
@@ -39,7 +38,7 @@
             <xpath expr="//notebook" position="inside">
                 <page string="Foreign currency" name="foreign_currency">
                     <group>
-                        <field name="foreign_currency_id" invisible='1'/>
+                        <field name="foreign_currency_id" invisible="1"/>
                         <field
                             name="foreign_inverse_rate"
             invisible="1"

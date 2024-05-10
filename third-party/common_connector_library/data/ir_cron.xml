@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_auto_delete_processed_queue_ept" model="ir.cron">
+        <field name="name">Emipro: Auto Delete Connector Queues</field>
+        <field eval="True" name="active"/>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="state">code</field>
+        <field name="doall">False</field>
+        <field name="model_id" ref="model_data_queue_mixin_ept"/>
+        <field name="code">model.delete_data_queue_ept()</field>
+    </record>
+
+    <record id="ir_cron_automatic_workflow_job" model="ir.cron">
+        <field name="name">Auto Invoice Workflow Job</field>
+        <field eval="False" name="active"/>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">minutes</field>
+        <field name="numbercall">-1</field>
+        <field eval="False" name="doall"/>
+        <field eval="ref('common_connector_library.model_sale_workflow_process_ept')"
+               name="model_id"/>
+        <field name="state">code</field>
+        <field name="code">model.auto_workflow_process_ept()</field>
+    </record>
+</odoo>

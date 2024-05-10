@@ -1,11 +1,13 @@
 from odoo import api, models, fields, Command, _
-from odoo.tests import Form
 from datetime import datetime
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
 import json
 from odoo.tools.float_utils import float_round
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountRetention(models.Model):
@@ -318,7 +320,7 @@ class AccountRetention(models.Model):
             self.env["account.move"], search_domain
         ).filtered(
             lambda i: not any(
-                i.retention_iva_line_ids.filtered(lambda l: l.state in ("draf", "emitted"))
+                i.retention_iva_line_ids.filtered(lambda l: l.state in ("draft", "emitted"))
             )
         )
         if not any(invoices_with_taxes):
@@ -444,6 +446,12 @@ class AccountRetention(models.Model):
         if vals.get("retention_line_ids", False):
             self._create_payments_from_retention_lines()
         return res
+    
+    def unlink(self):
+        for record in self:
+            if record.state == "emitted":
+                raise ValidationError(_("You cannot delete a hold linked to a posted entry. It is necessary to cancel the retention before being deleted"))
+        return super().unlink()
 
     def _create_payments_from_retention_lines(self):
         """
@@ -585,9 +593,6 @@ class AccountRetention(models.Model):
             if not retention.date:
                 retention.date = today
 
-            if retention.type in ["in_invoice", "in_refund", "in_debit"]:
-                retention._set_sequence()
-
             move_ids = retention.mapped("retention_line_ids.move_id")
             if retention.type_retention == "iva":
                 move_ids.write({"iva_voucher_number": retention.number})
@@ -598,6 +603,8 @@ class AccountRetention(models.Model):
             if not retention.payment_ids:
                 payments = retention.create_payment_from_retention_form()
                 retention.payment_ids = payments.ids
+            if retention.type in ["in_invoice", "in_refund", "in_debit"]:
+                retention._set_sequence()
 
         self.payment_ids.write({"date": self.date_accounting})
         self._reconcile_all_payments()
@@ -676,7 +683,7 @@ class AccountRetention(models.Model):
                 }
             )
         return sequence
-    
+
     def clear_islr_retention_number(self):
         for line in self.retention_line_ids:
             if line.move_id.islr_voucher_number:
@@ -753,7 +760,10 @@ class AccountRetention(models.Model):
                 }
             )
 
-        payments = Payment.create(payment_vals)
+        # payments = Payment.create(payment_vals)
+        payments = self.env["account.payment"]
+        for vals in payment_vals:
+            payments += Payment.create(vals)
         payments.compute_retention_amount_from_retention_lines()
 
         return payments

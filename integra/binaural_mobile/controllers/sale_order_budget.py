@@ -1,13 +1,15 @@
-import logging
 import json
+import logging
 from datetime import datetime
 
 from odoo import _, http
 from odoo.http import request
 from odoo.osv import expression
+
 from . import utils
 
 _logger = logging.getLogger(__name__)
+
 SALE_STATES = ["draft", "sent"]
 FIELDNAMES = [
     "id",
@@ -35,6 +37,8 @@ FIELD_ORDER_LINE = [
     "name",
     "product_uom_qty",
     "price_unit",
+    "price_unit_with_tax",
+    "price_total",
     "tax_id",
     "price_subtotal",
     "product_id",
@@ -44,6 +48,16 @@ PARSE_FIELDS = ["validity_date", "date_order"]
 
 
 class SaleOrderBudget(http.Controller):
+
+    def _get_tax_included(self, kwargs):
+        company = request.env.company
+        is_optional_tax_included = company.dairy_fiscal and company.dairy_no_fiscal
+
+        if is_optional_tax_included:
+            return kwargs.get("tax_included", False)
+
+        return any(company.dairy_fiscal)
+
     @http.route(
         "/budget/order", type="http", methods=["GET"], auth="public", website=False, sitemap=False
     )
@@ -137,14 +151,15 @@ class SaleOrderBudget(http.Controller):
                     if sale.company_id.account_use_credit_limit and sale.partner_id.use_partner_credit_limit_order:
                         total_pay = sale.partner_id.credit + sale.amount_total
                         if total_pay > sale.partner_id.credit_limit:
+                            decimal_places = sale.currency_id.decimal_places
                             data.update(
                                 {
                                     "status": 400, 
-                                    "msg": (_("La cuenta %s es de %s mas %s en presupuesto da un total de %s superando el limite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el limite de crédito del cliente.",
-                                            sale.partner_id.property_account_receivable_id.display_name, sale.partner_id.credit_limit, sale.amount_total, total_pay, sale.partner_id.credit_limit)
-                                    )
+                                    "msg": (_("La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
+                                            round(sale.partner_id.credit, decimal_places), round(sale.amount_total, decimal_places), round(total_pay,decimal_places), round(sale.partner_id.credit_limit, decimal_places)))
                                 }
                             )
+                            return data
                     sale.action_confirm()
                     sale._create_analytic_account()
                 elif confirm == "cancel":
@@ -153,7 +168,7 @@ class SaleOrderBudget(http.Controller):
         except Exception as e:
             data.update({"status": 400, "msg": e})
             return data
-    
+
     @http.route(
         "/budget/order/create",
         type="json",
@@ -169,11 +184,10 @@ class SaleOrderBudget(http.Controller):
                 kwargs[key] = int(value)
         data = {"status": 200, "msg": "Success"}
         sale_order = kwargs.get("sale_order")
-        tax_included = kwargs.get("tax_included", False)
+        tax_included = self._get_tax_included(kwargs)
         sale_order["tax_included"] = tax_included
         seller_id = request.env.user.employee_id.id
         request.update_env(user=request.session.uid)
-
         lines = utils.set_order_line(sale_order, tax_included)
         sale_order["order_line"] = lines
         sale_order.update({
@@ -226,7 +240,7 @@ class SaleOrderBudget(http.Controller):
         
         data = {"status": 200, "msg": _("Success")}
         sale_order = kwargs.get("sale_order")
-        tax_included = kwargs.get("tax_included", False)
+        tax_included = self._get_tax_included(kwargs)
         sale_order["tax_included"] = tax_included
 
         sale_id = int(sale_order.pop("id", False))
@@ -262,7 +276,8 @@ class SaleOrderBudget(http.Controller):
 
         data = {"status": 200, "msg": _("Success")}
         sale_id = kwargs.get("sale_id", False)
-        tax_included = kwargs.get("tax_included", False)
+        tax_included = self._get_tax_included(kwargs)
+        note = kwargs.get("note", False)
         try:
             sale = utils.browse_model_data("sale.order", int(sale_id))
             if not sale:
@@ -274,6 +289,7 @@ class SaleOrderBudget(http.Controller):
 
             sale_to_write["order_line"] = sale.order_line.read(FIELD_ORDER_LINE)
             sale_to_write["tax_included"] = tax_included
+            sale_to_write["note"] = note
             sale_to_write["order_line"] = utils.set_order_line(sale_to_write, tax_included)
 
             sale.write(sale_to_write)
@@ -284,11 +300,16 @@ class SaleOrderBudget(http.Controller):
 
             sale_order = sale_order[0]
 
-            sale_order["order_line"] = sale.order_line.read(FIELD_ORDER_LINE)
+            sale_order["order_line"] = sale.order_line.filtered(lambda line: line.display_type == False).read(FIELD_ORDER_LINE)
             
             for order_line in sale_order["order_line"]:
                 product_qty = request.env["product.template"].search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
                 order_line["qty_available"] = product_qty
+
+            if request.env.company.mobile_show_tax_type == "include_tax":
+                for line in sale_order["order_line"]:
+                    line["price_unit"] = line["price_unit_with_tax"]
+                    line["price_subtotal"] = line["price_total"]
             
             if tax_included:
                 for line in sale_order["order_line"]:
@@ -306,6 +327,12 @@ class SaleOrderBudget(http.Controller):
         except Exception as e:
             data.update({"status": 409, "msg": _("There was an error handling the request"), "error": str(e)})
             return data
+
+    @http.route("/validation_available", type="json", methods=["POST", "PUT"], auth="public", website=False, sitemap=False)
+    def validation_available(self, **kwargs):
+        settings = request.env['res.config.settings'].sudo().create({})  # Crear una instancia temporal de res.config.settings
+        allow_out_of_stock_order = settings.allow_out_of_stock_order
+        return {"allow_out_of_stock_order": allow_out_of_stock_order}
 
     @http.route(
         "/budget/create/order/line",
@@ -329,7 +356,7 @@ class SaleOrderBudget(http.Controller):
             if utils.product_duplicate(sale_order):
                 data.update({"status": 400, "msg": _("There are duplicated products.")})
                 return data
-            tax_included = kwargs.get("tax_included", False)
+            tax_included = self._get_tax_included(kwargs)
             sale_order["tax_included"] = tax_included
             sale_id = sale_order.pop("id", False)
 
@@ -434,6 +461,31 @@ class SaleOrderBudget(http.Controller):
 
         return data
 
+    @http.route(
+            '/budget/update_partner', type="json", auth="public", website=False, sitemap=False
+    )
+    def update_partner(self, budget=False, partner=False, **kw):
+        data = {"status": 200, "msg": _("Success")}
+        
+        if not budget or not partner:
+            data.update(
+                {"status": 204, "msg": _("No Found Budget or partner"),  "data": False}
+            )
+            return json.dumps(data)
+        
+        try:
+            sale_id = int(budget)
+            sale_order = request.env["sale.order"].sudo().search([("id", "=", sale_id)])
+            sale_order.update({
+                "partner_id": int(partner)
+            })
+        except Exception as e:
+            data.update({"status": 400, "msg": str(e)})
+            return data
+
+        return data
+
+
     def check_lines_validations(self, lines):
         """Evaluates if the sale order lines have available quantities
         and the quantity meet the sales policy requirement.
@@ -535,8 +587,10 @@ class SaleOrderBudget(http.Controller):
             warehouse_id = line.warehouse_id.id
             lang = line.order_id.partner_id.lang or request.env.user.lang or "es_VE"
             product = line.product_id.with_context(warehouse=warehouse_id, lang=lang)
+            settings = request.env['res.config.settings'].sudo().create({})  # Crear una instancia temporal de res.config.settings
+            allow_out_of_stock_order = settings.allow_out_of_stock_order
 
-            if product.free_qty < line.product_uom_qty:
+            if product.free_qty < line.product_uom_qty and not allow_out_of_stock_order:
                 message = _(
                     "Estás tratando de vender %(uom_qty).2f %(uom)s de %(product_name)s Pero solo tienes %(product_quantity).2f %(uom)s disponible en %(warehouse)s."
                 ) % {

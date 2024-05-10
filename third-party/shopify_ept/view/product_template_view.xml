@@ -1,0 +1,287 @@
+<?xml version="1.0" ?>
+<odoo>
+    <!--Tree view of shopify product template-->
+    <record id="shopify_product_tree_view_ept" model="ir.ui.view">
+        <field name="name">Shopify Product Tree View</field>
+        <field name="model">shopify.product.template.ept</field>
+        <field name="arch" type="xml">
+            <tree create="false" sample="1">
+                <header>
+                    <button name="%(shopify_ept.action_wizard_shopify_product_for_update)d" type="action" string="Update Existing Product"/>
+                    <button name="%(shopify_ept.action_wizard_shopify_update_stock)d" type="action" string="Export Stock"/>
+                </header>
+                <field name="name"/>
+                <field name="shopify_instance_id"/>
+                <field name="product_tmpl_id"/>
+                <field name="total_variants_in_shopify"/>
+                <field name="total_sync_variants"/>
+                <field name="exported_in_shopify"/>
+                <field name="website_published"/>
+            </tree>
+        </field>
+    </record>
+
+    <!--Search view of shopify product template-->
+    <record model="ir.ui.view" id="shopify_product_search_view_ept">
+        <field name="name">shopify.product.ept</field>
+        <field name="model">shopify.product.template.ept</field>
+        <field name="type">search</field>
+        <field name="arch" type="xml">
+            <search string="Shopify Products">
+                <field name="name" string="Product"
+                       filter_domain="['|','|',('name','ilike',self),('product_tmpl_id','ilike',self),('shopify_tmpl_id','ilike',self)]"/>
+                <filter string="Exported In Shopify" name=""
+                        icon="terp-accessories-archiver"
+                        domain="[('exported_in_shopify','=','True')]"/>
+                <filter string="Published in Web" name=""
+                        icon="terp-accessories-archiver"
+                        domain="[('website_published','=','True')]"/>
+                <filter string="Unpublished in Web" name=""
+                        icon="terp-accessories-archiver"
+                        domain="[('website_published','!=','True')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Instance" name="Instance" domain="[]"
+                            context="{'group_by':'shopify_instance_id'}"/>
+                    <filter string="Exported In Shopify"
+                            name="Exported In Shopify" domain="[]"
+                            context="{'group_by':'exported_in_shopify'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!--Form view of shopify product template-->
+    <record id="shopify_product_form_view_ept" model="ir.ui.view">
+        <field name="name">Shopify Product Form View</field>
+        <field name="model">shopify.product.template.ept</field>
+        <field name="arch" type="xml">
+            <form string="Shopify Product Form View" create="false">
+                <sheet>
+                    <field name="active" class="oe_inline" invisible='1'/>
+                    <div class="ribbon ribbon-top-right"
+                         attrs="{'invisible': [('active','=',True)]}">
+                        <span class="bg-danger"
+                              style="left: -4px !important;top: 20px !important">Archived
+                        </span>
+                    </div>
+
+                    <div class="oe_title" style="width: 390px;">
+                        <label class="oe_edit_only" for="name" string="Title"/>
+                        <h1>
+                            <field name="name" class="oe_inline"/>
+                        </h1>
+                    </div>
+                    <button name="shopify_publish_unpublish_product" class="pull-right"
+                            type="object" string="Unpublish Product" context="{'publish': 'shopify_unpublish'}"
+                            attrs="{'invisible': ['|',('exported_in_shopify','=',False),('website_published','=','unpublished')]}"/>
+                    <button name="shopify_publish_unpublish_product" class="pull-right"
+                            type="object" string="Publish in Web and POS"
+                            context="{'publish': 'shopify_publish_global'}"
+                            attrs="{'invisible': ['|',('exported_in_shopify','=',False),('website_published','=','published_global')]}"/>
+                    <button name="shopify_publish_unpublish_product" class="pull-right"
+                            type="object" string="Publish in Web Only"
+                            context="{'publish': 'shopify_publish_web'}"
+                            attrs="{'invisible': ['|',('exported_in_shopify','=',False),('website_published','=','published_web')]}"/>
+                    <notebook>
+                        <page string="Shopify Info">
+                            <group>
+                                <group>
+                                    <field name="shopify_instance_id"
+                                           attrs="{'readonly': [('exported_in_shopify','=',True)]}"/>
+                                    <field name="product_tmpl_id" required="1" readonly="1"/>
+                                </group>
+                                <group>
+                                    <label for="shopify_tmpl_id"/>
+                                    <div name="shopify_product_link">
+                                        <field name="shopify_tmpl_id" readonly="1" style="width:auto !important;"/>
+                                        <button name="action_product_ref_redirect"
+                                                type="object"
+                                                icon="fa-external-link"
+                                                attrs="{'invisible': [('exported_in_shopify','=',False)]}">
+                                        </button>
+                                    </div>
+
+                                    <field name="exported_in_shopify" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="created_at" readonly="1"/>
+                                    <field name="updated_at" readonly="1"/>
+                                    <field name="website_published" readonly="1"/>
+                                    <field name="published_at" readonly="1"/>
+                                    <field name="tag_ids" widget="many2many_tags"/>
+                                    <field name="shopify_product_category">
+                                    </field>
+
+                                </group>
+                                <group>
+                                    <field name="total_variants_in_shopify" readonly="1"/>
+                                    <field name="total_sync_variants"/>
+                                </group>
+                            </group>
+                            <div string="Description">
+                                <field name="description" nolabel="1"/>
+                            </div>
+                        </page>
+                        <page string="Variants"
+                              attrs="{'invisible': [('active','=',False)]}">
+                            <div>
+                                <field name="shopify_product_ids" nolabel="1"/>
+                            </div>
+                        </page>
+                        <page string="Images">
+                            <div string="Images Info" colspan="4">
+                                <field name="shopify_image_ids"
+                                       context="{'default_shopify_template_id':id}" mode="kanban"
+                                       options="{'create_text':'Add a Media','no_create_edit':True}"
+                                       nolabel="1">
+                                </field>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!--Action of shopify product template-->
+    <record id="action_shopify_product_ept"
+            model="ir.actions.act_window">
+        <field name="name">Shopify Product</field>
+        <field name="res_model">shopify.product.template.ept</field>
+        <field name="view_id" ref="shopify_product_tree_view_ept"/>
+        <field name="help" type="html">
+            <div class="oe_empty_shopify_products">
+                <br/>
+                <br/>
+                <br/>
+                <p>
+                    <b>There are no any Shopify Product Created yet</b>
+                </p>
+                <p>
+                    You can't create Shopify products directly from here. In order to
+                    create products for Shopify,
+                    You need to go to menu
+                    <b>Sales
+                        <i class="fa fa-angle-double-right"/>
+                        Products
+                        <i class="fa fa-angle-double-right"/>
+                        Products
+                    </b>
+                    and in list view of Product, select one or more products which you
+                    want to export to Shopify.
+                    At the top side, under the "More"
+                    section, you will find an option
+                    <b>"Prepare Product for Export"</b>
+                    .
+                    Clicking on that option, you will be asked to select Shopify
+                    Instance.After those products successfully prepared for Shopify,
+                    you can see all of them over here in this menu.
+                    However here you
+                    can open those products and add more Shopify specific
+                    attribute
+                    values to products. Once all products are well
+                    configured with
+                    proper values, you can export
+                    them to Shopify.
+                </p>
+            </div>
+        </field>
+    </record>
+
+    <!--Search view of shopify product template-->
+    <record model="ir.ui.view"
+            id="shopify_product_template_search_view_ept">
+        <field name="name">shopify Product Template Search View</field>
+        <field name="model">shopify.product.template.ept</field>
+        <field name="arch" type="xml">
+            <search string="shopify Products">
+                <field name="name" string="Product"
+                       filter_domain="[('name','ilike',self)]"/>
+                <field name="product_tmpl_id"/>
+                <field name="shopify_tmpl_id"/>
+                <filter name="exported_in_odoo" string="Exported In shopify"
+                        icon="terp-accessories-archiver"
+                        domain="[('exported_in_shopify','=',True)]"/>
+                <filter name="not_exported_in_odoo"
+                        string="Not Exported In shopify" icon="terp-accessories-archiver"
+                        domain="[('exported_in_shopify','=',False)]"/>
+                <filter name="website_published" string="Published"
+                        icon="terp-accessories-archiver"
+                        domain="[('website_published','in',('published_web','published_global'))]"/>
+                <filter name="website_published" string="Unpublished"
+                        icon="terp-accessories-archiver"
+                        domain="[('website_published','=','unpublished')]"/>
+                <filter name="archive_products" string="Archived"
+                        icon="terp-accessories-archiver" domain="[('active','=',False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Instance" name="instance_ept" domain=""
+                            context="{'group_by':'shopify_instance_id'}"/>
+                    <filter string="Template" name="template_ept" domain=""
+                            context="{'group_by':'product_tmpl_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!--Action, redirect instance kanban view to shopify products-->
+    <record id="action_shopify_product_instance_ept"
+            model="ir.actions.act_window">
+        <field name="name">Shopify Products</field>
+        <field name="res_model">shopify.product.template.ept</field>
+        <field name="view_id" ref="shopify_product_tree_view_ept"/>
+        <field name="domain">[('shopify_instance_id','=',active_id)]</field>
+    </record>
+
+    <!--Action, redirect instance kanban view to exported product-->
+    <record id="action_shopify_product_exported_ept"
+            model="ir.actions.act_window">
+        <field name="name">Exported Product</field>
+        <field name="res_model">shopify.product.template.ept</field>
+        <field name="view_id" ref="shopify_product_tree_view_ept"/>
+        <field name="domain">
+            [('exported_in_shopify','=',True),('shopify_instance_id','=',active_id)]
+        </field>
+    </record>
+
+    <!--Action, redirect instance kanban view to ready exported products-->
+    <record id="action_shopify_product_not_exported_ept"
+            model="ir.actions.act_window">
+        <field name="name">Ready to Export Product</field>
+        <field name="res_model">shopify.product.template.ept</field>
+        <field name="view_id" ref="shopify_product_tree_view_ept"/>
+        <field name="domain">
+            [('exported_in_shopify','=',False),('shopify_instance_id','=',active_id)]
+        </field>
+    </record>
+
+    <!--Action, redirect instance kanban view to ready exported products-->
+    <record id="action_shopify_product_published_ept"
+            model="ir.actions.act_window">
+        <field name="name">Published Product</field>
+        <field name="res_model">shopify.product.template.ept</field>
+        <field name="view_id" ref="shopify_product_tree_view_ept"/>
+        <field name="domain">
+            [('website_published','in',('published_web','published_global')),('shopify_instance_id','=',active_id)]
+        </field>
+    </record>
+
+    <!--Action, redirect instance kanban view to not published products-->
+    <record id="action_shopify_product_not_published_ept"
+            model="ir.actions.act_window">
+        <field name="name">Unpublished Products</field>
+        <field name="res_model">shopify.product.template.ept</field>
+        <field name="view_id" ref="shopify_product_tree_view_ept"/>
+        <field name="domain">
+            [('website_published','=','unpublished'),('exported_in_shopify','=',True),('shopify_instance_id','=',active_id)]
+        </field>
+    </record>
+
+    <menuitem id="menu_item_parent_shopify_products_ept"
+              name="Products" parent="shopify_ept.shopify_instance_menu_item"
+              sequence="3"/>
+
+    <menuitem id="menu_item_shopify_products_ept" name="Products"
+              parent="shopify_ept.menu_item_parent_shopify_products_ept"
+              sequence="1" action="action_shopify_product_ept"/>
+
+</odoo>

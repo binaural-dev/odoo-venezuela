@@ -15,13 +15,21 @@
 		<field name="journal_id" position="before">
                     <field name="is_retention" attrs="{'invisible': [('is_out_invoice', '=', False)]}"/>
 		</field>
+				
+				<field name="amount" position="attributes">
+					<attribute name="attrs">{'readonly': [('is_retention', '=', True)]}</attribute>
+				</field>
+
+				<field name="currency_id" position="attributes">
+					<attribute name="attrs">{'readonly': [('is_retention', '=', True)]}</attribute>
+				</field>
 
                 <group name="group2" position="after">
 		    <!-- Invisible fields -->
 		    <field name="edit_retention_fields" invisible="1"/>
 		    <field name="base_currency_is_vef" invisible="1"/>
 		    <field name="is_out_invoice" invisible="1"/>
-
+			<field name="journal_id" invisible="1"/>
 
 		    <div attrs="{'invisible':[('is_retention', '=', False)]}">
 			<label for="voucher_date"/>

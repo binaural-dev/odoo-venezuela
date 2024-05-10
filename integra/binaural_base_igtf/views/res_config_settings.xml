@@ -13,7 +13,7 @@
                     <div class="o_setting_left_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
                         <field name="show_igtf_suggested_sale_order" />
                     </div>
-                    <div class="o_setting_right_pane">
+                    <div class="o_setting_right_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
                         <div class="content-group">
                             <div class="row">
                                 <label for="show_igtf_suggested_sale_order" class="col-lg-12 o_light_label"/>

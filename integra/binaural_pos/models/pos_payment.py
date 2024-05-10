@@ -1,5 +1,9 @@
 from odoo import api, fields, models, _
-from odoo.tools import float_is_zero
+from odoo.tools import float_is_zero, float_compare
+
+
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class PosPayment(models.Model):
@@ -24,42 +28,36 @@ class PosPayment(models.Model):
         res["foreign_amount"] = payment.foreign_amount
         return res
 
-    def _create_payment_moves(self):
-        """ The function that creates the payment entry was overwritten so that it has the same 
+    def _create_payment_moves(self, is_reverse=False):
+        """The function that creates the payment entry was overwritten so that it has the same
         rate as the invoice/order/payment
         """
-        result = self.env['account.move']
+        move_id = super()._create_payment_moves(is_reverse=is_reverse)
         for payment in self:
-            order = payment.pos_order_id
-            payment_method = payment.payment_method_id
-            if payment_method.type == 'pay_later' or float_is_zero(payment.amount, precision_rounding=order.currency_id.rounding):
+            payment_move = move_id.filtered(
+                lambda x: float_compare(
+                    payment.amount,
+                    x.amount_total,
+                    precision_rounding=payment.pos_order_id.currency_id.rounding,
+                )
+                == 0
+            )
+            if not payment_move:
                 continue
-            accounting_partner = self.env["res.partner"]._find_accounting_partner(payment.partner_id)
-            pos_session = order.session_id
-            journal = pos_session.config_id.journal_id
-            payment_move = self.env['account.move'].with_context(default_journal_id=journal.id).create({
-                'journal_id': journal.id,
-                'date': fields.Date.context_today(order, order.date_order),
-                'ref': _('Invoice payment for %s (%s) using %s') % (order.name, order.account_move.name, payment_method.name),
-                'pos_payment_ids': payment.ids,
-                # >> BINAURAL
-                'foreign_rate': payment.foreign_rate,
-                'foreign_inverse_rate': payment.foreign_rate,
-                'manually_set_rate': True,
-                # << BINAURAL
-            })
-            result |= payment_move
-            payment.write({'account_move_id': payment_move.id})
-            amounts = pos_session._update_amounts({'amount': 0, 'amount_converted': 0}, {'amount': payment.amount}, payment.payment_date)
-            credit_line_vals = pos_session._credit_amounts({
-                'account_id': accounting_partner.with_company(order.company_id).property_account_receivable_id.id,  # The field being company dependant, we need to make sure the right value is received.
-                'partner_id': accounting_partner.id,
-                'move_id': payment_move.id,
-            }, amounts['amount'], amounts['amount_converted'])
-            debit_line_vals = pos_session._debit_amounts({
-                'account_id': pos_session.company_id.account_default_pos_receivable_account_id.id,
-                'move_id': payment_move.id,
-            }, amounts['amount'], amounts['amount_converted'])
-            self.env['account.move.line'].with_context(check_move_validity=False).create([credit_line_vals, debit_line_vals])
-            payment_move._post()
-        return result
+
+            payment_move.write(
+                {
+                    "foreign_rate": payment.foreign_rate,
+                    "foreign_inverse_rate": payment.foreign_rate,
+                    "manually_set_rate": True,
+                }
+            )
+            for line in payment_move.line_ids:
+                line.write(
+                    {
+                        "not_foreign_recalculate": True,
+                        "foreign_debit": abs(payment.foreign_amount) if line.debit > 0 else 0,
+                        "foreign_credit":  abs(payment.foreign_amount) if line.credit > 0 else 0,
+                    }
+                )
+        return move_id

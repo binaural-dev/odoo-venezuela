@@ -72,3 +72,15 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.group_stock_packaging',
         readonly=False
         )
+
+    custom_manifest = fields.Text(related="company_id.custom_manifest", readonly=False)
+    assetlink = fields.Text(related="company_id.assetlink", readonly=False)
+    mobile_show_tax_type = fields.Selection(
+        related="company_id.mobile_show_tax_type", readonly=False
+    )
+
+    mobile_tax_include = fields.Boolean(
+        related="company_id.mobile_tax_include", 
+        string="Include taxes in prices",
+        readonly=False
+    )

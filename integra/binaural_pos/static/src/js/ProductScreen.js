@@ -2,6 +2,9 @@
 odoo.define('binaural_pos.ProductScreen', function(require) {
 	"use strict";
 
+  const rpc = require('web.rpc');
+  const ajax = require('web.ajax');
+
 	const Registries = require('point_of_sale.Registries');
 	const ProductScreen = require('point_of_sale.ProductScreen');
   const NumberBuffer = require('point_of_sale.NumberBuffer');
@@ -61,32 +64,59 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 				let lines = order.get_orderlines();
 				let pos_config = self.env.pos.config;				
 				let call_super = true;
+        let validation_negative = true;
         if(order.is_refund){
 					return super._onClickPay();
         }
 
         var is_out = _t(' is out of stock.');
+        var is_negative = _t('the quantity cannot be negative');
         let title_wrning = ""
         let wrning = []
 
-				if(pos_config.amount_to_zero){
-          lines.forEach((line) => {
-
-						let prd = line.product;
-            if(prd.type != "product"){
-              return
-            }
-
-            if (this.is_discount_product(prd)){
-              return
-            }
-
-						if(line.quantity > prd.qty_available || prd.qty_available <= 0){
+        if(pos_config.amount_to_zero){
+          for (let line of lines) {
+              let prd = line.product;
+              if(prd.type != "product"){
+                  continue;
+              }
+  
+              if (this.is_discount_product(prd)){
+                  continue;
+              }
+  
+              // if(line.quantity > prd.qty_available || prd.qty_available <= 0){ Validacion OFFLINE de productos disponibles
+              //     call_super = false;
+              //     title_wrning = _t('Deny Order');
+              //     wrning.push(prd.display_name)
+              // }	
+          }
+          
+          let product_without_stock = await this.validate_products(lines); // Validacion Online de productos disponibles
+              
+          if(product_without_stock){
               call_super = false;
               title_wrning = _t('Deny Order');
-              wrning.push(prd.display_name)
-            }	
-					});
+              wrning.push(product_without_stock)
+          }	
+          // msg_warehouse = await this.validateProductsInWarehouse(lines, pos_config)
+          
+        }
+
+        //let msg = await this.validateProductsInWarehouse(lines, pos_config)
+        //if(msg){
+        //  return self.showPopup('ErrorPopup', {
+        //    title: _t("Validate Product in Warehouse"),
+        //    body: msg,
+        //  });
+        //}
+
+        if(!validation_negative){
+          let message = _t(is_negative);
+          return self.showPopup('ErrorPopup', {
+            title: title_wrning,
+            body: message,
+          });
 				}
 
 				if(!call_super){
@@ -98,6 +128,47 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 				}
         return super._onClickPay();
 			}
+
+      async validate_products(lines){
+        try {
+          const product_ids = lines.map(line => line.product.id);
+          const qtys = lines.map(line => line.quantity);
+          const products = await ajax.jsonRpc('/validate_products_order', 'call',
+            {
+              "lines" :product_ids,
+              "qty" : qtys,
+            }
+          )
+          const { msg_error } = products;
+          return msg_error
+
+        } catch (error) {
+          return false
+        }
+      }
+
+      async validateProductsInWarehouse(lines, pos_config){
+        try {
+          let product_ids = []
+          for (let line of lines) {
+            let prd = line.product.id
+            product_ids.push(prd)
+          }
+          const products = await ajax.jsonRpc('/validate_products_in_warehouse', 'call',
+            {
+              "product_ids" :product_ids,
+              "picking_type_id": pos_config.picking_type_id
+            }
+          )
+          const { msg_error } = products;
+
+          return msg_error
+          
+
+        } catch (error) {
+          return false
+        }
+      }
 		};
 
 	Registries.Component.extend(ProductScreen, BinauralProductScreen);

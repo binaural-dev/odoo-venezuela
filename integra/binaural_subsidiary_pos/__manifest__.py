@@ -7,7 +7,7 @@
     # Check https://github.com/odoo/odoo/blob/16.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     "category": "Point Of Sale",
-    "version": "16.0.2.0.3",
+    "version": "16.0.2.0.4",
     # any module necessary for this one to work correctly
     "depends": ["binaural_subsidiary", "sh_pos_analytic_tags", "pos_sale"],
     "data": [

@@ -1,5 +1,6 @@
 from . import account_move
 from . import commission_policy
+from . import commission_policy_type
 from . import commission_product_item
 from . import commission_policy_line
 from . import commission_policy_line_image

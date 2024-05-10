@@ -6,8 +6,12 @@
         <field name="arch" type="xml">
             <tree string="Commission Policy">
                 <field name="display_name"/>
-                <field name="policy_type" widget="badge" decoration-primary="policy_type=='client'"
-                       decoration-success="policy_type=='product'" decoration-warning="policy_type=='all'"/>
+                <field name="policy_type_name" 
+                    widget="badge" 
+                    decoration-primary="policy_type_name=='client'"
+                    decoration-success="policy_type_name=='product'" 
+                    decoration-danger="policy_type_name=='pricelist'" 
+                    decoration-warning="policy_type_name=='all'"/>
                 <field name="commission_line_ids"/>
             </tree>
         </field>
@@ -32,8 +36,9 @@
                 </div>
                 <group>
                     <group>
-                        <field name="policy_type"/>
-                        <field name="is_report_range" />
+                        <field name="policy_type_id" options="{'no_create': True,'no_create_edit': True}"/>
+                        <field name="policy_type_name" invisible="1"/>
+                        <field name="policy_type" invisible="1"/>
                     </group>
                     <group>
                     </group>
@@ -41,8 +46,19 @@
                 <notebook>
                     <page string="Commissions Range">
                         <field name="commission_line_ids"/>
+                        <group col="3" string="Legend (Type of Commission)">
+                            <group>
+                                <field colspan="2" name="text_priority" nolabel="1"/>
+                            </group>
+                            <group>
+                                <span colspan="2" class="oe_title">Product Commission, apply to</span>
+                                <span colspan="2">- Product (Priority 1)</span>
+                                <span colspan="2">- Marca (Priority 2)</span>
+                                <span colspan="2">- Category (Priority 3)</span>
+                            </group>
+                        </group>
                     </page>
-                    <page string="Products" attrs="{'invisible': [('policy_type', '!=','product')]}">
+                    <page string="Products" attrs="{'invisible': [('policy_type_name', '!=','product')]}">
                     <field name="commission_product_item_ids" mode="tree" options="{'no_create': True, 'no_create_edit':True}">
                         <tree>
                             <field name="applied_on"/>
@@ -52,8 +68,12 @@
                     </field>
                     </page>
 		    <page string="Clients"
-			  attrs="{'invisible': [('policy_type', '!=', 'client')]}">
-			<field name="clients_id"/>
+			  attrs="{'invisible': [('policy_type_name', '!=', 'client')]}">
+                <field name="clients_id"/>
+		    </page>
+		    <page string="Pricelists"
+			  attrs="{'invisible': [('policy_type_name', '!=', 'pricelist')]}">
+                <field name="pricelist_ids"/>
 		    </page>
                 </notebook>
             </sheet>

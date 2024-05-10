@@ -2,6 +2,10 @@
 <odoo>
 
     <data>
+
+        <record model="res.groups" id="group_sellers_show_all_client">
+            <field name="name">Portal / Vendedores que pueden visualizar todos los clientes</field>
+        </record>
     
         <record model="res.groups" id="group_sellers_edit_fee">
             <field name="name">Portal / Vendedores que puedan editar tarifas</field>
@@ -11,7 +15,18 @@
             <field name="name">Portal / Vendedores que puedan crear contactos</field>
         </record>
 
+        <record model="res.groups" id="group_sellers_create_contact_address">
+            <field name="name">Portal / Vendedores que puedan crear direcciones de contacto</field>
+        </record>
+
+        <record model="res.groups" id="group_sellers_cant_confirm_quotation">
+            <field name="name">Portal / Sellers who cannot confirm quotes</field>
+        </record>
+
+        <record model="res.groups" id="group_sellers_show_quantity_available">
+            <field name="name">Portal / Dont show quantity available</field>
+        </record>
+
     </data>
-    
 
 </odoo>

@@ -57,7 +57,10 @@ class AccountInvoiceReport(models.Model):
             The query with the foreign_rate and foreign_total_billed fields
 
         """
-        return super()._select() + ", line.foreign_rate,  line.foreign_subtotal, line.foreign_price_total"
+        return (
+            super()._select()
+            + ", line.foreign_currency_id, line.foreign_rate,  line.foreign_subtotal, line.foreign_price_total"
+        )
 
     @api.model
     def get_view(self, view_id=None, view_type=None, **options):

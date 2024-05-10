@@ -1,6 +1,5 @@
 from odoo import models, fields, api
-from odoo.http import request
-
+from odoo.addons.theme_prime.controllers.main import ThemePrimePWA
 
 class ResCompany(models.Model):
     _inherit = "res.company"
@@ -8,6 +7,14 @@ class ResCompany(models.Model):
     product_type_consu = fields.Boolean(string="Consumable")
     product_type_service = fields.Boolean(string="Service")
     product_type_product = fields.Boolean(string="Storable", default=True)
+    mobile_show_tax_type = fields.Selection(
+        selection=[
+            ("include_tax", "Tax Included in the price"),
+            ("exclude_tax", "tax excluded from the price"),
+        ],
+        default="include_tax",
+    )
+    mobile_tax_include = fields.Boolean(string="Include taxes in prices")
     retentions_draft_or_published = fields.Selection(
         [
             ("0", "Draft"),
@@ -41,3 +48,5 @@ class ResCompany(models.Model):
     dairy_no_fiscal = fields.Many2one("account.journal")
     app_sales_diaries = fields.Many2many("account.journal", relation="app_sales_diaries_rel")
     group_stock_packaging = fields.Boolean('Product Packagings')
+    custom_manifest = fields.Text(help="Open the url /pwa/1/manifest.json then use the content as template")
+    assetlink = fields.Text(help="Generate using PWA Builder and search inside the .zip generate the assetslinks.json file and pase the content here.")
