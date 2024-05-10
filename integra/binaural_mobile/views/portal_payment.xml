@@ -261,7 +261,7 @@
                     <input type="hidden" id="currency_foreign_rate" t-att-value="foreign_currency.rate"/>
                 </form>
 
-                <div class="modal fade" id="payment_method" tabindex="-1" aria-labelledby="payment_methodLabel"  aria-modal="true" role="dialog">
+                <div class="modal fade" id="payment_method" tabindex="-1" aria-labelledby="payment_methodLabel" data-bs-keyboard="false" aria-modal="true" role="dialog">
                     <div class="modal-dialog modal-fullscreen">
                         <div class="modal-content">
                             <div class="modal-header">
