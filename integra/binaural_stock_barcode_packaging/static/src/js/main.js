@@ -18,10 +18,7 @@ patch(MainComponent.prototype, "binaural_stock_barcode_main", {
   },
   async print_packaging() {
     let response = await this.orm.call("stock.picking", "print_packaging_from_barcode", [this.props.id])
-    console.log(response)
     let { action, valid } = response
-    console.log(action, valid)
-    console.log(action[1])
     if (!!valid) return await this.actionService.doAction(action[0], {
       additionalContext: action[1],
     });
