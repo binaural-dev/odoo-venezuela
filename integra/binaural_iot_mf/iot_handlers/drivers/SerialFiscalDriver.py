@@ -1047,7 +1047,7 @@ class SerialFiscalDriver(SerialDriver):
                     self._write(msj)
                     tries = 0
                     rt = ""
-                    while rt == "" and tries < 6:
+                    while rt == "" and tries < 60:
                         rt = self._read(1)
                         if tries > 0:
                             _logger.info("RETRY: %s", tries)
