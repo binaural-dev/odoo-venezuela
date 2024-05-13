@@ -11,6 +11,10 @@
                         Date:
                         <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %H:%M')"/>
                     </div>
+                    <div>
+                        Ciudad:
+                        <span t-field="picking.partner_id.city"/>
+                    </div>
                 </div>
                 <div class="col-5 text-center">
                     <!-- 'max-width: 132px' -->
@@ -19,12 +23,16 @@
             </div>
             <div class="row border border-dark rounded mt-2 p-2">
                 <div class="col-12 text-center" style="height:2.5rem !important">
-                    <p t-field="picking.partner_id" class="h5"/>
+                    <p t-out="picking.partner_id.name[:80]" class="h5"/>
                 </div>
             </div>
             <div class="row font-weight-bold border-right border-left">
-                <div class="col-12 text-center">
+                <div class="col-12 text-center"  style="overflow:hidden;">
                     <span t-field="picking.name" class="h2"/>
+                </div>
+            </div>
+            <div class="row font-weight-bold border-right border-left">
+                <div class="col-12 text-center"  style="overflow:hidden;">
                 </div>
             </div>
             <div class="row font-weight-bold" style="font-size:1.3rem">
@@ -40,7 +48,7 @@
                     </p>
                 </div>
             </div>
-            <div  class="row border border-dark" style="font-size: 0.8rem;min-height: 60px;">
+            <div  class="row border border-dark" style="font-size: 0.8rem;min-height: 40px;">
                 <div class="col-12">
                     Note: <span t-field="picking.note"/>
                 </div>
