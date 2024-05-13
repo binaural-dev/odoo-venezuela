@@ -1,5 +1,6 @@
 import logging
 from odoo import api, fields, models, _, Command
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -99,7 +100,9 @@ class AccountPaymentRegister(models.TransientModel):
                 },
             ),
         ]
-
+        if not self.env.company.advance_payment_igtf_journal_id:
+            raise ValidationError(_("No tiene Diario configurado para Anticipo IGTF"))
+        
         move_to_reconcile_with_payment_difference = self.env["account.move"].create(
             {
                 "journal_id": self.env.company.advance_payment_igtf_journal_id.id,
