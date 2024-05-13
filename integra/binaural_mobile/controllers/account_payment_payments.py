@@ -87,18 +87,21 @@ class AccountPaymentPayments(http.Controller):
                 advance_pays = pays_registered
                 module_advance_payment = request.env["ir.module.module"].sudo().search(
                     [
-                        ('name', "ilike", "binaural_advance_payment")
+                        ('name', "=", "binaural_advance_payment")
                     ], limit=1
                 )
-                advance_payment_installed = True if module_advance_payment.state == "installed" else False
+                advance_payment_installed = module_advance_payment.state == "installed"
                 advance_account_customer_ids = False
+
+                module_igtf = request.env["ir.module.module"].sudo().search([('name', "=", "binaural_igtf")])
+                igtf_installed = module_igtf.state == "installed"
+
                 if advance_payment_installed:
                     advance_account_customer_ids = [
-                        company.advance_customer_account_id.id,
-                        company.customer_account_igtf_id.id,
+                        company.advance_customer_account_id.id
                     ]
-                module_igtf = request.env["ir.module.module"].sudo().search([('name', "ilike", "binaural_igtf")])
-                igtf_installed = True if module_igtf.state == "installed" else False
+                    if igtf_installed:
+                        advance_account_customer_ids.append(company.customer_account_igtf_id.id)
                 
                 if type_fiscal:
                     retentions, pays_retention_registered = self.register_retentions(
