@@ -65,6 +65,9 @@ RUN curl -o odoo.deb -sSL http://nightly.odoo.com/16.0/nightly/deb/odoo_16.0.${O
 # Copy entrypoint script and Odoo configuration file
 COPY ./entrypoint.sh /
 COPY ./config/odoo.conf /etc/odoo/
+COPY ./requirements.txt /etc/odoo/
+
+RUN apt-get update && apt-get install git -y && pip install -r /etc/odoo/requirements.txt
 
 # Set permissions and Mount /var/lib/odoo to allow restoring filestore and /mnt/extra-addons for users addons
 RUN chown odoo /etc/odoo/odoo.conf \

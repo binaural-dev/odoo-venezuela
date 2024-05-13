@@ -137,10 +137,12 @@ class PosSession(models.Model):
         debit_account = 0
         move_lines = []
         for account in payment.payment_method_id:
-            credit_account = account.outstanding_account_id.id
+            debit_account = account.outstanding_account_id.id
 
-        for account in payment.payment_method_id.cross_journal:
-            debit_account = account.inbound_payment_method_line_ids.payment_account_id.id
+        for account_method in payment.payment_method_id.cross_journal:
+            credit_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
+            currency = account_method.currency_id.id if account_method.currency_id else self.env.company.currency_id.id
+
             move_lines.extend(
             [   
                 Command.create(
@@ -148,13 +150,14 @@ class PosSession(models.Model):
                         "name": _("PoS Payment Method Adjustment"),
                         "account_id": credit_account,
                         "partner_id": payment.partner_id.id,
-                        "credit": payment.amount,
-                        "foreign_credit": payment.foreign_amount,
-                        "debit": 0.0,
-                        "foreign_debit": 0.0,
+                        "amount_currency": payment.foreign_amount if currency  == 3 else payment.amount,
+                        "credit": 0.0,
+                        "foreign_credit": 0.0,
+                        "debit": payment.amount,
+                        "foreign_debit": payment.foreign_amount,
                         "not_foreign_recalculate": True,
                         "foreign_rate": payment.foreign_rate,
-                        "currency_id": account.currency_id.id if account.currency_id else self.env.company.currency_id.id
+                        "currency_id": account_method.currency_id.id if account_method.currency_id else self.env.company.currency_id.id 
                     }
                 ),
                 Command.create(
@@ -162,13 +165,14 @@ class PosSession(models.Model):
                         "name": _("PoS Payment Method Adjustment"),
                         "account_id": debit_account,
                         "partner_id": payment.partner_id.id,
-                        "debit": payment.amount,
-                        "foreign_debit": payment.foreign_amount,
-                        "credit": 0.0,
-                        "foreign_credit": 0.0,
+                        "amount_currency": -payment.foreign_amount if self.env.company.currency_id.id == 3 else -payment.amount,
+                        "debit": 0.0,
+                        "foreign_debit": 0.0,
+                        "credit": payment.amount,
+                        "foreign_credit": payment.foreign_amount,
                         "not_foreign_recalculate": True,
                         "foreign_rate": payment.foreign_rate,
-                        "currency_id": account.currency_id.id if account.currency_id else self.env.company.currency_id.id
+                        "currency_id": self.env.company.currency_id.id
 
                     }
                 ),
@@ -191,11 +195,11 @@ class PosSession(models.Model):
         move_lines = []
 
         for account in payment.payment_method_id:
-            debit_account = account.account.outstanding_account_id.id
+            debit_account = account.outstanding_account_id.id
 
-        for account in payment.payment_method_id.cross_journal:
-            credit_account = account.outbound_payment_method_line_ids.payment_account_id.ids
-
+        for account_method in payment.payment_method_id.cross_journal:
+            credit_account = account_method.outbound_payment_method_line_ids.payment_account_id.id
+            currency = account_method.currency_id.id if account_method.currency_id else self.env.company.currency_id.id
             move_lines.extend(
             [
                 Command.create(
@@ -203,13 +207,14 @@ class PosSession(models.Model):
                         "name": _("PoS Payment Method Adjustment"),
                         "account_id": debit_account,
                         "partner_id": payment.partner_id.id,
-                        "credit": 0.0,
+                        "amount_currency": abs(payment.foreign_amount) if self.env.company.currency_id.id == 3 else abs(payment.amount),
+                        "credit":0.0,
                         "foreign_credit": 0.0,
-                        "debit": payment.amount,
-                        "foreign_debit": payment.foreign_amount,
+                        "debit": abs(payment.amount),
+                        "foreign_debit": abs(payment.foreign_amount),
                         "not_foreign_recalculate": True,
                         "foreign_rate": payment.foreign_rate,
-                        "currency_id": account.currency_id.id if account.currency_id else self.env.company.currency_id.id,
+                        "currency_id": self.env.company.currency_id.id,
                     }
                 ),
                 Command.create(
@@ -217,10 +222,11 @@ class PosSession(models.Model):
                         "name": _("PoS Payment Method Adjustment"),
                         "account_id": credit_account,
                         "partner_id": payment.partner_id.id,
+                        "amount_currency": payment.foreign_amount if currency == 3 else payment.amount,
                         "debit": 0.0,
                         "foreign_debit": 0.0,
-                        "credit": payment.amount,
-                        "foreign_credit": payment.foreign_amount,
+                        "credit": abs(payment.amount),
+                        "foreign_credit": abs(payment.foreign_amount),
                         "not_foreign_recalculate": True,
                         "foreign_rate": payment.foreign_rate,
                         "currency_id": account.currency_id.id if account.currency_id else self.env.company.currency_id.id,
