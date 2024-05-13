@@ -136,6 +136,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             Payment: The created payment.
         """
         res = super(AccountPaymentRegisterIgtf, self)._create_payments()
+        _logger.warning("res de pagos")
         for payment in res:
             if (
                 payment.journal_id.is_igtf == True
@@ -162,5 +163,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                     if payment.reconciled_bill_ids:
                         payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference
+        _logger.warning("Saliendo res de pagos")
+        _logger.warning(res.journal_id.id)
+        _logger.warning(res.journal_id.name)
 
         return res
