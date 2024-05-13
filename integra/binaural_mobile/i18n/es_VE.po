@@ -1798,6 +1798,11 @@ msgstr "Pagos Movil con IGTF"
 #. module: binaural_mobile
 #: model:res.groups,name:binaural_mobile.group_sellers_show_quantity_available
 msgid "Portal / Dont show quantity available"
+msgstr "Portal / No mostrar cantidad disponible a vendedores"
+
+#. module: binaural_mobile
+#: model:res.groups,name:binaural_mobile.group_sellers_show_quantity_available
+msgid "Portal / Dont show quantity available"
 msgstr "Portal / No mostrar cantidad disponible"
 
 #. module: binaural_mobile
