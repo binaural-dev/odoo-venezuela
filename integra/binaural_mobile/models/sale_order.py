@@ -138,23 +138,24 @@ class SaleOrder(models.Model):
             )
             for line in self.order_line:
                 if not line.display_type:
-                    line.update(
-                        {
-                            "tax_id": [
-                                (
-                                    6,
-                                    0,
-                                    [
-                                        (
-                                            line.product_template_id.taxes_id[0].id
-                                            if self.tax_included
-                                            else with_out_tax.id
-                                        )
-                                    ],
-                                )
-                            ]
-                        }
-                    )
+                    if line.product_template_id.taxes_id:
+                        line.update(
+                            {
+                                "tax_id": [
+                                    (
+                                        6,
+                                        0,
+                                        [
+                                            (
+                                                line.product_template_id.taxes_id[0].id
+                                                if self.tax_included
+                                                else with_out_tax.id
+                                            )
+                                        ],
+                                    )
+                                ]
+                            }
+                        )
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
