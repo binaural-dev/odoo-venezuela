@@ -153,42 +153,52 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
                             </div>
                         </td>
                     </tr>
-                    `)
-                    return
-                }
+                    `);
+          return;
+        }
 
-                const requireReceipt = data[0]["journal_id"][2]
-                $("#requireReceipt").val(requireReceipt)
-                this.CalculateRemainingAmount()
-                this.build_table_invoices(data)
-            }
-        },
+        const requireReceipt = data[0]["journal_id"][2];
+        $("#requireReceipt").val(requireReceipt);
+        this.CalculateRemainingAmount();
+        this.build_table_invoices(data);
+      }
+    },
 
-        build_table_invoices: function(invoices){
-            const tbody = $("#notes_invoices_results")
-            tbody.empty()
-            let decimal_number = +$("#decimal").val()
-            const symbol = $("#symbol").val()
-            let symbolAfter = ""
-            let symbolBefore = ""
+    build_table_invoices: function (invoices) {
+      const tbody = $("#notes_invoices_results");
+      tbody.empty();
+      let decimal_number = +$("#decimal").val();
+      const symbol = $("#symbol").val();
+      let symbolAfter = "";
+      let symbolBefore = "";
 
-            if($("#position").val() == "after"){
-                symbolAfter = symbol
-            }else{
-                symbolBefore = symbol
-            }
+      if ($("#position").val() == "after") {
+        symbolAfter = symbol;
+      } else {
+        symbolBefore = symbol;
+      }
 
-            const amountL = _t("Importe adeudado:")
-            const taxableBaseL = _t("Base imponible: ")
-            const amountDetailedL = _t("Monto retenido: ")
-            const ivaDifL = _t("Diferencia de IVA:")
-            const note = _t("Nota:")
-            
-            invoices.forEach(line =>{
-                let { amount_total, amount_untaxed, amount_tax, id , name, journal_id, amount_residual, foreign_rate } = line
-                amount_residual = amount_residual.toFixed(decimal_number)
-                amount_total = amount_total.toFixed(decimal_number)
-                let tr_open = ` 
+      const amountL = _t("Importe adeudado:");
+      const taxableBaseL = _t("Base imponible: ");
+      const amountDetailedL = _t("Monto retenido: ");
+      const ivaDifL = _t("Diferencia de IVA:");
+      const note = _t("Nota:");
+
+      invoices.forEach((line) => {
+        let {
+          amount_total,
+          amount_untaxed,
+          amount_tax,
+          id,
+          name,
+          journal_id,
+          amount_residual,
+        } = line;
+        let first_expired_line = line["line_ids"][0];
+
+        amount_residual = amount_residual.toFixed(decimal_number);
+        amount_total = amount_total.toFixed(decimal_number);
+        let tr_open = ` 
                         <tr>
                         <td id="invoice">
                             <div class="d-flex justify-content-between">
