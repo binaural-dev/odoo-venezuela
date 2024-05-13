@@ -21,11 +21,6 @@ msgid "Pricelist"
 msgstr "Tarifa"
 
 #. module: binaural_shopify
-#: model:ir.model,name:binaural_shopify.model_res_config_shopify_instance
-msgid "Shopify Instance Configuration"
-msgstr ""
-
-#. module: binaural_shopify
 #: model_terms:ir.ui.view,arch_db:binaural_shopify.binaural_shopify_view_form
 msgid "Update product price"
 msgstr "Actualizar precio de producto"
