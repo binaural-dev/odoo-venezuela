@@ -43,9 +43,12 @@
         t-nocache-_link_class="_link_class"
         t-if="request.env.user.employee_id.is_seller">
             <li t-attf-class="#{_item_class}">
-                <a href="/payments" t-attf-class="#{_link_class} create_payment_link_menuitem">
-                    <span t-if="_text">Create payment</span>
-                </a>
+                <t t-set="user" t-value="request.env.user"/>
+                <t t-if="not user.has_group('binaural_mobile.group_sellers_cant_create_payments')">
+                    <a href="/payments" t-attf-class="#{_link_class} create_payment_link_menuitem">
+                        <span t-if="_text">Create payment</span>
+                    </a>
+                </t>
             </li>
         </t>
     </template>
