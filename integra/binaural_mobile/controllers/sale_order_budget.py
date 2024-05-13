@@ -57,6 +57,25 @@ class SaleOrderBudget(http.Controller):
             return kwargs.get("tax_included", False)
 
         return any(company.dairy_fiscal)
+    
+    def _get_vals_write_order_line(self, kwargs):
+        vals = utils.filter_dict(kwargs, ["product_id", "product_uom_qty", "tax_id"])
+
+        if "tax_include" not in vals:
+            return vals
+
+        tax_id = search_model_data("account.tax", domain, 1).id
+        tax_include = self._get_tax_included(kwargs)
+
+        if tax_included or request.env.company.mobile_tax_include:
+            product_taxes_id = browse_model_data("product.product", product_id).taxes_id
+
+            if any(product_taxes_id):
+                tax_id =  product_taxes_id[0].id
+
+        vals["tax_id"] = tax_id
+        
+        return vals
 
     @http.route(
         "/budget/order", type="http", methods=["GET"], auth="public", website=False, sitemap=False
@@ -224,8 +243,43 @@ class SaleOrderBudget(http.Controller):
 
         return data
 
+
     @http.route(
-        "/budget/edit/order", type="json", methods=["POST", "PUT"], auth="public", website=False, sitemap=False
+        "/budget/order/line",
+        type="json",
+        methods=["POST"],
+        auth="public",
+        website=False,
+        sitemap=False,
+    )
+    def write_order_line(self,  **kwargs):
+        line_id = kwargs.get('line_id', False)
+        tax_include = kwargs.get('tax_include', False)
+
+        if not line_id:
+            return {"status": 400, "msg": "id argument missing", "data": None}
+
+        try:
+
+            vals = self._get_vals_write_order_line(kwargs)
+
+            _logger.warning('---------vals------------')
+            _logger.warning(vals)
+            _logger.warning('---------------------')
+
+            record = utils.update_record("sale.order.line", int(line_id), vals)
+            data_response = record.read(FIELD_ORDER_LINE)
+
+            return {"status": 200, "msg": "Success", "data": data_response}
+
+        except Exception as e:
+            return {
+                "status": 400,
+                "msg": str(e)
+            }
+
+    @http.route(
+        "/budget/edit/order", type="json", methods=["PUT"], auth="public", website=False, sitemap=False
     )
     def edit_sale_order(self, **kwargs):
 

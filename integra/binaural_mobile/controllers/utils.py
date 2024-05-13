@@ -9,6 +9,22 @@ from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as DATETIME_FORMAT
 
 _logger = logging.getLogger(__name__)
 
+def filter_dict(original_dict, keys_to_include):
+    """
+    Filters the original dictionary to include only the specified keys.
+
+    Args:
+        original_dict (dict): The original dictionary.
+        keys_to_include (list): List of keys to include in the filtered dictionary.
+
+    Returns:
+        dict: A new dictionary containing only the specified keys and their values.
+    """
+    filtered_dict = {}
+    for key in keys_to_include:
+        if key in original_dict:
+            filtered_dict[key] = original_dict[key]
+    return filtered_dict
 
 def create_record(model_name: str, vals: list, is_sudo=True):
     """Creates a registry on the database using the ORM.
@@ -271,7 +287,6 @@ def get_order_line(sale_order: list, fields: list):
             sale_orders.append(order_cpy)
 
     return sale_orders or sale_order
-
 
 def set_order_line(sale_order: list, tax_included: bool):
     order_lines = sale_order.get("order_line", [])

@@ -32,6 +32,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             "change #stateClient": "_onChangeState",
             "change #municipalityClient": "_onChangeMunicipality",
             "click #openProduct": "_onClickOpenProduct",
+            "change .input_qty_line": "_onChangeQtyOrderLine",
         },
         init: function(parent, options) {
             this._super.apply(this, arguments);
@@ -625,6 +626,74 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $('#save_products').attr('disabled', true)
             }
         },
+        
+        _update_order_line: async function(order_line) {
+
+            const params = order_line;
+
+            const settings = {
+                type: "post"
+            }
+
+            const resp = await ajax.jsonRpc(
+                '/budget/order/line', 
+                'call',
+                params,
+                settings
+            )
+
+            return resp
+
+        },
+
+        _onChangeQtyOrderLine: async function(ev) {
+            try {
+                const tr = $(ev.target).closest('tr');
+
+                if (!tr.length) return;
+
+                const line_id = +tr[0].dataset.id;
+                const qty = + $(ev.target).val()
+
+                const data = {
+                    line_id,
+                    "product_uom_qty": qty
+                }
+
+                console.log({data});
+
+                await this._update_order_line(data)
+
+            } catch (error) {
+                this.showError(error)
+            }
+        },
+
+        _getElemQtyOrderLine: function (order, line) {
+            const show_input = true
+            const { product_uom_qty } = line;
+
+            const label = _t("Cantidad: ");
+
+            let elem = `
+                <div class="form-group">
+                    <label class="form-text" style="padding-right:3px;">${label} </label>
+                    <label>
+                        <input type="text" style="width: 60px;" class="form-control p-1 input_qty_line" value="${product_uom_qty.toFixed(2)}"/>
+                    </label>
+                </div>
+            `;
+
+            if (show_input) return elem;
+
+            // state == draft -> show input to type qty
+            return `
+                <label class="form-label" style="padding-right:3px;">
+                    ${label}
+                </label>
+                <label class="form-label" style="font-weight: bolder;">${product_uom_qty.toFixed(2)}</label><br/>
+            `;
+        },
 
         build_table_products: async function(data,buildTax) {
             if(buildTax && $("#invoice").is(":checked")){
@@ -632,9 +701,11 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 return
             }
             const tbody = $("#product_list")
-            const { order_line } = data[0];
+            const order = data[0];
+            const { order_line } = order;
+
             tbody.empty()
-            var qtyLabel = _t("Cantidad: ")
+
             var unitLabel = _t("Precio Unitario: ")
             const symbol = $("#symbolB").val()
             let symbolAfter = ""
@@ -664,12 +735,15 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 }
                 let trash = `<button type="button" class="fa fa-trash-o delete_product cancel_confirmed_input" 
                             style="background-color: transparent;border: none;padding: 0; color:red;"></button>`
+
+                const elem_qty_order_line = this._getElemQtyOrderLine(order, line)
+
                 if($("#status-val").val() == 'cancel' || $("#status-val").val() == 'sale') trash = ``
                 tbody.append(`
-                <tr>
+                <tr data-id="${id}">
                     <td colspan="4">
                         <label style="font-weight: bolder;">${name}</label> <input type="hidden" value="${id}"> <br/>
-                        <label class="form-label" style="padding-right:3px;">${qtyLabel} </label><label class="form-label" style="font-weight: bolder;">${product_uom_qty.toFixed(2)}</label><br/>
+                        ${elem_qty_order_line}
                         ${msgDeletProduct}
                         <label class="form-text" style="padding-right:3px;">${unitLabel}</label><label class="form-text" style="font-weight: bolder;">${symbolBefore} ${price_unit} ${symbolAfter}</label><br/>
                     </td>
