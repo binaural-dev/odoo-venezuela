@@ -21,7 +21,7 @@
                     name="picking_seller_ids" 
                     widget="many2many" 
                     attrs="{'readonly': [('state','=', 'done')], 'invisible': [('seller_id', '=', False)]}"
-                    domain="[('picking_type_id','=',stock_picking_type_id),('state','=','done'),('is_invoiced','=',True), ('seller_id','=',seller_id)]">
+                    domain="[('picking_type_id','=',stock_picking_type_id),('state','=','done'),('is_invoiced','=',True), ('seller_id','=',seller_id),('distribution_id','=',False)]">
                     <tree>
                         <!-- Dont remove readonly in this fields -->
                         <!-- 

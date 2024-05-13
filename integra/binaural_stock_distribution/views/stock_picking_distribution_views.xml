@@ -65,7 +65,7 @@
                                 id="picking_ids"
                                 widget="many2many" 
                                 attrs="{'readonly': [('state','=', 'done')]}"
-                                domain="[('picking_type_id','=',stock_picking_type_id),('state','=','done'),('is_invoiced','=',True)]">
+                                domain="[('picking_type_id','=',stock_picking_type_id),('state','=','done'),('is_invoiced','=',True),('distribution_id','=',False)]">
                                 <tree>
                                     <field name="name"/>
                                     <field name="partner_id"/>

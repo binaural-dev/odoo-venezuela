@@ -1,0 +1,42 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_stock_barcode_packaging
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20240214\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-10 15:15+0000\n"
+"PO-Revision-Date: 2024-05-10 15:15+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_stock_barcode_packaging
+#. odoo-javascript
+#: code:addons/binaural_stock_barcode_packaging/static/src/xml/main.xml:0
+#, python-format
+msgid "AGREGAR BULTOS"
+msgstr ""
+
+#. module: binaural_stock_barcode_packaging
+#. odoo-javascript
+#: code:addons/binaural_stock_barcode_packaging/static/src/xml/main.xml:0
+#, python-format
+msgid "IMPRIMIR ETIQUETAS"
+msgstr ""
+
+#. module: binaural_stock_barcode_packaging
+#. odoo-python
+#: code:addons/binaural_stock_barcode_packaging/models/stock_picking.py:0
+#, python-format
+msgid "The package qty is 0"
+msgstr "La cantidad de Cajas es 0"
+
+#. module: binaural_stock_barcode_packaging
+#: model:ir.model,name:binaural_stock_barcode_packaging.model_stock_picking
+msgid "Transfer"
+msgstr "Transferencia"
