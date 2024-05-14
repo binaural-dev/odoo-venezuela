@@ -101,7 +101,7 @@ class AccountPaymentRegister(models.TransientModel):
             ),
         ]
         if not self.env.company.advance_payment_igtf_journal_id:
-            raise ValidationError(_("No tiene Diario configurado para Anticipo IGTF"))
+            raise ValidationError(_("You do not have a Journal configured for IGTF Advance"))
         
         move_to_reconcile_with_payment_difference = self.env["account.move"].create(
             {
