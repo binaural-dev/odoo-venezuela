@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230626\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240513\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-28 19:08+0000\n"
-"PO-Revision-Date: 2023-06-28 19:08+0000\n"
+"POT-Creation-Date: 2024-05-14 13:21+0000\n"
+"PO-Revision-Date: 2024-05-14 13:21+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -64,3 +64,10 @@ msgstr "Diario usado por anticipos con IGTF"
 #: model:ir.model,name:binaural_advance_payment_igtf.model_account_payment_register
 msgid "Register Payment"
 msgstr "Registrar pago"
+
+#. module: binaural_advance_payment_igtf
+#. odoo-python
+#: code:addons/binaural_advance_payment_igtf/wizard/account_payment_register.py:0
+#, python-format
+msgid "You do not have a Journal configured for IGTF Advance"
+msgstr "No tiene Diario configurado para Anticipo IGTF"
