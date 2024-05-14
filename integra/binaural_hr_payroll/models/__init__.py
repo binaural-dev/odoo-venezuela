@@ -13,3 +13,6 @@ from . import hr_salary_rule
 from . import resource_calendar_attendance
 from . import res_company
 from . import res_config_settings
+from . import hr_payroll_structure_type
+from . import hr_payslip_input_type
+from . import hr_salary_rule_category
