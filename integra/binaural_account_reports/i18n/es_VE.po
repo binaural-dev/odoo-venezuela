@@ -256,11 +256,9 @@ msgid "Result Statment"
 msgstr "Estado de Resultado"
 
 #. module: binaural_account_reports
-#. odoo-python
-#: code:addons/binaural_account_reports/models/account_journal_report.py:0
-#, python-format
-msgid "T: %s"
-msgstr ""
+#: model:res.groups,name:binaural_account_reports.show_amount_currency_general_ledger
+msgid "Show Amount in Currency in General Ledger"
+msgstr " Mostrar Importe en Moneda en Libro Mayor"
 
 #. module: binaural_account_reports
 #: model:ir.actions.client,name:binaural_account_reports.action_account_report_coa_usd

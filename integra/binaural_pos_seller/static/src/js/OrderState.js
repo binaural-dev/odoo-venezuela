@@ -31,6 +31,27 @@ odoo.define("binaural_pos_seller.OrderState", function(require) {
                 json["seller_id"] = this.seller_id.id;
                 return json;
             }
+            get rate_from_lines() {
+                let rate = super.rate_from_lines
+                if (this.pos.config.use_seller_from_order != "from_order"){
+                  return rate
+                }
+                let seller = false
+                let seller_id = false
+                if(!!this.seller_id){
+                  return rate
+                }
+                if(this.get_orderlines().length > 0 && !!this.get_orderlines()[0].sale_order_origin_id){
+                  seller_id = this.get_orderlines()[0].sale_order_origin_id.seller_id
+                  if (!!seller_id){
+                    seller = this.pos.sellers.filter((employee) => employee.id == seller_id[0])
+                  }
+                }
+                if (seller.length > 0){
+                  this.set_seller(seller[0])
+                }
+                return rate
+            }
     
         };
     Registries.Model.extend(Order, BinauralOrderStateSeller);

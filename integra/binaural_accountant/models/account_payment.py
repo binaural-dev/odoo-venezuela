@@ -1,5 +1,8 @@
 from odoo import api, fields, models, _
 
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class AccountPayment(models.Model):
     _inherit = "account.payment"
@@ -33,6 +36,8 @@ class AccountPayment(models.Model):
         store=True,
         readonly=False,
     )
+
+    concept = fields.Char()
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -72,10 +77,11 @@ class AccountPayment(models.Model):
         """
         Rate = self.env["res.currency.rate"]
         for payment in self:
-            rate_values = Rate.compute_rate(
-                payment.foreign_currency_id.id, payment.date or fields.Date.today()
-            )
-            payment.update(rate_values)
+            if not payment.foreign_rate:
+                rate_values = Rate.compute_rate(
+                    payment.foreign_currency_id.id, payment.date or fields.Date.today()
+                )
+                payment.update(rate_values)
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
