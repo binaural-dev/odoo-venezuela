@@ -245,7 +245,7 @@ class SaleOrderBudget(http.Controller):
 
 
     @http.route(
-        "/budget/order/line",
+        "/budget/order/line/edit",
         type="json",
         methods=["POST"],
         auth="public",
@@ -260,14 +260,10 @@ class SaleOrderBudget(http.Controller):
             return {"status": 400, "msg": "id argument missing", "data": None}
 
         try:
-
             vals = self._get_vals_write_order_line(kwargs)
 
-            _logger.warning('---------vals------------')
-            _logger.warning(vals)
-            _logger.warning('---------------------')
-
             record = utils.update_record("sale.order.line", int(line_id), vals)
+
             data_response = record.read(FIELD_ORDER_LINE)
 
             return {"status": 200, "msg": "Success", "data": data_response}
@@ -318,6 +314,23 @@ class SaleOrderBudget(http.Controller):
             data.update({"status": 400, "msg": str(e)})
             return data
     
+    def _get_product_packaging(self, order_line):
+        product_id_id = int(order_line["product_id"][0])
+        product_id = request.env["product.product"].browse([product_id_id])
+        company_user = request.env.company
+
+        if not (product_id.packaged_product and company_user.group_stock_packaging):
+            return 1
+
+        packaging_ids = product_id.packaging_ids
+
+        if not packaging_ids:
+            return 1
+
+        first_packaging_qty = packaging_ids[0].qty
+
+        return first_packaging_qty
+
     @http.route("/budget/include_tax", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
     def include_taxes_in_sale_order(self, **kwargs):
         validation_errors = utils.ValidateRequest.require([
@@ -359,6 +372,7 @@ class SaleOrderBudget(http.Controller):
             for order_line in sale_order["order_line"]:
                 product_qty = request.env["product.template"].search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
                 order_line["qty_available"] = product_qty
+                order_line["packaging_qty"] = self._get_product_packaging(order_line)
 
             if request.env.company.mobile_show_tax_type == "include_tax":
                 for line in sale_order["order_line"]:
@@ -440,7 +454,10 @@ class SaleOrderBudget(http.Controller):
                             data.update({"status": 200, "msg": "msg", "data": sale_json})
                         
                         write_lines = utils.set_order_line(sale_order, tax_included)
-                        
+
+                        # product_qty = request.env["product.template"].search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
+                        # order_line["qty_available"] = product_qty
+
                         if write_lines:
                             sale_order["order_line"] = write_lines
                             sale.write(sale_order)
