@@ -8,7 +8,9 @@
 	    <field name="invoice_has_outstanding" position="after">
 		<field name="is_contingency" invisible="1"/>
 	    </field>
-
+            <xpath expr="//field[@name='invoice_user_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
             <xpath expr="//div[hasclass('oe_title')]/h1" position="attributes">
                 <attribute name="attrs">{'invisible': [('move_type', 'not in', ('in_invoice', 'in_refund', 'in_receipt')), ('posted_before', '=', False), ('is_contingency', '=', False)]}</attribute>
             </xpath>
@@ -154,6 +156,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//group[@id='header_right_group']/div[3]" position="after">
                     <field name="invoice_origin" string="Nro de Pedido"/>
+                    <field name="invoice_user_id"/>
                 </xpath>
             </field>
         </record>
