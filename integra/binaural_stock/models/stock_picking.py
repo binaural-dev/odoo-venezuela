@@ -1,5 +1,6 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+from odoo.osv import expression
 
 import logging
 
@@ -60,15 +61,28 @@ class StockPicking(models.Model):
     packs_count = fields.Integer(compute="_compute_stock_pickings_by_origin")
     outs_count = fields.Integer(compute="_compute_stock_pickings_by_origin")
 
-    def _get_picks(self):
-        return self.search(["&", ("origin", "=", self.origin), ("type_delivery_step", "=", "pick")])
+    def _get_picks(self, assigned=False):
+        domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "pick")]
+        if assigned:
+            domain = expression.AND([[("state", "=", "assigned")], domain])
+            return self.search(domain, limit=1)
+        return self.search(domain)
 
-    def _get_packs(self):
-        return self.search(["&", ("origin", "=", self.origin), ("type_delivery_step", "=", "pack")])
+    def _get_packs(self, assigned=False):
+        domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "pack")]
+        if assigned:
+            domain = expression.AND([[("state", "=", "assigned")], domain])
+            return self.search(domain, limit=1)
+        return self.search(domain)
 
-    def _get_outs(self):
-        return self.search(["&", ("origin", "=", self.origin), ("type_delivery_step", "=", "out")])
+    def _get_outs(self, assigned=False):
+        domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "out")]
+        if assigned:
+            domain = expression.AND([[("state", "=", "assigned")], domain])
+            return self.search(domain, limit=1)
+        return self.search(domain)
 
+    @api.depends("picks_count","packs_count","outs_count")
     def _compute_stock_pickings_by_origin(self):
         for record in self:
             record.picks_count = len(record._get_picks())

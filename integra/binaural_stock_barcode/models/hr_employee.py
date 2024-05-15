@@ -1,5 +1,6 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
+from odoo.osv import expression
 
 
 class HrEmployee(models.Model):
@@ -14,10 +15,12 @@ class HrEmployee(models.Model):
     )
 
     cart_active_id = fields.Many2one("stock.picking.cart", compute="_compute_cart_active_id")
+    available_picks_ids = fields.Many2many("stock.picking", compute="_compute_available_picks_id")
     pending_pick_id = fields.Many2one(
         "stock.picking",
         compute="_compute_pick_state_id",
-        inverse="inverse_pending_pick_id",
+        inverse="_inverse_pending_pick_id",
+        domain="[('id', 'in', available_picks_ids)]",
     )
     active_pick_id = fields.Many2one("stock.picking", compute="_compute_pick_state_id")
     paused_pick_ids = fields.Many2many("stock.picking", compute="_compute_pick_state_id")
@@ -53,7 +56,37 @@ class HrEmployee(models.Model):
             record.pending_pick_id = values.get("pending_pick_id")
             record.paused_pick_ids = values.get("paused_pick_ids")
 
-    def inverse_pending_pick_id(self):
+    @api.depends("available_picks_ids")
+    def _compute_available_picks_id(self):
+        type_delivery_step = {"picker": "pick", "packer": "pack", "out": "out"}
+        for record in self:
+            if record.role_picking not in type_delivery_step:
+                record.available_picks_ids = False
+                continue
+
+            domain = [
+                ("type_delivery_step", "=", type_delivery_step.get(record.role_picking)),
+                ("operation_state", "=", "ready"),
+                ("picker_id", "=", False),
+            ]
+            if record.user_id.property_warehouse_id:
+                domain = expression.AND(
+                    [
+                        domain,
+                        [
+                            (
+                                "picking_type_id.warehouse_id",
+                                "=",
+                                record.user_id.property_warehouse_id.id,
+                            )
+                        ],
+                    ],
+                    order="create_date asc",
+                )
+            record.available_picks_ids = record.env["stock.picking"].search(domain)
+
+
+    def _inverse_pending_pick_id(self):
         for record in self:
             values = record.get_pick_states()
 

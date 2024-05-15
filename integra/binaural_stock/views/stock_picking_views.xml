@@ -25,13 +25,13 @@
                 <field name="picks_count" invisible="1"/>
                 <field name="packs_count" invisible="1"/>
                 <field name="outs_count" invisible="1"/>
-                <button type="object" name="action_get_picks" class="oe_stat_button" icon="fa-cubes" groups="stock.group_stock_user" attrs="{'invisible': ['|',('picks_count', '=', 0), ('type_delivery_step','=','pick')]}">
+                <button type="object" name="action_get_picks" class="oe_stat_button" icon="fa-cubes" groups="stock.group_stock_user" attrs="{'invisible': [('picks_count', '&lt;', 1)]}">
                     <field name="picks_count" widget="statinfo" string="PICKS"/>
                 </button>
-                <button type="object" name="action_get_packs" class="oe_stat_button" icon="fa-cube" groups="stock.group_stock_user" attrs="{'invisible': ['|',('packs_count', '=', 0), ('type_delivery_step','=','pack')]}">
+                <button type="object" name="action_get_packs" class="oe_stat_button" icon="fa-cube" groups="stock.group_stock_user" attrs="{'invisible': [('packs_count', '&lt;', 1)]}">
                     <field name="packs_count" widget="statinfo" string="PACKS"/>
                 </button>
-                <button type="object" name="action_get_outs" class="oe_stat_button" icon="fa-truck" groups="stock.group_stock_user" attrs="{'invisible': ['|',('outs_count', '=', 0), ('type_delivery_step','=','out')]}">
+                <button type="object" name="action_get_outs" class="oe_stat_button" icon="fa-truck" groups="stock.group_stock_user" attrs="{'invisible': [('outs_count', '&lt;', 1)]}">
                     <field name="outs_count" widget="statinfo" string="OUTS"/>
                 </button>
             </xpath>

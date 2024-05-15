@@ -20,6 +20,8 @@
                             <button />
                         </control>
                         <field name="type_steps" />
+                        <field name="company_id" invisible="1"/>
+                        <field name="warehouse_id"/>
                         <field name="supervisor_required_to_edit"/>
                         <field name="supervisor_required_for_incomplete_qty" />
                     </tree>

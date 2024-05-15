@@ -97,9 +97,9 @@ class StockBarcodeControllerInherit(StockBarcodeController):
 
             cart_picking.write(
                 {
-                    "out_id": picking_id._get_outs(),
-                    "pick_id": picking_id._get_picks(),
-                    "pack_id": picking_id._get_packs(),
+                    "out_id": picking_id._get_outs(assigned=True),
+                    "pick_id": picking_id._get_picks(assigned=True),
+                    "pack_id": picking_id._get_packs(assigned=True),
                 }
             )
             picking_id.write({"cart_id": cart_picking.id})

@@ -96,21 +96,14 @@ class StockPicking(models.Model):
         if self.picker_id.pick_ids.filtered(lambda x: x.operation_state in ["ready"]):
             return
 
-        type_delivery_step = "pick"
-        if self.location_id.warehouse_id.delivery_steps == "ship_only":
-            type_delivery_step = "out"
+        if (
+            self.picker_id.user_id.property_warehouse_id.delivery_steps == "pick_ship"
+            and self.picker_id.role_picking == "out"
+        ):
+            return
 
-        new_pick = self.search(
-            [
-                ("operation_state", "=", "ready"),
-                ("type_delivery_step", "=", type_delivery_step),
-                ("picker_id", "=", False),
-            ],
-            order="create_date asc",
-            limit=1,
-        )
-        if new_pick:
-            new_pick.picker_id = self.picker_id
+        if self.picker_id.available_picks_ids:
+            self.picker_id.available_picks_ids[0].picker_id = self.picker_id
 
     def button_validate(self):
         res = super().button_validate()

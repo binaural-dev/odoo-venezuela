@@ -9,7 +9,7 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
   }
 
   _lineIsNotComplete(line) {
-    if(line.fake_line){
+    if (line.fake_line) {
       return true
     }
     return super._lineIsNotComplete(line);
@@ -21,14 +21,10 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
   }
   _createLinesState() {
     const picking = this.cache.getRecord(this.params.model, this.params.id);
-    if (picking.picks_count == 0) {
-      return super._createLinesState();
-    }
     let res = super._createLinesState();
     let products = res.map((line) => line.product_id.id)
-
     for (const id of picking.move_ids) {
-      const smlData = this.cache.getRecord('stock.move', id);
+      let smlData = this.cache.getRecord('stock.move', id);
       let base = {
         "location_id": {},
         "qty_done": 0,
@@ -49,6 +45,7 @@ export default class BinauralBarcodePickingModel extends BarcodePickingModel {
         smlData.id = id;
         smlData.product_id = this.cache.getRecord('product.product', smlData.product_id);
         smlData.location_id = this.cache.getRecord('stock.location', smlData.location_id);
+        smlData.product_uom_id = this.cache.getRecord('uom.uom', smlData.product_uom);
         smlData.fake_line = true;
         smlData.qty_done = 0;
         smlData.virtual_id = id;

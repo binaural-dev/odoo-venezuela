@@ -36,7 +36,7 @@
         <field name="model">hr.employee</field>
         <field name="arch" type="xml">
             <tree create="0" editable="bottom" string="Stock Picking (Waiting)">
-                <field name="name"/>
+                <field name="name" readonly="1"/>
                 <field name="cart_active_id"/>
                 <button name="pause_operation" 
                     type="object" 
@@ -46,7 +46,7 @@
                     attrs="{'invisible': [('active_pick_id','=',False)]}"/>
                 <field name="active_pick_id"/>
                 <field name="paused_pick_ids" widget="many2many_tags"/>
-                <field name="pending_pick_id" domain="[('type_delivery_step','=','out'),('operation_state', '=', 'ready'),('picker_id','=',False)]" />
+                <field name="pending_pick_id" />
                 <field name="pick_ids" widget="many2many_tags" optional="hide" groups="base.group_no_one"/>
             </tree>
         </field>
@@ -73,7 +73,7 @@
         <field name="model">hr.employee</field>
         <field name="arch" type="xml">
             <tree create="0" editable="bottom" string="Stock Picking (Waiting)">
-                <field name="name"/>
+                <field name="name" readonly="1"/>
                 <field name="cart_active_id"/>
                 <button name="pause_operation" 
                     type="object" 
@@ -83,7 +83,7 @@
                     attrs="{'invisible': [('active_pick_id','=',False)]}"/>
                 <field name="active_pick_id"/>
                 <field name="paused_pick_ids" widget="many2many_tags"/>
-                <field name="pending_pick_id" domain="[('type_delivery_step','=','pick'),('operation_state', '=', 'ready'),('picker_id','=',False)]" />
+                <field name="pending_pick_id" />
                 <field name="pick_ids" widget="many2many_tags" optional="hide" groups="base.group_no_one"/>
             </tree>
         </field>
