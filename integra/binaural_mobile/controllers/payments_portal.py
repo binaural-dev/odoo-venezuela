@@ -22,7 +22,7 @@ class PaymentsPortal(http.Controller):
     )
     def payment_list(self, page=1, search=None, search_in="name", url="/payment_list", **kw):
         user_id = request.env.user
-        if user_id.employee_id.is_seller:
+        if user_id.employee_id.is_seller and not user_id.has_group("binaural_mobile.group_sellers_cant_create_payments"):
             domain = [
                 ("company_id", "=", request.env.company.id),
                 ("seller_id", "=", user_id.employee_id.id),
@@ -111,7 +111,8 @@ class PaymentsPortal(http.Controller):
 
     @http.route("/payments", type="http", auth="public", website=True, sitemap=False)
     def payments_portal(self, **kw):
-        if request.env.user.employee_id.is_seller:
+        user_id = request.env.user
+        if user_id.employee_id.is_seller and not user_id.has_group("binaural_mobile.group_sellers_cant_create_payments"):
             dairy_payment = request.env.company.payment_methods_in_app
             dairy_sale = request.env.company.app_sales_diaries
             symbol_currency = request.env.company.currency_id

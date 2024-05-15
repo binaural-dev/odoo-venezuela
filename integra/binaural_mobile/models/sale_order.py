@@ -6,7 +6,11 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
-JOURNAL_DOMAIN = [("active", "=", True), ("type", "=", "sale"),]
+JOURNAL_DOMAIN = [
+    ("active", "=", True),
+    ("type", "=", "sale"),
+]
+
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
@@ -17,7 +21,7 @@ class SaleOrder(models.Model):
         for record in res:
             record.manage_note_app()
         return res
-    
+
     def write(self, vals):
         res = super().write(vals)
         if "note" in vals:
@@ -46,7 +50,6 @@ class SaleOrder(models.Model):
                         {"name": note, "display_type": "line_note"}
                     )
 
-
     def _get_default_journal(self):
         domain = copy.deepcopy(JOURNAL_DOMAIN)
         domain.append(("fiscal", "=", False))
@@ -71,14 +74,17 @@ class SaleOrder(models.Model):
     )
 
     def write(self, vals):
-        if "order_line" in vals and self.env.user.employee_id.is_seller and self.state in ["sale","done"]:
+        if (
+            "order_line" in vals
+            and self.env.user.employee_id.is_seller
+            and self.state in ["sale", "done"]
+        ):
             raise UserError(_("You can't modify this order, beceause it isn't in draft."))
         res = super().write(vals)
         return res
 
-
     def _create_invoices(self, grouped=False, final=False, date=None):
-        res = super()._create_invoices(grouped, final, date) #contingence?
+        res = super()._create_invoices(grouped, final, date)  # contingence?
         for invoice in res:
             if invoice.state == "draft":
                 invoice.journal_id = self.journal_id.id
@@ -93,13 +99,12 @@ class SaleOrder(models.Model):
                 journal = sale.env.company.dairy_fiscal
             else:
                 journal = sale.env.company.dairy_no_fiscal
-                
+
             if sale.invoice_ids:
                 for invoice in sale.invoice_ids:
                     if invoice.state == "draft":
                         invoice.journal_id = journal.id
             sale.journal_id = journal.id
-
 
     @api.depends("state", "invoice_ids")
     def _compute_state_seller(self):
@@ -116,12 +121,47 @@ class SaleOrder(models.Model):
 
             sale.state_seller = state_seller
 
+    @api.onchange("tax_included")
+    def _onchange_tax_included(self):
+        self.set_tax_lines()
+
+    def set_tax_lines(self):
+        if self.order_line:
+            with_out_tax = self.env["account.tax"].search(
+                [
+                    ("active", "=", True),
+                    ("company_id", "in", [self.company_id.id, False]),
+                    ("type_tax_use", "=", "sale"),
+                    ("amount", "=", 0),
+                ],
+                limit=1,
+            )
+            for line in self.order_line:
+                if not line.display_type:
+                    if line.product_template_id.taxes_id:
+                        line.update(
+                            {
+                                "tax_id": [
+                                    (
+                                        6,
+                                        0,
+                                        [
+                                            (
+                                                line.product_template_id.taxes_id[0].id
+                                                if self.tax_included
+                                                else with_out_tax.id
+                                            )
+                                        ],
+                                    )
+                                ]
+                            }
+                        )
+
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
-    price_unit_with_tax = fields.Float(
-        compute="_compute_price_unit_with_tax", store=True
-    )
+    price_unit_with_tax = fields.Float(compute="_compute_price_unit_with_tax", store=True)
+
     @api.depends("price_unit", "tax_id")
     def _compute_price_unit_with_tax(self):
         for line in self:
@@ -133,3 +173,9 @@ class SaleOrderLine(models.Model):
                 product=line.product_id,
             )
             line.price_unit_with_tax = taxes["total_included"]
+
+    @api.onchange('product_id')
+    def _onchange_product_id_warning(self):
+        res = super()._compute_tax_id()
+        self.order_id.set_tax_lines()
+        return res
