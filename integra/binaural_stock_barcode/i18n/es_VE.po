@@ -352,7 +352,7 @@ msgstr "Pausa"
 #: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.view_tree_stock_picking_hr_employee_out_tree_waiting
 #: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.view_tree_stock_picking_hr_employee_tree_waiting
 msgid "Pause Operation"
-msgstr "Operaciones Pausadas"
+msgstr "Pausar Operación"
 
 #. module: binaural_stock_barcode
 #: model_terms:ir.ui.view,arch_db:binaural_stock_barcode.view_picking_form
