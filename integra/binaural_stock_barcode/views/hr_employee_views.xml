@@ -37,6 +37,7 @@
         <field name="arch" type="xml">
             <tree create="0" editable="bottom" string="Stock Picking (Waiting)">
                 <field name="name" readonly="1"/>
+                <field name="available_picks_ids" invisible="1"/>
                 <field name="cart_active_id"/>
                 <button name="pause_operation" 
                     type="object" 
@@ -75,6 +76,7 @@
             <tree create="0" editable="bottom" string="Stock Picking (Waiting)">
                 <field name="name" readonly="1"/>
                 <field name="cart_active_id"/>
+                <field name="available_picks_ids" invisible="1"/>
                 <button name="pause_operation" 
                     type="object" 
                     string="Pause Operation" 
