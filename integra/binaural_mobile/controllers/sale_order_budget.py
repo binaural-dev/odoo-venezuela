@@ -425,7 +425,7 @@ class SaleOrderBudget(http.Controller):
             sale_order["order_line"] = sale.order_line.filtered(lambda line: line.display_type == False).read(FIELD_ORDER_LINE)
             
             for order_line in sale_order["order_line"]:
-                product_qty = request.env["product.template"].search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
+                product_qty = request.env["product.template"].sudo().search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
                 order_line["qty_available"] = product_qty
                 order_line["packaging_qty"] = self._get_product_packaging(order_line)
 
