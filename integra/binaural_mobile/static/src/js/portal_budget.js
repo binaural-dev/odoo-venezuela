@@ -142,7 +142,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $("#openProduct").attr("disabled",true)
             }
 
-            this.includeTax()
+            this.loadOrder();
 
             this._onProductModalScroll(self);
 
@@ -727,6 +727,16 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
         _onChangeNote: function(ev) {
             this.includeTax()
+        },
+
+        loadOrder: async function() {
+            const order = await ajax.jsonRpc('/budget/order/read', 'call', {
+                "sale_id" : parseInt($("#number_order_value").val()),
+            })
+            const { status, data } = order;
+            const is409 = status === 409;
+            if (is409) return
+            this.build_table_products([data],false)
         },
 
         includeTax: async function(){
