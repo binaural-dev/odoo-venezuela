@@ -143,7 +143,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $("#openProduct").attr("disabled",true)
             }
 
-            this.refreshOrderLines()
+            this.loadOrder();
 
             this._onProductModalScroll(self);
 
@@ -319,7 +319,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
                 if(stock_packaging){
                     let packagingQty = product.packaging_ids[1]
-                    multiplesLabel = packaged_product ? `<label class="form-text">Solo multiplos de ${packagingQty}</label><input type='hidden' id='product_qty_pack' value='${packagingQty}'/><br/>`: ``;
+                    multiplesLabel = packaged_product ? `<label class="form-text">Solo múltiplos de ${packagingQty}</label><input type='hidden' id='product_qty_pack' value='${packagingQty}'/><br/>`: ``;
                 }
 
                 if(type != "product"){
@@ -571,7 +571,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 // this.build_table_products(dt,true)
             }
 
-            this.refreshOrderLines()
+            this.loadOrder()
 
             this._onClickExitProducts()
             $("#table_inside").empty()
@@ -699,7 +699,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
                 await this._update_order_line(data)
 
-                await this.refreshOrderLines()
+                await this.loadOrder()
 
             } catch (error) {
                 this.showError(error)
@@ -743,7 +743,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
         build_table_products: async function(data,buildTax) {
             if(buildTax && $("#invoice").is(":checked")){
-                this.refreshOrderLines()
+                this.loadOrder()
                 return
             }
             const tbody = $("#product_list")
@@ -841,15 +841,26 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             tr.remove()
         },
 
-        _onChangeInvoice: function(ev) {
-            this.refreshOrderLines()
+        _onChangeInvoice: async function(ev) {
+            await this.includeTax()
+            await this.loadOrder()
         },
 
-        _onChangeNote: function(ev) {
-            this.refreshOrderLines()
+        _onChangeNote: async function(ev) {
+            await this.loadOrder()
         },
 
-        refreshOrderLines: async function(){
+        loadOrder: async function() {
+            const order = await ajax.jsonRpc('/budget/order/read', 'call', {
+                "sale_id" : parseInt($("#number_order_value").val()),
+            })
+            const { status, data } = order;
+            const is409 = status === 409;
+            if (is409) return
+            this.build_table_products([data],false)
+        },
+
+        includeTax: async function(){
             if ($("#number_order_value").val() == '') return
             const tax_included = $("#invoice").prop('checked')
             const note = $("#note").val()

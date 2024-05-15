@@ -331,6 +331,61 @@ class SaleOrderBudget(http.Controller):
 
         return first_packaging_qty
 
+    @http.route("/budget/order/read", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
+    def read_order(self, **kwargs):
+        validation_errors = utils.ValidateRequest.require([
+            ["sale_id"],
+        ], kwargs)
+
+        if any(validation_errors):
+            return utils.ValidateRequest.json(validation_errors)
+
+        data = {"status": 200, "msg": _("Success")}
+        sale_id = kwargs.get("sale_id", False)
+        tax_included = self._get_tax_included(kwargs)
+
+        try:
+            sale = utils.browse_model_data("sale.order", int(sale_id))
+
+            if not sale:
+                data.update({"status": 404, "msg": _("No sale order were found.")})
+                return data
+
+            sale_order = sale.read(FIELDFILTERS)
+
+            sale_order = utils.convert_field_string(sale_order, PARSE_FIELDS)
+
+            sale_order = sale_order[0]
+
+            sale_order["order_line"] = sale.order_line.filtered(lambda line: line.display_type == False).read(FIELD_ORDER_LINE)
+            
+            for order_line in sale_order["order_line"]:
+                product_qty = request.env["product.template"].search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
+                order_line["qty_available"] = product_qty
+                order_line["packaging_qty"] = self._get_product_packaging(order_line)
+
+            if request.env.company.mobile_show_tax_type == "include_tax":
+                for line in sale_order["order_line"]:
+                    line["price_unit"] = line["price_unit_with_tax"]
+                    line["price_subtotal"] = line["price_total"]
+
+            for line in sale_order["order_line"]:
+                description_tax = _("Tax no Selected")
+                value_tax = 0
+                if line["tax_id"][0]:
+                    tax = request.env["account.tax"].search([("id","=", line["tax_id"][0])])
+                    value_tax = tax.amount
+                    description_tax = tax.description
+                line["tax_id"].append(description_tax)
+                line["tax_id"].append(value_tax)
+
+            data.update({"data": sale_order})
+
+            return data
+        except Exception as e:
+            data.update({"status": 409, "msg": _("There was an error handling the request"), "error": str(e)})
+            return data
+
     @http.route("/budget/include_tax", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
     def include_taxes_in_sale_order(self, **kwargs):
         validation_errors = utils.ValidateRequest.require([
