@@ -38,6 +38,10 @@
         </xpath>
         <xpath expr="//button[@name='incrementButton']/.." position="replace">
         </xpath>
+        <xpath expr="//t[@t-call='stock_barcode.LineSourceLocation']" position="replace">
+        </xpath>
+        <xpath expr="//t[@t-call='stock_barcode.LineDestinationLocation']" position="replace">
+        </xpath>
         <xpath expr="//button[@t-on-click='edit']/.." position="replace">
             <t t-if="!line.fake_line">
                 <button t-on-click="edit" class="o_line_button o_edit btn"
