@@ -80,10 +80,9 @@ class HrEmployee(models.Model):
                                 record.user_id.property_warehouse_id.id,
                             )
                         ],
-                    ],
-                    order="create_date asc",
+                    ]
                 )
-            record.available_picks_ids = record.env["stock.picking"].search(domain)
+            record.available_picks_ids = record.env["stock.picking"].search(domain,order="create_date asc")
 
 
     def _inverse_pending_pick_id(self):
