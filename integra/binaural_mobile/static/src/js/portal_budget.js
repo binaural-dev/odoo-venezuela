@@ -706,28 +706,17 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             }
         },
 
-        _get_getElemUOM(uom) {
-
-            if (uom) {
-                return `<label class="form-text" style="font-weight: bolder;">${uom}</label>`
-            }
-
-            return '';
-        },
-
         _getElemQtyOrderLine: function (order, line) {
             const show_input = true
             const { product_uom_qty, qty_available, packaging_qty, uom } = line;
 
-            const label = _t("Cantidad: ");
-
             const packaging_qty_elem = packaging_qty > 1 ? `<label class="form-text" style="padding-right:3px;">Múltiplos de ${packaging_qty} </label>`: '';
 
-            const elem_uom = this._get_getElemUOM(uom);
+            const elem_uom = uom ? ` <label class="form-text" style="padding-right:3px;">${uom}</label>` : '';
 
             let elem = `
                 <div class="form-group">
-                    <label class="form-text" style="padding-right:3px;">${label} </label>
+                    <label class="form-text" style="padding-right:3px;">Cantidad: </label>
                     <label>
                         <input 
                             type="text"
@@ -737,8 +726,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                             data-qty-available="${qty_available}"
                             data-qty-pack="${packaging_qty}"
                         />
-                        ${elem_uom}
                     </label>
+                    ${elem_uom}
                     <br/>
                     ${packaging_qty_elem}
                 </div>
