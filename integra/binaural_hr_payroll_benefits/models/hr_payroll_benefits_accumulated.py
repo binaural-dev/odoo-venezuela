@@ -109,11 +109,7 @@ class HrPayrollBenefit(models.Model):
             benefits_days = company.benefits_days_per_month
             if not bool(benefits_days):
                 raise UserError(
-                    _(
-                        "The benefits days per month are not defined on the configuration."
-                        # "No se ha definido la cantidad de días de prestaciones por mes en"
-                        # "la configuración de nómina."
-                    )
+                    _("The benefits days per month are not defined on the configuration.")
                 )
 
             employees = self.env["hr.employee"].search([])
@@ -152,11 +148,7 @@ class HrPayrollBenefit(models.Model):
             benefits_days = company.benefits_days_per_month * 3
             if not bool(benefits_days):
                 raise UserError(
-                    _(
-                        "The benefits days per month are not defined on the configuration."
-                        # "No se ha definido la cantidad de días de prestaciones por mes en"
-                        # + "la configuración de nómina."
-                    )
+                    _("The benefits days per month are not defined on the configuration.")
                 )
 
             employees = self.env["hr.employee"].search([])
@@ -191,21 +183,13 @@ class HrPayrollBenefit(models.Model):
             days_per_year = employee.company_id.benefits_days_per_year
             if not days_per_year:
                 raise UserError(
-                    _(
-                        "The benefits days per month are not defined on the configuration."
-                        # "No se ha definido la cantidad de días de prestaciones por año en"
-                        # + "la configuración de nómina."
-                    )
+                    _("The benefits days per month are not defined on the configuration.")
                 )
 
             maximum_of_days = employee.company_id.maximum_benefits_days_per_year
             if not bool(maximum_of_days):
                 raise UserError(
-                    _(
-                        "The maximum benefits days per year are not defined on the configuration."
-                        # "No se ha definido la cantidad máxima de días de prestaciones por año en"
-                        # + "la configuración de nómina."
-                    )
+                    _("The maximum benefits days per year are not defined on the configuration.")
                 )
 
             seniority = employee._get_seniority_in_years()
@@ -230,11 +214,7 @@ class HrPayrollBenefit(models.Model):
             interest_rate = company.benefits_interest_monthly_rate
             if not bool(interest_rate):
                 raise UserError(
-                    _(
-                        "The benefits interest monthly rate is not defined on the configuration."
-                        # "No se ha definido la tasa mensual de intereses de prestaciones"
-                        # + "en la configuración de nómina."
-                    )
+                    _("The benefits interest monthly rate is not defined on the configuration.")
                 )
             daily_interest_rate = interest_rate / 30 / 100
             _logger.warning("Daily interest rate: %s", daily_interest_rate)
@@ -252,6 +232,10 @@ class HrPayrollBenefit(models.Model):
                 if not any(benefits_accumulated):
                     continue
 
+                _logger.warning(
+                    "Benefits available benefits: %s",
+                    benefits_accumulated[-1]["available_benefits"],
+                )
                 daily_interests = (
                     benefits_accumulated[-1]["available_benefits"] * daily_interest_rate,
                     benefits_accumulated[-1]["foreign_available_benefits"] * daily_interest_rate,
