@@ -1,6 +1,6 @@
 {
-    "name": "Binaural Inventario y Ventas",
-    "summary": """Agrega Validacion de  warehouse relacionados en ventas.""",
+    "name": "Binaural Inventario y Compras",
+    "summary": """Agrega campos de Comercial y factura en Stock.picking cuando es compra.""",
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     # Categories can be used to filter modules in modules listing
@@ -10,9 +10,8 @@
     "version": "16.0.0.0.4",
     # any module necessary for this one to work correctly
     "depends": [
-        "binaural_stock",
-        "binaural_sale",
-        "stock",
+        "purchase",
+        "binaural_stock_sale",
     ],
     "data": [
         # "security/ir_rule.xml",
