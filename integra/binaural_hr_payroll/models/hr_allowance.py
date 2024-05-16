@@ -40,7 +40,7 @@ class HrAllowanceLine(models.Model):
     allowance_id = fields.Many2one("hr.allowance")
     name = fields.Char(compute="_compute_name")
     code = fields.Char(related="allowance_id.code", store=True)
-    employee_id = fields.Many2one("hr.employee")
+    employee_id = fields.Many2one("hr.employee", required=True)
     employee_vat = fields.Char(string="Employee VAT", related="employee_id.vat")
     value = fields.Float(compute="_compute_value", readonly=False, store=True)
     description = fields.Char(related="allowance_id.description")
