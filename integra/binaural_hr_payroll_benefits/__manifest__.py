@@ -13,6 +13,7 @@
         "security/ir.model.access.csv",
         "views/hr_payroll_benefits_accumulated.xml",
         "views/hr_payroll_benefits_accumulated_detail.xml",
+        "views/res_config_settings.xml",
         "views/menuitems.xml",
     ],
 }

@@ -110,26 +110,6 @@
 	    </field>
 	</record>
 
-	<record id="hr_payroll_move_benefits_view_tree" model="ir.ui.view">
-	    <field name="name">hr.payroll.move.benefits.view.tree</field>
-	    <field name="model">hr.payroll.move</field>
-	    <field name="arch" type="xml">
-		<tree string="Benefits Payments" editable="bottom">
-		    <field name="company_id" invisible="1"/>
-		    <field name="date" optional="show"/>
-		    <field name="slip_id" optional="hide"/>
-		    <field name="employee_id" optional="show"/>
-		    <field name="employee_vat" optional="show"/>
-		    <field name="department_id" optional="show"/>
-		    <field name="employee_job_id" optional="show"/>
-		    <field name="advance_of_benefits" optional="show"/>
-		    <field name="total_net" optional="show"/>
-
-		    <field name="foreign_advance_of_benefits" optional="hide"/>
-		    <field name="foreign_total_net" optional="hide"/>
-		</tree>
-	    </field>
-	</record>
 
 	<record id="hr_payroll_move_profit_sharing_view_tree" model="ir.ui.view">
 	    <field name="name">hr.payroll.move.profit.sharing.view.tree</field>
@@ -209,7 +189,6 @@
 		    <field name="total_accrued" type="measure"/>
 		    <field name="total_net" type="measure"/>
 		    <field name="total_assig" type="measure"/>
-		    <field name="advance_of_benefits" type="measure"/>
 		    <field name="vacation_days" type="measure"/>
 		    <field name="consumed_vacation_days" type="measure"/>
 		    <field name="total_vacation" type="measure"/>
@@ -219,7 +198,6 @@
 		    <field name="foreign_total_accrued" type="measure" optional="hide"/>
 		    <field name="foreign_total_net" type="measure" optional="hide"/>
 		    <field name="foreign_total_assig" type="measure" optional="hide"/>
-		    <field name="foreign_advance_of_benefits" type="measure" optional="hide"/>
 		    <field name="foreign_total_vacation" type="measure" optional="hide"/>
 		</pivot>
 	    </field>
@@ -260,19 +238,6 @@
 		    (0, 0, {'view_mode': 'tree', 'view_id': ref('hr_payroll_move_advance_view_tree')}),
 		    (0, 0, {'view_mode': 'pivot'})]"
 	    />
-	</record>
-
-	<record id="hr_payroll_move_benefits_action" model="ir.actions.act_window">
-	    <field name="name">Benefits Payments</field>
-	    <field name="res_model">hr.payroll.move</field>
-	    <field name="domain">[("move_type",'=',"benefits")]</field>
-	    <field
-	    	name="view_ids"
-	    	eval="[(5, 0, 0),
-		    (0, 0, {'view_mode': 'tree', 'view_id': ref('hr_payroll_move_benefits_view_tree')}),
-		    (0, 0, {'view_mode': 'pivot'})]"
-	    />
-        <field name="context">{"default_move_type": "benefits"}</field>
 	</record>
 
 	<record id="hr_payroll_move_profit_sharing_action" model="ir.actions.act_window">

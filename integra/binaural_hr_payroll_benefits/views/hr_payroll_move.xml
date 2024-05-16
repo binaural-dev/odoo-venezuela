@@ -1,0 +1,51 @@
+<odoo>
+    <data>
+	<record id="hr_payroll_move_benefits_view_tree" model="ir.ui.view">
+	    <field name="name">hr.payroll.move.benefits.view.tree</field>
+	    <field name="model">hr.payroll.move</field>
+	    <field name="arch" type="xml">
+		<tree string="Benefits Payments" editable="bottom">
+		    <field name="company_id" invisible="1"/>
+		    <field name="date" optional="show"/>
+		    <field name="slip_id" optional="hide"/>
+		    <field name="employee_id" optional="show"/>
+		    <field name="employee_vat" optional="show"/>
+		    <field name="department_id" optional="show"/>
+		    <field name="employee_job_id" optional="show"/>
+		    <field name="advance_of_benefits" optional="show"/>
+		    <field name="total_net" optional="show"/>
+
+		    <field name="foreign_advance_of_benefits" optional="hide"/>
+		    <field name="foreign_total_net" optional="hide"/>
+		</tree>
+	    </field>
+	</record>
+
+	<record id="hr_payroll_move_view_pivot" model="ir.ui.view">
+	    <field name="name">hr.payroll.move.view.pivot.benefits</field>
+	    <field name="model">hr.payroll.move</field>
+	    <field name="inherit_id" ref="binaural_hr_payroll.hr_payroll_move_view_pivot"/>
+	    <field name="arch" type="xml">
+		<field name="total_assig" position="after">
+		    <field name="advance_of_benefits" type="measure"/>
+		</field>
+		<field name="foreign_total_assig" position="after">
+		    <field name="foreign_advance_of_benefits" type="measure" optional="hide"/>
+		</field>
+	    </field>
+	</record>
+
+	<record id="hr_payroll_move_benefits_action" model="ir.actions.act_window">
+	    <field name="name">Benefits Payments</field>
+	    <field name="res_model">hr.payroll.move</field>
+	    <field name="domain">[("move_type",'=',"benefits")]</field>
+	    <field
+	    	name="view_ids"
+	    	eval="[(5, 0, 0),
+		    (0, 0, {'view_mode': 'tree', 'view_id': ref('hr_payroll_move_benefits_view_tree')}),
+		    (0, 0, {'view_mode': 'pivot'})]"
+	    />
+            <field name="context">{"default_move_type": "benefits"}</field>
+	</record>
+    </data>
+</odoo>
