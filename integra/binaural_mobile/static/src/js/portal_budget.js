@@ -712,6 +712,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
             const label = _t("Cantidad: ");
 
+            const packaging_qty_elem = packaging_qty > 1 ? `<label class="form-text" style="padding-right:3px;">Múltiplos de ${packaging_qty} </label>`: '';
+
             let elem = `
                 <div class="form-group">
                     <label class="form-text" style="padding-right:3px;">${label} </label>
@@ -726,7 +728,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                         />
                     </label>
                     <br/>
-                    <label class="form-text" style="padding-right:3px;">Múltiplos de ${packaging_qty} </label>
+                    ${packaging_qty_elem}
                 </div>
             `;
 

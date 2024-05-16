@@ -314,9 +314,7 @@ class SaleOrderBudget(http.Controller):
             data.update({"status": 400, "msg": str(e)})
             return data
     
-    def _get_product_packaging(self, order_line):
-        product_id_id = int(order_line["product_id"][0])
-        product_id = request.env["product.product"].browse([product_id_id])
+    def _get_product_packaging(self, product_id):
         company_user = request.env.company
 
         if not (product_id.packaged_product and company_user.group_stock_packaging):
@@ -330,6 +328,9 @@ class SaleOrderBudget(http.Controller):
         first_packaging_qty = packaging_ids[0].qty
 
         return first_packaging_qty
+    
+    def _get_product_uom(self, product_id):
+        return product_id.uom_id.name
 
     @http.route("/budget/order/read", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
     def read_order(self, **kwargs):
@@ -361,8 +362,11 @@ class SaleOrderBudget(http.Controller):
             
             for order_line in sale_order["order_line"]:
                 product_qty = request.env["product.template"].sudo().search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
+                product_id_id = int(order_line["product_id"][0])
+                product_id = request.env["product.product"].browse([product_id_id])
                 order_line["qty_available"] = product_qty
-                order_line["packaging_qty"] = self._get_product_packaging(order_line)
+                order_line["packaging_qty"] = self._get_product_packaging(product_id)
+                order_line["uom"] = self._get_product_uom(product_id)
 
             if request.env.company.mobile_show_tax_type == "include_tax":
                 for line in sale_order["order_line"]:
