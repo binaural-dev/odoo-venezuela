@@ -4,7 +4,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Human Resources",
-    "version": "16.0.1.0.0",
+    "version": "16.0.1.0.1",
     # any module necessary for this one to work correctly
     "depends": ["binaural_hr_payroll"],
     # always loaded
@@ -13,6 +13,7 @@
         "security/ir.model.access.csv",
         "views/hr_payroll_benefits_accumulated.xml",
         "views/hr_payroll_benefits_accumulated_detail.xml",
+        "views/hr_payroll_move.xml",
         "views/res_config_settings.xml",
         "views/menuitems.xml",
     ],

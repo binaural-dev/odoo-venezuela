@@ -4,3 +4,6 @@ from . import hr_employee
 from . import hr_payroll_benefits_accumulated
 from . import hr_payroll_benefits_accumulated_detail
 from . import hr_payroll_move
+from . import hr_payroll_structure
+from . import hr_payslip
+from . import hr_payslip_line

@@ -2,7 +2,7 @@ from odoo import api, fields, models
 
 
 class HrPayslipLine(models.Model):
-    _inherit = "hr.payslip.self"
+    _inherit = "hr.payslip.line"
 
     foreign_currency_id = fields.Many2one(related="slip_id.foreign_currency_id")
 
@@ -26,57 +26,82 @@ class HrPayslipLine(models.Model):
             line.foreign_total = float(line.quantity) * line.foreign_amount * line.rate / 100
 
     def get_values_for_payroll_move(self):
+        """
+        Retrieves and returns a dictionary of payroll move parameters based on the
+        category and specific code of the payroll line.
+
+        This method ensures that only one payroll line is being processed. It uses
+        predefined mappings to update the result dictionary with values corresponding
+        to the payroll line's category code and specific code.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the payroll move parameters with keys as
+            defined by the category and specific code mappings.
+
+        Raises
+        ------
+        ValidationError
+            If more than one payroll line is being processed.
+
+        Examples
+        --------
+        >>> line = self.env['hr.payslip.line'].browse(1)
+        >>> line.category_id.code = 'BASIC'
+        >>> line.total = 150.0
+        >>> line.foreign_total = 15.0
+        >>> line.get_values_for_payroll_move()
+        {'total_basic': 150.0, 'foreign_total_basic': 15.0}
+
+        >>> line.category_id.code
+        'DED'
+        >>> line.total
+        100.0
+        >>> line.foreign_total
+        10.0
+        >>> line.get_values_for_payroll_move()
+        {'total_deduction': 100.0, 'foreign_total_deduction': 10.0}
+        """
         self.ensure_one()
+
         result = {}
-        if self.category_id.code == "DED":
-            result["total_deduction"] = self.total
-            result["foreign_total_deduction"] = self.foreign_total
-        if self.category_id.code == "ASIG":
-            result["total_assig"] = self.total
-            result["foreign_total_assig"] = self.foreign_total
-        if self.category_id.code == "BASIC":
-            result["total_basic"] = self.total
-            result["foreign_total_basic"] = self.foreign_total
-        if self.category_id.code == "DEV":
-            result["total_accrued"] = self.total
-            result["foreign_total_accrued"] = self.foreign_total
-        if self.category_id.code == "NET":
-            result["total_net"] = self.total
-            result["foreign_total_net"] = self.foreign_total
 
-        if self.code == "DDBVM":
-            result["vacation_days"] = self.total
-        if self.code == "DDVM":
-            result["consumed_vacation_days"] = self.total
-        if self.code == "PDDVM":
-            result["total_vacation"] = self.total
-            result["foreign_total_vacation"] = self.foreign_total
-        if self.code == "DDBVM":
-            result["vacation_bonus_days"] = self.total
-        if self.code == "PDDBVM":
-            result["total_vacation_bonus"] = self.total
-            result["foreign_total_vacation_bonus"] = self.foreign_total
-        if self.code == "UTIL":
-            result["profit_sharing_payment"] = self.total
-            result["foreign_profit_sharing_payment"] = self.foreign_total
-        if self.code == "ADPRESTA":
-            result["advance_of_benefits"] = self.total
-            result["foreign_advance_of_benefits"] = self.foreign_total
+        # Define mappings for category_id and code
+        category_mappings = {
+            "DED": {"total_deduction": "total", "foreign_total_deduction": "foreign_total"},
+            "ASIG": {"total_assig": "total", "foreign_total_assig": "foreign_total"},
+            "BASIC": {"total_basic": "total", "foreign_total_basic": "foreign_total"},
+            "DEV": {"total_accrued": "total", "foreign_total_accrued": "foreign_total"},
+            "NET": {"total_net": "total", "foreign_total_net": "foreign_total"},
+        }
 
-        if payroll_structure_category == "liquidation":
-            if self.code == "DDVMLIQ":
-                vacation_days += self.total
-            if self.code == "PDDVMLIQ":
-                total_vacation += self.total
-                foreign_total_vacation += self.foreign_total
-            if self.code == "DDVBMLIQ":
-                vacation_bonus_days += self.total
-            if self.code == "PDDVBMLIQ":
-                total_vacation_bonus += self.total
-                foreign_total_vacation_bonus += self.foreign_total
-            if self.code == "UTILLIQ":
-                profit_sharing_payment += self.total
-                foreign_profit_sharing_payment += self.foreign_total
-            if self.code == "PRESTA":
-                benefits_payment += self.total
-                foreign_benefits_payment += self.foreign_total
+        code_mappings = {
+            "DDBVM": {"vacation_days": "total", "vacation_bonus_days": "total"},
+            "DDVM": {"consumed_vacation_days": "total"},
+            "PDDVM": {
+                "total_vacation_bonus": "total",
+                "foreign_total_vacation_bonus": "foreign_total",
+            },
+            "PDDBVM": {"total_vacation": "total", "foreign_total_vacation": "foreign_total"},
+            "UTIL": {
+                "profit_sharing_payment": "total",
+                "foreign_profit_sharing_payment": "foreign_total",
+            },
+            "ADPRESTA": {
+                "advance_of_benefits": "total",
+                "foreign_advance_of_benefits": "foreign_total",
+            },
+        }
+
+        # Update result based on category_id.code
+        if self.category_id.code in category_mappings:
+            for key, attr in category_mappings[self.category_id.code].items():
+                result[key] = getattr(self, attr)
+
+        # Update result based on code
+        if self.code in code_mappings:
+            for key, attr in code_mappings[self.code].items():
+                result[key] = getattr(self, attr)
+
+        return result

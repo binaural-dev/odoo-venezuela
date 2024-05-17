@@ -13,8 +13,3 @@ class HrPayslip(models.Model):
             }
         )
         return localdict
-
-    def _get_payroll_move_params(self):
-        move_params = self._get_payroll_move_params()
-
-        
