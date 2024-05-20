@@ -280,6 +280,7 @@ class AccountRetention(models.Model):
             ("company_id", "=", self.company_id.id),
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
+            ("journal_id.fiscal", "=", True),
             ("move_type", "in", ("in_refund", "in_invoice")),
             ("amount_residual", ">", 0),
             ("fiscal", "=", True),
@@ -313,6 +314,7 @@ class AccountRetention(models.Model):
             ("company_id", "=", self.company_id.id),
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
+            ("journal_id.fiscal", "=", True),
             ("move_type", "in", ("out_refund", "out_invoice")),
             ("amount_residual", ">", 0),
         ]
