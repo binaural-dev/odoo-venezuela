@@ -95,12 +95,12 @@ class AccountTax(models.Model):
             self.env, res["foreign_subtotal"], currency_obj=foreign_currency
         )
 
-        res["discount_amount"] = res_without_discount["amount_untaxed"] - res["amount_untaxed"]
+        res["discount_amount"] =  res["amount_untaxed"] - res_without_discount["amount_untaxed"]
         res["formatted_discount_amount"] = formatLang(
             self.env, res["discount_amount"], currency_obj=currency
         )
         res["foreign_discount_amount"] = (
-            foreign_taxes_without_discount["amount_untaxed"] - foreign_taxes["amount_untaxed"]
+            foreign_taxes["amount_untaxed"] - foreign_taxes_without_discount["amount_untaxed"]
         )
         res["foreign_formatted_discount_amount"] = formatLang(
             self.env, res["foreign_discount_amount"], currency_obj=foreign_currency
