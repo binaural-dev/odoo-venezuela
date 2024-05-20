@@ -8,6 +8,10 @@ class ResConfigSettings(models.TransientModel):
 
     unique_tax = fields.Boolean(related="company_id.unique_tax", readonly=False)
 
+    show_discount_on_moves = fields.Boolean(
+        related="company_id.show_discount_on_moves", readonly=False
+    )
+
     exent_aliquot_sale = fields.Many2one(
         "account.tax", related="company_id.exent_aliquot_sale", readonly=False
     )
