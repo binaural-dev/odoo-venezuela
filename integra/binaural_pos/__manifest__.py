@@ -11,6 +11,7 @@
     "depends": ["base", "point_of_sale", "binaural_rate", "binaural_contact", "binaural_stock"],
     # always loaded
     "data": [
+        "security/ir.model.access.csv",
         "data/res_group.xml",
         "views/pos_payment_method.xml",
         "views/pos_order.xml",
@@ -19,6 +20,8 @@
         "views/pos_payment_views.xml",
         "views/report_saledetails.xml",
         "security/res_group.xml",
+        "wizard/payment_report.xml",
+        "report/payment_report.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
