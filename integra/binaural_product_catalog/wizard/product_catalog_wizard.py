@@ -57,7 +57,7 @@ class GenerateProductCatalogWizard(models.TransientModel):
     border_width = fields.Integer('Border width', default=lambda self: self.env.company.border_width)
     primary_color = fields.Char('Primary color', default=lambda self: self.env.company.primary_color)
 
-     style_mod = fields.Selection(
+    style_mod = fields.Selection(
         selection = [
             ('style_1', 'Style 1'),
             ('style_6', 'Style 6')
