@@ -267,18 +267,27 @@ class PortalAccountInh(PortalAccount):
             invoices = AccountInvoice.search(
                 domain, order=order, limit=_items_per_page, offset=pager_offset
             )
+            _logger.warning("INVOICES: %s", invoices.mapped("next_installment_date"))
+            _logger.warning("STart of next month: %s", date_utils.start_of(next_month, "month"))
+            _logger.warning(
+                "STart of next month type: %s", type(date_utils.start_of(next_month, "month"))
+            )
             if filterby == "d_next_installment_payment_date_this_month":
-                return invoices.filtered(
+                res = invoices.filtered(
                     lambda i: i.next_installment_date
                     and i.next_installment_date >= today
                     and i.next_installment_date <= date_utils.end_of(today, "month")
                 )
+                _logger.warning("RESSS: %s", res)
+                return res
             if filterby == "d_next_installment_payment_date_next_month":
-                return invoices.filtered(
+                res = invoices.filtered(
                     lambda i: i.next_installment_date
                     and i.next_installment_date >= date_utils.start_of(next_month, "month")
                     and i.next_installment_date <= date_utils.end_of(next_month, "month")
                 )
+                _logger.warning("RESSS: %s", res)
+                return res
             return invoices
 
         values.update(

@@ -194,11 +194,22 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           journal_id,
           amount_residual,
         } = line;
-        let first_expired_line = line["line_ids"][0];
-        console.log(
-          "FIRST EXPIRED LINE DATE",
-          first_expired_line["date_maturity"]
-        );
+        const lines_ordered_by_maturity_date = line.line_ids.sort(function (
+          a,
+          b
+        ) {
+          const a_date = a.date_maturity.split("/");
+          [a_date[0], a_date[1]] = [a_date[1], a_date[0]];
+
+          const b_date = b.date_maturity.split("/");
+          [b_date[0], b_date[1]] = [b_date[1], b_date[0]];
+
+          return new Date(b_date) - new Date(a_date);
+        });
+        const first_expired_line = lines_ordered_by_maturity_date[0];
+
+        console.log("LINES", line.line_ids);
+        console.log("LINES ORDERED", lines_ordered_by_maturity_date);
 
         amount_residual = amount_residual.toFixed(decimal_number);
         amount_total = amount_total.toFixed(decimal_number);

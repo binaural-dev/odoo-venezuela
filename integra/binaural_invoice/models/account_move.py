@@ -128,6 +128,7 @@ class AccountMove(models.Model):
         for invoice in self:
             invoice.next_installment_date = False
             if not invoice.payment_term_details:
+                invoice.next_installment_date = invoice.invoice_date_due
                 continue
             for term in invoice.payment_term_details:
                 term_date = datetime.strptime(term.get("date", ""), date_format).date()
