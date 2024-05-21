@@ -125,6 +125,24 @@
         </field>
     </record> 
 
+    <record id="view_order_tree" model="ir.ui.view">
+        <field name="name">sale.order.tree</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="vat" optional="hide"/>
+                <field name="address" optional="hide"/>
+                <field name="mobile" optional="hide"/>
+            </xpath>
+            <xpath expr="//field[@name='activity_ids']" position="after">
+                <field name="foreign_rate" optional="hide"/>
+                <field name="foreign_total_billed" optional="hide" />
+               
+            </xpath>
+        </field>
+    </record>
+
     <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">
         <field name="name">Quotations</field>
         <field name="type">ir.actions.act_window</field>
