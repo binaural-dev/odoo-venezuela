@@ -607,6 +607,7 @@ class AccountRetention(models.Model):
                 retention.payment_ids = payments.ids
             if retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._set_sequence()
+                move_ids.write({"iva_voucher_number": retention.number})
 
         self.payment_ids.write({"date": self.date_accounting})
         self._reconcile_all_payments()
