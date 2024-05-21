@@ -5,6 +5,20 @@ from odoo.tools import get_lang
 class GeneralLedgerCustomHandler(models.AbstractModel):
     _inherit = "account.general.ledger.report.handler"
 
+
+    def _custom_options_initializer(self, report, options, previous_options=None):
+        # Remove multi-currency columns if needed
+        columns = super()._custom_options_initializer(report, options, previous_options=previous_options)
+        if not self.user_has_groups('binaural_account_reports.show_amount_currency_general_ledger'):
+            options['columns'] = [
+                column for column in options['columns']
+                if column['expression_label'] != 'amount_currency'
+            ]
+
+        # Automatically unfold the report when printing it, unless some specific lines have been unfolded
+        options['unfold_all'] = (self._context.get('print_mode') and not options.get('unfolded_lines')) or options['unfold_all']
+        return columns
+
     def _get_query_sums(self, report, options):
         options_by_column_group = report._split_options_per_column_group(options)
 

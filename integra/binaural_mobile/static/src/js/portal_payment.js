@@ -195,6 +195,10 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           amount_residual,
         } = line;
         let first_expired_line = line["line_ids"][0];
+        console.log(
+          "FIRST EXPIRED LINE DATE",
+          first_expired_line["date_maturity"]
+        );
 
         amount_residual = amount_residual.toFixed(decimal_number);
         amount_total = amount_total.toFixed(decimal_number);
@@ -458,6 +462,14 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
     _onClickExit_payment: function (ev) {
       this.Empty_inputs();
       this.Set_day_today();
+      let inputsRequest = [
+        "#diary_pay",
+        "#amount_to_payment",
+        "#reference_number",
+      ];
+      inputsRequest.forEach(function (id) {
+        $(id).removeClass("is-invalid");
+      });
       $(".disabled-pay").attr("disabled", true);
     },
 

@@ -48,7 +48,9 @@ class ResPartnerInherit(models.Model):
         return res
 
     def sellers_validate(self):
-        for partner in self.filtered(lambda p: p != self.env.ref("binaural_seller.res_partner_1")):
+        for partner in self.filtered(
+            lambda p: p != self.env.ref("binaural_seller.res_partner_1", raise_if_not_found=False)
+        ):
             employee_seller = self.env["hr.employee"].search(
                 [
                     ("company_id", "=", self.env.company.id), 

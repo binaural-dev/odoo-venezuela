@@ -162,5 +162,4 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                     if payment.reconciled_bill_ids:
                         payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference
-
         return res

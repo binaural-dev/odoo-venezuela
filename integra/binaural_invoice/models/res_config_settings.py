@@ -14,10 +14,18 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
         implied_group="binaural_invoice.group_sales_invoicing_series",
     )
+    show_total_on_usd_invoice = fields.Boolean(
+        related="company_id.show_total_on_usd_invoice", readonly=False
+    )
+    show_tag_on_usd_invoice = fields.Boolean(
+        related="company_id.show_tag_on_usd_invoice", readonly=False
+    )
 
     @api.onchange("group_sales_invoicing_series")
     def onchange_group_sales_invoicing_series(self):
         ir_sequence = self.env["ir.sequence"].sudo()
 
-        series_sequence = ir_sequence.search(["|", ("code", "=", "series.invoice.correlative"), ("active", "=", False)])
+        series_sequence = ir_sequence.search(
+            ["|", ("code", "=", "series.invoice.correlative"), ("active", "=", False)]
+        )
         series_sequence.active = self.group_sales_invoicing_series

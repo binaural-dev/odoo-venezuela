@@ -92,7 +92,15 @@ class PaymentMobile(models.Model):
             if advance_payment_installed:
                 company_id = self.env.company
                 advance_account_customer = company_id.advance_customer_account_id
-                advance_account_customer_igtf = company_id.customer_account_igtf_id
+                advance_account_customer_igtf = (
+                    company_id.customer_account_igtf_id 
+                    if self.env["ir.module.module"].sudo().search(
+                        [
+                            ('name', "=", "binaural_igtf")
+                        ]
+                    ).state == 'installed'
+                    else False
+                )
             for line in lines.payment_mobile_line:
                 pass_advance_pay = False
                 if advance_payment_installed:

@@ -15,7 +15,7 @@ class ResConfigSettings(models.TransientModel):
     pdv_option = fields.Boolean(string="Pdv options", related='company_id.pdv_option', readonly=False)
     url_megasoft = fields.Char(related='company_id.url_megasoft', readonly=False)
     port_megasoft = fields.Char(related='company_id.port_megasoft', readonly=False)
-
+    pre_close_megasoft = fields.Boolean(related='pos_config_id.pre_close', readonly=False)
 
     @api.onchange('change_p2c')
     def _onchange_change_p2c(self):
