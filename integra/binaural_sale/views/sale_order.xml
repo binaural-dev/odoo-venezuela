@@ -137,8 +137,8 @@
             </xpath>
             <xpath expr="//field[@name='activity_ids']" position="after">
                 <field name="foreign_rate" optional="hide"/>
-                <field name="foreign_total_billed" optional="hide" />
-               
+                <field name="foreign_currency_id" invisible="1"/>
+                <field name="foreign_total_billed" optional="hide" options="{'currency_field': 'foreign_currency_id'}"/>
             </xpath>
         </field>
     </record>
