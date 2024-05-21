@@ -204,7 +204,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           const b_date = b.date_maturity.split("/");
           [b_date[0], b_date[1]] = [b_date[1], b_date[0]];
 
-          return new Date(b_date) - new Date(a_date);
+          return new Date(a_date) - new Date(b_date);
         });
         const first_expired_line = lines_ordered_by_maturity_date[0];
 
