@@ -849,6 +849,17 @@ class AccountReport(models.Model):
 
         return rslt
 
+    def caret_option_open_general_ledger(self, options, params):
+        """
+        Inherits the original method so the general ledger report is called on the right currency
+        according to the context in which it's being called.
+        """
+        action_vals = super().caret_option_open_general_ledger(options, params)
+        context = literal_eval(action_vals["context"])
+        context["usd_report"] = self.env.context.get("usd_report", False)
+        action_vals["context"] = str(context)
+        return action_vals
+
 
 class AccountReportCustomHandler(models.AbstractModel):
     _inherit = "account.report.custom.handler"

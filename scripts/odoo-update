@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+import os
+import click
+from dotenv import load_dotenv
+
+
+@click.command()
+@click.option("-d", required=True, help="Database name")
+@click.argument("args", nargs=-1)
+def run_command(d, args):
+    load_dotenv()
+    PROJECT_NAME = os.getenv("PROJECT_NAME")
+    os.system(f"docker exec -it {PROJECT_NAME} odoo -d {d} -u {' '.join(args)}")
+
+if __name__ == "__main__":
+    run_command()

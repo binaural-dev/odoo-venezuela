@@ -30,7 +30,10 @@
                 </tr>
             </table>
         </table>
-
+    
+    <xpath expr="//h2" position="replace">
+        <h2 t-field="o.report_title_name" />
+    </xpath>
 	<xpath expr="//table[@class='table table-sm'][1]" position="replace">
 	    <table class="table table-sm">
                 <tr>

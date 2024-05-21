@@ -6,6 +6,9 @@ from collections import defaultdict
 from odoo.tools.misc import formatLang
 from odoo.tools import float_compare
 
+import logging
+_logger = logging.getLogger(__name__)
+
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -392,7 +395,9 @@ class AccountMove(models.Model):
                 if line.currency_id == self.env.company.currency_foreign_id
             ]
 
-            for line in self.line_ids:
+            for line in self.line_ids.sorted(lambda l: l.tax_ids, reverse=True):
+                # If the line is an adjustment line, the foreign debit and foreign credit will be
+                # the foreign debit and foreign credit adjustment fields.
                 if line.not_foreign_recalculate:
                     continue
 
@@ -605,8 +610,8 @@ class AccountMove(models.Model):
             date_field = "invoice_date" if is_sale else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
-            move.foreign_rate = rate_values["foreign_rate"]
-            move.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
+            move.foreign_rate = rate_values.get("foreign_rate",0)
+            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate",0)
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -655,6 +660,126 @@ class AccountMove(models.Model):
             if not move.foreign_rate:
                 return
             move.foreign_inverse_rate = Rate.compute_inverse_rate(move.foreign_rate)
+
+    def _get_payments(self, line_ids):
+        self.ensure_one()
+
+        move_ids = line_ids.mapped('move_id.id')
+
+        if not move_ids:
+            return []
+
+        payment_related = self.env['account.payment'].search([('move_id', 'in', move_ids)], order='id desc')
+
+        return payment_related
+
+    def _get_account_move_line_related(self):
+        self.ensure_one()
+
+        account_move_line_ids = []
+
+        reconciled_lines = self.line_ids._all_reconciled_lines()
+
+        if not reconciled_lines:
+            return account_move_line_ids
+
+        account_move_line_ids = reconciled_lines.mapped("move_id.line_ids").ids
+
+        return account_move_line_ids
+
+    def _account_analytic_by_line_id(self, line_ids):
+        self.ensure_one()
+
+        account_analytic_by_line_id = {}
+
+        for line_id in line_ids:
+            if not line_id.analytic_distribution:
+                account_analytic_by_line_id[line_id.id] = ""
+                continue
+
+            account_analytic_ids_ids = [int(analytic_id) for analytic_id in line_id.analytic_distribution.keys()]
+            account_analytic_ids = self.env["account.analytic.account"].browse(account_analytic_ids_ids)
+
+            if not account_analytic_ids:
+                account_analytic_by_line_id[line_id.id] = ""
+                continue
+
+            analytic_codes = []
+
+            for code in account_analytic_ids.mapped("code"):
+                if not code:
+                    continue
+
+                analytic_codes.append(code)
+
+            account_analytic_by_line_id[line_id.id] = ", ".join(analytic_codes)
+
+        return account_analytic_by_line_id
+
+
+    def _get_retention_payment_move_ids(self, line_ids):
+        self.ensure_one()
+
+        if not line_ids:
+            return []
+
+        retention_ids = line_ids.mapped("move_id.retention_islr_line_ids.retention_id")
+        retention_ids = retention_ids + line_ids.mapped("move_id.retention_iva_line_ids.retention_id")
+        retention_ids = retention_ids + line_ids.mapped("move_id.retention_municipal_line_ids.retention_id")
+
+        retention_payment_move_ids = retention_ids.payment_ids.mapped("move_id")
+
+        if not retention_payment_move_ids:
+            return []
+
+        return retention_payment_move_ids.ids
+
+    def get_account_move_report_data(self):
+        self.ensure_one()
+
+        doc_title = ''
+        doc_date = ''
+        main_move_concept = self.ref
+        main_move_payment_concept = ''
+        payment_related_move_ids = []
+
+        main_move = {
+            'name': self.name,
+        }
+
+        line_ids_ids = self._get_account_move_line_related()
+        line_ids = self.env['account.move.line'].browse(line_ids_ids)
+        account_analytic_by_line_id = self._account_analytic_by_line_id(line_ids)
+
+        payment_move_ids = self._get_payments(line_ids)
+        retention_payment_move_ids = self._get_retention_payment_move_ids(line_ids)
+
+        if payment_move_ids:
+            first_payment = payment_move_ids[0]
+            doc_date = first_payment.date
+
+            main_move_payment_concept = first_payment.concept
+            payment_related_move_ids = payment_move_ids.mapped('move_id.id')
+
+            if self.amount_residual == 0:
+                doc_title = first_payment.name
+
+        # Used in the custom/binaural_accountant/report/account_report.py
+        data = {
+            "doc_ids": line_ids_ids,
+            "docs": line_ids,
+            'doc_title': doc_title,
+            'doc_date': doc_date,
+            'main_move': self,
+            'main_move_concept': main_move_concept,
+            'main_move_payment_concept': main_move_payment_concept,
+            'payment_related_move_ids': payment_related_move_ids,
+            'retention_payment_move_ids': retention_payment_move_ids,
+            'account_analytic_by_line_id': account_analytic_by_line_id,
+            'group_analytic_accounting': self.env.user.has_group("analytic.group_analytic_accounting"),
+        }
+
+        return data
 
     def action_register_payment(self):
         """

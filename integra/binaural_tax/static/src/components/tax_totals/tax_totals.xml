@@ -18,7 +18,7 @@
                             <span class="o_tax_group_edit_input">
                                 <input
                                     type="text"
-                                    t-ref="taxValueInput"
+                                    t-ref="taxValueInput2"
                                     class="o_field_float
                                     o_field_number o_input"
                                     t-att-disabled="state.value === 'disable'"
