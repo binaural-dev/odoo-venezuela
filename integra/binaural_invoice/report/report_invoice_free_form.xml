@@ -126,7 +126,7 @@
                                             </t>
                                             <t t-else="">
                                                 <span class="text-nowrap" t-field="line.foreign_subtotal" groups="account.group_show_line_subtotals_tax_excluded"/>
-                                                <span class="text-nowrap" t-field="line.price_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
+                                                <span class="text-nowrap" t-field="line.foreign_price_total" groups="account.group_show_line_subtotals_tax_included"/>
                                             </t>
                                         </td>
                                     </t>
@@ -172,7 +172,7 @@
                     </div>
                 </div>
                 <div> 
-                    <span>
+                    <span t-if="o.company_id.show_tag_on_usd_invoice">
                         A los efectos de lo previsto en el <strong>Art. 25</strong> de la Ley de
                         Impuesto al Valor Agregado se expresa el monto total
                         de la factura en <strong>USD</strong> calculado a la tasa de cambio
@@ -270,7 +270,7 @@
                     </t>
                 </td>
             </tr>
-            <tr class="border-black o_total">
+            <tr class="border-black o_total" t-if="o.company_id.show_total_on_usd_invoice">
                 <t t-if="has_rounding"><td>Total en USD</td></t>
                 <t t-else=""><td><strong>Total en USD</strong></td></t>
                 <td class="text-end">

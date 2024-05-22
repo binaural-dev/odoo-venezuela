@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+
+import os
+import click
+from dotenv import load_dotenv
+
+
+@click.command()
+@click.option("-d")
+@click.option("-l", default="admin")
+@click.argument("args", nargs=-1)
+def run_command(d,l, args):
+    load_dotenv()
+    PROJECT_NAME = os.getenv("PROJECT_NAME")
+    POSTGRES_USER = os.getenv("POSTGRES_USER")
+    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+    RESET_PASSWORD = os.getenv("RESET_PASSWORD")
+    password = f"'{RESET_PASSWORD}'"
+    login = f"'{l}'"
+    os.system(
+        f'docker exec -it -e PGPASSWORD={POSTGRES_PASSWORD} {PROJECT_NAME} psql --host {PROJECT_NAME}_db -U {POSTGRES_USER} -d {d} -c "update res_users set password = {password} where login = {login};"')
+
+if __name__ == "__main__":
+    run_command()
