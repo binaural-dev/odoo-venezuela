@@ -65,9 +65,11 @@
                     <div id="taxes-invoices-budgets">
 
                     </div>
+		    
                     <div class="d-flex justify-content-end">
                         <hr width="50%" />
                     </div>
+
                     <div class="d-flex justify-content-end">
                         <label class="form-label">Total:    </label>
                         <label class="form-label" style="font-weight: bolder;">
@@ -75,6 +77,41 @@
                             <span t-field="invoice.amount_untaxed" t-else=""/>
                         </label>
                     </div>
+
+		    <div>
+			<label>Payment Term: </label>
+			<span t-field="invoice.invoice_payment_term_id"/>
+	    	    </div>
+
+		    <t t-if="invoice.payment_term_details">
+                        <div t-if='invoice.show_payment_term_details' id="total_payment_term_details_table" class="row">
+                            <div t-attf-class="#{'col-7' if report_type != 'html' else 'col-sm-7 col-md-6'} mt-2 mb-2">
+                                <table class="table table-sm" style="page-break-inside: avoid;">
+                                    <th class="border-black text-start">
+                                        Due Date
+                                    </th>
+                                    <th class="border-black text-end">
+                                        Amount Due
+                                    </th>
+                                    <th t-if="invoice.show_discount_details" class="border-black text-end">
+                                        Discount
+                                    </th>
+                                    <t t-foreach="invoice.payment_term_details" t-as="term">
+                                        <tr>
+                                            <td t-esc="term.get('date')" class="text-start"/>
+                                            <td t-options='{"widget": "monetary", "display_currency": invoice.currency_id}' t-esc="term.get('amount')" class="text-end"/>
+                                            <td t-if="term.get('discount_date')" class="text-end">
+                                                <span t-options='{"widget": "monetary", "display_currency": invoice.currency_id}'
+                                                      t-esc="term.get('discount_amount_currency')"/> if paid before
+                                                <span t-esc="term.get('discount_date')"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </table>
+                            </div>
+                        </div>
+                    </t>
+
                 </div>
                 <input type="hidden" id="symbolB" t-att-value="currency.symbol"/>
                 <input type="hidden" id="positionS" t-att-value="currency.position"/>
