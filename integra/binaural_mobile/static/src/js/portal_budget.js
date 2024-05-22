@@ -707,7 +707,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
         },
 
         _getElemQtyOrderLine: function (order, line) {
-            const show_input = true
+            const { state } = order;
+            const show_input = state === 'draft';
             const { product_uom_qty, qty_available, packaging_qty, uom } = line;
 
             const packaging_qty_elem = packaging_qty > 1 ? `<label class="form-text" style="padding-right:3px;">Múltiplos de ${packaging_qty} </label>`: '';
@@ -737,10 +738,14 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
             // state == draft -> show input to type qty
             return `
-                <label class="form-label" style="padding-right:3px;">
-                    ${label}
-                </label>
-                <label class="form-label" style="font-weight: bolder;">${product_uom_qty.toFixed(2)}</label><br/>
+                <div class="form-group">
+                    <label class="form-text" style="padding-right:3px;">
+                        Cantidad: ${product_uom_qty.toFixed(2)}
+                    </label>
+                    ${elem_uom}
+                    <br/>
+                    ${packaging_qty_elem}
+                </div>
             `;
         },
 
@@ -752,6 +757,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             const tbody = $("#product_list")
             const order = data[0];
             const { order_line } = order;
+
+            console.log({order});
 
             tbody.empty()
 

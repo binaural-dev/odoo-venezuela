@@ -43,7 +43,7 @@ FIELD_ORDER_LINE = [
     "price_subtotal",
     "product_id",
 ]
-FIELDFILTERS = ["id", "name", "amount_tax", "amount_untaxed", "amount_total"]
+FIELDFILTERS = ["id", "name", "amount_tax", "amount_untaxed", "amount_total", "state"]
 PARSE_FIELDS = ["validity_date", "date_order"]
 
 
@@ -76,6 +76,22 @@ class SaleOrderBudget(http.Controller):
         vals["tax_id"] = tax_id
         
         return vals
+
+    def _check_write_order_line(self, line_id):
+        if not line_id:
+            return {"status": 400, "msg": "id argument missing", "data": None}
+        
+        order_line_id = utils.browse_model_data("sale.order.line", int(line_id))
+
+        if not order_line_id:
+            return {"status": 404, "msg": (_("Line record not Found with id %s") % line_id), "data": None}
+
+        order_state = order_line_id.order_id.state
+
+        if order_state != 'draft':
+            return {"status": 400, "msg": (_('The order with status "%s" cannot be edited') % order_state.upper()), "data": None}
+
+        return False
 
     @http.route(
         "/budget/order", type="http", methods=["GET"], auth="public", website=False, sitemap=False
@@ -255,9 +271,10 @@ class SaleOrderBudget(http.Controller):
     def write_order_line(self,  **kwargs):
         line_id = kwargs.get('line_id', False)
         tax_include = kwargs.get('tax_include', False)
+        is_bad_request_error = self._check_write_order_line(line_id)
 
-        if not line_id:
-            return {"status": 400, "msg": "id argument missing", "data": None}
+        if is_bad_request_error:
+            return is_bad_request_error
 
         try:
             vals = self._get_vals_write_order_line(kwargs)
