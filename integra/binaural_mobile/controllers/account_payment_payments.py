@@ -54,6 +54,7 @@ class AccountPaymentPayments(http.Controller):
         data = {"status": 200, "msg": "Success"}
 
         file = kwargs.get("file", False)
+        file2 = kwargs.get("file", False)
 
         if invoices and payments and partner_id or invoices and use_credit and partner_id:
             invoices_id = []
@@ -195,6 +196,7 @@ class AccountPaymentPayments(http.Controller):
                         "payment_mobile_methods": pays_app_methods,
                         "payment_mobile_line": pays_app_lines,
                         "proof_payment_id": file,
+                        "proof_payment_domain": file2,
                         "is_fiscal": type_fiscal,
                         "state": "process",
                     }

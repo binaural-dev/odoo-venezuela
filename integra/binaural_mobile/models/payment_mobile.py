@@ -52,6 +52,7 @@ class PaymentMobile(models.Model):
         default=lambda self: self.env.company.currency_id,
     )
     proof_payment_id = fields.Many2one("payment.mobile.proof", tracking=True)
+    proof_payment_domain = fields.Many2one("payment.mobile.proof", tracking=True)
     proof_file = fields.Binary(related="proof_payment_id.proof_file", tracking=True)
     proof_name = fields.Char(related="proof_payment_id.name")
     verified_payment = fields.Boolean(default=False, tracking=True)
