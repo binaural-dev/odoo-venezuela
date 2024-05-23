@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Multi - Company Rules -->
+        <record model="ir.rule" id="shopify_instance_comp_rule">
+            <field name="name">Shopify Instance multi-company</field>
+            <field name="model_id" ref="model_shopify_instance_ept"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|',('shopify_company_id','=',False),
+                ('shopify_company_id','in',company_ids)]
+            </field>
+        </record>
+
+        <!--multi company product template rule -->
+        <record model="ir.rule" id="shopify_product_template_rule">
+            <field name="name">Shopify Product Template multi-company</field>
+            <field name="model_id" ref="model_shopify_product_template_ept"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|',('shopify_instance_id.shopify_company_id','=',False),
+                ('shopify_instance_id.shopify_company_id','in',company_ids)]
+            </field>
+        </record>
+
+        <!--multi company product variant -->
+        <record model="ir.rule" id="shopify_product_variant_rule">
+            <field name="name">Shopify Product variant multi-company</field>
+            <field name="model_id" ref="model_shopify_product_product_ept"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|',('shopify_instance_id.shopify_company_id','=',False),
+                ('shopify_instance_id.shopify_company_id','in',company_ids)]
+            </field>
+        </record>
+
+        <!--multi company product queue -->
+        <record model="ir.rule" id="shopify_product_queue_rule">
+            <field name="name">Shopify Product data queue multi-company</field>
+            <field name="model_id"
+                   ref="model_shopify_product_data_queue_ept"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|',('shopify_instance_id.shopify_company_id','=',False),
+                ('shopify_instance_id.shopify_company_id','in',company_ids)]
+            </field>
+        </record>
+
+        <!--multi company customer queue -->
+        <record model="ir.rule" id="shopify_customer_queue_rule">
+            <field name="name">Shopify customer data queue multi-company</field>
+            <field name="model_id"
+                   ref="model_shopify_customer_data_queue_ept"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|',('shopify_instance_id.shopify_company_id','=',False),
+                ('shopify_instance_id.shopify_company_id','in',company_ids)]
+            </field>
+        </record>
+
+        <!--multi company order queue -->
+        <record model="ir.rule" id="shopify_order_queue_rule">
+            <field name="name">Shopify order data queue multi-company</field>
+            <field name="model_id" ref="model_shopify_order_data_queue_ept"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|',('shopify_instance_id.shopify_company_id','=',False),
+                ('shopify_instance_id.shopify_company_id','in',company_ids)]
+            </field>
+        </record>
+
+        <!--multi company payment gateway -->
+        <record model="ir.rule" id="shopify_payment_gateway_rule">
+            <field name="name">Shopify payment multi-company</field>
+            <field name="model_id" ref="model_shopify_payment_gateway_ept"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|',('shopify_instance_id.shopify_company_id','=',False),
+                ('shopify_instance_id.shopify_company_id','in',company_ids)]
+            </field>
+        </record>
+
+        <!--multi company shopify.location.ept -->
+        <record model="ir.rule" id="shopify_location_rule">
+            <field name="name">Shopify location multi-company</field>
+            <field name="model_id" ref="model_shopify_location_ept"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|',('instance_id.shopify_company_id','=',False),
+                ('instance_id.shopify_company_id','in',company_ids)]
+            </field>
+        </record>
+
+        <!-- Multi - Company Payout report -->
+        <record model="ir.rule" id="shopify_multi_com_payout_report_rule">
+            <field name="name">Shopify payout report multi-company</field>
+            <field name="model_id" ref="model_shopify_payout_report_ept"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|',('instance_id.shopify_company_id','=',False),
+                ('instance_id.shopify_company_id','in',company_ids)]
+            </field>
+        </record>
+
+        <record model="ir.module.category" id="module_shopify_ept">
+            <field name="name">Shopify</field>
+            <field name="description">Shopify User Access Right</field>
+            <field name="sequence">100</field>
+        </record>
+
+        <record model="res.groups" id="group_shopify_ept">
+            <field name="name">User</field>
+            <field name="category_id" ref="module_shopify_ept"/>
+            <field name="implied_ids"
+                   eval="[(4,ref('sales_team.group_sale_salesman_all_leads')),(4,ref('stock.group_stock_user')),(4,ref('account.group_account_invoice'))]"/>
+        </record>
+
+        <record model="res.groups" id="group_shopify_manager_ept">
+            <field name="name">Manager</field>
+            <field name="category_id" ref="module_shopify_ept"/>
+            <field name="implied_ids"
+                   eval="[(4,ref('shopify_ept.group_shopify_ept')),(4,ref('stock.group_stock_manager')),(4,ref('sales_team.group_sale_manager')),(4,ref('account.group_account_manager'))]"/>
+            <field name="users"
+                   eval="[(4, ref('base.user_root')),(4, ref('base.user_admin'))]"/>
+        </record>
+    </data>
+</odoo>

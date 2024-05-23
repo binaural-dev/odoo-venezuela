@@ -261,7 +261,7 @@
                     <input type="hidden" id="currency_foreign_rate" t-att-value="foreign_currency.rate"/>
                 </form>
 
-                <div class="modal fade" id="payment_method" tabindex="-1" aria-labelledby="payment_methodLabel"  aria-modal="true" role="dialog">
+                <div class="modal fade" id="payment_method" tabindex="-1" aria-labelledby="payment_methodLabel" data-bs-keyboard="false" aria-modal="true" role="dialog">
                     <div class="modal-dialog modal-fullscreen">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -298,7 +298,7 @@
                                     </div>
                                 </div>
                                 <div class="row mb-2">
-                                    <t t-if="request.env.company.module_binaural_igtf">
+                                    <t t-if="request.env['ir.module.module'].sudo().search([('name', '=', 'binaural_igtf')]).state == 'installed'">
                                         <label class="form-text col-sm-2 igtf_input" style="display:none;">IGTF suggested</label>
                                         <div class="col-sm-4 igtf_input" style="display:none;">
                                             <input type="text" class="form-control" id="igtf_pay"  disabled="disabled"/>

@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_common_log_book_ept,Common Log Book,model_common_log_book_ept,,1,1,1,1
+access_common_log_lines_ept,Common Log Lines,model_common_log_lines_ept,,1,1,1,1
+access_common_product_image_ept,Common Product Image,model_common_product_image_ept,,1,1,1,1
+access_sale_workflow_process,auto_invoice_workflow_ept_payment_sale_workflow_process_user,model_sale_workflow_process_ept,,1,1,1,1

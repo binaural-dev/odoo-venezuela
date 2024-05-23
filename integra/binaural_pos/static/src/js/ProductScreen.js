@@ -74,7 +74,7 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
         let title_wrning = ""
         let wrning = []
 
-				if(pos_config.amount_to_zero){
+        if(pos_config.amount_to_zero){
           for (let line of lines) {
               let prd = line.product;
               if(prd.type != "product"){
@@ -85,16 +85,31 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
                   continue;
               }
   
-              let can_sell_product = await this.validate_products(prd.id,line.quantity);
-              
-              // if(line.quantity > prd.qty_available || prd.qty_available <= 0){ Validacion OFFLINE
-              if(can_sell_product == false){
-                  call_super = false;
-                  title_wrning = _t('Deny Order');
-                  wrning.push(prd.display_name)
-              }	
+              // if(line.quantity > prd.qty_available || prd.qty_available <= 0){ Validacion OFFLINE de productos disponibles
+              //     call_super = false;
+              //     title_wrning = _t('Deny Order');
+              //     wrning.push(prd.display_name)
+              // }	
           }
-      }
+          
+          let product_without_stock = await this.validate_products(lines); // Validacion Online de productos disponibles
+              
+          if(product_without_stock){
+              call_super = false;
+              title_wrning = _t('Deny Order');
+              wrning.push(product_without_stock)
+          }	
+          // msg_warehouse = await this.validateProductsInWarehouse(lines, pos_config)
+          
+        }
+
+        //let msg = await this.validateProductsInWarehouse(lines, pos_config)
+        //if(msg){
+        //  return self.showPopup('ErrorPopup', {
+        //    title: _t("Validate Product in Warehouse"),
+        //    body: msg,
+        //  });
+        //}
 
         if(!validation_negative){
           let message = _t(is_negative);
@@ -114,19 +129,41 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
         return super._onClickPay();
 			}
 
-      async validate_products(product_id, qty){
-        let can_sell_product = true;
+      async validate_products(lines){
         try {
+          const product_ids = lines.map(line => line.product.id);
+          const qtys = lines.map(line => line.quantity);
           const products = await ajax.jsonRpc('/validate_products_order', 'call',
             {
-              "line" :product_id,
-              "qty" : qty,
+              "lines" :product_ids,
+              "qty" : qtys,
             }
           )
-          const { can_sell } = products;
-          can_sell_product = can_sell
+          const { msg_error } = products;
+          return msg_error
 
-          return can_sell_product
+        } catch (error) {
+          return false
+        }
+      }
+
+      async validateProductsInWarehouse(lines, pos_config){
+        try {
+          let product_ids = []
+          for (let line of lines) {
+            let prd = line.product.id
+            product_ids.push(prd)
+          }
+          const products = await ajax.jsonRpc('/validate_products_in_warehouse', 'call',
+            {
+              "product_ids" :product_ids,
+              "picking_type_id": pos_config.picking_type_id
+            }
+          )
+          const { msg_error } = products;
+
+          return msg_error
+          
 
         } catch (error) {
           return false

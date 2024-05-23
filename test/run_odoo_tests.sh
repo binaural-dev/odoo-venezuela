@@ -1,8 +1,9 @@
 #!/bin/bash
 
-while getopts :t:m:d: flag
+while getopts :c:t:m:d: flag
 do
     case "${flag}" in
+        c) container=${OPTARG};;
         t) tags=${OPTARG};;
         m) modules=${OPTARG};;
         d) database=${OPTARG};;
@@ -21,10 +22,10 @@ execute_odoo_tests() {
     if [ -z "${tags}" ] && [ -z "${modules}" ]; then
         echo "Running tests without tags and modules..."
         modules=$(list_directories)
-        odoo --test-enable --test-tags=bin --stop-after-init --log-level=test --load-language=es_VE --without-demo=all -d ${database} -i ${modules}
+        docker exec -it ${container} odoo --test-enable --test-tags=bin --stop-after-init --log-level=test --load-language=es_VE --without-demo=all -d ${database} -i ${modules}
     else
         echo "Running tests with tags and modules..."         
-        odoo --test-tags=${tags} --stop-after-init --log-level=test --load-language=es_VE --without-demo=all -d ${database} -i ${modules}
+        docker exec -it ${container} odoo --test-tags=${tags} --stop-after-init --log-level=test --load-language=es_VE --without-demo=all -d ${database} -i ${modules}
     fi
 }
 
@@ -39,6 +40,7 @@ list_directories() {
 
 usage() {
     echo "USAGE: $0
+    [ -c ODOO CONTAINER (docker container name)]
     [ -t TAGS (comma separated tag1,tag2,tag3)]
     [ -m MODULES (comma separated module1,module2,module3)]
     [ -d DATABASE_NAME ]"

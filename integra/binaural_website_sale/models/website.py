@@ -7,6 +7,10 @@ class Website(models.Model):
 
     do_not_show_products_without_availability_on_site = fields.Boolean(default=False)
 
+    people_not_being_able_to_see_prices = fields.Boolean(default=False)
+
+    people_not_being_able_to_see_available = fields.Boolean(default=False)
+
     def _search_with_fuzzy(self, search_type, search, limit, order, options):
         res = super()._search_with_fuzzy(search_type, search, limit, order, options)
         company_count = request.env["res.company"].sudo().search_count([])        

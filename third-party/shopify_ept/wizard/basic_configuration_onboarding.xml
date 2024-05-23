@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="shopify_basic_configurations_onboarding_wizard_view" model="ir.ui.view">
+        <field name="name">shopify.basic.configurations.onboarding.form</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority">1000</field>
+        <field name="arch" type="xml">
+            <form class="o_shopify_ept">
+                <div class="oe_title mb-2 ml-2"
+                     attrs="{'invisible': [('shopify_instance_id', '!=', False)]}">
+                    <h1 class="o_on_board_heading">
+                        Currently, no instance configuration is underway.
+                    </h1>
+                    <div class="alert alert-warning" role="alert" style="margin-left: 18px;width: 137%;">
+                        <h3 style="font-weight:bold;color:#7d5a29;padding: 0 !important;">
+                            <u>Note :</u>
+                        </h3>
+                        <b>
+                            <ul>
+                                <li>Upon completion of all steps, the Onboarding panel will be reset.</li>
+                                <li>Onboarding panel will be reset when the instance is created, so you will no longer
+                                    be able to modify any configuration settings from the panel. The configuration can
+                                    be changed under Configuration -> Settings -> Select Instance.
+                                </li>
+                            </ul>
+                        </b>
+                    </div>
+                </div>
+                <div class="oe_title mb-2 ml-2"
+                     attrs="{'invisible': [('shopify_instance_id', '=', False)]}">
+                    <h1 class="font-weight-bold o_on_board_heading">
+                        <field name="shopify_instance_id" readonly="1"
+                               options="{'no_open': True}"/>
+                    </h1>
+                </div>
+                <div class="o_horizontal_separator o_onboard_header font-weight-bold"
+                     attrs="{'invisible': [('shopify_instance_id', '=', False)]}">General
+                    Configuration
+                </div>
+                <div class="row mt16 o_settings_container o_onboard_padding"
+                     attrs="{'invisible': [('shopify_instance_id', '=', False)]}">
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div>
+                            <field name="shopify_company_id" invisible="1" class="o_onboard_input"/>
+                            <label for="shopify_warehouse_id" string="Warehouse" class="o_onboard_label"/>
+                            <field name="shopify_warehouse_id"
+                                   class="o_light_label w-50 o_onboard_select" widget="selection"
+                                   attrs="{'required':[('shopify_instance_id','!=',False)]}"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div>
+                            <label for="shopify_lang_id" class="o_onboard_label" string="Language"/>
+                            <field name="shopify_lang_id"
+                                   options="{'no_open':True,'no_create':True,'no_create_edit':True}"
+                                   attrs="{'required':[('shopify_instance_id','!=',False)]}"
+                                   class="o_light_label w-50 o_onboard_select" widget="selection"
+                            />
+                        </div>
+                    </div>
+                </div>
+                <div class="o_horizontal_separator font-weight-bold o_onboard_header"
+                     attrs="{'invisible': [('shopify_instance_id', '=', False)]}">Product
+                    Configuration
+                </div>
+                <div class="row mt16 o_settings_container o_onboard_padding"
+                     attrs="{'invisible': [('shopify_instance_id', '=', False)]}">
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1">
+                            <field name="auto_import_product"
+                                   class="o_onboard_boolean_toggle" widget="boolean_toggle"/>
+                            <label for="auto_import_product" class="o_onboard_label"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div>
+                            <label for="shopify_sync_product_with" class="o_onboard_label"/>
+                            <field name="shopify_sync_product_with"
+                                   class="o_light_label w-50 o_onboard_select" widget="selection"
+                                   attrs="{'required':[('shopify_instance_id','!=',False)]}"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1">
+                            <field name="shopify_sync_product_with_images"
+                                   class="o_onboard_boolean_toggle" widget="boolean_toggle"/>
+                            <label for="shopify_sync_product_with_images" class="o_onboard_label"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div>
+                            <label for="shopify_pricelist_id" string="Pricelist" class="o_onboard_label"/>
+                            <field name="shopify_pricelist_id"
+                                   class="o_light_label o_onboard_input"
+                                   attrs="{'required':[('shopify_instance_id','!=',False)]}"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="o_horizontal_separator font-weight-bold o_onboard_header"
+                     attrs="{'invisible': [('shopify_instance_id', '=', False)]}">Order
+                    Configuration
+                </div>
+                <div class="row mt16 o_settings_container o_onboard_padding"
+                     attrs="{'invisible': [('shopify_instance_id', '=', False)]}">
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1">
+                            <field name="auto_fulfill_gift_card_order"
+                                   widget="boolean_toggle" class="o_onboard_boolean_toggle"/>
+                            <label for="auto_fulfill_gift_card_order"
+                                   string="Automatically fulfill only the gift cards of the order?"
+                                   class="o_onboard_label"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1">
+                            <label for="shopify_section_id" string="Sales Team" class="o_onboard_label"/>
+                            <field name="shopify_section_id" class="o_light_label o_onboard_input"/>
+                        </div>
+                    </div>
+
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1">
+                            <field name="order_visible_currency"
+                                   widget="boolean_toggle" class="o_onboard_boolean_toggle"/>
+                            <label for="order_visible_currency"
+                                   string="Import order in customer visible currency?"
+                                   class="o_onboard_label"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div>
+                            <label for="shopify_default_pos_customer_id" class="o_onboard_label"/>
+                            <field name="shopify_default_pos_customer_id"
+                                   class="o_light_label o_onboard_input"
+                                   options="{'no_create':True,'no_create_edit': True}"/>
+                        </div>
+                    </div>
+
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1">
+                            <field name="is_delivery_multi_warehouse"
+                                   widget="boolean_toggle" class="o_onboard_boolean_toggle"/>
+                            <label for="is_delivery_multi_warehouse"
+                                   string="Is Delivery from Multiple warehouse?"
+                                   class="o_onboard_label"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div>
+                            <label for="shopify_import_order_after_date" string="Import Order After Date"
+                                   class="o_onboard_label"/>
+                            <field name="shopify_import_order_after_date"
+                                   class="o_light_label w-50 o_onboard_input"/>
+                        </div>
+                    </div>
+
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div>
+                            <field name="import_customer_as_company"
+                                   widget="boolean_toggle" class="o_onboard_boolean_toggle"/>
+                            <label for="import_customer_as_company"
+                                   string="Import customer as Company"
+                                   class="o_onboard_label"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div>
+                            <label for="shopify_order_status_ids" string="Import Order Status"/>
+                            <field name="shopify_order_status_ids" class="o_light_label o_onboard_input"
+                                   widget="many2many_tags"/>
+                        </div>
+                    </div>
+
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1">
+                            <field name="is_delivery_fee"
+                                   widget="boolean_toggle" class="o_onboard_boolean_toggle"/>
+                            <label for="is_delivery_fee"
+                                   string="Is Delivery Fee?"
+                                   class="o_onboard_label"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1">
+                            <field name="shopify_is_use_default_sequence"
+                                   widget="boolean_toggle" class="o_onboard_boolean_toggle"/>
+                            <label for="shopify_is_use_default_sequence"
+                                   string="Use Odoo Default Sequence?"
+                                   class="o_onboard_label"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1" attrs="{'invisible':[('is_delivery_fee','=',False)]}">
+                            <label for="delivery_fee_name" class="o_onboard_label"/>
+                            <field name="delivery_fee_name" attrs="{'required':[('is_delivery_fee','=',True)]}"
+                                   class="o_light_label w-50 o_onboard_input"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1" attrs="{'invisible':[('shopify_is_use_default_sequence','=',True)]}">
+                            <label for="shopify_order_prefix" class="o_onboard_label"/>
+                            <field name="shopify_order_prefix"
+                                   class="o_light_label w-50 o_onboard_input"/>
+                        </div>
+                    </div>
+
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box"
+                         groups="analytic.group_analytic_accounting">
+                        <div class="ml-2 pl-1">
+                            <label for="shopify_analytic_account_id" string="Analytic Account" class="o_onboard_label"/>
+                            <field name="shopify_analytic_account_id" class="o_light_label o_onboard_input"/>
+                        </div>
+                    </div>
+                    <!--                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box"-->
+                    <!--                         groups="analytic.group_analytic_tags">-->
+                    <!--                        <div class="ml-2 pl-1">-->
+                    <!--                            <label for="shopify_analytic_tag_ids" string="Analytic Tags" class="o_onboard_label"/>-->
+                    <!--                            <field name="shopify_analytic_tag_ids" class="o_light_label o_onboard_input"-->
+                    <!--                                   widget="many2many_tags"/>-->
+                    <!--                            <a href="javascript:void(0)"-->
+                    <!--                               title="- Set the Analytic Tags for shopify orders line. &#013;Note :- The configuration of the analytic tags for this instance will be applied to all sales orders created by the connector. With this configuration, the Analytic Default Rule configured in Odoo will not apply to Shopify orders invoices. If you wish to use Odoo Analytic Default Rule, you will not have to configure any analytic tags here."-->
+                    <!--                               class="ml-2 o_doc_link o_onboard_doc_link"/>-->
+                    <!--                        </div>-->
+                    <!--                    </div>-->
+                </div>
+                <div class="o_horizontal_separator font-weight-bold o_onboard_header"
+                     attrs="{'invisible': [('shopify_instance_id', '=', False)]}">Tax Configuration
+                </div>
+                <div class="row mt16 o_settings_container o_onboard_padding"
+                     attrs="{'invisible': [('shopify_instance_id', '=', False)]}">
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box">
+                        <div class="ml-2 pl-1">
+                            <label for="shopify_apply_tax_in_order"
+                                   string="Apply Tax" class="o_onboard_label"/>
+                            <field name="shopify_apply_tax_in_order"
+                                   class="o_light_label w-50 o_onboard_select"
+                                   attrs="{'required':[('shopify_instance_id','!=',False)]}"/>
+                        </div>
+                    </div>
+
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box"
+                         attrs="{'invisible': [('shopify_apply_tax_in_order', '=', 'odoo_tax')]}">
+                        <div>
+                            <label for="shopify_credit_tax_account_id"
+                                   string="Credit Note Tax Account"
+                                   class="o_onboard_label"/>
+                            <field name="shopify_credit_tax_account_id"
+                                   attrs="{'required' : [('shopify_apply_tax_in_order','=','create_shopify_tax'),('shopify_instance_id','!=',False)]}"
+                                   class="o_light_label o_onboard_input"/>
+                        </div>
+                    </div>
+                    <div class="col-xs-12 col-md-6 o_setting_box o_onboard_setting_box"
+                         attrs="{'invisible': [('shopify_apply_tax_in_order', '=', 'odoo_tax')]}">
+                        <div class="ml-2 pl-1">
+                            <label for="shopify_invoice_tax_account_id" string="Invoice Tax Account"
+                                   class="o_onboard_label"/>
+                            <field name="shopify_invoice_tax_account_id"
+                                   attrs="{'required' : [('shopify_apply_tax_in_order','=','create_shopify_tax'),('shopify_instance_id','!=',False)]}"
+                                   class="o_light_label o_onboard_input"/>
+                        </div>
+                    </div>
+                </div>
+                <footer>
+                    <button string="Save Configurations" type="object"
+                            name="shopify_save_basic_configurations"
+                            class="oe_highlight o_onboard_button"
+                            attrs="{'invisible': [('shopify_instance_id', '=', False)]}"/>
+                    <button class="oe_highlight o_onboard_button_white" special="cancel"
+                            string="Cancel"/>
+                </footer>
+                <script>
+                    $('document').ready(function(){
+                    $('div.o_form_nosheet.o_shopify_ept').parents('div.modal-content').addClass('on_board_custom_form')
+                    });
+                </script>
+            </form>
+        </field>
+    </record>
+</odoo>

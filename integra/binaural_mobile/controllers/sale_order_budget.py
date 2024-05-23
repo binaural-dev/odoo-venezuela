@@ -1,13 +1,15 @@
-import logging
 import json
+import logging
 from datetime import datetime
 
 from odoo import _, http
 from odoo.http import request
 from odoo.osv import expression
+
 from . import utils
 
 _logger = logging.getLogger(__name__)
+
 SALE_STATES = ["draft", "sent"]
 FIELDNAMES = [
     "id",
@@ -35,6 +37,8 @@ FIELD_ORDER_LINE = [
     "name",
     "product_uom_qty",
     "price_unit",
+    "price_unit_with_tax",
+    "price_total",
     "tax_id",
     "price_subtotal",
     "product_id",
@@ -44,6 +48,16 @@ PARSE_FIELDS = ["validity_date", "date_order"]
 
 
 class SaleOrderBudget(http.Controller):
+
+    def _get_tax_included(self, kwargs):
+        company = request.env.company
+        is_optional_tax_included = company.dairy_fiscal and company.dairy_no_fiscal
+
+        if is_optional_tax_included:
+            return kwargs.get("tax_included", False)
+
+        return any(company.dairy_fiscal)
+
     @http.route(
         "/budget/order", type="http", methods=["GET"], auth="public", website=False, sitemap=False
     )
@@ -154,7 +168,7 @@ class SaleOrderBudget(http.Controller):
         except Exception as e:
             data.update({"status": 400, "msg": e})
             return data
-    
+
     @http.route(
         "/budget/order/create",
         type="json",
@@ -170,11 +184,10 @@ class SaleOrderBudget(http.Controller):
                 kwargs[key] = int(value)
         data = {"status": 200, "msg": "Success"}
         sale_order = kwargs.get("sale_order")
-        tax_included = kwargs.get("tax_included", False)
+        tax_included = self._get_tax_included(kwargs)
         sale_order["tax_included"] = tax_included
         seller_id = request.env.user.employee_id.id
         request.update_env(user=request.session.uid)
-
         lines = utils.set_order_line(sale_order, tax_included)
         sale_order["order_line"] = lines
         sale_order.update({
@@ -227,7 +240,7 @@ class SaleOrderBudget(http.Controller):
         
         data = {"status": 200, "msg": _("Success")}
         sale_order = kwargs.get("sale_order")
-        tax_included = kwargs.get("tax_included", False)
+        tax_included = self._get_tax_included(kwargs)
         sale_order["tax_included"] = tax_included
 
         sale_id = int(sale_order.pop("id", False))
@@ -250,7 +263,61 @@ class SaleOrderBudget(http.Controller):
         except Exception as e:
             data.update({"status": 400, "msg": str(e)})
             return data
-    
+
+    @http.route("/budget/order/read", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
+    def read_order(self, **kwargs):
+        validation_errors = utils.ValidateRequest.require([
+            ["sale_id"],
+        ], kwargs)
+
+        if any(validation_errors):
+            return utils.ValidateRequest.json(validation_errors)
+
+        data = {"status": 200, "msg": _("Success")}
+        sale_id = kwargs.get("sale_id", False)
+        tax_included = self._get_tax_included(kwargs)
+
+        try:
+            sale = utils.browse_model_data("sale.order", int(sale_id))
+
+            if not sale:
+                data.update({"status": 404, "msg": _("No sale order were found.")})
+                return data
+
+            sale_order = sale.read(FIELDFILTERS)
+
+            sale_order = utils.convert_field_string(sale_order, PARSE_FIELDS)
+
+            sale_order = sale_order[0]
+
+            sale_order["order_line"] = sale.order_line.filtered(lambda line: line.display_type == False).read(FIELD_ORDER_LINE)
+            
+            for order_line in sale_order["order_line"]:
+                product_qty = request.env["product.template"].search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
+                order_line["qty_available"] = product_qty
+
+            if request.env.company.mobile_show_tax_type == "include_tax":
+                for line in sale_order["order_line"]:
+                    line["price_unit"] = line["price_unit_with_tax"]
+                    line["price_subtotal"] = line["price_total"]
+
+            for line in sale_order["order_line"]:
+                description_tax = _("Tax no Selected")
+                value_tax = 0
+                if line["tax_id"][0]:
+                    tax = request.env["account.tax"].search([("id","=", line["tax_id"][0])])
+                    value_tax = tax.amount
+                    description_tax = tax.description
+                line["tax_id"].append(description_tax)
+                line["tax_id"].append(value_tax)
+
+            data.update({"data": sale_order})
+
+            return data
+        except Exception as e:
+            data.update({"status": 409, "msg": _("There was an error handling the request"), "error": str(e)})
+            return data
+
     @http.route("/budget/include_tax", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
     def include_taxes_in_sale_order(self, **kwargs):
         validation_errors = utils.ValidateRequest.require([
@@ -263,7 +330,8 @@ class SaleOrderBudget(http.Controller):
 
         data = {"status": 200, "msg": _("Success")}
         sale_id = kwargs.get("sale_id", False)
-        tax_included = kwargs.get("tax_included", False)
+        tax_included = self._get_tax_included(kwargs)
+        note = kwargs.get("note", False)
         try:
             sale = utils.browse_model_data("sale.order", int(sale_id))
             if not sale:
@@ -275,6 +343,7 @@ class SaleOrderBudget(http.Controller):
 
             sale_to_write["order_line"] = sale.order_line.read(FIELD_ORDER_LINE)
             sale_to_write["tax_included"] = tax_included
+            sale_to_write["note"] = note
             sale_to_write["order_line"] = utils.set_order_line(sale_to_write, tax_included)
 
             sale.write(sale_to_write)
@@ -285,11 +354,16 @@ class SaleOrderBudget(http.Controller):
 
             sale_order = sale_order[0]
 
-            sale_order["order_line"] = sale.order_line.read(FIELD_ORDER_LINE)
+            sale_order["order_line"] = sale.order_line.filtered(lambda line: line.display_type == False).read(FIELD_ORDER_LINE)
             
             for order_line in sale_order["order_line"]:
-                product_qty = request.env["product.template"].search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
+                product_qty = request.env["product.template"].sudo().search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
                 order_line["qty_available"] = product_qty
+
+            if request.env.company.mobile_show_tax_type == "include_tax":
+                for line in sale_order["order_line"]:
+                    line["price_unit"] = line["price_unit_with_tax"]
+                    line["price_subtotal"] = line["price_total"]
             
             if tax_included:
                 for line in sale_order["order_line"]:
@@ -310,7 +384,7 @@ class SaleOrderBudget(http.Controller):
 
     @http.route("/validation_available", type="json", methods=["POST", "PUT"], auth="public", website=False, sitemap=False)
     def validation_available(self, **kwargs):
-        settings = request.env['res.config.settings'].sudo().create({})  # Crear una instancia temporal de res.config.settings
+        settings = request.env['res.config.settings']
         allow_out_of_stock_order = settings.allow_out_of_stock_order
         return {"allow_out_of_stock_order": allow_out_of_stock_order}
 
@@ -336,7 +410,7 @@ class SaleOrderBudget(http.Controller):
             if utils.product_duplicate(sale_order):
                 data.update({"status": 400, "msg": _("There are duplicated products.")})
                 return data
-            tax_included = kwargs.get("tax_included", False)
+            tax_included = self._get_tax_included(kwargs)
             sale_order["tax_included"] = tax_included
             sale_id = sale_order.pop("id", False)
 
@@ -440,6 +514,31 @@ class SaleOrderBudget(http.Controller):
             return data
 
         return data
+
+    @http.route(
+            '/budget/update_partner', type="json", auth="public", website=False, sitemap=False
+    )
+    def update_partner(self, budget=False, partner=False, **kw):
+        data = {"status": 200, "msg": _("Success")}
+        
+        if not budget or not partner:
+            data.update(
+                {"status": 204, "msg": _("No Found Budget or partner"),  "data": False}
+            )
+            return json.dumps(data)
+        
+        try:
+            sale_id = int(budget)
+            sale_order = request.env["sale.order"].sudo().search([("id", "=", sale_id)])
+            sale_order.update({
+                "partner_id": int(partner)
+            })
+        except Exception as e:
+            data.update({"status": 400, "msg": str(e)})
+            return data
+
+        return data
+
 
     def check_lines_validations(self, lines):
         """Evaluates if the sale order lines have available quantities

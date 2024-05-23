@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240311\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240401\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-13 18:55+0000\n"
-"PO-Revision-Date: 2024-03-13 18:55+0000\n"
+"POT-Creation-Date: 2024-04-09 16:01+0000\n"
+"PO-Revision-Date: 2024-04-09 16:01+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -20,6 +20,11 @@ msgstr ""
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_fiscal_reports
 msgid "Account Reports"
 msgstr "Informes"
+
+#. module: binaural_fiscal_inspector
+#: model:ir.ui.menu,name:binaural_fiscal_inspector.retention_line_report_fiscal
+msgid "Administracion"
+msgstr ""
 
 #. module: binaural_fiscal_inspector
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_aged_payable_fiscal
@@ -47,6 +52,11 @@ msgid "Fiscal Inspectorate"
 msgstr "Inspeccion Fiscal"
 
 #. module: binaural_fiscal_inspector
+#: model:res.groups,name:binaural_fiscal_inspector.group_fiscal_inspectorate_editable
+msgid "Fiscal Inspectorate Editable"
+msgstr "Inspección fiscal editable"
+
+#. module: binaural_fiscal_inspector
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_general_ledger_fiscal
 msgid "General Ledger"
 msgstr "Libro Mayor"
@@ -55,6 +65,32 @@ msgstr "Libro Mayor"
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.txt_report_fiscal
 msgid "Generate TXT"
 msgstr "Generar TXT"
+
+#. module: binaural_fiscal_inspector
+#: model:ir.model.fields,field_description:binaural_fiscal_inspector.field_account_bank_statement_line__invoice_has_outstanding
+#: model:ir.model.fields,field_description:binaural_fiscal_inspector.field_account_move__invoice_has_outstanding
+#: model:ir.model.fields,field_description:binaural_fiscal_inspector.field_account_payment__invoice_has_outstanding
+msgid "Invoice Has Outstanding"
+msgstr "La Factura Tiene Pendientes de Pago"
+
+#. module: binaural_fiscal_inspector
+#: model:ir.model.fields,field_description:binaural_fiscal_inspector.field_account_bank_statement_line__invoice_outstanding_credits_debits_widget
+#: model:ir.model.fields,field_description:binaural_fiscal_inspector.field_account_move__invoice_outstanding_credits_debits_widget
+#: model:ir.model.fields,field_description:binaural_fiscal_inspector.field_account_payment__invoice_outstanding_credits_debits_widget
+msgid "Invoice Outstanding Credits Debits Widget"
+msgstr "Widget de créditos y débitos de factura pendientes"
+
+#. module: binaural_fiscal_inspector
+#: model:ir.model.fields,field_description:binaural_fiscal_inspector.field_account_bank_statement_line__invoice_payments_widget
+#: model:ir.model.fields,field_description:binaural_fiscal_inspector.field_account_move__invoice_payments_widget
+#: model:ir.model.fields,field_description:binaural_fiscal_inspector.field_account_payment__invoice_payments_widget
+msgid "Invoice Payments Widget"
+msgstr "Widget Pagos de Facturas"
+
+#. module: binaural_fiscal_inspector
+#: model:ir.model,name:binaural_fiscal_inspector.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
 
 #. module: binaural_fiscal_inspector
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_partner_ledger_fiscal
@@ -77,6 +113,11 @@ msgid "Result Statement"
 msgstr "Estado de resultados"
 
 #. module: binaural_fiscal_inspector
+#: model:ir.ui.menu,name:binaural_fiscal_inspector.action_retention_line_report_fiscal
+msgid "Retention Line Report"
+msgstr "Reporte de retención"
+
+#. module: binaural_fiscal_inspector
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.account_report_sale_menu_fiscal
 msgid "Sale Book"
 msgstr "Libro de Ventas"
@@ -95,3 +136,8 @@ msgstr "Informes de declaración"
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.menu_action_account_report_coa_fiscal
 msgid "Trial Balance"
 msgstr "Balance de Comprobación"
+
+#. module: binaural_fiscal_inspector
+#: model:ir.ui.menu,name:binaural_fiscal_inspector.xml_retention_islr_fiscal
+msgid "XML Retenciones de ISLR"
+msgstr ""

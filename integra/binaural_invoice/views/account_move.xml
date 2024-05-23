@@ -92,7 +92,7 @@
             <field name="name">Credit Notes</field>
             <field name="res_model">account.move</field>
             <field name="view_mode">tree,kanban,form</field>
-            <field name="view_id" ref="account.view_invoice_tree" />
+            <field name="view_id" ref="account.view_out_credit_note_tree" />
             <field name="search_view_id" ref="account.view_account_invoice_filter" />
             <field name="domain">[('move_type', '=', 'out_refund')]</field>
             <field name="context">{'default_move_type': 'out_refund', 'default_filter_partner': 'customer'}</field>

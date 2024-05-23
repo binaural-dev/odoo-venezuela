@@ -29,7 +29,7 @@
 		    <field name="edit_retention_fields" invisible="1"/>
 		    <field name="base_currency_is_vef" invisible="1"/>
 		    <field name="is_out_invoice" invisible="1"/>
-
+			<field name="journal_id" invisible="1"/>
 
 		    <div attrs="{'invisible':[('is_retention', '=', False)]}">
 			<label for="voucher_date"/>

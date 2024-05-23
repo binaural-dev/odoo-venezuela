@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230705\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240331\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-21 19:03+0000\n"
-"PO-Revision-Date: 2023-07-21 19:03+0000\n"
+"POT-Creation-Date: 2024-04-13 16:12+0000\n"
+"PO-Revision-Date: 2024-04-13 16:12+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,30 +16,22 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_megasoft
-#: model:ir.model.fields,field_description:binaural_megasoft.field_iot_box__blacklist
-msgid "Blacklist"
-msgstr "Lista negra"
-
-#. module: binaural_megasoft
-#: model:ir.model.fields,field_description:binaural_megasoft.field_iot_box__blacklist_port_ids
-msgid "Blacklist Port"
-msgstr "Lista negra de puerto"
-
-#. module: binaural_megasoft
 #. odoo-javascript
 #: code:addons/binaural_megasoft/static/src/xml/ClosePosPopup.xml:0
 #, python-format
 msgid "Cerrar PDV"
-msgstr "Cerrar PDV"
+msgstr ""
 
 #. module: binaural_megasoft
+#: model:ir.model.fields,field_description:binaural_megasoft.field_pos_payment_method__is_change_method
 #: model:ir.model.fields,field_description:binaural_megasoft.field_res_company__change_p2c
 #: model:ir.model.fields,field_description:binaural_megasoft.field_res_config_settings__change_p2c
 msgid "Change c2p method"
-msgstr "Método para verificar cambio P2C"
+msgstr "Es método de cambio"
 
 #. module: binaural_megasoft
 #. odoo-javascript
+#: code:addons/binaural_megasoft/static/src/xml/ClosePosPopup.xml:0
 #: code:addons/binaural_megasoft/static/src/xml/ClosePosPopup.xml:0
 #, python-format
 msgid "Close PDV"
@@ -56,21 +48,6 @@ msgid "Config Settings"
 msgstr "Opciones de configuración"
 
 #. module: binaural_megasoft
-#: model:ir.model.fields,field_description:binaural_megasoft.field_pos_payment_method__confirm_payment_p2c
-msgid "Confirm Payment P2C"
-msgstr "Confirmar pago P2C"
-
-#. module: binaural_megasoft
-#: model:ir.model.fields,field_description:binaural_megasoft.field_pos_payment_method__confirm_payment_pdv
-msgid "Confirm Payment Pdv"
-msgstr "Confirmar pago PDV"
-
-#. module: binaural_megasoft
-#: model:ir.model.fields,field_description:binaural_megasoft.field_pos_payment_method__confirm_payment_zelle
-msgid "Confirm Payment Zelle"
-msgstr "Confirmar pago Zelle"
-
-#. module: binaural_megasoft
 #: model_terms:ir.ui.view,arch_db:binaural_megasoft.pos_config_view_form_inherit_megasoft
 msgid "Device"
 msgstr "Dispositivo"
@@ -81,8 +58,25 @@ msgid "Device Megasoft"
 msgstr "Dispositivo Megasoft"
 
 #. module: binaural_megasoft
-#: model:ir.model,name:binaural_megasoft.model_iot_box
-msgid "IoT Box"
+#. odoo-javascript
+#: code:addons/binaural_megasoft/static/src/js/PaymentScreen.js:0
+#: code:addons/binaural_megasoft/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "El tiempo para realizar la transaccion expiró"
+msgstr ""
+
+#. module: binaural_megasoft
+#. odoo-javascript
+#: code:addons/binaural_megasoft/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "Imprimir ultima transaccion aprobada"
+msgstr ""
+
+#. module: binaural_megasoft
+#. odoo-javascript
+#: code:addons/binaural_megasoft/static/src/xml/PaymentScreen.xml:0
+#, python-format
+msgid "Imprimir ultima transaccion procesada"
 msgstr ""
 
 #. module: binaural_megasoft
@@ -92,19 +86,9 @@ msgid "IoT Device"
 msgstr "Dispositivo IoT"
 
 #. module: binaural_megasoft
-#: model:ir.model.fields,field_description:binaural_megasoft.field_iot_port__iot_box_blacklist_ids
-msgid "Iot Box Blacklist"
-msgstr "Lista negra IoT"
-
-#. module: binaural_megasoft
 #: model:ir.model.fields,field_description:binaural_megasoft.field_pos_payment_method__is_change
 msgid "Is Change"
 msgstr "Es vuelto"
-
-#. module: binaural_megasoft
-#: model:ir.model.fields,field_description:binaural_megasoft.field_pos_payment_method__is_change_method
-msgid "Is Change Method"
-msgstr "Es método de cambio"
 
 #. module: binaural_megasoft
 #: model:ir.model.fields,field_description:binaural_megasoft.field_pos_payment_method__is_payment_p2c
@@ -117,11 +101,6 @@ msgid "Is Payment Pdv"
 msgstr "Es pago PDV"
 
 #. module: binaural_megasoft
-#: model:ir.model.fields,field_description:binaural_megasoft.field_pos_payment_method__is_payment_zelle
-msgid "Is Payment Zelle"
-msgstr "Es pago Zelle"
-
-#. module: binaural_megasoft
 #: model_terms:ir.ui.view,arch_db:binaural_megasoft.res_config_settings_binaural_megasoft
 msgid "Megasoft"
 msgstr ""
@@ -130,6 +109,15 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_megasoft.res_config_settings_binaural_megasoft
 msgid "Megasoft configurations"
 msgstr "Configuraciones de Megasoft"
+
+#. module: binaural_megasoft
+#. odoo-javascript
+#: code:addons/binaural_megasoft/static/src/js/PaymentScreen.js:0
+#: code:addons/binaural_megasoft/static/src/js/PaymentScreen.js:0
+#: code:addons/binaural_megasoft/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "No hay partner seleccionado"
+msgstr ""
 
 #. module: binaural_megasoft
 #. odoo-javascript
@@ -165,6 +153,19 @@ msgid "Port of Megasoft"
 msgstr "Puerto de Megasoft"
 
 #. module: binaural_megasoft
+#: model:ir.model.fields,field_description:binaural_megasoft.field_pos_config__pre_close
+#: model:ir.model.fields,field_description:binaural_megasoft.field_res_config_settings__pre_close_megasoft
+msgid "Pre Close"
+msgstr "Pre cierre de pagos con Facturas Fiscales"
+
+#. module: binaural_megasoft
+#. odoo-javascript
+#: code:addons/binaural_megasoft/static/src/xml/ClosePosPopup.xml:0
+#, python-format
+msgid "Pre-Cerrar PDV"
+msgstr ""
+
+#. module: binaural_megasoft
 #. odoo-javascript
 #: code:addons/binaural_megasoft/static/src/xml/PaymentScreen.xml:0
 #, python-format
@@ -172,26 +173,38 @@ msgid "Punto de venta"
 msgstr ""
 
 #. module: binaural_megasoft
+#. odoo-javascript
+#: code:addons/binaural_megasoft/static/src/js/PaymentScreen.js:0
+#: code:addons/binaural_megasoft/static/src/js/PaymentScreen.js:0
+#: code:addons/binaural_megasoft/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "Seleccionar un partner"
+msgstr ""
+
+#. module: binaural_megasoft
+#. odoo-javascript
+#: code:addons/binaural_megasoft/static/src/js/PaymentScreen.js:0
+#: code:addons/binaural_megasoft/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "Tiempo expirado"
+msgstr ""
+
+#. module: binaural_megasoft
 #: model:ir.model.fields,field_description:binaural_megasoft.field_res_company__url_megasoft
 #: model:ir.model.fields,field_description:binaural_megasoft.field_res_config_settings__url_megasoft
 msgid "URL Megasoft"
-msgstr "URL Megasoft"
+msgstr ""
 
 #. module: binaural_megasoft
+#: model:ir.model.fields,field_description:binaural_megasoft.field_pos_payment_method__confirm_payment_p2c
 #: model:ir.model.fields,field_description:binaural_megasoft.field_res_company__verificate_p2c
 msgid "Verificate c2p payment"
-msgstr "Verificar pago C2P"
+msgstr "Confirmar pago P2C"
 
 #. module: binaural_megasoft
 #: model:ir.model.fields,field_description:binaural_megasoft.field_res_config_settings__verificate_p2c
 msgid "Verificate p2c payment"
 msgstr "Verificar pago P2C"
-
-#. module: binaural_megasoft
-#: model:ir.model.fields,field_description:binaural_megasoft.field_res_company__verificate_zelle
-#: model:ir.model.fields,field_description:binaural_megasoft.field_res_config_settings__verificate_zelle
-msgid "Verificate zelle payment"
-msgstr "Verificar pago Zelle"
 
 #. module: binaural_megasoft
 #. odoo-javascript
@@ -208,18 +221,7 @@ msgid ""
 msgstr ""
 
 #. module: binaural_megasoft
-#. odoo-javascript
-#: code:addons/binaural_megasoft/static/src/xml/PaymentScreen.xml:0
-#, python-format
-msgid "Zelle"
-msgstr ""
-
-#. module: binaural_megasoft
-#: model:ir.model,name:binaural_megasoft.model_iot_port
-msgid "iot.port"
-msgstr ""
-
-#. module: binaural_megasoft
+#: model:ir.model.fields,field_description:binaural_megasoft.field_pos_payment_method__confirm_payment_pdv
 #: model:ir.model.fields,field_description:binaural_megasoft.field_res_company__pdv_option
 msgid "pdv options"
-msgstr "Opciones de PDV"
+msgstr "Confirmar pago PDV"

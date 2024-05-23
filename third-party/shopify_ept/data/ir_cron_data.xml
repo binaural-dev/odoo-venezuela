@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!--Auto cron job for process product data queue and it runs every 5 min.-->
+        <record id="process_shopify_product_queue" model="ir.cron">
+            <field name="name">Shopify: Process Products Queue</field>
+            <field name="model_id" ref="model_shopify_product_data_queue_line_ept"/>
+            <field name="state">code</field>
+            <field name="code">model.auto_import_product_queue_line_data()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">5</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+        </record>
+
+        <!--Auto cron job for process order data queue and it runs every 5 min.-->
+        <record id="process_shopify_order_queue" model="ir.cron">
+            <field name="name">Shopify: Process Orders Queue</field>
+            <field name="model_id" ref="model_shopify_order_data_queue_line_ept"/>
+            <field name="state">code</field>
+            <field name="code">model.auto_import_order_queue_data()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">5</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+        </record>
+
+        <!--Auto cron job for process customer data queue and it runs every 5 min.-->
+        <record id="process_shopify_customer_queue" model="ir.cron">
+            <field name="name">Shopify: Process Customer Queue</field>
+            <field name="model_id" ref="model_shopify_customer_data_queue_line_ept"/>
+            <field name="state">code</field>
+            <field name="code">model.sync_shopify_customer_into_odoo()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">5</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+        </record>
+
+        <!--Auto cron job for process export data queue and it runs every 15 min.-->
+        <record id="process_shopify_export_stock_queue" model="ir.cron">
+            <field name="name">Shopify: Process Export Stock Queue</field>
+            <field name="model_id" ref="model_shopify_export_stock_queue_line_ept"/>
+            <field name="state">code</field>
+            <field name="code">model.auto_export_stock_queue_data()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">15</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+        </record>
+
+        <!--Auto cron job for export inventory stock from Odoo to Shopify.-->
+        <record id="ir_cron_shopify_auto_export_inventory" model="ir.cron">
+            <field name="name">Shopify Auto Export Stock</field>
+            <field eval="False" name="active"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="state">code</field>
+            <field name="doall">False</field>
+            <field name="model_id" ref="model_shopify_process_import_export"/>
+            <field name="code">model.shopify_export_stock_queue()</field>
+        </record>
+
+        <!--Auto cron job for import orders from Shopify to Odoo.-->
+        <record id="ir_cron_shopify_auto_import_order" model="ir.cron">
+            <field name="name">Shopify Auto Import Orders</field>
+            <field eval="False" name="active"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="state">code</field>
+            <field name="doall">False</field>
+            <field name="model_id" ref="model_shopify_order_data_queue_ept"/>
+            <field name="code">model.import_order_cron_action()</field>
+        </record>
+
+        <!--Auto cron job for import shipped orders from Shopify to Odoo.-->
+        <record id="ir_cron_shopify_auto_import_shipped_order" model="ir.cron">
+            <field name="name">Shopify Auto Import Shipped Orders</field>
+            <field eval="False" name="active"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="state">code</field>
+            <field name="doall">False</field>
+            <field name="model_id" ref="model_shopify_order_data_queue_ept"/>
+            <field name="code">model.import_shipped_order_cron_action()</field>
+        </record>
+
+        <!--Auto cron job for import buy with prime orders from Shopify to Odoo.-->
+        <record id="ir_cron_shopify_auto_import_buy_with_prime_order" model="ir.cron">
+            <field name="name">Shopify Auto Import Buy with Prime Orders</field>
+            <field eval="False" name="active"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="state">code</field>
+            <field name="doall">False</field>
+            <field name="model_id" ref="model_shopify_order_data_queue_ept"/>
+            <field name="code">model.import_buy_with_prime_order_cron_action()</field>
+        </record>
+
+        <!--Auto cron job for import cancel orders from Shopify to Odoo.-->
+        <record id="ir_cron_shopify_auto_import_cancel_order" model="ir.cron">
+            <field name="name">Shopify Auto Import Cancel Orders</field>
+            <field eval="False" name="active"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="state">code</field>
+            <field name="doall">False</field>
+            <field name="model_id" ref="model_shopify_process_import_export"/>
+            <field name="code">model.import_cancel_order_cron_action()</field>
+        </record>
+
+        <!--Auto cron job for update order status from Odoo to Shopify-->
+        <record id="ir_cron_shopify_auto_update_order_status" model="ir.cron">
+            <field name="name">Shopify Auto Update Order Shipping Status</field>
+            <field eval="False" name="active"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="state">code</field>
+            <field name="doall">False</field>
+            <field name="model_id" ref="model_shopify_process_import_export"/>
+            <field name="code">model.update_order_status_cron_action()</field>
+        </record>
+
+        <!-- Auto Import Shopify Payout Report Created by Deval Jagad -->
+        <record id="ir_cron_auto_import_payout_report" model="ir.cron">
+            <field name="name">Import Shopify Payout Report</field>
+            <field eval="False" name="active"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="state">code</field>
+            <field name="doall">False</field>
+            <field name="model_id" ref="model_shopify_payout_report_ept"/>
+            <field name="code">model.auto_import_payout_report()</field>
+        </record>
+
+        <!-- Auto Reconcile Bank Statement of Shopify Payout Report Created by Deval Jagad -->
+        <record id="ir_cron_auto_process_bank_statement" model="ir.cron">
+            <field name="name">Process Bank Statement Of Shopify Payout Report</field>
+            <field eval="False" name="active"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field name="state">code</field>
+            <field name="doall">False</field>
+            <field name="model_id" ref="model_shopify_payout_report_ept"/>
+            <field name="code">model.auto_process_bank_statement()</field>
+        </record>
+
+        <!--Below cron job is used to import product images explicitly-->
+        <record id="shopify_ir_cron_import_image_explicitly" model="ir.cron">
+            <field name="name">Shopify Import Product Image Explicitly</field>
+            <field name="model_id" ref="model_shopify_product_data_queue_line_ept"/>
+            <field name="state">code</field>
+            <field name="code">model.shopify_image_import()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">50</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+        </record>
+
+        <!--Auto cron job for import products from Shopify to Odoo.-->
+        <record id="ir_cron_shopify_auto_import_product" model="ir.cron">
+            <field name="name">Shopify Auto Import Products</field>
+            <field eval="False" name="active"/>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="state">code</field>
+            <field name="doall">False</field>
+            <field name="model_id" ref="model_shopify_product_data_queue_ept"/>
+            <field name="code">model.import_product_cron_action()</field>
+        </record>
+
+        <!--Auto cron job for stock move process for the shipped order-->
+        <record id="process_stock_move_of_shipped_order" model="ir.cron">
+            <field name="name">Shopify Process Stock Move</field>
+            <field name="model_id" ref="model_stock_move"/>
+            <field name="state">code</field>
+            <field eval="False" name="active"/>
+            <field name="code">model.auto_process_stock_move()</field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">10</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+        </record>
+    </data>
+</odoo>

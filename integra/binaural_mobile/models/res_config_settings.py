@@ -5,6 +5,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
@@ -31,9 +32,7 @@ class ResConfigSettings(models.TransientModel):
     )
 
     order_payment = fields.Selection(
-        string="Sort invoices by", 
-        related="company_id.order_payment", 
-        readonly=False
+        string="Sort invoices by", related="company_id.order_payment", readonly=False
     )
 
     shop_catalog_view_mode = fields.Selection(
@@ -48,30 +47,33 @@ class ResConfigSettings(models.TransientModel):
     )
 
     payment_methods_in_app = fields.Many2many(
-        related="company_id.payment_methods_in_app", 
-        readonly=False
+        related="company_id.payment_methods_in_app", readonly=False
     )
 
-    dairy_fiscal = fields.Many2one(
-        related='company_id.dairy_fiscal',
-        readonly=False
-    )
+    dairy_fiscal = fields.Many2one(related="company_id.dairy_fiscal", readonly=False)
 
-    dairy_no_fiscal = fields.Many2one(
-        related='company_id.dairy_no_fiscal',
-        readonly=False
-    )
+    dairy_no_fiscal = fields.Many2one(related="company_id.dairy_no_fiscal", readonly=False)
 
-    app_sales_diaries = fields.Many2many(
-        related='company_id.app_sales_diaries',
-        readonly=False
-    )
+    app_sales_diaries = fields.Many2many(related="company_id.app_sales_diaries", readonly=False)
 
-    group_stock_packaging = fields.Boolean('Product Packagings',
-        implied_group='product.group_stock_packaging',
-        related='company_id.group_stock_packaging',
-        readonly=False
-        )
+    group_stock_packaging = fields.Boolean(
+        "Product Packagings",
+        implied_group="product.group_stock_packaging",
+        related="company_id.group_stock_packaging",
+        readonly=False,
+    )
 
     custom_manifest = fields.Text(related="company_id.custom_manifest", readonly=False)
     assetlink = fields.Text(related="company_id.assetlink", readonly=False)
+
+    allow_installment_payments = fields.Boolean()
+    
+    mobile_show_tax_type = fields.Selection(
+        related="company_id.mobile_show_tax_type", readonly=False
+    )
+
+    mobile_tax_include = fields.Boolean(
+        related="company_id.mobile_tax_include", 
+        string="Include taxes in prices",
+        readonly=False
+    )

@@ -4,6 +4,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
     const publicWidget = require('web.public.widget');
     const ajax = require('web.ajax');
     const { _t } = require('web.core');
+    var Dialog = require('web.Dialog');
     
     const portalBudgetForm = publicWidget.Widget.extend({
         selector: '.o_portal_budget_form',
@@ -16,6 +17,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             "click .delete_product": "_onClickDeleteProduct",
             "click #save_products": "_onClickSaveProducts",
             "change #invoice": "_onChangeInvoice",
+            "blur #note": "_onChangeNote",
             "click .cancel-btn": "_onClickCancel",
             "click .confirm-btn": "_onClickConfirm",
             "click #dowload_pdf": "_onClickDowloadPdf",
@@ -45,6 +47,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 maximumInputLength: 35,
                 minimumInputLength: 0,
                 maximumSelectionSize: 1,
+                allowClear: true,
                 ajax: {
                     url: '/budget/client',
                     dataType: 'json',
@@ -67,8 +70,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                             });
                             self.partners.push(client); 
                         });
-
-                        self._loadContactSelectOptions(dt, $('#client').val())
 
                         return {results: ret};
                     }
@@ -141,7 +142,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $("#openProduct").attr("disabled",true)
             }
 
-            this.includeTax()
+            this.loadOrder();
 
             this._onProductModalScroll(self);
 
@@ -169,6 +170,17 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
         },
         _onChangeClient: async function ({target}) {
             this._loadContactSelectOptions(this.partners, target.value);
+            if($("#number_order_value").val()){
+                const partner = await ajax.jsonRpc('/budget/update_partner', 'call',
+                    {
+                        "budget" :$("#number_order_value").val(),
+                        "partner" : $("#client").val(),
+                    }
+                )
+                const { status:st, msg } = partner;
+                const is400 = st === 400;
+                if (is400) alert(msg)  
+            }
         },
         _loadContacts: async function () {
             const {data, status } = await this._getClients()
@@ -213,7 +225,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             
             $("#openProduct").attr('disabled', false)
             $("#same_address").attr('disabled', false)
-            $("#openClient").remove()
 
             if (Boolean($("#client").val())) {
                 $("#openCreateAddressContact").attr('disabled', false)
@@ -256,7 +267,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             }
         },
 
-        _appendProduct: (self, products, allow_out_of_stock_order,stock_packaging, tbody) => {
+        _appendProduct: async (self, products, allow_out_of_stock_order,stock_packaging, tbody) => {
 
             if (!products) return;
 
@@ -281,13 +292,28 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 symbolBefore = symbol
             }
 
+            let dont_show_quantity_available = false
+            try{
+              dont_show_quantity_available = await self._rpc(
+                {
+                  "model": "res.users",
+                  "method":"has_group",
+                  "args": ['binaural_mobile.group_sellers_show_quantity_available']
+                }
+              )
+            }catch(e){}
+
+
             products.forEach(product => {
                 let { display_name, list_price, image, quantity, id, msg_price, uom_id, type, packaged_product } = product
                 let displayQtyOrType = ""
-                if(quantity == 0 && !allow_out_of_stock_order && type != "product") {
-                    displayQtyOrType = type
-                }else{
-                    displayQtyOrType = quantity.toFixed(2) + ' ' + uom_id[1]
+
+                if(!dont_show_quantity_available){
+                  if(quantity == 0 && !allow_out_of_stock_order && type != "product") {
+                      displayQtyOrType = type
+                  }else{
+                      displayQtyOrType = quantity.toFixed(2) + ' ' + uom_id[1]
+                  }
                 }
 
                 if(stock_packaging){
@@ -308,7 +334,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                             <input type="hidden" class="val_product" value="${id}"/>
                             <label class="form-text">${priceLabel}:</label>
                             <label class="form-text price_product" style="font-weight: bolder;">${symbolBefore} ${list_price} ${symbolAfter}</label><br/>
-                            <label class="form-text" style="font-weight: bolder;">${displayQtyOrType}</label><input type='hidden' id="qtyAvailable" value='${quantity}'/>
+                            <label class="form-text" style="font-weight: bolder;">${displayQtyOrType || ""}</label><input type='hidden' id="qtyAvailable" value='${quantity}'/>
                         </td>
                         <td style="width: 150px;">
                             <input type="text" class="form-control qty_product" id='qtyProduct' placeholder="${qtyLabel}"/>
@@ -519,7 +545,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $("#note").val("")
                 $("#product_head").show()
                 $("#number").show()
-                $("input[id='client']").select2("enable", false);
                 $("#number_order").text(data[0].name)
                 $("#number_order_value").val(data[0].id)
                 $("#same_address").attr('disabled', true)
@@ -534,10 +559,12 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 const products = await ajax.jsonRpc('/budget/create/order/line', 'call',
                         {"sale_orders" :orders.withValues}
                     )
-                const { status:st, data:dt } = products;
+                const { status:st, data:dt, msg } = products;
                 const is400 = st === 400;
                 if (is400){
                     $("#save_products").attr('disabled', false)
+                    this._onClickExitProducts()
+                    Dialog.alert(this,msg, { title: 'Error' });
                     return 
                 }
                 this.build_table_products(dt,true)
@@ -698,12 +725,28 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             this.includeTax()
         },
 
+        _onChangeNote: function(ev) {
+            this.includeTax()
+        },
+
+        loadOrder: async function() {
+            const order = await ajax.jsonRpc('/budget/order/read', 'call', {
+                "sale_id" : parseInt($("#number_order_value").val()),
+            })
+            const { status, data } = order;
+            const is409 = status === 409;
+            if (is409) return
+            this.build_table_products([data],false)
+        },
+
         includeTax: async function(){
             if ($("#number_order_value").val() == '') return
             const tax_included = $("#invoice").prop('checked')
+            const note = $("#note").val()
             const products = await ajax.jsonRpc('/budget/include_tax', 'call', {
                 "sale_id" : parseInt($("#number_order_value").val()),
-                "tax_included" : tax_included
+                "tax_included" : tax_included,
+                "note": note
             })
             const { status, data } = products;
             const is409 = status === 409;
@@ -840,6 +883,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                     "country": $("#countryClient").val(),
                     "state": $("#stateClient").val(),
                     "municipality": $("#municipalityClient").val(),
+                    "city": $("#cityClient").val(),
                     "parish": $("#parishClient").val(),
                     "type": $("#typeContactCreateClientModal").val(),
                     "parent_id": $("#client").val()
@@ -904,17 +948,30 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             if($("#stateClient").val()!=""){
                 const filter = $("#stateClient").val();
                 const model = $("#stateClient").attr("name");
-                const tag = "#municipalityClient";
-                const namemodel = "3"
-                const data  = {
+                const municipalityTag = "#municipalityClient";
+                const cityTag = "#cityClient";
+                const municipalityNamemodel = "3";
+                const cityNamemodel = "5";
+                
+                const municipalityData = {
                     filter,
                     model,
                     target: "municipality_id",
-                    namemodel,
+                    namemodel: municipalityNamemodel,
                     field: "name",
                     ref: "state_id",
-                }
-                this.SearchFilterInputs(data, tag)
+                };
+                this.SearchFilterInputs(municipalityData, municipalityTag);
+                
+                const cityData = {
+                    filter,
+                    model,
+                    target: "city_id",
+                    namemodel: cityNamemodel,
+                    field: "name",
+                    ref: "state_id",
+                };
+                this.SearchFilterInputs(cityData, cityTag);
             }
         },
 

@@ -12,12 +12,12 @@ const { Component, onPatched, onWillUpdateProps, useRef, useState } = owl;
  **/
 class TaxGroupComponent extends Component {
     setup() {
-        this.inputTax = useRef("taxValueInput");
+        this.inputTax = useRef("taxValueInput2");
         this.state = useState({ value: "readonly" });
         onPatched(() => {
             if (this.state.value === "edit") {
                 const { taxGroup, currency } = this.props;
-                const newVal = formatFloat(taxGroup.tax_group_amount, { digits: currency.digits });
+                const newVal = formatFloat(taxGroup.tax_group_amount, { digits: (currency && currency.digits) });
                 this.inputTax.el.value = newVal;
                 this.inputTax.el.focus(); // Focus the input
             }
