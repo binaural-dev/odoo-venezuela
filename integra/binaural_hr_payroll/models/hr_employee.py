@@ -191,6 +191,16 @@ class HrEmployee(models.Model):
             raise UserError(_("There are no payslips for the employee: %s", self.name))
         return moves[-1]["total_accrued"] / 30
 
+    def get_foreign_profit_sharing_wage(self):
+        self.ensure_one()
+        if self.company_id.profit_sharing_type == "annual_avg":
+            return self._compute_employee_average_wage() / 30
+
+        moves = self.get_all_payroll_moves()
+        if not moves:
+            raise UserError(_("There are no payslips for the employee: %s", self.name))
+        return moves[-1]["foreign_total_accrued"] / 30
+
     def _compute_employee_average_wage(self):
         self.ensure_one()
         moves = self._get_payroll_moves_grouped_by_months_of_a_specific_year()
