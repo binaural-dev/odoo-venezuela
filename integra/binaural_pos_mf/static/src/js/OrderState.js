@@ -14,7 +14,7 @@ odoo.define("binaural_pos_mf.OrderState", function(require) {
         this.fiscal_machine = this.fiscal_machine || false;
         this.mf_invoice_number = this.mf_invoice_number || 0;
       }
-      init_from_JSON(json){
+      init_from_JSON(json) {
         super.init_from_JSON(json);
         this.fiscal_machine = json.fiscal_machine || false;
         this.mf_invoice_number = json.mf_invoice_number || 0;
@@ -24,6 +24,9 @@ odoo.define("binaural_pos_mf.OrderState", function(require) {
         res.fiscal_machine = this.fiscal_machine;
         res.mf_invoice_number = this.mf_invoice_number;
         return res;
+      }
+      assert_editable() {
+        return
       }
 
     };
