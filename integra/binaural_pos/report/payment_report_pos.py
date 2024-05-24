@@ -15,12 +15,14 @@ class ReportPaymentPos(models.AbstractModel):
         date_start = data.get("date_start")
         date_stop = data.get("date_stop")
         category_ids = data.get("category_ids")
+        show_categories = data.get("show_categories")
 
         currency = self.env.company.currency_id
         foreign_currency = self.env.company.currency_foreign_id
 
         def get_payment_info(payments):
             return {
+                "sale_count": len(payments.pos_order_id),
                 "count": len(payments),
                 "amount": sum(payments.mapped("amount")),
                 "foreign_amount": sum(payments.mapped("foreign_amount")),
@@ -65,10 +67,15 @@ class ReportPaymentPos(models.AbstractModel):
             payments = {"fiscal": {}, "no_fiscal": {}, "global": {}}
             payment_methods = []
 
-            pos_categ = self.env["pos.category"].search([("id", "in", category_ids)])
+            pos_categ = self.env["product.category"].search([("id", "in", category_ids)])
 
             for category in pos_categ:
-                categories.append({"id": str(category.id), "name": category.name})
+                if show_categories in ["1_level", "both"]:
+                    categories.append({"id": str(category.id), "name": category.name})
+                if show_categories in ["2_level", "both"]:
+                    for child in category.child_id:
+                        if str(child.id) not in [c["id"] for c in categories]:
+                            categories.append({"id": str(child.id), "name": " - " + child.name})
 
             for payment_method in config_id.payment_method_ids:
                 payment_methods.append(
@@ -80,11 +87,21 @@ class ReportPaymentPos(models.AbstractModel):
 
             for order in order_ids:
                 for line in order.account_move.invoice_line_ids:
-                    category = str(line.product_id.pos_categ_id.id)
-                    if group_categories.get(category, False):
-                        group_categories[category] |= line
-                    else:
-                        group_categories[category] = line
+                    category = str(line.product_id.categ_id.id)
+                    if category in [c["id"] for c in categories]:
+                        if group_categories.get(category, False):
+                            group_categories[category] |= line
+                        else:
+                            group_categories[category] = line
+
+                        if str(line.product_id.categ_id.parent_id.id) in [
+                            c["id"] for c in categories
+                        ]:
+                            parent_category = str(line.product_id.categ_id.parent_id.id)
+                            if group_categories.get(parent_category, False):
+                                group_categories[parent_category] |= line
+                            else:
+                                group_categories[parent_category] = line
 
                 for payment in order.payment_ids:
                     payment_method_id = str(payment.payment_method_id.id)
@@ -106,10 +123,15 @@ class ReportPaymentPos(models.AbstractModel):
                         else:
                             payments["no_fiscal"][payment_method_id] = payment
 
+            _logger.info("order_fiscal: %s", categories)
+
             def get_percentage(amount):
                 if not order_ids.payment_ids:
                     return 0
-                return str(round(amount * 100 / get_payment_info(order_ids.payment_ids)["amount"], 2)) + " %"
+                return (
+                    str(round(amount * 100 / get_payment_info(order_ids.payment_ids)["amount"], 2))
+                    + " %"
+                )
 
             return {
                 "all_payments": order_ids.payment_ids,

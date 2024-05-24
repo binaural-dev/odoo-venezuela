@@ -28,7 +28,7 @@
                                     <t t-set="sales" t-value="get_payment_info(get_info(o)['all_payments'])"/>
                                     <tr>
                                         <td >Ventas</td>
-                                        <td class="text-center" t-out="sales['count']"></td>
+                                        <td class="text-center" t-out="sales['sale_count']"></td>
                                         <td class="text-end" t-out="sales['f_foreign_amount']"></td>
                                         <td class="text-end" t-out="sales['f_amount']"></td>
                                         <td class="text-end" t-out="get_info(o)['get_percentage'](sales['amount'])"></td>
@@ -45,7 +45,7 @@
                                             <t t-set="info" t-value="get_payment_info(payments['global'][payment_method['id']])"/>
                                             <tr>
                                                 <td t-out="payment_method['name']" />
-                                                <td class="text-center" t-out="info['count']"></td>
+                                                <td class="text-center"></td>
                                                 <td class="text-end" t-out="info['f_foreign_amount']"></td>
                                                 <td class="text-end" t-out="info['f_amount']"></td>
                                                 <td class="text-end" t-out="get_info(o)['get_percentage'](info['amount'])"></td>
@@ -71,7 +71,7 @@
                                             <t t-set="info" t-value="get_payment_info(payments['fiscal'][payment_method['id']])"/>
                                             <tr>
                                                 <td t-out="payment_method['name']" />
-                                                <td class="text-center" t-out="info['count']"></td>
+                                                <td class="text-center"></td>
                                                 <td class="text-end" t-out="info['f_foreign_amount']"></td>
                                                 <td class="text-end" t-out="info['f_amount']"></td>
                                                 <td class="text-end" t-out="get_info(o)['get_percentage'](info['amount'])"></td>
@@ -90,7 +90,7 @@
                                             <t t-set="info" t-value="get_payment_info(payments['no_fiscal'][payment_method['id']])"/>
                                             <tr>
                                                 <td t-out="payment_method['name']" />
-                                                <td class="text-center" t-out="info['count']"></td>
+                                                <td class="text-center"></td>
                                                 <td class="text-end" t-out="info['f_foreign_amount']"></td>
                                                 <td class="text-end" t-out="info['f_amount']"></td>
                                                 <td class="text-end" t-out="get_info(o)['get_percentage'](info['amount'])"></td>
@@ -109,7 +109,7 @@
                                             <t t-set="info" t-value="get_category_info(group_categories[category['id']])"/>
                                             <tr>
                                                 <td t-out="category['name']" />
-                                                <td class="text-center" t-out="info['count']"></td>
+                                                <td class="text-center"></td>
                                                 <td class="text-end" t-out="info['f_foreign_amount']"></td>
                                                 <td class="text-end" t-out="info['f_amount']"></td>
                                                 <td class="text-end" t-out="get_info(o)['get_percentage'](info['amount'])"></td>

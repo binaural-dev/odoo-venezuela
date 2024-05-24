@@ -12,13 +12,13 @@ class PosPaymentReport(models.TransientModel):
     _description = "Point of Sale Details Report"
 
     def _default_pos_start_date(self):
-        return fields.Datetime.now() + timedelta(days=-1)
+        return fields.Datetime.today()
 
     def _default_pos_end_date(self):
-        return fields.Datetime.now() + timedelta(days=1)
+        return fields.Datetime.now()
 
     def _default_pos_categories(self):
-        return self.env["pos.category"].search([])
+        return self.env["product.category"].search([("parent_id", "=", False)])
 
     start_date = fields.Datetime(required=True, default=_default_pos_start_date)
     end_date = fields.Datetime(required=True, default=_default_pos_end_date)
@@ -27,7 +27,12 @@ class PosPaymentReport(models.TransientModel):
         "pos.config", default=lambda s: s.env["pos.config"].search([])
     )
     category_ids = fields.Many2many(
-        "pos.category", string="Categories", default=_default_pos_categories
+        "product.category", string="Categories", default=_default_pos_categories
+    )
+
+    show_categories = fields.Selection(
+        selection=[("1_level", "1st Level"), ("2_level", "2nd Level"), ("both", "Both")],
+        default="both",
     )
 
     def generate_report(self):
@@ -36,5 +41,6 @@ class PosPaymentReport(models.TransientModel):
             "date_stop": self.end_date,
             "config_ids": self.pos_config_ids.ids,
             "category_ids": self.category_ids.ids,
+            "show_categories": self.show_categories,
         }
         return self.env.ref("binaural_pos.action_payment_report_pos").report_action([], data=data)
