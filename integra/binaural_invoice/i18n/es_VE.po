@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240515\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-16 19:58+0000\n"
-"PO-Revision-Date: 2024-05-16 19:58+0000\n"
+"POT-Creation-Date: 2024-05-24 16:07+0000\n"
+"PO-Revision-Date: 2024-05-24 16:07+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -142,6 +142,14 @@ msgstr "Libro de Compras"
 #: model_terms:ir.ui.view,arch_db:binaural_invoice.template_invoice_sale_note_binaural_invoice
 msgid "Cant"
 msgstr ""
+
+#. module: binaural_invoice
+#. odoo-python
+#: code:addons/binaural_invoice/wizard/accounting_reports.py:0
+#: code:addons/binaural_invoice/wizard/accounting_reports.py:0
+#, python-format
+msgid "Check the move %s does not have an invoice date"
+msgstr "Verifique el asiento %s no tiene una fecha de factura"
 
 #. module: binaural_invoice
 #: model:ir.model,name:binaural_invoice.model_res_company
