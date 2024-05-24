@@ -280,6 +280,7 @@ class AccountRetention(models.Model):
             ("company_id", "=", self.company_id.id),
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
+            ("journal_id.fiscal", "=", True),
             ("move_type", "in", ("in_refund", "in_invoice")),
             ("amount_residual", ">", 0),
             ("fiscal", "=", True),
@@ -313,6 +314,7 @@ class AccountRetention(models.Model):
             ("company_id", "=", self.company_id.id),
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
+            ("journal_id.fiscal", "=", True),
             ("move_type", "in", ("out_refund", "out_invoice")),
             ("amount_residual", ">", 0),
         ]
@@ -605,6 +607,7 @@ class AccountRetention(models.Model):
                 retention.payment_ids = payments.ids
             if retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._set_sequence()
+                move_ids.write({"iva_voucher_number": retention.number})
 
         self.payment_ids.write({"date": self.date_accounting})
         self._reconcile_all_payments()

@@ -20,7 +20,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="base_igtf_setting">
+                        <div class="col-12 col-lg-6 o_setting_box" id="unique_tax_setting">
                             <div class="o_setting_left_pane">
                                 <field name="unique_tax"/>
                             </div>
@@ -113,6 +113,14 @@
                                         <field name="extend_aliquot_purchase"/>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="show_discount_on_moves_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="show_discount_on_moves"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="show_discount_on_moves"/>
                             </div>
                         </div>
 

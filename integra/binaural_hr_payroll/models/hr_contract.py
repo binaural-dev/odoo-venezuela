@@ -26,6 +26,8 @@ class HrContract(models.Model):
 
     salary_type = fields.Selection([("fixed", "Fixed"), ("variable", "Variable")], default="fixed")
 
+    structure_type_id = fields.Many2one(required=True)
+
     @api.depends("wage_type", "compute_payroll_using")
     def _compute_wage_field_to_use(self):
         conditions_for_fields = {
@@ -58,6 +60,11 @@ class HrContract(models.Model):
         return self._get_contract_wage()
         # return self[self.wage_field_to_use]
 
+    #TODO Change the way this behaviour works so the get_all_payroll_moves is not called a lot of
+    # times for each time we need to get both the integral and the foreign integral wage. This
+    # includes the calls of the methods for getting the vacation and profit sharing days alicuots
+    # both on the base and on the foreign currency.
+
     def get_integral_daily_wage(self):
         self.ensure_one()
         employee_id = self.employee_id
@@ -69,4 +76,17 @@ class HrContract(models.Model):
         last_accrued = employee_salary_payments[-1]["total_accrued"]
         bonus_days_alicuot = employee_id.get_vacation_bonus_days_alicuot()
         profit_sharing_days_alicuot = employee_id.get_profit_sharing_days_alicuot()
+        return (last_accrued / 30) + bonus_days_alicuot + profit_sharing_days_alicuot
+
+    def get_foreign_integral_daily_wage(self):
+        self.ensure_one()
+        employee_id = self.employee_id
+        employee_salary_payments = employee_id.get_all_payroll_moves()
+
+        if not employee_salary_payments:
+            return 0
+
+        last_accrued = employee_salary_payments[-1]["foreign_total_accrued"]
+        bonus_days_alicuot = employee_id.get_foreign_vacation_bonus_days_alicuot()
+        profit_sharing_days_alicuot = employee_id.get_foreign_profit_sharing_days_alicuot()
         return (last_accrued / 30) + bonus_days_alicuot + profit_sharing_days_alicuot

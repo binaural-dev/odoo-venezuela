@@ -124,6 +124,18 @@ class AccountMove(models.Model):
                 continue
 
             total = False
+            if record.move_type == "out_refund":
+                out_invoice = record.reversed_entry_id
+
+                for line in record.invoice_line_ids:
+                    out_invoice_line = out_invoice.invoice_line_ids.filtered(lambda x: x.product_id == line.product_id)
+                    if not out_invoice_line.commission_image_id:
+                        continue
+                    line.commission_image_id = out_invoice_line.commission_image_id
+
+                record.total_commission = total
+                return
+
             for line in record.invoice_line_ids:
                 if line.sale_line_ids.commission_policy_line_image_ids:
                     commission_id = line.sale_line_ids.get_commission_policy_line_image(
@@ -274,7 +286,7 @@ class AccountMove(models.Model):
     def is_valid_to_compute_commission(self):
         """Check if the invoice is valid to compute commission."""
         self.ensure_one()
-        if self.move_type != "out_invoice":
+        if self.move_type not in ["out_invoice", "out_refund"]:
             return False
         if (
             self.compute_commission_when == "invoice_is_fully_paid"
