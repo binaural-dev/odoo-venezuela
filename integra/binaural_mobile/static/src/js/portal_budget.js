@@ -758,8 +758,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             const order = data[0];
             const { order_line } = order;
 
-            console.log({order});
-
             tbody.empty()
 
             var unitLabel = _t("Precio Unitario: ")
@@ -978,6 +976,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             }
             $(".cancel_confirmed_input").attr("disabled", true)
             $(".delete_product").hide()
+
+            await this.loadOrder()
         },
 
         _onClickDowloadPdf : async function(ev) {
