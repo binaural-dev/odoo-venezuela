@@ -916,6 +916,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                                 "tax_base_extend_aliquot_no_deductible": tax.get("tax_group_base_amount"),
                                 "amount_extend_aliquot_no_deductible": tax.get("tax_group_amount"),
                             }
+                        )
 
         return tax_result
 
