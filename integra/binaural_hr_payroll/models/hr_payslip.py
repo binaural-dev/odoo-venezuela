@@ -7,10 +7,17 @@ from odoo import api, fields, models, _
 from odoo.addons.hr_payroll.models.browsable_object import BrowsableObject
 from odoo.tools import html2plaintext, is_html_empty
 from odoo.exceptions import UserError
+from odoo.tools.misc import format_date
+
 
 
 class HrPayslip(models.Model):
     _inherit = "hr.payslip"
+
+    report_title_name = fields.Char(
+        string='Payslip Name',
+        compute='_compute_report_title_name', store=True, readonly=False,
+        states={'done': [('readonly', True)], 'cancel': [('readonly', True)], 'paid': [('readonly', True)]})
 
     foreign_currency_id = fields.Many2one(
         "res.currency", related="company_id.currency_foreign_id", store=True
@@ -265,6 +272,22 @@ class HrPayslip(models.Model):
             }
         )
         return localdict
+
+    @api.depends('employee_id', 'struct_id', 'date_from')
+    def _compute_report_title_name(self):
+        
+        for slip in self.filtered(lambda p: p.employee_id and p.date_from):
+            lang = slip.employee_id.sudo().address_home_id.lang or self.env.user.lang
+            context = {'lang': lang}
+            for struct_name in self:
+                payslip_name = struct_name.struct_id.name
+            del context
+
+            slip.report_title_name = '%(payslip_name)s - %(employee_name)s - %(dates)s' % {
+                'payslip_name': payslip_name,
+                'employee_name': slip.employee_id.name,
+                'dates': format_date(self.env, slip.date_from, date_format="MMMM y", lang_code=lang)
+            }
 
     def _get_localdict(self):
         localdict = super()._get_localdict()
