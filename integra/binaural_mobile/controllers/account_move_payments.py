@@ -128,7 +128,7 @@ class AccountMovePayments(http.Controller):
         """
         data = {"status": 200, "msg": "Success"}
 
-        # try:
+        try:
             seller_id = request.env.user
 
             partner_ids = request.env["res.partner"].search([("id", "=", int(partner_id))])
@@ -204,8 +204,8 @@ class AccountMovePayments(http.Controller):
                     {"status": 204, "msg": "Factura no encontrada", "count": 0, "data": False}
                 )
 
-        # except Exception as e:
-        #     data.update({"status": 400, "msg": str(e)})
+        except Exception as e:
+            data.update({"status": 400, "msg": str(e)})
 
         return data
 
