@@ -126,77 +126,86 @@ class AccountMovePayments(http.Controller):
         Returns:
             data: invoices results
         """
-        seller_id = request.env.user
         data = {"status": 200, "msg": "Success"}
 
-        partner_ids = request.env["res.partner"].search([("id", "=", int(partner_id))])
-        partner_ids += partner_ids.child_ids
+        # try:
+            seller_id = request.env.user
 
-        domain = [
-            ("partner_id", "in", partner_ids.ids),
-            ("payment_state", "in", ["not_paid", "partial"]),
-            ("move_type", "=", "out_invoice"),
-            ("state", "=", "posted"),
-            ("seller_id", "=", seller_id.employee_id.id),
-            ("journal_id", "=", int(type_dairy)),
-        ]
+            partner_ids = request.env["res.partner"].search([("id", "=", int(partner_id))])
+            partner_ids += partner_ids.child_ids
 
-        order_options = {"0": "create_date asc", "1": "amount_residual desc"}
+            domain = [
+                ("partner_id", "in", partner_ids.ids),
+                ("payment_state", "in", ["not_paid", "partial"]),
+                ("move_type", "=", "out_invoice"),
+                ("state", "=", "posted"),
+                ("seller_id", "=", seller_id.employee_id.id),
+                ("journal_id", "=", int(type_dairy)),
+            ]
 
-        order_invoices = order_options.get(request.env.company.order_payment, "create_date asc")
+            order_options = {"0": "create_date asc", "1": "amount_residual desc"}
 
-        account_move_ids = (
-            request.env["account.move"].sudo().search(domain=domain, order=order_invoices)
-        )
+            order_invoices = order_options.get(request.env.company.order_payment, "create_date asc")
 
-        acc_move_count = len(account_move_ids)
-        all_acc_move_count = len(account_move_ids)
-        account_move_results = []
-        lang = request.env["res.lang"].search([("code", "=", request.env.user.lang)])
-        date_format = lang.date_format if lang else "%Y-%m-%d"
-
-        if acc_move_count > 0:
-            currency_foreign_id = request.env.company.currency_foreign_id
-            journal_id = account_move_ids[0].journal_id
-            for account_move_id in account_move_ids:
-                account_move_result_lines_with_residual_amount = account_move_id.line_ids.filtered(
-                    lambda l: not float_is_zero(
-                        l.amount_residual, precision_rounding=l.currency_id.rounding
-                    )
-                )
-
-                account_move_result = account_move_id.read(FIELDNAMES)[0]
-
-                account_move_result["journal_id"] = (
-                    journal_id.name,
-                    journal_id.id,
-                    journal_id.fiscal,
-                )
-                account_move_result["is_foreign"] = True
-
-                if account_move_id.currency_id.id != currency_foreign_id.id:
-                    account_move_result["currency_foreign"] = currency_foreign_id.symbol
-                    account_move_result["is_foreign"] = False
-
-                account_move_result[
-                    "line_ids"
-                ] = account_move_result_lines_with_residual_amount.read(
-                    ["amount_residual", "date_maturity"]
-                )
-                for line in account_move_result["line_ids"]:
-                    line["date_maturity"] = line["date_maturity"].strftime(date_format)
-                account_move_results.append(account_move_result)
-
-            data.update(
-                {
-                    "data": account_move_results,
-                    "count": acc_move_count,
-                    "total_count": all_acc_move_count,
-                }
+            account_move_ids = (
+                request.env["account.move"].sudo().search(domain=domain, order=order_invoices)
             )
 
-        else:
-            data.update({"status": 204, "msg": "Factura no encontrada", "count": 0, "data": False})
+            acc_move_count = len(account_move_ids)
+            all_acc_move_count = len(account_move_ids)
+            account_move_results = []
+            lang = request.env["res.lang"].search([("code", "=", request.env.user.lang)])
+            date_format = lang.date_format if lang else "%Y-%m-%d"
+
+            if acc_move_count > 0:
+                currency_foreign_id = request.env.company.currency_foreign_id
+                journal_id = account_move_ids[0].journal_id
+                for account_move_id in account_move_ids:
+                    account_move_result_lines_with_residual_amount = (
+                        account_move_id.line_ids.filtered(
+                            lambda l: not float_is_zero(
+                                l.amount_residual, precision_rounding=l.currency_id.rounding
+                            )
+                        )
+                    )
+
+                    account_move_result = account_move_id.read(FIELDNAMES)[0]
+
+                    account_move_result["journal_id"] = (
+                        journal_id.name,
+                        journal_id.id,
+                        journal_id.fiscal,
+                    )
+                    account_move_result["is_foreign"] = True
+
+                    if account_move_id.currency_id.id != currency_foreign_id.id:
+                        account_move_result["currency_foreign"] = currency_foreign_id.symbol
+                        account_move_result["is_foreign"] = False
+
+                    account_move_result["line_ids"] = (
+                        account_move_result_lines_with_residual_amount.read(
+                            ["amount_residual", "date_maturity"]
+                        )
+                    )
+                    for line in account_move_result["line_ids"]:
+                        line["date_maturity"] = line["date_maturity"].strftime(date_format)
+                    account_move_results.append(account_move_result)
+
+                data.update(
+                    {
+                        "data": account_move_results,
+                        "count": acc_move_count,
+                        "total_count": all_acc_move_count,
+                    }
+                )
+
+            else:
+                data.update(
+                    {"status": 204, "msg": "Factura no encontrada", "count": 0, "data": False}
+                )
+
+        # except Exception as e:
+        #     data.update({"status": 400, "msg": str(e)})
 
         return data
 
