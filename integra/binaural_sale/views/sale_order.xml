@@ -25,14 +25,13 @@
 
             <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']" position="after">
                 <field name="foreign_subtotal"/>
-                    <field name="foreign_rate" optional="hide"/>
+                <field name="foreign_rate" optional="hide"/>
                 <field
-            name="foreign_inverse_rate"
-        groups="base.group_no_one"
-        string="Foreign inverse rate"
-        optional="hide"
-        readonly="1"
-                />
+                    name="foreign_inverse_rate"
+                    groups="base.group_no_one"
+                    string="Foreign inverse rate"
+                    optional="hide"
+                    readonly="1"/>
             </xpath>
 
             <xpath expr="//notebook" position="inside">
@@ -41,20 +40,18 @@
                         <field name="foreign_currency_id" invisible="1"/>
                         <field
                             name="foreign_inverse_rate"
-            invisible="1"
-                            string="Foreign inverse rate"
-                        />
-            <t groups="base.group_no_one">
-            <field name="foreign_inverse_rate"/>
-            </t>
+                            invisible="1"
+                            string="Foreign inverse rate" />
+                        <field name="foreign_inverse_rate" groups="base.group_no_one"/>
                         <field name="foreign_rate"/>
-            <field 
-            name="tax_totals" 
+                    </group>
+                    <group class="oe_subtotal_footer oe_right" colspan="2" name="sale_total">
+                        <field 
+                            name="tax_totals" 
                             widget="account-tax-foreign-totals-field" 
                             nolabel="1" 
                             colspan="2"
-                readonly="1"
-            />
+                            readonly="1"/>
                     </group>
                 </page>
             </xpath>

@@ -1,6 +1,8 @@
 {
-    "name": "Binaural Nómina Prestaciones",
-    "summary": """Modificaciones de nómina para pagos de prestaciones en Venezuela.""",
+    "name": "Binaural Nómina Liquidaciones",
+    "summary": """
+        Modificaciones de nómina para liquidaciones y pagos de prestaciones en Venezuela.
+    """,
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Human Resources",
@@ -13,8 +15,7 @@
         "security/ir.model.access.csv",
         "views/hr_payroll_benefits_accumulated.xml",
         "views/hr_payroll_benefits_accumulated_detail.xml",
-        "views/hr_payroll_move.xml",
-        "views/res_config_settings.xml",
+        "views/hr_payslip.xml",
         "views/menuitems.xml",
     ],
 }
