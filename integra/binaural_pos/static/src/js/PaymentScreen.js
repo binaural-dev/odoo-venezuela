@@ -11,6 +11,10 @@ odoo.define("binaural_pos.PaymentScreen", function (require) {
         }
         return super.addNewPaymentLine(...arguments);
       }
+
+      shouldDownloadInvoice() {
+          return false;
+      }
       _updateSelectedPaymentline() {
         // do nothing if there is not a selected payment line
         if (!this.selectedPaymentLine) return;

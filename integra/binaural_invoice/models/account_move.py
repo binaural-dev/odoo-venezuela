@@ -1,8 +1,10 @@
+from datetime import datetime
 import json
 import logging
 
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
+from odoo.tools import format_date
 
 _logger = logging.getLogger(__name__)
 
@@ -21,27 +23,7 @@ class AccountMove(models.Model):
     first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")
 
-    # @api.model
-    # def check_access_rights(self, operation, raise_exception=True):
-    #     if not self.env.context.get("params",False):
-    #         return super().check_access_rights(operation, raise_exception)
-
-    #     if not self.env.context.get("params").get("action", False):
-    #         return super().check_access_rights(operation, raise_exception)
-
-    #     action_id = self.env.ref("account.action_move_out_refund_type").id
-    #     action = self.env.context.get("params").get("action")
-    #     if action != action_id:
-    #         return super().check_access_rights(operation, raise_exception)
-
-    #     if self.env.user.has_group("binaural_invoice.create_out_refund"): 
-    #         self = self.with_context(create=1)
-    #     else:
-    #         self = self.with_context(create=0)
-
-    #     _logger.info("Context: %s", self.env.context)
-
-    #     return super().check_access_rights(operation, raise_exception)
+    next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
@@ -138,6 +120,21 @@ class AccountMove(models.Model):
             domain = move.get_partner_domain(extend=extend_domain)
 
             move.update({"partner_id_domain": json.dumps(domain)})
+
+    @api.depends("payment_term_details")
+    def _compute_next_installment_date(self):
+        lang = self.env["res.lang"].search([("code", "=", self.env.user.lang)])
+        date_format = lang.date_format if lang else "%Y-%m-%d"
+        for invoice in self:
+            invoice.next_installment_date = False
+            if not invoice.payment_term_details:
+                invoice.next_installment_date = invoice.invoice_date_due
+                continue
+            for term in invoice.payment_term_details:
+                term_date = datetime.strptime(term.get("date", ""), date_format).date()
+                if term_date and term_date >= fields.Date.today():
+                    invoice.next_installment_date = term_date
+                    break
 
     def _post(self, soft=True):
         res = super()._post(soft)

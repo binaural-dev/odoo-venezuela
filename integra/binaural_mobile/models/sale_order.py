@@ -22,12 +22,6 @@ class SaleOrder(models.Model):
             record.manage_note_app()
         return res
 
-    def write(self, vals):
-        res = super().write(vals)
-        if "note" in vals:
-            self.manage_note_app()
-        return res
-
     def manage_note_app(self):
         for record in self:
             line_note = record.order_line.filtered(lambda line: line.display_type == "line_note")
@@ -45,10 +39,6 @@ class SaleOrder(models.Model):
             if record.note:
                 if line_note:
                     line_note.write({"name": note})
-                else:
-                    record.order_line += record.order_line.new(
-                        {"name": note, "display_type": "line_note"}
-                    )
 
     def _get_default_journal(self):
         domain = copy.deepcopy(JOURNAL_DOMAIN)
@@ -74,6 +64,8 @@ class SaleOrder(models.Model):
     )
 
     def write(self, vals):
+        if "note" in vals:
+            self.manage_note_app()
         if (
             "order_line" in vals
             and self.env.user.employee_id.is_seller

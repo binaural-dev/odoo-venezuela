@@ -474,7 +474,7 @@ class SaleOrderBudget(http.Controller):
 
     @http.route("/validation_available", type="json", methods=["POST", "PUT"], auth="public", website=False, sitemap=False)
     def validation_available(self, **kwargs):
-        settings = request.env['res.config.settings'].sudo().create({})  # Crear una instancia temporal de res.config.settings
+        settings = request.env['res.config.settings']
         allow_out_of_stock_order = settings.allow_out_of_stock_order
         return {"allow_out_of_stock_order": allow_out_of_stock_order}
 
