@@ -136,25 +136,26 @@ class AccountTax(models.Model):
                     }
                 )
 
-        if foreign_tax_lines:
-            for tax_line in foreign_tax_lines:
-                tax_line["currency"] = currency
+        tax_values_list = []
+        for base_line in base_lines:
+            tax_values_list += self._compute_taxes_for_single_line(base_line)[1]
+
+        if tax_lines:
+            for tax_line in tax_lines:
+                tax_line["currency"] = foreign_currency
                 tax_line["tax_amount"] = 0.0
-                for tax in taxes:
-                    if tax_line["tax_repartition_line"].tax_id.id == tax["tax"].id:
-                        tax_amount = tax_line["tax_repartition_line"].tax_id._compute_amount(
-                            float_round(tax["base"], precision_rounding=currency.rounding),
-                            tax["price"],
-                        )
-                        if self.env.company.tax_calculation_rounding_method == "round_globally":
-                            tax_line["tax_amount"] += tax_amount
-                        else:
-                            tax_line["tax_amount"] += float_round(
-                                tax_amount, precision_rounding=currency.rounding
-                            )
+                for tax in tax_values_list:
+                    if tax["tax_repartition_line"].id == tax_line["tax_repartition_line"].id:
+                        tax_line["tax_amount"] += tax["amount"]
 
-                tax_line["tax_amount"] = float_round(
-                    tax_line["tax_amount"], precision_rounding=currency.rounding
-                )
 
-        return foreign_base_lines, foreign_tax_lines
+        foreign_taxes = super()._prepare_tax_totals(base_lines, foreign_currency, tax_lines)
+
+        res["groups_by_foreign_subtotal"] = foreign_taxes["groups_by_subtotal"]
+        res["foreign_subtotals"] = foreign_taxes["subtotals"]
+        res["foreign_amount_untaxed"] = foreign_taxes["amount_untaxed"]
+        res["foreign_amount_total"] = foreign_taxes["amount_total"]
+        res["foreign_formatted_amount_untaxed"] = foreign_taxes["formatted_amount_untaxed"]
+        res["foreign_formatted_amount_total"] = foreign_taxes["formatted_amount_total"]
+        return res
+
