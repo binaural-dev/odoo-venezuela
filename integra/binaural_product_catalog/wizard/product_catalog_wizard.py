@@ -72,5 +72,4 @@ class GenerateProductCatalogWizard(models.TransientModel):
     @api.onchange("style_mod")
     def _onchange_style(self):
        for item in self:
-            if item.style_mod in ['style_1', 'style_6']:
-                item.style = item.style_mod
+            item.style = item.style_mod
