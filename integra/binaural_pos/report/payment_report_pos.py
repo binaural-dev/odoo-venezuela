@@ -94,14 +94,14 @@ class ReportPaymentPos(models.AbstractModel):
                         else:
                             group_categories[category] = line
 
-                        if str(line.product_id.categ_id.parent_id.id) in [
-                            c["id"] for c in categories
-                        ]:
-                            parent_category = str(line.product_id.categ_id.parent_id.id)
-                            if group_categories.get(parent_category, False):
-                                group_categories[parent_category] |= line
-                            else:
-                                group_categories[parent_category] = line
+                    if str(line.product_id.categ_id.parent_id.id) in [
+                        c["id"] for c in categories
+                    ]:
+                        parent_category = str(line.product_id.categ_id.parent_id.id)
+                        if group_categories.get(parent_category, False):
+                            group_categories[parent_category] |= line
+                        else:
+                            group_categories[parent_category] = line
 
                 for payment in order.payment_ids:
                     payment_method_id = str(payment.payment_method_id.id)
