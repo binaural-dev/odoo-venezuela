@@ -705,3 +705,8 @@ msgstr "Desea reembolsar todos los productos"
 #, python-format
 msgid "the quantity cannot be negative"
 msgstr "La cantidad no puede ser negativa"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_order__sales_order
+msgid "Sales Order"
+msgstr "Comercial"

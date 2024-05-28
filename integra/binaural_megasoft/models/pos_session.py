@@ -31,13 +31,13 @@ class PosSession(models.Model):
                 return False
             return True
 
-        pos_payments = pos_payments.filtered(lambda payment: not is_change(payment))
-
-        payments = pos_payments.filtered(
-            lambda payment: bool(payment.pos_order_id.fiscal_machine)
+        pos_payments = pos_payments.filtered(
+            lambda payment: not is_change(payment)
+            and bool(payment.pos_order_id.fiscal_machine)
             and bool(payment.payment_method_id.is_payment_pdv)
-            and payment.amount > 0
         )
+
+        payments = pos_payments.filtered(lambda payment: payment.amount > 0)
 
         refund_payments = pos_payments - payments
 

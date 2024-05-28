@@ -45,9 +45,62 @@
         </xpath>
     </t>
 
+    <t t-name="TaxTotalsField" t-inherit="account.TaxTotalsField" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table[1]/tbody[1]/t[1]" position="before">
+            <tr t-if="totals.discount_amount and totals.show_discount">
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label">Subtotal</label>
+                </td>
+                <td>
+                    <span
+                        name="subtotal"
+                        class="o_tax_group_amount_value o_list_monetary"
+                        t-out="totals.formatted_subtotal"
+                    />
+                </td>
+            </tr>
+            <tr t-if="totals.discount_amount and totals.show_discount">
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label">Discount</label>
+                </td>
+                <td class="o_tax_group">
+                    <span
+                        name="discount_amount"
+                        class="o_tax_group_amount_value o_list_monetary"
+                        t-out="totals.formatted_discount_amount"
+                    />
+                </td>
+            </tr>
+        </xpath>
+    </t>
+
     <t t-name="TaxForeignTotalsField" owl="1">
         <table t-if="totals" class="oe_right">
             <tbody>
+                <tr t-if="totals.foreign_discount_amount and totals.show_discount">
+                    <td class="o_td_label">
+                        <label class="o_form_label o_tax_total_label">Subtotal</label>
+                    </td>
+                    <td>
+                        <span
+                            name="foreign_amount_untaxed"
+                            class="o_tax_group_amount_value o_list_monetary"
+                            t-out="totals.foreign_formatted_subtotal"
+                        />
+                    </td>
+                </tr>
+                <tr t-if="totals.foreign_discount_amount and totals.show_discount">
+                    <td class="o_td_label">
+                        <label class="o_form_label o_tax_total_label">Discount</label>
+                    </td>
+                    <td class="o_tax_group">
+                        <span
+                            name="foreign_discount_amount"
+                            class="o_tax_group_amount_value o_list_monetary"
+                            t-out="totals.foreign_formatted_discount_amount"
+                        />
+                    </td>
+                </tr>
                 <t t-foreach="totals.foreign_subtotals" t-as="subtotal" t-key="subtotal['name']">
                     <tr>
                         <td class="o_td_label">
