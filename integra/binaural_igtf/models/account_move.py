@@ -21,7 +21,7 @@ class AccountMoveIgtf(models.Model):
         copy=False,
     )
 
-    def recalculate_bi_igtf(self):
+    def recalculate_bi_igtf(self, line_id=None):
         """This method can be used by ir.actions.server to update bi_igtf"""
         for record in self:
 
@@ -31,6 +31,14 @@ class AccountMoveIgtf(models.Model):
 
             payments = record.invoice_payments_widget.get("content", False)
             amount = 0
+            if line_id:
+                line = self.env["account.move.line"].browse([line_id])
+                payment_id = line.move_id.payment_id
+                if payment_id and payment_id.is_igtf_on_foreign_exchange:
+                    payment_id = line.move_id.payment_id
+                    record.bi_igtf += payment_id.get_bi_igtf()
+                    continue
+
             for payment in payments:
                 payment_id = payment.get("account_payment_id", False)
                 if not payment_id:
@@ -38,7 +46,8 @@ class AccountMoveIgtf(models.Model):
 
                 payment_id = record.env["account.payment"].browse([payment_id])
                 if payment_id.is_igtf_on_foreign_exchange:
-                    amount += abs(payment['amount'])
+                    amount += payment_id.get_bi_igtf()
+
             record.bi_igtf = amount
 
 
@@ -146,4 +155,9 @@ class AccountMoveIgtf(models.Model):
         for move in self:
             move.remove_igtf_from_move(partial_id)
         res = super().js_remove_outstanding_partial(partial_id)
+        return res
+
+    def js_assign_outstanding_line(self, line_id):
+        res = super().js_assign_outstanding_line(line_id)
+        self.recalculate_bi_igtf(line_id)
         return res
