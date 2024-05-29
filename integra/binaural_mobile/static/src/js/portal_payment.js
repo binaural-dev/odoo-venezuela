@@ -4,6 +4,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
   const publicWidget = require("web.public.widget");
   const ajax = require("web.ajax");
   const { _t } = require("web.core");
+  const Dialog = require('web.Dialog');
 
   publicWidget.registry.PaymentsPortalForm = publicWidget.Widget.extend({
     selector: ".payments_portal_form",
@@ -137,8 +138,13 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
         });
         this.ClearTotalRetentions();
         $("#requireReceipt").val("");
-        const { data, status } = invoices;
+        const { data, status, msg } = invoices;
         const is204 = status === 204;
+        const is400 = status === 400;
+        if(is400){
+          Dialog.alert(this,msg, { title: 'Error' });
+          return;
+        }
         if (is204) {
           const tbody = $("#notes_invoices_results");
           tbody.empty();
@@ -395,9 +401,12 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
             exist_igtf: $("#igtf_pay").length,
           }
         );
-        const { data, status } = dairySym;
-        const is400 = status === 400;
-        if (is400) return;
+        const { data, status, msg } = dairySym;
+        const is404 = status === 404;
+        if(is404){
+          Dialog.alert(this,msg, { title: 'Error' });
+          return;
+        }
 
         $("#currency").val(data[0]);
         $("#symbol-dairy").text(data[1]);
