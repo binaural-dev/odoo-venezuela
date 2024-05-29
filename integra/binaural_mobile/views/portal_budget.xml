@@ -459,7 +459,7 @@
                                 <div class="modal-header">
                                 </div>
                                 <div class="modal-body">
-                                    <div class="alert alert-danger" role="alert">
+                                    <div class="alert alert-danger" role="alert" id="errorQtyMsg">
                                         Check the units of the product
                                     </div>
                                 </div>
