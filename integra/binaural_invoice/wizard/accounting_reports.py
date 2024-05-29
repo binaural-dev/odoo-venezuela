@@ -940,14 +940,20 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "percent": workbook.add_format({"num_format": "0.00%"}),
         }
 
+        # header
         worksheet.merge_range(
-            "D1:F1",
+            "C1:M1",
             f"{self.company_id.name} - {self.company_id.vat}",
             workbook.add_format({"bold": True, "center_across": True, "font_size": 18}),
         )
-        worksheet.merge_range("D2:F2", "Libro de Ventas", cell_bold)
         worksheet.merge_range(
-            "D3:F3",
+            "C2:M2",
+            f"Direccion:  {self.company_id.street}",
+            cell_bold,
+        )
+        worksheet.merge_range("C3:M3", "Libro de Ventas", cell_bold)
+        worksheet.merge_range(
+            "C4:M4",
             (
                 f"Desde {self._format_date(self.date_from)}"
                 f" Hasta {self._format_date(self.date_to)}"
@@ -1004,21 +1010,27 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "percent": workbook.add_format({"num_format": "0.00%"}),
         }
 
-        # header xml
+        # header
         worksheet.merge_range(
-            "D1:F1",
+            "C1:M1",
             f"{self.company_id.name} - {self.company_id.vat}",
             workbook.add_format({"bold": True, "center_across": True, "font_size": 18}),
-        )
-        worksheet.merge_range("D2:F2", "Libro de Compras", cell_bold)
+        ) 
         worksheet.merge_range(
-            "D3:F3",
+            "C2:M2",
+            f"Direccion:  {self.company_id.street}",
+            cell_bold,
+        )
+        worksheet.merge_range("C3:M3", "Libro de Compras", cell_bold)
+        worksheet.merge_range(
+            "C4:M4",
             (
                 f"Desde {self._format_date(self.date_from)}"
                 f" Hasta {self._format_date(self.date_to)}"
             ),
             cell_bold,
         )
+
         company = self.company_id
         if self.company_id.config_deductible_tax:            
             row_buy_national = 3
