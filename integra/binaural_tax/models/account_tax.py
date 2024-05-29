@@ -137,7 +137,7 @@ class AccountTax(models.Model):
                 )
 
         tax_values_list = []
-        for base_line in base_lines:
+        for base_line in foreign_base_lines:
             tax_values_list += self._compute_taxes_for_single_line(base_line)[1]
 
         if foreign_tax_lines:
