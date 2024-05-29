@@ -137,25 +137,16 @@ class AccountTax(models.Model):
                 )
 
         tax_values_list = []
-        for base_line in base_lines:
+        for base_line in foreign_base_lines:
             tax_values_list += self._compute_taxes_for_single_line(base_line)[1]
 
-        if tax_lines:
-            for tax_line in tax_lines:
-                tax_line["currency"] = foreign_currency
+        if foreign_tax_lines:
+            for tax_line in foreign_tax_lines:
+                tax_line["currency"] = currency
                 tax_line["tax_amount"] = 0.0
                 for tax in tax_values_list:
                     if tax["tax_repartition_line"].id == tax_line["tax_repartition_line"].id:
                         tax_line["tax_amount"] += tax["amount"]
 
 
-        foreign_taxes = super()._prepare_tax_totals(base_lines, foreign_currency, tax_lines)
-
-        res["groups_by_foreign_subtotal"] = foreign_taxes["groups_by_subtotal"]
-        res["foreign_subtotals"] = foreign_taxes["subtotals"]
-        res["foreign_amount_untaxed"] = foreign_taxes["amount_untaxed"]
-        res["foreign_amount_total"] = foreign_taxes["amount_total"]
-        res["foreign_formatted_amount_untaxed"] = foreign_taxes["formatted_amount_untaxed"]
-        res["foreign_formatted_amount_total"] = foreign_taxes["formatted_amount_total"]
-        return res
-
+        return foreign_base_lines, foreign_tax_lines
