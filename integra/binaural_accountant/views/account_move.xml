@@ -124,7 +124,8 @@
                     sum="Foreign Amount total" 
                     widget="monetary" 
                     options="{'currency_field': 'foreign_currency_id'}"
-                    decoration-bf="1"/>
+                    decoration-bf="1"
+                    optional="hide"/>
             </xpath>
         </field>
     </record>

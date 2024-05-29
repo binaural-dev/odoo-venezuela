@@ -285,11 +285,13 @@ msgstr ""
 
 #. module: binaural_product_catalog
 #: model:ir.model.fields,field_description:binaural_product_catalog.field_product_catalog_wizard__style
+#: model:ir.model.fields,field_description:binaural_product_catalog.field_product_catalog_wizard__style_mod
 msgid "Style"
 msgstr "Estilo"
 
 #. module: binaural_product_catalog
 #: model:ir.model.fields.selection,name:binaural_product_catalog.selection__product_catalog_wizard__style__style_1
+#: model:ir.model.fields.selection,name:binaural_product_catalog.selection__product_catalog_wizard__style_mod__style_1
 msgid "Style 1"
 msgstr "Estilo 1"
 
@@ -315,6 +317,7 @@ msgstr "estilo 5"
 
 #. module: binaural_product_catalog
 #: model:ir.model.fields.selection,name:binaural_product_catalog.selection__product_catalog_wizard__style__style_6
+#: model:ir.model.fields.selection,name:binaural_product_catalog.selection__product_catalog_wizard__style_mod__style_6
 msgid "Style 6"
 msgstr "Estilo 6"
 

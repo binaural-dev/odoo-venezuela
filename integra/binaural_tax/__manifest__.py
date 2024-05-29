@@ -6,11 +6,14 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.0.0.8",
+    "version": "16.0.0.0.9",
     # any module necessary for this one to work correctly
     "depends": ["base", "account", "binaural_rate"],
     # always loaded
-    "data": ["views/res_config_settings.xml"],
+    "data": [
+        "views/res_config_settings.xml",
+        "views/account_move.xml",
+    ],
     "images": ["static/description/icon.png"],
     "application": True,
     "assets": {

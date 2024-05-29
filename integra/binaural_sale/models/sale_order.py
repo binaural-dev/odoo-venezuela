@@ -79,6 +79,10 @@ class SaleOrder(models.Model):
         )
     )
 
+    address = fields.Char(related='partner_id.street')
+    
+    mobile = fields.Char(related='partner_id.mobile')
+
     @api.constrains("order_line")
     def _check_taxes_id(self):
         for order in self:

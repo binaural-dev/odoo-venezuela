@@ -43,7 +43,7 @@ FIELD_ORDER_LINE = [
     "price_subtotal",
     "product_id",
 ]
-FIELDFILTERS = ["id", "name", "amount_tax", "amount_untaxed", "amount_total"]
+FIELDFILTERS = ["id", "name", "amount_tax", "amount_untaxed", "amount_total", "state"]
 PARSE_FIELDS = ["validity_date", "date_order"]
 
 
@@ -57,6 +57,41 @@ class SaleOrderBudget(http.Controller):
             return kwargs.get("tax_included", False)
 
         return any(company.dairy_fiscal)
+    
+    def _get_vals_write_order_line(self, kwargs):
+        vals = utils.filter_dict(kwargs, ["product_id", "product_uom_qty", "tax_id"])
+
+        if "tax_include" not in vals:
+            return vals
+
+        tax_id = search_model_data("account.tax", domain, 1).id
+        tax_include = self._get_tax_included(kwargs)
+
+        if tax_included or request.env.company.mobile_tax_include:
+            product_taxes_id = browse_model_data("product.product", product_id).taxes_id
+
+            if any(product_taxes_id):
+                tax_id =  product_taxes_id[0].id
+
+        vals["tax_id"] = tax_id
+        
+        return vals
+
+    def _check_write_order_line(self, line_id):
+        if not line_id:
+            return {"status": 400, "msg": "id argument missing", "data": None}
+        
+        order_line_id = utils.browse_model_data("sale.order.line", int(line_id))
+
+        if not order_line_id:
+            return {"status": 404, "msg": (_("Line record not Found with id %s") % line_id), "data": None}
+
+        order_state = order_line_id.order_id.state
+
+        if order_state != 'draft':
+            return {"status": 400, "msg": (_('The order with status "%s" cannot be edited') % order_state.upper()), "data": None}
+
+        return False
 
     @http.route(
         "/budget/order", type="http", methods=["GET"], auth="public", website=False, sitemap=False
@@ -224,8 +259,40 @@ class SaleOrderBudget(http.Controller):
 
         return data
 
+
     @http.route(
-        "/budget/edit/order", type="json", methods=["POST", "PUT"], auth="public", website=False, sitemap=False
+        "/budget/order/line/edit",
+        type="json",
+        methods=["POST"],
+        auth="public",
+        website=False,
+        sitemap=False,
+    )
+    def write_order_line(self,  **kwargs):
+        line_id = kwargs.get('line_id', False)
+        tax_include = kwargs.get('tax_include', False)
+        is_bad_request_error = self._check_write_order_line(line_id)
+
+        if is_bad_request_error:
+            return is_bad_request_error
+
+        try:
+            vals = self._get_vals_write_order_line(kwargs)
+
+            record = utils.update_record("sale.order.line", int(line_id), vals)
+
+            data_response = record.read(FIELD_ORDER_LINE)
+
+            return {"status": 200, "msg": "Success", "data": data_response}
+
+        except Exception as e:
+            return {
+                "status": 400,
+                "msg": str(e)
+            }
+
+    @http.route(
+        "/budget/edit/order", type="json", methods=["PUT"], auth="public", website=False, sitemap=False
     )
     def edit_sale_order(self, **kwargs):
 
@@ -264,6 +331,82 @@ class SaleOrderBudget(http.Controller):
             data.update({"status": 400, "msg": str(e)})
             return data
     
+    def _get_product_packaging(self, product_id):
+        company_user = request.env.company
+
+        if not (product_id.packaged_product and company_user.group_stock_packaging):
+            return 1
+
+        packaging_ids = product_id.packaging_ids
+
+        if not packaging_ids:
+            return 1
+
+        first_packaging_qty = packaging_ids[0].qty
+
+        return first_packaging_qty
+    
+    def _get_product_uom(self, product_id):
+        return product_id.uom_id.name
+
+    @http.route("/budget/order/read", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
+    def read_order(self, **kwargs):
+        validation_errors = utils.ValidateRequest.require([
+            ["sale_id"],
+        ], kwargs)
+
+        if any(validation_errors):
+            return utils.ValidateRequest.json(validation_errors)
+
+        data = {"status": 200, "msg": _("Success")}
+        sale_id = kwargs.get("sale_id", False)
+        tax_included = self._get_tax_included(kwargs)
+
+        try:
+            sale = utils.browse_model_data("sale.order", int(sale_id))
+
+            if not sale:
+                data.update({"status": 404, "msg": _("No sale order were found.")})
+                return data
+
+            sale_order = sale.read(FIELDFILTERS)
+
+            sale_order = utils.convert_field_string(sale_order, PARSE_FIELDS)
+
+            sale_order = sale_order[0]
+
+            sale_order["order_line"] = sale.order_line.filtered(lambda line: line.display_type == False).read(FIELD_ORDER_LINE)
+            
+            for order_line in sale_order["order_line"]:
+                product_qty = request.env["product.template"].sudo().search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
+                product_id_id = int(order_line["product_id"][0])
+                product_id = request.env["product.product"].browse([product_id_id])
+                order_line["qty_available"] = product_qty
+                order_line["packaging_qty"] = self._get_product_packaging(product_id)
+                order_line["uom"] = self._get_product_uom(product_id)
+
+            if request.env.company.mobile_show_tax_type == "include_tax":
+                for line in sale_order["order_line"]:
+                    line["price_unit"] = line["price_unit_with_tax"]
+                    line["price_subtotal"] = line["price_total"]
+
+            for line in sale_order["order_line"]:
+                description_tax = _("Tax no Selected")
+                value_tax = 0
+                if line["tax_id"][0]:
+                    tax = request.env["account.tax"].search([("id","=", line["tax_id"][0])])
+                    value_tax = tax.amount
+                    description_tax = tax.description
+                line["tax_id"].append(description_tax)
+                line["tax_id"].append(value_tax)
+
+            data.update({"data": sale_order})
+
+            return data
+        except Exception as e:
+            data.update({"status": 409, "msg": _("There was an error handling the request"), "error": str(e)})
+            return data
+
     @http.route("/budget/include_tax", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
     def include_taxes_in_sale_order(self, **kwargs):
         validation_errors = utils.ValidateRequest.require([
@@ -303,8 +446,9 @@ class SaleOrderBudget(http.Controller):
             sale_order["order_line"] = sale.order_line.filtered(lambda line: line.display_type == False).read(FIELD_ORDER_LINE)
             
             for order_line in sale_order["order_line"]:
-                product_qty = request.env["product.template"].search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
+                product_qty = request.env["product.template"].sudo().search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
                 order_line["qty_available"] = product_qty
+                order_line["packaging_qty"] = self._get_product_packaging(order_line)
 
             if request.env.company.mobile_show_tax_type == "include_tax":
                 for line in sale_order["order_line"]:
@@ -330,7 +474,7 @@ class SaleOrderBudget(http.Controller):
 
     @http.route("/validation_available", type="json", methods=["POST", "PUT"], auth="public", website=False, sitemap=False)
     def validation_available(self, **kwargs):
-        settings = request.env['res.config.settings'].sudo().create({})  # Crear una instancia temporal de res.config.settings
+        settings = request.env['res.config.settings']
         allow_out_of_stock_order = settings.allow_out_of_stock_order
         return {"allow_out_of_stock_order": allow_out_of_stock_order}
 
@@ -386,7 +530,7 @@ class SaleOrderBudget(http.Controller):
                             data.update({"status": 200, "msg": "msg", "data": sale_json})
                         
                         write_lines = utils.set_order_line(sale_order, tax_included)
-                        
+
                         if write_lines:
                             sale_order["order_line"] = write_lines
                             sale.write(sale_order)

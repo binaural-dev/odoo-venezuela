@@ -12,11 +12,14 @@
                     ('seller_id', '=', request.env.user.employee_id.id),
                     ('seller_id_user', '=', user_id.id)
                 ])"/>
-                <a t-attf-href="/payment_list"  class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
-                    Payments
-                    <span class="badge text-bg-secondary rounded-pill" 
-                    t-out="payment_count"/>
-                </a>
+                <t t-set="user" t-value="request.env.user"/>
+                <t t-if="not user.has_group('binaural_mobile.group_sellers_cant_create_payments')">
+                    <a t-attf-href="/payment_list"  class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+                        Payments
+                        <span class="badge text-bg-secondary rounded-pill" 
+                        t-out="payment_count"/>
+                    </a>
+                </t>
             </t>
         </xpath>
     </template>

@@ -21,16 +21,27 @@ class AccountMoveIgtf(models.Model):
         copy=False,
     )
 
-    def recalculate_bi_igtf(self):
+    def recalculate_bi_igtf(self, line_id=None, initial_residual=0.0):
         """This method can be used by ir.actions.server to update bi_igtf"""
         for record in self:
-
             if not record.invoice_payments_widget:
                 record.bi_igtf = 0
                 continue
 
             payments = record.invoice_payments_widget.get("content", False)
             amount = 0
+            if line_id:
+                line = self.env["account.move.line"].browse([line_id])
+                payment_id = line.move_id.payment_id
+                if payment_id and payment_id.is_igtf_on_foreign_exchange:
+                    payment_id = line.move_id.payment_id
+                    bi_igtf = payment_id.get_bi_igtf()
+                    if initial_residual < bi_igtf:
+                        record.bi_igtf = initial_residual
+                        continue
+                    record.bi_igtf += bi_igtf
+                    continue
+
             for payment in payments:
                 payment_id = payment.get("account_payment_id", False)
                 if not payment_id:
@@ -38,9 +49,13 @@ class AccountMoveIgtf(models.Model):
 
                 payment_id = record.env["account.payment"].browse([payment_id])
                 if payment_id.is_igtf_on_foreign_exchange:
-                    amount += abs(payment['amount'])
-            record.bi_igtf = amount
+                    bi_igtf = payment_id.get_bi_igtf()
+                    if initial_residual < bi_igtf:
+                        record.bi_igtf = initial_residual
+                        continue
+                    amount += bi_igtf
 
+            record.bi_igtf = amount
 
     def remove_igtf_from_move(self, partial_id):
         """Remove IGTF from move
@@ -63,9 +78,7 @@ class AccountMoveIgtf(models.Model):
         reverse_move_credit = partial.credit_move_id.payment_id.reconciled_bill_ids
         reverse_move_debit = partial.debit_move_id.payment_id.reconciled_bill_ids
 
-
         for move in move_credit:
-
             if (
                 payment_credit.is_igtf
                 and payment_credit.is_igtf_on_foreign_exchange
@@ -146,4 +159,15 @@ class AccountMoveIgtf(models.Model):
         for move in self:
             move.remove_igtf_from_move(partial_id)
         res = super().js_remove_outstanding_partial(partial_id)
+        return res
+
+    def js_assign_outstanding_line(self, line_id):
+        amount_residual = self.amount_residual
+        res = super().js_assign_outstanding_line(line_id)
+        self.recalculate_bi_igtf(
+            line_id,
+            initial_residual=amount_residual
+            if not self.currency_id.is_zero(amount_residual)
+            else self.amount_residual,
+        )
         return res
