@@ -12,6 +12,8 @@
             <xpath expr="//field[@name='receivable_account_id']" position="after">
                 <field name="cross_account_journal" />
                 <field name="cross_journal" />
+                <field name="apply_one_cross_move" />
+
             </xpath>
         </field>
     </record>

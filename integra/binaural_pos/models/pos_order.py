@@ -12,7 +12,18 @@ class PosOrder(models.Model):
     foreign_amount_total = fields.Float(string="Foreign Total", readonly=True, required=True)
     foreign_currency_rate = fields.Float(readonly=True, required=True)
     to_receipt = fields.Boolean(readonly=True)
+    sales_order = fields.Many2one('res.users', string='Sales Order', compute='_compute_sales_order', store=True)
 
+    @api.depends('lines.sale_order_origin_id.user_id')
+    def _compute_sales_order(self):
+        for order in self:
+            if order.lines and order.lines.filtered(lambda x: x.sale_order_origin_id.user_id):
+                order.sales_order = order.lines.mapped('sale_order_origin_id.user_id')[:1]
+            elif order.partner_id.user_id:
+                order.sales_order = order.partner_id.user_id
+            else:
+                order.sales_order = order.user_id
+    
     def _process_order(self, order, draft, existing_order):
         res = super()._process_order(order, draft, existing_order)
         order = self.browse(res)
