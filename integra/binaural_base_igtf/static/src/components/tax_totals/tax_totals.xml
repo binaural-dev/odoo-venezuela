@@ -7,7 +7,6 @@
         t-inherit-mode="extension" 
         owl="1">
         <xpath expr="//t[@t-as='taxGroup']" position="after">
-            <t t-log="totals"/>
             <t t-if="totals.igtf.apply_igtf &amp;&amp; !totals.igtf.is_igtf_suggested">
                 <tr>
                     <td class="o_td_label">
@@ -27,7 +26,6 @@
                         </label>
                     </td>
                     <td>
-                        <t t-log="totals"/>
                         <span class="o_tax_group_amount_value">
                             <t t-out="totals.igtf.formatted_foreign_igtf_amount"/>
                         </span>
@@ -63,7 +61,6 @@
                         </label>
                     </td>
                     <td>
-                        <t t-log="totals"/>
                         <span class="o_tax_group_amount_value">
                             <t t-out="totals.igtf.formatted_foreign_igtf_amount"/>
                         </span>
@@ -111,7 +108,6 @@
                         </label>
                     </td>
                     <td>
-                        <t t-log="totals"/>
                         <span class="o_tax_group_amount_value">
                             <t t-out="totals.igtf.formatted_igtf_amount"/>
                         </span>
@@ -146,7 +142,6 @@
                         </label>
                     </td>
                     <td>
-                        <t t-log="totals"/>
                         <span class="o_tax_group_amount_value">
                             <t t-out="totals.igtf.formatted_igtf_amount"/>
                         </span>
