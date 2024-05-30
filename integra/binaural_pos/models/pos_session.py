@@ -112,14 +112,16 @@ class PosSession(models.Model):
         """This function validate cross move, the proposal of this function is the transitory account be zero"""
         for session in self:
             for order_payment in session.order_ids.payment_ids:
-                if (
-                    order_payment.payment_method_id.cross_account_journal
-                    and order_payment.payment_method_id.cross_journal
-                ):
-                    if order_payment.amount < 0:
-                        line_vals = session._line_vals_move_cross_outgoing(order_payment)
-                    else:
-                        line_vals = session._line_vals_move_cross_incoming(order_payment)
+                if not order_payment.payment_method_id.apply_one_cross_move:
+                    if (
+                        order_payment.payment_method_id.cross_account_journal
+                        and order_payment.payment_method_id.cross_journal
+                    ):
+                        
+                        if order_payment.amount < 0:
+                            line_vals = session._line_vals_move_cross_outgoing(order_payment)
+                        else:
+                            line_vals = session._line_vals_move_cross_incoming(order_payment)
 
                         session._create_cross_move(order_payment, line_vals)
 
