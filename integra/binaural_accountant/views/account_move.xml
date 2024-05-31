@@ -124,10 +124,6 @@
                     decoration-bf="1"
                     optional="hide"/>
             </xpath>
-
-            <xpath expr="//field[@name='name']" position="after">
-                <field name="correlative" optional="hide"/>
-            </xpath>
         </field>
     </record>
 </odoo>
