@@ -1,5 +1,5 @@
 from odoo import fields, models, _, api
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.osv import expression
 
 import logging
@@ -61,3 +61,18 @@ class AccountMove(models.Model):
             journal = self.env["account.journal"].search(domain, limit=1)
             res = journal
         return res
+
+    @api.depends("company_id", "invoice_filter_type_domain")
+    def _compute_suitable_journal_ids(self):
+        res = super()._compute_suitable_journal_ids()
+        if self.env.user.has_group("binaural_fiscal_inspector.group_fiscal_inspectorate_editable"):
+            for m in self:
+                m.suitable_journal_ids = m.suitable_journal_ids.filtered_domain(
+                    [("fiscal", "=", True)]
+                )
+        return res
+
+    def js_remove_outstanding_partial(self, partial_id):
+        if self.env.user.has_group("binaural_fiscal_inspector.group_fiscal_inspectorate"):
+            raise ValidationError(_("Your user is not allowed to break reconciliation."))
+        return super().js_remove_outstanding_partial(partial_id)
