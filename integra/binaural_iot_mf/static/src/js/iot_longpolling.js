@@ -7,7 +7,8 @@ import { IoTLongpolling } from '@iot/iot_longpolling';
 export class BinauralIoTLongpolling extends IoTLongpolling {
   constructor(dialogService) {
     super(...arguments);
-    this.ACTION_TIMEOUT = 160000;
+    this.POLL_TIMEOUT = 6000000;
+    this.ACTION_TIMEOUT = 1600000;
   }
 }
 

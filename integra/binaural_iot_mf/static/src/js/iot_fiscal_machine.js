@@ -3,6 +3,7 @@
 import { Widget } from "@web/views/widgets/widget";
 import { registry } from "@web/core/registry";
 import { DeviceController } from "@iot/device_controller";
+import { useService } from "@web/core/utils/hooks";
 
 var core = require('web.core');
 var _t = core._t;
@@ -25,10 +26,13 @@ export class IoTFiscalMachineComponent extends Widget {
   setup() {
     super.setup();
     const device = this.props.record.data
+    const orm = useService("orm")
+
     this.device = new DeviceController(
       this.env.services.iot_longpolling,
       { iot_ip: device.iot_ip, identifier: device.identifier }
     );
+
 
     this.button_names = {
       "print_out_invoice": _t("Print Invoice"),
@@ -48,10 +52,12 @@ export class IoTFiscalMachineComponent extends Widget {
       "print_resume_date": _t("Print Resume"),
       "configure_device": _t("Configure Device"),
     }
+
     this.state = useState({
       action: this[this.props.action] || this.not_function,
       name: this.button_names[this.props.action] || "CLOWN"
     });
+
   }
   showFailedConnection() {
     this.env.services.notification.add(_t("Device is not connected"), {
@@ -68,6 +74,34 @@ export class IoTFiscalMachineComponent extends Widget {
   not_function() {
     console.log("CLOWN, please set a function name")
   }
+  get_serial_machine() {
+    if (!this.device) {
+      this.showFailedConnection()
+      return
+    }
+
+    this.iotDevice.addListener(({ value }) => {
+      this.iotDevice.removeListener();
+      this.env.services.rpc("web/dataset/call_kw/iot.device/set_serial_machine", {
+        model: 'iot.device',
+        method: 'set_serial_machine',
+        args: [this.props.record.data.id, value],
+        kwargs: {},
+      })
+        .then(() => {
+          window.location.reload()
+        })
+    });
+    this.iotDevice.action({
+      action: "get_last_invoice_number",
+      data: { "me": "you" },
+    })
+      .then(data => {
+        onIoTActionResult(data, this.env)
+      })
+      .guardedCatch(() => this.iotDevice.iotLongpolling._doWarnFail(this.device.iotIp));
+  }
+
   get_serial_machine() {
     if (!this.device) {
       this.showFailedConnection()
