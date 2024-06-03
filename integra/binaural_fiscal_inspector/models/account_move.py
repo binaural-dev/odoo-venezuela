@@ -62,16 +62,6 @@ class AccountMove(models.Model):
             res = journal
         return res
 
-    @api.depends("company_id", "invoice_filter_type_domain")
-    def _compute_suitable_journal_ids(self):
-        res = super()._compute_suitable_journal_ids()
-        if self.env.user.has_group("binaural_fiscal_inspector.group_fiscal_inspectorate_editable"):
-            for m in self:
-                m.suitable_journal_ids = m.suitable_journal_ids.filtered_domain(
-                    [("fiscal", "=", True)]
-                )
-        return res
-
     def js_remove_outstanding_partial(self, partial_id):
         if self.env.user.has_group("binaural_fiscal_inspector.group_fiscal_inspectorate"):
             raise ValidationError(_("Your user is not allowed to break reconciliation."))
