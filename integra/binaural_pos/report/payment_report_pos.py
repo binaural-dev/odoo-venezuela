@@ -128,10 +128,10 @@ class ReportPaymentPos(models.AbstractModel):
             def get_percentage(amount):
                 if not order_ids.payment_ids:
                     return 0
-                return (
-                    str(round(amount * 100 / get_payment_info(order_ids.payment_ids)["amount"], 2))
-                    + " %"
+                percentage = round(
+                    amount * 100 / get_payment_info(order_ids.payment_ids)["amount"], 2
                 )
+                return f"{percentage:.2f} %"
 
             return {
                 "all_payments": order_ids.payment_ids,
