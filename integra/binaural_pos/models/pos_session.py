@@ -231,7 +231,7 @@ class PosSession(models.Model):
                         "foreign_credit": abs(payment.foreign_amount),
                         "not_foreign_recalculate": True,
                         "foreign_rate": payment.foreign_rate,
-                        "currency_id": account.currency_id.id if account.currency_id else self.env.company.currency_id.id,
+                        "currency_id": account_method.currency_id.id if account_method.currency_id else self.env.company.currency_id.id,
                     }
                 ),
             ])
