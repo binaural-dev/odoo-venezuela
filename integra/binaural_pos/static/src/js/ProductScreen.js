@@ -75,7 +75,7 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
         let wrning = []
         let msg_warehouse = ''
 
-				if(pos_config.amount_to_zero){
+        if(pos_config.amount_to_zero){
           for (let line of lines) {
               let prd = line.product;
               if(prd.type != "product"){
@@ -165,7 +165,6 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
           return false
         }
       }
-      
 		};
 
 	Registries.Component.extend(ProductScreen, BinauralProductScreen);

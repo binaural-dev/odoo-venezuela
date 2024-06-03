@@ -6,12 +6,13 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Appointment",
-    "version": "16.0.1.0.6",
+    "version": "16.0.1.1.1",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
         "web",
         "portal",
+        "stock",
         "appointment",
         "website_appointment",
         "appointment_hr",

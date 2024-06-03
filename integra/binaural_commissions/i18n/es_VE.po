@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240116\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240326\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-26 19:48+0000\n"
-"PO-Revision-Date: 2024-02-26 19:48+0000\n"
+"POT-Creation-Date: 2024-04-22 16:12+0000\n"
+"PO-Revision-Date: 2024-04-22 16:12+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -37,6 +37,13 @@ msgid "%s This product already belongs to another product policy"
 msgstr "%s Este producto ya pertenece a otra política de producto"
 
 #. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/commission_policy.py:0
+#, python-format
+msgid "- %s (Priority %s)\n"
+msgstr "- %s (Prioridad %s)\n"
+
+#. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
 msgid "<span class=\"o_form_label\">Commission Journal</span>"
 msgstr "<span class=\"o_form_label\">Diario de Comisión</span>"
@@ -44,7 +51,12 @@ msgstr "<span class=\"o_form_label\">Diario de Comisión</span>"
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
 msgid "<span class=\"o_form_label\">Commission Product</span>"
-msgstr "<span class=\"o_form_label\">Produco de Comisión</span>"
+msgstr "<span class=\"o_form_label\">Producto de Comisión</span>"
+
+#. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
+msgid "<span class=\"o_form_label\">Order Commission</span>"
+msgstr "<span class=\"o_form_label\">Orden de asignación de comisión</span>"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_policy_form_view
@@ -60,19 +72,6 @@ msgstr ""
 "                                <span colspan=\"2\">- Categoría (Prioridad 3)</span>"
 
 #. module: binaural_commissions
-#: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_policy_form_view
-msgid ""
-"<span colspan=\"2\" class=\"oe_title\">Type of commmission and properties</span>\n"
-"                                <span colspan=\"2\">- Product (Priority 1)</span>\n"
-"                                <span colspan=\"2\">- Client (Priority 2)</span>\n"
-"                                <span colspan=\"2\">- General (Priority 3)</span>"
-msgstr ""
-"<span colspan=\"2\" class=\"oe_title\">Tipos de comisiones y sus prioridades:</span>\n"
-"                                <span colspan=\"2\">- Producto (Prioridad 1)</span>\n"
-"                                <span colspan=\"2\">- Cliente (Prioridad 2)</span>\n"
-"                                <span colspan=\"2\">- General (Prioridad 3)</span>"
-
-#. module: binaural_commissions
 #. odoo-python
 #: code:addons/binaural_commissions/wizard/set_commission_order_to_invoice.py:0
 #, python-format
@@ -80,9 +79,19 @@ msgid "Action complete, but..."
 msgstr "Acción completada, pero..."
 
 #. module: binaural_commissions
+#: model:res.groups,name:binaural_commissions.group_commission_manager
+msgid "Administrator"
+msgstr "Administrador"
+
+#. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__applied_on
 msgid "Applied On"
 msgstr "Aplica para"
+
+#. module: binaural_commissions
+#: model:ir.actions.server,name:binaural_commissions.action_set_invoice_ref_reversed
+msgid "Asignar Origen a Nota de Credito"
+msgstr ""
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__brand_id
@@ -121,6 +130,7 @@ msgstr "Categoría"
 #. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy__policy_type__client
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy_line_image__policy_type__client
+#: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy_type__policy_type__client
 msgid "Client"
 msgstr "Cliente"
 
@@ -216,6 +226,11 @@ msgid "Commission Line"
 msgstr "Línea de Comisión"
 
 #. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
+msgid "Commission Order"
+msgstr "Orden de asignación de comisión"
+
+#. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__commission_payment_state
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_move__commission_payment_state
 #: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__commission_payment_state
@@ -241,6 +256,18 @@ msgstr "Política de Comisión"
 #: model:ir.model,name:binaural_commissions.model_commission_policy_line_image
 msgid "Commission Policy Line Image"
 msgstr "Imagen de Línea de Política de Comisión"
+
+#. module: binaural_commissions
+#: model:ir.model,name:binaural_commissions.model_commission_policy_type
+msgid "Commission Policy Type"
+msgstr "Tipo de Política de Comisión"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/res_config_settings.py:0
+#, python-format
+msgid "Commission Policy Types"
+msgstr "Tipos de Políticas de Comisión"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_res_company__commission_product_id
@@ -330,6 +357,11 @@ msgid "Config Settings"
 msgstr "Opciones de configuración"
 
 #. module: binaural_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
+msgid "Configure the order of commissions assignment"
+msgstr "Prioridad que se asignará a los tipos de comisiones"
+
+#. module: binaural_commissions
 #: model_terms:ir.actions.act_window,help:binaural_commissions.commission_policy_action
 msgid "Create a new commission policy!"
 msgstr "¡Crea una nueva política de comisión!"
@@ -338,6 +370,7 @@ msgstr "¡Crea una nueva política de comisión!"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__create_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__create_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__create_uid
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type__create_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__create_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__create_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__create_uid
@@ -349,6 +382,7 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__create_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__create_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__create_date
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type__create_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__create_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__create_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__create_date
@@ -391,6 +425,7 @@ msgstr "Descuento de pagos correctivos"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__display_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__display_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__display_name
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type__display_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__display_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__display_name
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__display_name
@@ -444,6 +479,7 @@ msgstr "Fecha de Primer Pago"
 #: code:addons/binaural_commissions/models/commission_policy_line_image.py:0
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy__policy_type__all
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy_line_image__policy_type__all
+#: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy_type__policy_type__all
 #, python-format
 msgid "General"
 msgstr ""
@@ -472,9 +508,15 @@ msgid "Generate an invoice with all commissions"
 msgstr "Generar una factura con todas las comisiones"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_sale_order__has_invoices_paid
+msgid "Has Invoices Paid"
+msgstr "Tiene Facturas de Comisión"
+
+#. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__id
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__id
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__id
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type__id
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__id
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__id
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__id
@@ -556,7 +598,7 @@ msgstr "Asiento contable"
 #. module: binaural_commissions
 #: model:ir.model,name:binaural_commissions.model_account_move_line
 msgid "Journal Item"
-msgstr "Apunte contable"
+msgstr "Partida individual"
 
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.view_move_form
@@ -586,6 +628,7 @@ msgstr "Calcular Comisión Con"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy____last_update
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line____last_update
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image____last_update
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type____last_update
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item____last_update
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice____last_update
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard____last_update
@@ -603,6 +646,7 @@ msgstr "Fecha del Último Pago"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__write_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__write_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__write_uid
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type__write_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__write_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__write_uid
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__write_uid
@@ -614,6 +658,7 @@ msgstr "Última Actualización por"
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__write_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__write_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__write_date
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type__write_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__write_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_generate_commission_from_invoice__write_date
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__write_date
@@ -645,6 +690,7 @@ msgstr "El momento en que se calcula la comisión"
 
 #. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__name
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type__name
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__name
 #: model:ir.model.fields,field_description:binaural_commissions.field_invoice_commission_summary_wizard__name
 msgid "Name"
@@ -655,7 +701,9 @@ msgstr "Nombre"
 #: code:addons/binaural_commissions/wizard/set_commission_order_to_invoice.py:0
 #, python-format
 msgid "Only orders in state 'Sale' or 'Done' can be processed"
-msgstr "Solo pueden ser procesadas las ordenes en estado 'Pedido de Venta' y 'Bloqueado'"
+msgstr ""
+"Solo pueden ser procesadas las ordenes en estado 'Pedido de Venta' y "
+"'Bloqueado'"
 
 #. module: binaural_commissions
 #. odoo-python
@@ -731,14 +779,48 @@ msgid "Policy"
 msgstr "Política"
 
 #. module: binaural_commissions
+#: model:ir.module.category,name:binaural_commissions.module_category_policy_commissions
+msgid "Policy Commissions"
+msgstr "Política de Comisiones"
+
+#. module: binaural_commissions
 #: model:ir.model.fields,field_description:binaural_commissions.field_sale_order_line__commission_policy_line_image_ids
 msgid "Policy Line Images"
 msgstr "Imágenes de Línea de Política"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move_line__policy_type_id
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move_line__policy_type_name
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__policy_type_id
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__policy_type_name
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line__policy_type_id
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_line_image__policy_type_id
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type__policy_type
+msgid "Policy Type"
+msgstr "Tipo de Política"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/commission_policy.py:0
+#, python-format
+msgid "Policy Type Priority:\n"
+msgstr "Prioridad de tipo de política:\n"
+
+#. module: binaural_commissions
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__res_company__in_invoice_status_commission__posted
 msgid "Posted"
 msgstr "Publicado"
+
+#. module: binaural_commissions
+#: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy_type__policy_type__pricelist
+msgid "Pricelist"
+msgstr "Tarifa"
+
+#. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__pricelist_ids
+#: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_policy_form_view
+msgid "Pricelists"
+msgstr "Tarifas"
 
 #. module: binaural_commissions
 #. odoo-python
@@ -748,10 +830,19 @@ msgid "Primera fecha de pago"
 msgstr ""
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_bank_statement_line__priority_commission_policy_type
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_move__priority_commission_policy_type
+#: model:ir.model.fields,field_description:binaural_commissions.field_account_payment__priority_commission_policy_type
+#: model:ir.model.fields,field_description:binaural_commissions.field_sale_order__priority_commission_policy_type
+msgid "Priority Commission Policy Type"
+msgstr "Prioridad de Tipo de Política de Comisión"
+
+#. module: binaural_commissions
 #: model:ir.model,name:binaural_commissions.model_product_template
 #: model:ir.model.fields,field_description:binaural_commissions.field_commission_product_item__product_id
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy__policy_type__product
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy_line_image__policy_type__product
+#: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_policy_type__policy_type__product
 #: model:ir.model.fields.selection,name:binaural_commissions.selection__commission_product_item__applied_on__1_product
 msgid "Product"
 msgstr "Producto"
@@ -827,6 +918,12 @@ msgid "Sellers"
 msgstr "Vendedores"
 
 #. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__sequence
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy_type__sequence
+msgid "Sequence"
+msgstr "Secuencia"
+
+#. module: binaural_commissions
 #: model:ir.model,name:binaural_commissions.model_set_commission_order_to_invoice
 msgid "Set Commission Order To Invoice"
 msgstr "Establecer Comisión desde la Orden a Factura"
@@ -847,6 +944,11 @@ msgstr "Asignar política y parametrós de comisiones a presupuestos"
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.commission_product_item_form_view
 msgid "Show Products"
 msgstr "Mostrar Productos"
+
+#. module: binaural_commissions
+#: model:ir.model.fields,field_description:binaural_commissions.field_commission_policy__text_priority
+msgid "Text Priority"
+msgstr "Prioridad de Comisiones"
 
 #. module: binaural_commissions
 #. odoo-python
@@ -870,7 +972,9 @@ msgstr ""
 #: code:addons/binaural_commissions/models/commission_policy_line.py:0
 #, python-format
 msgid "The date from must be lower than the date to!"
-msgstr "La cantidad de días en la columna 'Desde' debe ser menor que la cantidad de días en la columna 'Hasta'"
+msgstr ""
+"La cantidad de días en la columna 'Desde' debe ser menor que la cantidad de "
+"días en la columna 'Hasta'"
 
 #. module: binaural_commissions
 #. odoo-python
@@ -938,6 +1042,29 @@ msgstr ""
 
 #. module: binaural_commissions
 #. odoo-python
+#: code:addons/binaural_commissions/wizard/set_commission_order_to_invoice.py:0
+#, python-format
+msgid "The order(s) already had invoices paid, They have not been processed"
+msgstr ""
+"Las Ordenes con Facturas de comisión en 'Proceso' o 'Pagadas', han sido "
+"excluidas"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/commission_policy_type.py:0
+#, python-format
+msgid "The policy type 'all' must be last"
+msgstr "La política de tipo 'General' debe ser la última"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/commission_policy_type.py:0
+#, python-format
+msgid "The policy type 'product' must be first"
+msgstr "La política de tipo 'Producto' debe ser la primera"
+
+#. module: binaural_commissions
+#. odoo-python
 #: code:addons/binaural_commissions/models/account_move.py:0
 #, python-format
 msgid "The reception date cannot be empty after the set date."
@@ -970,6 +1097,11 @@ msgid "Total discount"
 msgstr "Total de descuento"
 
 #. module: binaural_commissions
+#: model:res.groups,name:binaural_commissions.group_commission_user
+msgid "User"
+msgstr "Usuario"
+
+#. module: binaural_commissions
 #. odoo-python
 #: code:addons/binaural_commissions/models/account_partial_reconcile.py:0
 #, python-format
@@ -983,6 +1115,13 @@ msgstr "No puedes agregar un pago a una factura sin fecha de recepción."
 msgid "You can't change the policy type if there are clients assigned"
 msgstr ""
 "Para cambiar tipo de comisión, la pestaña Cliente no debe contener registros"
+
+#. module: binaural_commissions
+#. odoo-python
+#: code:addons/binaural_commissions/models/commission_policy.py:0
+#, python-format
+msgid "You can't change the policy type if there are pricelists assigned"
+msgstr "No puedes cambiar el tipo de política si hay tarifas asignadas"
 
 #. module: binaural_commissions
 #. odoo-python
@@ -1030,4 +1169,4 @@ msgstr "Pagada"
 #. module: binaural_commissions
 #: model_terms:ir.ui.view,arch_db:binaural_commissions.res_config_settings
 msgid "state of invoice payment of commission"
-msgstr "Estado de la factura para el pago de condiciones iniciaria con"
+msgstr "La factura para el pago de comisiones se creará con estado"

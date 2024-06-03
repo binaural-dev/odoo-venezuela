@@ -47,8 +47,7 @@ class ValidateQtyProducts(http.Controller):
                 warehouse_id_pos = (
                     request.env["stock.picking.type"].browse(picking_type_id[0]).warehouse_id
                 )
-
-                if product_id:
+                if product_id and product_id.detailed_type in ['product','consu']:
                     stock_quant = request.env["stock.quant"].search(
                         [
                             ("product_tmpl_id", "=", product_id.id),
@@ -91,4 +90,5 @@ class ValidateQtyProducts(http.Controller):
                 }
             )
 
-        return data
+            return data
+    

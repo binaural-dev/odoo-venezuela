@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231226\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240313\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-26 19:01+0000\n"
-"PO-Revision-Date: 2023-12-26 19:01+0000\n"
+"POT-Creation-Date: 2024-04-18 20:59+0000\n"
+"PO-Revision-Date: 2024-04-18 20:59+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -22,13 +22,13 @@ msgstr ""
 
 #. module: binaural_appointment
 #: model_terms:ir.ui.view,arch_db:binaural_appointment.appointment_form_inherit
-msgid "<option value=\"\">Select Prefix Vat</option>"
-msgstr "<option value=\"\">Seleccionar tipo de documento</option>"
+msgid "<option value=\"\">Seleccione un socio</option>"
+msgstr ""
 
 #. module: binaural_appointment
 #: model_terms:ir.ui.view,arch_db:binaural_appointment.appointment_form_inherit
-msgid "<option value=\"\">Select a Product</option>"
-msgstr "<option value=\"\">Seleccionar un producto</option>"
+msgid "<option value=\"\">Select Prefix Vat</option>"
+msgstr "<option value=\"\">Seleccionar tipo de documento</option>"
 
 #. module: binaural_appointment
 #: model_terms:ir.ui.view,arch_db:binaural_appointment.binaural_appointment_product_template
@@ -55,15 +55,48 @@ msgstr "Limite de Bloques a reservar por usuario al día"
 
 #. module: binaural_appointment
 #: model:ir.model,name:binaural_appointment.model_calendar_event
+#: model:ir.model.fields,field_description:binaural_appointment.field_account_bank_statement_line__calendar_event_id
+#: model:ir.model.fields,field_description:binaural_appointment.field_account_move__calendar_event_id
+#: model:ir.model.fields,field_description:binaural_appointment.field_account_payment__calendar_event_id
 msgid "Calendar Event"
-msgstr "Evento de calendario"
+msgstr "Calendario de eventos"
+
+#. module: binaural_appointment
+#: model:ir.model.fields,field_description:binaural_appointment.field_appointment_type__invoice_create
+msgid "Create Invoices"
+msgstr "Crear Facturas"
+
+#. module: binaural_appointment
+#: model_terms:ir.ui.view,arch_db:binaural_appointment.appointment_form_inherit
+msgid "Customers"
+msgstr "Clientes"
 
 #. module: binaural_appointment
 #. odoo-python
 #: code:addons/binaural_appointment/controllers/appointment.py:0
 #, python-format
 msgid "Email: %s"
+msgstr "Correo: %s"
+
+#. module: binaural_appointment
+#: model:ir.model.fields,help:binaural_appointment.field_appointment_type__invoice_create
+msgid ""
+"For each scheduled appointment, create a new invoices and assign it to the "
+"responsible user with state draft."
 msgstr ""
+"Por cada cita agendada, crear una factura en borrador y asignar a al usuario"
+" responsable"
+
+#. module: binaural_appointment
+#: model:ir.model.fields,field_description:binaural_appointment.field_appointment_type__invoice_ids
+msgid "Invoice"
+msgstr "Factura"
+
+#. module: binaural_appointment
+#: model:ir.model.fields,field_description:binaural_appointment.field_calendar_event__invoice_ids
+#: model_terms:ir.ui.view,arch_db:binaural_appointment.appointment_type_view_form_binaural_appointment
+msgid "Invoices"
+msgstr "Facturas"
 
 #. module: binaural_appointment
 #. odoo-python
@@ -79,16 +112,21 @@ msgid "Is_appointment"
 msgstr "Reserva"
 
 #. module: binaural_appointment
+#: model:ir.model,name:binaural_appointment.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: binaural_appointment
 #: model:ir.model,name:binaural_appointment.model_crm_lead
 msgid "Lead/Opportunity"
-msgstr "Lead/Oportunidad"
+msgstr "Iniciativa/Oportunidad"
 
 #. module: binaural_appointment
 #. odoo-python
 #: code:addons/binaural_appointment/controllers/appointment.py:0
 #, python-format
-msgid "Mobile: %s"
-msgstr ""
+msgid "Phone: %s"
+msgstr "Teléfono: %s"
 
 #. module: binaural_appointment
 #. odoo-python
@@ -154,3 +192,13 @@ msgstr "Tu tipo de documento"
 #: model_terms:ir.ui.view,arch_db:binaural_appointment.appointment_form_inherit
 msgid "Your Vat"
 msgstr "Tu identificación"
+
+#. module: binaural_appointment
+#: model:ir.model.fields,field_description:binaural_appointment.field_crm_lead__start
+msgid "start"
+msgstr "Inicio"
+
+#. module: appointment
+#: model_terms:ir.ui.view,arch_db:appointment.appointment_validated
+msgid "Cancel/Reschedule"
+msgstr "Cancelar/Programar"

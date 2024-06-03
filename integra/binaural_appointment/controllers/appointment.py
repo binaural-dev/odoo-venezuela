@@ -1,24 +1,23 @@
 
-from odoo import exceptions, http, fields, _
-from odoo.http import request, route
-from werkzeug.exceptions import Forbidden, NotFound
-from odoo.addons.base.models.ir_qweb import keep_query
-from odoo.tools import plaintext2html, DEFAULT_SERVER_DATETIME_FORMAT as dtf
-from babel.dates import format_datetime, format_date, format_time
-from datetime import datetime, date
-from odoo.tools.misc import babel_locale_parse, get_lang
-import pytz
-import re
 import json
-from dateutil.relativedelta import relativedelta
-import uuid
-
-from odoo.addons.appointment.controllers.appointment import AppointmentController
-
 import logging
+import re
+import uuid
+from datetime import date, datetime
+
+import pytz
+from babel.dates import format_date, format_datetime, format_time
+from dateutil.relativedelta import relativedelta
+from odoo import _, exceptions, fields, http
+from odoo.addons.appointment.controllers.appointment import AppointmentController
+from odoo.addons.base.models.ir_qweb import keep_query
+from odoo.http import request, route
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as dtf
+from odoo.tools import plaintext2html
+from odoo.tools.misc import babel_locale_parse, get_lang
+from werkzeug.exceptions import Forbidden, NotFound
 
 from ..utils import has_logged
-
 
 _logger = logging.getLogger(__name__)
 
@@ -79,7 +78,7 @@ class AppointmentController(AppointmentController):
 
 
         partner = self._get_customer_partner()
-        partner_data = partner.read(fields=['name', 'mobile', 'email', 'prefix_vat', 'vat'])[0] if partner else {}
+        partner_data = partner.read(fields=['name', 'phone', 'email', 'prefix_vat', 'vat'])[0] if partner else {}
         date_time_object = datetime.strptime(date_time, dtf)
         day_name = format_datetime(date_time_object, 'EEE', locale=get_lang(request.env).code)
         date_formated = format_date(date_time_object.date(), locale=get_lang(request.env).code)
@@ -160,8 +159,8 @@ class AppointmentController(AppointmentController):
         if Partner:
             if not Partner.calendar_verify_availability(date_start, date_end):
                 return request.redirect('/appointment/%s?%s' % (appointment_type.id, keep_query('*', state='failed-partner')))
-            if not Partner.mobile:
-                Partner.write({'mobile': phone})
+            if not Partner.phone:
+                Partner.write({'phone': phone})
             if not Partner.email:
                 Partner.write({'email': email})
             if not Partner.prefix_vat:
@@ -171,7 +170,7 @@ class AppointmentController(AppointmentController):
         else:
             Partner = Partner.create({
                 'name': name,
-                'mobile': Partner._phone_format(phone, country=self._get_customer_country()),
+                'phone': Partner._phone_format(phone, country=self._get_customer_country()),
                 'email': email,
                 "prefix_vat": prefix_vat,
                 "vat": vat,
@@ -203,7 +202,7 @@ class AppointmentController(AppointmentController):
         description = ''
 
         if phone:
-            description_bits.append(_('Mobile: %s', phone))
+            description_bits.append(_('Phone: %s', phone))
         if email:
             description_bits.append(_('Email: %s', email))
 
@@ -247,5 +246,14 @@ class AppointmentController(AppointmentController):
         ).sudo().create(
             self._prepare_calendar_values(appointment_type, date_start, date_end, duration, description, question_answer_inputs, name, staff_user, Partner, invite_token)
         )
+
+        data = {
+            'product_id': kwargs.get("product_id", None),
+            'duration': kwargs.get("duration", 0)
+        }
+
         event.attendee_ids.write({'state': 'accepted'})
+
+        event.sudo().create_invoices(data)
+
         return request.redirect('/calendar/view/%s?partner_id=%s&%s' % (event.access_token, Partner.id, keep_query('*', state='new')))

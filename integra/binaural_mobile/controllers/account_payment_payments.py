@@ -35,16 +35,17 @@ class AccountPaymentPayments(http.Controller):
         **kwargs
     ):
         """
-        Here the payments compiled by the seller in the APP 
-        are recorded and thus create the record of the payments and 
-        reconcile with the invoice, in addition, this will feed the 
+        Here the payments compiled by the seller in the APP
+        are recorded and thus create the record of the payments and
+        reconcile with the invoice, in addition, this will feed the
         payment master of the sellers app and also record the withholdings, igtf generated
 
         Args:
             use_credit (bool, ): Use use of customer advances. Defaults to False.
             dairy_type (int, ): id of the journal type selected by the seller . Defaults to False.
             invoices (dic, ): id from invoices selected for the Seller. Defaults to False.
-            payments (dic, ): Dic with all dictionary with all the payment information added by qweb. Defaults to False.
+            payments (dic, ): Dic with all dictionary with all the payment information added by qweb.
+                              Defaults to False.
             partner_id (int, ): id of the partner selected. Defaults to False.
 
         Returns:
@@ -72,7 +73,7 @@ class AccountPaymentPayments(http.Controller):
             )
 
             ctx = {"active_model": "account.move", "active_ids": data_invoices.ids}
-            
+
             try:
                 type_fiscal = (
                     request.env["account.journal"]
@@ -85,21 +86,26 @@ class AccountPaymentPayments(http.Controller):
                 pays_registered = request.env["account.payment"]
                 pays_retention_registered = pays_registered
                 advance_pays = pays_registered
-                module_advance_payment = request.env["ir.module.module"].sudo().search(
-                    [
-                        ('name', "ilike", "binaural_advance_payment")
-                    ], limit=1
+                module_advance_payment = (
+                    request.env["ir.module.module"]
+                    .sudo()
+                    .search([("name", "ilike", "binaural_advance_payment")], limit=1)
                 )
-                advance_payment_installed = True if module_advance_payment.state == "installed" else False
+                advance_payment_installed = module_advance_payment.state == "installed"
                 advance_account_customer_ids = False
+
+                module_igtf = (
+                    request.env["ir.module.module"]
+                    .sudo()
+                    .search([("name", "ilike", "binaural_igtf")])
+                )
+                igtf_installed = module_igtf.state == "installed"
+
                 if advance_payment_installed:
-                    advance_account_customer_ids = [
-                        company.advance_customer_account_id.id,
-                        company.customer_account_igtf_id.id,
-                    ]
-                module_igtf = request.env["ir.module.module"].sudo().search([('name', "ilike", "binaural_igtf")])
-                igtf_installed = True if module_igtf.state == "installed" else False
-                
+                    advance_account_customer_ids = [company.advance_customer_account_id.id]
+                    if igtf_installed:
+                        advance_account_customer_ids.append(company.customer_account_igtf_id.id)
+
                 if type_fiscal:
                     retentions, pays_retention_registered = self.register_retentions(
                         data_invoices, partner_id, company, pays_retention_registered
@@ -108,9 +114,11 @@ class AccountPaymentPayments(http.Controller):
                 pays_app_register = request.env["payment.mobile"]
 
                 if use_credit:
-                    if advance_payment_installed:    
-                        invoices = data_invoices.mapped("line_ids").filtered(
-                            lambda l: l.account_id.account_type == "asset_receivable"
+                    if advance_payment_installed:
+                        invoices = (
+                            data_invoices.mapped("line_ids")
+                            .filtered(lambda l: l.account_id.account_type == "asset_receivable")
+                            .sorted(lambda l: l.date_maturity)
                         )
                         domain_customer = [
                             ("partner_id", "=", int(partner_id)),
@@ -130,7 +138,13 @@ class AccountPaymentPayments(http.Controller):
 
                 if payments:
                     pays_registered, payments_igtf = self.register_payments(
-                        payments, ctx, company, data_invoices, seller_id, type_fiscal, igtf_installed,
+                        payments,
+                        ctx,
+                        company,
+                        data_invoices,
+                        seller_id,
+                        type_fiscal,
+                        igtf_installed,
                     )
 
                 pays_registered += pays_retention_registered
@@ -201,8 +215,8 @@ class AccountPaymentPayments(http.Controller):
                     and company.retentions_draft_or_published == "0"
                     and len(retentions) > 0
                 ):
-                    retentions.action_cancel()
-                    retentions.action_draft()
+                    retentions.sudo().action_cancel()
+                    retentions.sudo().action_draft()
 
             except Exception as e:
                 data.update({"status": 400, "msg": str(e)})
@@ -276,11 +290,13 @@ class AccountPaymentPayments(http.Controller):
 
         return retentions, pays_retention_registered
 
-    def register_payments(self, payments, ctx, company, data_invoices, seller_id, fiscal, igtf_installed):
+    def register_payments(
+        self, payments, ctx, company, data_invoices, seller_id, fiscal, igtf_installed
+    ):
         pays_registered = request.env["account.payment"]
         currency_vef_id = request.env.company.currency_foreign_id.id
         payments_igtf = request.env["payment.mobile.igtf"]
-    
+
         for payment in payments:
             pay_day = payments[payment]["dateToPay"]
             pay_day_formatted = datetime.strptime(pay_day, "%Y-%m-%d")
@@ -321,7 +337,7 @@ class AccountPaymentPayments(http.Controller):
                         "account.account_payment_method_manual_in"
                     ).id,
                     "foreign_rate": currency_id.company_rate,
-                    "foreign_inverse_rate": currency_id.company_rate, 
+                    "foreign_inverse_rate": currency_id.company_rate,
                     "payment_from_app": True,
                 }
             )
@@ -335,8 +351,10 @@ class AccountPaymentPayments(http.Controller):
 
             pays_registered += payment_create
 
-        invoices = data_invoices.mapped("line_ids").filtered(
-            lambda l: l.account_id.account_type == "asset_receivable"
+        invoices = (
+            data_invoices.mapped("line_ids")
+            .filtered(lambda l: l.account_id.account_type == "asset_receivable")
+            .sorted(lambda l: l.date_maturity)
         )
         pays = pays_registered.mapped("move_id.line_ids").filtered(
             lambda l: l.account_id.account_type == "asset_receivable"
@@ -370,7 +388,9 @@ class AccountPaymentPayments(http.Controller):
                 "currency_id": company.currency_id.id,
                 "invoice_id": invoice.id,
                 "payment_related": payment.id,
-                "use_balance": True if advance and payment.destination_account_id.id in advance else False,
+                "use_balance": True
+                if advance and payment.destination_account_id.id in advance
+                else False,
             }
         )
         return pays_app_line
@@ -411,4 +431,11 @@ class AccountPaymentPayments(http.Controller):
         data = {"status": 200, "msg": "Success"}
         total_or_partial = request.env.company.process_payments_invoices
         data.update({"data": total_or_partial})
+        return data
+
+    @http.route("/installment_payments", type="json", auth="public", methods=["POST"], website=True)
+    def installment_payments(self, **kw):
+        data = {"status": 200, "msg": "Success"}
+        installment_payments = request.env.company.allow_installment_payments
+        data.update({"data": installment_payments})
         return data

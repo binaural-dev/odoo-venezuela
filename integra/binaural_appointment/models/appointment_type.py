@@ -1,6 +1,6 @@
-from odoo import api, fields, models, _, Command
-
 import logging
+
+from odoo import Command, _, api, fields, models
 
 _logger = logging.getLogger(__name__)
 class AppointmentType(models.Model):
@@ -11,6 +11,12 @@ class AppointmentType(models.Model):
         string="Related Product",
         domain="[('is_appointment', '=', True),('sale_ok', '=', True)]",
         required=True,
+    )
+
+    invoice_ids = fields.Many2many(
+        "account.move",
+        compute="_compute_invoice_ids",
+        store=True
     )
 
     prefix_vat = fields.Selection(
@@ -42,3 +48,21 @@ class AppointmentType(models.Model):
         string='Block Appointment',
         related='product_id.block_appointment'
     )
+
+    invoice_create = fields.Boolean(
+        string="Create Invoices",
+        help="For each scheduled appointment, create a new invoices and assign it to the responsible user with state draft."
+    )
+
+    @api.depends('meeting_ids.invoice_ids')
+    def _compute_invoice_ids(self):
+        for record in self:
+            record.invoice_ids = record.meeting_ids.invoice_ids.ids
+
+    def action_invoice_ids(self):
+        self.ensure_one()
+
+        action = self.env["ir.actions.actions"]._for_xml_id("account.action_move_out_invoice_type")
+        action['domain'] = [('id', 'in', self.invoice_ids.ids)]
+
+        return action

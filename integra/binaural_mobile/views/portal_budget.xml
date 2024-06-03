@@ -31,7 +31,7 @@
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()" id="csrf_token" />
                     <t t-if="budget">
                         <t t-if="budget.state == 'draft'">
-                            <div class="d-flex justify-content-center">
+                            <div class="d-flex justify-content-center" t-if="not not_confirm_quotes">
                                 <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
                                 <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                             </div>
@@ -41,7 +41,7 @@
                         </t>
                     </t>
                     <t t-else="">
-                        <div class="d-flex justify-content-center">
+                        <div class="d-flex justify-content-center" t-if="not not_confirm_quotes">
                             <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
                             <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                         </div>
@@ -193,7 +193,8 @@
                         </div>
                         <div class="col-sm-2">
                             <div class="form-check">
-                                <t t-if="budget">
+
+                                <t t-if="budget and is_optional_tax_included">
                                     <t t-if="budget.state in ['cancel', 'sale']">
                                         <input class="form-check-input cancel_confirmed_input" type="checkbox" id="invoice" t-if="budget.tax_included" checked="True" disabled="disabled"/>
                                         <input class="form-check-input cancel_confirmed_input" type="checkbox" id="invoice" t-else="" disabled="disabled"/>
@@ -204,11 +205,28 @@
                                     </t>
                                 </t>
                                 <t t-else="">
-                                    <input class="form-check-input cancel_confirmed_input" type="checkbox" id="invoice" disabled="disabled"/>
+                                    <div t-attf-style="{{'' if is_optional_tax_included else  'display: none'}}">
+                                        <input 
+                                            class="form-check-input cancel_confirmed_input" 
+                                            type="checkbox" 
+                                            id="invoice" 
+                                            disabled="disabled"
+                                            t-if="tax_included"
+                                            checked="true"
+                                        />
+                                        <input 
+                                            class="form-check-input cancel_confirmed_input" 
+                                            type="checkbox" 
+                                            id="invoice" 
+                                            disabled="disabled" 
+                                            t-else=""
+                                        />
+                                    </div>
                                 </t>
-                                <label class="form-check-label" style="font-weight: bolder;">
+                                <label class="form-check-label" style="font-weight: bolder;" t-if="is_optional_tax_included">
                                     Invoice required
                                 </label>
+
                             </div>
                         </div>
                         <label class="col-sm-2 form-text">Note</label>
@@ -248,45 +266,6 @@
                             </thead>
                             <tbody id="product_list">
                                 <t t-if="budget">
-                                    <t t-foreach="budget.order_line" t-as="line">
-                                        <tr>
-                                            <td colspan="4">
-                                                <label style="font-weight: bolder;"><t t-out="line.name"/></label> <input type="hidden" t-att-value="line.id"/> <br/>
-                                                <label class="form-label">Qty:</label><label class="form-label" style="font-weight: bolder;">
-                                                    <t t-out="line.product_uom_qty"/>
-                                                </label><br/>
-                                                <label class="form-text">Unit price:</label>
-                                                <label class="form-text" style="font-weight: bolder;">
-                                                    <t t-out="currency.symbol" t-if="currency.position == 'before'"/>
-                                                    <t t-out="line.price_unit"/>
-                                                    <t t-out="currency.symbol" t-if="currency.position == 'after'"/>
-                                                </label><br/>
-                                            </td>
-                                            <td class="text-center">
-                                                <div  style="display: flex; align-items: center; justify-content: center;">
-                                                    <div style="width: 100px; height: 50px;">
-                                                        <label class="total_product">
-                                                            <t t-out="currency.symbol" t-if="currency.position == 'before'"/>
-                                                            <t t-out="line.price_subtotal"/>
-                                                            <t t-out="currency.symbol" t-if="currency.position == 'after'"/>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <label class="badge bg-primary"><t t-out="line.tax_id.description" t-if="budget.tax_included"/></label>
-                                                </div>
-                                            </td>
-                                            <td style="width: 50px;">
-                                                <t t-if="budget and budget.state in ['cancel', 'sale']">
-                                                    
-                                                </t>
-                                                <t t-else="">
-                                                    <button type="button" class="fa fa-trash-o delete_product cancel_confirmed_input" 
-                                                    style="background-color: transparent;border: none;padding: 0; color:red;"></button>
-                                                </t>
-                                            </td>
-                                        </tr>
-                                    </t>
                                 </t>
                             </tbody>
                         </table>
@@ -326,7 +305,7 @@
                     <br />
                     <t t-if="budget">
                         <t t-if="budget.state == 'draft'">
-                            <div class="d-flex justify-content-center">
+                            <div class="d-flex justify-content-center" t-if="not not_confirm_quotes">
                                 <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
                                 <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                             </div>
@@ -336,7 +315,7 @@
                         </t>
                     </t>
                     <t t-else="">
-                        <div class="d-flex justify-content-center">
+                        <div class="d-flex justify-content-center" t-if="not not_confirm_quotes">
                             <button type="button" class="btn btn-secondary col-5 mx-auto cancel-btn">Cancel</button>
                             <button type="button" class="btn btn-primary col-5 mx-auto confirm-btn">Confirm</button>
                         </div>
@@ -415,23 +394,25 @@
                                                     <option value="">Select State</option>
                                                 </select>
                                             </div>
+                                            <label class="form-text col-sm-2">City</label>
+                                            <div class="col-sm-4">
+                                                <select class="form-control register-client" id="cityClient">
+                                                    <option value="">Select City</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-2">
                                             <label class="form-text col-sm-2">Municipality</label>
                                             <div class="col-sm-4">
                                                 <select class="form-control register-client" id="municipalityClient">
                                                     <option value="">Select Municipality</option>
                                                 </select>
                                             </div>
-                                        </div>
-                                        <div class="row mb-2">
                                             <label class="form-text col-sm-2">Parish</label>
                                             <div class="col-sm-4">
                                                 <select class="form-control register-client" id="parishClient">
                                                     <option value="">Select Parish</option>
                                                 </select>
-                                            </div>
-                                            <label class="form-text col-sm-2">Number phone</label>
-                                            <div class="col-sm-4">
-                                                <input type="text" class="register-client form-control" id="numberPhone" placeholder="0426-123-1234"/>
                                             </div>
                                         </div>
                                         <div class="row mb-2">
@@ -439,6 +420,10 @@
                                             <label class="form-text col-sm-2">Email</label>
                                             <div class="col-sm-4 igtf_input">
                                                 <input type="email" class="register-client form-control" id="emailClient" placeholder="test@gmail.com"/>
+                                            </div>
+                                            <label class="form-text col-sm-2">Number phone</label>
+                                            <div class="col-sm-4">
+                                                <input type="text" class="register-client form-control" id="numberPhone" placeholder="0426-123-1234"/>
                                             </div>
                                         </div>
 
@@ -474,7 +459,7 @@
                                 <div class="modal-header">
                                 </div>
                                 <div class="modal-body">
-                                    <div class="alert alert-danger" role="alert">
+                                    <div class="alert alert-danger" role="alert" id="errorQtyMsg">
                                         Check the units of the product
                                     </div>
                                 </div>

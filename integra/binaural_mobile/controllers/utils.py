@@ -9,6 +9,22 @@ from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT as DATETIME_FORMAT
 
 _logger = logging.getLogger(__name__)
 
+def filter_dict(original_dict, keys_to_include):
+    """
+    Filters the original dictionary to include only the specified keys.
+
+    Args:
+        original_dict (dict): The original dictionary.
+        keys_to_include (list): List of keys to include in the filtered dictionary.
+
+    Returns:
+        dict: A new dictionary containing only the specified keys and their values.
+    """
+    filtered_dict = {}
+    for key in keys_to_include:
+        if key in original_dict:
+            filtered_dict[key] = original_dict[key]
+    return filtered_dict
 
 def create_record(model_name: str, vals: list, is_sudo=True):
     """Creates a registry on the database using the ORM.
@@ -260,14 +276,17 @@ def get_order_line(sale_order: list, fields: list):
     for order in sale_order:
         order_line = order.get("order_line", [])
         if order_line:
-            domain = [("id", "in", order_line)]
+            domain = [("id", "in", order_line),('display_type', '=', False)]
             order_cpy = order.copy()
             line = get_model_data("sale.order.line", domain, fields)
             order_cpy.update({"order_line": line})
+            if request.env.company.mobile_show_tax_type == "include_tax":
+                for line in order_cpy["order_line"]:
+                    line["price_unit"] = line["price_unit_with_tax"]
+                    line["price_subtotal"] = line["price_total"]
             sale_orders.append(order_cpy)
 
     return sale_orders or sale_order
-
 
 def set_order_line(sale_order: list, tax_included: bool):
     order_lines = sale_order.get("order_line", [])
@@ -293,7 +312,7 @@ def set_order_line(sale_order: list, tax_included: bool):
 
         product_id = int(product_id) if type(product_id) is str else product_id
 
-        if tax_included:
+        if tax_included or request.env.company.mobile_tax_include:
             product_taxes_id = browse_model_data("product.product", product_id).taxes_id
 
             if any(product_taxes_id):

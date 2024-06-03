@@ -8,7 +8,7 @@
     # Check https://github.com/odoo/odoo/blob/16.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     "category": "Expense/Payroll",
-    "version": "16.0.1.2.7",
+    "version": "16.0.1.3.10",
     # any module necessary for this one to work correctly
     "depends": [
         "account",
@@ -21,14 +21,16 @@
     ],
     # always loaded
     "data": [
+        "security/res_groups.xml",
+        "security/ir.model.access.csv",
         "data/ir_actions_server.xml",
         "data/product_data.xml",
-        "security/ir.model.access.csv",
+        "data/commission_policy_type.xml",
         "views/account_move_views.xml",
         "views/account_move_line_views.xml",
         "views/commission_policy_line_views.xml",
         "views/commission_policy_views.xml",
-        "views/res_config_settings.xml",
+        "views/commission_policy_type_views.xml",
         "views/menuitems.xml",
         "views/res_config_settings.xml",
         "views/sale_order_views.xml",
