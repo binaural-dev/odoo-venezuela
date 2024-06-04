@@ -149,12 +149,8 @@ class AccountPaymentPayments(http.Controller):
                         type_fiscal,
                         igtf_installed,
                     )
-                _logger.warning("___________________________________________________")
-                _logger.warning(pays_registered)
-                _logger.warning(pays_retention_registered)
                 pays_registered += pays_retention_registered
                 pays_registered += advance_pays
-                _logger.warning("___________________________________________________")
 
                 _logger.warning(pays_registered)
 
