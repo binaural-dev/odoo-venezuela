@@ -149,9 +149,15 @@ class AccountPaymentPayments(http.Controller):
                         type_fiscal,
                         igtf_installed,
                     )
-
+                _logger.warning("___________________________________________________")
+                _logger.warning(pays_registered)
+                _logger.warning(pays_retention_registered)
                 pays_registered += pays_retention_registered
                 pays_registered += advance_pays
+                _logger.warning("___________________________________________________")
+
+                _logger.warning(pays_registered)
+
 
                 pays_app_methods = request.env["payment.mobile.methods"]
                 pays_app_lines = request.env["payment.mobile.line"]
@@ -180,6 +186,12 @@ class AccountPaymentPayments(http.Controller):
                                             pay_r, invoice_id, company, advance_account_customer_ids
                                         )
 
+                        if pay_r.is_retention:
+                            if pay_r.retention_line_ids[0].move_id == invoice:
+                                pays_app_lines += self.create_line_app(
+                                    pay_r, invoice, company, advance_account_customer_ids
+                                )
+                            
                     pays_app_method = request.env["payment.mobile.methods"].create(
                         {
                             "journal_id": pay_r.journal_id.id,
