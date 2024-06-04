@@ -9,41 +9,46 @@ _logger = logging.getLogger(__name__)
 class BinThemePrimePWA(ThemePrimePWA):
 
     def get_default_manifest_json(self, website_id, website):
+        manifest_data = {"fake": 1}
 
-        if website and website.id == website_id and website.dr_pwa_activated:
-            manifest_data = {
-                "name": website.dr_pwa_name,
-                "short_name": website.dr_pwa_short_name,
-                "display": "standalone",
-                "background_color": website.dr_pwa_background_color,
-                "theme_color": website.dr_pwa_theme_color,
-                "id": website.dr_pwa_start_url,
-                "start_url": website.dr_pwa_start_url,
-                "scope": "/",
-                "icons": [{
-                    "src": "/web/image/website/%s/dr_pwa_icon_192/192x192" % website.id,
-                    "sizes": "192x192",
-                    "type": "image/png",
-                }, {
-                    "src": "/web/image/website/%s/dr_pwa_icon_512/512x512" % website.id,
-                    "sizes": "512x512",
-                    "type": "image/png",
-                }]
-            }
-            if website.dr_pwa_shortcuts:
-                manifest_data['shortcuts'] = [{
+        if not (website and website.id == website_id and website.dr_pwa_activated):
+            return manifest_data
+
+        manifest_data = {
+            "name": website.dr_pwa_name,
+            "short_name": website.dr_pwa_short_name,
+            "display": "standalone",
+            "background_color": website.dr_pwa_background_color,
+            "theme_color": website.dr_pwa_theme_color,
+            "id": website.dr_pwa_start_url,
+            "start_url": website.dr_pwa_start_url,
+            "scope": "/",
+            "icons": [{
+                "src": "/web/image/website/%s/dr_pwa_icon_192/192x192" % website.id,
+                "sizes": "192x192",
+                "type": "image/png",
+            }, {
+                "src": "/web/image/website/%s/dr_pwa_icon_512/512x512" % website.id,
+                "sizes": "512x512",
+                "type": "image/png",
+            }]
+        }
+
+        if website.dr_pwa_shortcuts:
+            manifest_data['shortcuts'] = [
+                {
                     "name": shortcut.name,
                     "short_name": shortcut.short_name or '',
                     "description": shortcut.description or '',
                     "url": shortcut.url,
                     "icons": [{"src": "/web/image/dr.pwa.shortcuts/%s/icon/192x192" % shortcut.id, "sizes": "192x192"}]
-                } for shortcut in website.dr_pwa_shortcuts]
+                } for shortcut in website.dr_pwa_shortcuts
+            ]
 
         return manifest_data
-    
 
     @http.route('/pwa/<int:website_id>/manifest.json', type='http', auth='public', website=True)
-    def get_pwa_manifest_json(self, website_id, **kargs):
+    def get_pwa_manifest(self, website_id, **kargs):
         _logger.warning("AAAAAAAAAAAAAAAAAAAAAAAAssss")
         website = request.website
         manifest_data = self.get_default_manifest_json(website_id, website)
@@ -57,11 +62,13 @@ class BinThemePrimePWA(ThemePrimePWA):
 
             manifest_data = json_custom_manifest
 
-        except:
             website.company_id.write({"custom_manifest": json.dumps(manifest_data)})
 
-        _logger.warning("JSON_CUSTOM_MANIFEST")
-        _logger.warning(json_custom_manifest)
+            _logger.warning("JSON_CUSTOM_MANIFEST")
+            _logger.warning(json_custom_manifest)
+
+        except:
+            website.company_id.write({"custom_manifest": json.dumps(manifest_data)})
 
         _logger.warning("MANIFEST DATA")
         _logger.warning(manifest_data)
@@ -79,8 +86,8 @@ class BinThemePrimePWA(ThemePrimePWA):
                 "relation": ["delegate_permission/common.handle_all_urls"],
                 "target": {
                     "namespace": "android_app",
-                    "package_name": "com.odoo.binaural_dev_ferremundo.twa",
-                    "sha256_cert_fingerprints": ["ADD FINGERPRINT HERE"]
+                    "package_name": _("ADD PACKAGE NAME HERE (Android Unique Identifier)"),
+                    "sha256_cert_fingerprints": [_("ADD FINGERPRINT HERE")]
                 }
             }
         ]
@@ -92,6 +99,7 @@ class BinThemePrimePWA(ThemePrimePWA):
 
             assetlinks_data = json_assetlink
 
+            website.company_id.write({"assetlink": json.dumps(assetlinks_data)})
         except:
             website.company_id.write({"assetlink": json.dumps(assetlinks_data)})
 
