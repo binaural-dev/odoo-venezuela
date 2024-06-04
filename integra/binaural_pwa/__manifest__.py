@@ -8,9 +8,9 @@
     "category": "Theme/eCommerce",
     "version": "16.0.0.0.4",
     # any module necessary for this one to work correctly
-    "depends": ["base", "theme_prime"],
+    "depends": ["base","web","website","theme_prime"],
     # always loaded
-    "data": ['views/templates.xml',],
+    "data": ['views/templates.xml', 'views/res_config_settings.xml'],
     "images": ["static/description/icon.png"],
     "application": True,
 }

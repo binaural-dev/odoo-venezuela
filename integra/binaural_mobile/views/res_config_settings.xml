@@ -185,7 +185,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="row mt16 o_settings_container">
+                <!-- <div class="row mt16 o_settings_container">
                     <div class="col-12 o_setting_box" name="Binaural_mobile_app_settings">
                         <div class="o_setting_right_pane">
                             <label for="custom_manifest"/>
@@ -203,8 +203,8 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="row mt16 o_settings_container">
+                </div> -->
+                <!-- <div class="row mt16 o_settings_container">
                     <div class="col-12 o_setting_box" name="Binaural_mobile_app_settings">
                         <div class="o_setting_right_pane">
                             <label for="assetlink"/>
@@ -220,7 +220,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </xpath>
 
         </field>

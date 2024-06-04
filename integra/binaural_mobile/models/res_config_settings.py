@@ -63,8 +63,8 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
     )
 
-    custom_manifest = fields.Text(related="company_id.custom_manifest", readonly=False)
-    assetlink = fields.Text(related="company_id.assetlink", readonly=False)
+    # custom_manifest = fields.Text(related="company_id.custom_manifest", readonly=False)
+    # assetlink = fields.Text(related="company_id.assetlink", readonly=False)
 
     allow_installment_payments = fields.Boolean()
     
