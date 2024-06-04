@@ -49,13 +49,10 @@ class BinThemePrimePWA(ThemePrimePWA):
 
     @http.route('/pwa/<int:website_id>/manifest.json', type='http', auth='public', website=True)
     def get_pwa_manifest(self, website_id, **kargs):
-        _logger.warning("AAAAAAAAAAAAAAAAAAAAAAAAssss")
         website = request.website
         manifest_data = self.get_default_manifest_json(website_id, website)
 
         custom_manifest = website.company_id.custom_manifest
-        
-        _logger.warning("CUSTOM MANIFEST %s", custom_manifest)
 
         try:
             json_custom_manifest = json.loads(custom_manifest)
@@ -64,14 +61,9 @@ class BinThemePrimePWA(ThemePrimePWA):
 
             website.company_id.write({"custom_manifest": json.dumps(manifest_data)})
 
-            _logger.warning("JSON_CUSTOM_MANIFEST")
-            _logger.warning(json_custom_manifest)
-
         except:
             website.company_id.write({"custom_manifest": json.dumps(manifest_data)})
 
-        _logger.warning("MANIFEST DATA")
-        _logger.warning(manifest_data)
         return request.make_response(
             data=json.dumps(manifest_data),
             headers=[('Content-Type', 'application/json')]
