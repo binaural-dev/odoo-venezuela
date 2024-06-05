@@ -9,8 +9,7 @@ class StockLot(models.Model):
     gender = fields.Selection(
         [
             ("male", "Male"),
-            ("female", "Female"),
-            ("undefined", "Undefined"),
+            ("female", "Female")
         ],
         "Gender",
         default="undefined",
@@ -40,6 +39,15 @@ class StockLot(models.Model):
     )
     
     # Relation to breeder
-    lot_breeder_ids = fields.Many2many(
+    lot_breeder_ids = fields.Many2one(
         'stock.lot.breeder', ondelete="cascade"
     )
+
+    # Related to ancestrys
+    lot_ancestry_ids = fields.One2many(
+        'stock.lot.ancestral.milk.production',
+        'lot_id',
+        string='Ancestral milk production'
+    )
+
+    # lot_types
