@@ -22,11 +22,22 @@
                             <field name="lot_race_id" />
                         </group>
                     </group>
-                    <group string="Breeder and Owner">
-                        <group>
+                    <group>
+                        <group string="Breeder and Owner">
                             <field name="res_partner_owner_id" readonly="0"/>
                             <field name="proprietary_acronym"/>
                             <field name="lot_breeder_ids" widget="many2many_tags" readonly="0"/>
+                        </group>
+                        <group string="Pedigree">
+                            Empty
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Ancestry milk production data">
+                            
+                        </group>
+                        <group string="Morphological Evaluation">
+                            
                         </group>
                     </group>
                 </page>
