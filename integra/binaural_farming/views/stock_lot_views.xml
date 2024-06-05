@@ -44,7 +44,15 @@
                             </field>
                         </group>
                         <group string="Morphological Evaluation">
-                            
+                            <field name="lot_morphological_ids">
+                                <tree editable="bottom">
+                                    <field name="types_morphological_id" />
+                                    <field name="valuation_quantity" />
+                                    <field name="types_qualitative_evaluation_id" />
+                                    
+                                    
+                                </tree>
+                            </field>
                         </group>
                     </group>
                 </page>
