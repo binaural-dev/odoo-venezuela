@@ -51,3 +51,8 @@ class StockLot(models.Model):
     )
 
     # lot_types
+    lot_morphological_ids = fields.One2many(
+        'stock.lot.evaluation.morphological',
+        'morphological_id',
+        string='Evaluation Morphological'
+    )
