@@ -146,7 +146,9 @@ class AccountTax(models.Model):
                 tax_line["tax_amount"] = 0.0
                 for tax in tax_values_list:
                     if tax["tax_repartition_line"].id == tax_line["tax_repartition_line"].id:
-                        tax_line["tax_amount"] += float_round(tax["amount"], precision_digits=2)
+                        tax_line["tax_amount"] += float_round(
+                            tax["amount"], precision_digits=currency.decimal_places
+                        )
 
 
         return foreign_base_lines, foreign_tax_lines
