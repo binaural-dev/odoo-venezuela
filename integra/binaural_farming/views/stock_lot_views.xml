@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="binaural_farming_view_form_stock_production_lot" model="ir.ui.view">
+        <field name="name">binaural.farming.view.form.stock.production.lot</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="stock.view_production_lot_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Farming">
+                    <group string="Identification">
+                        <group>
+                            <field name="image" widget="image" class="oe_avatar"/>         
+                        </group>
+                        <group>
+                            <field name="gender" />
+                            <field name="name_lot" />
+                            <field name="tatto_left" />
+                            <field name="tatto_right" />
+                            <field name="adga_registration_number" />
+                            <field name="asoembra_registration_number" />
+                            <field name="date_of_birth" widget="date"/>
+                            <field name="lot_race_id" />
+                        </group>
+                    </group>
+                    <group string="Breeder and Owner">
+                        <group>
+                            <field name="res_partner_owner_id" readonly="0"/>
+                            <field name="proprietary_acronym"/>
+                            <field name="lot_breeder_ids" widget="many2many_tags" readonly="0"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
