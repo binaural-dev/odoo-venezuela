@@ -12,7 +12,7 @@ class StockLot(models.Model):
             ("female", "Female")
         ],
         "Gender",
-        default="undefined",
+        default="",
     )
     name_lot = fields.Char()
     tatto_left = fields.Char()
