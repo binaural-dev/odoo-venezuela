@@ -1,0 +1,43 @@
+name: Dummy Staging
+
+on:
+  repository_dispatch:
+    types:
+      - dummy_staging
+  workflow_dispatch:
+
+jobs:
+  dummy_staging:
+    runs-on: ubuntu-latest
+    if: github.repository != 'binaural-dev/integra'
+    env:
+      CI_COMMIT_AUTHOR: "binauralbot"
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+    steps:
+      - name: Obtener token de instalación de GitHub App
+        id: get_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v3
+        with:
+          ref: staging 
+          token: ${{ steps.get_token.outputs.token  }}
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Configuring git...
+        run: |
+          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
+          git config --global user.email "actions@github.com"
+      - name: Executing Dummy creation/updating.
+        run: |
+          python3 $(pwd)/scripts/dummy.py
+          git add dummy_file
+          git commit -m "Dummy.sh"
+      - name: Pushing dummy_file to staging
+        run: |
+          git push origin staging
