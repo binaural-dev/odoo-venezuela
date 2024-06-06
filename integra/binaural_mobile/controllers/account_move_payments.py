@@ -1,15 +1,15 @@
-import logging
 import json
-
+import logging
+from datetime import datetime
 from pprint import pprint
-from odoo import http, _
-from odoo.tools import float_is_zero
+
+from dateutil.relativedelta import relativedelta
+from odoo import _, fields, http
 from odoo.http import request
 from odoo.osv import expression
-from odoo import fields
+from odoo.tools import float_is_zero
+
 from . import utils
-from dateutil.relativedelta import relativedelta
-from datetime import datetime
 
 _logger = logging.getLogger(__name__)
 
@@ -31,6 +31,7 @@ FIELDPARTNER = [
     "total_due",
     "withholding_type_id",
     "display_name",
+    "taxpayer_type",
 ]
 FIELDNAMES = [
     "id",
@@ -196,6 +197,7 @@ class AccountMovePayments(http.Controller):
                         "data": account_move_results,
                         "count": acc_move_count,
                         "total_count": all_acc_move_count,
+                        "taxpayer_type": partner_ids[0].taxpayer_type,
                     }
                 )
 
