@@ -32,4 +32,5 @@
     ],
     "post_init_hook": "create_res_users_fiscal",
     "uninstall_hook": "inspector_uninstall_hook",
+    "binaural": True,
 }

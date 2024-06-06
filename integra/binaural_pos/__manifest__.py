@@ -32,4 +32,5 @@
             "binaural_pos/static/tests/unit/**/*",
         ],
     },
+    "binaural": True,
 }

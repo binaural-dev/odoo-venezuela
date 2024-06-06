@@ -13,4 +13,5 @@
     # always loaded
     "auto_install": True,
     "data": ["data/ir_config_parameter.xml"],
+    "binaural":True,
 }

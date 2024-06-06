@@ -38,4 +38,5 @@
         "data/cron.xml"
 
     ],
+    "binaural":True,
 }

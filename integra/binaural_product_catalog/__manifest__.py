@@ -18,4 +18,5 @@
         "report/product_catalog_style_6_template.xml",
     ],
     "application": True,
+    "binaural": True,
 }
