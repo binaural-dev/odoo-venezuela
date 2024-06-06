@@ -181,12 +181,6 @@ class AccountPaymentPayments(http.Controller):
                                         pays_app_lines += self.create_line_app(
                                             pay_r, invoice_id, company, advance_account_customer_ids
                                         )
-
-                        if pay_r.is_retention:
-                            if pay_r.retention_line_ids[0].move_id == invoice:
-                                pays_app_lines += self.create_line_app(
-                                    pay_r, invoice, company, advance_account_customer_ids
-                                )
                             
                     pays_app_method = request.env["payment.mobile.methods"].create(
                         {
