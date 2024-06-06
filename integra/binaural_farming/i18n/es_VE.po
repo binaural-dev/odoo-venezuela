@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240514\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-05 19:59+0000\n"
-"PO-Revision-Date: 2024-06-05 19:59+0000\n"
+"POT-Creation-Date: 2024-06-06 14:55+0000\n"
+"PO-Revision-Date: 2024-06-06 14:55+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,14 +26,10 @@ msgid "Adga Registration Number"
 msgstr "Número de registro Adga"
 
 #. module: binaural_farming
+#: model:ir.model,name:binaural_farming.model_stock_lot_ancestral_milk_production
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__lot_ancestry_ids
 msgid "Ancestral milk production"
 msgstr "Producción de leche de ancestros"
-
-#. module: binaural_farming
-#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__ancestry
-msgid "Ancestry"
-msgstr "Ancestros"
 
 #. module: binaural_farming
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_view_form_stock_production_lot
@@ -58,17 +54,27 @@ msgstr "Contacto"
 #. module: binaural_farming
 #: model_terms:ir.actions.act_window,help:binaural_farming.res_partner_owner_action
 msgid "Create a new Owner for stock lot!"
-msgstr "Crear un nuevo Propietario para el lote"
+msgstr "Crear un nuevo Propietario para el lote de ganado!"
 
 #. module: binaural_farming
 #: model_terms:ir.actions.act_window,help:binaural_farming.stock_lot_breeder_action
 msgid "Create a new breeder for stock lot!"
-msgstr ""
+msgstr "Crear un nuevo criador para el lote de ganado!"
+
+#. module: binaural_farming
+#: model_terms:ir.actions.act_window,help:binaural_farming.stock_lot_qualitative_valuation_action
+msgid "Create a new qualitative valuation for stock lot!"
+msgstr "Crear una nueva valoración cualitativa para el lote de ganado!"
 
 #. module: binaural_farming
 #: model_terms:ir.actions.act_window,help:binaural_farming.stock_lot_race_action
 msgid "Create a new race for stock lot!"
-msgstr ""
+msgstr "Crear una nueva raza para el lote de ganado"
+
+#. module: binaural_farming
+#: model_terms:ir.actions.act_window,help:binaural_farming.stock_lot_type_morphological_action
+msgid "Create a new type morphological for stock lot!"
+msgstr "Crear un nuevo tipo de morfologia para el lote de ganado"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__create_uid
@@ -109,6 +115,16 @@ msgstr "Descripcion"
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_type_morphological__display_name
 msgid "Display Name"
 msgstr "Nombre"
+
+#. module: binaural_farming
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__lot_morphological_ids
+msgid "Evaluation Morphological"
+msgstr "Evaluación Morfológica"
+
+#. module: binaural_farming
+#: model:ir.model,name:binaural_farming.model_stock_lot_evaluation_morphological
+msgid "Evaluation morphological"
+msgstr "Evaluación Morfológica"
 
 #. module: binaural_farming
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_view_form_stock_production_lot
@@ -217,6 +233,21 @@ msgid "Male"
 msgstr "Macho"
 
 #. module: binaural_farming
+#: model:ir.model,name:binaural_farming.model_stock_lot_breeder
+msgid "Manage breeder"
+msgstr "Manejar criadores"
+
+#. module: binaural_farming
+#: model:ir.model,name:binaural_farming.model_stock_lot_race
+msgid "Manage race"
+msgstr "Manejar razas"
+
+#. module: binaural_farming
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_evaluation_morphological__morphological_id
+msgid "Morphological"
+msgstr "Morfológica"
+
+#. module: binaural_farming
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_view_form_stock_production_lot
 msgid "Morphological Evaluation"
 msgstr "Valoracion Morfologica"
@@ -224,7 +255,6 @@ msgstr "Valoracion Morfologica"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__name
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_breeder__name
-#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_evaluation_morphological__name
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_qualitative_valuation__name
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_race__name
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_type_morphological__name
@@ -235,11 +265,6 @@ msgstr "Nombre"
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__name_lot
 msgid "Name Lot"
 msgstr "Nombre del lote"
-
-#. module: binaural_farming
-#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_qualitative_valuation__name_valoration
-msgid "Name Valoration"
-msgstr "Nombre de valoracion"
 
 #. module: binaural_farming
 #: model:ir.actions.act_window,name:binaural_farming.res_partner_owner_action
@@ -260,6 +285,11 @@ msgid "Proprietary Acronym"
 msgstr "Acronimo del propietario"
 
 #. module: binaural_farming
+#: model:ir.model,name:binaural_farming.model_stock_lot_qualitative_valuation
+msgid "Qualitative valuation"
+msgstr "Valoración cualitativa"
+
+#. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__res_partner_owner_id
 msgid "Res Partner Owner"
 msgstr "Propietario"
@@ -274,14 +304,28 @@ msgstr "Litros del segundo dia"
 #: model:ir.ui.menu,name:binaural_farming.stock_lot_breeder_menu
 #: model_terms:ir.ui.view,arch_db:binaural_farming.stock_lot_breeder_tree_view
 msgid "Stock Lot Breeder"
-msgstr "Inventario de lote por Criador"
+msgstr "Criadores de ganado"
+
+#. module: binaural_farming
+#: model:ir.actions.act_window,name:binaural_farming.stock_lot_qualitative_valuation_action
+#: model:ir.ui.menu,name:binaural_farming.stock_lot_qualitative_valuation_menu
+#: model_terms:ir.ui.view,arch_db:binaural_farming.stock_lot_qualitative_valuation_tree_view
+msgid "Stock Lot Qualitative Valuation"
+msgstr "Valoración cualitativa de lotes de ganado"
 
 #. module: binaural_farming
 #: model:ir.actions.act_window,name:binaural_farming.stock_lot_race_action
 #: model:ir.ui.menu,name:binaural_farming.stock_lot_race_menu
 #: model_terms:ir.ui.view,arch_db:binaural_farming.stock_lot_race_tree_view
 msgid "Stock Lot Race"
-msgstr "Inventario de lote por raza"
+msgstr "Raza de ganado"
+
+#. module: binaural_farming
+#: model:ir.actions.act_window,name:binaural_farming.stock_lot_type_morphological_action
+#: model:ir.ui.menu,name:binaural_farming.stock_lot_type_morphological_menu
+#: model_terms:ir.ui.view,arch_db:binaural_farming.stock_lot_type_morphological_tree_view
+msgid "Stock Lot Type Morphological"
+msgstr "Tipo de Morfológias de ganado"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__tatto_left
@@ -299,15 +343,24 @@ msgid "Third Day Liters"
 msgstr "Litros del tercer dia"
 
 #. module: binaural_farming
+#: model:ir.model,name:binaural_farming.model_stock_lot_type_morphological
+msgid "Type morphological"
+msgstr "Tipo de morfológico"
+
+#. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_evaluation_morphological__types_morphological_id
-#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_type_morphological__types_morphological
 msgid "Types Morphological"
-msgstr "Tipos de morfologias"
+msgstr "Tipos de morfológias"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_evaluation_morphological__types_qualitative_evaluation_id
 msgid "Types Qualitative Evaluation"
 msgstr "Tipos de valoracion cuantitativa"
+
+#. module: binaural_farming
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_evaluation_morphological__valuation_quantity
+msgid "Valuation Quantity"
+msgstr "Cantidad de valoración"
 
 #. module: binaural_farming
 #: model:res.groups,name:binaural_farming.group_res_partner_owner_farming
@@ -318,33 +371,3 @@ msgstr "Ver check de ser propietario"
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_from_res_partner_tree
 msgid "owner"
 msgstr "Propietario"
-
-#. module: binaural_farming
-#: model:ir.model,name:binaural_farming.model_stock_lot_ancestral_milk_production
-msgid "stock.lot.ancestral.milk.production"
-msgstr ""
-
-#. module: binaural_farming
-#: model:ir.model,name:binaural_farming.model_stock_lot_breeder
-msgid "stock.lot.breeder"
-msgstr ""
-
-#. module: binaural_farming
-#: model:ir.model,name:binaural_farming.model_stock_lot_evaluation_morphological
-msgid "stock.lot.evaluation.morphological"
-msgstr ""
-
-#. module: binaural_farming
-#: model:ir.model,name:binaural_farming.model_stock_lot_qualitative_valuation
-msgid "stock.lot.qualitative.valuation"
-msgstr ""
-
-#. module: binaural_farming
-#: model:ir.model,name:binaural_farming.model_stock_lot_race
-msgid "stock.lot.race"
-msgstr ""
-
-#. module: binaural_farming
-#: model:ir.model,name:binaural_farming.model_stock_lot_type_morphological
-msgid "stock.lot.type.morphological"
-msgstr ""

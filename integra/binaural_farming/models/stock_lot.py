@@ -50,7 +50,7 @@ class StockLot(models.Model):
         string='Ancestral milk production'
     )
 
-    # lot_types
+    # Relation to types morphological
     lot_morphological_ids = fields.One2many(
         'stock.lot.evaluation.morphological',
         'morphological_id',
