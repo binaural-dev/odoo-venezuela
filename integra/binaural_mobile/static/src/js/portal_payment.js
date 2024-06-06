@@ -269,7 +269,8 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           let amount_detained = (amount_tax * retencion) / 100;
           amount_detained = amount_detained.toFixed(decimal_number);
           let dif_iva = amount_tax - amount_detained;
-          dif_iva = dif_iva.toFixed(decimal_number);
+          amount_tax = amount_tax.toFixed(decimal_number);
+          amount_untaxed = amount_untaxed.toFixed(decimal_number);
           let amount_detained_vef,
             dif_iva_vef = null;
           let amount_detained_vef_line,

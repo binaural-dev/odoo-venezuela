@@ -3,10 +3,10 @@ import logging
 from dateutil.relativedelta import relativedelta
 from odoo import _, fields, http
 from odoo.addons.binaural_mobile.controllers.account_move_payments import (
-    FIELDFILTERS,
-    FIELDNAMES,
-    FIELDPARTNER,
     AccountMovePayments,
+    FIELDPARTNER,
+    FIELDNAMES,
+    FIELDFILTERS
 )
 from odoo.http import request
 from odoo.osv import expression
