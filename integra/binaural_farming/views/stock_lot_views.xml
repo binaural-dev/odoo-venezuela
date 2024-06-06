@@ -29,14 +29,14 @@
                             <field name="lot_breeder_ids" readonly="0"/>
                         </group>
                         <group string="Pedigree">
-                            Empty
+                            
                         </group>
                     </group>
                     <group>
                         <group string="Ancestry milk production data">
                             <field name="lot_ancestry_ids">
                                 <tree editable="bottom">
-                                    <field name="ancestry" />
+                                    <field name="name" />
                                     <field name="first_day_liters" />
                                     <field name="second_day_liters" />
                                     <field name="third_day_liters" />
@@ -49,8 +49,6 @@
                                     <field name="types_morphological_id" />
                                     <field name="valuation_quantity" />
                                     <field name="types_qualitative_evaluation_id" />
-                                    
-                                    
                                 </tree>
                             </field>
                         </group>

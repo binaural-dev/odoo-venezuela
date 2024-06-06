@@ -3,9 +3,8 @@ from odoo.exceptions import UserError, ValidationError
 
 class StockLotQualitativeValuation(models.Model):
     _name = 'stock.lot.qualitative.valuation'
-
+    _description = 'Qualitative valuation'
     
+
     # fields models
     name = fields.Char()
-    
-    name_valoration = fields.Char()
