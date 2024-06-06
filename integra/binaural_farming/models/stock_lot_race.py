@@ -9,4 +9,4 @@ class StockLotRace(models.Model):
     # fields models
     name = fields.Char()
     description = fields.Char()
-    active = fields.Boolean()
+    active = fields.Boolean(default=True)

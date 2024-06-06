@@ -24,7 +24,8 @@ class StockLot(models.Model):
     # Related to race
     lot_race_id = fields.Many2one(
         "stock.lot.race",
-        default=lambda self: self.lot_race_id.name
+        default=lambda self: self.lot_race_id.name,
+        domain=[("active", "=", True)],
     )
 
     # Relation to owner
@@ -40,7 +41,9 @@ class StockLot(models.Model):
     
     # Relation to breeder
     lot_breeder_ids = fields.Many2one(
-        'stock.lot.breeder', ondelete="cascade"
+        'stock.lot.breeder', 
+        ondelete="cascade",
+        domain=[("active", "=", True)],
     )
 
     # Related to ancestrys

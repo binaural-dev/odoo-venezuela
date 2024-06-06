@@ -23,7 +23,7 @@ msgstr "Activo"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__adga_registration_number
 msgid "Adga Registration Number"
-msgstr "Número de registro Adga"
+msgstr "Número de registro ADGA"
 
 #. module: binaural_farming
 #: model:ir.model,name:binaural_farming.model_stock_lot_ancestral_milk_production
@@ -39,7 +39,7 @@ msgstr "Datos de producción de leche de ancestros"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__asoembra_registration_number
 msgid "Asoembra Registration Number"
-msgstr "Número de registro Asoembra"
+msgstr "Número de registro ASOCABRAS"
 
 #. module: binaural_farming
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_view_form_stock_production_lot
@@ -139,7 +139,7 @@ msgstr "Propietarios"
 #. module: binaural_farming
 #: model:ir.model.fields.selection,name:binaural_farming.selection__stock_lot__gender__female
 msgid "Female"
-msgstr "Femenino"
+msgstr "Hembra"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__first_day_liters
@@ -220,7 +220,7 @@ msgstr "Criador del lote"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__lot_race_id
 msgid "Lot Race"
-msgstr "Lote de raza"
+msgstr "Raza"
 
 #. module: binaural_farming
 #: model:ir.model,name:binaural_farming.model_stock_lot
@@ -270,7 +270,7 @@ msgstr "Nombre del lote"
 #: model:ir.actions.act_window,name:binaural_farming.res_partner_owner_action
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_from_res_partner_tree
 msgid "Owners"
-msgstr "Propietarios"
+msgstr "Propietarios de ganado"
 
 #. module: binaural_farming
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_view_form_stock_production_lot
@@ -311,7 +311,7 @@ msgstr "Criadores de ganado"
 #: model:ir.ui.menu,name:binaural_farming.stock_lot_qualitative_valuation_menu
 #: model_terms:ir.ui.view,arch_db:binaural_farming.stock_lot_qualitative_valuation_tree_view
 msgid "Stock Lot Qualitative Valuation"
-msgstr "Valoración cualitativa de lotes de ganado"
+msgstr "Valoración cualitativa de ganado"
 
 #. module: binaural_farming
 #: model:ir.actions.act_window,name:binaural_farming.stock_lot_race_action
