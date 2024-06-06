@@ -34,4 +34,5 @@
             "binaural_megasoft/static/src/css/*.css",
         ],
     },
+    "binaural": True,
 }

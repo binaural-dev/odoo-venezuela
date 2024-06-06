@@ -13,4 +13,5 @@
     ],
     "data": ["views/product_pricelist.xml"],
     "images": ["static/description/icon.png"],
+    "binaural": True,
 }
