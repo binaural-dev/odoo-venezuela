@@ -2,6 +2,6 @@
 <odoo>
     <record id="binauralbot_url" model="ir.config_parameter">
         <field name="key">binaural_base.binauralbot_url</field>
-        <field name="value">https://binaural-dev-binauralbot1.odoo.com</field>
+        <field name="value">https://binaural.odoo.com</field>
     </record>
 </odoo>
