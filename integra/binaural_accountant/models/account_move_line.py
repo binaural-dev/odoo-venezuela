@@ -128,14 +128,19 @@ class AccountMoveLine(models.Model):
     @api.depends("foreign_credit", "foreign_debit", "foreign_subtotal")
     def _compute_foreign_balance(self):
         for line in self:
+
             if line.display_type == "product" and line.move_id.is_invoice(include_receipts=True):
                 sign = line.move_id.direction_sign
                 # This may be needed to be changed in the future, when taking into account
                 # moves that are not invoices.
                 line.foreign_balance = sign * line.foreign_subtotal
+
+            if line.move_id.is_invoice(include_receipts=True):
                 line._credit_debit_balance()
-                continue
-            line.foreign_balance = line.foreign_debit - line.foreign_credit
+
+            if line.balance != 0 and line.foreign_balance == 0:
+                _logger.info(f"Line {line.id} has balance {line.balance} and foreign balance 0")
+                line.foreign_balance = line.foreign_debit - line.foreign_credit
 
     def _inverse_foreign_balance(self):
         for line in self:
