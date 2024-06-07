@@ -1,8 +1,11 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
+import logging
+_logger = logging.getLogger(__name__)
 
 class StockLot(models.Model):
     _inherit = "stock.lot"
+    
 
     # fields models
     image = fields.Image()
@@ -58,4 +61,19 @@ class StockLot(models.Model):
         'stock.lot.evaluation.morphological',
         'morphological_id',
         string='Evaluation Morphological'
+    )
+
+    # Relation into lots
+    parent_father_id = fields.Many2one('stock.lot', 'Parent Father Lots', index=True, ondelete='cascade')
+    parent_mother_id = fields.Many2one('stock.lot', 'Parent Mother Lots', index=True, ondelete='cascade')
+
+    child_father_ids = fields.One2many(
+        "stock.lot",
+        "parent_father_id",
+        string="Childs Father"
+    )
+    child_mother_ids = fields.One2many(
+        "stock.lot",
+        "parent_mother_id",
+        string="Childs Mother"
     )
