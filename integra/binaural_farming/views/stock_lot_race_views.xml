@@ -6,7 +6,6 @@
         <field name="model">stock.lot.race</field>
         <field name="arch" type="xml">
             <tree string="Stock Lot Race" editable="bottom">
-                <field name="name"/>
                 <field name="description" />
                 <field name="active" widget="boolean_toggle"/>
             </tree>
