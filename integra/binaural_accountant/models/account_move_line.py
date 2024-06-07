@@ -139,7 +139,6 @@ class AccountMoveLine(models.Model):
                 line._credit_debit_balance()
 
             if line.balance != 0 and line.foreign_balance == 0:
-                _logger.info(f"Line {line.id} has balance {line.balance} and foreign balance 0")
                 line.foreign_balance = line.foreign_debit - line.foreign_credit
 
     def _inverse_foreign_balance(self):
