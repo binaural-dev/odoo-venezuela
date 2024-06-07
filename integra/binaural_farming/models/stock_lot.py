@@ -24,7 +24,7 @@ class StockLot(models.Model):
     # Related to race
     lot_race_id = fields.Many2one(
         "stock.lot.race",
-        default=lambda self: self.lot_race_id.name,
+        default=lambda self: self.lot_race_id,
         domain=[("active", "=", True)],
     )
 
