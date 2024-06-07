@@ -32,26 +32,27 @@
                             
                         </group>
                     </group>
-                    <group>
-                        <group string="Ancestry milk production data">
-                            <field name="lot_ancestry_ids">
-                                <tree editable="bottom">
-                                    <field name="name" />
-                                    <field name="first_day_liters" />
-                                    <field name="second_day_liters" />
-                                    <field name="third_day_liters" />
-                                </tree>
-                            </field>
-                        </group>
-                        <group string="Morphological Evaluation">
-                            <field name="lot_morphological_ids">
-                                <tree editable="bottom">
-                                    <field name="types_morphological_id" />
-                                    <field name="valuation_quantity" />
-                                    <field name="types_qualitative_evaluation_id" />
-                                </tree>
-                            </field>
-                        </group>
+                    <group string="Ancestry milk production data">
+                        <field name="lot_ancestry_ids">
+                            <tree editable="bottom">
+                                <field name="name" style="width: 20px"/>
+                                <field name="first_milk_sample" />
+                                <field name="first_day_sample" />
+                                <field name="second_milk_sample" />
+                                <field name="second_day_sample" />
+                                <field name="third_milk_sample" />
+                                <field name="third_day_sample" />
+                            </tree>
+                        </field>
+                    </group>
+                    <group string="Morphological Evaluation">
+                        <field name="lot_morphological_ids">
+                            <tree editable="bottom">
+                                <field name="types_morphological_id" />
+                                <field name="valuation_quantity" />
+                                <field name="types_qualitative_evaluation_id" />
+                            </tree>
+                        </field>
                     </group>
                 </page>
             </xpath>

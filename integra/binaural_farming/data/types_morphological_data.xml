@@ -2,19 +2,19 @@
 <odoo>
     <data noupdate="1">
         <record forcecreate="True" id="types_morphological_structure" model="stock.lot.type.morphological">
-            <field name="name">Structure and Capacity</field>
+            <field name="name">Estructura y capacidad</field>
         </record>
         <record forcecreate="True" id="types_morphological_dairy" model="stock.lot.type.morphological">
-            <field name="name">Dairy temperament</field>
+            <field name="name">Temperamento lechero</field>
         </record>
         <record forcecreate="True" id="types_morphological_legs" model="stock.lot.type.morphological">
-            <field name="name">Legs and hooves</field>
+            <field name="name">Piernas y pezuñas</field>
         </record>
         <record forcecreate="True" id="types_morphological_strength" model="stock.lot.type.morphological">
-            <field name="name">Strength and hardiness</field>
+            <field name="name">Resistencia y rusticidad</field>
         </record>
         <record forcecreate="True" id="types_morphological_mammary" model="stock.lot.type.morphological">
-            <field name="name">Mammary System</field>
+            <field name="name">Sistema mamario</field>
         </record>
     </data>
 </odoo>

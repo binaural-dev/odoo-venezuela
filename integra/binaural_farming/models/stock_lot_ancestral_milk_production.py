@@ -7,9 +7,14 @@ class StockLotAncestralMilkProduction(models.Model):
     
     # fields models
     name = fields.Char()
-    first_day_liters = fields.Float(digits='Stock Weight')
-    second_day_liters = fields.Float(digits='Stock Weight')
-    third_day_liters = fields.Float(digits='Stock Weight')
+    # Muestra del dia
+    first_day_sample = fields.Integer()
+    second_day_sample = fields.Integer()
+    third_day_sample = fields.Integer()
+    # Muestras de litros de leche
+    first_milk_sample = fields.Float(digits='Stock Weight')
+    second_milk_sample = fields.Float(digits='Stock Weight')
+    third_milk_sample = fields.Float(digits='Stock Weight')
 
     lot_id = fields.Many2one(
         'stock.lot'
