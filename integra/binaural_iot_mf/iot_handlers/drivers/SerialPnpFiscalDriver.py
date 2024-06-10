@@ -189,9 +189,9 @@ class SerialPnPFiscalDriver(SerialBaseFiscalDriver):
                 response = _send_to_pnp(c + "|", self._connection)
                 if c == cmd[-1]:
                     if move_type == "out_invoice":
-                        invoice = response.decode("latin-1").split("|")[4]
-                    if move_type == "out_refund":
                         invoice = response.decode("latin-1").split("|")[5]
+                    if move_type == "out_refund":
+                        invoice = response.decode("latin-1").split("|")[6]
 
             machine_cmd = _send_to_pnp("\x80", self._connection).decode("latin-1")
             response_splitted = machine_cmd.split("|")
