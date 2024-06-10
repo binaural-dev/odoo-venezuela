@@ -31,6 +31,7 @@ FIELDPARTNER = [
     "total_due",
     "withholding_type_id",
     "display_name",
+    "taxpayer_type",
 ]
 FIELDNAMES = [
     "id",
@@ -196,6 +197,7 @@ class AccountMovePayments(http.Controller):
                         "data": account_move_results,
                         "count": acc_move_count,
                         "total_count": all_acc_move_count,
+                        "taxpayer_type": partner_ids[0].taxpayer_type,
                     }
                 )
 
