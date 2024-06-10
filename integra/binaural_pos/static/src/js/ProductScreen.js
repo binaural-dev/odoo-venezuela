@@ -73,6 +73,7 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
         var is_negative = _t('the quantity cannot be negative');
         let title_wrning = ""
         let wrning = []
+        let msg_warehouse = ''
 
         if(pos_config.amount_to_zero){
           for (let line of lines) {
@@ -92,24 +93,16 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
               // }	
           }
           
-          let product_without_stock = await this.validate_products(lines); // Validacion Online de productos disponibles
+          // let product_without_stock = await this.validate_products(lines); // Validacion Online de productos disponibles
               
-          if(product_without_stock){
-              call_super = false;
-              title_wrning = _t('Deny Order');
-              wrning.push(product_without_stock)
-          }	
-          // msg_warehouse = await this.validateProductsInWarehouse(lines, pos_config)
+          // if(product_without_stock){
+          //     call_super = false;
+          //     title_wrning = _t('Deny Order');
+          //     wrning.push(product_without_stock)
+          // }	
+          msg_warehouse = await this.validateProductsInWarehouse(lines, pos_config)
           
         }
-
-        //let msg = await this.validateProductsInWarehouse(lines, pos_config)
-        //if(msg){
-        //  return self.showPopup('ErrorPopup', {
-        //    title: _t("Validate Product in Warehouse"),
-        //    body: msg,
-        //  });
-        //}
 
         if(!validation_negative){
           let message = _t(is_negative);
@@ -126,6 +119,13 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
             body: message,
           });
 				}
+
+        if(msg_warehouse){
+          return self.showPopup('ErrorPopup', {
+            title: _t("Validate Product in Warehouse"),
+            body: msg_warehouse,
+          });
+        }
         return super._onClickPay();
 			}
 
@@ -149,21 +149,17 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 
       async validateProductsInWarehouse(lines, pos_config){
         try {
-          let product_ids = []
-          for (let line of lines) {
-            let prd = line.product.id
-            product_ids.push(prd)
-          }
+          const product_ids = lines.map(line => line.product.id);
+          const qtys = lines.map(line => line.quantity);
           const products = await ajax.jsonRpc('/validate_products_in_warehouse', 'call',
             {
               "product_ids" :product_ids,
+              "qty" :qtys,
               "picking_type_id": pos_config.picking_type_id
             }
           )
           const { msg_error } = products;
-
           return msg_error
-          
 
         } catch (error) {
           return false
