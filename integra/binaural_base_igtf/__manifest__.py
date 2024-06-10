@@ -18,4 +18,5 @@
         "web.assets_backend": ["binaural_base_igtf/static/src/components/**/*"],
     },
     "application": True,
+    "binaural":True,
 }

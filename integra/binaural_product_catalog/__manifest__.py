@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Stock/Inventory",
-    "version": "16.0.1.0.2",
+    "version": "16.0.1.0.3",
     "depends": ["stock", "sh_product_catalog_generator", "binaural_stock"],
     "data": [
         'views/product_template.xml',
@@ -18,4 +18,5 @@
         "report/product_catalog_style_6_template.xml",
     ],
     "application": True,
+    "binaural": True,
 }

@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.0.0.5",
+    "version": "16.0.0.0.6",
     "depends": [
         "base",
         "base_automation",
@@ -38,4 +38,5 @@
         "data/cron.xml"
 
     ],
+    "binaural":True,
 }

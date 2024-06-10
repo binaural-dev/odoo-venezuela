@@ -217,8 +217,8 @@ class AccountPaymentPayments(http.Controller):
                     and company.retentions_draft_or_published == "0"
                     and len(retentions) > 0
                 ):
-                    retentions.action_cancel()
-                    retentions.action_draft()
+                    retentions.sudo().action_cancel()
+                    retentions.sudo().action_draft()
 
             except Exception as e:
                 data.update({"status": 400, "msg": str(e)})

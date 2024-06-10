@@ -2,6 +2,7 @@
     "name": "Binaural Nómina con Ausencias",
     "summary": """Personalizaciones de nómina y ausencias para Venezuela""",
     "author": "Binauraldev",
+    "license": "LGPL-3",
     "website": "https://www.binauraldev.com",
     "category": "Payroll Localization",
     "version": "16.0.1.0.0",
@@ -11,4 +12,5 @@
     "data": [
         "data/hr_work_entry_type.xml",
     ],
+    "binaural": True,
 }

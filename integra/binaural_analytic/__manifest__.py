@@ -14,4 +14,5 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "auto_install": True,
+    "binaural":True,
 }
