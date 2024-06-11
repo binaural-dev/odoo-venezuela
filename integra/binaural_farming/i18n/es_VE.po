@@ -168,16 +168,6 @@ msgid "Gender"
 msgstr "Sexo"
 
 #. module: binaural_farming
-#: model:ir.model.fields.selection,name:binaural_farming.selection__stock_lot_ancestral_milk_production__name__grandfather
-msgid "Grandfather"
-msgstr "Abuela Paterna"
-
-#. module: binaural_farming
-#: model:ir.model.fields.selection,name:binaural_farming.selection__stock_lot_ancestral_milk_production__name__grandmother
-msgid "Grandmother"
-msgstr "Abuela Materna"
-
-#. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__id
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_breeder__id
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_evaluation_morphological__id
@@ -269,6 +259,11 @@ msgid "Manage race"
 msgstr "Manejar razas"
 
 #. module: binaural_farming
+#: model:ir.model.fields.selection,name:binaural_farming.selection__stock_lot_ancestral_milk_production__name__maternal_grandmother
+msgid "Maternal Grandmother"
+msgstr "Abuela Materna"
+
+#. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_evaluation_morphological__morphological_id
 msgid "Morphological"
 msgstr "Morfológica"
@@ -311,6 +306,11 @@ msgstr "Lote padre"
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__parent_mother_id
 msgid "Parent Mother Lots"
 msgstr "Lote madre"
+
+#. module: binaural_farming
+#: model:ir.model.fields.selection,name:binaural_farming.selection__stock_lot_ancestral_milk_production__name__paternal_grandfather
+msgid "Paternal Grandfather"
+msgstr "Abuela Paterna"
 
 #. module: binaural_farming
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_view_form_stock_production_lot

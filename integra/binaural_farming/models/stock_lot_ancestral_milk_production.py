@@ -9,8 +9,8 @@ class StockLotAncestralMilkProduction(models.Model):
     name = fields.Selection(
         [
          ('mother','Mother'),
-         ('grandmother','Grandmother'),
-         ('grandfather','Grandfather')
+         ('maternal_grandmother','Maternal Grandmother'),
+         ('paternal_grandfather','Paternal Grandfather')
         ]
     )
     # Muestra del dia
