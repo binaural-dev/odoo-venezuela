@@ -85,23 +85,34 @@ class AccountMovePayments(http.Controller):
             data.update({"status": 404, "msg": _("not found clients")})
             return json.dumps(data)
 
-        advance_customer_id = request.env.company.advance_customer_account_id.id
+        module_advance_payment = (
+            request.env["ir.module.module"]
+            .sudo()
+            .search([("name", "ilike", "binaural_advance_payment")], limit=1)
+        )
+        advance_payment_installed = module_advance_payment.state == "installed"
+        if advance_payment_installed:
+            advance_customer_id = request.env.company.advance_customer_account_id.id
 
-        for partner in partners:
-            domain_customer = [
-                ("partner_id", "=", partner.get("id")),
-                ("account_id", "=", advance_customer_id),
-                ("move_id.state", "=", "posted"),
-            ]
+            for partner in partners:
+                domain_customer = [
+                    ("partner_id", "=", partner.get("id")),
+                    ("account_id", "=", advance_customer_id),
+                    ("move_id.state", "=", "posted"),
+                ]
 
-            advance_lines = request.env["account.move.line"].search(domain_customer)
+                advance_lines = request.env["account.move.line"].search(domain_customer)
 
-            credit_partner = 0
+                credit_partner = 0
 
-            for line in advance_lines:
-                credit_partner += line.filtered(lambda l: not l.reconciled).amount_residual
+                for line in advance_lines:
+                    credit_partner += line.filtered(lambda l: not l.reconciled).amount_residual
 
-            partner["credit_partner"] = credit_partner
+                partner["credit_partner"] = credit_partner
+        else:
+            for partner in partners:
+
+                partner["credit_partner"] = 0
 
         data.update(
             {
