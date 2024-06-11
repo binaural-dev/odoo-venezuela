@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="main_agro_template" name="Agro Base">
+        <t t-call="website.layout">
+            <div class="container">
+                <t t-call="website.s_searchbar"></t>
+                <div class="bg-primary">
+                    <div class="row row-cols-1 row-cols-md-3 g-4">
+                        <t t-call="binaural_farming_website.product_animal"/>
+                        <t t-call="binaural_farming_website.product_animal"/>
+                        <t t-call="binaural_farming_website.product_animal"/>
+                        <t t-call="binaural_farming_website.product_animal"/>
+                        <t t-call="binaural_farming_website.product_animal"/>
+                        <t t-call="binaural_farming_website.product_animal"/>
+                        <t t-call="binaural_farming_website.product_animal"/>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="product_animal" name="product Animal">
+        <div class="col">
+            <div class="card text-dark bg-light mb-3 text-center">
+                <!-- <img src="..." class="card-img-top" alt="..."> -->
+                <div class="card-body" >
+                    <h3>GIO22002</h3>
+                    <div class="card-text">
+                        <div class="card_info-bloc">
+                            <p><strong>VGC:</strong> 132.58</p>	
+                            <p><strong>Fiabilidad:</strong> 0.59 </p>						
+                        </div>
+                        <br/>
+                        <div class="card_info-bloc">
+                            <p><strong>VG Morfología:</strong> 0.14 </p>	
+                            <p><strong>Fiabilidad:</strong> 0.6 </p>						
+                        </div>
+                        <br/>
+                        <div class="card_info-bloc">
+                            <p><strong>VG Producción Vitalícia:</strong> 60.45</p>	
+                            <p><strong>Fiabilidad:</strong> 0.5</p>						
+                        </div>
+                    </div>
+                    <a class="btn btn-primary" href="/agro/1" role="button">Ver ficha</a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="agro_animal_lot" name="Animal">
+        <t t-call="website.layout">
+            <div class="container">
+                <br/>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="bg-primary" >
+                            <h1>aaaaaaaaaaaaaaaaaaaaaaaaa</h1>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <h1 class="bg-primary">
+                            <span class="badge">
+                                Identificación
+                            </span>
+                        </h1>
+                        <p><strong>Number: </strong></p>
+                        <p><strong>Name: </strong></p>
+                        <p>
+                            <strong>Tattoo Left: </strong>
+                        
+                            <strong>Right: </strong>
+
+                        </p>
+                        <p><strong># Register: </strong></p>
+                        <p><strong># Register Asocabra: </strong></p>
+                        <p><strong>Birthdate: </strong></p>
+                        <p><strong>Raza: </strong></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-5">
+                        <h1 class="bg-primary text-center">
+                            <span class="badge">
+                                Breeder and owner information
+                            </span>
+                        </h1>
+                        <p><strong>Breeder: </strong></p>
+                        <p><strong>Owner: </strong></p>
+                        <p><strong>Owner acronyms: </strong></p>
+                    </div>
+                    <div class="col-sm-7">
+                        <h1 class="bg-secondary text-center">
+                            <span class="badge">
+                                Pedigree
+                            </span>
+                        </h1>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h1 class="bg-secondary text-center">
+                            <span class="badge">
+                                Ancestral milk production data
+                            </span>
+                        </h1>
+                        <t t-call="binaural_farming_website.table_ancestral"/>
+                    </div>
+                    <div class="col-sm-6">
+                        <h1 class="bg-primary text-center">
+                            <span class="badge">
+                                Morphological evaluation
+                            </span>
+                        </h1>
+                        <t t-call="binaural_farming_website.table_morpho_eval"/>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="table_ancestral" name="Ancestral Milk">
+        <table class="redTable">
+            <thead>
+                <tr>
+                    <th>Ancestral</th>
+                    <th>Lt</th>
+                    <th>Days</th>
+                    <th>Lt</th>
+                    <th>Days</th>
+                    <th>Lt</th>
+                    <th>Days</th>
+                </tr>
+            </thead>
+            <tbody>
+                <t t-call="binaural_farming_website.tr_ancestral"/>
+            </tbody>
+        </table>
+    </template>
+
+    <template id="tr_ancestral" name="tr Ancestral Milk">
+        <tr>
+            <td>Mother</td>
+            <td>1</td>
+            <td>3_1</td>
+            <td>1</td>
+            <td>5_1</td>
+            <td>1</td>
+            <td>7_1</td>
+        </tr>
+        <tr>
+            <td>GrandMother</td>
+            <td>1</td>
+            <td>3_1</td>
+            <td>1</td>
+            <td>5_1</td>
+            <td>1</td>
+            <td>7_1</td>
+        </tr>
+        <tr>
+            <td>GrandMother</td>
+            <td>1</td>
+            <td>3_1</td>
+            <td>1</td>
+            <td>5_1</td>
+            <td>1</td>
+            <td>7_1</td>
+        </tr>
+    </template>
+
+    <template id="table_morpho_eval" name="Morpho Evaluation">
+        <table class="greenTable">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Quantitative assessment</th>
+                    <th>Qualitative assessment</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Structure and capacity</td>
+                    <td>2_1</td>
+                    <td>1</td>
+                </tr>
+                <tr>
+                    <td>milk temperament</td>
+                    <td>2_2</td>
+                    <td>2</td>
+                </tr>
+                <tr>
+                    <td>Legs and hooves</td>
+                    <td>2_3</td>
+                    <td>3</td>
+                </tr>
+                <tr>
+                    <td>strength and durability</td>
+                    <td>2_4</td>
+                    <td>4</td>
+                </tr>
+                <tr>
+                    <td>mammary system</td>
+                    <td>2_5</td>
+                    <td>5</td>
+                </tr>
+                <tr>
+                    <td>TOTAL</td>
+                    <td>2_67</td>
+                    <td>8</td>
+                </tr>
+            </tbody>
+        </table>
+    </template>
+</odoo>

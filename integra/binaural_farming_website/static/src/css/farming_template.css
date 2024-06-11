@@ -1,0 +1,99 @@
+.animal-title {
+    font-weight: bold;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    font-size: 14px;   
+}
+
+/* TABLA DE ANCESTROS */
+table.redTable {
+    border: 2px solid #A40808;
+    background-color: #EEE7DB;
+    width: 100%;
+    text-align: center;
+    border-collapse: collapse;
+}
+table.redTable td, table.redTable th {
+    border: 1px solid #AAAAAA;
+    padding: 3px 2px;
+}
+table.redTable tbody td {
+    font-size: 13px;
+}
+table.redTable tr:nth-child(even) {
+    background: #F5C8BF;
+}
+table.redTable thead {
+    background: #A40808;
+}
+
+table.redTable thead th {
+    font-size: 19px;
+    font-weight: bold;
+    color: #FFFFFF;
+    text-align: center;
+    border-left: 2px solid #A40808;
+}
+table.redTable thead th:first-child {
+    border-left: none;
+}
+
+table.redTable tfoot td {
+    font-size: 13px;
+}
+table.redTable tfoot .links {
+    text-align: right;
+}
+table.redTable tfoot .links a{
+    display: inline-block;
+    background: #FFFFFF;
+    color: #A40808;
+    padding: 2px 8px;
+    border-radius: 5px;
+}
+
+/* TABLA Evaluacion morfologica  */
+table.greenTable {
+    border: 2px solid #27A40F;
+    background-color: #EEE7DB;
+    width: 100%;
+    text-align: center;
+    border-collapse: collapse;
+  }
+  table.greenTable td, table.greenTable th {
+    border: 1px solid #AAAAAA;
+    padding: 3px 2px;
+  }
+  table.greenTable tbody td {
+    font-size: 13px;
+  }
+  table.greenTable tr:nth-child(even) {
+    background: #B8F5A4;
+  }
+  table.greenTable thead {
+    background: #47A400;
+  }
+  table.greenTable thead th {
+    font-size: 19px;
+    font-weight: bold;
+    color: #FFFFFF;
+    text-align: center;
+    border-left: 2px solid #13A403;
+  }
+  table.greenTable thead th:first-child {
+    border-left: none;
+  }
+  
+  table.greenTable tfoot td {
+    font-size: 13px;
+  }
+  table.greenTable tfoot .links {
+    text-align: right;
+  }
+  table.greenTable tfoot .links a{
+    display: inline-block;
+    background: #FFFFFF;
+    color: #A40808;
+    padding: 2px 8px;
+    border-radius: 5px;
+  }

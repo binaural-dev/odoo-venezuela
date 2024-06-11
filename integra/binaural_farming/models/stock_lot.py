@@ -1,8 +1,11 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
+import logging
+_logger = logging.getLogger(__name__)
 
 class StockLot(models.Model):
     _inherit = "stock.lot"
+    
 
     # fields models
     image = fields.Image()
@@ -90,3 +93,4 @@ class StockLot(models.Model):
 
     #         category_ids += categories.child_id.ids
     #         categories = categories.child_id
+
