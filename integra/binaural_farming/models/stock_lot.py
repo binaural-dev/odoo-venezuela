@@ -59,3 +59,34 @@ class StockLot(models.Model):
         'morphological_id',
         string='Evaluation Morphological'
     )
+
+    # Relation into lots
+    parent_father_id = fields.Many2one('stock.lot', 'Parent Father Lots', index=True, ondelete='cascade')
+    parent_mother_id = fields.Many2one('stock.lot', 'Parent Mother Lots', index=True, ondelete='cascade')
+
+    child_father_ids = fields.One2many(
+        "stock.lot",
+        "parent_father_id",
+        string="Childs Father"
+    )
+    child_mother_ids = fields.One2many(
+        "stock.lot",
+        "parent_mother_id",
+        string="Childs Mother"
+    )
+
+    # parent_ids = fields.Many2many("stock.lot", compute="_compute_parent_ids")
+
+    # @api.depends("parent_father_id", "parent_mother_id")
+    # def _compute_parent_ids(self):
+    #     child_dad_ids = self.parent_father_id.ids
+    #     child_mom_ids = self.parent_mother_id.ids
+    #     childs_dad = self.parent_father_id
+    #     childs_mom = self.parent_mother_id
+    #     finish_ancestry = False
+    #     while not finish_ancestry:
+    #         if len(childs_dad.child_id.ids) == 0 & len(child_mom_ids.child_id.ids) == 0: 
+    #             finish_ancestry = True
+
+    #         category_ids += categories.child_id.ids
+    #         categories = categories.child_id

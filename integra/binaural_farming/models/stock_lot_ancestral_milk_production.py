@@ -6,7 +6,13 @@ class StockLotAncestralMilkProduction(models.Model):
     _description = 'Ancestral milk production'
     
     # fields models
-    name = fields.Char()
+    name = fields.Selection(
+        [
+         ('mother','Mother'),
+         ('grandmother','Grandmother'),
+         ('grandfather','Grandfather')
+        ]
+    )
     # Muestra del dia
     first_day_sample = fields.Integer()
     second_day_sample = fields.Integer()
