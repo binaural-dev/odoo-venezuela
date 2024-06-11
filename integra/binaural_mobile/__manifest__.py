@@ -21,7 +21,6 @@
         "binaural_sale",
         "binaural_stock",
         "binaural_payment_extension",
-        'binaural_advance_payment',
         "theme_prime",
         "product",
     ],
