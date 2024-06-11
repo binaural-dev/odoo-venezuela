@@ -64,21 +64,21 @@ class StockPicking(models.Model):
     def _get_picks(self, assigned=False):
         domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "pick")]
         if assigned:
-            domain = expression.AND([[("state", "=", "assigned")], domain])
+            domain = expression.AND([[("state", "in", ["assigned","waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
     def _get_packs(self, assigned=False):
         domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "pack")]
         if assigned:
-            domain = expression.AND([[("state", "=", "assigned")], domain])
+            domain = expression.AND([[("state", "in", ["assigned","waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
     def _get_outs(self, assigned=False):
         domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "out")]
         if assigned:
-            domain = expression.AND([[("state", "=", "assigned")], domain])
+            domain = expression.AND([[("state", "in", ["assigned","waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
