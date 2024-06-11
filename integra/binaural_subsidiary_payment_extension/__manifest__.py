@@ -23,4 +23,6 @@
         "wizard/municipal_retention_xlsx_report.xml",
     ],
     "auto_install": True,
+    "binaural": True,
+    "license": "LGPL-3",
 }

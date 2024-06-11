@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.4.16.9",
+    "version": "16.0.4.17.12",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -23,6 +23,7 @@
         "security/ir.model.access.csv",
         "data/account_data.xml",
         "data/ir_actions_server.xml",
+        "data/paperformats.xml",
         "views/account_invoice_report.xml",
         "views/account_move.xml",
         "views/account_move_line.xml",
@@ -31,10 +32,14 @@
         "views/ir_property.xml",
         "report/account_invoice_details.xml",
         "report/all_payment_report.xml",
+        "report/account_report_templates.xml",
+        "report/account_report_document.xml",
+        "report/account_template_report_views.xml",
         "wizard/account_payment_register.xml",
         "wizard/invoices_details.xml",
         "wizard/payment_report.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
+    "binaural":True,
 }

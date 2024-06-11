@@ -12,12 +12,12 @@ const { Component, onPatched, onWillUpdateProps, useRef, useState } = owl;
  **/
 class TaxGroupComponent extends Component {
     setup() {
-        this.inputTax = useRef("taxValueInput");
+        this.inputTax = useRef("taxValueInput2");
         this.state = useState({ value: "readonly" });
         onPatched(() => {
             if (this.state.value === "edit") {
                 const { taxGroup, currency } = this.props;
-                const newVal = formatFloat(taxGroup.tax_group_amount, { digits: currency.digits });
+                const newVal = formatFloat(taxGroup.tax_group_amount, { digits: (currency && currency.digits) });
                 this.inputTax.el.value = newVal;
                 this.inputTax.el.focus(); // Focus the input
             }
@@ -111,7 +111,7 @@ export class TaxTotalsComponent extends Component {
     }
 
     get currencyId() {
-        return this.props.record.data.currency_id;
+        return this.props.record.data.foreign_currency_id;
     }
 
     invalidate() {
@@ -133,7 +133,7 @@ export class TaxTotalsComponent extends Component {
     }
 
     _format(amount) {
-        return formatMonetary(amount, { currencyId: this.currencyId });
+        return formatMonetary(amount, { currencyId: this.currencyId[0] });
     }
 
     _computeTotalsFormat() {

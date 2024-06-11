@@ -24,4 +24,5 @@ parroquias. 
         'views/stock_picking_brand.xml',
     ],
     "application": True,
+    "binaural":True,
 }

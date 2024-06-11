@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "1.1",
+    "version": "16.0.1.0.2",
     "depends": [
         "base",
         "point_of_sale",
@@ -34,4 +34,5 @@
             "binaural_megasoft/static/src/css/*.css",
         ],
     },
+    "binaural": True,
 }

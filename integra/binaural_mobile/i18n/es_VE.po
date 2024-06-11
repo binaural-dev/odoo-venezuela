@@ -4,11 +4,10 @@
 #
 msgid ""
 msgstr ""
-
-"Project-Id-Version: Odoo Server 16.0+e-20240401\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240513\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-10 15:07+0000\n"
-"PO-Revision-Date: 2024-04-10 15:07+0000\n"
+"POT-Creation-Date: 2024-05-21 19:24+0000\n"
+"PO-Revision-Date: 2024-05-21 19:24+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -17,14 +16,9 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: binaural_mobile
-#: model:res.groups,name:binaural_mobile.group_sellers_show_quantity_available
-msgid "Portal / Dont show quantity available"
-msgstr "Portal / No mostrar cantidad disponible a vendedores"
-
-#. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.products
 msgid "\" category."
-msgstr ""
+msgstr "\" categoría."
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.tp_product_quick_view
@@ -301,6 +295,11 @@ msgstr ""
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
+msgid "<span>* At least a diary must to be specified</span>"
+msgstr "<span>* Al menos un diario debe ser especificado</span>"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
 msgid "<span>: </span>"
 msgstr ""
 
@@ -423,6 +422,12 @@ msgid "All"
 msgstr "Todo"
 
 #. module: binaural_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_company__allow_installment_payments
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_config_settings__allow_installment_payments
+msgid "Allow Installment Payments"
+msgstr ""
+
+#. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
 msgid "Allows sellers to view the types of products that are selected"
 msgstr ""
@@ -442,6 +447,7 @@ msgid "Amount"
 msgstr "Monto"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_invoices_1
 msgid "Amount Due"
 msgstr "Monto adeudado"
@@ -619,6 +625,12 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
 msgid "Check the units of the product"
 msgstr "Verifica las unidades del producto"
+
+#. module: binaural_mobile
+#: model:ir.model.fields,help:binaural_mobile.field_res_company__allow_installment_payments
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
+msgid "Check this if you want to allow payments by installments on the app."
+msgstr ""
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -882,6 +894,11 @@ msgid "Direction *"
 msgstr "Dirección *"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "Discount"
+msgstr ""
+
+#. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile__display_name
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_igtf__display_name
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_line__display_name
@@ -915,6 +932,7 @@ msgid "Drag building blocks here to customize the header for \""
 msgstr ""
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_invoices_1
 msgid "Due Date"
 msgstr "Fecha de Vencimiento"
@@ -937,7 +955,7 @@ msgstr ""
 #. odoo-javascript
 #: code:addons/binaural_mobile/static/src/js/portal_payment.js:0
 #, python-format
-msgid "El monto del pago excede el monto registrado en el pago métodos."
+msgid "El monto adeudado excede el monto registrado en los métodos de pago."
 msgstr ""
 
 #. module: binaural_mobile
@@ -1034,7 +1052,7 @@ msgstr ""
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_line__foreign_amount
 msgid "Foreign Amount"
-msgstr "Cantidad foranea"
+msgstr "Monto foraneo"
 
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_line__foreign_amount_payment_total
@@ -1044,7 +1062,7 @@ msgstr "Monto total foraneo del pago"
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_line__foreign_rate
 msgid "Foreign Rate"
-msgstr "Tarifa foranea"
+msgstr "Tasa foranea"
 
 #. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_res_config_settings__retentions_draft_or_published
@@ -1157,6 +1175,7 @@ msgstr "Indica si un pedido de venta incluye impuestos."
 #. odoo-python
 #: code:addons/binaural_mobile/models/sale_order.py:0
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_line__invoice_id
+
 #, python-format
 msgid "Invoice"
 msgstr "Factura"
@@ -1164,7 +1183,7 @@ msgstr "Factura"
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_invoices_1
 msgid "Invoice #"
-msgstr "Número"
+msgstr "Factura número"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_invoices_1
@@ -1234,7 +1253,7 @@ msgstr "Diario"
 #. module: binaural_mobile
 #: model:ir.model,name:binaural_mobile.model_account_move_line
 msgid "Journal Item"
-msgstr "Partida individual"
+msgstr "Apunte contable"
 
 #. module: binaural_mobile
 #: model:ir.model.fields,help:binaural_mobile.field_sale_order__journal_id
@@ -1264,6 +1283,20 @@ msgid ""
 "de %s superando el límite de ventas de %s. Por favor cancele el presupuesto "
 "o comuníquese con el administrador para aumentar el límite de crédito del "
 "cliente."
+msgstr ""
+
+#. module: binaural_mobile
+#. odoo-python
+#: code:addons/binaural_mobile/controllers/portal.py:0
+#, python-format
+msgid "La próxima cuota de pago es el mes siguiente"
+msgstr ""
+
+#. module: binaural_mobile
+#. odoo-python
+#: code:addons/binaural_mobile/controllers/portal.py:0
+#, python-format
+msgid "La próxima cuota de pago es este mes"
 msgstr ""
 
 #. module: binaural_mobile
@@ -1423,12 +1456,6 @@ msgid "Name *"
 msgstr "Nombre *"
 
 #. module: binaural_mobile
-#: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile__activity_calendar_event_id
-#: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_igtf__activity_calendar_event_id
-msgid "Next Activity Calendar Event"
-msgstr ""
-
-#. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile__activity_date_deadline
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_igtf__activity_date_deadline
 msgid "Next Activity Deadline"
@@ -1530,6 +1557,7 @@ msgstr "No se encontraron resultados para '"
 
 #. module: binaural_mobile
 #. odoo-python
+#: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "No sale order were found."
@@ -1752,6 +1780,11 @@ msgid "Payment Proof"
 msgstr "Comprobante de pago"
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "Payment Term:"
+msgstr "Términos de Pago:"
+
+#. module: binaural_mobile
 #: model:ir.model.fields.selection,name:binaural_mobile.selection__res_company__process_payments_invoices__0
 msgid "Payment Total"
 msgstr "Pago Total"
@@ -1800,9 +1833,19 @@ msgid "Payments Mobile With IGTF"
 msgstr "Pagos Movil con IGTF"
 
 #. module: binaural_mobile
+#: model:res.groups,name:binaural_mobile.group_sellers_show_quantity_available
+msgid "Portal / Dont show quantity available"
+msgstr "Portal / No mostrar cantidad disponible"
+
+#. module: binaural_mobile
 #: model:res.groups,name:binaural_mobile.group_sellers_cant_confirm_quotation
 msgid "Portal / Sellers who cannot confirm quotes"
-msgstr "Portal / vendedores que no pueden confirmar presupuesto"
+msgstr "Portal / Vendedores que no pueden confirmar cotizaciones"
+
+#. module: binaural_mobile
+#: model:res.groups,name:binaural_mobile.group_sellers_cant_create_payments
+msgid "Portal / Sellers who cannot create payments"
+msgstr ""
 
 #. module: binaural_mobile
 #: model:res.groups,name:binaural_mobile.group_sellers_create_contact
@@ -2275,6 +2318,7 @@ msgstr "Almacenable"
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
+#: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "Success"
 msgstr "Éxito"
@@ -2296,7 +2340,9 @@ msgstr "Impuesto incluido en el precio"
 
 #. module: binaural_mobile
 #. odoo-python
+
 #: code:addons/binaural_mobile/controllers/invoice_portal.py:0
+#: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "Tax no Selected"
@@ -2357,7 +2403,7 @@ msgstr "Hay productos duplicados."
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.payments_list_portal
 msgid "There are no payments made to the company."
-msgstr "Actualmente no tiene pagos en su cuenta."
+msgstr "No se realizaron pagos a la empresa."
 
 #. module: binaural_mobile
 #. odoo-python
@@ -2375,6 +2421,7 @@ msgstr "Hubo un error al crear el pedido de venta"
 
 #. module: binaural_mobile
 #. odoo-python
+#: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #, python-format
 msgid "There was an error handling the request"
@@ -2568,12 +2615,17 @@ msgstr "No tienes acceso a esta función."
 #. module: binaural_mobile
 #: model:ir.model.fields.selection,name:binaural_mobile.selection__res_company__order_payment__0
 msgid "from the oldest invoice to the newest"
-msgstr "Mas Antigua"
+msgstr "Más antigua"
 
 #. module: binaural_mobile
 #: model:ir.model.fields.selection,name:binaural_mobile.selection__res_company__order_payment__1
 msgid "from the one with the most residual amount to the one with the least"
-msgstr "Mayor Monto"
+msgstr "Mayor monto"
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_invoices_seller
+msgid "if paid before"
+msgstr ""
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.products

@@ -14,5 +14,6 @@
         "views/sale_report_view.xml",
     ],
     "application": True,
-    "auto_install": False,
+    "auto_install": True,
+    "binaural":True,
 }

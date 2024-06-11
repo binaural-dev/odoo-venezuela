@@ -1,6 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from lxml import etree
+import datetime
 from odoo.tools.float_utils import float_is_zero
 import logging
 
@@ -79,6 +80,10 @@ class SaleOrder(models.Model):
             f"('currency_id', '=', {self.env.company.currency_id.id})]"
         )
     )
+
+    address = fields.Char(related="partner_id.street")
+
+    mobile = fields.Char(related="partner_id.mobile")
 
     @api.constrains("order_line")
     def _check_taxes_id(self):
@@ -454,3 +459,13 @@ class SaleOrder(models.Model):
         self._block_valid_confirm()
 
         return super().action_confirm()
+
+    def cancel_order_after_date(self):
+        orders = self.search(
+            [
+                ("create_date", "<", fields.Date.today() - datetime.timedelta(days=1)),
+                ("state", "not in", ["sale", "done", "cancel"]),
+            ]
+        )
+        for order in orders:
+            order.action_cancel()

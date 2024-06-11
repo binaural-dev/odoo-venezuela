@@ -39,11 +39,22 @@
 			    <field name="foreign_inverse_rate"/>
 			</t>
                         <field name="foreign_rate" attrs="{'readonly' : [('state' , '=' , 'posted')]}"/>
-                        <field name="tax_totals" 
-                            widget="account-tax-foreign-totals-field" 
-                            nolabel="1" 
-                            colspan="2"
-                            attrs="{'readonly': ['|', ('state', '!=', 'draft'), '&amp;', ('move_type', 'not in', ('in_invoice', 'in_refund')), ('quick_edit_mode', '=', False)]}"/>
+                    </group>
+                    <group colspan="4">
+                        <group class="oe_subtotal_footer oe_right"
+                            attrs="{'invisible': ['|', ('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')),
+                                                       ('payment_state' ,'=', 'invoicing_legacy')]}">
+                            <field name="tax_totals" 
+                                widget="account-tax-foreign-totals-field" 
+                                nolabel="1" 
+                                colspan="2"
+                                attrs="{'readonly': ['|', ('state', '!=', 'draft'), '&amp;', ('move_type', 'not in', ('in_invoice', 'in_refund')), ('quick_edit_mode', '=', False)]}"/>
+                                <field name="invoice_payments_widget" colspan="2" nolabel="1" widget="payment"/>
+                        </group>
+                        <field name="invoice_outstanding_credits_debits_widget"
+                            class="oe_invoice_outstanding_credits_debits"
+                            colspan="2" nolabel="1" widget="payment"
+                            attrs="{'invisible': [('state', '!=', 'posted')]}"/>
                     </group>
                 </page>
             </xpath>
@@ -110,7 +121,8 @@
                     sum="Foreign Amount total" 
                     widget="monetary" 
                     options="{'currency_field': 'foreign_currency_id'}"
-                    decoration-bf="1"/>
+                    decoration-bf="1"
+                    optional="hide"/>
             </xpath>
         </field>
     </record>

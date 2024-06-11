@@ -117,6 +117,12 @@ class HrEmployee(models.Model):
         moves = self.get_all_payroll_moves()
         return (vacation_bonus_days / 360) * (moves[-1]["total_accrued"] / 30)
 
+    def get_foreign_vacation_bonus_days_alicuot(self):
+        self.ensure_one()
+        vacation_bonus_days = self.get_vacation_bonus_days()
+        moves = self.get_all_payroll_moves()
+        return (vacation_bonus_days / 360) * (moves[-1]["foreign_total_accrued"] / 30)
+
     def get_vacation_bonus_days(self):
         self.ensure_one()
         seniority_in_months = self.get_seniority_in_months()
@@ -148,13 +154,21 @@ class HrEmployee(models.Model):
         moves = self.get_all_payroll_moves()
         return (profit_sharing_days / 360) * (moves[-1]["total_accrued"] / 30)
 
+    def get_foreign_profit_sharing_days_alicuot(self):
+        self.ensure_one()
+        profit_sharing_days = self.company_id.profit_sharing_days_qty
+        moves = self.get_all_payroll_moves()
+        return (profit_sharing_days / 360) * (moves[-1]["foreign_total_accrued"] / 30)
+
     def get_all_payroll_moves(self):
         self._cr.execute(
             """
                 SELECT
                     EXTRACT(MONTH FROM date) AS month,
                     SUM(total_basic) as total_basic,
-                    SUM(total_accrued) as total_accrued
+                    SUM(total_accrued) as total_accrued,
+                    SUM(foreign_total_basic) as foreign_total_basic,
+                    SUM(foreign_total_accrued) as foreign_total_accrued
                 FROM hr_payroll_move as move
                 WHERE
                     employee_id = %s AND
@@ -204,7 +218,9 @@ class HrEmployee(models.Model):
                 SELECT
                     EXTRACT(MONTH FROM date) AS month,
                     SUM(total_basic) as total_basic,
-                    SUM(total_accrued) as total_accrued
+                    SUM(total_accrued) as total_accrued,
+                    SUM(foreign_total_basic) as foreign_total_basic,
+                    SUM(foreign_total_accrued) as foreign_total_accrued
                 FROM hr_payroll_move as move
                 WHERE
                     employee_id = %s AND

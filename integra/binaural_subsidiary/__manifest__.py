@@ -4,7 +4,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.0.5.2.2",
+    "version": "16.0.5.2.3",
     "category": "Accountant",
     "depends": [
         "base",
@@ -37,4 +37,5 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "post_init_hook": "activate_series_invoicing",
+    "binaural": True,
 }

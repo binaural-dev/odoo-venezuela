@@ -15,6 +15,6 @@
     ],
     "data": [
         "views/product_template.xml",
-
     ],
+    "binaural": True,
 }

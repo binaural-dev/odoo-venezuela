@@ -43,21 +43,19 @@
                         <field name="foreign_currency_id" invisible='1'/>
                         <field
                             name="foreign_inverse_rate"
-            invisible="1"
+                            invisible="1"
                             string="Foreign inverse rate"
                         />
-            <t groups="base.group_no_one">
-            <field name="foreign_inverse_rate"/>
-            </t>
-
+                        <field name="foreign_inverse_rate" groups="base.group_no_one"/>
                         <field name="foreign_rate"/>
-            <field 
-            name="tax_totals" 
+                    </group>
+                    <group class="oe_subtotal_footer oe_right">
+                        <field 
+                            name="tax_totals" 
                             widget="account-tax-foreign-totals-field" 
                             nolabel="1" 
                             colspan="2"
-            readonly="1"
-            />
+                            readonly="1" />
                     </group>
                 </page>
             </xpath>

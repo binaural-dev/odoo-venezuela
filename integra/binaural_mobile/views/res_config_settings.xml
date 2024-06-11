@@ -68,6 +68,14 @@
                                     <field name="process_payments_invoices" class="o_light_label" widget="radio" options="{'horizontal': true}"/>
                                 </div>
                             </div>
+			    <br/>
+			    <div class="col-12" attrs="{'invisible': [('process_payments_invoices', '=', '0')]}">
+                        	<label for="allow_installment_payments" class="p-0 col-4 o_light_label"/>
+                            	<field name="allow_installment_payments" class=" w-auto"/>
+                            	<div class="text-muted">
+                                    Check this if you want to allow payments by installments on the app.
+                            	</div>
+		    	    </div>
                         </div>
                     </div>
                     <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
@@ -135,13 +143,26 @@
                             <div class="content-group">
                                 <div class="mt16">
                                     <label for="dairy_fiscal"/><span>: </span>
-                                    <field name="dairy_fiscal" options="{'no_create': True, 'no_edit': True}" domain="[('type', '=', 'sale'),('fiscal', '=', True)]" required="1"/>
+                                    <field 
+                                        name="dairy_fiscal" 
+                                        options="{'no_create': True, 'no_edit': True}" 
+                                        domain="[('type', '=', 'sale'),('fiscal', '=', True)]" 
+                                        attrs="{'required': [('dairy_no_fiscal', '=', False)]  }"
+                                    />
                                 </div>
                             </div>
                             <div class="content-group">
                                 <div class="mt16">
                                     <label for="dairy_no_fiscal"/><span>: </span>
-                                    <field name="dairy_no_fiscal" options="{'no_create': True, 'no_edit': True}" domain="[('type', '=', 'sale'),('fiscal', '=', False)]" required="1"/>
+                                    <field 
+                                        name="dairy_no_fiscal" 
+                                        options="{'no_create': True, 'no_edit': True}" 
+                                        domain="[('type', '=', 'sale'),('fiscal', '=', False)]" 
+                                        attrs="{'required': [('dairy_fiscal', '=', False)]  }"
+                                    />
+                                </div>
+                                <div class="mt16">
+                                    <span>* At least a diary must to be specified</span>
                                 </div>
                             </div>
                         </div>

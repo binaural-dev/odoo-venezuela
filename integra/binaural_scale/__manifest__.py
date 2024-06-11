@@ -23,4 +23,5 @@
         "point_of_sale.assets": ["binaural_scale/static/src/js/*.js"],
     },
     "application": True,
+    "binaural": True,
 }

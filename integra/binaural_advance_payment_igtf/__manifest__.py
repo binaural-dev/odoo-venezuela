@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Igtf",
-    "version": "1.3",
+    "version": "16.0.0.0.4",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -23,4 +23,5 @@
     ],
     "images": ["static/description/icon.png"],
     "auto_install": True,
+    "binaural":True,
 }

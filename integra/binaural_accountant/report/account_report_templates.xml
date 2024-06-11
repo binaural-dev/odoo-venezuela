@@ -1,0 +1,36 @@
+<odoo>
+	<data>
+		<template id="binaural_accountant_inherit_report_payment_receipt_document" inherit_id="account.report_payment_receipt_document">
+			<xpath expr="//table" position="before">
+				<div class="row mb64">
+					<div class="col-6" t-if="o.partner_bank_id">
+						<strong>Cuenta Receptora: </strong>
+						<t t-if="o.partner_bank_id.bank_id">
+								<span t-esc="o.partner_bank_id.bank_id.name + ' - ' + o.partner_bank_id.acc_number"/>
+						</t>
+						<t t-else="">
+								<span t-field="o.partner_bank_id"/>
+						</t>
+					</div>
+					<div class="col-6" t-if="o.journal_id.default_account_id">
+						<strong>Cuenta Emisora: </strong>
+						<span t-field="o.journal_id.default_account_id"/>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-12 my-2 ">
+						<p>La cantidad de <span t-out="o.currency_id.amount_to_text(o.amount)"/> (<span t-field="o.amount"/>)</p>
+					</div>
+				</div>
+			</xpath>
+				<xpath expr="//table" position="after">
+
+				<div style="position:fixed;top:850px;page-break-inside:avoid;left:34.5%;">
+					<center>____________________________________________</center>
+					<center>Firma Autorizada</center>
+				</div>
+			</xpath>
+		</template>
+	</data>
+</odoo>

@@ -28,4 +28,5 @@
         "wizard/stock_quantity_history.xml",
     ],
     "application": True,
+    "binaural": True,
 }

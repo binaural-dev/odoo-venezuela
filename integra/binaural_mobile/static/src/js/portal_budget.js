@@ -32,6 +32,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             "change #stateClient": "_onChangeState",
             "change #municipalityClient": "_onChangeMunicipality",
             "click #openProduct": "_onClickOpenProduct",
+            "change .input_qty_line": "_onChangeQtyOrderLine",
         },
         init: function(parent, options) {
             this._super.apply(this, arguments);
@@ -142,7 +143,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $("#openProduct").attr("disabled",true)
             }
 
-            this.includeTax()
+            this.loadOrder();
 
             this._onProductModalScroll(self);
 
@@ -318,7 +319,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
 
                 if(stock_packaging){
                     let packagingQty = product.packaging_ids[1]
-                    multiplesLabel = packaged_product ? `<label class="form-text">Solo multiplos de ${packagingQty}</label><input type='hidden' id='product_qty_pack' value='${packagingQty}'/><br/>`: ``;
+                    multiplesLabel = packaged_product ? `<label class="form-text">Solo múltiplos de ${packagingQty}</label><input type='hidden' id='product_qty_pack' value='${packagingQty}'/><br/>`: ``;
                 }
 
                 if(type != "product"){
@@ -337,7 +338,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                             <label class="form-text" style="font-weight: bolder;">${displayQtyOrType || ""}</label><input type='hidden' id="qtyAvailable" value='${quantity}'/>
                         </td>
                         <td style="width: 150px;">
-                            <input type="text" class="form-control qty_product" id='qtyProduct' placeholder="${qtyLabel}"/>
+                            <input type="text" class="form-control qty_product" id='qtyProduct' data-qty-available="${quantity}" placeholder="${qtyLabel}"/>
                             ${multiplesLabel}
                             <label class="form-text text-success">${msg_price || ''}</label>
                         </td>
@@ -549,7 +550,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $("#number_order_value").val(data[0].id)
                 $("#same_address").attr('disabled', true)
                 $("#invoice").attr('disabled', false)
-                this.build_table_products(data,true)
+                // this.build_table_products(data,true)
             }
 
             if(orders.withValues.length > 0){
@@ -567,8 +568,10 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                     Dialog.alert(this,msg, { title: 'Error' });
                     return 
                 }
-                this.build_table_products(dt,true)
+                // this.build_table_products(dt,true)
             }
+
+            this.loadOrder()
 
             this._onClickExitProducts()
             $("#table_inside").empty()
@@ -586,7 +589,6 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
         
             const response = await ajax.jsonRpc('/validation_available', 'call', {});
             const allowOutOfStockOrder = response.allow_out_of_stock_order;
-            console.log('allowOutOfStockOrder', allowOutOfStockOrder);
         
             if (+productQtyInsert > +productQtyAvailable && !allowOutOfStockOrder) {
                 tr.querySelector('#qtyProduct').value = productQtyAvailable
@@ -604,8 +606,9 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             this.validateInputEmpty()
         },
 
-        showError: function(){
+        showError: function( msg = "Verifica las unidades del producto"){
             $("#errorQty").modal('show')
+            $("#errorQtyMsg").html(msg);
             setTimeout(function () {
                 $("#errorQty").modal('hide')
             }, 2000);
@@ -625,16 +628,138 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 $('#save_products').attr('disabled', true)
             }
         },
+        
+        _update_order_line: async function(order_line) {
+            const params = order_line;
+
+            const settings = {
+                type: "post"
+            }
+
+            const resp = await ajax.jsonRpc(
+                '/budget/order/line/edit', 
+                'call',
+                params,
+                settings
+            )
+
+            const { status, msg } = resp;
+
+            if (status === 400) {
+                throw msg;
+            } 
+
+            return resp;
+
+        },
+
+        _check_order_line_qty_quantity: async function (ev) {
+            const qty = +ev.target.value;
+            const qtyAvailable = +ev.target.dataset.qtyAvailable;
+            const qtyPack = +ev.target.dataset.qtyPack;
+
+            const response = await ajax.jsonRpc('/validation_available', 'call', {});
+            const allowOutOfStockOrder = response.allow_out_of_stock_order;
+
+            if (qty > qtyAvailable && !allowOutOfStockOrder) {
+                ev.target.value = qtyAvailable
+                throw "La cantidad es mayor que la cantidad disponible";
+            }
+
+            if (qtyAvailable < +qtyPack){
+                this.validateInputEmpty()
+                throw `La cantidad disponible es menor al múltiplo de ${qtyPack}`;
+            }
+        
+            if(qty % qtyPack != 0){
+                ev.target.value = ''
+                throw `La cantidad no es un múltiplo de ${qtyPack}`;
+            }
+
+            this.validateInputEmpty()
+
+            return true;
+        },
+
+        _onChangeQtyOrderLine: async function(ev) {
+            try {
+                const tr = $(ev.target).closest('tr');
+
+                if (!tr.length) return;
+
+                await this._check_order_line_qty_quantity(ev)
+
+                const line_id = +tr[0].dataset.id;
+                const qty = +ev.target.value
+
+                const data = {
+                    line_id,
+                    "product_uom_qty": qty
+                }
+
+                await this._update_order_line(data)
+
+                await this.loadOrder()
+
+            } catch (error) {
+                this.showError(error)
+            }
+        },
+
+        _getElemQtyOrderLine: function (order, line) {
+            const { state } = order;
+            const show_input = state === 'draft';
+            const { product_uom_qty, qty_available, packaging_qty, uom } = line;
+
+            const packaging_qty_elem = packaging_qty > 1 ? `<label class="form-text" style="padding-right:3px;">Múltiplos de ${packaging_qty} </label>`: '';
+
+            const elem_uom = uom ? ` <label class="form-text" style="padding-right:3px;">${uom}</label>` : '';
+
+            let elem = `
+                <div class="form-group">
+                    <label class="form-text" style="padding-right:3px;">Cantidad: </label>
+                    <label>
+                        <input 
+                            type="text"
+                            style="width: 60px;"
+                            class="form-control p-1 input_qty_line" 
+                            value="${product_uom_qty.toFixed(2)}"
+                            data-qty-available="${qty_available}"
+                            data-qty-pack="${packaging_qty}"
+                        />
+                    </label>
+                    ${elem_uom}
+                    <br/>
+                    ${packaging_qty_elem}
+                </div>
+            `;
+
+            if (show_input) return elem;
+
+            // state == draft -> show input to type qty
+            return `
+                <div class="form-group">
+                    <label class="form-text" style="padding-right:3px;">
+                        Cantidad: ${product_uom_qty.toFixed(2)}
+                    </label>
+                    ${elem_uom}
+                    <br/>
+                    ${packaging_qty_elem}
+                </div>
+            `;
+        },
 
         build_table_products: async function(data,buildTax) {
             if(buildTax && $("#invoice").is(":checked")){
-                this.includeTax()
+                this.loadOrder()
                 return
             }
             const tbody = $("#product_list")
-            const { order_line } = data[0];
+            const order = data[0];
+            const { order_line } = order;
+
             tbody.empty()
-            var qtyLabel = _t("Cantidad: ")
+
             var unitLabel = _t("Precio Unitario: ")
             const symbol = $("#symbolB").val()
             let symbolAfter = ""
@@ -664,12 +789,15 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 }
                 let trash = `<button type="button" class="fa fa-trash-o delete_product cancel_confirmed_input" 
                             style="background-color: transparent;border: none;padding: 0; color:red;"></button>`
+
+                const elem_qty_order_line = this._getElemQtyOrderLine(order, line)
+
                 if($("#status-val").val() == 'cancel' || $("#status-val").val() == 'sale') trash = ``
                 tbody.append(`
-                <tr>
+                <tr data-id="${id}">
                     <td colspan="4">
                         <label style="font-weight: bolder;">${name}</label> <input type="hidden" value="${id}"> <br/>
-                        <label class="form-label" style="padding-right:3px;">${qtyLabel} </label><label class="form-label" style="font-weight: bolder;">${product_uom_qty.toFixed(2)}</label><br/>
+                        ${elem_qty_order_line}
                         ${msgDeletProduct}
                         <label class="form-text" style="padding-right:3px;">${unitLabel}</label><label class="form-text" style="font-weight: bolder;">${symbolBefore} ${price_unit} ${symbolAfter}</label><br/>
                     </td>
@@ -721,12 +849,23 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             tr.remove()
         },
 
-        _onChangeInvoice: function(ev) {
-            this.includeTax()
+        _onChangeInvoice: async function(ev) {
+            await this.includeTax()
+            await this.loadOrder()
         },
 
-        _onChangeNote: function(ev) {
-            this.includeTax()
+        _onChangeNote: async function(ev) {
+            await this.loadOrder()
+        },
+
+        loadOrder: async function() {
+            const order = await ajax.jsonRpc('/budget/order/read', 'call', {
+                "sale_id" : parseInt($("#number_order_value").val()),
+            })
+            const { status, data } = order;
+            const is409 = status === 409;
+            if (is409) return
+            this.build_table_products([data],false)
         },
 
         includeTax: async function(){
@@ -837,6 +976,8 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             }
             $(".cancel_confirmed_input").attr("disabled", true)
             $(".delete_product").hide()
+
+            await this.loadOrder()
         },
 
         _onClickDowloadPdf : async function(ev) {

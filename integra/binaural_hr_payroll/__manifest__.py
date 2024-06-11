@@ -2,9 +2,10 @@
     "name": "Binaural Nómina",
     "summary": """Personalizaciones de nómina para Venezuela""",
     "author": "Binauraldev",
+    "license": "LGPL-3",
     "website": "https://www.binauraldev.com",
     "category": "Payroll Localization",
-    "version": "16.0.0.6.7",
+    "version": "16.0.0.6.11",
     # any module necessary for this one to work correctly
     "depends": ["hr", "hr_payroll", "hr_work_entry_contract_enterprise", "binaural_rate"],
     # always loaded
@@ -29,4 +30,5 @@
         "views/res_config_settings.xml",
         "views/menuitems.xml",
     ],
+    "binaural": True,
 }
