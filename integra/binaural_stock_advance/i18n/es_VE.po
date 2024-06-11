@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230925\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240603\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-02 14:56+0000\n"
-"PO-Revision-Date: 2023-11-02 14:56+0000\n"
+"POT-Creation-Date: 2024-06-11 15:47+0000\n"
+"PO-Revision-Date: 2024-06-11 15:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -48,6 +48,12 @@ msgid "Calculate taking into account the order quantities"
 msgstr "Calcular tomando en cuenta las cantidades de la orden"
 
 #. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__category_cost_account_id
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__category_cost_account_id
+msgid "Category Cost Account"
+msgstr "Cuenta de valoración de inventario en todas las categorias"
+
+#. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__check_advance_stock
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__check_advance_stock
 msgid "Check Advance Stock"
@@ -86,8 +92,22 @@ msgid "Cost CIF"
 msgstr "CIF"
 
 #. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__cost_ddp
+msgid "Cost DDP"
+msgstr ""
+
+#. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__price_unit
 msgid "Cost Total With Tax"
+msgstr ""
+
+#. module: binaural_stock_advance
+#. odoo-python
+#: code:addons/binaural_stock_advance/models/stock_landed_cost.py:0
+#, python-format
+msgid ""
+"Cost and adjustments lines do not match. You should maybe recompute the "
+"landed costs."
 msgstr ""
 
 #. module: binaural_stock_advance
@@ -119,7 +139,7 @@ msgstr ""
 #. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__foreign_additional_landed_cost
 msgid "Foreign Additional landed cost"
-msgstr "Costos Adicionales Und Alterno"
+msgstr "Costos Adicionales Alterno"
 
 #. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__foreign_cost_cif
@@ -202,6 +222,15 @@ msgid "Is stock Advance"
 msgstr "Inventario Avanzado"
 
 #. module: binaural_stock_advance
+#. odoo-python
+#: code:addons/binaural_stock_advance/models/product_category.py:0
+#, python-format
+msgid ""
+"It is not allowed to change this category due to the division method used in"
+" landed costs."
+msgstr "No se permite cambiar esta categoría por el método de división usado en los costes en destino"
+
+#. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__last_cost
 msgid "Last cost"
 msgstr "Costo Final Und"
@@ -220,6 +249,11 @@ msgstr "Último Costo actualizado"
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__percentage_tariff_code
 msgid "Percentage Tariff"
 msgstr "% Arancelario"
+
+#. module: binaural_stock_advance
+#: model:ir.model,name:binaural_stock_advance.model_product_category
+msgid "Product Category"
+msgstr "Categoría de producto"
 
 #. module: binaural_stock_advance
 #: model:ir.model,name:binaural_stock_advance.model_product_product
@@ -288,6 +322,11 @@ msgid "Tariff Value"
 msgstr "Valor Arancelario"
 
 #. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__total_cost_ddp
+msgid "Total Cost DDP"
+msgstr ""
+
+#. module: binaural_stock_advance
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_stock_valuation_adjustment_lines__total_amount_cost
 msgid "Total amount cost"
 msgstr "Coste"
@@ -312,6 +351,12 @@ msgstr "Actualizar Último Costo"
 #: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__use_fee_percentage
 msgid "Use Fee Percentage"
 msgstr "Usar % Arancelario en Costos en Destino"
+
+#. module: binaural_stock_advance
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_company__use_same_account_stock_valuation_to_category
+#: model:ir.model.fields,field_description:binaural_stock_advance.field_res_config_settings__use_same_account_stock_valuation_to_category
+msgid "Use Same Account Stock Valuation To Category"
+msgstr "Usar misma cuenta de valoración de inventario en todas las categorias"
 
 #. module: binaural_stock_advance
 #: model:ir.model,name:binaural_stock_advance.model_stock_valuation_adjustment_lines
