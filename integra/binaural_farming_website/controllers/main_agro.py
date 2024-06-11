@@ -12,17 +12,23 @@ _logger = logging.getLogger(__name__)
 class MainAgro(http.Controller):
 
     @http.route(
-        ["/agro","/agro/<int:lot>"], type="http", auth="public", website=True
+        ["/agro","/agro/<string:lot>"], type="http", auth="public", website=True
     )
     def website_agro(self, lot=None, **kw):
-        # lot= 1
         if not lot:
-
+            lot_ids = request.env["stock.lot"].search([('gender', '!=', False)])
             return request.render(
-                "binaural_farming_website.main_agro_template",{},
+                "binaural_farming_website.main_agro_template",
+                {
+                    "lots": lot_ids
+                },
             )
+        lot_id = request.env["stock.lot"].search([('name', '=', lot)])
+        
         return request.render(
-            "binaural_farming_website.agro_animal_lot",{
+            "binaural_farming_website.agro_animal_lot",
+            {
+                "lot": lot_id,
             },
         )
     
