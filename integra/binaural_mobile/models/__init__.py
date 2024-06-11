@@ -7,3 +7,4 @@ from . import account_payment
 from . import account_move_line
 from . import payment_mobile_igtf
 from . import website
+from . import res_partner
