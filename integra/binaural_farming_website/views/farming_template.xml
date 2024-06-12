@@ -19,7 +19,7 @@
     <template id="product_animal" name="product Animal">
         <div class="col">
             <div class="card text-dark bg-light mb-3 text-center card">
-                <img t-attf-src="data:image/*;base64,{{lot.image}}" t-att-alt="lot.name" class="card-img-top" />
+                <img t-attf-src="data:image/*;base64,{{lot.image}}"  width='100%' t-att-alt="lot.name" class="card-img-top img-fluid card_image" />
                 <div class="card-body text-break" >
                     <div class="card-title">
                         <h3 t-if="lot.name">
@@ -45,8 +45,8 @@
                 <br/>
                 <div class="row">
                     <div class="col-sm-6 text-break">
-                        <div class="bg-primary" >
-                            <img t-attf-src="data:image/*;base64,{{lot.image}}" t-att-alt="lot.name" class="card-img-top" />
+                        <div class="bg-primary div_image_box" >
+                            <img t-attf-src="data:image/*;base64,{{lot.image}}" t-att-alt="lot.name" class="image_box" />
                         </div>
                         <br/>
                     </div>
@@ -88,7 +88,7 @@
                 <hr class="bg-primary"/>
                 <div class="row">
                     <div class="col-sm-5 text-break">
-                        <h1 class="bg-primary text-center break-word">
+                        <h1 class="bg-primary text-center break-word ">
                             <span class="badge">
                                 Breeder and owner information
                             </span>

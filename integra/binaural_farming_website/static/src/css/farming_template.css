@@ -5,6 +5,36 @@
     font-size: 14px;   
 }
 
+.card_image {
+  height: calc(13*1.2rem);
+  padding: 0;
+  position:relative;
+}
+
+.image_box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.div_image_box{
+  width: 100%; /* Ancho del div contenedor */
+  max-width: 500px; /* Ajusta el máximo ancho según tus necesidades */
+  height: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.div_image_box::before {
+  content: "";
+  display: block;
+  padding-top: 100%; /* Mantiene la relación de aspecto cuadrada */
+}
+
 /* TABLA DE ANCESTROS */
 table.redTable {
     border: 2px solid #A40808;
