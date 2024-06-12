@@ -10,7 +10,7 @@ class StockLotAncestralMilkProduction(models.Model):
         [
          ('mother','Mother'),
          ('maternal_grandmother','Maternal Grandmother'),
-         ('paternal_grandfather','Paternal Grandfather')
+         ('paternal_grandmother','Paternal Grandmother')
         ]
     )
     # Muestra del dia

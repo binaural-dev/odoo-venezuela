@@ -58,11 +58,6 @@ msgid "Childs Mother"
 msgstr "Hijos de la madre"
 
 #. module: binaural_farming
-#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__complete_name
-msgid "Complete Name"
-msgstr "Nombres de ancestros"
-
-#. module: binaural_farming
 #: model:ir.model,name:binaural_farming.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
@@ -160,7 +155,7 @@ msgstr "Hembra"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__first_day_sample
 msgid "First Day Sample"
-msgstr "Primer dias"
+msgstr "Dias"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__first_milk_sample
@@ -297,6 +292,11 @@ msgid "Name Lot"
 msgstr "Nombre del lote"
 
 #. module: binaural_farming
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__complete_name
+msgid "Names Pedigree"
+msgstr "Nombres de ancestros"
+
+#. module: binaural_farming
 #: model:ir.actions.act_window,name:binaural_farming.res_partner_owner_action
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_from_res_partner_tree
 msgid "Owners"
@@ -313,8 +313,8 @@ msgid "Parent Mother Lots"
 msgstr "Lote madre"
 
 #. module: binaural_farming
-#: model:ir.model.fields.selection,name:binaural_farming.selection__stock_lot_ancestral_milk_production__name__paternal_grandfather
-msgid "Paternal Grandfather"
+#: model:ir.model.fields.selection,name:binaural_farming.selection__stock_lot_ancestral_milk_production__name__paternal_grandmother
+msgid "Paternal Grandmother"
 msgstr "Abuela Paterna"
 
 #. module: binaural_farming
@@ -342,7 +342,7 @@ msgstr "Propietario"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__second_day_sample
 msgid "Second Day Sample"
-msgstr "Segundo dias"
+msgstr "Dias"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__second_milk_sample
@@ -390,7 +390,7 @@ msgstr "Tatto derecho"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__third_day_sample
 msgid "Third Day Sample"
-msgstr "Tercer dias"
+msgstr "Dias"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__third_milk_sample
