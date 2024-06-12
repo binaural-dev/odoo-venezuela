@@ -5,6 +5,11 @@
     font-size: 14px;   
 }
 
+.title_span{
+  white-space: normal;
+  text-transform: uppercase;
+}
+
 .card_image {
   height: calc(13*1.2rem);
   padding: 0;

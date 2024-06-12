@@ -23,7 +23,7 @@
                 <div class="card-body text-break" >
                     <div class="card-title">
                         <h3 t-if="lot.name">
-                            <span class="badge bg-secondary" t-out="lot.name"/>
+                            <span class="badge bg-secondary title_span" t-out="lot.name"/>
                         </h3>
                     </div>
                     <hr/>
@@ -52,7 +52,7 @@
                     </div>
                     <div class="col-sm-6 text-break">
                         <h1 class="bg-primary text-center">
-                            <span class="badge">
+                            <span class="badge title_span">
                                 Identificación
                             </span>
                         </h1>
@@ -88,8 +88,8 @@
                 <hr class="bg-primary"/>
                 <div class="row">
                     <div class="col-sm-5 text-break">
-                        <h1 class="bg-primary text-center break-word ">
-                            <span class="badge">
+                        <h1 class="bg-primary text-center" >
+                            <span class="badge title_span">
                                 Breeder and owner information
                             </span>
                         </h1>
@@ -111,7 +111,7 @@
                     </div>
                     <div class="col-sm-7">
                         <h1 class="bg-secondary text-center">
-                            <span class="badge">
+                            <span class="badge title_span">
                                 Pedigree
                             </span>
                         </h1>
@@ -123,7 +123,7 @@
                 <div class="row">
                     <div class="col-sm-6 text-break">
                         <h1 class="bg-secondary text-center">
-                            <span class="badge">
+                            <span class="badge title_span">
                                 Ancestral milk production data
                             </span>
                         </h1>
@@ -132,7 +132,7 @@
                     </div>
                     <div class="col-sm-6 text-break">
                         <h1 class="bg-primary text-center">
-                            <span class="badge">
+                            <span class="badge title_span">
                                 Morphological evaluation
                             </span>
                         </h1>
