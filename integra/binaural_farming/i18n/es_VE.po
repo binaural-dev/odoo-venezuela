@@ -58,6 +58,11 @@ msgid "Childs Mother"
 msgstr "Hijos de la madre"
 
 #. module: binaural_farming
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__complete_name
+msgid "Complete Name"
+msgstr "Nombres de ancestros"
+
+#. module: binaural_farming
 #: model:ir.model,name:binaural_farming.model_res_partner
 msgid "Contact"
 msgstr "Contacto"

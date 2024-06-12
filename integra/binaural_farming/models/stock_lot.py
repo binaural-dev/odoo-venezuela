@@ -5,7 +5,7 @@ _logger = logging.getLogger(__name__)
 
 class StockLot(models.Model):
     _inherit = "stock.lot"
-    
+    _rec_name = "complete_name"
 
     # fields models
     image = fields.Image()
@@ -77,19 +77,16 @@ class StockLot(models.Model):
         "parent_mother_id",
         string="Childs Mother"
     )
+    
+    complete_name = fields.Char(compute="_compute_complete_name", string="Names Pedigree")
+    
+    @api.depends("name", "parent_father_id.complete_name", "parent_mother_id.complete_name")
+    def _compute_complete_name(self):
+        names = self.name + " "
 
-    parent_ids = fields.Many2many("stock.lot", compute="_compute_parent_ids")
+        if self.parent_father_id: 
+            names += f" (Padre) {self.parent_father_id.name}" 
+        if self.parent_mother_id:
+            names += f" (Madre) {self.parent_mother_id.name}"
 
-    @api.depends("parent_father_id", "parent_mother_id")
-    def _compute_parent_ids(self):
-        child_dad_ids = self.parent_father_id.ids
-        child_mom_ids = self.parent_mother_id.ids
-        childs_dad = self.parent_father_id
-        childs_mom = self.parent_mother_id
-        finish_ancestry = False
-        while not finish_ancestry:
-            if len(childs_dad.child_id.ids) == 0 & len(child_mom_ids.child_id.ids) == 0: 
-                finish_ancestry = True
-
-            category_ids += categories.child_id.ids
-            categories = categories.child_id
+        self.complete_name = names
