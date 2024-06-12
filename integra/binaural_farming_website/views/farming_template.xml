@@ -4,13 +4,18 @@
     <template id="main_agro_template" name="Agro Base">
         <t t-call="website.layout">
             <div class="container">
-                <t t-call="website.s_searchbar"></t>
-                <div class="bg-primary">
+                <t t-call="portal.portal_searchbar">
+                    <t t-set="title"> </t>
+                </t>
+                <div>
                     <div class="row row-cols-1 row-cols-sm-3 g-6">
                         <t t-foreach="lots" t-as="lot">
                             <t t-call="binaural_farming_website.product_animal"/>
                         </t>
                     </div>
+                </div>
+                <div class="products_pager d-flex justify-content-center pt-5 pb-3">
+                    <t t-call="website.pager"/>
                 </div>
             </div>
         </t>
