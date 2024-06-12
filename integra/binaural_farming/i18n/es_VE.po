@@ -160,7 +160,7 @@ msgstr "Hembra"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__first_day_sample
 msgid "First Day Sample"
-msgstr "Primer dia"
+msgstr "Primer dias"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__first_milk_sample
@@ -342,7 +342,7 @@ msgstr "Propietario"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__second_day_sample
 msgid "Second Day Sample"
-msgstr "Segundo dia"
+msgstr "Segundo dias"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__second_milk_sample
@@ -390,7 +390,7 @@ msgstr "Tatto derecho"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__third_day_sample
 msgid "Third Day Sample"
-msgstr "Tercer dia"
+msgstr "Tercer dias"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__third_milk_sample
