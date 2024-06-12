@@ -29,11 +29,9 @@
                             <field name="lot_breeder_ids" readonly="0"/>
                         </group>
                         <group string="Pedigree">
+                            <field name="display_name" />
                             <field name="parent_father_id" />
                             <field name="parent_mother_id" />
-                            
-                            <field name="child_father_ids" />
-                            <field name="child_mother_ids" />
                         </group>
                     </group>
                     <group string="Ancestry milk production data">
