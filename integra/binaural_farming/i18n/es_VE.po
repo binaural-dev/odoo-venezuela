@@ -115,7 +115,7 @@ msgstr "Fecha de nacimiento"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_race__description
 msgid "Description"
-msgstr "Descripcion"
+msgstr "Descripción"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__display_name
@@ -155,7 +155,7 @@ msgstr "Hembra"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__first_day_sample
 msgid "First Day Sample"
-msgstr "Dias"
+msgstr "Días"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__first_milk_sample
@@ -180,7 +180,7 @@ msgstr ""
 #. module: binaural_farming
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_view_form_stock_production_lot
 msgid "Identification"
-msgstr "Identificacion"
+msgstr "Identificación"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__image
@@ -271,7 +271,7 @@ msgstr "Morfológica"
 #. module: binaural_farming
 #: model_terms:ir.ui.view,arch_db:binaural_farming.binaural_farming_view_form_stock_production_lot
 msgid "Morphological Evaluation"
-msgstr "Valoracion Morfologica"
+msgstr "Valoración Morfológica"
 
 #. module: binaural_farming
 #: model:ir.model.fields.selection,name:binaural_farming.selection__stock_lot_ancestral_milk_production__name__mother
@@ -342,7 +342,7 @@ msgstr "Propietario"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__second_day_sample
 msgid "Second Day Sample"
-msgstr "Dias"
+msgstr "Días"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__second_milk_sample
@@ -390,7 +390,7 @@ msgstr "Tatto derecho"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__third_day_sample
 msgid "Third Day Sample"
-msgstr "Dias"
+msgstr "Días"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_ancestral_milk_production__third_milk_sample
@@ -410,7 +410,7 @@ msgstr "Tipos de morfológias"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_evaluation_morphological__types_qualitative_evaluation_id
 msgid "Types Qualitative Evaluation"
-msgstr "Tipos de valoracion cuantitativa"
+msgstr "Tipos de valoración cuantitativa"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_evaluation_morphological__valuation_quantity
