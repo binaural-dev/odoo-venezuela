@@ -116,14 +116,13 @@
 
         .card-catalog-container {
           width:260px;
-          border-bottom: 1px solid #1D1E1C;
           margin: 0;
           vertical-align: top;
 
           display: inline-table;
 
           margin-right: -20px;
-          margin-bottom: 30px;
+          margin-bottom: 40px;
 
         }
 
@@ -162,7 +161,7 @@
 
         .card-catalog__body {
           padding: 0px 5px;
-          padding-top: 5px;
+          padding-bottom: 8px;
         }
 
         .card-catalog__title {

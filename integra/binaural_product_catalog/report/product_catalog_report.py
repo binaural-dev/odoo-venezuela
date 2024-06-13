@@ -21,7 +21,11 @@ class ProductCatalogReport(models.AbstractModel):
     @api.model
     def _prepare_product_dict(self, record, price, data, currency_id):
         def get_price(self, price):
-            return self.product_tmpl_id.taxes_id.compute_all(price, currency_id, 1)["total_included"]
+
+            if data.get("price_without_tax"):
+                return self.product_tmpl_id.taxes_id.compute_all(price, currency_id, 1)["total_excluded"]
+            else:
+                return self.product_tmpl_id.taxes_id.compute_all(price, currency_id, 1)["total_included"]
 
         price = float_round(price, precision_digits=currency_id.decimal_places)
         return {
@@ -188,6 +192,8 @@ class ProductCatalogReport(models.AbstractModel):
             'border_width': data['border_width'],
             'primary_color': data['primary_color'],
             'show_available_qty': data['show_available_qty'],
+            'price_without_tax': data['price_without_tax']
+
         }
         
         return default_data

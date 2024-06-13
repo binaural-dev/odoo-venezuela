@@ -13,4 +13,5 @@
     "data": [
         # 'security/ir.model.access.csv',
     ],
+    "binaural": True,
 }

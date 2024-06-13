@@ -25,4 +25,5 @@
         "views/stock_picking_views.xml",
         "wizard/stock_quantity_history.xml",
     ],
+    "binaural": True,
 }

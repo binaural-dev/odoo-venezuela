@@ -15,4 +15,5 @@
     ],
     "application": True,
     "auto_install": True,
+    "binaural":True,
 }
