@@ -1,7 +1,11 @@
 {
     "name": "Binaural Ganaderia",
     "summary": "Modulo para información de Ganaderia",
+<<<<<<< Updated upstream
     "version": "16.0.0.0.16",
+=======
+    "version": "16.0.0.0.19",
+>>>>>>> Stashed changes
     "category": "Stock",
     "license": "LGPL-3",
     "author": "BinauralDev",

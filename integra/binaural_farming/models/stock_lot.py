@@ -5,7 +5,6 @@ _logger = logging.getLogger(__name__)
 
 class StockLot(models.Model):
     _inherit = "stock.lot"
-    _rec_name = "complete_name"
 
     # fields models
     image = fields.Image()
@@ -64,8 +63,8 @@ class StockLot(models.Model):
     )
 
     # Relation into lots
-    parent_father_id = fields.Many2one('stock.lot', 'Parent Father Lots', index=True, ondelete='cascade')
-    parent_mother_id = fields.Many2one('stock.lot', 'Parent Mother Lots', index=True, ondelete='cascade')
+    parent_father_id = fields.Many2one('stock.lot', 'Parent Father Lots', ondelete='cascade')
+    parent_mother_id = fields.Many2one('stock.lot', 'Parent Mother Lots', ondelete='cascade')
 
     child_father_ids = fields.One2many(
         "stock.lot",
@@ -78,15 +77,54 @@ class StockLot(models.Model):
         string="Childs Mother"
     )
     
-    complete_name = fields.Char(compute="_compute_complete_name", string="Names Pedigree")
+    names_parents = fields.Char(compute="_compute_names_parents", string="Names parents")
+    names_parents_paternal = fields.Char(compute="_compute_names_parents_paternal", string="Names parents paternal")
+    names_parents_maternal = fields.Char(compute="_compute_names_parents_maternal", string="Names parents maternal")
+
+    amount_total_evaluation = fields.Integer(
+        string='Amount total of evaluation',
+        compute='_compute_amount_total_evaluation', 
+        store=True,
+    )
     
-    @api.depends("name", "parent_father_id.complete_name", "parent_mother_id.complete_name")
-    def _compute_complete_name(self):
-        names = self.name + " "
+    # Computes
+    # Parents lots
+    @api.depends("name", "parent_father_id.names_parents", "parent_mother_id.names_parents")
+    def _compute_names_parents(self):
+        names = ""
 
         if self.parent_father_id: 
             names += f" (Padre) {self.parent_father_id.name}" 
         if self.parent_mother_id:
             names += f" (Madre) {self.parent_mother_id.name}"
 
-        self.complete_name = names
+        self.names_parents = names
+
+    # Parents lots (Paternal)
+    @api.depends("name", "parent_father_id.parent_father_id.names_parents_paternal")
+    def _compute_names_parents_paternal(self):
+        names = ""
+
+        if self.parent_father_id.parent_father_id: 
+            names += f" (Padre) {self.parent_father_id.parent_father_id.name}"
+
+        self.names_parents_paternal = names
+
+    # Parents lots (Maternal)
+    @api.depends("name", "parent_mother_id.parent_mother_id.names_parents_maternal")
+    def _compute_names_parents_maternal(self):
+        names = ""
+
+        if self.parent_mother_id.parent_mother_id:
+            names += f" (Madre) {self.parent_mother_id.parent_mother_id.name}"
+
+        self.names_parents_maternal = names
+
+    @api.depends('lot_morphological_ids.valuation_quantity')
+    def _compute_amount_total_evaluation(self):
+        for lots in self:
+            total = 0
+            for qua_val in lots.lot_morphological_ids:
+                total += qua_val.valuation_quantity
+            
+            lots.amount_total_evaluation = total
