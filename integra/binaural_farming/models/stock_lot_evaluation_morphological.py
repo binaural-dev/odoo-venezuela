@@ -19,3 +19,4 @@ class StockLotEvaluationMorphological(models.Model):
     morphological_id = fields.Many2one(
         'stock.lot'
     )
+                

@@ -57,7 +57,10 @@
                                 <field name="types_qualitative_evaluation_id" />
                             </tree>
                         </field>
-                    </group>
+                        <group>
+                            <field name="amount_total_evaluation"/>
+                        </group>
+                    </group>    
                 </page>
             </xpath>
         </field>
