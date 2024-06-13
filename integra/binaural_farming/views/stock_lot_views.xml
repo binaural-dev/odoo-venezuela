@@ -29,7 +29,9 @@
                             <field name="lot_breeder_ids" readonly="0"/>
                         </group>
                         <group string="Pedigree">
-                            <field name="complete_name" />
+                            <field name="names_parents" />
+                            <field name="names_parents_paternal" />
+                            <field name="names_parents_maternal" />
                             <field name="parent_father_id" />
                             <field name="parent_mother_id" />
                         </group>

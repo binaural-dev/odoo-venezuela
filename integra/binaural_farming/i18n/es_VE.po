@@ -297,9 +297,19 @@ msgid "Name Lot"
 msgstr "Nombre del lote"
 
 #. module: binaural_farming
-#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__complete_name
-msgid "Names Pedigree"
-msgstr "Nombres de ancestros"
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__names_parents
+msgid "Names parents"
+msgstr "Lotes Padres"
+
+#. module: binaural_farming
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__names_parents_maternal
+msgid "Names parents maternal"
+msgstr "Lotes Abuelas"
+
+#. module: binaural_farming
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__names_parents_paternal
+msgid "Names parents paternal"
+msgstr "Lotes Abuelos"
 
 #. module: binaural_farming
 #: model:ir.actions.act_window,name:binaural_farming.res_partner_owner_action
