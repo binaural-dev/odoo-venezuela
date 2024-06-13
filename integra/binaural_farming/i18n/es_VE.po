@@ -27,6 +27,11 @@ msgid "Adga Registration Number"
 msgstr "Número de registro ADGA"
 
 #. module: binaural_farming
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__amount_total_evaluation
+msgid "Amount total of evaluation"
+msgstr "Resultado total: "
+
+#. module: binaural_farming
 #: model:ir.model,name:binaural_farming.model_stock_lot_ancestral_milk_production
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__lot_ancestry_ids
 msgid "Ancestral milk production"

@@ -79,7 +79,14 @@ class StockLot(models.Model):
     )
     
     complete_name = fields.Char(compute="_compute_complete_name", string="Names Pedigree")
+
+    amount_total_evaluation = fields.Integer(
+        string='Amount total of evaluation',
+        compute='_compute_amount_total_evaluation', 
+        store=True,
+    )
     
+    # Computes
     @api.depends("name", "parent_father_id.complete_name", "parent_mother_id.complete_name")
     def _compute_complete_name(self):
         names = self.name + " "
@@ -90,3 +97,12 @@ class StockLot(models.Model):
             names += f" (Madre) {self.parent_mother_id.name}"
 
         self.complete_name = names
+
+    @api.depends('lot_morphological_ids.valuation_quantity')
+    def _compute_amount_total_evaluation(self):
+        for lots in self:
+            total = 0
+            for qua_val in lots.lot_morphological_ids:
+                total += qua_val.valuation_quantity
+            
+            lots.amount_total_evaluation = total
