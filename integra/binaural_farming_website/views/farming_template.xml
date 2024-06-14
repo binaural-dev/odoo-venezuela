@@ -265,7 +265,7 @@
 
     <template id="tr_ancestral" name="tr Ancestral Milk">
         <tr>
-            <td class="fw-bold"><t t-out="ancestry.name or '-'"/></td>
+            <td class="fw-bold"><span t-field="ancestry.name"/></td>
             <td><t t-out="ancestry.first_milk_sample or '-'"/></td>
             <td><t t-out="ancestry.first_day_sample or '-'"/></td>
             <td><t t-out="ancestry.second_milk_sample or '-'"/></td>
