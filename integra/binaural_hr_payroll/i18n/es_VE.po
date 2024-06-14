@@ -1607,3 +1607,10 @@ msgstr ""
 #: model:ir.model,name:binaural_hr_payroll.model_report_hr_payroll_report_payslip_lang
 msgid "report.hr_payroll.report_payslip_lang"
 msgstr ""
+
+#. module: binaural_hr_payroll
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.binaural_hr_payroll_inherit_hr_payroll_structure_type_view_search
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.binaural_hr_payroll_inherit_hr_salary_rule_category_view_search
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.binaural_hr_payslip_view_search
+msgid "Archived"
+msgstr "Archivado"
