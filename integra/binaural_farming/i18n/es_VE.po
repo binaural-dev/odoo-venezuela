@@ -17,7 +17,9 @@ msgstr ""
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_breeder__active
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_qualitative_valuation__active
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_race__active
+#: model:ir.model.fields,field_description:binaural_farming.field_stock_lot_type_morphological__active
 msgid "Active"
 msgstr "Activo"
 
