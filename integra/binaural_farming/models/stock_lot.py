@@ -63,8 +63,18 @@ class StockLot(models.Model):
     )
 
     # Relation into lots
-    parent_father_id = fields.Many2one('stock.lot', 'Parent Father Lots', ondelete='cascade')
-    parent_mother_id = fields.Many2one('stock.lot', 'Parent Mother Lots', ondelete='cascade')
+    parent_father_id = fields.Many2one(
+        'stock.lot', 
+        'Parent Father Lots', 
+        ondelete='cascade',
+        domain="[('id','!=', id),('gender','=','male')]"
+    )
+    parent_mother_id = fields.Many2one(
+        'stock.lot', 
+        'Parent Mother Lots', 
+        ondelete='cascade',
+        domain="[('id','!=', id),('gender','=','female')]"
+    )
 
     child_father_ids = fields.One2many(
         "stock.lot",
@@ -107,6 +117,8 @@ class StockLot(models.Model):
 
         if self.parent_father_id.parent_father_id: 
             names += f" (Padre) {self.parent_father_id.parent_father_id.name}"
+        if self.parent_father_id.parent_mother_id:
+            names += f" (Madre) {self.parent_father_id.parent_mother_id.name}"
 
         self.names_parents_paternal = names
 
@@ -115,6 +127,8 @@ class StockLot(models.Model):
     def _compute_names_parents_maternal(self):
         names = ""
 
+        if self.parent_mother_id.parent_father_id:
+            names += f" (Padre) {self.parent_mother_id.parent_father_id.name}"
         if self.parent_mother_id.parent_mother_id:
             names += f" (Madre) {self.parent_mother_id.parent_mother_id.name}"
 

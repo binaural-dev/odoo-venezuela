@@ -299,12 +299,12 @@ msgstr "Lotes Padres"
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__names_parents_maternal
 msgid "Names parents maternal"
-msgstr "Lotes Abuelas"
+msgstr "Lotes de Abuelos Maternos"
 
 #. module: binaural_farming
 #: model:ir.model.fields,field_description:binaural_farming.field_stock_lot__names_parents_paternal
 msgid "Names parents paternal"
-msgstr "Lotes Abuelos"
+msgstr "Lotes de Abuelos Paternos"
 
 #. module: binaural_farming
 #: model:ir.actions.act_window,name:binaural_farming.res_partner_owner_action

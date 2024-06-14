@@ -32,8 +32,12 @@
                             <field name="names_parents" />
                             <field name="names_parents_paternal" />
                             <field name="names_parents_maternal" />
-                            <field name="parent_father_id" />
-                            <field name="parent_mother_id" />
+                            <field name="parent_father_id"
+                                   domain="[('id','!=', id),('gender','=','male')]"
+                            />
+                            <field name="parent_mother_id" 
+                                   domain="[('id','!=', id),('gender','=','female')]"
+                            />
                         </group>
                     </group>
                     <group string="Ancestry milk production data">
