@@ -40,6 +40,57 @@
   padding-top: 100%; /* Mantiene la relación de aspecto cuadrada */
 }
 
+.family-tree {
+  width: 750px;
+  display:block;
+  margin: 50px auto;
+}
+
+.family-tree .tree-nodo {
+  float:left;
+  width: 33%;
+  height: 220px;
+  position:relative;
+}
+
+.family-tree .tree-ejemplar {
+  width: 100%;
+  height:200px;
+  display: block;
+  position:relative;
+  border-right:1px solid gray;
+  margin:20px 0;
+}
+
+.family-tree .tree-padres {
+  width: 100%;
+  height:100px;
+  display: block;
+  position:relative;
+  margin:10px 0;
+  border-right:1px solid gray;
+}
+.family-tree .tree-abuelos {
+  width: 100%;
+  height:50px;
+  display: block;
+  position:relative;
+  margin:5px 0;
+}
+.family-tree p {
+  line-height: normal;
+  padding: 0 15px;
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  /*
+  para asignar recuadro a cada nombre
+  border:1px solid silver;
+  eliminar los demás bordes
+  */ 
+}
+
 /* TABLA DE ANCESTROS */
 table.redTable {
     border: 2px solid #A40808;
