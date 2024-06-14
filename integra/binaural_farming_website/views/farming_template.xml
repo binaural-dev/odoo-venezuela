@@ -33,9 +33,9 @@
                     </div>
                     <hr class="bg-secondary"/>
                     <div class="card-text fs-5">
-                        <p><strong>Name</strong> <br/><t t-out="lot.name_lot or '-'"/></p>	
-                        <p><strong>Birthdate</strong> <br/><t t-out="lot.date_of_birth or '-'"/></p>	
-                        <p><strong>Race</strong> <br/><t t-out="lot.lot_race_id.description or '-'"/></p>	
+                        <p><strong>Name</strong><br/><t t-out="lot.name_lot or '-'"/></p>	
+                        <p><strong>Birthdate</strong><br/><t t-out="lot.date_of_birth or '-'"/></p>	
+                        <p><strong>Race</strong><br/><t t-out="lot.lot_race_id.description or '-'"/></p>	
                     </div>
                     <hr class="bg-primary"/>
                     <a class="btn btn-primary fw-bold text-white" t-attf-href="/agro/{{lot.name}}" role="button">Ver ficha</a>
