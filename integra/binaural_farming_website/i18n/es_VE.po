@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240606\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-12 19:53+0000\n"
-"PO-Revision-Date: 2024-06-12 19:53+0000\n"
+"POT-Creation-Date: 2024-06-14 13:45+0000\n"
+"PO-Revision-Date: 2024-06-14 13:45+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -23,6 +23,16 @@ msgid ""
 msgstr ""
 "/ \n"
 "                                <strong>Derecho: </strong>"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<span class=\"badge bg-primary \">-</span>"
+msgstr ""
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<span class=\"badge bg-secondary \">-</span>"
+msgstr ""
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
@@ -75,6 +85,31 @@ msgstr ""
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<span class=\"text-primary\">Father</span>:"
+msgstr "<span class=\"text-primary\">Padre</span>:"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<span class=\"text-primary\">GrandFather</span>:"
+msgstr "<span class=\"text-primary\">Abuelo</span>:"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<span class=\"text-primary\">GrandMother</span>:"
+msgstr "<span class=\"text-primary\">Abuela</span>:"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<span class=\"text-primary\">Mother</span>:"
+msgstr "<span class=\"text-primary\">Madre</span>:"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<span class=\"text-primary\">Son</span>:"
+msgstr "<span class=\"text-primary\">Hijo</span>:"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
 msgid "<strong># Register ADGA: </strong>"
 msgstr "<strong>Nº Registro ADGA: </strong>"
 
@@ -90,7 +125,7 @@ msgstr "<strong>Fecha de nacimiento: </strong>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.product_animal
-msgid "<strong>Birthdate:</strong>"
+msgid "<strong>Birthdate</strong> <br/>"
 msgstr "<strong>Fecha de nacimiento:</strong>"
 
 #. module: binaural_farming_website
@@ -100,9 +135,13 @@ msgstr "<strong>Criador: </strong>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
-#: model_terms:ir.ui.view,arch_db:binaural_farming_website.product_animal
 msgid "<strong>Name:</strong>"
 msgstr "<strong>Nombre:</strong>"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.product_animal
+msgid "<strong>Name</strong> <br/>"
+msgstr "<strong>Nombre</strong> <br/>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
@@ -126,8 +165,8 @@ msgstr "<strong>Raza: </strong>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.product_animal
-msgid "<strong>Race:</strong>"
-msgstr "<strong>Raza:</strong>"
+msgid "<strong>Race</strong> <br/>"
+msgstr "<strong>Raza</strong> <br/>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
