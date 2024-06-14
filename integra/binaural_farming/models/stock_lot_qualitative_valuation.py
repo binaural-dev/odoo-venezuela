@@ -8,3 +8,4 @@ class StockLotQualitativeValuation(models.Model):
 
     # fields models
     name = fields.Char()
+    active = fields.Boolean(default=True) 

@@ -8,10 +8,12 @@ class StockLotEvaluationMorphological(models.Model):
     
     # fields models
     types_morphological_id = fields.Many2one(
-        'stock.lot.type.morphological'
+        'stock.lot.type.morphological',
+        
     )
     types_qualitative_evaluation_id = fields.Many2one(
-        'stock.lot.qualitative.valuation'
+        'stock.lot.qualitative.valuation',
+        
     )
     valuation_quantity = fields.Integer()
 

@@ -8,3 +8,4 @@ class StockLotTypeMorphological(models.Model):
     
     # fields models
     name = fields.Char()
+    active = fields.Boolean(default=True)
