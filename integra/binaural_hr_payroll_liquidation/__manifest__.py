@@ -4,6 +4,7 @@
         Modificaciones de nómina para liquidaciones y pagos de prestaciones en Venezuela.
     """,
     "author": "Binauraldev",
+    "license": "LGPL-3",
     "website": "https://www.binauraldev.com",
     "category": "Human Resources",
     "version": "16.0.1.0.0",
@@ -20,4 +21,5 @@
         "views/res_config_settings.xml",
         "views/menuitems.xml",
     ],
+    "binaural": True,
 }

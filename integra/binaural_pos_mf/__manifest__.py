@@ -30,4 +30,5 @@
     "installable": True,
     "application": False,
     "auto_install": False,
+    "binaural": True,
 }

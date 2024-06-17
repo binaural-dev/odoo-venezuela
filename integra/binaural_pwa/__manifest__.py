@@ -13,4 +13,5 @@
     "data": ['views/templates.xml',],
     "images": ["static/description/icon.png"],
     "application": True,
+    "binaural": True,
 }

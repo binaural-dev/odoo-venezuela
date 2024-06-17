@@ -81,6 +81,12 @@ class AccountPaymentPayments(http.Controller):
                     .search([("id", "=", int(dairy_type))])
                     .fiscal
                 )
+                partner = (
+                    request.env["res.partner"]
+                    .sudo()
+                    .search([("id", "=", int(partner_id))])
+                )
+                taxpayer = partner.taxpayer_type
                 seller_id = request.env.user.employee_id.id
                 payments_igtf = request.env["payment.mobile.igtf"]
                 pays_registered = request.env["account.payment"]
@@ -106,7 +112,7 @@ class AccountPaymentPayments(http.Controller):
                     if igtf_installed:
                         advance_account_customer_ids.append(company.customer_account_igtf_id.id)
 
-                if type_fiscal:
+                if type_fiscal and taxpayer != "ordinary":
                     retentions, pays_retention_registered = self.register_retentions(
                         data_invoices, partner_id, company, pays_retention_registered
                     )
@@ -210,13 +216,11 @@ class AccountPaymentPayments(http.Controller):
                                     }
                                 )
 
-                if (
-                    type_fiscal
-                    and company.retentions_draft_or_published == "0"
-                    and len(retentions) > 0
-                ):
-                    retentions.action_cancel()
-                    retentions.action_draft()
+                if (type_fiscal and taxpayer != "ordinary"):
+                    if company.retentions_draft_or_published == "0" and retentions:
+                        for retention in retentions:
+                            retention.sudo().action_cancel()
+                            retention.sudo().action_draft()
 
             except Exception as e:
                 data.update({"status": 400, "msg": str(e)})
