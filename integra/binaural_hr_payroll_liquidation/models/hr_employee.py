@@ -169,7 +169,7 @@ class HrEmployee(models.Model):
         seniority = self._get_seniority_in_years()
         if seniority <= 1:
             return 0
-        return (benefits_days_per_year_from_year_two - 1) * seniority
+        return benefits_days_per_year_from_year_two * (seniority - 1)
 
     def _get_benefits_days_per_year(self):
         self.ensure_one()
