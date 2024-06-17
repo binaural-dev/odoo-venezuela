@@ -10,6 +10,7 @@ class HrPayrollBenefitAccumulatedDetail(models.Model):
     """
 
     _name = "hr.payroll.benefits.accumulated.detail"
+    _description = "Payroll Benefits Accumulated Detail"
 
     date = fields.Date()
     employee_id = fields.Many2one("hr.employee")

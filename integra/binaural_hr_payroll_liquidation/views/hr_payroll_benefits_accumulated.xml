@@ -15,7 +15,7 @@
 		    <group>
 			<filter name="group_employee" string="Employee"
 				domain="[]" context="{'group_by': 'employee_id'}"/>
-			<filter name="group_date" string="Fecha"
+			<filter name="group_date" string="Date"
 				domain="[]" context="{'group_by': 'date'}"/>
 		    </group>
 		</search>

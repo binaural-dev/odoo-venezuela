@@ -1,6 +1,7 @@
 from calendar import isleap
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
+from collections import defaultdict
 
 from odoo import api, fields, models, _
 from odoo.addons.hr_payroll.models.browsable_object import BrowsableObject
@@ -9,14 +10,20 @@ from odoo.exceptions import UserError
 from odoo.tools.misc import format_date
 
 
-
 class HrPayslip(models.Model):
     _inherit = "hr.payslip"
 
     report_title_name = fields.Char(
-        string='Payslip Name',
-        compute='_compute_report_title_name', store=True, readonly=False,
-        states={'done': [('readonly', True)], 'cancel': [('readonly', True)], 'paid': [('readonly', True)]})
+        string="Payslip Name",
+        compute="_compute_report_title_name",
+        store=True,
+        readonly=False,
+        states={
+            "done": [("readonly", True)],
+            "cancel": [("readonly", True)],
+            "paid": [("readonly", True)],
+        },
+    )
 
     foreign_currency_id = fields.Many2one(
         "res.currency", related="company_id.currency_foreign_id", store=True
@@ -124,7 +131,9 @@ class HrPayslip(models.Model):
                     r["number_of_days"] -= worked_days_sum - (
                         30 if self.date_from.month != 2 else 28
                     )
-                if self.date_from.day == 16 and worked_days_sum > (15 if self.date_from.month != 2 else february_day_quincenal):
+                if self.date_from.day == 16 and worked_days_sum > (
+                    15 if self.date_from.month != 2 else february_day_quincenal
+                ):
                     r["number_of_days"] -= worked_days_sum - (
                         15 if self.date_from.month != 2 else 13
                     )
@@ -262,8 +271,6 @@ class HrPayslip(models.Model):
                 "tope_pf": self.company_id.forced_unemployment_wage_treshold,
                 "dias_utilidades_config": self.company_id.profit_sharing_days_qty,
                 "dias_vacaciones_config": self.company_id.first_year_vacation_days,
-                "dias_prestaciones_mes_config": self.company_id.benefits_days_per_month,
-                "tipo_calculo_intereses_prestaciones_config": self.company_id.benefits_interest_computation_type,
                 "compute_payroll_using": self.company_id.compute_payroll_using,
                 "allowances": BrowsableObject(
                     self.employee_id.id, allowances_values_per_code, self.env
@@ -272,20 +279,21 @@ class HrPayslip(models.Model):
         )
         return localdict
 
-    @api.depends('employee_id', 'struct_id', 'date_from')
+    @api.depends("employee_id", "struct_id", "date_from")
     def _compute_report_title_name(self):
-        
         for slip in self.filtered(lambda p: p.employee_id and p.date_from):
             lang = slip.employee_id.sudo().address_home_id.lang or self.env.user.lang
-            context = {'lang': lang}
+            context = {"lang": lang}
             for struct_name in self:
                 payslip_name = struct_name.struct_id.name
             del context
 
-            slip.report_title_name = '%(payslip_name)s - %(employee_name)s - %(dates)s' % {
-                'payslip_name': payslip_name,
-                'employee_name': slip.employee_id.name,
-                'dates': format_date(self.env, slip.date_from, date_format="MMMM y", lang_code=lang)
+            slip.report_title_name = "%(payslip_name)s - %(employee_name)s - %(dates)s" % {
+                "payslip_name": payslip_name,
+                "employee_name": slip.employee_id.name,
+                "dates": format_date(
+                    self.env, slip.date_from, date_format="MMMM y", lang_code=lang
+                ),
             }
 
     def _get_localdict(self):
@@ -300,12 +308,79 @@ class HrPayslip(models.Model):
             slip._register_payroll_move()
         return res
 
+    def action_payslip_cancel(self):
+        res = super().action_payslip_cancel()
+        payroll_moves_to_delete = self.env["hr.payroll.move"].search([("slip_id", "in", self.ids)])
+        payroll_moves_to_delete.unlink()
+        return res
+
     def _register_payroll_move(self):
+        """
+        Register an hr.payroll.move record based on the current hr.payslip.
+
+        This method processes the current hr.payslip record to generate and create
+        an hr.payroll.move record using the parameters retrieved from the
+        _get_payroll_move_params method. It ensures that the payroll move is registered
+        unless the payroll structure category is 'provision'.
+
+        Returns
+        -------
+        hr.payroll.move
+            The created hr.payroll.move record.
+
+        Raises
+        ------
+        ValidationError
+            If more than one hr.payslip record is being processed.
+
+        Examples
+        --------
+        >>> payslip = self.env['hr.payslip'].browse(1)
+        >>> payroll_move = payslip._register_payroll_move()
+        >>> payroll_move
+        <hr.payroll.move record>
+        """
+        self.ensure_one()
+        if self.struct_id.category in ("provision", "other"):
+            return
+        move_params = self._get_payroll_move_params()
+        return self.env["hr.payroll.move"].create(move_params)
+
+    def _get_payroll_move_params(self):
+        """
+        Retrieve and return a dictionary of parameters for creating an hr.payroll.move record.
+
+        This method processes the current hr.payslip record to generate a dictionary of
+        parameters based on the category and specific codes of the payslip lines. The
+        parameters are used to create an hr.payroll.move record each time the payslip
+        is processed.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the payroll move parameters with keys as defined
+            by the category and specific code mappings.
+
+        Raises
+        ------
+        ValidationError
+            If more than one hr.payslip line is being processed.
+
+        Examples
+        --------
+        >>> payslip = self.env['hr.payslip'].browse(1)
+        >>> payslip._get_payroll_move_params()
+        {
+            'move_type': 'BASIC',
+            'employee_id': 1,
+            'date': '2023-05-01',
+            'slip_id': 1,
+            'total_basic': 1000.0,
+            'foreign_total_basic': 100.0
+        }
+        """
         self.ensure_one()
         payroll_structure_category = self.struct_id.category
-
-        if payroll_structure_category == "provision":
-            return
 
         move_params = {}
         move_params["move_type"] = payroll_structure_category
@@ -317,111 +392,13 @@ class HrPayslip(models.Model):
             move_params["date_from_vacation"] = self.date_from_vacation
             move_params["date_to_vacation"] = self.date_to_vacation
 
-        total_basic = 0
-        total_deduction = 0
-        total_accrued = 0
-        total_net = 0
-        total_assig = 0
-        advance_of_benefits = 0
-        benefits_payment = 0
-        profit_sharing_payment = 0
-        vacation_days = 0
-        vacation_bonus_days = 0
-        total_vacation_bonus = 0
-        consumed_vacation_days = 0
-        total_vacation = 0
-
-        foreign_total_basic = 0
-        foreign_total_deduction = 0
-        foreign_total_accrued = 0
-        foreign_total_net = 0
-        foreign_total_assig = 0
-        foreign_advance_of_benefits = 0
-        foreign_benefits_payment = 0
-        foreign_profit_sharing_payment = 0
-        foreign_total_vacation_bonus = 0
-        foreign_total_vacation = 0
-
+        move_params_sum = defaultdict(float)
         for line in self.line_ids:
-            if line.category_id.code == "DED":
-                total_deduction += line.total
-                foreign_total_deduction += line.foreign_total
-            if line.category_id.code == "ASIG":
-                total_assig += line.total
-                foreign_total_assig += line.foreign_total
-            if line.category_id.code == "BASIC":
-                total_basic += line.total
-                foreign_total_basic += line.foreign_total
-            if line.category_id.code == "DEV":
-                total_accrued += line.total
-                foreign_total_accrued += line.foreign_total
-            if line.category_id.code == "NET":
-                total_net += line.total
-                foreign_total_net += line.foreign_total
+            move_params_per_line = line.get_values_for_payroll_move()
+            for key, value in move_params_per_line.items():
+                move_params_sum[key] += value
 
-            if line.code == "DDBVM":
-                vacation_days += line.total
-            if line.code == "DDVM":
-                consumed_vacation_days += line.total
-            if line.code == "PDDVM":
-                total_vacation += line.total
-                foreign_total_vacation += line.foreign_total
-            if line.code == "DDBVM":
-                vacation_bonus_days += line.total
-            if line.code == "PDDBVM":
-                total_vacation_bonus += line.total
-                foreign_total_vacation_bonus += line.foreign_total
-            if line.code == "UTIL":
-                profit_sharing_payment += line.total
-                foreign_profit_sharing_payment += line.foreign_total
-            if line.code == "ADPRESTA":
-                advance_of_benefits += line.total
-                foreign_advance_of_benefits += line.foreign_total
-
-            if payroll_structure_category == "liquidation":
-                if line.code == "DDVMLIQ":
-                    vacation_days += line.total
-                if line.code == "PDDVMLIQ":
-                    total_vacation += line.total
-                    foreign_total_vacation += line.foreign_total
-                if line.code == "DDVBMLIQ":
-                    vacation_bonus_days += line.total
-                if line.code == "PDDVBMLIQ":
-                    total_vacation_bonus += line.total
-                    foreign_total_vacation_bonus += line.foreign_total
-                if line.code == "UTILLIQ":
-                    profit_sharing_payment += line.total
-                    foreign_profit_sharing_payment += line.foreign_total
-                if line.code == "PRESTA":
-                    benefits_payment += line.total
-                    foreign_benefits_payment += line.foreign_total
-
-        move_params["total_basic"] = total_basic
-        move_params["total_deduction"] = total_deduction
-        move_params["total_accrued"] = total_accrued
-        move_params["total_net"] = total_net
-        move_params["total_assig"] = total_assig
-        move_params["advance_of_benefits"] = advance_of_benefits
-        move_params["benefits_payment"] = benefits_payment
-        move_params["profit_sharing_payment"] = profit_sharing_payment
-        move_params["vacation_days"] = vacation_days
-        move_params["vacation_bonus_days"] = vacation_bonus_days
-        move_params["total_vacation_bonus"] = total_vacation_bonus
-        move_params["consumed_vacation_days"] = consumed_vacation_days
-        move_params["total_vacation"] = total_vacation
-
-        move_params["foreign_total_basic"] = foreign_total_basic
-        move_params["foreign_total_deduction"] = foreign_total_deduction
-        move_params["foreign_total_accrued"] = foreign_total_accrued
-        move_params["foreign_total_net"] = foreign_total_net
-        move_params["foreign_total_assig"] = foreign_total_assig
-        move_params["foreign_advance_of_benefits"] = foreign_advance_of_benefits
-        move_params["foreign_benefits_payment"] = foreign_benefits_payment
-        move_params["foreign_profit_sharing_payment"] = foreign_profit_sharing_payment
-        move_params["foreign_total_vacation_bonus"] = foreign_total_vacation_bonus
-        move_params["foreign_total_vacation"] = foreign_total_vacation
-
-        return self.env["hr.payroll.move"].create(move_params)
+        return {**move_params, **move_params_sum}
 
     @api.model
     def _compute_monday_in_range(self, slip_id):
