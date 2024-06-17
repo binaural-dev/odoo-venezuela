@@ -50,10 +50,10 @@ class ReportPaymentPos(models.AbstractModel):
             }
 
         def get_info(pos_config_id):
-            config_id = self.env["pos.config"].browse(pos_config_id.id)
+            config_id = self.env["pos.config"].browse(pos_config_id.ids)
             order_ids = self.env["pos.order"].search(
                 [
-                    ("config_id", "=", pos_config_id.id),
+                    ("config_id", "=", pos_config_id.ids),
                     ("date_order", ">=", date_start),
                     ("date_order", "<=", date_stop),
                 ]
@@ -122,8 +122,6 @@ class ReportPaymentPos(models.AbstractModel):
                             payments["no_fiscal"][payment_method_id] |= payment
                         else:
                             payments["no_fiscal"][payment_method_id] = payment
-
-            _logger.info("order_fiscal: %s", categories)
 
             def get_percentage(amount):
                 if not order_ids.payment_ids:

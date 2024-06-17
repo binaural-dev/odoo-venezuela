@@ -35,6 +35,11 @@ class PosPaymentReport(models.TransientModel):
         default="both",
     )
 
+    type_report = fields.Selection(
+        selection=[("general", "General"), ("by_cash_register", "By Cash Register")],
+        default="by_cash_register",
+    )
+
     def generate_report(self):
         data = {
             "date_start": self.start_date,
@@ -42,5 +47,6 @@ class PosPaymentReport(models.TransientModel):
             "config_ids": self.pos_config_ids.ids,
             "category_ids": self.category_ids.ids,
             "show_categories": self.show_categories,
+            "type_report": self.type_report,
         }
         return self.env.ref("binaural_pos.action_payment_report_pos").report_action([], data=data)
