@@ -69,6 +69,9 @@ class HrPayslip(models.Model):
                 payslip.benefits_advance = 0
                 continue
             benefits_available_amount = payslip._get_employee_benefits_available_amount()
+            if benefits_available_amount == 0:
+                payslip.benefits_advance = 0
+                continue
             payslip.benefits_advance = benefits_available_amount * (
                 payslip.benefits_advance_percentage / 100
             )
@@ -81,13 +84,19 @@ class HrPayslip(models.Model):
         for slip in self:
             if not slip.is_benefits:
                 continue
+            if slip.benefits_advance_percentage == 0 or slip.benefits_advance == 0:
+                raise UserError(
+                    _(
+                        "You cannot make a benefits advance to an employee who doesn't have"
+                        " available benefits."
+                    )
+                )
+
             if slip.benefits_advance_percentage > 75:
                 raise UserError(
                     _(
                         "You cannot make a benefits advance payment of more than the 75% of the"
-                        " available amount for the"
-                        # "No se puede realizar un adelanto de prestaciones por más del 75% del"
-                        # + "monto disponible del empleado."
+                        " available amount for the employee."
                     )
                 )
         return super().compute_sheet()
@@ -98,6 +107,10 @@ class HrPayslip(models.Model):
         """
         res = super().action_payslip_done()
         for slip in self:
+            _logger.warning(
+                "Fractional Vacation Days: %s", slip.employee_id.get_fractional_vacation_days()
+            )
+
             slip.employee_id._register_payroll_benefits(
                 benefits_advance=(slip.benefits_advance, slip.foreign_benefits_advance)
             )
@@ -112,3 +125,15 @@ class HrPayslip(models.Model):
             limit=1,
         )
         return benefits_accumulated.available_benefits or 0
+
+    def _get_base_local_dict(self):
+        localdict = super()._get_base_local_dict()
+        localdict.update(
+            {
+                "dias_prestaciones_mes_config": self.company_id.benefits_days_per_month,
+                "tipo_calculo_intereses_prestaciones_config": (
+                    self.company_id.benefits_interest_computation_type
+                ),
+            }
+        )
+        return localdict

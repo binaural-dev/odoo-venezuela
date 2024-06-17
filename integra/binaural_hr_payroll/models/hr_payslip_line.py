@@ -77,13 +77,17 @@ class HrPayslipLine(models.Model):
         }
 
         code_mappings = {
-            "DDBVM": {"vacation_days": "total", "vacation_bonus_days": "total"},
-            "DDVM": {"consumed_vacation_days": "total"},
-            "PDDVM": {
+            "PVAC": {
+                "vacation_days": "quantity",
+                "total_vacation": "total",
+                "foreign_total_vacation": "foreign_total",
+            },
+            "BVAC": {
+                "vacation_bonus_days": "quantity",
                 "total_vacation_bonus": "total",
                 "foreign_total_vacation_bonus": "foreign_total",
             },
-            "PDDBVM": {"total_vacation": "total", "foreign_total_vacation": "foreign_total"},
+            "DDVM": {"consumed_vacation_days": "total"},
             "UTIL": {
                 "profit_sharing_payment": "total",
                 "foreign_profit_sharing_payment": "foreign_total",

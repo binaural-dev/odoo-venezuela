@@ -93,3 +93,111 @@ class HrEmployee(models.Model):
                 benefits_to_update.sudo().write(benefits_accumulated_params)
             else:
                 payroll_benefits_accumulated.sudo().create(benefits_accumulated_params)
+
+    def get_fractional_vacation_days(self, is_bonus=False):
+        """
+        Compute the fractional days or bonus days of vacation for the current year.
+
+        If the vacations of the employee had already been paid this year and their departure month
+        (or the current one) is less than they entry month, the result will be 0.
+
+        If the days that are gonna be computed are bonus, the total of days to use as a fraction
+        are calculated taking into account the first years for the additional days, else we use the
+        additional days starting on year 2.
+
+        Parameters
+        ----------
+        is_bonus : bool
+            If the days that are gonna be computed are bonus vacation days.
+
+        Returns
+        -------
+        float
+            The fraction of days or bonus days of the current year.
+        """
+        self.ensure_one()
+        first_day_of_year = date.today().replace(month=1, day=1)
+        last_day_of_year = date.today().replace(month=12, day=1)
+        vacation_slips_of_current_year = self.env["hr.payroll.move"].search(
+            [
+                ("employee_id", "=", self.id),
+                ("date_to_vacation", ">=", first_day_of_year),
+                ("date_to_vacation", "<=", last_day_of_year),
+            ],
+            order="date desc",
+            limit=1,
+        )
+
+        if vacation_slips_of_current_year and self.entry_date.month >= (
+            self.departure_date.month if self.departure_date else date.today().month
+        ):
+            return 0
+
+        seniority_years = self._get_seniority_in_years()
+        vacation_days = self.company_id.first_year_vacation_days
+        additional_vacation_days_per_year = (
+            self.company_id.additional_vacation_days_after_first_year
+        )
+        additional_vacation_days_total = seniority_years * additional_vacation_days_per_year
+
+        # If the days are not the bonus one, the additional days must be added starting year 2 of
+        # the employee.
+        if not is_bonus:
+            additional_vacation_days_total -= additional_vacation_days_per_year
+
+        months_worked_this_year = (
+            self.departure_date.month if self.departure_date else date.today().month
+        ) - self.entry_date.month
+
+        days_per_month = (additional_vacation_days_total + vacation_days) / 12
+        return days_per_month * months_worked_this_year
+
+    def get_benefits_days_total(self):
+        """
+        Compute the total days of benefits on the current date.
+
+        These are the benefits days per year from the config multiplied by the number of seniority
+        years the employee has starting on year 2.
+
+        Returns
+        -------
+        int
+            The number of benefits days of the employee for the current date.
+        """
+        self.ensure_one()
+        benefits_days_per_year_from_year_two = self.company_id.benefits_days_per_year
+        seniority = self._get_seniority_in_years()
+        if seniority <= 1:
+            return 0
+        return (benefits_days_per_year_from_year_two - 1) * seniority
+
+    def _get_benefits_days_per_year(self):
+        self.ensure_one()
+        maximum_benefits_days_per_year = self.company_id.maximum_benefits_days_per_year
+        seniority = self._get_seniority()
+        years = int(seniority.years)
+        if seniority.months >= 6:
+            years += 1
+        return years * maximum_benefits_days_per_year
+
+    def _get_benefits_per_years_amount(self):
+        payroll_moves = self._get_payroll_moves_grouped_by_months_of_a_specific_year()
+        salary_type = self.contract_id.salary_type
+        total_accrued = 0
+        if salary_type == "variable":
+            return 0
+        days_per_year = self._get_benefits_days_per_year()
+        total_accrued = payroll_moves[-1]["total_accrued"]
+        amount_per_days = total_accrued / 30
+        return amount_per_days * days_per_year
+
+    def _get_benefits_per_years_foreign_amount(self):
+        payroll_moves = self._get_payroll_moves_grouped_by_months_of_a_specific_year()
+        salary_type = self.contract_id.salary_type
+        total_accrued = 0
+        if salary_type == "variable":
+            return 0
+        days_per_year = self._get_benefits_days_per_year()
+        total_accrued = payroll_moves[-1]["foreign_total_accrued"]
+        amount_per_days = total_accrued / 30
+        return amount_per_days * days_per_year

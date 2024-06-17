@@ -14,7 +14,6 @@ class HrPayrollMove(models.Model):
             ("salary", "Salary"),
             ("vacation", "Vacations"),
             ("profit_sharing", "Profit Sharing"),
-            ("liquidation", "Liquidation"),
             ("advance", "Advance"),
         ],
         string="Type",

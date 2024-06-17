@@ -5,7 +5,11 @@ class HrPayrollMove(models.Model):
     _inherit = "hr.payroll.move"
 
     move_type = fields.Selection(
-        selection_add=[("benefits", "Benefits"), ("profit_sharing",)],
+        selection_add=[
+            ("benefits", "Benefits"),
+            ("profit_sharing",),
+            ("liquidation", "Liquidation"),
+        ],
         ondelete={"beneftis": "cascade"},
     )
     benefits_payment = fields.Float()

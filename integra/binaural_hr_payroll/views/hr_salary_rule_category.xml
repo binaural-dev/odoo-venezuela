@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="binaural_hr_payroll_inherit_hr_salary_rule_category_view_search" model="ir.ui.view">
+        <field name="name">binaural.hr.payroll.inherit.hr.salary.rule.category.view.search.</field>
+        <field name="model">hr.salary.rule.category</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_salary_rule_category_filter"/>
+        <field name="arch" type="xml">
+            <search>
+                <separator/>
+                <filter string="Archived" name="archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+</odoo>

@@ -10,14 +10,20 @@ from odoo.exceptions import UserError
 from odoo.tools.misc import format_date
 
 
-
 class HrPayslip(models.Model):
     _inherit = "hr.payslip"
 
     report_title_name = fields.Char(
-        string='Payslip Name',
-        compute='_compute_report_title_name', store=True, readonly=False,
-        states={'done': [('readonly', True)], 'cancel': [('readonly', True)], 'paid': [('readonly', True)]})
+        string="Payslip Name",
+        compute="_compute_report_title_name",
+        store=True,
+        readonly=False,
+        states={
+            "done": [("readonly", True)],
+            "cancel": [("readonly", True)],
+            "paid": [("readonly", True)],
+        },
+    )
 
     foreign_currency_id = fields.Many2one(
         "res.currency", related="company_id.currency_foreign_id", store=True
@@ -273,20 +279,21 @@ class HrPayslip(models.Model):
         )
         return localdict
 
-    @api.depends('employee_id', 'struct_id', 'date_from')
+    @api.depends("employee_id", "struct_id", "date_from")
     def _compute_report_title_name(self):
-        
         for slip in self.filtered(lambda p: p.employee_id and p.date_from):
             lang = slip.employee_id.sudo().address_home_id.lang or self.env.user.lang
-            context = {'lang': lang}
+            context = {"lang": lang}
             for struct_name in self:
                 payslip_name = struct_name.struct_id.name
             del context
 
-            slip.report_title_name = '%(payslip_name)s - %(employee_name)s - %(dates)s' % {
-                'payslip_name': payslip_name,
-                'employee_name': slip.employee_id.name,
-                'dates': format_date(self.env, slip.date_from, date_format="MMMM y", lang_code=lang)
+            slip.report_title_name = "%(payslip_name)s - %(employee_name)s - %(dates)s" % {
+                "payslip_name": payslip_name,
+                "employee_name": slip.employee_id.name,
+                "dates": format_date(
+                    self.env, slip.date_from, date_format="MMMM y", lang_code=lang
+                ),
             }
 
     def _get_localdict(self):
@@ -299,6 +306,12 @@ class HrPayslip(models.Model):
         res = super().action_payslip_done()
         for slip in self:
             slip._register_payroll_move()
+        return res
+
+    def action_payslip_cancel(self):
+        res = super().action_payslip_cancel()
+        payroll_moves_to_delete = self.env["hr.payroll.move"].search([("slip_id", "in", self.ids)])
+        payroll_moves_to_delete.unlink()
         return res
 
     def _register_payroll_move(self):
@@ -328,7 +341,7 @@ class HrPayslip(models.Model):
         <hr.payroll.move record>
         """
         self.ensure_one()
-        if self.struct_id.category == "provision":
+        if self.struct_id.category in ("provision", "other"):
             return
         move_params = self._get_payroll_move_params()
         return self.env["hr.payroll.move"].create(move_params)
