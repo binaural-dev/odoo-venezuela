@@ -18,4 +18,5 @@
         "security/ir.model.access.csv",
     ],
     'auto_install': True,
+    "binaural": True,
 }

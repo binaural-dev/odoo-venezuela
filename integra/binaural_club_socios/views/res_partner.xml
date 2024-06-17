@@ -195,7 +195,21 @@
                     <field name="business_name_usufruct" />
                 </field>
             </field>
-        </record>
-
+    </record>
+        
+    <record id="res_partner_view_search_binaural_club_socios" model="ir.ui.view">
+        <field name="name">binaural.club.socios.search.res.partner</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='type_company']" position="after">
+                <field 
+                    name="action_number" 
+                    string="Número de Acción" 
+                    filter_domain="['|','|', ('action_number','=',self),('parent_id.action_number','=',self),('associate_action.number','=',self) ]"
+                />
+                <separator/>
+            </xpath>
+        </field>
+    </record>
 </odoo>
-

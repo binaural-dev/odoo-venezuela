@@ -37,4 +37,5 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "post_init_hook": "activate_series_invoicing",
+    "binaural": True,
 }
