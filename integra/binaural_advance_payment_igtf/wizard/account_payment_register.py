@@ -25,15 +25,15 @@ class AccountPaymentRegister(models.TransientModel):
                 else payment.partner_id.property_account_payable_id.id
             )
 
-            payment_invoice_amount = payment.reconciled_invoice_ids.line_ids.filtered(
+            payment_invoice_amount = round(payment.reconciled_invoice_ids.line_ids.filtered(
                 lambda line: line.account_id.account_type == "asset_receivable"
-            ).amount_currency
+            ).amount_currency, payment.currency_id.decimal_places)
 
             if payment_invoice_amount == 0:
 
-                payment_invoice_amount = payment.reconciled_bill_ids.line_ids.filtered(
+                payment_invoice_amount = round(payment.reconciled_bill_ids.line_ids.filtered(
                     lambda line: line.account_id.account_type == "liability_payable"
-                ).amount_currency
+                ).amount_currency, payment.currency_id.decimal_places)
 
             amount = round(payment.amount, payment.currency_id.decimal_places)
 
@@ -44,8 +44,11 @@ class AccountPaymentRegister(models.TransientModel):
                 # If amount of the payment invoice is negative, means its provider.
                 is_provider = True
                 payment_invoice_amount = payment_invoice_amount * -1
+
+            payment_invoice_amount += self.igtf_amount
+
             if (
-                amount > payment_invoice_amount
+                amount > round(payment_invoice_amount, payment.currency_id.decimal_places)
                 and payment.journal_id.fiscal
                 and payment.journal_id.is_igtf
                 and payment.is_igtf_on_foreign_exchange
