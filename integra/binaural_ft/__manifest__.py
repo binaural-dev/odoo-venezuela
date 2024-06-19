@@ -18,12 +18,7 @@
         "binaural_payment_extension",
     ],
     "data": [
-        "report/dispatch_note.xml",
-        "report/delivery_note.xml",
-        "report/sale_order_ticket.xml",
         "report/invoice_mf_ticket.xml",
-        "report/freeform.xml",
-        "report/freeform_header.xml",
         "views/stock_picking.xml",
     ],
     "assets": {
