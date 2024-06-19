@@ -27,11 +27,16 @@
 	    <field name="model">hr.payroll.benefits.accumulated</field>
 	    <field name="arch" type="xml">
 		<tree string="Benefits Accumulated" editable="bottom">
+		    <field name="type"/>
 		    <field name="employee_id"/>
 		    <field name="employee_vat"/>
 		    <field name="employee_department_id"/>
 		    <field name="employee_job_id"/>
 		    <field name="date"/>
+		    <field name="monthly_or_quarterly_accumulated_benefits"/>
+		    <field name="foreign_monthly_or_quarterly_accumulated_benefits"/>
+		    <field name="annual_accumulated_benefits"/>
+		    <field name="foreign_annual_accumulated_benefits"/>
 		    <field name="accumulated_benefits"/>
 		    <field name="foreign_accumulated_benefits"/>
 		    <field name="accumulated_benefits_advance"/>
