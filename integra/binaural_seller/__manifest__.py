@@ -26,5 +26,6 @@
         "views/sale_order.xml",
     ],
     "images": ["static/description/icon.png"],
+    "binaural": True,
 }
 

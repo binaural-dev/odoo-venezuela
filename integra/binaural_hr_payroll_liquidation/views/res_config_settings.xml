@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_config_settings_binaural_hr_payroll_benefits" model="ir.ui.view">
+            <field name="name">res.config.settings.binaural.hr.payroll.benefits</field>
+            <field name="model">res.config.settings</field>
+            <field name="priority" eval="100"/>
+            <field name="inherit_id" ref="binaural_hr_payroll.res_config_settings_binaural_hr_payroll"/>
+            <field name="arch" type="xml">
+		<div id="binaural_hr_payroll_profit_sharing_setting_box" position="after">
+		    <div class="col-lg-8 col-12 o_setting_box" id="binaural_hr_payroll_benefits_sharing_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <div class="text-muted">
+				Benefits Configuration
+                            </div>
+                            <group class="mt16" name="default_benefits">
+                            	<label for="benefits_days_per_month"/>
+                                <div>
+                                    <field name="benefits_days_per_month" nolabel="1"/>
+                                    <span>Day(s)</span>
+                                </div>
+                                <label for="benefits_days_per_year"/>
+                                <div>
+                                    <field name="benefits_days_per_year" nolabel="1"/>
+                                    <span>Day(s)</span>
+                                </div>
+                                <label for="maximum_benefits_days_per_year"/>
+                                <div>
+                                    <field name="maximum_benefits_days_per_year" nolabel="1"/>
+                                    <span>Day(s)</span>
+                                </div>
+                                <label for="benefits_interest_computation_type"/>
+                                <div>
+                                    <field name="benefits_interest_computation_type" nolabel="1" widget="radio"/>
+                                </div>
+				<div attrs="{'invisible': [('benefits_interest_computation_type','=','escrow')]}">
+				    <label for="benefits_interest_monthly_rate"/>
+				    <div>
+					<field name="benefits_interest_monthly_rate" nolabel="1"/>
+                                    </div>
+				</div>
+                                <label for="benefits_computation_type"/>
+                                <div>
+                                    <field name="benefits_computation_type" nolabel="1" widget="radio"/>
+                                </div>
+                            </group>
+                        </div>
+                    </div>
+		</div>
+	    </field>
+    	</record>
+    </data>
+</odoo>
