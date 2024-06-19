@@ -250,31 +250,26 @@ class HrPayrollBenefit(models.Model):
                 employee._register_payroll_benefits(interests=daily_interests)
 
     @api.model
-    def get_available_benefits(self, employee_id):
-        benefit = self.env["hr.payroll.benefits.accumulated"].search(
+    def get_benefits_for_employee(self, employee_id):
+        benefits = self.env["hr.payroll.benefits.accumulated"].search(
             [
                 ("employee_id", "=", employee_id),
             ],
             limit=1,
         )
-        return benefit.available_benefits
+        return benefits
+
+    @api.model
+    def get_available_benefits(self, employee_id):
+        benefits = self.get_benefits_for_employee(employee_id)
+        return benefits.available_benefits
 
     @api.model
     def get_foreign_available_benefits(self, employee_id):
-        benefit = self.env["hr.payroll.benefits.accumulated"].search(
-            [
-                ("employee_id", "=", employee_id),
-            ],
-            limit=1,
-        )
-        return benefit.foreign_available_benefits
+        benefits = self.get_benefits_for_employee(employee_id)
+        return benefits.foreign_available_benefits
 
     @api.model
     def get_accumulated_interest(self, employee_id):
-        benefit = self.env["hr.payroll.benefits.accumulated"].search(
-            [
-                ("employee_id", "=", employee_id),
-            ],
-            limit=1,
-        )
-        return benefit.accumulated_interest
+        benefits = self.get_benefits_for_employee(employee_id)
+        return benefits.accumulated_interest
