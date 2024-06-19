@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="account.report_invoice_with_payments">
+        <t t-call="binaural_invoice.template_invoice_free_form_binaural_invoice" t-lang="lang"/>
+    </template>
+</odoo>

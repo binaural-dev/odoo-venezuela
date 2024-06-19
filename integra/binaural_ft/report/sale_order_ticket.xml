@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<odoo>
+    <record id="action_sale_noteescpos" model="ir.actions.report">
+        <field name="name">Pedido de venta</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-text</field>
+        <field name="report_name">binaural_ft.template</field>
+        <field name="binding_model_id" ref="sale.model_sale_order" />
+    </record>
+        
+    <template id="template">
+<t t-out="docs.get_receipt_base()"/>
+    </template>
+</odoo>
