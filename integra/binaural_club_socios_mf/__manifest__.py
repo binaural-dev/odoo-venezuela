@@ -13,4 +13,5 @@
         "binaural_iot_mf",
     ],
     "data": [],
+    "binaural":True,
 }

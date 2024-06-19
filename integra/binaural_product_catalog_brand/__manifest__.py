@@ -12,4 +12,5 @@
     "data": ["report/product_catalog_style_6.xml","wizard/product_catalog_wizard.xml"],
     "auto_install": True,
     "application": True,
+    "binaural": True,
 }

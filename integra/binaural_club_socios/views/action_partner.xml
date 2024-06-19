@@ -19,7 +19,7 @@
         <field name="arch" type="xml">
             <form string="Action Partner Form">
                     <header>
-                        <field name="state" widget="statusbar" nolabel="1"/>
+                        <field name="state" widget="statusbar" nolabel="1" options="{'clickable': '1', 'fold_field': 'fold'}" class="ms-2" on_change="1" can_create="false" can_write="false"/>
                     </header>
                     <sheet>
                         <group>

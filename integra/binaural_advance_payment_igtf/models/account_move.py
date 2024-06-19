@@ -141,37 +141,51 @@ class AccountMoveAdvanceIgtf(models.Model):
             )
 
         return move_to_reconcile_with_payment_difference
-
+    
     def _reconcile_move_with_payment_difference(self, move_id, move_to_reconcile):
         """
         This method is called when click on add payment widget. It will reconcile the move with the payment difference
 
         Args:
-            move_id (account.move): Move object to reconcile
+            move_id (account.move): Move object to reconmove_to_reconcilecile
             move_to_reconcile (account.move): Move object to reconcile with
 
         Returns:
             bool: True
         """
+
         move_to_reconcile.action_post()
 
-        advance_lines = move_id.line_ids.filtered(
-            lambda x: x.account_id.id == self.env.company.advance_customer_account_id.id
-        )
-        move_to_reconcile_lines = move_to_reconcile.line_ids.filtered(
-            lambda x: x.account_id.id == self.env.company.advance_customer_account_id.id
-        )
+        if self.move_type == "out_invoice":
+            advance_lines = move_id.line_ids.filtered(
+                lambda x: x.account_id.id == self.env.company.advance_customer_account_id.id 
+            )
+
+            move_to_reconcile_lines = move_to_reconcile.line_ids.filtered(
+                lambda x: x.account_id.id == self.env.company.advance_customer_account_id.id
+            )
+
+        elif self.move_type == "in_invoice":
+            advance_lines = move_id.line_ids.filtered(
+                lambda x: x.account_id.id == self.env.company.advance_supplier_account_id.id 
+            )
+
+            move_to_reconcile_lines = move_to_reconcile.line_ids.filtered(
+                lambda x: x.account_id.id == self.env.company.advance_supplier_account_id.id
+            )
 
         move_line_to_reconcile = self.env["account.move.line"].browse([move_to_reconcile_lines.id])
         move_line_to_reconcile += advance_lines
         move_line_to_reconcile.reconcile()
 
         move_to_reconcile_asset_account = move_to_reconcile.line_ids.filtered(
-            lambda x: x.account_id.account_type == "asset_receivable"
+            lambda x: x.account_id.account_type == "asset_receivable" or x.account_id.account_type == "liability_payable"
         )
+
         move_account_asset = self.line_ids.filtered(
-            lambda x: x.account_id.account_type == "asset_receivable"
+            lambda x: x.account_id.account_type == "asset_receivable" or x.account_id.account_type == "liability_payable"
         )
+
         move_reconcile = self.env["account.move.line"].browse([move_to_reconcile_asset_account.id])
         move_reconcile += move_account_asset
         move_reconcile.reconcile()
