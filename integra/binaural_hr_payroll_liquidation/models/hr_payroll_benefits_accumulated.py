@@ -1,13 +1,8 @@
-import logging
-
 from datetime import date, datetime
 from dateutil import relativedelta
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
-
-
-_logger = logging.getLogger(__name__)
 
 
 class HrPayrollBenefit(models.Model):
@@ -21,12 +16,18 @@ class HrPayrollBenefit(models.Model):
     employee_department_id = fields.Many2one("hr.department", related="employee_id.department_id")
     employee_job_id = fields.Many2one("hr.job", related="employee_id.job_id")
 
+    monthly_or_quarterly_accumulated_benefits = fields.Float(string="Monthly/Quarterly Accumulated")
+    annual_accumulated_benefits = fields.Float()
     accumulated_benefits = fields.Float(required=True)
     accumulated_benefits_advance = fields.Float()
     available_benefits = fields.Float(compute="_compute_available_benefits")
     available_benefits_to_pay = fields.Float(compute="_compute_available_benefits_to_pay")
     accumulated_interest = fields.Float(required=True)
 
+    foreign_monthly_or_quarterly_accumulated_benefits = fields.Float(
+        string="Monthly/Quarterly Foreign Accumulated"
+    )
+    foreign_annual_accumulated_benefits = fields.Float()
     foreign_accumulated_benefits = fields.Float(required=True)
     foreign_accumulated_benefits_advance = fields.Float()
     foreign_available_benefits = fields.Float(compute="_compute_available_benefits")
@@ -34,6 +35,14 @@ class HrPayrollBenefit(models.Model):
     foreign_accumulated_interest = fields.Float(required=True)
 
     date = fields.Date(string="Last Computation Date", required=True)
+
+    type = fields.Selection(
+        [
+            ("monthly", "Monthly"),
+            ("quarterly", "Quarterly"),
+        ],
+        compute="_compute_type",
+    )
 
     _sql_constraints = [
         (
@@ -92,6 +101,11 @@ class HrPayrollBenefit(models.Model):
         )
         employee.mixed_monthly_wage = moves_accrued_sum / months
 
+    @api.depends("employee_id.company_id.benefits_computation_type")
+    def _compute_type(self):
+        for benefits in self:
+            benefits.type = benefits.employee_id.company_id.benefits_computation_type
+
     @api.model
     def get_monthly_benefits(self):
         """
@@ -109,11 +123,7 @@ class HrPayrollBenefit(models.Model):
             benefits_days = company.benefits_days_per_month
             if not bool(benefits_days):
                 raise UserError(
-                    _(
-                        "The benefits days per month are not defined on the configuration."
-                        # "No se ha definido la cantidad de días de prestaciones por mes en"
-                        # "la configuración de nómina."
-                    )
+                    _("The benefits days per month are not defined on the configuration.")
                 )
 
             employees = self.env["hr.employee"].search([])
@@ -129,7 +139,6 @@ class HrPayrollBenefit(models.Model):
                     months_diff = relativedelta.relativedelta(
                         fields.Date.today(), employee.last_monthly_calculated_benefits
                     ).months
-                    _logger.warning("Months diff: %s", (months_diff))
                     if months_diff < 1:
                         continue
 
@@ -152,11 +161,7 @@ class HrPayrollBenefit(models.Model):
             benefits_days = company.benefits_days_per_month * 3
             if not bool(benefits_days):
                 raise UserError(
-                    _(
-                        "The benefits days per month are not defined on the configuration."
-                        # "No se ha definido la cantidad de días de prestaciones por mes en"
-                        # + "la configuración de nómina."
-                    )
+                    _("The benefits days per month are not defined on the configuration.")
                 )
 
             employees = self.env["hr.employee"].search([])
@@ -183,7 +188,6 @@ class HrPayrollBenefit(models.Model):
 
         employees = self.env["hr.employee"].search([])
         for employee in employees:
-            _logger.warning("Entry date: %s" % (employee.entry_date))
             entry_date = employee.entry_date
             if not entry_date or today.day != entry_date.day or today.month != entry_date.month:
                 continue
@@ -191,21 +195,13 @@ class HrPayrollBenefit(models.Model):
             days_per_year = employee.company_id.benefits_days_per_year
             if not days_per_year:
                 raise UserError(
-                    _(
-                        "The benefits days per month are not defined on the configuration."
-                        # "No se ha definido la cantidad de días de prestaciones por año en"
-                        # + "la configuración de nómina."
-                    )
+                    _("The benefits days per month are not defined on the configuration.")
                 )
 
             maximum_of_days = employee.company_id.maximum_benefits_days_per_year
             if not bool(maximum_of_days):
                 raise UserError(
-                    _(
-                        "The maximum benefits days per year are not defined on the configuration."
-                        # "No se ha definido la cantidad máxima de días de prestaciones por año en"
-                        # + "la configuración de nómina."
-                    )
+                    _("The maximum benefits days per year are not defined on the configuration.")
                 )
 
             seniority = employee._get_seniority_in_years()
@@ -227,28 +223,23 @@ class HrPayrollBenefit(models.Model):
     def get_benefits_interest(self):
         companies = self.env["res.company"].search([])
         for company in companies:
+            if company.benefits_interest_computation_type != "internal":
+                continue
+
             interest_rate = company.benefits_interest_monthly_rate
             if not bool(interest_rate):
                 raise UserError(
-                    _(
-                        "The benefits interest monthly rate is not defined on the configuration."
-                        # "No se ha definido la tasa mensual de intereses de prestaciones"
-                        # + "en la configuración de nómina."
-                    )
+                    _("The benefits interest monthly rate is not defined on the configuration.")
                 )
             daily_interest_rate = interest_rate / 30 / 100
-            _logger.warning("Daily interest rate: %s", daily_interest_rate)
 
             employees = self.env["hr.employee"].search([])
-            _logger.warning("Employees: %s", employees)
             for employee in employees:
-                _logger.warning("Employee: %s", employee)
                 benefits_accumulated = self.env["hr.payroll.benefits.accumulated"].search(
                     [
                         ("employee_id", "=", employee.id),
                     ]
                 )
-                _logger.warning("Benefits accumulated: %s", benefits_accumulated)
                 if not any(benefits_accumulated):
                     continue
 
@@ -259,31 +250,26 @@ class HrPayrollBenefit(models.Model):
                 employee._register_payroll_benefits(interests=daily_interests)
 
     @api.model
-    def get_available_benefits(self, employee_id):
-        benefit = self.env["hr.payroll.benefits.accumulated"].search(
+    def get_benefits_for_employee(self, employee_id):
+        benefits = self.env["hr.payroll.benefits.accumulated"].search(
             [
                 ("employee_id", "=", employee_id),
             ],
             limit=1,
         )
-        return benefit.available_benefits
+        return benefits
+
+    @api.model
+    def get_available_benefits(self, employee_id):
+        benefits = self.get_benefits_for_employee(employee_id)
+        return benefits.available_benefits
 
     @api.model
     def get_foreign_available_benefits(self, employee_id):
-        benefit = self.env["hr.payroll.benefits.accumulated"].search(
-            [
-                ("employee_id", "=", employee_id),
-            ],
-            limit=1,
-        )
-        return benefit.foreign_available_benefits
+        benefits = self.get_benefits_for_employee(employee_id)
+        return benefits.foreign_available_benefits
 
     @api.model
     def get_accumulated_interest(self, employee_id):
-        benefit = self.env["hr.payroll.benefits.accumulated"].search(
-            [
-                ("employee_id", "=", employee_id),
-            ],
-            limit=1,
-        )
-        return benefit.accumulated_interest
+        benefits = self.get_benefits_for_employee(employee_id)
+        return benefits.accumulated_interest

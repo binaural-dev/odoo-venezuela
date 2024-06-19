@@ -1,4 +1,4 @@
-# Translation of Odoo Server.
+ # Translation of Odoo Server.
 # This file contains the translation of the following modules:
 # 	* binaural_hr_payroll_liquidation
 #
@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240603\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-05 14:11+0000\n"
-"PO-Revision-Date: 2024-06-05 14:11+0000\n"
+"POT-Creation-Date: 2024-06-19 20:55+0000\n"
+"PO-Revision-Date: 2024-06-19 20:55+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -70,6 +70,11 @@ msgstr "Monto"
 #: model:ir.model.fields.selection,name:binaural_hr_payroll_liquidation.selection__hr_payroll_benefits_accumulated_detail__type__annual
 msgid "Annual"
 msgstr "Anual"
+
+#. module: binaural_hr_payroll_liquidation
+#: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__annual_accumulated_benefits
+msgid "Annual Accumulated Benefits"
+msgstr "Acumulado Anual"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__available_benefits
@@ -284,6 +289,11 @@ msgid "Foreign Amount"
 msgstr "Monto Foráneo"
 
 #. module: binaural_hr_payroll_liquidation
+#: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__foreign_annual_accumulated_benefits
+msgid "Foreign Annual Accumulated Benefits"
+msgstr "Acumulado Anual Alterno"
+
+#. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__foreign_available_benefits
 msgid "Foreign Available Benefits"
 msgstr "Saldo Disponible de Prestaciones Total en Moneda Foránea"
@@ -385,10 +395,21 @@ msgstr ""
 "El campo Días Máximos de Prestaciones por Año debe ser un número positivo"
 
 #. module: binaural_hr_payroll_liquidation
+#: model:ir.model.fields.selection,name:binaural_hr_payroll_liquidation.selection__hr_payroll_benefits_accumulated__type__monthly
 #: model:ir.model.fields.selection,name:binaural_hr_payroll_liquidation.selection__hr_payroll_benefits_accumulated_detail__type__monthly
 #: model:ir.model.fields.selection,name:binaural_hr_payroll_liquidation.selection__res_company__benefits_computation_type__monthly
 msgid "Monthly"
 msgstr "Mensual"
+
+#. module: binaural_hr_payroll_liquidation
+#: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__monthly_or_quarterly_accumulated_benefits
+msgid "Monthly/Quarterly Accumulated"
+msgstr "Acumulado Mensual/Trimestral"
+
+#. module: binaural_hr_payroll_liquidation
+#: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__foreign_monthly_or_quarterly_accumulated_benefits
+msgid "Monthly/Quarterly Foreign Accumulated"
+msgstr "Acumulado Mensual/Trimestral Alterno"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model,name:binaural_hr_payroll_liquidation.model_hr_payslip
@@ -416,6 +437,7 @@ msgid "Payslip Payments"
 msgstr "Pagos de Nómina"
 
 #. module: binaural_hr_payroll_liquidation
+#: model:ir.model.fields.selection,name:binaural_hr_payroll_liquidation.selection__hr_payroll_benefits_accumulated__type__quarterly
 #: model:ir.model.fields.selection,name:binaural_hr_payroll_liquidation.selection__hr_payroll_benefits_accumulated_detail__type__quarterly
 #: model:ir.model.fields.selection,name:binaural_hr_payroll_liquidation.selection__res_company__benefits_computation_type__quarterly
 msgid "Quarterly"
@@ -466,6 +488,7 @@ msgid "This employee already has benefits accumulated."
 msgstr "Este empleado ya tiene acumulado de prestaciones"
 
 #. module: binaural_hr_payroll_liquidation
+#: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__type
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated_detail__type
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_move__move_type
 msgid "Type"
@@ -498,5 +521,5 @@ msgid ""
 "You cannot make a benefits advance to an employee who doesn't have available"
 " benefits."
 msgstr ""
-"No se puede realizar un adelanto de prestaciones a un empleado que no tiene"
-" prestaciones disponibles"
+"No se puede realizar un adelanto de prestaciones a un empleado que no tiene "
+"prestaciones disponibles"
