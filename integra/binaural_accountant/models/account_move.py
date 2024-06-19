@@ -939,10 +939,10 @@ class AccountMove(models.Model):
         res = super()._compute_needed_terms()
 
         for invoice in self:
-            invoice._compute_tax_totals()
             is_draft = invoice.id != invoice._origin.id
             sign = 1 if invoice.is_inbound(include_receipts=True) else -1
             if invoice.is_invoice(True) and invoice.invoice_line_ids:
+                invoice._compute_tax_totals()
                 if invoice.invoice_payment_term_id:
                     if is_draft:
                         tax_amount_currency = 0.0
