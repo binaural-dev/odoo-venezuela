@@ -20,4 +20,5 @@
         "data/res_partner_data.xml",
         "data/account_journal_data.xml"
     ],
+    "binaural": True,
 }

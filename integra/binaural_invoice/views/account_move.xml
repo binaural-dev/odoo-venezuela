@@ -161,4 +161,15 @@
             </field>
         </record>
 
+        <record id="binaural_invoice_view_invoice_tree" model="ir.ui.view">
+            <field name="name">account.move.tree.binaural.invoice</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_invoice_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="correlative" optional="hide"/>
+                </xpath>
+            </field>
+        </record>
+
 </odoo>

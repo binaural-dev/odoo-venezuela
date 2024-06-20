@@ -909,6 +909,13 @@ msgid "docids empty"
 msgstr ""
 
 #. module: binaural_accountant
+#. odoo-python
+#: code:addons/binaural_accountant/report/account_invoice_details_report.py:0
+#, python-format
+msgid "The time zone is not registered, log in to your profile and configure it."
+msgstr "La zona horaria no está registrada, accede a tu perfil y configúrala."
+
+#. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document
 msgid "documento"
 msgstr ""

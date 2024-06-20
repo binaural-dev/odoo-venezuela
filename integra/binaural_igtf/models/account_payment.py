@@ -34,7 +34,7 @@ class AccountPaymentIgtf(models.Model):
         compute="_compute_igtf_amount",
         store=True,
         help="IGTF Amount",
-        digits=(16, 2),
+        # digits=(16, 6), Change field Float to Monetary odoo 17
     )
 
     amount_with_igtf = fields.Float(
@@ -309,3 +309,13 @@ class AccountPaymentIgtf(models.Model):
                     move.button_draft()
 
         return super(AccountPaymentIgtf, self).action_draft()
+
+
+    def get_bi_igtf(self):
+        self.ensure_one()
+        amount_without_difference = self.amount_with_igtf - self.igtf_amount
+        if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
+            amount_without_difference = amount_without_difference * self.foreign_rate
+
+        return amount_without_difference
+

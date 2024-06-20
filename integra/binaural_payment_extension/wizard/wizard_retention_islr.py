@@ -180,7 +180,7 @@ class RetentionIslrReport(models.TransientModel):
                         break
                 dict["Código Concepto"] = concept
                 dict["Monto Operación"] = (
-                    il.foreign_invoice_amount if foreign_currency_id == 3 else il.invoice_amount
+                    round(il.foreign_invoice_amount, 2) if foreign_currency_id == 3 else il.invoice_amount
                 )
                 dict["Porcentaje de retención"] = alicuota
                 lista.append(dict)
