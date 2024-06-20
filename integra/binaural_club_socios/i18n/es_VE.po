@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240603\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-20 14:11+0000\n"
-"PO-Revision-Date: 2024-06-20 14:11+0000\n"
+"POT-Creation-Date: 2024-06-20 16:13+0000\n"
+"PO-Revision-Date: 2024-06-20 16:13+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -90,6 +90,7 @@ msgstr "Formulario de Acción de Socio"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__state_action
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__state_action
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
 msgid "Action State"
 msgstr "Estado de la Acción"
 
@@ -144,9 +145,19 @@ msgid "Active"
 msgstr "Activo"
 
 #. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Active Action"
+msgstr "Acción Activa"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__active_lang_count
 msgid "Active Lang Count"
 msgstr "Contador de idiomas activos"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Active Partners"
+msgstr "Socios Activos"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__activity_ids
@@ -371,7 +382,7 @@ msgstr "Rebote"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__business_name
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__business_name
 msgid "Business Name"
-msgstr ""
+msgstr "Razón Social"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__business_name_usufruct
@@ -653,9 +664,19 @@ msgid "Deceased"
 msgstr "Fallecido"
 
 #. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Deceased Partners"
+msgstr "Socios Fallecidos"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__trust
 msgid "Degree of trust you have in this debtor"
 msgstr "Grado de confianza en este deudor"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Discontinued Partners"
+msgstr "Socios Suspendidos"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__display_name
@@ -833,6 +854,7 @@ msgstr ""
 msgid "Family reference"
 msgstr "Referencia"
 
+
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__member_gender__female
 msgid "Female"
@@ -910,10 +932,20 @@ msgid "Holder"
 msgstr "Tenedor"
 
 #. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Holder Partners"
+msgstr "Socios Tenedores"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__action_partner__state__honorary
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__status_action_batch__status__honorary
 msgid "Honorary"
 msgstr "Honorario"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Honorary Action"
+msgstr "Acción Honorario"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__id
@@ -1013,6 +1045,11 @@ msgstr "Imagen 512"
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__state_partner__inactive
 msgid "Inactive"
 msgstr "Inactivo"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Inactive Partners"
+msgstr "Socios Inactivos"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__mobile_blacklisted
@@ -1739,7 +1776,7 @@ msgstr ""
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__is_seo_optimized
 msgid "SEO optimized"
-msgstr ""
+msgstr "SEO Optimizado"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__message_has_sms_error
@@ -1793,7 +1830,7 @@ msgstr "Sí mismo"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__seo_name
 msgid "Seo name"
-msgstr ""
+msgstr "Nombre SEO"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__member_gender
@@ -1873,6 +1910,11 @@ msgstr ""
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__status_action_batch__status__special
 msgid "Special"
 msgstr "Especial"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Special Action"
+msgstr "Acción Especial"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__type_relation__special_children
@@ -2203,13 +2245,18 @@ msgstr ""
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__translated_display_name
 msgid "Translated Display Name"
-msgstr ""
+msgstr "Nombre de visualización traducido"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__action_partner__state__treasury
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__status_action_batch__status__treasury
 msgid "Treasury"
 msgstr "Tesorería"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Treasury Action"
+msgstr "Acción Tesorería"
 
 #. module: binaural_club_socios
 #. odoo-python
@@ -2281,6 +2328,7 @@ msgstr "Titular Usufructo"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__vat_usufruct
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__vat_usufruct
 msgid "Vat Usufruct"
+
 msgstr "RIF Usufructo"
 
 #. module: binaural_club_socios
