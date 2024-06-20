@@ -2398,6 +2398,26 @@ msgid "Website communication history"
 msgstr "Historial de comunicaciones del sitio web"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_meta_description
+msgid "Website meta description"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_meta_keywords
+msgid "Website meta keywords"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_meta_title
+msgid "Website meta title"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_meta_og_img
+msgid "Website opengraph image"
+msgstr ""
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__tz
 msgid ""
 "When printing documents and exporting/importing data, time values are computed according to this timezone.\n"
