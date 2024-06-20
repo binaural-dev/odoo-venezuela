@@ -3,7 +3,7 @@
 
     <t t-name="ReceiptScreen" t-inherit="binaural_pos_receipt.ReceiptScreen" t-inherit-mode="extension" owl="1">
         <xpath expr="//div[hasclass('buttons')]" position="inside">
-            <div class="button print" t-on-click="printTicketInvoice">
+            <div class="button print" t-if="currentOrder.to_receipt" t-on-click="printTicketInvoice">
                 <i class="fa fa-print"></i> Imprimir Factura
             </div>
         </xpath>
