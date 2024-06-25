@@ -15,6 +15,7 @@
     ],
     "data": [
         "report/invoice_mf_ticket.xml",
+        "views/pos_payment_method.xml",
     ],
     "assets": {
         "point_of_sale.assets": [

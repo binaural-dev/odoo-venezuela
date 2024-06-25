@@ -39,6 +39,7 @@ class AccountMove(models.Model):
         )
         if self.partner_id.phone:
             lines.append(TXT_ALIGN_LT + b"TELEFONO: " + encode_text(self.partner_id.phone))
+        lines = self.set_info_extra(lines)
         text_move_type = "FACTURA"
         if self.move_type == "out_invoice":
             lines.append(TXT_ALIGN_CT + encode_text(text_move_type))
@@ -52,7 +53,9 @@ class AccountMove(models.Model):
                 )
             )
             lines.append(TXT_ALIGN_CT + encode_text(text_move_type))
-        lines.append(TXT_ALIGN_LT + encode_text(get_spaces(text_move_type+":", self.name)))
+        lines.append(
+            TXT_ALIGN_LT + encode_text(get_spaces(text_move_type + ":", self.remove_code_in_name()))
+        )
         lines.append(
             encode_text(
                 get_spaces(
@@ -75,8 +78,7 @@ class AccountMove(models.Model):
 
             if line.tax_ids and line.tax_ids[0].amount > 0:
                 aliquot = " (G)"
-
-            if line.quantity > 1:
+            if line.quantity != 1:
                 lines.append(
                     encode_text(
                         str(line.quantity) + "x Bs " + "{0:,.2f}".format(line.foreign_price)
@@ -119,22 +121,40 @@ class AccountMove(models.Model):
                 )
             )
         lines.append(SEPARATOR_SMALL)
+        # AGREGA LOS PAGOS HECHOS EN POS ANTES DEL TOTAL
+        if self.pos_order_ids[0].payment_ids:
+            for payment in reversed(self.pos_order_ids[0].payment_ids):
+                lines.append(
+                    TXT_ALIGN_LT
+                    + encode_text(
+                        get_spaces(
+                            payment.payment_method_id.payment_name_in_mf,
+                            "Bs " + "{0:,.2f}".format(payment.foreign_amount),
+                        )
+                    )
+                )
+            lines.append(SEPARATOR_SMALL)
+        # _________________________________________________________
         lines.append(
             TXT_FONT_A
             + TXT_BOLD_ON
             + encode_text(get_spaces("TOTAL", "Bs " + "{0:,.2f}".format(subtotal + iva_16), True))
         )
-        lines.append(
-            TXT_BOLD_OFF
-            + encode_text(get_spaces("EFECTIVO", "Bs " + "{0:,.2f}".format(subtotal + iva_16)))
-        )
+        # MOSTRAR EL TOTAL EFECTIVO AL FINAL DEL TICKET
+        # lines.append(
+        #     TXT_BOLD_OFF
+        #     + encode_text(get_spaces("EFECTIVO", "Bs " + "{0:,.2f}".format(subtotal + iva_16)))
+        # )
+        # _________________________________________________________
         lines.append(
             TXT_FONT_A
             + TXT_BOLD_OFF
             + TXT_ITALICS
             + encode_text(
                 get_spaces(
-                    "MH", self.set_info_in_receipt().get(str(self.company_id.id), False)["serial"], True
+                    "MH",
+                    self.set_info_in_receipt().get(str(self.company_id.id), False)["serial"],
+                    True,
                 )
             )
         )
@@ -145,17 +165,30 @@ class AccountMove(models.Model):
 
         data += b"\x1d\x56\x41\n"
         return data.decode("latin-1")
-    
+
     def set_info_in_receipt(self):
         return {}
-    
+
+    def set_info_extra(self, lines):
+        if self.pos_order_ids:
+            lines.append(
+                TXT_ALIGN_LT + b"OPERADOR: " + encode_text(self.pos_order_ids[0].employee_id.name)
+            )
+            lines.append(
+                TXT_ALIGN_LT
+                + encode_text(self.pos_order_ids[0].pos_reference.upper().replace(" ", ": "))
+            )
+        return lines
+
     def remove_code_in_name(self):
-        name_without_code = ''
+        name_without_code = ""
         if self.journal_id.code:
-            name_without_code = self.name.replace(self.journal_id.code, '')
+            name_without_code = self.name.replace(
+                f"{self.journal_id.code}/{self.invoice_date.year}/", ""
+            )
+            name_without_code = name_without_code.zfill(8)
         return name_without_code or self.name
 
 
 def encode_text(text):
     return str(text).replace('"', "").replace("ñ", "n").replace("Ñ", "N").encode("latin-1")
-
