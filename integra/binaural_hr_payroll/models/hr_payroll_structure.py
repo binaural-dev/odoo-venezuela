@@ -8,11 +8,10 @@ class HrPayrollStructure(models.Model):
         [
             ("salary", "Salary"),
             ("vacation", "Vacation"),
-            ("benefits", "Benefits"),
             ("profit_sharing", "Profit Sharing"),
-            ("liquidation", "Liquidation"),
             ("provision", "Provision"),
             ("advance", "Advance"),
+            ("other", "Other"),
         ],
         default="salary",
     )

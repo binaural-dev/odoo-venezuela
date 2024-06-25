@@ -14,4 +14,5 @@
     "data": [
         "views/account_asset.xml",
     ],
+    "binaural":True,
 }

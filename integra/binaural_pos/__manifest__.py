@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.0.0.2.11",
+    "version": "16.0.0.2.16",
     # any module necessary for this one to work correctly
     "depends": ["base", "point_of_sale", "binaural_rate", "binaural_contact", "binaural_stock"],
     # always loaded
@@ -35,4 +35,5 @@
             "binaural_pos/static/tests/unit/**/*",
         ],
     },
+    "binaural": True,
 }

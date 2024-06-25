@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "16.0.1.12.0",
+    "version": "16.0.1.12.1",
     "depends": ["base", "binaural_rate", "binaural_tax", "binaural_invoice", "binaural_tax_payer"],
     "data": [
         "views/res_config_settings.xml",
@@ -18,4 +18,5 @@
         "web.assets_backend": ["binaural_base_igtf/static/src/components/**/*"],
     },
     "application": True,
+    "binaural":True,
 }

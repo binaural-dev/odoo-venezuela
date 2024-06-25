@@ -20,7 +20,7 @@
 
 				<div class="row">
 					<div class="col-12 my-2 ">
-						<p>La cantidad de <span t-field="o.amount_words"/> (<span t-field="o.amount"/>)</p>
+						<p>La cantidad de <span t-out="o.currency_id.amount_to_text(o.amount)"/> (<span t-field="o.amount"/>)</p>
 					</div>
 				</div>
 			</xpath>

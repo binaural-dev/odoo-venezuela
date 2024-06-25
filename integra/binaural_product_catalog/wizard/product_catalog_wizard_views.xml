@@ -68,7 +68,12 @@
                 <field name="border_width"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
                 <field name="order_by_name"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
             </field>
-
+            <xpath expr="//field[@name='style']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='style']" position="after">
+                <field name="style_mod" widget="radio"/>
+            </xpath>
         </field>
     </record>
 
