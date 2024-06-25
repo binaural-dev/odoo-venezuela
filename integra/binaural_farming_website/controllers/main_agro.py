@@ -1,6 +1,8 @@
 import json
 import logging
 from datetime import datetime
+from collections import OrderedDict
+from werkzeug.exceptions import Forbidden, NotFound
 
 from odoo import _, http
 from odoo.http import request
@@ -19,10 +21,21 @@ class MainAgro(http.Controller):
         auth="public",
         website=True,
     )
-    def website_agro(self, lot=None, page=1, search=None, search_in="name", url="/agro", **kw):
+    def website_agro(
+        self, lot=None, page=1, filterby=None, search=None, search_in="name", url="/agro", **kw
+    ):
         if not lot:
             _items_per_page = 15
             domain = self.domain_lots()
+            
+            searchbar_filters = self._get_searchbar_filters()
+            if not filterby:
+                filterby = "all"
+            domain = expression.AND([domain, searchbar_filters[filterby]["domain"]])
+
+            if search and search_in:
+                domain = expression.AND([domain, self._get_search_domain_lots(search_in, search)])
+
             lot_count = request.env["stock.lot"].search_count(domain)
 
             pager = agro_pager(
@@ -35,8 +48,7 @@ class MainAgro(http.Controller):
                 page=page,
                 step=_items_per_page,
             )
-            if search and search_in:
-                domain = expression.AND([domain, self._get_search_domain_lots(search_in, search)])
+            
             lot_ids = request.env["stock.lot"].search(
                 domain, limit=_items_per_page, offset=pager["offset"]
             )
@@ -48,10 +60,14 @@ class MainAgro(http.Controller):
                     "default_url": url,
                     "searchbar_inputs": self._get_searchbar_inputs_lots(),
                     "pager": pager,
+                    "searchbar_filters": OrderedDict(sorted(searchbar_filters.items())),
+                    "filterby": filterby,
                     "lots": lot_ids,
                 },
             )
         lot_id = request.env["stock.lot"].search([("name", "=", lot)])
+        if not lot_id:
+            raise NotFound()
 
         return request.render(
             "binaural_farming_website.agro_animal_lot",
@@ -64,6 +80,19 @@ class MainAgro(http.Controller):
         return {
             "name": {"input": "name", "label": _("Search for Lot")},
             "race": {"input": "race", "label": _("Search for Race")},
+        }
+
+    def _get_searchbar_filters(self):
+        return {
+            "all": {"label": _("All"), "domain": []},
+            "female": {
+                "label": _("Female"),
+                "domain": [("gender", "=", "female")],
+            },
+            "male": {
+                "label": _("Male"),
+                "domain": [("gender", "=", "male")],
+            },
         }
 
     def _get_search_domain_lots(self, search_in, search):
