@@ -27,7 +27,7 @@ class MainAgro(http.Controller):
         if not lot:
             _items_per_page = 15
             domain = self.domain_lots()
-            
+
             searchbar_filters = self._get_searchbar_filters()
             if not filterby:
                 filterby = "all"
@@ -48,7 +48,7 @@ class MainAgro(http.Controller):
                 page=page,
                 step=_items_per_page,
             )
-            
+
             lot_ids = request.env["stock.lot"].search(
                 domain, limit=_items_per_page, offset=pager["offset"]
             )
@@ -108,4 +108,8 @@ class MainAgro(http.Controller):
     def domain_lots(self):
         website = request.env["website"].get_current_website()
         website_company_id = website._get_cached("company_id")
-        return [("gender", "!=", False), ("company_id", "in", [False, website_company_id])]
+        return [
+            ("gender", "!=", False),
+            ("company_id", "in", [False, website_company_id]),
+            ("publishing_on_the_web", "=", True),
+        ]
