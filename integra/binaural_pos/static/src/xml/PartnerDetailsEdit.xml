@@ -30,5 +30,18 @@
                     t-model="changes.name" />
             </div>
         </xpath>
+        <xpath expr="//div/div/div[@class='partner-detail'][2]" position="replace">
+            <div class="partner-detail" >
+                <span class="label">City</span>
+                <select class="detail" name="cities" t-model="changes.city_id" t-on-change="captureChange">
+                    <option value="">None</option>
+                    <t t-foreach="env.pos.cities" t-as="city" t-key="city.id">
+                        <option t-att-value="city.id" t-att-selected="city.name == changes.city">
+                            <t t-esc="city.name" />
+                        </option>
+                    </t>
+                </select>
+            </div>
+        </xpath>
     </t>
 </templates>
