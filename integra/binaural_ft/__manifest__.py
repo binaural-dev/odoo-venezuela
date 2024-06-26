@@ -8,7 +8,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.1.0.1",
+    "version": "16.0.1.0.2",
     "depends": [
         "point_of_sale",
         "binaural_pos_receipt",
