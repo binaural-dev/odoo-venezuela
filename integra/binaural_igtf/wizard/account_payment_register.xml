@@ -12,7 +12,7 @@
                         <field name="is_igtf_on_foreign_exchange" attrs="{'invisible': [('is_igtf', '=', False)]}" />
                         <div attrs="{'invisible' : [('is_igtf_on_foreign_exchange', '=',False)]}">
                             <span class="oe_title">IGTF(<field name="igtf_percentage" readonly="1"/>)%:</span>
-                            <field name="igtf_amount"/>
+                            <field name="igtf_amount" widget="monetary"/>
                         </div>
                     </group>
                 </xpath>

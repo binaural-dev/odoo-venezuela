@@ -81,54 +81,62 @@ class MemberInDebtReport(models.Model):
         tools.drop_view_if_exists(self.env.cr, self._table)
         self.env.cr.execute(
             """
-             CREATE OR REPLACE FUNCTION PUBLIC.get_members_pending_debt(p_id BIGINT, act_number BIGINT, invoice_fee_period DATE, start_date DATE)
+            CREATE OR REPLACE FUNCTION PUBLIC.get_members_pending_debt(p_id BIGINT, act_number BIGINT, invoice_fee_period DATE, start_date DATE)
                 RETURNS TABLE(partner_id BIGINT, action_number BIGINT, quota_period DATE, amount FLOAT) AS $$
-                DECLARE
-                    _rec RECORD;
-                    _tmp_date DATE;
-                    _tmp_next_date DATE;
-                    _tmp_record RECORD;
-                    curry CURSOR FOR SELECT * FROM pending_debt_list ORDER BY date_end ASC;
+                DECLARE 
                     _effective_date DATE;
-                    BEGIN
-                        FOR record IN curry LOOP
-                            IF invoice_fee_period IS NULL THEN
-                                _effective_date := start_date;
-                            ELSE
-                                _effective_date := invoice_fee_period;
-                            END IF;
-                            IF record.date_end IS NULL THEN
-                                _tmp_date := NOW()::DATE;
-                            ELSE
-                                _tmp_date := record.date_end;
-                            END IF;
-                            IF _effective_date <= _tmp_date AND EXTRACT(MONTH FROM _effective_date) >= (SELECT day_end_date_payment FROM partner_config LIMIT 1) THEN
-                                _tmp_next_date := _effective_date + INTERVAL '1 months';
-                                LOOP 
-                                    IF EXTRACT(MONTH FROM _tmp_next_date) >= EXTRACT(MONTH FROM NOW()::DATE) AND EXTRACT(YEAR FROM _tmp_next_date) >= EXTRACT(YEAR FROM NOW()::DATE) THEN
-                                        EXIT;
-                                    END IF;
-                                    
-                                    SELECT p_id, act_number, _tmp_next_date AS _date INTO _rec;
-                                    partner_id := _rec.p_id;
-                                    action_number := _rec.act_number;
-                                    quota_period := _rec._date;
-                                    
-                                    amount := (SELECT pdl.amount FROM pending_debt_list pdl WHERE pdl.date_end >= _tmp_next_date OR pdl.date_end IS NULL ORDER BY pdl.date_end ASC LIMIT 1);
-                                    
-                                    _tmp_next_date := _tmp_next_date + INTERVAL '1 months';
-                                                            
-                                    RETURN NEXT;
-                                END LOOP;
-                            END IF;
+                    _tmp_next_date DATE;
+                    _day_end_date_payment INTEGER;
+                BEGIN
+                    IF invoice_fee_period IS NULL THEN
+                        _effective_date := start_date;
+                    ELSE
+                        _effective_date := invoice_fee_period;
+                    END IF;
 
-                            IF EXTRACT(MONTH FROM _tmp_next_date) >= EXTRACT(MONTH FROM NOW()::DATE) AND EXTRACT(YEAR FROM _tmp_next_date) >= EXTRACT(YEAR FROM NOW()::DATE) THEN
+                    SELECT day_end_date_payment INTO _day_end_date_payment FROM partner_config LIMIT 1;
+
+                    IF _effective_date <= CURRENT_DATE AND EXTRACT(DAY FROM CURRENT_DATE) >= _day_end_date_payment THEN
+                        _tmp_next_date := _effective_date;
+                    ELSE
+                        IF EXTRACT(DAY FROM CURRENT_DATE) < _day_end_date_payment THEN
+                            _tmp_next_date := date_trunc('month', _effective_date) + INTERVAL '1 month';
+                        ELSE
+                            _tmp_next_date := date_trunc('month', _effective_date);
+                        END IF;
+                    END IF;
+
+                    WHILE _tmp_next_date <= NOW()::DATE + INTERVAL '1 month' LOOP
+                        RAISE NOTICE 'Processing date: %', _tmp_next_date;
+
+                        IF invoice_fee_period IS NOT NULL AND EXTRACT(DAY FROM invoice_fee_period) > _day_end_date_payment THEN
+                            IF EXTRACT(MONTH FROM _tmp_next_date) = EXTRACT(MONTH FROM invoice_fee_period) 
+                            AND EXTRACT(YEAR FROM _tmp_next_date) = EXTRACT(YEAR FROM invoice_fee_period) THEN
+                                _tmp_next_date := _tmp_next_date + INTERVAL '1 month';
+                                CONTINUE;
+                            END IF;
+                        END IF;
+
+                        IF EXTRACT(DAY FROM CURRENT_DATE) < _day_end_date_payment THEN
+                            IF EXTRACT(MONTH FROM _tmp_next_date) = EXTRACT(MONTH FROM NOW()) 
+                            AND EXTRACT(YEAR FROM _tmp_next_date) = EXTRACT(YEAR FROM NOW()) THEN
                                 EXIT;
                             END IF;
-                        END LOOP;
-                    END;
-                $$
-            LANGUAGE plpgsql;
+                        END IF;
+
+                        RETURN QUERY
+                        SELECT 
+                            p_id AS partner_id,
+                            act_number AS action_number,
+                            _tmp_next_date AS quota_period,
+                            (SELECT pdl.amount FROM pending_debt_list pdl 
+                            WHERE pdl.date_end >= _tmp_next_date OR pdl.date_end IS NULL 
+                            ORDER BY pdl.date_end ASC LIMIT 1) AS amount;
+
+                        _tmp_next_date := _tmp_next_date + INTERVAL '1 month';
+                    END LOOP;
+                END;
+                $$ LANGUAGE plpgsql;
             """
         )
         self.env.cr.execute(

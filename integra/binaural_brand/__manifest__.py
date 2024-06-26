@@ -32,4 +32,5 @@ parroquias. 
         'reports/report_sale.xml',
     ],
     "application": True,
+    "binaural":True,
 }

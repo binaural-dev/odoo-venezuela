@@ -139,8 +139,7 @@ class PaymentMobile(models.Model):
     def compute_test(self):
         self.amount_total()
         for line in self.payment_mobile_line:
-            line._compute_amount()
-            line._compute_amount_foreign()
+            line._compute_amounts()
             line._compute_amount_payment_total()
             line._compute_foreign_amount_payment_total()
 
@@ -227,8 +226,7 @@ class PaymentMobileLine(models.Model):
         res = super().write(vals)
         if "payment_related" in vals:
             for line in self:
-                line._compute_amount()
-                line._compute_amount_foreign()
+                line._compute_amounts()
         return res
 
     @api.depends("payment_related")
@@ -246,6 +244,9 @@ class PaymentMobileLine(models.Model):
     @api.depends("payment_related")
     def _compute_foreign_amount_payment_total(self):
         for line in self:
+            if line.payment_related.is_retention:
+                line.foreign_amount_payment_total = line.payment_related.retention_foreign_amount
+                continue
             if line.payment_related.currency_id != line.foreign_currency_id:
                 line.foreign_amount_payment_total = (
                     line.payment_related.amount * line.payment_related.foreign_rate
@@ -288,6 +289,10 @@ class PaymentMobileLine(models.Model):
                 and line.foreign_amount > line.foreign_amount_payment_total
             ):
                 line.foreign_amount = line.foreign_amount_payment_total
+            
+            if line.payment_related.is_retention:
+                line.amount = line.payment_related.amount
+                line.foreign_amount = line.payment_related.retention_foreign_amount
 
 
 class PaymentMobileMethods(models.Model):

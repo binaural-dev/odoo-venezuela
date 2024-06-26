@@ -626,11 +626,17 @@ class SaleOrder(models.Model):
         @author: Nilam Kubavat @Emipro Technologies Pvt. Ltd on date 17 Jan 2024.
         Task_id: 6264
         """
+        product_product_obj = self.env["product.product"]
         message = ""
         refund_line_items = self.prepare_refund_data(refunds_data)
         orig_move_ids = self.picking_ids.move_ids.move_orig_ids if self.picking_ids.move_ids.move_orig_ids else self.picking_ids.move_ids
         orig_done_picking_ids = orig_move_ids.picking_id.filtered(lambda picking: picking.state == "done")
-        if not orig_done_picking_ids:
+        mrp_module = product_product_obj.search_installed_module_ept('mrp')
+        if not orig_done_picking_ids and mrp_module:
+            orig_done_picking_ids = orig_move_ids.move_dest_ids.picking_id.filtered(
+                lambda picking: picking.state == "done")
+        is_return = list(filter(lambda x: x.get('restock_type') == 'return', refunds_data[0].get('refund_line_items')))
+        if not orig_done_picking_ids and is_return:
             message = "Done picking is not available, so return can't be generated."
         need_to_remove_lines = []
         for picking_id in orig_done_picking_ids:
@@ -867,6 +873,8 @@ class SaleOrder(models.Model):
             else:
                 if order_response.get('transaction'):
                     for transaction in order_response.get('transaction'):
+                        if transaction.get('status') == 'failure':
+                            continue
                         if "Cash on Delivery" in transaction.get("gateway"):
                             gateway = transaction.get("gateway")
                         elif transaction.get('gateway') != 'gift_card' and transaction.get("status") == 'success':
@@ -892,7 +900,7 @@ class SaleOrder(models.Model):
             for transaction in order_response.get('transaction'):
                 if "Cash on Delivery" in transaction.get("gateway") or transaction.get('status') == 'success':
                     payments.append(transaction.get("gateway"))
-            if len(payments) > 1:
+            if len(list(set(payments))) > 1:
                 payment_vals = self.prepare_vals_shopify_multi_payment(instance, order_data_queue_line, order_response,
                                                                        payment_gateway, workflow)
                 if not payment_vals:
@@ -2201,7 +2209,10 @@ class SaleOrder(models.Model):
         shopify_line_ids = []
         for line in order_data.get('line_items'):
             line_id = line.get('id')
-            qty = int(line.get('fulfillable_quantity'))
+            if order_data.get('fulfillment_status') not in ['fulfilled', 'partial']:
+                qty = int(line.get('quantity'))
+            else:
+                qty = int(line.get('fulfillable_quantity'))
             if response_data.get(line_id):
                 qty = qty + response_data.get(line_id)
                 response_data.update({line_id: qty})
@@ -2701,8 +2712,8 @@ class SaleOrder(models.Model):
                     continue
                 if existing_refund_total_gift_card_amount == sale_gift_card_line.price_unit:
                     need_to_add_gift_card = False
-                new_move = self.with_context(check_move_validity=False,
-                                             need_to_add_gift_card=need_to_add_gift_card).create_move_and_delete_not_necessary_line(
+                new_move, payment_id = self.with_context(check_move_validity=False,
+                                                         need_to_add_gift_card=need_to_add_gift_card).create_move_and_delete_not_necessary_line(
                     refund_data_line, invoices, created_by, shopify_financial_status)
                 if refund_data_line.get('order_adjustments'):
                     self.create_refund_adjustment_line(refund_data_line.get('order_adjustments'), new_move)
@@ -2710,6 +2721,9 @@ class SaleOrder(models.Model):
                 new_move.with_context(**{'check_move_validity': False})._sync_dynamic_lines({'records': new_move})
                 if new_move.state == 'draft':
                     new_move.action_post()
+                    if payment_id:
+                        payment_id.action_post()
+                        self.reconcile_payment_ept(payment_id, new_move)
                     existing_refund_gift_card_line = new_move.invoice_line_ids.filtered(
                         lambda l: l.product_id.id == self.shopify_instance_id.gift_card_product_id.id)
                     existing_refund_total_gift_card_amount += existing_refund_gift_card_line.price_unit if existing_refund_gift_card_line.quantity >= 1 else 0
@@ -2721,6 +2735,7 @@ class SaleOrder(models.Model):
             @author: Haresh Mori @Emipro Technologies Pvt. Ltd on date 19/05/2021.
             Task Id : 173066 - Manage Partial refund in the Shopify
         """
+        payment_id = False
         delete_move_lines = self.env['account.move.line']
         shopify_line_ids = []
         shopify_line_ids_with_qty = {}
@@ -2737,6 +2752,10 @@ class SaleOrder(models.Model):
 
         move_reversal.reverse_moves()
         new_move = move_reversal.new_move_ids
+        # code for create payment for credit note
+        if self.shopify_instance_id.credit_note_register_payment and self.shopify_instance_id.credit_note_payment_journal:
+            payment_id = self.credit_note_register_payment(new_move)
+        # code for create payment for credit note
         new_move.write({'is_refund_in_shopify': True, 'shopify_refund_id': refunds_data.get('id')})
         total_qty = 0.0
         total_sale_line_qty = 0.0
@@ -2778,7 +2797,33 @@ class SaleOrder(models.Model):
             # delete_move_lines.with_context(check_move_validity=False)._onchange_price_subtotal()
             # delete_move_lines.with_context(check_move_validity=False).unlink()
             # new_move.with_context(check_move_validity=False)._recompute_tax_lines()
-        return new_move
+        return new_move, payment_id
+
+    def credit_note_register_payment(self, new_move):
+        """
+        This method is used to register payment of the credit note.
+        """
+        account_payment_obj = self.env['account.payment']
+        instance_id = new_move.shopify_instance_id
+        if instance_id.credit_note_register_payment and instance_id.credit_note_payment_journal:
+            vals = self.prepare_credit_note_payment_dict(instance_id, new_move)
+            vals.update({'amount': new_move.amount_total})
+            payment_id = account_payment_obj.create(vals)
+            return payment_id
+
+    def prepare_credit_note_payment_dict(self, instance_id, new_move):
+        """ This method use to prepare a vals dictionary for payment."""
+        return {
+            'journal_id': new_move.shopify_instance_id.credit_note_payment_journal.id,
+            'ref': new_move.payment_reference,
+            'currency_id': new_move.currency_id.id,
+            'payment_type': 'outbound',
+            'date': new_move.date,
+            'partner_id': new_move.commercial_partner_id.id,
+            'amount': new_move.amount_residual,
+            'payment_method_id': self.auto_workflow_process_id.inbound_payment_method_id.id,
+            'partner_type': 'customer'
+        }
 
     def set_price_based_on_refund(self, move_line):
         """
@@ -2814,10 +2859,13 @@ class SaleOrder(models.Model):
                          'move_id': move_ids.id, 'partner_id': move_ids.partner_id.id,
                          'name': adjustment_product.display_name}
             new_move_vals = account_move_line_obj.new(move_vals)
+            if self.shopify_instance_id.apply_tax_in_order == 'odoo_tax':
+                new_move_vals.with_context(round=False)._compute_totals()
             # new_move_vals._onchange_product_id()
             new_vals = account_move_line_obj._convert_to_write(
                 {name: new_move_vals[name] for name in new_move_vals._cache})
-            new_vals.update({'quantity': 1, 'price_unit': -adjustments_amount, 'tax_ids': []})
+            new_vals.update(
+                {'quantity': 1, 'price_unit': -adjustments_amount, 'tax_ids': [(6, 0, new_move_vals.tax_ids.ids)]})
             account_move_line_obj.with_context(check_move_validity=False).create(new_vals)
 
     def _prepare_invoice(self):
@@ -3068,7 +3116,11 @@ class SaleOrderLine(models.Model):
         This method is used to prevent the delete sale order line if the order has a Shopify order.
         @author: Haresh Mori on date:17/06/2020
         """
+        product_product_obj = self.env['product.product']
         for record in self:
+            loyality_module = product_product_obj.search_installed_module_ept('sale_loyalty')
+            if loyality_module and record.is_reward_line:
+                continue
             if record.order_id.shopify_order_id:
                 msg = _(
                     "You can not delete this line because this line is Shopify order line and we need "

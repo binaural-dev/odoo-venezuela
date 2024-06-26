@@ -32,6 +32,7 @@ class PosSession(models.Model):
     def _loader_params_res_partner(self):
         res = super()._loader_params_res_partner()
         res["search_params"]["fields"].append("prefix_vat")
+        res["search_params"]["fields"].append("city_id")
         return res
 
     def _loader_params_res_currency(self):
@@ -65,6 +66,19 @@ class PosSession(models.Model):
         products = self._sort_available_products(products)
         self._process_pos_ui_product_product(products)
         return products
+    
+    def _loader_params_res_country_city(self):
+        return {'search_params': {'domain': [], 'fields': ['name', 'id']}}
+
+    def _get_pos_ui_res_country_city(self, params):
+        return self.env['res.country.city'].search_read(**params['search_params'])
+    
+    def _pos_ui_models_to_load(self):
+        result = super()._pos_ui_models_to_load()
+        if 'res.country.city' not in result:
+            result.append('res.country.city')
+        return result
+
 
     def get_pos_ui_product_product_by_params(self, custom_search_params):
         """
