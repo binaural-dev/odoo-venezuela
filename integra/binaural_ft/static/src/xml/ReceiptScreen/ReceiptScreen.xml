@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="ReceiptScreen" t-inherit="binaural_pos_receipt.ReceiptScreen" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('buttons')]" position="replace">
+            <div class="buttons">
+                <div class="button print" t-if="currentOrder.is_to_receipt()" t-on-click="printTicketInvoice">
+                    <i class="fa fa-print"></i> Imprimir Factura
+                </div>
+                <div class="button print" t-else="" t-on-click="printReceipt">
+                    <i class="fa fa-print"></i> Imprimir Recibo
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</templates>
