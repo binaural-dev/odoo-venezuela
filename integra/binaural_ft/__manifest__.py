@@ -21,7 +21,6 @@
         "point_of_sale.assets": [
             "binaural_ft/static/src/js/*.js",
             "binaural_ft/static/src/xml/**/**.xml",
-            # "binaural_ft/static/src/css/*.css",
         ],
     },
     "binaural": True,
