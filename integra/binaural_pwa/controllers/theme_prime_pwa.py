@@ -47,7 +47,7 @@ class BinThemePrimePWA(ThemePrimePWA):
 
         return manifest_data
 
-    @http.route('/pwa/<int:website_id>/manifest.json', type='http', auth='public', website=True)
+    @http.route('/pwa/<int:website_id>/manifest.json', type="json", auth="public", website=True)
     def get_pwa_manifest(self, website_id, **kargs):
         website = request.website
         manifest_data = self.get_default_manifest_json(website_id, website)
@@ -59,10 +59,10 @@ class BinThemePrimePWA(ThemePrimePWA):
 
             manifest_data = json_custom_manifest
 
-            website.company_id.write({"custom_manifest": json.dumps(manifest_data)})
+            website.sudo().company_id.write({"custom_manifest": json.dumps(manifest_data)})
 
         except:
-            website.company_id.write({"custom_manifest": json.dumps(manifest_data)})
+            website.sudo().company_id.write({"custom_manifest": json.dumps(manifest_data)})
 
         return request.make_response(
             data=json.dumps(manifest_data),
@@ -91,9 +91,9 @@ class BinThemePrimePWA(ThemePrimePWA):
 
             assetlinks_data = json_assetlink
 
-            website.company_id.write({"assetlink": json.dumps(assetlinks_data)})
+            website.sudo().company_id.write({"assetlink": json.dumps(assetlinks_data)})
         except:
-            website.company_id.write({"assetlink": json.dumps(assetlinks_data)})
+            website.sudo().company_id.write({"assetlink": json.dumps(assetlinks_data)})
 
         return request.make_response(
             data=json.dumps(assetlinks_data),

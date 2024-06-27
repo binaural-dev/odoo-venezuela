@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Theme/eCommerce",
-    "version": "16.0.0.0.6",
+    "version": "16.0.0.0.7",
     # any module necessary for this one to work correctly
     "depends": ["base","web","website","theme_prime"],
     # always loaded
