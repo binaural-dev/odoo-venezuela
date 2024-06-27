@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import api, fields, models
 from odoo.addons.theme_prime.controllers.main import ThemePrimePWA
 
 

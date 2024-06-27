@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <record id="res_partner_kanban_view" model="ir.ui.view">
+	<field name="name">binaural_club_socios_res_partner_kanban_view</field>
+	<field name="model">res.partner</field>
+	<field name="inherit_id" ref="base.res_partner_kanban_view"/>
+	<field name="arch" type="xml">
+	    <kanban position="attributes">
+		<attribute name="default_order">action_number</attribute>
+	    </kanban>
+	</field>
+    </record>
+
     <record id="binaural_club_socios_form_res_partner" model="ir.ui.view">
         <field name="name">binaural_club_socios_form_res_partner</field>
         <field name="model">res.partner</field>
@@ -195,7 +206,68 @@
                     <field name="business_name_usufruct" />
                 </field>
             </field>
-        </record>
+    </record>
 
+    <record id="res_partner_view_search_binaural_club_socios" model="ir.ui.view">
+        <field name="name">binaural.club.socios.search.res.partner</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='type_company']" position="after">
+                <field 
+                    name="action_number" 
+                    string="Número de Acción" 
+                    filter_domain="['|','|', ('action_number','=',self),('parent_id.action_number','=',self),('associate_action.number','=',self) ]"
+                />
+		<field name="state_action" string="Action State"/>
+                <separator/>
+		<filter
+		    string="Active Action"
+		    name="active_action"
+		    domain="[('active','=',True), ('state_action', '=', 'active')]"
+		/>
+		<filter
+		    string="Special Action"
+		    name="special_action"
+		    domain="[('active','=',True), ('state_action', '=', 'special')]"
+		/>
+		<filter
+		    string="Honorary Action"
+		    name="honorary_action"
+		    domain="[('active','=',True), ('state_action', '=', 'honorary')]"
+		/>
+		<filter
+		    string="Treasury Action"
+		    name="treasury_action"
+		    domain="[('active','=',True), ('state_action', '=', 'treasury')]"
+		/>
+                <separator/>
+		<filter
+		    string="Active Partners"
+		    name="active_club_partners"
+		    domain="[('active','=',True), ('state_partner', '=', 'active')]"
+		/>
+		<filter
+		    string="Inactive Partners"
+		    name="inactive_club_partners"
+		    domain="[('active','=',True), ('state_partner', '=', 'inactive')]"
+		/>
+		<filter
+		    string="Discontinued Partners"
+		    name="discontinued_club_partners"
+		    domain="[('active','=',True), ('can_access_club', '=', False)]"
+		/>
+		<filter
+		    string="Deceased Partners"
+		    name="deceased_club_partners"
+		    domain="[('active','=',True), ('state_partner', '=', 'deceased')]"
+		/>
+		<filter
+		    string="Holder Partners"
+		    name="holder_club_partners"
+		    domain="[('active','=',True), ('state_partner', '=', 'holder')]"
+		/>
+            </xpath>
+        </field>
+    </record>
 </odoo>
-

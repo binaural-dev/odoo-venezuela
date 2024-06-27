@@ -408,6 +408,43 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Credit Note Register Payment configuration -->
+                        <div class="col-12 col-lg-6 o_setting_box"
+                             attrs="{'invisible': [('refund_order_webhook', '=', False)]}">
+                            <div class="o_setting_left_pane">
+                                <field name="credit_note_register_payment"
+                                       style="margin-left: -0.5em"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="credit_note_register_payment"
+                                       string="Would you like to register payment for credit note?"/>
+                                <div class="text-muted">
+                                    If this feature is enabled, the system will automatically register payment for
+                                    credit note.
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Credit Note Register Payment configuration -->
+                        <!-- Payment Journal configuration -->
+                        <div class="col-xs-12 col-md-6 o_setting_box"
+                             attrs="{'invisible': [('credit_note_register_payment', '=', False)]}">
+                            <div class="o_setting_right_pane">
+                                <label for="credit_note_payment_journal" string="Payment Journal for Credit note"/>
+                                <div class="text-muted">
+                                    Selected Journal will be set in Credit note Payment journal
+                                </div>
+                                <div class="content-group">
+                                    <div class="mt16">
+                                        <field name="credit_note_payment_journal"
+                                               class="o_light_label" widget="selection"
+                                               domain="[('type','in',['cash','bank']),('company_id','=',shopify_company_id)]"
+                                               options="{'no_create':True,'no_open':True}"
+                                               attrs="{'required':[('credit_note_register_payment','!=',False)]}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Payment Journal configuration -->
                         <div class="col-12 col-lg-6 o_setting_box"
                              attrs="{'invisible': [('return_picking_order', '=', False)]}">
                             <div class="o_setting_left_pane">
