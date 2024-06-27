@@ -15,7 +15,6 @@
         "binaural_contact",
         "account",
         "account_accountant",
-        "binaural_invoice_lots",
     ],
     "data": [
         "security/ir.model.access.csv",
