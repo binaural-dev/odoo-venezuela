@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="stock_specie_tree_view" model="ir.ui.view">
+        <field name="name">Stock specie Tree</field>
+        <field name="model">stock.specie</field>
+        <field name="arch" type="xml">
+            <tree string="Stock specie" editable="bottom">
+                <field name="name" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="stock_specie_action" model="ir.actions.act_window">
+        <field name="name">Stock specie</field>
+        <field name="res_model">stock.specie</field>
+        <field name="view_mode">tree</field>
+        <field name="domain"></field>
+    </record>
+
+    <menuitem 
+        id="stock_specie_menu" 
+        name="Stock specie" 
+        parent="stock.menu_product_in_config_stock" 
+        action="stock_specie_action" 
+        sequence="4"
+    />
+
+</odoo>

@@ -16,15 +16,31 @@ _logger = logging.getLogger(__name__)
 class MainAgro(http.Controller):
 
     @http.route(
-        ["/agro", "/agro/page/<int:page>", "/agro/<string:lot>"],
+        [
+            "/agro/ganaderia",
+            "/agro/ganaderia/page/<int:page>",
+            "/agro/ganaderia/<string:specie>",
+            "/agro/ganaderia/<string:specie>/page/<int:page>",
+            "/agro/ganaderia/<string:specie>/<string:lot>-<int:lot_id>",
+            "/agro/ganaderia/<string:lot>-<int:lot_id>",
+        ],
         type="http",
         auth="public",
         website=True,
     )
     def website_agro(
-        self, lot=None, page=1, filterby=None, search=None, search_in="name", url="/agro", **kw
+        self,
+        lot=None,
+        lot_id=None,
+        specie=None,
+        page=1,
+        filterby=None,
+        search=None,
+        search_in="name",
+        url="/agro/ganaderia",
+        **kw
     ):
-        if not lot:
+        if not lot and not lot_id:
             _items_per_page = 15
             domain = self.domain_lots()
 
@@ -32,6 +48,9 @@ class MainAgro(http.Controller):
             if not filterby:
                 filterby = "all"
             domain = expression.AND([domain, searchbar_filters[filterby]["domain"]])
+
+            if specie:
+                domain = expression.AND([domain, [("specie_id.name", "=", specie)]])
 
             if search and search_in:
                 domain = expression.AND([domain, self._get_search_domain_lots(search_in, search)])
@@ -65,13 +84,14 @@ class MainAgro(http.Controller):
                     "lots": lot_ids,
                 },
             )
-        lot_id = request.env["stock.lot"].search([("name", "=", lot)])
+        lot_id = request.env["stock.lot"].browse(lot_id)
         if not lot_id:
             raise NotFound()
 
         return request.render(
             "binaural_farming_website.agro_animal_lot",
             {
+                "default_url": url,
                 "lot": lot_id,
             },
         )
@@ -83,7 +103,7 @@ class MainAgro(http.Controller):
         }
 
     def _get_searchbar_filters(self):
-        return {
+        filter_records = {
             "all": {"label": _("All"), "domain": []},
             "female": {
                 "label": _("Female"),
@@ -94,6 +114,14 @@ class MainAgro(http.Controller):
                 "domain": [("gender", "=", "male")],
             },
         }
+        specie_ids = request.env["stock.specie"].search([])
+        for specie in specie_ids:
+            filter_records[specie.name] = {
+                "label": specie.name,
+                "domain": [("specie_id", "=", specie.id)],
+            }
+
+        return filter_records
 
     def _get_search_domain_lots(self, search_in, search):
         search_domain = []

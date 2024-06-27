@@ -96,6 +96,37 @@ class StockLot(models.Model):
         compute='_compute_amount_total_evaluation', 
         store=True,
     )
+
+    final_quantification_id = fields.Many2one(
+        "stock.lot.qualitative.valuation",
+        string='Final quantification'
+    )
+
+    # Nuevos campos 
+    production_types = fields.Selection(
+        [
+            ("dairy_breeds", "Dairy Breeds"),
+            ("meat_breeds", "Meat Breeds")
+        ],
+        "Production Types",
+        default="dairy_breeds",
+    )
+
+    publishing_on_the_web = fields.Boolean()
+
+    # Cantidad de crias
+    first_birth = fields.Integer()
+    second_birth = fields.Integer()
+    third_birth = fields.Integer()
+
+    # Related to weight offspring
+    lot_weight_offspring_ids = fields.One2many(
+        'stock.lot.weight.offspring',
+        'lot_id',
+        string='Weight Offspring'
+    )
+
+    specie_id = fields.Many2one("stock.specie")
     
     # Computes
     # Parents lots
@@ -142,3 +173,8 @@ class StockLot(models.Model):
                 total += qua_val.valuation_quantity
             
             lots.amount_total_evaluation = total
+
+    @api.onchange("specie_id")
+    def _onchange_specie(self):
+        for lot in self:
+            lot.lot_race_id = False

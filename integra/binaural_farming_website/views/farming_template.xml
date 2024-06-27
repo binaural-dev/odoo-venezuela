@@ -9,11 +9,16 @@
                     <t t-set="title"> </t>
                 </t>
                 <div>
-                    <div class="row row-cols-1 row-cols-sm-3 g-6">
-                        <t t-foreach="lots" t-as="lot">
-                            <t t-call="binaural_farming_website.product_animal"/>
-                        </t>
-                    </div>
+                    <t t-if="lots">
+                        <div class="row row-cols-1 row-cols-sm-3 g-6">
+                            <t t-foreach="lots" t-as="lot">
+                                <t t-call="binaural_farming_website.product_animal"/>
+                            </t>
+                        </div>
+                    </t>                                                
+                    <t t-else="">
+                        <h2>Not have Results :(</h2>
+                    </t>
                 </div>
                 <div class="products_pager d-flex justify-content-center pt-5 pb-3">
                     <t t-call="website.pager"/>
@@ -39,7 +44,8 @@
                         <p><strong>Race</strong><br/><t t-out="lot.lot_race_id.description or '-'"/></p>	
                     </div>
                     <hr class="bg-primary"/>
-                    <a class="btn btn-primary fw-bold text-white" t-attf-href="/agro/{{lot.name}}" role="button">Ver ficha</a>
+                    <t t-set="specie" t-value="'' if not lot.specie_id else '/'+lot.specie_id.name"/>
+                    <a class="btn btn-primary fw-bold text-white" t-attf-href="{{default_url}}{{specie}}/{{lot.name}}-{{lot.id}}" role="button">Ver ficha</a>
                 </div>
             </div>
         </div>
@@ -89,6 +95,10 @@
                             <p>
                                 <strong>Birthdate: </strong>
                                 <t t-out="lot.date_of_birth or '-'"/>
+                            </p>
+                            <p>
+                                <strong>Specie: </strong>
+                                <t t-out="lot.specie_id.name or '-'"/>
                             </p>
                             <p>
                                 <strong>Race: </strong>
@@ -146,7 +156,8 @@
                                     <p>
                                         <span class="text-primary">Father</span>: 
                                         <t t-if="lot.parent_father_id">
-                                            <a t-attf-href="/agro/{{lot.parent_father_id.name}}" role="button">
+                                            <t t-set="specie" t-value="'' if not lot.parent_father_id.specie_id else '/'+lot.parent_father_id.specie_id.name"/>
+                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_father_id.name}}-{{lot.parent_father_id.id}}" role="button">
                                                 <span class="badge bg-secondary " t-out="lot.parent_father_id.name"/>
                                             </a>
                                         </t>
@@ -158,7 +169,8 @@
                                 <div class="tree-padres">
                                     <p><span class="text-primary">Mother</span>: 
                                         <t t-if="lot.parent_mother_id">
-                                            <a t-attf-href="/agro/{{lot.parent_mother_id.name}}" role="button">
+                                            <t t-set="specie" t-value="'' if not lot.parent_mother_id.specie_id else '/'+lot.parent_mother_id.specie_id.name"/>
+                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_mother_id.name}}-{{lot.parent_mother_id.id}}" role="button">
                                                 <span class="badge bg-primary " t-out="lot.parent_mother_id.name"/>
                                             </a>
                                         </t>
@@ -173,7 +185,8 @@
                                     <p>
                                         <span class="text-primary">GrandFather</span>: 
                                         <t t-if="lot.parent_father_id and lot.parent_father_id.parent_father_id">
-                                            <a t-attf-href="/agro/{{lot.parent_father_id.parent_father_id.name}}" role="button">
+                                            <t t-set="specie" t-value="'' if not lot.parent_father_id.parent_father_id.specie_id else '/'+lot.parent_father_id.parent_father_id.specie_id.name"/>
+                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_father_id.parent_father_id.name}}-{{lot.parent_father_id.parent_father_id.id}}" role="button">
                                                 <span class="badge bg-secondary " t-out="lot.parent_father_id.parent_father_id.name"/>
                                             </a>
                                         </t>
@@ -186,7 +199,8 @@
                                     <p>
                                         <span class="text-primary">GrandMother</span>: 
                                         <t t-if="lot.parent_father_id and lot.parent_father_id.parent_mother_id">
-                                            <a t-attf-href="/agro/{{lot.parent_father_id.parent_mother_id.name}}" role="button">
+                                            <t t-set="specie" t-value="'' if not lot.parent_father_id.parent_mother_id.specie_id else '/'+lot.parent_father_id.parent_mother_id.specie_id.name"/>
+                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_father_id.parent_mother_id.name}}-{{lot.parent_father_id.parent_mother_id.id}}" role="button">
                                                 <span class="badge bg-primary " t-out="lot.parent_father_id.parent_mother_id.name"/>
                                             </a>
                                         </t>
@@ -199,7 +213,8 @@
                                     <p>
                                         <span class="text-primary">GrandFather</span>: 
                                         <t t-if="lot.parent_mother_id and lot.parent_mother_id.parent_father_id">
-                                            <a t-attf-href="/agro/{{lot.parent_mother_id.parent_father_id.name}}" role="button">
+                                            <t t-set="specie" t-value="'' if not lot.parent_mother_id.parent_father_id.specie_id else '/'+lot.parent_mother_id.parent_father_id.specie_id.name"/>
+                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_mother_id.parent_father_id.name}}-{{lot.parent_mother_id.parent_father_id.id}}" role="button">
                                                 <span class="badge bg-secondary " t-out="lot.parent_mother_id.parent_father_id.name"/>
                                             </a>
                                         </t>
@@ -212,7 +227,8 @@
                                     <p>
                                         <span class="text-primary">GrandMother</span>: 
                                         <t t-if="lot.parent_mother_id and lot.parent_mother_id.parent_mother_id">
-                                            <a t-attf-href="/agro/{{lot.parent_mother_id.parent_mother_id.name}}" role="button">
+                                            <t t-set="specie" t-value="'' if not lot.parent_mother_id.parent_mother_id.specie_id else '/'+lot.parent_mother_id.parent_mother_id.specie_id.name"/>
+                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_mother_id.parent_mother_id.name}}-{{lot.parent_mother_id.parent_mother_id.id}}" role="button">
                                                 <span class="badge bg-primary " t-out="lot.parent_mother_id.parent_mother_id.name"/>
                                             </a>
                                         </t>
