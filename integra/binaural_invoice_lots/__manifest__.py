@@ -13,7 +13,7 @@
         "stock",
         "product",
         "binaural_rate",
-        "binaural_club_socios,"
+        "binaural_club_socios",
     ],
     "data": [
         "security/ir.model.access.csv",
