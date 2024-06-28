@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240603\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-19 20:55+0000\n"
-"PO-Revision-Date: 2024-06-19 20:55+0000\n"
+"POT-Creation-Date: 2024-06-28 20:37+0000\n"
+"PO-Revision-Date: 2024-06-28 20:37+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -256,37 +256,37 @@ msgstr "Fideícomiso"
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated_detail__foreign_accumulated_amount
 msgid "Foreign Accumulated Amount"
-msgstr "Monto Acumulado Foráneo"
+msgstr "Monto Acumulado Alterno"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__foreign_accumulated_benefits
 msgid "Foreign Accumulated Benefits"
-msgstr "Acumulado de Prestaciones Foráneo"
+msgstr "Acumulado de Prestaciones Alterno"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__foreign_accumulated_benefits_advance
 msgid "Foreign Accumulated Benefits Advance"
-msgstr "Saldo Acumulado de Anticipo de Prestaciones Foráneo"
+msgstr "Saldo Acumulado de Anticipo de Prestaciones Alterno"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__foreign_accumulated_interest
 msgid "Foreign Accumulated Interest"
-msgstr "Interesés Acumulados en Moneda Foránea"
+msgstr "Interesés Acumulados en Moneda Alterna"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payslip__foreign_benefits_advance
 msgid "Foreign Advance"
-msgstr "Adelanto Foráneo"
+msgstr "Adelanto Alterno"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_move__foreign_advance_of_benefits
 msgid "Foreign Advance Of Benefits"
-msgstr "Adelanto de Prestaciones Foráneo"
+msgstr "Adelanto de Prestaciones Alterno"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated_detail__foreign_amount
 msgid "Foreign Amount"
-msgstr "Monto Foráneo"
+msgstr "Monto Alterno"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__foreign_annual_accumulated_benefits
@@ -296,25 +296,23 @@ msgstr "Acumulado Anual Alterno"
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__foreign_available_benefits
 msgid "Foreign Available Benefits"
-msgstr "Saldo Disponible de Prestaciones Total en Moneda Foránea"
+msgstr "Saldo Disponible de Prestaciones Total en Moneda Alterno"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__foreign_available_benefits_to_pay
 msgid "Foreign Available Benefits To Pay"
-msgstr "Saldo Disponible de Prestaciones en Moneda Foránea"
+msgstr "Saldo Disponible de Prestaciones en Moneda Alterna"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_move__foreign_benefits_payment
 msgid "Foreign Benefits Payment"
-msgstr "Pago de Prestaciones en Moneda Foránea"
+msgstr "Pago de Prestaciones en Moneda Alterna"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__employee_vat
-#: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated__id
 #: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated_detail__employee_vat
-#: model:ir.model.fields,field_description:binaural_hr_payroll_liquidation.field_hr_payroll_benefits_accumulated_detail__id
 msgid "ID"
-msgstr ""
+msgstr "CI"
 
 #. module: binaural_hr_payroll_liquidation
 #: model:ir.model.fields.selection,name:binaural_hr_payroll_liquidation.selection__res_company__benefits_interest_computation_type__internal
