@@ -96,7 +96,7 @@ class AccountMoveLine(models.Model):
         res = super(AccountMoveLine, lines_without_name)._compute_name()
         receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
         for line in self:
-            if line.name or not (
+            if not (
                 line.account_id
                 and line.account_id.account_type in receivable_and_payable_account_types
             ):
