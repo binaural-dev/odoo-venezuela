@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.1.0.1",
+    "version": "16.0.1.0.0",
     "depends": [
         "base",
         "stock",

@@ -20,9 +20,7 @@ class WizardInvoiceBatch(models.TransientModel):
         required=True,
     )
     partners_ids = fields.Many2many(
-        "res.partner",
-        required=True,
-        domain=[("active", "=", True), ("action_number", "!=", False)],
+        "res.partner", required=True, domain=[("active", "=", True)]
     )
 
     sub_amount_untaxed = fields.Monetary(
