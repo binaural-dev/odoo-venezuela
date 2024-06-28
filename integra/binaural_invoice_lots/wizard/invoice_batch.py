@@ -1,5 +1,6 @@
 import copy
-from odoo import api, fields, models, _
+
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import date_utils
 
@@ -9,27 +10,26 @@ class WizardInvoiceBatch(models.TransientModel):
     _description = "Create batch invoices for fixed concepts"
     _rec_name = "comment"
 
-    company_id = fields.Many2one("res.company", default=lambda self: self.env.user.company_id)
+    company_id = fields.Many2one(
+        "res.company", default=lambda self: self.env.user.company_id
+    )
 
     subscription_product_line_ids = fields.One2many(
         "invoice.batch.line",
         "subscription_product_line_id",
         required=True,
     )
-    partners_ids = fields.Many2many("res.partner", required=True, domain=[("active", "=", True)])
+    partners_ids = fields.Many2many(
+        "res.partner",
+        required=True,
+        domain=[("active", "=", True), ("action_number", "!=", False)],
+    )
 
     sub_amount_untaxed = fields.Monetary(
-        # string="Exento",
-        compute="_compute_subscription_product_amounts",
+        compute="_compute_subscription_product_amounts"
     )
-    sub_amount_tax = fields.Monetary(
-        # string="Impuestos",
-        compute="_compute_subscription_product_amounts",
-    )
-    sub_amount_total = fields.Monetary(
-        # string="Total",
-        compute="_compute_subscription_product_amounts",
-    )
+    sub_amount_tax = fields.Monetary(compute="_compute_subscription_product_amounts")
+    sub_amount_total = fields.Monetary(compute="_compute_subscription_product_amounts")
     comment = fields.Text()
     fee_period = fields.Date()
 
@@ -80,8 +80,8 @@ class WizardInvoiceBatch(models.TransientModel):
         ]
         invoice_vals["invoice_line_ids"] = lines_vals
 
-        invoice_vals_for_all_valid_partners = self._get_invoice_vals_for_all_valid_partners(
-            invoice_vals
+        invoice_vals_for_all_valid_partners = (
+            self._get_invoice_vals_for_all_valid_partners(invoice_vals)
         )
         self.env["account.move"].create(invoice_vals_for_all_valid_partners)
         return
@@ -102,10 +102,14 @@ class WizardInvoiceBatch(models.TransientModel):
                 ]
             )
             if partner_invoices_for_period.filtered(
-                lambda i: any(line.product_id.fixed_concept for line in i.invoice_line_ids)
+                lambda i: any(
+                    line.product_id.fixed_concept for line in i.invoice_line_ids
+                )
             ):
                 continue
-            fiscal_position_id = self.env["account.fiscal.position"]._get_fiscal_position(partner)
+            fiscal_position_id = self.env[
+                "account.fiscal.position"
+            ]._get_fiscal_position(partner)
             new_vals = {
                 "partner_id": partner.id,
                 "fiscal_position_id": fiscal_position_id,
@@ -131,12 +135,16 @@ class WizardInvoiceBatch(models.TransientModel):
                         product=line.product_id,
                         partner=line.subscription_product_line_id.partner_id,
                     )
-                    sub_amount_tax += sum(t.get("amount", 0.0) for t in taxes.get("taxes", []))
+                    sub_amount_tax += sum(
+                        t.get("amount", 0.0) for t in taxes.get("taxes", [])
+                    )
                 else:
                     sub_amount_tax += line.price_tax
             rec.update(
                 {
-                    "sub_amount_untaxed": rec.company_id.currency_id.round(sub_amount_untaxed),
+                    "sub_amount_untaxed": rec.company_id.currency_id.round(
+                        sub_amount_untaxed
+                    ),
                     "sub_amount_tax": rec.company_id.currency_id.round(sub_amount_tax),
                     "sub_amount_total": sub_amount_untaxed + sub_amount_tax,
                 }
@@ -174,7 +182,9 @@ class InvoiceBatchLine(models.TransientModel):
     )
     price_subtotal = fields.Float(compute="_compute_amount", readonly=True, store=True)
     price_tax = fields.Float(compute="_compute_amount", readonly=True, store=True)
-    price_total = fields.Float(compute="_compute_amount", string="Total", readonly=True, store=True)
+    price_total = fields.Float(
+        compute="_compute_amount", string="Total", readonly=True, store=True
+    )
 
     product_no_variant_attribute_value_ids = fields.Many2many(
         "product.template.attribute.value",
@@ -216,7 +226,10 @@ class InvoiceBatchLine(models.TransientModel):
                 no_variant_attributes_price_extra=no_variant_attributes_price_extra
             )
 
-        if self.subscription_product_line_id.pricelist_id.discount_policy == "with_discount":
+        if (
+            self.subscription_product_line_id.pricelist_id.discount_policy
+            == "with_discount"
+        ):
             return product.with_context(
                 pricelist=self.subscription_product_line_id.pricelist_id.id
             ).list_price
@@ -226,14 +239,19 @@ class InvoiceBatchLine(models.TransientModel):
             uom=self.product_uom.id,
         )
 
-        final_price, rule_id = self.subscription_product_line_id.pricelist_id.with_context(
+        (
+            final_price,
+            rule_id,
+        ) = self.subscription_product_line_id.pricelist_id.with_context(
             **product_context
         ).get_product_price_rule(
             self.product_id,
             self.quantity or 1.0,
             self.subscription_product_line_id.partner_id,
         )
-        base_price, currency = self.with_context(**product_context)._get_real_price_currency(
+        base_price, currency = self.with_context(
+            **product_context
+        )._get_real_price_currency(
             product,
             rule_id,
             self.quantity,
@@ -244,7 +262,8 @@ class InvoiceBatchLine(models.TransientModel):
             base_price = currency._convert(
                 base_price,
                 self.subscription_product_line_id.pricelist_id.currency_id,
-                self.subscription_product_line_id.company_id or self.env.user.company_id,
+                self.subscription_product_line_id.company_id
+                or self.env.user.company_id,
                 fields.Date.today(),
             )
         return max(base_price, final_price)
@@ -262,7 +281,9 @@ class InvoiceBatchLine(models.TransientModel):
         if not self.product_id or not self.subscription_product_line_id.pricelist_id:
             return {"domain": {"product_uom": []}}
         vals = {}
-        domain = {"product_uom": [("category_id", "=", self.product_id.uom_id.category_id.id)]}
+        domain = {
+            "product_uom": [("category_id", "=", self.product_id.uom_id.category_id.id)]
+        }
         if not self.product_uom or (self.product_id.uom_id.id != self.product_uom.id):
             vals["product_uom"] = self.product_id.uom_id
             vals["quantity"] = self.quantity or 1.0
@@ -284,7 +305,9 @@ class InvoiceBatchLine(models.TransientModel):
 
         self.tax_ids = product.taxes_id
         if self.subscription_product_line_id.pricelist_id:
-            vals["price_unit"] = self.env["account.tax"]._fix_tax_included_price_company(
+            vals["price_unit"] = self.env[
+                "account.tax"
+            ]._fix_tax_included_price_company(
                 self._get_display_price(product),
                 product.taxes_id,
                 self.tax_ids,
