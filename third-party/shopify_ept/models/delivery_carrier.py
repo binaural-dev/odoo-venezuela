@@ -96,6 +96,11 @@ class DeliveryCarrier(models.Model):
         """
         This method is use to search the carrier for webhook fulfillment
         """
+        carrier_company = fulfillment_data.get('tracking_company')
+        if carrier_company:
+            carrier = self.search([('shopify_tracking_company', '=', carrier_company)], limit=1)
+            if carrier:
+                return carrier
         carrier_name = fulfillment_data.get('service')
         carrier = False
         if carrier_name:

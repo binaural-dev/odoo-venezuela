@@ -17,4 +17,5 @@
         "reports/member_list_report.xml",
         "wizard/member_list.xml"
     ],
+    "binaural": True,
 }
