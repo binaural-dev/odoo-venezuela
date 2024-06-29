@@ -6,6 +6,9 @@ odoo.define("binaural_mobile_multipackage.portal_budget_form", function (require
   const ajax = require("web.ajax");
   const { _t } = require("web.core");
 
+  // Note: This structure can be refactoriced deleting packagesByProduct variable to replace it for just use preLines variable.
+  // To delete the method to add and verify by packagesByProduct.
+
   publicWidget.registry.portalBudgetForm = portalBudgetForm.extend({
     events: _.extend({}, portalBudgetForm.prototype.events, {
       "click .modal_btn_multiple_packaging": "onClickShowModalMultiplePackaging",
@@ -283,6 +286,8 @@ odoo.define("binaural_mobile_multipackage.portal_budget_form", function (require
       this._setPackageByProduct(productId);
       
       this._disableModalSaveBtn(false);
+
+      this._setProductPackageIntoPrelines();
       
       $(ev.target.closest(".modal")).modal("hide");
     },
@@ -308,10 +313,9 @@ odoo.define("binaural_mobile_multipackage.portal_budget_form", function (require
 
     _getPreLinesFromPackagesByProduct: function () {
       const newPreLines = [];
-      
-      
+
       this.packagesByProduct.forEach(packProduct => {
-        const {productId, requestedPackages} = packProduct; 
+        const {productId, requestedPackages} = packProduct;
 
         const {listPrice} = this._getProductById(productId);
 
@@ -343,25 +347,23 @@ odoo.define("binaural_mobile_multipackage.portal_budget_form", function (require
     },
 
     _setProductPackageIntoPrelines: function () {
+      
       const packagePreLines = this._getPreLinesFromPackagesByProduct()
 
       for (const packPreLine of packagePreLines) {
         const prevPreLineIdx = this._getPrelineIdxByPackageId(packPreLine.packageId);
-  
-        if (prevPreLineIdx >= 0) {
-          this.preLines[prevPreLineIdx] = packPreLine;
+
+        // If not exist the line it'll be added
+        if (prevPreLineIdx === -1) {
+          this.preLines.push(packPreLine);
           continue;
         }
-  
-        this.preLines.push(packPreLine);
-        
+
+        // If exist the line it'll be overwritten
+        this.preLines[prevPreLineIdx] = packPreLine;
+
       }
 
-    },
-
-    _onClickSaveProducts: async function (ev) {
-      this._setProductPackageIntoPrelines();
-      await this._super.apply(this, arguments);
     },
 
     // change
@@ -452,13 +454,16 @@ odoo.define("binaural_mobile_multipackage.portal_budget_form", function (require
     },
 
     _renderGetQtyEntryElement: function (productResp) {
-      
       const product = this._getProductFormatedFromResp(productResp);
-
+      
       const {
+        id,
         qtyAvailable,
       } = product;
       
+      const preLine = this._getPreLineByProductId(id)
+      const qtyInputValue = preLine ? preLine.qtyReq : '';
+
       const qtyLabel = _t("Cant.");
 
       const showMultiPackageModalBtn = this._getShowMultiPackageModalBtn(product)
@@ -466,12 +471,13 @@ odoo.define("binaural_mobile_multipackage.portal_budget_form", function (require
       let qtyEntryElement = '';
 
       if (showMultiPackageModalBtn) {
-        qtyEntryElement += `<label class="form-control form-text text-start qty-product-label" style="width: 80px !important;width: max-content;cursor:pointer;float: right;color: rgba(33, 37, 41, 0.7);">Cant.</label>`;
+        qtyEntryElement += `<label class="form-control form-text text-start qty-product-label" style="width: 80px !important;width: max-content;cursor:pointer;float: right;color: rgba(33, 37, 41, 0.7);">${qtyInputValue || "Cant."}</label>`;
         qtyEntryElement += '<label class="form-text text-end modal_btn_multiple_packaging bg-secondary text-white rounded p-1 px-1" style="font-weight: bolder;width: max-content;cursor:pointer;font-size: 12px;">Elegir empaquetados</label>'
         return qtyEntryElement;
       }
 
-      qtyEntryElement += `<input type="text" class="form-control qty_product" id='qtyProduct' style="width: 80px;float: right;" data-qty-available="${qtyAvailable}" placeholder="${qtyLabel}"/>`;
+
+      qtyEntryElement += `<input type="text" class="form-control qty_product" id='qtyProduct' style="width: 80px;float: right;" data-qty-available="${qtyAvailable}" placeholder="${qtyLabel}" value="${qtyInputValue}"/>`;
 
       return qtyEntryElement;
     },
