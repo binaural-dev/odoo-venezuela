@@ -16,6 +16,7 @@ class PosConfigInherit(models.Model):
     flag_21 = fields.Selection(related="iface_fiscal_data_module.flag_21")
     traditional_line = fields.Boolean(related="iface_fiscal_data_module.traditional_line")
     has_cashbox = fields.Boolean(related="iface_fiscal_data_module.has_cashbox")
+    access_button_mf = fields.Boolean()
 
     def _compute_iot_device_ids(self):
         super()._compute_iot_device_ids()
