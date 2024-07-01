@@ -17,12 +17,9 @@ class MainAgro(http.Controller):
 
     @http.route(
         [
-            "/agro/ganaderia",
-            "/agro/ganaderia/page/<int:page>",
-            "/agro/ganaderia/<string:specie>",
-            "/agro/ganaderia/<string:specie>/page/<int:page>",
-            "/agro/ganaderia/<string:specie>/<string:lot>-<int:lot_id>",
-            "/agro/ganaderia/<string:lot>-<int:lot_id>",
+            "/agro/<string:service>/<string:specie>/<string:race_animal>",
+            "/agro/<string:service>/<string:specie>/<string:race_animal>/page/<int:page>",
+            "/agro/<string:service>/<string:lot>-<int:lot_id>",
         ],
         type="http",
         auth="public",
@@ -30,19 +27,23 @@ class MainAgro(http.Controller):
     )
     def website_agro(
         self,
+        service=None,
+        race_animal=None,
+        specie=None,
         lot=None,
         lot_id=None,
-        specie=None,
         page=1,
         filterby=None,
         search=None,
         search_in="name",
-        url="/agro/ganaderia",
+        url="/agro",
         **kw
     ):
         if not lot and not lot_id:
             _items_per_page = 15
             domain = self.domain_lots()
+            url_service = url + f"/{service}"
+            url = self._build_url_agro(url, service, race_animal, specie)
 
             searchbar_filters = self._get_searchbar_filters()
             if not filterby:
@@ -50,11 +51,14 @@ class MainAgro(http.Controller):
             domain = expression.AND([domain, searchbar_filters[filterby]["domain"]])
 
             if specie:
-                domain = expression.AND([domain, [("specie_id.name", "=", specie)]])
+                domain = expression.AND([domain, [("specie_id.name", "ilike", specie)]])
+
+            if race_animal:
+                domain = expression.AND([domain, [("lot_race_id.description", "ilike", race_animal)]])
 
             if search and search_in:
                 domain = expression.AND([domain, self._get_search_domain_lots(search_in, search)])
-
+            
             lot_count = request.env["stock.lot"].search_count(domain)
 
             pager = agro_pager(
@@ -77,6 +81,7 @@ class MainAgro(http.Controller):
                     "search": search,
                     "search_in": search_in,
                     "default_url": url,
+                    "url_service": url_service,
                     "searchbar_inputs": self._get_searchbar_inputs_lots(),
                     "pager": pager,
                     "searchbar_filters": OrderedDict(sorted(searchbar_filters.items())),
@@ -84,6 +89,9 @@ class MainAgro(http.Controller):
                     "lots": lot_ids,
                 },
             )
+        
+        if service:
+            url += f"/{service}"
         lot_id = request.env["stock.lot"].browse(lot_id)
         if not lot_id:
             raise NotFound()
@@ -114,12 +122,6 @@ class MainAgro(http.Controller):
                 "domain": [("gender", "=", "male")],
             },
         }
-        specie_ids = request.env["stock.specie"].search([])
-        for specie in specie_ids:
-            filter_records[specie.name] = {
-                "label": specie.name,
-                "domain": [("specie_id", "=", specie.id)],
-            }
 
         return filter_records
 
@@ -141,3 +143,12 @@ class MainAgro(http.Controller):
             ("company_id", "in", [False, website_company_id]),
             ("publishing_on_the_web", "=", True),
         ]
+    
+    def _build_url_agro(self, url, service, race_animal, specie):
+        if service:
+            url += f"/{service}"
+        if specie:
+            url += f"/{specie}"
+        if race_animal:
+            url += f"/{race_animal}"
+        return url

@@ -44,8 +44,7 @@
                         <p><strong>Race</strong><br/><t t-out="lot.lot_race_id.description or '-'"/></p>	
                     </div>
                     <hr class="bg-primary"/>
-                    <t t-set="specie" t-value="'' if not lot.specie_id else '/'+lot.specie_id.name"/>
-                    <a class="btn btn-primary fw-bold text-white" t-attf-href="{{default_url}}{{specie}}/{{lot.name}}-{{lot.id}}" role="button">Ver ficha</a>
+                    <a class="btn btn-primary fw-bold text-white" t-attf-href="{{url_service}}/{{lot.name}}-{{lot.id}}" role="button">Ver ficha</a>
                 </div>
             </div>
         </div>
@@ -156,8 +155,7 @@
                                     <p>
                                         <span class="text-primary">Father</span>: 
                                         <t t-if="lot.parent_father_id">
-                                            <t t-set="specie" t-value="'' if not lot.parent_father_id.specie_id else '/'+lot.parent_father_id.specie_id.name"/>
-                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_father_id.name}}-{{lot.parent_father_id.id}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_father_id.name}}-{{lot.parent_father_id.id}}" role="button">
                                                 <span class="badge bg-secondary " t-out="lot.parent_father_id.name"/>
                                             </a>
                                         </t>
@@ -170,7 +168,7 @@
                                     <p><span class="text-primary">Mother</span>: 
                                         <t t-if="lot.parent_mother_id">
                                             <t t-set="specie" t-value="'' if not lot.parent_mother_id.specie_id else '/'+lot.parent_mother_id.specie_id.name"/>
-                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_mother_id.name}}-{{lot.parent_mother_id.id}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_mother_id.name}}-{{lot.parent_mother_id.id}}" role="button">
                                                 <span class="badge bg-primary " t-out="lot.parent_mother_id.name"/>
                                             </a>
                                         </t>
@@ -185,8 +183,7 @@
                                     <p>
                                         <span class="text-primary">GrandFather</span>: 
                                         <t t-if="lot.parent_father_id and lot.parent_father_id.parent_father_id">
-                                            <t t-set="specie" t-value="'' if not lot.parent_father_id.parent_father_id.specie_id else '/'+lot.parent_father_id.parent_father_id.specie_id.name"/>
-                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_father_id.parent_father_id.name}}-{{lot.parent_father_id.parent_father_id.id}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_father_id.parent_father_id.name}}-{{lot.parent_father_id.parent_father_id.id}}" role="button">
                                                 <span class="badge bg-secondary " t-out="lot.parent_father_id.parent_father_id.name"/>
                                             </a>
                                         </t>
@@ -199,8 +196,7 @@
                                     <p>
                                         <span class="text-primary">GrandMother</span>: 
                                         <t t-if="lot.parent_father_id and lot.parent_father_id.parent_mother_id">
-                                            <t t-set="specie" t-value="'' if not lot.parent_father_id.parent_mother_id.specie_id else '/'+lot.parent_father_id.parent_mother_id.specie_id.name"/>
-                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_father_id.parent_mother_id.name}}-{{lot.parent_father_id.parent_mother_id.id}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_father_id.parent_mother_id.name}}-{{lot.parent_father_id.parent_mother_id.id}}" role="button">
                                                 <span class="badge bg-primary " t-out="lot.parent_father_id.parent_mother_id.name"/>
                                             </a>
                                         </t>
@@ -213,8 +209,7 @@
                                     <p>
                                         <span class="text-primary">GrandFather</span>: 
                                         <t t-if="lot.parent_mother_id and lot.parent_mother_id.parent_father_id">
-                                            <t t-set="specie" t-value="'' if not lot.parent_mother_id.parent_father_id.specie_id else '/'+lot.parent_mother_id.parent_father_id.specie_id.name"/>
-                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_mother_id.parent_father_id.name}}-{{lot.parent_mother_id.parent_father_id.id}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_mother_id.parent_father_id.name}}-{{lot.parent_mother_id.parent_father_id.id}}" role="button">
                                                 <span class="badge bg-secondary " t-out="lot.parent_mother_id.parent_father_id.name"/>
                                             </a>
                                         </t>
@@ -227,8 +222,7 @@
                                     <p>
                                         <span class="text-primary">GrandMother</span>: 
                                         <t t-if="lot.parent_mother_id and lot.parent_mother_id.parent_mother_id">
-                                            <t t-set="specie" t-value="'' if not lot.parent_mother_id.parent_mother_id.specie_id else '/'+lot.parent_mother_id.parent_mother_id.specie_id.name"/>
-                                            <a t-attf-href="{{default_url}}{{specie}}/{{lot.parent_mother_id.parent_mother_id.name}}-{{lot.parent_mother_id.parent_mother_id.id}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_mother_id.parent_mother_id.name}}-{{lot.parent_mother_id.parent_mother_id.id}}" role="button">
                                                 <span class="badge bg-primary " t-out="lot.parent_mother_id.parent_mother_id.name"/>
                                             </a>
                                         </t>
