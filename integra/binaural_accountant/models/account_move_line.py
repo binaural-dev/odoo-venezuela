@@ -92,10 +92,11 @@ class AccountMoveLine(models.Model):
 
     @api.depends("product_id", "move_id.name")
     def _compute_name(self):
-        res = super()._compute_name()
+        lines_without_name = self.filtered(lambda l: not l.name)
+        res = super(AccountMoveLine, lines_without_name)._compute_name()
         receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
         for line in self:
-            if line.name or not (
+            if not (
                 line.account_id
                 and line.account_id.account_type in receivable_and_payable_account_types
             ):
