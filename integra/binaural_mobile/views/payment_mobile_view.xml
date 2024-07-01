@@ -34,7 +34,8 @@
 							<group>
 								<field name="partner_id" attrs="{'readonly':[('state','=','process')]}"/>
 								<field name="seller_id" attrs="{'readonly':[('state','=','process')]}"/>
-								<field name="proof_payment_id" attrs="{'invisible':[('proof_payment_id', '!=', False)]}"/>
+								<field name="proof_payment_id" domain="[('id','=', proof_payment_domain)]" attrs="{'invisible':[('proof_payment_id', '!=', False)]}"/>
+								<field name="proof_payment_domain" invisible="1"/>
 								<field name="proof_file" widget="binary" filename="proof_name"
 								attrs="{'invisible':[('proof_payment_id', '=', False)]}"
 								/>
