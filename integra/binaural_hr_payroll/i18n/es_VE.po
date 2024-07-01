@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240304\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240603\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-04 14:36+0000\n"
-"PO-Revision-Date: 2024-03-04 14:36+0000\n"
+"POT-Creation-Date: 2024-06-28 20:41+0000\n"
+"PO-Revision-Date: 2024-06-28 20:41+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -177,6 +177,9 @@ msgstr "Acción Neceasria"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_allowance__active
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_structure_type__active
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_input_type__active
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_salary_rule_category__active
 msgid "Active"
 msgstr "Activo"
 
@@ -197,11 +200,6 @@ msgstr ""
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_structure__category__advance
 msgid "Advance"
 msgstr "Anticipo"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__advance_of_benefits
-msgid "Advance Of Benefits"
-msgstr "Anticipo de Prestaciones"
 
 #. module: binaural_hr_payroll
 #: model:ir.actions.act_window,name:binaural_hr_payroll.hr_payroll_move_advance_action
@@ -276,69 +274,6 @@ msgstr "Salario Base"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__total_basic
 msgid "Basic salary"
 msgstr "Salario Básico"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_move__move_type__benefits
-#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_structure__category__benefits
-msgid "Benefits"
-msgstr "Prestaciones"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__benefits_computation_type
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_config_settings__benefits_computation_type
-msgid "Benefits Computation Type"
-msgstr "Tipo de Cálculo de Prestaciones"
-
-#. module: binaural_hr_payroll
-#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
-msgid "Benefits Configuration"
-msgstr "Configuración de Prestaciones"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__benefits_days_per_month
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_config_settings__benefits_days_per_month
-msgid "Benefits Days Per Month"
-msgstr "Días de Prestaciones Por Mes"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.constraint,message:binaural_hr_payroll.constraint_res_company_benefits_days_per_month
-msgid "Benefits Days Per Month must be a positive number"
-msgstr "Días de Prestaciones Por Mes debe ser positivo"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__benefits_days_per_year
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_config_settings__benefits_days_per_year
-msgid "Benefits Days Per Year"
-msgstr "Días de Prestaciones Por Año"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.constraint,message:binaural_hr_payroll.constraint_res_company_benefits_days_per_year
-msgid "Benefits Days Per Year must be a postitive number"
-msgstr "Días de Prestaciones Por Año debe ser positivo"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__benefits_interest_computation_type
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_config_settings__benefits_interest_computation_type
-msgid "Benefits Interest Computation Type"
-msgstr "Tipo de Cálculo de Intereses de Prestaciones"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__benefits_interest_monthly_rate
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_config_settings__benefits_interest_monthly_rate
-msgid "Benefits Interest Monthly Rate"
-msgstr "Tasa Mensual de Intereses de Prestaciones"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__benefits_payment
-msgid "Benefits Payment"
-msgstr "Pago de Prestaciones"
-
-#. module: binaural_hr_payroll
-#: model:ir.actions.act_window,name:binaural_hr_payroll.hr_payroll_move_benefits_action
-#: model:ir.ui.menu,name:binaural_hr_payroll.menu_hr_payroll_benefits_move
-#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payroll_move_benefits_view_tree
-msgid "Benefits Payments"
-msgstr "Pagos de Prestaciones"
 
 #. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.res_config_settings_binaural_hr_payroll
@@ -580,7 +515,7 @@ msgstr ""
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__resource_calendar_attendance__day_period__early_morning
 msgid "Early Morning"
-msgstr ""
+msgstr "Madrugada"
 
 #. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run_document
@@ -601,6 +536,11 @@ msgid "Employee Contract"
 msgstr "Contrato de empleado"
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__employee_job_id
+msgid "Employee Job"
+msgstr "Puesto de Trabajo"
+
+#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__employee_name
 msgid "Employee Name"
 msgstr "Nombre del Empleado"
@@ -619,11 +559,6 @@ msgstr "Cuenta bancaría del empleado para pagar salarios"
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__entry_date
 msgid "Entry Date"
 msgstr "Fecha de Ingreso"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__benefits_interest_computation_type__escrow
-msgid "Escrow"
-msgstr "Fideicomiso"
 
 #. module: binaural_hr_payroll
 #: model:hr.work.entry.type,name:binaural_hr_payroll.hr_work_entry_binaural_vacation_holiday
@@ -684,11 +619,6 @@ msgid "Forced Unemployment Wage Treshold"
 msgstr "Tope Salario Paro Forzoso"
 
 #. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_advance_of_benefits
-msgid "Foreign Advance Of Benefits"
-msgstr "Anticipo de Prestaciones Alterno"
-
-#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__foreign_amount
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_worked_days__foreign_amount
 msgid "Foreign Amount"
@@ -710,9 +640,9 @@ msgid "Foreign Basic salary"
 msgstr "Salario Básico alterno"
 
 #. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__foreign_benefits_payment
-msgid "Foreign Benefits Payment"
-msgstr "Pago de Prestaciones Alterno"
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__foreign_holidays_accrued
+msgid "Foreign Holidays Accrued"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_contract__foreign_hourly_wage
@@ -882,11 +812,6 @@ msgid "Inasistencia horas"
 msgstr ""
 
 #. module: binaural_hr_payroll
-#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__benefits_interest_computation_type__internal
-msgid "Internal"
-msgstr "Interno"
-
-#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_is_follower
 msgid "Is Follower"
 msgstr ""
@@ -898,7 +823,6 @@ msgid "Ivss Wage Treshold"
 msgstr "Tope Salario IVSS"
 
 #. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__employee_job_id
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip_line__employee_job_id
 msgid "Job Position"
 msgstr "Puesto de Trabajo"
@@ -944,23 +868,6 @@ msgid "Line"
 msgstr "Línea"
 
 #. module: binaural_hr_payroll
-#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_move__move_type__liquidation
-#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_structure__category__liquidation
-msgid "Liquidation"
-msgstr "Liquidación"
-
-#. module: binaural_hr_payroll
-#: model:ir.actions.act_window,name:binaural_hr_payroll.hr_payroll_move_liquidation_action
-#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.hr_payroll_move_liquidation_view_tree
-msgid "Liquidation Payments"
-msgstr "Pagos de Liquidación"
-
-#. module: binaural_hr_payroll
-#: model:ir.ui.menu,name:binaural_hr_payroll.menu_hr_payroll_liquidation_move
-msgid "Liquidations Payments"
-msgstr "Pagos de Liquidaciones"
-
-#. module: binaural_hr_payroll
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.report_pre_payslip_run
 msgid "Logo"
 msgstr ""
@@ -969,17 +876,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payroll_move__message_main_attachment_id
 msgid "Main Attachment"
 msgstr ""
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__maximum_benefits_days_per_year
-#: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_config_settings__maximum_benefits_days_per_year
-msgid "Maximum Benefits Days Per Year"
-msgstr "Cantidad Máxima de Días de Prestaciones Por Año"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.constraint,message:binaural_hr_payroll.constraint_res_company_maximum_benefits_days_per_year
-msgid "Maximum Benefits Days Per Year must be a positive number"
-msgstr "Cantidad Máxima de Días de Prestaciones Por Año debe ser positivo"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_res_company__maximum_vacation_days
@@ -1020,11 +916,6 @@ msgstr "Sueldo mínimo de ley"
 #, python-format
 msgid "Month"
 msgstr "Mes"
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__benefits_computation_type__monthly
-msgid "Monthly"
-msgstr "Mensual"
 
 #. module: binaural_hr_payroll
 #. odoo-python
@@ -1085,6 +976,11 @@ msgid "Número de horas"
 msgstr ""
 
 #. module: binaural_hr_payroll
+#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_structure__category__other
+msgid "Other"
+msgstr "Otro"
+
+#. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_hr_payslip
 msgid "Pay Slip"
 msgstr "Recibo de nómina"
@@ -1118,9 +1014,19 @@ msgid "Payslip Date"
 msgstr "Fecha del Recibo"
 
 #. module: binaural_hr_payroll
+#: model:ir.model,name:binaural_hr_payroll.model_hr_payslip_input_type
+msgid "Payslip Input Type"
+msgstr "Tipo de entrada del recibo de nómina"
+
+#. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_hr_payslip_line
 msgid "Payslip Line"
 msgstr "Línea de recibo de nómina"
+
+#. module: binaural_hr_payroll
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_payslip__report_title_name
+msgid "Payslip Name"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_hr_payroll_move
@@ -1212,11 +1118,6 @@ msgid "Python Code"
 msgstr "Código Python"
 
 #. module: binaural_hr_payroll
-#: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__res_company__benefits_computation_type__quarterly
-msgid "Quarterly"
-msgstr "Trimestral"
-
-#. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_employee__vat_rif
 #: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.view_employee_form
 msgid "RIF"
@@ -1301,9 +1202,20 @@ msgid "Salary Rule"
 msgstr "Regla salarial"
 
 #. module: binaural_hr_payroll
+#: model:ir.model,name:binaural_hr_payroll.model_hr_salary_rule_category
+msgid "Salary Rule Category"
+msgstr "Categoría de regla salarial"
+
+#. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_hr_payroll_structure
 msgid "Salary Structure"
 msgstr "Estructura salarial"
+
+#. module: binaural_hr_payroll
+#: model:ir.model,name:binaural_hr_payroll.model_hr_payroll_structure_type
+#: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_contract__structure_type_id
+msgid "Salary Structure Type"
+msgstr "Tipo de Estructura Salarial"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields,field_description:binaural_hr_payroll.field_hr_contract__salary_type
@@ -1354,6 +1266,8 @@ msgid ""
 "The net amount will be recovered from the first positive remuneration "
 "established after this."
 msgstr ""
+"El importe neto se recuperará de la primera remuneración positiva "
+"establecida después de esto."
 
 #. module: binaural_hr_payroll
 #. odoo-python
@@ -1368,6 +1282,14 @@ msgid "The value of Provisions Cron Day must be between 1 and 30"
 msgstr ""
 "El valor de Día del Mes Para Ejecutar El Cron de Provisiones debe ser entre "
 "1 y 30"
+
+#. module: binaural_hr_payroll
+#. odoo-python
+#: code:addons/binaural_hr_payroll/models/hr_employee.py:0
+#: code:addons/binaural_hr_payroll/models/hr_employee.py:0
+#, python-format
+msgid "There are no payslips for the employee: %s"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #. odoo-python
@@ -1487,6 +1409,7 @@ msgstr "Período Vacacional"
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_payroll_move__move_type__vacation
+#: model_terms:ir.ui.view,arch_db:binaural_hr_payroll.view_employee_form
 msgid "Vacations"
 msgstr "Vacaciones"
 
@@ -1510,7 +1433,7 @@ msgstr "Valor"
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__salary_type__variable
 msgid "Variable"
-msgstr "Variable"
+msgstr ""
 
 #. module: binaural_hr_payroll
 #: model:ir.model.fields.selection,name:binaural_hr_payroll.selection__hr_contract__wage_field_to_use__wage
@@ -1540,14 +1463,6 @@ msgid ""
 msgstr ""
 "Si el salario base para el cálculo de los recibos se va a realizar\n"
 "\t\t\t\t    usando la moneda base o la alterna."
-
-#. module: binaural_hr_payroll
-#: model:ir.model.fields,help:binaural_hr_payroll.field_res_company__benefits_interest_computation_type
-#: model:ir.model.fields,help:binaural_hr_payroll.field_res_config_settings__benefits_interest_computation_type
-msgid "Whether the benefits interest is computed internally or by escrow"
-msgstr ""
-"Si los intereses de prestaciones van a ser calculados internamente o por "
-"fideicomiso"
 
 #. module: binaural_hr_payroll
 #: model:ir.model,name:binaural_hr_payroll.model_resource_calendar_attendance

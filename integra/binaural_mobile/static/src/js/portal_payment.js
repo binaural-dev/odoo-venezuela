@@ -138,7 +138,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
         });
         this.ClearTotalRetentions();
         $("#requireReceipt").val("");
-        const { data, status, msg } = invoices;
+        const { data, status, taxpayer_type, msg } = invoices
         const is204 = status === 204;
         const is400 = status === 400;
         if(is400){
@@ -166,11 +166,11 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
         const requireReceipt = data[0]["journal_id"][2];
         $("#requireReceipt").val(requireReceipt);
         this.CalculateRemainingAmount();
-        this.build_table_invoices(data);
+        this.build_table_invoices(data, taxpayer_type)
       }
     },
 
-    build_table_invoices: function (invoices) {
+    build_table_invoices: function(invoices,taxpayer_type) {
       const tbody = $("#notes_invoices_results");
       tbody.empty();
       let decimal_number = +$("#decimal").val();
@@ -213,9 +213,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           return new Date(a_date) - new Date(b_date);
         });
         const first_expired_line = lines_ordered_by_maturity_date[0];
-
-        console.log("LINES", line.line_ids);
-        console.log("LINES ORDERED", lines_ordered_by_maturity_date);
+        const first_expired_line_amount_residual = first_expired_line["amount_residual"].toFixed(decimal_number);
 
         amount_residual = amount_residual.toFixed(decimal_number);
         amount_total = amount_total.toFixed(decimal_number);
@@ -233,7 +231,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
 																		<label class="form-label">Importe adeudado (cuota): </label>
                                     <label class="form-text text-primary">${symbolBefore}</label>
 																		<label class="form-text text-primary">
-																			${first_expired_line["amount_residual"]} 
+																			${first_expired_line_amount_residual} 
 																		</label>
 																		<label class="form-text">(${first_expired_line["date_maturity"]})</label>
                                 </div>
@@ -257,7 +255,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
 
         $("#notes_invoices").text(_t("Notas:"));
 
-        if (journal_id[2]) {
+        if (journal_id[2] && taxpayer_type != 'ordinary'){
           const {
             currency_foreign,
             is_foreign,
@@ -269,8 +267,6 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           amount_detained = amount_detained.toFixed(decimal_number);
           let dif_iva = amount_tax - amount_detained;
           dif_iva = dif_iva.toFixed(decimal_number);
-          amount_tax = amount_tax.toFixed(decimal_number);
-          amount_untaxed = amount_untaxed.toFixed(decimal_number);
           let amount_detained_vef,
             dif_iva_vef = null;
           let amount_detained_vef_line,
@@ -380,6 +376,103 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           tr_open += tr_selected;
           $("#notes_invoices").text(_t("Facturas:"));
         }
+        else (journal_id[2] && taxpayer_type == 'ordinary');{
+          const { currency_foreign, is_foreign, foreign_total_billed, foreign_taxable_income } = line
+          let retencion = parseFloat($("#withholding").val())
+          let amount_detained = amount_tax * retencion / 100
+          amount_detained = amount_detained.toFixed(decimal_number)
+          let dif_iva =  amount_tax - amount_detained
+          dif_iva = dif_iva.toFixed(decimal_number)
+          amount_tax = amount_tax.toFixed(decimal_number)
+          amount_untaxed = amount_untaxed.toFixed(decimal_number)
+          let amount_detained_vef, dif_iva_vef = null
+          let amount_detained_vef_line, dif_iva_vef_line, amount_tax_vef_line,amount_untaxed_vef_line = ``
+
+          if(!is_foreign){
+              let decimal_places = +$("#currency_foreign_id").val()
+              let iva_vef = (foreign_total_billed - foreign_taxable_income).toFixed(decimal_places)
+              amount_detained_vef = (iva_vef * retencion / 100).toFixed(decimal_places)
+              dif_iva_vef = (iva_vef - amount_detained_vef).toFixed(decimal_places)
+              amount_untaxed_vef_line = `
+                  <label class="form-text" style="opacity:0;">${taxableBaseL}</label>
+                  <label class="form-text text-secondary">${foreign_taxable_income.toFixed(decimal_places).replace('.', ',')}</label>
+                  <label class="form-text text-secondary">${currency_foreign}</label>
+              `
+              amount_tax_vef_line = `
+                  <label class="form-text text-secondary">${iva_vef.replace('.', ',')}</label>
+                  <label class="form-text text-secondary">${currency_foreign}</label>
+              `
+              amount_detained_vef_line = `
+                  <label class="form-text" style="opacity:0;">${amountDetailedL}</label>
+                  
+                  <label class="form-text text-secondary">${amount_detained_vef.replace('.', ',')}</label>
+                  <label class="form-text text-secondary">${currency_foreign}</label>
+                  <input type="hidden" id="amount_retention_vef" value="0"/>
+              `
+              dif_iva_vef_line = `
+                  <label class="form-text text-secondary">${dif_iva_vef.replace('.', ',')}</label>
+                  <label class="form-text text-secondary">${currency_foreign}</label>
+              `
+          }
+          if(journal_id[2]){
+          let tr_selected = `<div id="to_pay" style="display: none;">
+                              <hr width="100%" />
+                              <div class="d-flex justify-content-between">
+                                  <div>
+                                      <label class="form-text ">${taxableBaseL}</label>
+                                      <label class="form-text text-primary">${symbolBefore}</label>
+                                      <label class="form-text text-primary">${amount_untaxed}</label>
+                                      <label class="form-text text-primary">${symbolAfter}</label>
+                                      
+                                  </div>
+                                  <div>
+                                      <label class="form-text ">IVA:</label>
+                                      <label class="form-text text-primary">${symbolBefore}</label>
+                                      <label class="form-text text-primary">${amount_tax}</label>
+                                      <label class="form-text text-primary">${symbolAfter}</label>
+                                      
+                                  </div>
+                              </div>
+                              <div class="d-flex justify-content-between">
+                                  <div>
+                                      ${amount_untaxed_vef_line}
+                                  </div>
+                                  <div>
+                                      ${amount_tax_vef_line}
+                                  </div>
+                              </div>
+                              <div class="d-flex justify-content-between">
+                                  <div>
+                                      <label class="form-text text-primary" id="amount_retention"></label>
+                                      <label class="form-text text-primary">${symbolAfter}</label>
+                                  </div>
+                                  
+                              </div>
+                              <div class="d-flex justify-content-between">
+                                  <div style="display: none;">
+                                      ${amount_detained_vef_line}
+                                  </div>
+                                  <div>
+                                      
+                                  </div>
+                              </div>
+                              <hr width="100%" />
+                              <div class="d-flex justify-content-center">
+                                  <div class="col-sm-4">
+                                      <label class="form-text">${note}</label>
+                                      <input type="text" class="form-control" id="note_payment"/>
+                                  </div>
+                              </div>
+                          </div>`
+          tr_open += tr_selected
+        }
+          else
+          {
+            let tr_selected = ``
+            tr_open += tr_selected
+          }
+          $("#notes_invoices").text(_t("Facturas:"))
+      }
 
         let tr_add = tr_open + tr_close;
         tbody.append(tr_add);
@@ -701,7 +794,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           total_retention -= retention;
 
           $("#total_retention").val(total_retention.toFixed(decimal));
-          $("#total_retention_l").text(total_retention.toFixed(decimal));
+          $("#total_retention_l").text(isNaN(total_retention) ? "0,00" : total_retention.toFixed(decimal));
 
           const amount_retention_vef = selectInvoice
             .closest("td")
@@ -741,7 +834,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
         let total_retention = +$("#total_retention").val();
         total_retention += retention;
         $("#total_retention").val(total_retention.toFixed(decimal));
-        $("#total_retention_l").text(total_retention.toFixed(decimal));
+        $("#total_retention_l").text(isNaN(total_retention) ? "0,00" : total_retention.toFixed(decimal));
 
         const amount_retention_vef = selectInvoice
           .closest("td")

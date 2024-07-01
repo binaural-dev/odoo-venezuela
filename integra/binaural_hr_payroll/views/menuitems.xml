@@ -19,21 +19,9 @@
 	parent="hr_payroll.menu_hr_payroll_report"
     />
     <menuitem
-	id="menu_hr_payroll_benefits_move"
-	name="Benefits Payments"
-	action="hr_payroll_move_benefits_action"
-	parent="hr_payroll.menu_hr_payroll_report"
-    />
-    <menuitem
 	id="menu_hr_payroll_profit_sharing_move"
 	name="Profit Sharing Payments"
 	action="hr_payroll_move_profit_sharing_action"
-	parent="hr_payroll.menu_hr_payroll_report"
-    />
-    <menuitem
-	id="menu_hr_payroll_liquidation_move"
-	name="Liquidations Payments"
-	action="hr_payroll_move_liquidation_action"
 	parent="hr_payroll.menu_hr_payroll_report"
     />
     <menuitem
