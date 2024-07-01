@@ -5,7 +5,7 @@
     "license": "LGPL-3",
     "website": "https://www.binauraldev.com",
     "category": "Payroll Localization",
-    "version": "16.0.1.0.4",
+    "version": "16.0.1.0.5",
     # any module necessary for this one to work correctly
     "depends": ["hr", "hr_payroll", "hr_work_entry_contract_enterprise", "binaural_rate"],
     # always loaded
