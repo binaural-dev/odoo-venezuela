@@ -71,7 +71,8 @@ class Module(models.Model):
     def write(self, vals):
         res = super().write(vals)
         for record in self:
-            record.manage_module_version()
+            if record.binaural:
+                record.manage_module_version()
         return res
 
 

@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_stock_lot,binaural_farming.binaural_farming,model_stock_lot,base.group_user,1,1,1,1
+access_stock_lot_race,binaural_farming.binaural_farming,model_stock_lot_race,base.group_user,1,1,1,1
+access_stock_lot_breeder,binaural_farming.binaural_farming,model_stock_lot_breeder,base.group_user,1,1,1,1
+access_stock_lot_ancestral_milk_production,binaural_farming.binaural_farming,model_stock_lot_ancestral_milk_production,base.group_user,1,1,1,1
+access_stock_lot_type_morphological,binaural_farming.binaural_farming,model_stock_lot_type_morphological,base.group_user,1,1,1,1
+access_stock_lot_qualitative_valuation,binaural_farming.binaural_farming,model_stock_lot_qualitative_valuation,base.group_user,1,1,1,1
+access_stock_lot_evaluation_morphological,binaural_farming.binaural_farming,model_stock_lot_evaluation_morphological,base.group_user,1,1,1,1

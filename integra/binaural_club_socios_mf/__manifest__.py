@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.0.0.0",
+    "version": "16.0.1.0.0",
     "depends": [
         "binaural_club_socios",
         "binaural_iot_mf",

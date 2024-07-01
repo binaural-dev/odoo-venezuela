@@ -127,6 +127,7 @@ class ResPartner(models.Model):
     type_relation = fields.Selection(
         [
             ("partner", "Partner"),
+            ("usufruct_partner", "Usufruct Partner"),
             ("associated", "Associated"),
             ("wife", "Wife"),
             ("children", "Children"),
@@ -252,7 +253,6 @@ class ResPartner(models.Model):
                 "type_operation": "unlink",
                 "name_exec": self.env.user.name,
                 "date_exec": fields.Date.today(),
-                
             }
             self.env["action.partner.previous"].sudo().create(values_action)
 

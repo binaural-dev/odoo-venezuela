@@ -13,9 +13,7 @@ class HrPayrollMove(models.Model):
         [
             ("salary", "Salary"),
             ("vacation", "Vacations"),
-            ("benefits", "Benefits"),
             ("profit_sharing", "Profit Sharing"),
-            ("liquidation", "Liquidation"),
             ("advance", "Advance"),
         ],
         string="Type",
@@ -43,8 +41,6 @@ class HrPayrollMove(models.Model):
     total_net = fields.Float()
 
     total_assig = fields.Float()
-    advance_of_benefits = fields.Float()
-    benefits_payment = fields.Float()
     profit_sharing_payment = fields.Float()
 
     date_from_vacation = fields.Date()
@@ -64,8 +60,6 @@ class HrPayrollMove(models.Model):
     foreign_total_net = fields.Float()
 
     foreign_total_assig = fields.Float()
-    foreign_advance_of_benefits = fields.Float()
-    foreign_benefits_payment = fields.Float()
     foreign_profit_sharing_payment = fields.Float()
 
     foreign_total_vacation_bonus = fields.Float()

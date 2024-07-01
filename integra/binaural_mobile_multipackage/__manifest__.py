@@ -1,7 +1,7 @@
 {
     "name": "Binaural Móvil Multi-Empaquetados",
     "summary": "Implementacion de Binaural Móvil",
-    "version": "16.0.0.0.6",
+    "version": "16.0.0.0.7",
     "category": "Accounting",
     "license": "LGPL-3",
     "author": "BinauralDev",
