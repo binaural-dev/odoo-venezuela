@@ -217,6 +217,13 @@ class HrPayrollBenefit(models.Model):
                 else maximum_of_days
             )
 
+            if employee.last_annual_calculated_benefits:
+                months_diff = relativedelta.relativedelta(
+                    fields.Date.today(), employee.last_quarterly_calculated_benefits
+                ).months
+                if months_diff < 12:
+                    continue
+
             employee._get_benefits(benefits_days, is_annual=True)
 
     @api.model

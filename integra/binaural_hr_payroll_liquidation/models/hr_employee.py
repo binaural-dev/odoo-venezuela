@@ -7,6 +7,7 @@ class HrEmployee(models.Model):
 
     last_monthly_calculated_benefits = fields.Date()
     last_quarterly_calculated_benefits = fields.Date()
+    last_annual_calculated_benefits = fields.Date()
 
     def _get_benefits(self, benefits_days, is_monthly=False, is_annual=False):
         self.ensure_one()
@@ -47,6 +48,7 @@ class HrEmployee(models.Model):
             self.last_quarterly_calculated_benefits = today
         else:
             detail_params["type"] = "annual"
+            self.last_annual_calculated_benefits = today
         self.env["hr.payroll.benefits.accumulated.detail"].create(detail_params)
 
     def _register_payroll_benefits(
@@ -96,7 +98,6 @@ class HrEmployee(models.Model):
         >>> )
         """
         for employee in self:
-
             payroll_benefits_accumulated = self.env["hr.payroll.benefits.accumulated"]
 
             # Prepare base parameters
