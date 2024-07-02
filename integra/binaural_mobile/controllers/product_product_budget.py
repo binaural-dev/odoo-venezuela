@@ -107,9 +107,8 @@ class ProductProductBudget(http.Controller):
             domain = [("id", "in", ids)]
 
         record_product_ids = utils.search_model_data(
-            "product.product", domain, int(limit), int(offset)
+            "product.product", domain, int(limit), int(offset), order="name asc, quantity desc"
         )
-
         product_ids = record_product_ids.read(FIELDNAMES)
 
         product_ids = self.get_variant_tags(product_ids)
@@ -221,5 +220,3 @@ class ProductProductBudget(http.Controller):
                 products.append(product_cpy)
 
         return products
-
-    

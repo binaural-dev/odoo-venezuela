@@ -387,7 +387,7 @@ class SaleOrder(models.Model):
                 if invoice_id.payment_state == block_order_invoice_payment_state:
                     invoice_count_payment_state += 1
 
-            if invoice_id.invoice_date_due < today_date:
+            if invoice_id.invoice_date_due and invoice_id.invoice_date_due < today_date:
                 amount_total_overdue += invoice_id.amount_total
                 invoice_count_date_expired += 1
 
