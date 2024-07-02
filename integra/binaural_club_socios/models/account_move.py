@@ -53,7 +53,7 @@ class AccountMove(models.Model):
                 ("fee_period", "<=", end_of_month),
                 ("state", "in", ["posted"]),
                 ("move_type", "=", "out_invoice"),
-                ("payment_state", "not in", ["reversed"])
+                ("payment_state", "not in", ["reversed"]),
             ]
         )
 
@@ -68,29 +68,33 @@ class AccountMove(models.Model):
                 return True
         return False
 
-    @api.model
-    def create(self, vals):
-        partner_id = vals.get("partner_id")
-        fee_period = fields.Date.from_string(vals.get("fee_period"))
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            _logger.warning("Vals: %s", vals)
+            _logger.warning("Vals lines: %s", vals.get("invoice_line_ids", []))
+            partner_id = vals.get("partner_id")
+            fee_period = fields.Date.from_string(vals.get("fee_period"))
 
-        current_invoice_product_ids = [
-            line[2]["product_id"]
-            for line in vals.get("invoice_line_ids", [])
-            if line[2].get("product_id")
-        ]
+            current_invoice_product_ids = [
+                line[2]["product_id"]
+                for line in vals.get("invoice_line_ids", [])
+                if line[2].get("product_id")
+            ]
 
-        if fee_period and self.check_fee_period_exists(
-            partner_id, fee_period, current_invoice_product_ids
-        ):
-            raise ValidationError(_("the concept has already been invoiced for this period."))
+            if fee_period and self.check_fee_period_exists(
+                partner_id, fee_period, current_invoice_product_ids
+            ):
+                raise ValidationError(_("the concept has already been invoiced for this period."))
 
-        res = super(AccountMove, self).create(vals)
-        res.partner_id.write({"is_solvent": False})
-        return res
+        moves = super().create(vals_list)
+        for move in moves:
+            move.partner_id.write({"is_solvent": False})
+        return moves
 
     def action_post(self):
         for record in self:
-            if record.move_type == 'out_invoice':
+            if record.move_type == "out_invoice":
                 current_invoice_product_ids = [
                     line.product_id.id
                     for line in record.invoice_line_ids
@@ -100,6 +104,8 @@ class AccountMove(models.Model):
                 if record.fee_period and self.check_fee_period_exists(
                     record.partner_id.id, record.fee_period, current_invoice_product_ids
                 ):
-                    raise ValidationError(_("the concept has already been invoiced for this period."))
+                    raise ValidationError(
+                        _("the concept has already been invoiced for this period.")
+                    )
 
         return super(AccountMove, self).action_post()

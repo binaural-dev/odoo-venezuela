@@ -24,7 +24,7 @@ class HrEmployee(models.Model):
 
         today = datetime.today().date()
 
-        self._register_payroll_benefits(benefits=benefits)
+        self._register_payroll_benefits(benefits=benefits, is_annual=is_annual)
         benefits_accumulated = self.env["hr.payroll.benefits.accumulated"].search(
             [("employee_id", "=", self.id)],
             limit=1,
@@ -50,10 +50,56 @@ class HrEmployee(models.Model):
         self.env["hr.payroll.benefits.accumulated.detail"].create(detail_params)
 
     def _register_payroll_benefits(
-        self, benefits=(0, 0), interests=(0, 0), benefits_advance=(0, 0)
+        self, benefits=(0, 0), interests=(0, 0), benefits_advance=(0, 0), is_annual=False
     ):
+        """
+        Registers payroll benefits for employees by either updating existing records or creating
+        new ones.
+
+        Parameters
+        ----------
+        benefits : tuple of float
+            A tuple containing two values:
+                - benefits[0]: The accumulated benefits for the employee.
+                - benefits[1]: The foreign accumulated benefits for the employee.
+        interests : tuple of float
+            A tuple containing two values:
+                - interests[0]: The accumulated interest for the employee.
+                - interests[1]: The foreign accumulated interest for the employee.
+        benefits_advance : tuple of float
+            A tuple containing two values:
+                - benefits_advance[0]: The accumulated benefits advance for the employee.
+                - benefits_advance[1]: The foreign accumulated benefits advance for the employee.
+        is_annual : bool
+            A flag indicating whether the benefits being computed are annual. If True, annual
+            benefits fields are updated; otherwise, monthly or quarterly benefits fields are
+            updated.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        The `benefits`, `interests`, and `benefits_advance` arguments should be tuples with two
+        elements each.
+        The `is_annual` flag determines which set of accumulated benefits fields are updated.
+
+        Examples
+        --------
+        Register annual payroll benefits for an employee:
+
+        >>> self._register_payroll_benefits(
+        >>>     benefits=(1000, 200),
+        >>>     interests=(50, 10),
+        >>>     is_annual=True
+        >>> )
+        """
         for employee in self:
+
             payroll_benefits_accumulated = self.env["hr.payroll.benefits.accumulated"]
+
+            # Prepare base parameters
             benefits_accumulated_params = {
                 "employee_id": employee.id,
                 "accumulated_benefits": benefits[0],
@@ -63,35 +109,86 @@ class HrEmployee(models.Model):
                 "accumulated_benefits_advance": benefits_advance[0],
                 "foreign_accumulated_benefits_advance": benefits_advance[1],
                 "date": fields.Date.today(),
+                "annual_accumulated_benefits": 0.0,
+                "foreign_annual_accumulated_benefits": 0.0,
+                "monthly_or_quarterly_accumulated_benefits": 0.0,
+                "foreign_monthly_or_quarterly_accumulated_benefits": 0.0,
             }
-            benefits_accumulated = payroll_benefits_accumulated.search(
-                [("employee_id", "=", employee.id)]
+
+            # Set the appropriate accumulated benefits
+            if is_annual:
+                benefits_accumulated_params.update(
+                    {
+                        "annual_accumulated_benefits": benefits[0],
+                        "foreign_annual_accumulated_benefits": benefits[1],
+                    }
+                )
+            else:
+                benefits_accumulated_params.update(
+                    {
+                        "monthly_or_quarterly_accumulated_benefits": benefits[0],
+                        "foreign_monthly_or_quarterly_accumulated_benefits": benefits[1],
+                    }
+                )
+
+            # Find existing accumulated benefits for the employee
+            existing_accumulated = payroll_benefits_accumulated.search(
+                [("employee_id", "=", employee.id)], limit=1
             )
 
-            if any(benefits_accumulated):
-                benefits_to_update = benefits_accumulated[-1]
+            if existing_accumulated:
+                # Update with existing values
+                benefits_accumulated_params.update(
+                    {
+                        "annual_accumulated_benefits": (
+                            benefits_accumulated_params["annual_accumulated_benefits"]
+                            + existing_accumulated.annual_accumulated_benefits
+                        ),
+                        "foreign_annual_accumulated_benefits": (
+                            benefits_accumulated_params["foreign_annual_accumulated_benefits"]
+                            + existing_accumulated.foreign_annual_accumulated_benefits
+                        ),
+                        "monthly_or_quarterly_accumulated_benefits": (
+                            benefits_accumulated_params["monthly_or_quarterly_accumulated_benefits"]
+                            + existing_accumulated.monthly_or_quarterly_accumulated_benefits
+                        ),
+                        "foreign_monthly_or_quarterly_accumulated_benefits": (
+                            benefits_accumulated_params[
+                                "foreign_monthly_or_quarterly_accumulated_benefits"
+                            ]
+                            + existing_accumulated.foreign_monthly_or_quarterly_accumulated_benefits
+                        ),
+                        "accumulated_benefits": (
+                            benefits_accumulated_params["accumulated_benefits"]
+                            + existing_accumulated.accumulated_benefits
+                        ),
+                        "foreign_accumulated_benefits": (
+                            benefits_accumulated_params["foreign_accumulated_benefits"]
+                            + existing_accumulated.foreign_accumulated_benefits
+                        ),
+                        "accumulated_interest": (
+                            benefits_accumulated_params["accumulated_interest"]
+                            + existing_accumulated.accumulated_interest
+                        ),
+                        "foreign_accumulated_interest": (
+                            benefits_accumulated_params["foreign_accumulated_interest"]
+                            + existing_accumulated.foreign_accumulated_interest
+                        ),
+                        "accumulated_benefits_advance": (
+                            benefits_accumulated_params["accumulated_benefits_advance"]
+                            + existing_accumulated.accumulated_benefits_advance
+                        ),
+                        "foreign_accumulated_benefits_advance": (
+                            benefits_accumulated_params["foreign_accumulated_benefits_advance"]
+                            + existing_accumulated.foreign_accumulated_benefits_advance
+                        ),
+                    }
+                )
 
-                benefits_accumulated_params[
-                    "accumulated_benefits"
-                ] += benefits_to_update.accumulated_benefits
-                benefits_accumulated_params[
-                    "foreign_accumulated_benefits"
-                ] += benefits_to_update.foreign_accumulated_benefits
-                benefits_accumulated_params[
-                    "accumulated_interest"
-                ] += benefits_to_update.accumulated_interest
-                benefits_accumulated_params[
-                    "foreign_accumulated_interest"
-                ] += benefits_to_update.foreign_accumulated_interest
-                benefits_accumulated_params[
-                    "accumulated_benefits_advance"
-                ] += benefits_to_update.accumulated_benefits_advance
-                benefits_accumulated_params[
-                    "foreign_accumulated_benefits_advance"
-                ] += benefits_to_update.foreign_accumulated_benefits_advance
-
-                benefits_to_update.sudo().write(benefits_accumulated_params)
+                # Update the existing record
+                existing_accumulated.sudo().write(benefits_accumulated_params)
             else:
+                # Create a new record
                 payroll_benefits_accumulated.sudo().create(benefits_accumulated_params)
 
     def get_fractional_vacation_days(self, is_bonus=False):
@@ -169,7 +266,7 @@ class HrEmployee(models.Model):
         seniority = self._get_seniority_in_years()
         if seniority <= 1:
             return 0
-        return (benefits_days_per_year_from_year_two - 1) * seniority
+        return benefits_days_per_year_from_year_two * (seniority - 1)
 
     def _get_benefits_days_per_year(self):
         self.ensure_one()
