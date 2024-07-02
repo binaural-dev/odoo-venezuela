@@ -16,9 +16,9 @@ class ResPartner(models.Model):
             )
 
         return name
-    
+
     @api.model
     def create_from_ui(self, partner):
-        if partner["city_id"]:
+        if partner.get("city_id", False):
             partner["city_id"] = int(partner["city_id"])
         return super().create_from_ui(partner)
