@@ -6,7 +6,7 @@
                 <span class="info-title">Opening foreign cash</span>
                 <div class="cash-input-sub-section" t-on-input="handleInputForeignChange">
                     <input class="pos-input" t-ref="openingForeignCashInput"/>
-                    <div class="button icon" t-on-click="openDetailsPopup">
+                    <div class="button icon" t-on-click="openForeignDetailsPopup">
                         <i class="fa fa-calculator" role="img" title="Open the money details popup"/>
                     </div>
                 </div>
@@ -18,6 +18,9 @@
                 <span t-esc="env.pos.format_currency(state.openingCash)"/> | 
                 <span t-esc="env.pos.format_foreign_currency(state.openingForeignCash)"/>
             </div>
+        </xpath>
+        <xpath expr="//MoneyDetailsPopup" position="attributes">
+            <attribute name="currency">state.currencyDetails</attribute>
         </xpath>
     </t>
 </templates>

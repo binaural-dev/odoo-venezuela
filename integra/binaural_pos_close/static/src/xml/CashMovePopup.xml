@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="CashMovePopup" t-inherit="point_of_sale.CashMovePopup" t-inherit-mode="extension" owl="1">
-        <xpath expr="//div[hasclass('input-amount')]/span[2]" position="after">
-            <span 
-                t-on-click="onClickButtonCurrency" 
-                class="input-type">
-                <t t-esc="state.currency.name"/> <i class="fa fa-refresh" role="img" />
-            </span>
+        <xpath expr="//div[@t-on-click='confirm']" position="before">
+            <div class="button confirm dynamic-size" t-on-click="onClickButtonCurrency">
+                <span 
+                    class="input-type">
+                    <t t-esc="state.currency.name"/> <i class="fa fa-refresh" role="img" />
+                </span>
+            </div>
         </xpath>
         <xpath expr="//div[@t-on-click='confirm']/span[1]" position="replace">
             <t t-if="state.is_base">

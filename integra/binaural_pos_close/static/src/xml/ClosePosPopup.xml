@@ -45,7 +45,7 @@
                 <td t-esc="env.pos.format_foreign_currency(foreignDefaultCashDetails.foreign_amount)"/>
                 <td class="flex" t-on-input="(event) => this.handleInputChange(foreignDefaultCashDetails.id, event)">
                     <input class="pos-input" t-ref="closingForeignCashInput"/>
-                    <div class="button icon" t-on-click="openDetailsPopup">
+                    <div class="button icon" t-on-click="openForeignDetailsPopup">
                         <i class="fa fa-calculator" role="img" title="Open the money details popup"/>
                     </div>
                 </td>
@@ -55,14 +55,23 @@
         <xpath expr="//tr[@t-as='pm']" position="replace">
             <tr t-foreach="otherPaymentMethods" t-as="pm" t-key="pm.id">
                 <td t-esc="pm.name"/>
-                <td t-esc="env.pos.format_currency(pm.amount)"/>
-                <td t-esc="env.pos.format_foreign_currency(pm.foreign_amount)"/>
+                <t t-if="pm.is_foreign_currency">
+                    <td/>
+                    <td t-esc="env.pos.format_foreign_currency(pm.foreign_amount)"/>
+                </t>
+                <t t-else="">
+                    <td t-esc="env.pos.format_currency(pm.amount)"/>
+                    <td/>
+                </t>
                 <t t-set="_showDiff" t-value="_getShowDiff(pm)" />
                 <td t-if="_showDiff" t-on-input="(event) => this.handleInputChange(pm.id, event)">
                     <input class="pos-input" t-ref="closingCashInput_{{pm.id}}"/>
                 </td>
                 <td t-if="_showDiff" t-esc="env.pos.format_currency(state.payments[pm.id].difference)" t-att-class="{'warning': state.payments[pm.id].difference}"/>
             </tr>
+        </xpath>
+        <xpath expr="//MoneyDetailsPopup" position="attributes">
+            <attribute name="currency">state.currencyDetails</attribute>
         </xpath>
     </t>
 </templates>

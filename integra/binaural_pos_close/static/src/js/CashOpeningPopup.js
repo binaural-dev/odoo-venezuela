@@ -13,9 +13,39 @@ const BinauralCashOpeningPopup = (CashOpeningPopup) =>
       this.state = useState({
         ...this.state,
         openingForeignCash: this.env.pos.pos_session.foreign_cash_register_balance_start || 0,
+        currencyDetails: this.env.pos.currency,
+        currencyNotes: "",
+        foreignCurrencyNotes: "",
       });
       useValidateCashInput("openingForeignCashInput", this.env.pos.pos_session.foreign_cash_register_balance_start);
-      this.openingCashInputRef = useRef('openingForeignCashInput');
+      this.openingForeignCashInputRef = useRef('openingForeignCashInput');
+    }
+    updateCashOpening({ total, moneyDetailsNotes }) {
+      var inputRef = this.openingCashInputRef
+      var stateTotal = this.state.openingCash
+      if (this.state.currencyDetails.id != this.env.pos.currency.id) {
+        inputRef = this.openingForeignCashInputRef
+        this.state.foreignCurrencyNotes = moneyDetailsNotes
+        this.state.openingForeignCash = total;
+      } else {
+        this.state.openingCash = total;
+        this.state.currencyNotes = moneyDetailsNotes
+      }
+      inputRef.el.value = this.env.pos.format_currency_no_symbol(total);
+      if (moneyDetailsNotes) {
+        this.state.notes = this.state.currencyNotes + this.state.foreignCurrencyNotes;
+      }
+      this.manualInputCashCount = false;
+      this.closeDetailsPopup();
+    }
+    openDetailsPopup() {
+      super.openDetailsPopup(...arguments)
+      this.state.currencyDetails = this.env.pos.currency
+    }
+    openForeignDetailsPopup() {
+      this.state.openingForeignCash = 0;
+      this.state.displayMoneyDetailsPopup = true;
+      this.state.currencyDetails = this.env.pos.foreign_currency
     }
     handleInputForeignChange(event) {
       if (event.target.classList.contains('invalid-cash-input')) return;

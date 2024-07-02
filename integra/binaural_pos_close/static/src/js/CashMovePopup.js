@@ -14,12 +14,17 @@ const BinauralCashMovePopup = (CashMovePopup) =>
         ...this.state, currency: this.env.pos.currency, is_base: true
       });
     }
+    getPayload() {
+      let res = super.getPayload();
+      res["currency"] = this.state.currency;
+      return res
+    }
 
     onClickButtonCurrency() {
-      if (this.env.pos.currency.id == this.state.currency.id){
+      if (this.env.pos.currency.id == this.state.currency.id) {
         this.state.currency = this.env.pos.foreign_currency
         this.state.is_base = false
-      } else{
+      } else {
         this.state.currency = this.env.pos.currency
         this.state.is_base = true
       }

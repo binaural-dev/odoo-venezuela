@@ -13,6 +13,51 @@ const BinauralClosePosPopup = (ClosePosPopup) =>
       super.setup();
       this.closingForeignCashInputRef = useRef('closingForeignCashInput');
       useValidateCashInput("closingForeignCashInput");
+      this.state = useState({
+        ...this.state,
+        currencyDetails: this.env.pos.currency,
+        currencyNotes: "",
+        foreignCurrencyNotes: "",
+      });
+    }
+    updateCountedCash({ total, moneyDetailsNotes, moneyDetails }) {
+      var inputRef = this.closingCashInputRef
+      var defaultCashDetails = this.defaultCashDetails
+      var difference = "difference"
+      var amount = "amount"
+      if (this.state.currencyDetails.id != this.env.pos.currency.id) {
+        inputRef = this.closingForeignCashInputRef
+        defaultCashDetails = this.foreignDefaultCashDetails
+        difference = "foreign_difference"
+        amount = "foreign_amount"
+        this.state.foreignCurrencyNotes = moneyDetailsNotes
+      } else {
+        this.state.currencyNotes = moneyDetailsNotes
+      }
+      inputRef.el.value = this.env.pos.format_currency_no_symbol(total);
+      console.log(defaultCashDetails)
+      this.state.payments[defaultCashDetails.id].counted = total;
+      this.state.payments[defaultCashDetails.id][difference] =
+        this.env.pos.round_decimals_currency(
+          this.state.payments[defaultCashDetails.id].counted - defaultCashDetails[amount]
+        );
+      if (moneyDetailsNotes) {
+        this.state.notes = this.state.currencyNotes + this.state.foreignCurrencyNotes;
+      }
+      this.manualInputCashCount = false;
+      this.moneyDetails = moneyDetails;
+      this.closeDetailsPopup();
+    }
+    openDetailsPopup() {
+      super.openDetailsPopup(...arguments)
+      this.state.currencyDetails = this.env.pos.currency
+    }
+    openForeignDetailsPopup() {
+      this.state.payments[this.foreignDefaultCashDetails.id].counted = 0;
+      this.state.payments[this.foreignDefaultCashDetails.id].difference = -this.foreignDefaultCashDetails.amount;
+      // this.state.notes = "";
+      this.state.displayMoneyDetailsPopup = true;
+      this.state.currencyDetails = this.env.pos.foreign_currency
     }
     handleInputChange(paymentId, event) {
       if (event.target.classList.contains('invalid-cash-input')) return;

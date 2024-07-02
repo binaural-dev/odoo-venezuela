@@ -1,10 +1,6 @@
 from odoo import api, fields, models, _, Command
 from odoo.exceptions import AccessError, UserError, ValidationError
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class PosSession(models.Model):
     _inherit = "pos.session"
@@ -40,7 +36,11 @@ class PosSession(models.Model):
     def _loader_params_pos_session(self):
         res = super()._loader_params_pos_session()
         res["search_params"]["fields"].append("foreign_cash_register_balance_start")
-        _logger.info(res)
+        return res
+
+    def _loader_params_pos_bill(self):
+        res = super()._loader_params_pos_bill()
+        res["search_params"]["fields"].append("currency_id")
         return res
 
     def action_pos_session_open(self):
@@ -49,13 +49,21 @@ class PosSession(models.Model):
         for session in self.filtered(lambda session: session.state == "opening_control"):
             values = {}
             if session.config_id.cash_control and not session.rescue:
+                foreign_cash_journal = self.payment_method_ids.filtered(
+                    lambda x: x.is_cash_count and x.is_foreign_currency
+                )[:1].journal_id
+                if not foreign_cash_journal:
+                    raise ValidationError(
+                        _("You can't open the session without foreign cash payment method")
+                    )
+
                 last_session = self.search(
                     [("config_id", "=", session.config_id.id), ("id", "!=", session.id)], limit=1
                 )
+
                 session.foreign_cash_register_balance_start = (
                     last_session.foreign_cash_register_balance_end_real
                 )
-                _logger.info(session.foreign_cash_register_balance_start)
             session.write(values)
         return res
 
@@ -262,7 +270,8 @@ class PosSession(models.Model):
             else None
         )
 
-        _logger.info(last_session.foreign_cash_register_balance_end_real)
+        if not self.config_id.cash_control:
+            return res
 
         res["default_cash_details"]["foreign_amount"] = 0
         res["default_cash_details"]["payment_foreign_amount"] = 0
@@ -375,3 +384,40 @@ class PosSession(models.Model):
             message += notes.replace("\n", "<br/>")
         if message:
             self.message_post(body=message)
+
+    def try_cash_in_out(self, _type, amount, reason, extras):
+        sign = 1 if _type == "in" else -1
+        sessions = self.filtered("cash_journal_id")
+        if not sessions:
+            raise UserError(_("There is no cash payment method for this PoS Session"))
+
+        new_amount = amount
+        foreign_amount = 0
+        if (
+            extras.get("currency", False)
+            and extras.get("currency") != self.company_id.currency_id.id
+        ):
+            new_amount = 0
+            foreign_amount = amount
+
+        self.env["account.bank.statement.line"].create(
+            [
+                {
+                    "pos_session_id": session.id,
+                    "journal_id": session.cash_journal_id.id,
+                    "amount": sign * new_amount,
+                    "foreign_amount": sign * foreign_amount,
+                    "date": fields.Date.context_today(self),
+                    "payment_ref": "-".join([session.name, extras["translatedType"], reason]),
+                }
+                for session in sessions
+            ]
+        )
+
+        message_content = [
+            f"Cash {extras['translatedType']}",
+            f'- Amount: {extras["formattedAmount"]}',
+        ]
+        if reason:
+            message_content.append(f"- Reason: {reason}")
+        self.message_post(body="<br/>\n".join(message_content))

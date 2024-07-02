@@ -1,9 +1,5 @@
 from odoo import api, fields, models
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class PosConfig(models.Model):
     _inherit = "pos.config"
@@ -26,7 +22,6 @@ class PosConfig(models.Model):
                 limit=1,
             )
             if session:
-                _logger.info(session)
                 pos_config.last_session_closing_foreign_cash = session[0][
                     "foreign_cash_register_balance_end_real"
                 ]
