@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231204\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240527\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-07 13:11+0000\n"
-"PO-Revision-Date: 2023-12-07 13:11+0000\n"
+"POT-Creation-Date: 2024-06-14 17:43+0000\n"
+"PO-Revision-Date: 2024-06-14 17:43+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -78,11 +78,6 @@ msgid "Artículo"
 msgstr ""
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Assign Serial Numbers"
-msgstr "Asignar números de serie"
-
-#. module: binaural_stock
 #. odoo-python
 #: code:addons/binaural_stock/models/product_product.py:0
 #, python-format
@@ -113,11 +108,6 @@ msgid "Companies"
 msgstr "Compañías"
 
 #. module: binaural_stock
-#: model:res.groups,name:binaural_stock.group_change_weight_picking
-msgid "Change Weight in Picking"
-msgstr "Cambiar peso en Picking"
-
-#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_product_category__company_id
 msgid "Company"
 msgstr "Compañía"
@@ -143,29 +133,9 @@ msgid "Define a main sell's warehouse."
 msgstr "Define un almacén de ventas principal."
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Demand"
-msgstr "Demanda"
-
-#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Descripción"
 msgstr ""
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Description"
-msgstr "Descripción"
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Details"
-msgstr "Detalles"
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Done"
-msgstr "Hecho"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
@@ -181,11 +151,6 @@ msgstr "Exceptuar Productos en 0"
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Fecha:"
 msgstr ""
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Forecast Report"
-msgstr "Informe de pronóstico"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__group_product_available_quantity_on_sale
@@ -313,11 +278,6 @@ msgid "Rango:"
 msgstr ""
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Reserved"
-msgstr "Reservada"
-
-#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_tree_view
 msgid "Sales Price"
 msgstr "Precio de Venta + Impuesto"
@@ -335,11 +295,6 @@ msgstr "Mostrar costo en la vista del producto"
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Stock"
-msgstr ""
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Stock Moves"
 msgstr ""
 
 #. module: binaural_stock
@@ -381,11 +336,6 @@ msgid "Ultimo Costo"
 msgstr ""
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Unit of Measure"
-msgstr "Unidad de medida"
-
-#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__use_main_warehouse
 #: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__use_main_warehouse
 msgid "Use Main Warehouse"
@@ -408,6 +358,13 @@ msgstr "Buscar en Almacen"
 
 #. module: binaural_stock
 #. odoo-python
+#: code:addons/binaural_stock/models/product_product.py:0
+#, python-format
+msgid "You can't create products"
+msgstr "No puedes crear productos"
+
+#. module: binaural_stock
+#. odoo-python
 #: code:addons/binaural_stock/models/stock_picking.py:0
 #: code:addons/binaural_stock/models/stock_picking.py:0
 #, python-format
@@ -426,7 +383,7 @@ msgstr "No puedes hacer que las transferencias sean mayor que la demanda"
 #: code:addons/binaural_stock/models/stock_picking.py:0
 #, python-format
 msgid "You cannot make transfers larger than the reserved quantity"
-msgstr "You cannot make transfers larger than the reserved quantity"
+msgstr ""
 
 #. module: binaural_stock
 #. odoo-python
@@ -434,6 +391,11 @@ msgstr "You cannot make transfers larger than the reserved quantity"
 #, python-format
 msgid "You do not have permission to make shipment-type transfers"
 msgstr "No tiene permiso para hacer transferencias de tipo de Expedicion"
+
+#. module: binaural_stock
+#: model:ir.actions.server,name:binaural_stock.correction_quantity_product_template
+msgid "correction quantity product template"
+msgstr ""
 
 #. module: binaural_stock
 #: model:ir.actions.report,name:binaural_stock.inventory_valuation_report
