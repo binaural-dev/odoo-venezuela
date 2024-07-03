@@ -35,7 +35,6 @@ const BinauralClosePosPopup = (ClosePosPopup) =>
         this.state.currencyNotes = moneyDetailsNotes
       }
       inputRef.el.value = this.env.pos.format_currency_no_symbol(total);
-      console.log(defaultCashDetails)
       this.state.payments[defaultCashDetails.id].counted = total;
       this.state.payments[defaultCashDetails.id][difference] =
         this.env.pos.round_decimals_currency(
