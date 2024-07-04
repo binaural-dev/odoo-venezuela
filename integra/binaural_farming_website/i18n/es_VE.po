@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240606\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-14 14:13+0000\n"
-"PO-Revision-Date: 2024-06-14 14:13+0000\n"
+"POT-Creation-Date: 2024-06-27 17:37+0000\n"
+"PO-Revision-Date: 2024-06-27 17:37+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -25,6 +25,21 @@ msgstr ""
 "                                <strong>Derecho: </strong>"
 
 #. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_offsprings_meat
+msgid "1ER BIRTH"
+msgstr "1ER PARTO"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_offsprings_meat
+msgid "2DO BIRTH"
+msgstr "2DO PARTO"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_offsprings_meat
+msgid "3ER BIRTH"
+msgstr "3ER PARTO"
+
+#. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
 msgid "<span class=\"badge bg-primary \">-</span>"
 msgstr ""
@@ -38,12 +53,46 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
 msgid ""
 "<span class=\"badge title_span\">\n"
-"                                Ancestral milk production data\n"
-"                            </span>"
+"                                    Ancestral milk production data\n"
+"                                </span>"
 msgstr ""
 "<span class=\"badge title_span\">\n"
 "                                Datos de producción de leche de ancestros\n"
 "                            </span>"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid ""
+"<span class=\"badge title_span\">\n"
+"                                    Births and number of offspring\n"
+"                                </span>"
+msgstr ""
+"<span class=\"badge title_span\">\n"
+"                                    Partos y número de crías\n"
+"\n"
+"                            </span>"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid ""
+"<span class=\"badge title_span\">\n"
+"                                    Morphological evaluation\n"
+"                                </span>"
+msgstr ""
+"<span class=\"badge title_span\">\n"
+"                                Valoración morfológica\n"
+"                            </span>"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid ""
+"<span class=\"badge title_span\">\n"
+"                                    Weight of offspring\n"
+"                                </span>"
+msgstr ""
+"<span class=\"badge title_span\">\n"
+"                                    Peso de la crías\n"
+"                                </span>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
@@ -63,17 +112,6 @@ msgid ""
 "                                Identificación\n"
 "                            </span>"
 msgstr ""
-
-#. module: binaural_farming_website
-#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
-msgid ""
-"<span class=\"badge title_span\">\n"
-"                                Morphological evaluation\n"
-"                            </span>"
-msgstr ""
-"<span class=\"badge title_span\">\n"
-"                                Valoración morfológica\n"
-"                            </span>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
@@ -160,6 +198,11 @@ msgstr "<strong>Propietario: </strong>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<strong>Race Type: </strong>"
+msgstr "<strong>Tipo de Raza: </strong>"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
 msgid "<strong>Race: </strong>"
 msgstr "<strong>Raza: </strong>"
 
@@ -170,8 +213,20 @@ msgstr "<strong>Raza</strong><br/>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<strong>Specie: </strong>"
+msgstr "<strong>Especie: </strong>"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
 msgid "<strong>Tattoo Left: </strong>"
 msgstr "<strong>Tattoo Izquierdo: </strong>"
+
+#. module: binaural_farming_website
+#. odoo-python
+#: code:addons/binaural_farming_website/controllers/main_agro.py:0
+#, python-format
+msgid "All"
+msgstr "Todo"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_ancestral
@@ -184,14 +239,43 @@ msgid "Days"
 msgstr "Días"
 
 #. module: binaural_farming_website
-#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_ancestral
-msgid "Lactancias"
-msgstr ""
+#. odoo-python
+#: code:addons/binaural_farming_website/controllers/main_agro.py:0
+#, python-format
+msgid "Female"
+msgstr "Hembras"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_birth_meat
+msgid "First Birth"
+msgstr "1er Parto"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_ancestral
 msgid "Lt"
 msgstr ""
+
+#. module: binaural_farming_website
+#. odoo-python
+#: code:addons/binaural_farming_website/controllers/main_agro.py:0
+#, python-format
+msgid "Male"
+msgstr "Machos"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.main_agro_template
+msgid "Not have Results :("
+msgstr "No tengo se encontraron resultados :("
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_ancestral
+msgid "N° Lactancias"
+msgstr ""
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_offsprings_meat
+msgid "Offsprings"
+msgstr "Crías"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_morpho_eval
@@ -218,14 +302,34 @@ msgid "Search for Race"
 msgstr "Buscar por Raza"
 
 #. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_birth_meat
+msgid "Second Birth"
+msgstr "2do Parto"
+
+#. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_morpho_eval
 msgid "TOTAL"
 msgstr ""
 
 #. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_birth_meat
+msgid "Third Birth"
+msgstr "3er Parto"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_offsprings_meat
+msgid "Time"
+msgstr "Tiempo"
+
+#. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.product_animal
 msgid "Ver ficha"
 msgstr ""
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.table_offsprings_meat
+msgid "Weight"
+msgstr "Peso"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_link

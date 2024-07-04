@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Template Global Agro -->
     <template id="main_agro_template" name="Agro Base">
         <t t-call="website.layout">
             <div class="container">
@@ -8,11 +9,16 @@
                     <t t-set="title"> </t>
                 </t>
                 <div>
-                    <div class="row row-cols-1 row-cols-sm-3 g-6">
-                        <t t-foreach="lots" t-as="lot">
-                            <t t-call="binaural_farming_website.product_animal"/>
-                        </t>
-                    </div>
+                    <t t-if="lots">
+                        <div class="row row-cols-1 row-cols-sm-3 g-6">
+                            <t t-foreach="lots" t-as="lot">
+                                <t t-call="binaural_farming_website.product_animal"/>
+                            </t>
+                        </div>
+                    </t>                                                
+                    <t t-else="">
+                        <h2>Not have Results :(</h2>
+                    </t>
                 </div>
                 <div class="products_pager d-flex justify-content-center pt-5 pb-3">
                     <t t-call="website.pager"/>
@@ -38,12 +44,13 @@
                         <p><strong>Race</strong><br/><t t-out="lot.lot_race_id.description or '-'"/></p>	
                     </div>
                     <hr class="bg-primary"/>
-                    <a class="btn btn-primary fw-bold text-white" t-attf-href="/agro/{{lot.name}}" role="button">Ver ficha</a>
+                    <a class="btn btn-primary fw-bold text-white" t-attf-href="{{url_service}}/{{lot.name}}-{{lot.id}}" role="button">Ver ficha</a>
                 </div>
             </div>
         </div>
     </template>
 
+    <!-- Template Individual Animal -->
     <template id="agro_animal_lot" name="Animal">
         <t t-call="website.layout">
             <div class="container">
@@ -51,19 +58,25 @@
                 <div class="row">
                     <div class="col-sm-6 text-break">
                         <div class="bg-primary div_image_box" >
-                            <img t-attf-src="data:image/*;base64,{{lot.image}}" t-att-alt="lot.name" class="image_box" />
+                            <img t-attf-src="data:image/*;base64,{{lot.image}}" t-att-alt="lot.name" class="image_box rounded"/>
                         </div>
                         <br/>
                     </div>
                     <div class="col-sm-6 text-break">
-                        <h1 class="bg-primary text-center">
+                        <h3 class="bg-primary text-center">
                             <span class="badge title_span">
                                 Identificación
                             </span>
-                        </h1>
-                        <div class="fs-4 text-break">
-                            <p><strong>Number: </strong> <t t-out="lot.name"/></p>
-                            <p><strong>Name:</strong> <t t-out="lot.name_lot or '-'"/></p>	
+                        </h3>
+                        <div class=" text-break">
+                            <p>
+                                <strong>Number: </strong>
+                                <t t-out="lot.name"/>
+                            </p>
+                            <p>
+                                <strong>Name:</strong>
+                                <t t-out="lot.name_lot or '-'"/>
+                            </p>	
                             <p>
                                 <strong>Tattoo Left: </strong>
                                 <t t-out="lot.tatto_left or '-'"/> / 
@@ -80,25 +93,36 @@
                             </p>
                             <p>
                                 <strong>Birthdate: </strong>
-                                <t t-out="lot.date_of_birth if lot.date_of_birth else '-'"/>
+                                <t t-out="lot.date_of_birth or '-'"/>
+                            </p>
+                            <p>
+                                <strong>Specie: </strong>
+                                <t t-out="lot.specie_id.name or '-'"/>
                             </p>
                             <p>
                                 <strong>Race: </strong>
-                                <t t-out="lot.lot_race_id.description if lot.lot_race_id else '-'"/>
+                                <t t-out="lot.lot_race_id.description or '-'"/>
+                            </p>
+                            <p>
+                                <strong>Race Type: </strong>
+                                <span t-field="lot.production_types"/>
+                            </p>
+                            <p>
+                                <strong>Gender: </strong>
+                                <span t-field="lot.gender"/>
                             </p>
                         </div>
-                        <br/>
                     </div>
                 </div>
                 <hr class="bg-primary"/>
                 <div class="row">
                     <div class="col-sm-5 text-break">
-                        <h1 class="bg-primary text-center" >
+                        <h3 class="bg-primary text-center" >
                             <span class="badge title_span">
                                 Breeder and owner information
                             </span>
-                        </h1>
-                        <div class="fs-4 text-break">
+                        </h3>
+                        <div class="text-break">
                             <p>
                                 <strong>Breeder: </strong>
                                 <t t-out="lot.lot_breeder_ids.name or '-'"/>
@@ -115,11 +139,11 @@
                         <br/>
                     </div>
                     <div class="col-sm-7">
-                        <h1 class="bg-secondary text-center">
+                        <h3 class="bg-secondary text-center">
                             <span class="badge title_span">
                                 Pedigree
                             </span>
-                        </h1>
+                        </h3>
                         <div class="family-tree">
                             <div class="tree-nodo">
                                 <div class="tree-ejemplar">
@@ -134,7 +158,7 @@
                                     <p>
                                         <span class="text-primary">Father</span>: 
                                         <t t-if="lot.parent_father_id">
-                                            <a t-attf-href="/agro/{{lot.parent_father_id.name}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_father_id.name}}-{{lot.parent_father_id.id}}" role="button">
                                                 <span class="badge bg-secondary " t-out="lot.parent_father_id.name"/>
                                             </a>
                                         </t>
@@ -146,7 +170,8 @@
                                 <div class="tree-padres">
                                     <p><span class="text-primary">Mother</span>: 
                                         <t t-if="lot.parent_mother_id">
-                                            <a t-attf-href="/agro/{{lot.parent_mother_id.name}}" role="button">
+                                            <t t-set="specie" t-value="'' if not lot.parent_mother_id.specie_id else '/'+lot.parent_mother_id.specie_id.name"/>
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_mother_id.name}}-{{lot.parent_mother_id.id}}" role="button">
                                                 <span class="badge bg-primary " t-out="lot.parent_mother_id.name"/>
                                             </a>
                                         </t>
@@ -161,7 +186,7 @@
                                     <p>
                                         <span class="text-primary">GrandFather</span>: 
                                         <t t-if="lot.parent_father_id and lot.parent_father_id.parent_father_id">
-                                            <a t-attf-href="/agro/{{lot.parent_father_id.parent_father_id.name}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_father_id.parent_father_id.name}}-{{lot.parent_father_id.parent_father_id.id}}" role="button">
                                                 <span class="badge bg-secondary " t-out="lot.parent_father_id.parent_father_id.name"/>
                                             </a>
                                         </t>
@@ -174,7 +199,7 @@
                                     <p>
                                         <span class="text-primary">GrandMother</span>: 
                                         <t t-if="lot.parent_father_id and lot.parent_father_id.parent_mother_id">
-                                            <a t-attf-href="/agro/{{lot.parent_father_id.parent_mother_id.name}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_father_id.parent_mother_id.name}}-{{lot.parent_father_id.parent_mother_id.id}}" role="button">
                                                 <span class="badge bg-primary " t-out="lot.parent_father_id.parent_mother_id.name"/>
                                             </a>
                                         </t>
@@ -187,7 +212,7 @@
                                     <p>
                                         <span class="text-primary">GrandFather</span>: 
                                         <t t-if="lot.parent_mother_id and lot.parent_mother_id.parent_father_id">
-                                            <a t-attf-href="/agro/{{lot.parent_mother_id.parent_father_id.name}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_mother_id.parent_father_id.name}}-{{lot.parent_mother_id.parent_father_id.id}}" role="button">
                                                 <span class="badge bg-secondary " t-out="lot.parent_mother_id.parent_father_id.name"/>
                                             </a>
                                         </t>
@@ -200,7 +225,7 @@
                                     <p>
                                         <span class="text-primary">GrandMother</span>: 
                                         <t t-if="lot.parent_mother_id and lot.parent_mother_id.parent_mother_id">
-                                            <a t-attf-href="/agro/{{lot.parent_mother_id.parent_mother_id.name}}" role="button">
+                                            <a t-attf-href="{{default_url}}/{{lot.parent_mother_id.parent_mother_id.name}}-{{lot.parent_mother_id.parent_mother_id.id}}" role="button">
                                                 <span class="badge bg-primary " t-out="lot.parent_mother_id.parent_mother_id.name"/>
                                             </a>
                                         </t>
@@ -216,44 +241,67 @@
                 </div>
                 <hr class="bg-secondary"/>
                 <div class="row">
-                    <div class="col-sm-6 text-break">
-                        <h1 class="bg-secondary text-center">
-                            <span class="badge title_span">
-                                Ancestral milk production data
-                            </span>
-                        </h1>
-                        <t t-call="binaural_farming_website.table_ancestral"/>
-                        <br/>
-                    </div>
-                    <div class="col-sm-6 text-break">
-                        <h1 class="bg-primary text-center">
-                            <span class="badge title_span">
-                                Morphological evaluation
-                            </span>
-                        </h1>
-                        <t t-call="binaural_farming_website.table_morpho_eval"/>
-                        <br/>
-                    </div>
+                    <t t-if="lot.production_types == 'meat_breeds'">
+                        <div class="col-sm-6 text-break">
+                            <h3 class="bg-secondary text-center">
+                                <span class="badge title_span">
+                                    Births and number of offspring
+                                </span>
+                            </h3>
+                            <t t-call="binaural_farming_website.table_birth_meat"/>
+                            <br/>
+                        </div>
+                        <div class="col-sm-6 text-break">
+                            <h3 class="bg-primary text-center">
+                                <span class="badge title_span">
+                                    Weight of offspring
+                                </span>
+                            </h3>
+                            <t t-call="binaural_farming_website.table_offsprings_meat"/>
+                            <br/>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <div class="col-sm-6 text-break">
+                            <h3 class="bg-secondary text-center">
+                                <span class="badge title_span">
+                                    Ancestral milk production data
+                                </span>
+                            </h3>
+                            <t t-call="binaural_farming_website.table_ancestral"/>
+                            <br/>
+                        </div>
+                        <div class="col-sm-6 text-break">
+                            <h3 class="bg-primary text-center">
+                                <span class="badge title_span">
+                                    Morphological evaluation
+                                </span>
+                            </h3>
+                            <t t-call="binaural_farming_website.table_morpho_eval"/>
+                            <br/>
+                        </div>
+                    </t>
                 </div>
             </div>
         </t>
     </template>
 
+    <!-- Tables Milks -->
     <template id="table_ancestral" name="Ancestral Milk">
         <div>
-            <h5 class="text-end">Lactancias</h5>
             <table class="redTable">
-                <thead>
-                    <tr>
-                        <th>Ancestral</th>
-                        <th>Lt</th>
-                        <th>Days</th>
-                        <th>Lt</th>
-                        <th>Days</th>
-                        <th>Lt</th>
-                        <th>Days</th>
-                    </tr>
-                </thead>
+                <tr>
+                    <th rowspan="2" class="thead-red">Ancestral</th>
+                    <th colspan="6" class="thead-red">N° Lactancias</th>
+                </tr>
+                <tr>
+                    <th>Lt</th>
+                    <th>Days</th>
+                    <th>Lt</th>
+                    <th>Days</th>
+                    <th>Lt</th>
+                    <th>Days</th>
+                </tr>
                 <tbody>
                     <t t-foreach="lot.lot_ancestry_ids" t-as="ancestry">
                         <t t-call="binaural_farming_website.tr_ancestral"/>
@@ -298,6 +346,68 @@
                     <td>-</td>
                 </tr>
             </tbody>
+        </table>
+    </template>
+
+    <!-- Tables Meats -->
+    <template id="table_birth_meat" name="Table Birth Meat">
+        <table class="greenTable">
+            <thead>
+                <tr>
+                    <th t-if="lot.first_birth">First Birth</th>
+                    <th t-if="lot.second_birth">Second Birth</th>
+                    <th t-if="lot.third_birth">Third Birth</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td t-if="lot.first_birth" t-out="lot.first_birth"/>
+                    <td t-if="lot.second_birth" t-out="lot.second_birth"/>
+                    <td t-if="lot.third_birth" t-out="lot.third_birth"/>
+                </tr>
+            </tbody>
+        </table>
+    </template>
+
+    <template id="table_offsprings_meat" name="Table Offsprings Meat">
+        <table class="redTable" border="1">
+            <tr>
+                <th rowspan="2" class="thead-red">Time</th>
+                <th colspan="2" t-if="lot.first_birth" class="thead-red">1ER BIRTH</th>
+                <th colspan="2" t-if="lot.second_birth" class="thead-red">2DO BIRTH</th>
+                <th colspan="2" t-if="lot.third_birth" class="thead-red">3ER BIRTH</th>
+            </tr>
+            <tr>
+                <t t-if="lot.first_birth">
+                    <th>Offsprings</th>
+                    <th>Weight</th>
+                </t>
+                <t t-if="lot.second_birth">
+                    <th>Offsprings</th>
+                    <th>Weight</th>
+                </t>
+                <t t-if="lot.third_birth">
+                    <th>Offsprings</th>
+                    <th>Weight</th>
+                </t>
+            </tr>
+            <t t-foreach="lot.lot_weight_offspring_ids" t-as="offspring">
+                <tr>
+                    <td><span t-field="offspring.name"/></td>
+                    <t t-if="lot.first_birth">
+                        <td t-out="offspring.first_number_offspring"></td>
+                        <td t-out="offspring.first_birth_weight"></td>
+                    </t>
+                    <t t-if="lot.second_birth">
+                        <td t-out="offspring.second_number_offspring"></td>
+                        <td t-out="offspring.second_birth_weight"></td>
+                    </t>
+                    <t t-if="lot.third_birth">
+                        <td t-out="offspring.third_number_offspring"></td>
+                        <td t-out="offspring.third_birth_weight"></td>
+                    </t>
+                </tr>
+            </t>
         </table>
     </template>
 </odoo>

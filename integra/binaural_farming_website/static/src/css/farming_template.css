@@ -27,8 +27,8 @@
 }
 
 .div_image_box{
-  width: 100%; /* Ancho del div contenedor */
-  max-width: 500px; /* Ajusta el máximo ancho según tus necesidades */
+  width: 100%; 
+  max-width: 400px; 
   height: auto;
   position: relative;
   overflow: hidden;
@@ -111,6 +111,9 @@ table.redTable tr:nth-child(even) {
 }
 table.redTable thead {
     background: #A40808;
+}
+.thead-red{
+  background: #A40808;
 }
 
 table.redTable thead th {
