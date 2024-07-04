@@ -249,6 +249,8 @@ class HrPayrollBenefit(models.Model):
                 )
                 if not any(benefits_accumulated):
                     continue
+                if employee.last_calculated_benefits_interest == fields.Date.today():
+                    continue
 
                 daily_interests = (
                     benefits_accumulated[-1]["available_benefits"] * daily_interest_rate,
