@@ -58,17 +58,17 @@
                 <div class="row">
                     <div class="col-sm-6 text-break">
                         <div class="bg-primary div_image_box" >
-                            <img t-attf-src="data:image/*;base64,{{lot.image}}" t-att-alt="lot.name" class="image_box" />
+                            <img t-attf-src="data:image/*;base64,{{lot.image}}" t-att-alt="lot.name" class="image_box rounded"/>
                         </div>
                         <br/>
                     </div>
                     <div class="col-sm-6 text-break">
-                        <h1 class="bg-primary text-center">
+                        <h3 class="bg-primary text-center">
                             <span class="badge title_span">
                                 Identificación
                             </span>
-                        </h1>
-                        <div class="fs-4 text-break">
+                        </h3>
+                        <div class=" text-break">
                             <p>
                                 <strong>Number: </strong>
                                 <t t-out="lot.name"/>
@@ -107,19 +107,22 @@
                                 <strong>Race Type: </strong>
                                 <span t-field="lot.production_types"/>
                             </p>
+                            <p>
+                                <strong>Gender: </strong>
+                                <span t-field="lot.gender"/>
+                            </p>
                         </div>
-                        <br/>
                     </div>
                 </div>
                 <hr class="bg-primary"/>
                 <div class="row">
                     <div class="col-sm-5 text-break">
-                        <h1 class="bg-primary text-center" >
+                        <h3 class="bg-primary text-center" >
                             <span class="badge title_span">
                                 Breeder and owner information
                             </span>
-                        </h1>
-                        <div class="fs-4 text-break">
+                        </h3>
+                        <div class="text-break">
                             <p>
                                 <strong>Breeder: </strong>
                                 <t t-out="lot.lot_breeder_ids.name or '-'"/>
@@ -136,11 +139,11 @@
                         <br/>
                     </div>
                     <div class="col-sm-7">
-                        <h1 class="bg-secondary text-center">
+                        <h3 class="bg-secondary text-center">
                             <span class="badge title_span">
                                 Pedigree
                             </span>
-                        </h1>
+                        </h3>
                         <div class="family-tree">
                             <div class="tree-nodo">
                                 <div class="tree-ejemplar">
@@ -240,40 +243,40 @@
                 <div class="row">
                     <t t-if="lot.production_types == 'meat_breeds'">
                         <div class="col-sm-6 text-break">
-                            <h1 class="bg-secondary text-center">
+                            <h3 class="bg-secondary text-center">
                                 <span class="badge title_span">
                                     Births and number of offspring
                                 </span>
-                            </h1>
+                            </h3>
                             <t t-call="binaural_farming_website.table_birth_meat"/>
                             <br/>
                         </div>
                         <div class="col-sm-6 text-break">
-                            <h1 class="bg-primary text-center">
+                            <h3 class="bg-primary text-center">
                                 <span class="badge title_span">
                                     Weight of offspring
                                 </span>
-                            </h1>
+                            </h3>
                             <t t-call="binaural_farming_website.table_offsprings_meat"/>
                             <br/>
                         </div>
                     </t>
                     <t t-else="">
                         <div class="col-sm-6 text-break">
-                            <h1 class="bg-secondary text-center">
+                            <h3 class="bg-secondary text-center">
                                 <span class="badge title_span">
                                     Ancestral milk production data
                                 </span>
-                            </h1>
+                            </h3>
                             <t t-call="binaural_farming_website.table_ancestral"/>
                             <br/>
                         </div>
                         <div class="col-sm-6 text-break">
-                            <h1 class="bg-primary text-center">
+                            <h3 class="bg-primary text-center">
                                 <span class="badge title_span">
                                     Morphological evaluation
                                 </span>
-                            </h1>
+                            </h3>
                             <t t-call="binaural_farming_website.table_morpho_eval"/>
                             <br/>
                         </div>
