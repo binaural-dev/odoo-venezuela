@@ -8,6 +8,7 @@ class HrEmployee(models.Model):
     last_monthly_calculated_benefits = fields.Date()
     last_quarterly_calculated_benefits = fields.Date()
     last_annual_calculated_benefits = fields.Date()
+    last_calculated_benefits_interest = fields.Date()
 
     def _get_benefits(self, benefits_days, is_monthly=False, is_annual=False):
         self.ensure_one()
