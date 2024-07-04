@@ -257,6 +257,7 @@ class HrPayrollBenefit(models.Model):
                     benefits_accumulated[-1]["foreign_available_benefits"] * daily_interest_rate,
                 )
                 employee._register_payroll_benefits(interests=daily_interests)
+                employee.last_calculated_benefits_interest = fields.Date.today()
 
     @api.model
     def get_benefits_for_employee(self, employee_id):
