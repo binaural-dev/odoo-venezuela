@@ -38,9 +38,16 @@
                         </h3>
                     </div>
                     <hr class="bg-secondary"/>
-                    <div class="card-text fs-5">
+                    <div class="card-text">
                         <p><strong>Name</strong><br/><t t-out="lot.name_lot or '-'"/></p>	
-                        <p><strong>Birthdate</strong><br/><t t-out="lot.date_of_birth or '-'"/></p>	
+                        <p><strong>Birthdate</strong><br/>
+                            <t t-if="lot.date_of_birth">
+                                <span t-field="lot.date_of_birth" t-options='{"format": "dd/MM/yyyy"}'/>
+                            </t>
+                            <t t-else="">
+                                -
+                            </t>
+                        </p>	
                         <p><strong>Race</strong><br/><t t-out="lot.lot_race_id.description or '-'"/></p>	
                     </div>
                     <hr class="bg-primary"/>
@@ -93,7 +100,12 @@
                             </p>
                             <p>
                                 <strong>Birthdate: </strong>
-                                <t t-out="lot.date_of_birth or '-'"/>
+                                <t t-if="lot.date_of_birth">
+                                    <span t-field="lot.date_of_birth" t-options='{"format": "dd/MM/yyyy"}'/>
+                                </t>
+                                <t t-else="">
+                                    -
+                                </t>
                             </p>
                             <p>
                                 <strong>Specie: </strong>
