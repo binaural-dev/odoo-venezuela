@@ -7,7 +7,7 @@
     "license": "LGPL-3",
     "website": "https://www.binauraldev.com",
     "category": "Human Resources",
-    "version": "16.0.1.0.6",
+    "version": "16.0.1.0.7",
     # any module necessary for this one to work correctly
     "depends": ["binaural_hr_payroll", "binaural_hr_payroll_holidays"],
     # always loaded
