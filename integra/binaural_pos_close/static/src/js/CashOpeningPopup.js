@@ -17,6 +17,8 @@ const BinauralCashOpeningPopup = (CashOpeningPopup) =>
         currencyNotes: "",
         foreignCurrencyNotes: "",
       });
+      this.currency = this.env.pos.currency
+      this.foreign_currency = this.env.pos.foreign_currency
       useValidateCashInput("openingForeignCashInput", this.env.pos.pos_session.foreign_cash_register_balance_start);
       this.openingForeignCashInputRef = useRef('openingForeignCashInput');
     }

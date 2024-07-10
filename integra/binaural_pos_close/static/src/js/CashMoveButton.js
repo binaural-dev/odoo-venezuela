@@ -6,8 +6,8 @@ import Registries from 'point_of_sale.Registries';
 import { _t } from 'web.core';
 
 const TRANSLATED_CASH_MOVE_TYPE = {
-  in: _t('in'),
-  out: _t('out'),
+  in: _t('Entrada'),
+  out: _t('Salida'),
 };
 
 const BinauralCashMoveButton = (CashMoveButton) =>

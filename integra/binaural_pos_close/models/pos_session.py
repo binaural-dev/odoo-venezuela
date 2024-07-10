@@ -84,7 +84,9 @@ class PosSession(models.Model):
     @api.depends("payment_method_ids", "order_ids", "foreign_cash_register_balance_start")
     def _compute_foreign_cash_balance(self):
         for session in self:
-            cash_payment_method = session.payment_method_ids.filtered("is_cash_count")[:1]
+            cash_payment_method = session.payment_method_ids.filtered(
+                lambda x: x.is_cash_count and x.is_foreign_currency
+            )[:1]
             if cash_payment_method:
                 total_cash_payment = 0.0
                 last_session = session.search(
@@ -404,7 +406,7 @@ class PosSession(models.Model):
             [
                 {
                     "pos_session_id": session.id,
-                    "journal_id": session.cash_journal_id.id,
+                    "journal_id": session.foreign_cash_journal_id.id,
                     "amount": sign * new_amount,
                     "foreign_amount": sign * foreign_amount,
                     "date": fields.Date.context_today(self),
