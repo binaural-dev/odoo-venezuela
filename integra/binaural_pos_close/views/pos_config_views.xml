@@ -11,7 +11,8 @@
                         <span>Last Closing Foreign Cash Balance</span>
                     </div>
                     <div class="col-6">
-                        <span><field name="last_session_closing_foreign_cash" /></span>
+                        <field name="foreign_currency_id" invisible="1"/>
+                        <span><field name="last_session_closing_foreign_cash" widget="monetary" options="{'currency_field': 'foreign_currency_id'}" /></span>
                     </div>
                 </div>
             </xpath>
