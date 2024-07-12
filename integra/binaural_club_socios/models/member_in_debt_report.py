@@ -15,7 +15,6 @@ class MemberInDebtReport(models.Model):
     quota_period_str = fields.Char("Periodo de la Cuota", compute="_compute_quota_period_str")
     amount = fields.Float("Monto")
 
-
     @api.depends("quota_period")
     def _compute_quota_period_str(self):
         for debt_member in self:
@@ -62,7 +61,7 @@ class MemberInDebtReport(models.Model):
                 AND (payment_state = 'paid' or payment_state = 'in_payment')
                 AND account_move.state = 'posted'
                 ORDER BY fee_period DESC
-                FETCH FIRST 1 ROWS WITH TIES
+                LIMIT 1
             ) invoice ON TRUE
         """
 
@@ -96,6 +95,8 @@ class MemberInDebtReport(models.Model):
 
                     SELECT day_end_date_payment INTO _day_end_date_payment FROM partner_config LIMIT 1;
 
+                    _effective_date := (date_trunc('month', _effective_date) + INTERVAL '1 month');
+
                     IF _effective_date <= CURRENT_DATE AND EXTRACT(DAY FROM CURRENT_DATE) >= _day_end_date_payment THEN
                         _tmp_next_date := _effective_date;
                     ELSE
@@ -106,7 +107,7 @@ class MemberInDebtReport(models.Model):
                         END IF;
                     END IF;
 
-                    WHILE _tmp_next_date <= NOW()::DATE + INTERVAL '1 month' LOOP
+                    WHILE _tmp_next_date <= (date_trunc('month', NOW()) + INTERVAL '1 month')::DATE + (_day_end_date_payment -1) LOOP
                         RAISE NOTICE 'Processing date: %', _tmp_next_date;
 
                         IF invoice_fee_period IS NOT NULL AND EXTRACT(DAY FROM invoice_fee_period) > _day_end_date_payment THEN
@@ -136,6 +137,7 @@ class MemberInDebtReport(models.Model):
                         _tmp_next_date := _tmp_next_date + INTERVAL '1 month';
                     END LOOP;
                 END;
+
                 $$ LANGUAGE plpgsql;
             """
         )
