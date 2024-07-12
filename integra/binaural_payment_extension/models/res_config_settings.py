@@ -28,3 +28,4 @@ class ResConfigSettings(models.TransientModel):
     condition_withholding_id = fields.Many2one(
         related='company_id.condition_withholding_id', readonly=False
     )
+    code_visible=fields.Boolean(related='company_id.code_visible',readonly=False)
