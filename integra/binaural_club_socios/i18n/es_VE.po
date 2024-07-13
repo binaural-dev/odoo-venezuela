@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240603\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-20 16:13+0000\n"
-"PO-Revision-Date: 2024-06-20 16:13+0000\n"
+"POT-Creation-Date: 2024-07-13 16:05+0000\n"
+"PO-Revision-Date: 2024-07-13 16:05+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -109,13 +109,13 @@ msgstr "Tipo de Acción"
 #: code:addons/binaural_club_socios/models/action_partner.py:0
 #, python-format
 msgid "Action changed to %s, by %s"
-msgstr ""
+msgstr "Acción cambiada to %s, by %s"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__action_number_related
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__action_number_related
 msgid "Action related"
-msgstr ""
+msgstr "Acción relacionada"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch__actions_ids
@@ -177,7 +177,7 @@ msgstr "Estado de la actividad"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__activity_type_icon
 msgid "Activity Type Icon"
-msgstr "Ícono de tipo de actvidad"
+msgstr "Ícono de tipo de actividad"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__mobile_phone_two
@@ -366,12 +366,12 @@ msgstr "Lista de denegación"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__mobile_blacklisted
 msgid "Blacklisted Phone Is Mobile"
-msgstr ""
+msgstr "El teléfono en la lista negra es móvil"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__phone_blacklisted
 msgid "Blacklisted Phone is Phone"
-msgstr ""
+msgstr "El teléfono en la lista negra es Fijo"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_bounce
@@ -789,32 +789,32 @@ msgstr "Establecer Prorroga:(%s)"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__expiration_alert_subject
 msgid "Expiration Alert Mail Subject"
-msgstr ""
+msgstr "Asunto del correo de alerta de vencimiento"
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_partner_config_view_form
 msgid "Expiration alert"
-msgstr ""
+msgstr "Alerta de caducidad"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__expiration_alert_body
 msgid "Expiration alert mail body"
-msgstr ""
+msgstr "Cuerpo del correo de alerta de vencimiento"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__extension_alert_subject
 msgid "Extension Alert Mail Subject"
-msgstr ""
+msgstr "Asunto del correo de alerta de extensión"
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_partner_config_view_form
 msgid "Extension alert"
-msgstr ""
+msgstr "Extension alert"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__extension_alert_body
 msgid "Extension alert mailing body"
-msgstr ""
+msgstr "Cuerpo del correo de alerta de extensión"
 
 #. module: binaural_club_socios
 #. odoo-python
@@ -854,7 +854,6 @@ msgstr ""
 msgid "Family reference"
 msgstr "Referencia"
 
-
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__member_gender__female
 msgid "Female"
@@ -865,7 +864,7 @@ msgstr "Femenino"
 msgid ""
 "Field used to store sanitized phone number. Helps speeding up searches and "
 "comparisons."
-msgstr ""
+msgstr "Campo utilizado para almacenar el número de teléfono desinfectado. Ayuda a acelerar las búsquedas y comparaciones."
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_account_position_id
@@ -1087,6 +1086,11 @@ msgstr "Facturas"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_is_follower
 msgid "Is Follower"
 msgstr "Es un seguidor"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__is_postpaid
+msgid "Is Postpaid"
+msgstr "¿Es Pospago?"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__is_public
@@ -2328,7 +2332,6 @@ msgstr "Titular Usufructo"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__vat_usufruct
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__vat_usufruct
 msgid "Vat Usufruct"
-
 msgstr "RIF Usufructo"
 
 #. module: binaural_club_socios

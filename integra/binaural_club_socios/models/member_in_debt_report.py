@@ -86,16 +86,22 @@ class MemberInDebtReport(models.Model):
                     _effective_date DATE;
                     _tmp_next_date DATE;
                     _day_end_date_payment INTEGER;
+                    _is_postpaid BOOLEAN;
                 BEGIN
+                    SELECT day_end_date_payment INTO _day_end_date_payment FROM partner_config LIMIT 1;
+                    SELECT is_postpaid INTO _is_postpaid FROM partner_config LIMIT 1;
+
                     IF invoice_fee_period IS NULL THEN
                         _effective_date := start_date;
                     ELSE
                         _effective_date := invoice_fee_period;
                     END IF;
 
-                    SELECT day_end_date_payment INTO _day_end_date_payment FROM partner_config LIMIT 1;
+                    _effective_date := date_trunc('month', _effective_date);
 
-                    _effective_date := (date_trunc('month', _effective_date) + INTERVAL '1 month');
+                    IF _is_postpaid THEN
+                        _effective_date := (date_trunc('month', _effective_date) + INTERVAL '1 month');
+                    END IF;
 
                     IF _effective_date <= CURRENT_DATE AND EXTRACT(DAY FROM CURRENT_DATE) >= _day_end_date_payment THEN
                         _tmp_next_date := _effective_date;
