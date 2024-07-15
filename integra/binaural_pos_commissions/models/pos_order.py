@@ -1,6 +1,4 @@
-from odoo import fields, models
-import logging
-_logger = logging.getLogger(__name__)
+from odoo import fields, models, _
 
 
 class PosOrder(models.Model):
@@ -17,9 +15,19 @@ class PosOrder(models.Model):
         return res
 
     def assing_commission_policy_line_images_to_order_lines(self):
-        self.env["commission.policy"].assing_commission_policy_line_images_to_lines(
-            self.lines
-        )
+        lines = self.lines
+        if self.company_id.use_image_from_sale_order:
+
+            lines = self.lines.filtered(
+                lambda line: not line.sale_order_line_id.commission_policy_line_image_ids
+            )
+            lines_from_sale_order = self.lines - lines
+            for line in lines_from_sale_order:
+                line.commission_policy_line_image_ids = (
+                    line.sale_order_line_id.commission_policy_line_image_ids
+                )
+
+        self.env["commission.policy"].assing_commission_policy_line_images_to_lines(lines)
 
     def set_company_settings(self):
         self.commission_invoice_date_field = self.company_id.commission_invoice_date_field
@@ -34,3 +42,20 @@ class PosOrder(models.Model):
         res["compute_commission_when"] = self.compute_commission_when
         res["priority_commission_policy_type"] = self.priority_commission_policy_type
         return res
+
+    def set_commission_from_sale(self):
+        view = self.env.ref("binaural_commissions.set_commission_order_to_invoice_form")
+        return {
+            "name": _("Set Commission Order to Invoice"),
+            "type": "ir.actions.act_window",
+            "view_mode": "form",
+            "res_model": "set.commission.order.to.invoice",
+            "views": [(view.id, "form")],
+            "view_id": view.id,
+            "target": "new",
+            "flags": {"mode": "readonly"},
+            "context": dict(
+                self.env.context,
+                default_pos_order_ids=self.ids,
+            ),
+        }
