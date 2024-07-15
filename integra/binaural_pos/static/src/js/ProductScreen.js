@@ -32,12 +32,30 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
         })
         return res
       }
+      async _setValue(inputValue) {
+        const order = this.env.pos.get_order();
+        const selectedLine = order.get_selected_orderline();
+        const barcode = selectedLine.product.barcode;
+
+        console.log("_setValue selectedLine", { selectedLine, barcode });
+
+        if (barcode) return;
+
+        return super._setValue(inputValue);
+
+      }
       async _clickProduct(event) {
+
         if (!this.currentOrder) {
             this.env.pos.add_new_order();
         }
         const product = event.detail;
+        const barcode = product.barcode;
         const options = await this._getAddProductOptions(product);
+
+        if (barcode) return;
+
+        // this.env.pos.db.get_product_by_id(foundProductIds[0]);
         // Do not add product if options is undefined.
         product.optional_product_ids = [];
         if (!options) return;
