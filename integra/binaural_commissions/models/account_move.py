@@ -23,7 +23,9 @@ class AccountMove(models.Model):
     total_commission = fields.Float(
         compute="_compute_total_commission_of_invoice", store=True, copy=False
     )
-    discount_invoice_ids = fields.Many2many("account.move", compute="_compute_discount_invoice")
+    discount_invoice_ids = fields.Many2many(
+        "account.move", compute="_compute_discount_invoice", compute_sudo=True
+    )
     commission_invoice_date_field = fields.Char(readonly=True, copy=False)
     compute_commission_when = fields.Char(readonly=True, copy=False)
     priority_commission_policy_type = fields.Char(readonly=True, copy=False)
@@ -43,6 +45,7 @@ class AccountMove(models.Model):
     )
     commission_discount = fields.Float(
         compute="_compute_discount_invoice",
+        compute_sudo=True,
         store=True,
         copy=False,
         help="Discount of corrective payments",
@@ -128,7 +131,9 @@ class AccountMove(models.Model):
                 out_invoice = record.reversed_entry_id
 
                 for line in record.invoice_line_ids:
-                    out_invoice_line = out_invoice.invoice_line_ids.filtered(lambda x: x.product_id == line.product_id)
+                    out_invoice_line = out_invoice.invoice_line_ids.filtered(
+                        lambda x: x.product_id == line.product_id
+                    )
                     if not out_invoice_line.commission_image_id:
                         continue
                     line.commission_image_id = out_invoice_line.commission_image_id
@@ -137,22 +142,23 @@ class AccountMove(models.Model):
                 return
 
             for line in record.invoice_line_ids:
-                if line.sale_line_ids.commission_policy_line_image_ids:
-                    commission_id = line.sale_line_ids.get_commission_policy_line_image(
-                        record.collection_days
+                commission_id = line.get_commission(record.collection_days)
+                _logger.info(commission_id)
+                if not commission_id:
+                    continue
+
+                if len(commission_id) > 1:
+                    raise ValidationError(
+                        _(
+                            "The commission policy has more than one record with the same date range."
+                        )
                     )
 
-                    if commission_id and len(commission_id) > 1:
-                        raise ValidationError(
-                            _(
-                                "The commission policy has more than one record with the same date range."
-                            )
-                        )
-                    line.commission_image_id = commission_id
-                    line.commission_amount = line.price_subtotal * (
-                        line.commission_image_id.commission / 100
-                    )
-                    total += line.commission_amount
+                line.commission_image_id = commission_id
+                line.commission_amount = line.price_subtotal * (
+                    line.commission_image_id.commission / 100
+                )
+                total += line.commission_amount
             record.total_commission = total
 
     @api.depends("invoice_date_due", "invoice_date")
@@ -375,7 +381,7 @@ class AccountMove(models.Model):
                     )
 
                     discount = out_invoice_id.total_commission * percentaje / 100
-                    amount_total += discount 
+                    amount_total += discount
 
             percentaje = float_round(
                 (payment.get("amount", 0) * 100) / out_refund_id.amount_total,

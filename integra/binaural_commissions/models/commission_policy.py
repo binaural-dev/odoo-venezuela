@@ -1,6 +1,7 @@
 import logging
 from os import unlink
 from typing import List, Union
+from collections import defaultdict
 import traceback
 
 from odoo import api, fields, models, _
@@ -67,11 +68,12 @@ class CommissionPolicy(models.Model):
             commission.display_name = f"{commission.policy_type_id.name}" f" ({commission.name})"
 
     def available_to_policy_type_and_create_image(self, lines):
+        model_name = lines._name
         CommissionPolicyLineImage = self.env["commission.policy.line.image"]
         if not lines:
-            return self.env["sale.order.line"]
+            return self.env[model_name]
 
-        lines_applied = self.env["sale.order.line"]
+        lines_applied = self.env[model_name]
 
         for record in self:
             if record.policy_type_name == "client":
@@ -117,3 +119,64 @@ class CommissionPolicy(models.Model):
         read_lines = commission_lines.read(["date_from", "date_to", "commission", "policy_type"])
         res = [(0, 0, line) for line in read_lines]
         return res
+
+    def assing_commission_policy_line_images_to_lines(self, lines):
+        """
+        This function assigns the commissions available for the lines.
+
+        Generating an exact copy of the commission lines so that when the invoice is
+        created they can be calculated.
+
+        Depending on the configuration, the order will depend.
+
+        1. Product
+        2. XXX
+        3. XXX
+        4. XXX
+        5. General
+        """
+        model_name = lines._name
+        CommissionPolicy = self.env["commission.policy"]
+        CommissionPolicyLineImage = self.env["commission.policy.line.image"]
+        CommisionPolicesItem = self.env["commission.product.item"]
+
+        (
+            lines_with_commissions_type_product,
+            lines_commissions,
+        ) = CommisionPolicesItem._get_commission_product_items(lines)
+
+        policy_line_images_grouped_by_commission_policy = defaultdict(
+            lambda: self.env[model_name]
+        )
+
+        lines_without_commissions_type_product = (
+            lines - lines_with_commissions_type_product
+        )
+
+        for line_commission in lines_commissions:
+            line = line_commission[0]
+            commission_item = line_commission[1]
+
+            commission_policy_id = commission_item.commission_policy_id
+
+            if commission_policy_id in policy_line_images_grouped_by_commission_policy:
+                line.commission_policy_line_image_ids = (
+                    policy_line_images_grouped_by_commission_policy[commission_policy_id]
+                )
+                continue
+
+            commission_policy_lines = (
+                commission_policy_id.commission_line_ids._prepare_commission_line_image()
+            )
+            images = CommissionPolicyLineImage.create(commission_policy_lines)
+            line.commission_policy_line_image_ids = images.ids
+            policy_line_images_grouped_by_commission_policy[commission_policy_id] = images
+
+        policies = CommissionPolicy.search([("policy_type_id.policy_type", "!=", "product")])
+
+        for policy in policies:
+            lines_without_commissions_type_product -= (
+                policy.available_to_policy_type_and_create_image(
+                    lines_without_commissions_type_product
+                )
+            )

@@ -10,3 +10,9 @@ class AccountMoveLine(models.Model):
     policy_type_id = fields.Many2one(related="commission_image_id.policy_type_id")
     policy_type_name = fields.Selection(related="policy_type_id.policy_type")
     policy_type = fields.Selection(related="commission_image_id.policy_type")
+
+    def get_commission(self, collection_days):
+        commission_id = self.env["commission.policy.line.image"]
+        if self.sale_line_ids:
+            commission_id = self.sale_line_ids.get_commission_policy_line_image(collection_days)
+        return commission_id

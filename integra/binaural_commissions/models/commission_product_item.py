@@ -133,3 +133,77 @@ class CommissionPolicyItem(models.Model):
                         record.category_id.name,
                     )
                 )
+
+    @api.model
+    def _get_commission_product_items(self, lines):
+        model_name = lines._name
+        lines_with_commission = self.env[model_name]
+        line_comission = []
+
+        product_ids = lines.product_id
+        brand_ids = product_ids.brand_id.ids
+        category_ids = product_ids.categ_id.ids
+        categories = product_ids.categ_id
+        finish_categ = False
+        while not finish_categ:
+            if len(categories.parent_id.ids) == 0:
+                finish_categ = True
+
+            category_ids += categories.parent_id.ids
+            categories = categories.parent_id
+
+        CommisionPolicesItem = self.env["commission.product.item"]
+        items = CommisionPolicesItem.search(
+            [("product_id", "in", product_ids.ids), ("applied_on", "=", "1_product")]
+        )
+        if len(brand_ids) > 1:
+            items += CommisionPolicesItem.search(
+                [("brand_id", "in", brand_ids), ("applied_on", "=", "2_brand")]
+            )
+        if len(category_ids) > 1:
+            items += CommisionPolicesItem.search(
+                [
+                    ("category_id", "in", category_ids),
+                    ("applied_on", "=", "3_category"),
+                ],
+                order="len_category_sub_category desc",
+            )
+
+        processed_lines = []
+        for item in items:
+            for line in lines:
+                if line.id in processed_lines:
+                    continue
+                if line.product_id == item.product_id:
+                    if item.excluded:
+                        processed_lines.append(line.id)
+                        continue
+                    line_comission.append((line, item))
+                    processed_lines.append(line.id)
+                    lines_with_commission |= line
+                    continue
+
+                if item.brand_id and line.product_id.brand_id == item.brand_id:
+                    line_comission.append((line, item))
+                    processed_lines.append(line.id)
+                    lines_with_commission |= line
+                    continue
+
+                if not item.category_id or not line.product_id.categ_id:
+                    continue
+
+                category = line.product_id.categ_id
+                finish = False
+                while not finish:
+                    if category == item.category_id:
+                        line_comission.append((line, item))
+                        processed_lines.append(line.id)
+                        lines_with_commission |= line
+                        finish = True
+                    elif not category.parent_id:
+                        finish = True
+                    else:
+                        category = category.parent_id
+
+        return lines_with_commission, line_comission
+
