@@ -143,7 +143,6 @@ class AccountMove(models.Model):
 
             for line in record.invoice_line_ids:
                 commission_id = line.get_commission(record.collection_days)
-                _logger.info(commission_id)
                 if not commission_id:
                     continue
 
