@@ -6,12 +6,12 @@ el conjunto de productos en una marca o el conjunto de productos dentro de una c
 
 En orden de prioridad se asignan:
 
--> Producto 
-    -> Producto
-    -> Marca
-    -> Categoria
--> Cliente
--> General
+* Producto 
+Producto
+Marca
+Categoria
+* Cliente
+* General
 
 En la configuracion de la politica se colocan los rangos de dias
 
