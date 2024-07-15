@@ -22,3 +22,8 @@ class AccountMove(models.Model):
                     _("You cannot modify a journal entry linked to a POS session that is still opened")
                 )
         return super().button_draft()
+
+class AccountMoveLine(models.Model):
+    _inherit = "account.move.line"
+
+    pos_order_line_ids = fields.Many2many("pos.order.line")
