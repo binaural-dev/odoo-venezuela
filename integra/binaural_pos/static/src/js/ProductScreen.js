@@ -32,14 +32,26 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
         })
         return res
       }
-      async _setValue(inputValue) {
+
+      is_barcode_strict_mode_invalid(barcode = -1) {
+        const activate_barcode_strict_mode = this.env.pos.config.activate_barcode_strict_mode;
+
+        if (!activate_barcode_strict_mode) return false;
+
         const order = this.env.pos.get_order();
         const selectedLine = order.get_selected_orderline();
-        const barcode = selectedLine.product.barcode;
 
-        console.log("_setValue selectedLine", { selectedLine, barcode });
+        barcode = barcode === -1 ? selectedLine.product.barcode : barcode;
 
-        if (barcode) return;
+        if (barcode) return true;
+
+      }
+
+      async _setValue(inputValue) {
+
+        const is_barcode_strict_mode_invalid = this.is_barcode_strict_mode_invalid();
+
+        if (is_barcode_strict_mode_invalid && !(inputValue == "" || inputValue == "remove")) return;
 
         return super._setValue(inputValue);
 
@@ -47,13 +59,15 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
       async _clickProduct(event) {
 
         if (!this.currentOrder) {
-            this.env.pos.add_new_order();
+          this.env.pos.add_new_order();
         }
+
         const product = event.detail;
-        const barcode = product.barcode;
         const options = await this._getAddProductOptions(product);
 
-        if (barcode) return;
+        const is_barcode_strict_mode_invalid = this.is_barcode_strict_mode_invalid(product.barcode);
+
+        if (is_barcode_strict_mode_invalid) return;
 
         // this.env.pos.db.get_product_by_id(foundProductIds[0]);
         // Do not add product if options is undefined.
