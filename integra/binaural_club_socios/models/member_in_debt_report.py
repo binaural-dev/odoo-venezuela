@@ -157,6 +157,7 @@ class MemberInDebtReport(models.Model):
                     %s
                     %s
                 ) debts
+                WHERE debts.amount > 0
             );
             """
             % (
