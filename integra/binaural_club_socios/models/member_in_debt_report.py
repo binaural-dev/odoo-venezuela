@@ -20,6 +20,7 @@ class MemberInDebtReport(models.Model):
         for debt_member in self:
             debt_member.quota_period_str = debt_member.quota_period.strftime("%m/%Y")
 
+    # Builders Main Select
     def _select(self):
         select_str = """
             SELECT
@@ -32,7 +33,23 @@ class MemberInDebtReport(models.Model):
 
         return select_str
 
-    def _sub_select(self):
+    def _from(self):
+        from_str = """
+            FROM
+                get_members_pending_debts()
+        """
+
+        return from_str
+
+    def _where(self):
+        where_str = """
+            WHERE debts.amount > 0
+        """
+
+        return where_str
+
+    # Builder From Sub Query
+    def _from_sub_select(self):
         sub_select_str = """
             SELECT
                 (get_members_pending_debt(
@@ -44,42 +61,46 @@ class MemberInDebtReport(models.Model):
         """
 
         return sub_select_str
-
-    def _from(self):
+    
+    def _from_sub_select_from(self):
         from_str = """
             FROM
                 res_partner partner
         """
 
         return from_str
-
-    def _join(self):
+    
+    def _from_sub_select_join(self):
         join_str = """
             LEFT JOIN LATERAL (
-                SELECT fee_period, partner_id FROM account_move 
-                WHERE partner_id = partner.id
-                AND (payment_state = 'paid' or payment_state = 'in_payment')
-                AND account_move.state = 'posted'
-                ORDER BY fee_period DESC
+                SELECT 
+				account_move.fee_period,
+				account_move.partner_id
+                FROM account_move 
+                WHERE 
+                    account_move.partner_id = partner.id
+                    AND (
+                            account_move.payment_state = 'paid' or account_move.payment_state = 'in_payment'
+                        )
+                    AND account_move.state = 'posted'
+                ORDER BY account_move.fee_period DESC
                 LIMIT 1
             ) invoice ON TRUE
         """
 
         return join_str
-
-    def _where(self):
+    
+    def _from_sub_select_where(self):
         where_str = """
             WHERE partner.action_number IS NOT NULL
-            AND partner.state_partner IN ('active', 'holder')
+            AND partner.state_partner IN ('active', 'holder');
         """
 
         return where_str
 
-
-    def init(self):
-        tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute(
-            """
+    # Declaring Functions
+    def _sql_function_get_members_pending_debt(self):
+        sql_function_get_members_pending_debt = """
             CREATE OR REPLACE FUNCTION PUBLIC.get_members_pending_debt(p_id BIGINT, act_number BIGINT, invoice_fee_period DATE, start_date DATE)
                 RETURNS TABLE(partner_id BIGINT, action_number BIGINT, quota_period DATE, amount FLOAT) AS $$
                 DECLARE 
@@ -87,6 +108,8 @@ class MemberInDebtReport(models.Model):
                     _tmp_next_date DATE;
                     _day_end_date_payment INTEGER;
                     _is_postpaid BOOLEAN;
+                    _current_amount double precision;
+                    _amount double precision;
                 BEGIN
                     SELECT day_end_date_payment INTO _day_end_date_payment FROM partner_config LIMIT 1;
                     SELECT is_postpaid INTO _is_postpaid FROM partner_config LIMIT 1;
@@ -131,41 +154,95 @@ class MemberInDebtReport(models.Model):
                             END IF;
                         END IF;
 
+
+                        SELECT 
+                            pdl.amount
+                        INTO _current_amount
+                        FROM pending_debt_list pdl 
+                        WHERE 
+                            pdl.date_end >= _tmp_next_date 
+                            OR pdl.date_end IS NULL 
+                        ORDER BY pdl.date_end ASC 
+                        LIMIT 1;
+                        
+                        IF _current_amount IS NOT NULL THEN
+                            _amount := _current_amount;
+                        END IF;
+
                         RETURN QUERY
                         SELECT 
                             p_id AS partner_id,
                             act_number AS action_number,
                             _tmp_next_date AS quota_period,
-                            (SELECT pdl.amount FROM pending_debt_list pdl 
-                            WHERE pdl.date_end >= _tmp_next_date OR pdl.date_end IS NULL 
-                            ORDER BY pdl.date_end ASC LIMIT 1) AS amount;
+                            _amount AS amount;
 
                         _tmp_next_date := _tmp_next_date + INTERVAL '1 month';
                     END LOOP;
                 END;
 
                 $$ LANGUAGE plpgsql;
+        """
+
+        return sql_function_get_members_pending_debt
+
+    def _sql_function_get_members_pending_debts(self):
+        sql_function_get_members_pending_debts = ("""
+            CREATE OR REPLACE FUNCTION PUBLIC.get_members_pending_debts()
+                RETURNS TABLE(partner_id BIGINT, action_number BIGINT, quota_period DATE, amount FLOAT) AS $$
+                DECLARE 
+
+                BEGIN
+
+                RETURN QUERY
+                    %s
+                    %s
+                    %s
+                    %s
+                END;
+
+                $$ LANGUAGE plpgsql;
+        """
+        % (
+            self._from_sub_select(),
+            self._from_sub_select_from(),
+            self._from_sub_select_join(),
+            self._from_sub_select_where()
+        ))
+
+        return sql_function_get_members_pending_debts
+
+    def _sql_view(self):
+        return (
             """
-        )
-        self.env.cr.execute(
-            """
-            CREATE OR REPLACE VIEW %s AS (
-                %s
-                FROM (
+                CREATE OR REPLACE VIEW %s AS (
                     %s
+                    FROM get_members_pending_debts() debts
                     %s
-                    %s
-                    %s
-                ) debts
-                WHERE debts.amount > 0
-            );
+                );
             """
             % (
                 self._table,
                 self._select(),
-                self._sub_select(),
-                self._from(),
-                self._join(),
-                self._where(),
+                self._where()
             )
+        )
+
+    def init(self):
+        tools.drop_view_if_exists(self.env.cr, self._table)
+        
+        sql_function_get_members_pending_debt = self._sql_function_get_members_pending_debt()
+        sql_function_get_members_pending_debts = self._sql_function_get_members_pending_debts()
+        
+        sql_view = self._sql_view()
+
+        self.env.cr.execute(
+            sql_function_get_members_pending_debt
+        )
+
+        self.env.cr.execute(
+            sql_function_get_members_pending_debts
+        )
+
+        self.env.cr.execute(
+            sql_view
         )
