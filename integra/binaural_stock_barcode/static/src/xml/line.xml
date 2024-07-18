@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="LineQuantity" t-inherit="stock_barcode.LineQuantity" t-inherit-mode="extension" owl="1">
+        <xpath expr="//span[@t-if='qtyDemand']" position="replace">
+            <t t-if="!line.fake_line">
+                <span>/ <t t-out="line.demanded_qty"/></span>
+            </t>
+            <t t-else="">
+                <span>/ 0</span>
+            </t>
+        </xpath>
+    </t>
+
+    <t t-name="LineReserved" owl="1">
+        <div class="o_barcode_line_locations d-block">
+            <div class="o_barcode_product_line_alternate_code mr-2" t-if="line.product_id.alternate_code">
+                <i class="fa fa-fw fa-tag"/>
+                <span class="alternate-code" t-esc="line.product_id.alternate_code"/>
+            </div>
+            <div class="o_barcode_source_line_location mr-2">
+                <i class="fa fa-fw fa-truck"/>
+                <span class="source-location" t-esc="line.location_id.display_name"/>
+                <i class="fa fa-fw fa-long-arrow-right"/>
+                <span>Reservado: </span>
+                <t t-if="!line.fake_line">
+                    <span class="reseved-qty font-weight-bold" t-esc="line.reserved_uom_qty" />
+                </t>
+                <t t-else="">
+                    <span class="reseved-qty font-weight-bold"> 0</span>
+                </t>
+            </div>
+        </div>			
+    </t>
+
+    <t t-name="LineComponent" t-inherit="stock_barcode.LineComponent" t-inherit-mode="extension" owl="1">
+        <xpath expr="//t[@t-call='stock_barcode.LineQuantity']" position="before">
+            <t t-call="LineReserved"/>
+        </xpath>
+        <xpath expr="//button[@name='incrementButton']/.." position="replace">
+        </xpath>
+        <xpath expr="//t[@t-call='stock_barcode.LineSourceLocation']" position="replace">
+        </xpath>
+        <xpath expr="//t[@t-call='stock_barcode.LineDestinationLocation']" position="replace">
+        </xpath>
+        <xpath expr="//button[@t-on-click='edit']/.." position="replace">
+            <t t-if="!line.fake_line">
+                <button t-on-click="edit" class="o_line_button o_edit btn"
+                    t-att-class="this.env.model.lineCanBeEdited(line) ? 'btn-secondary' : ''"
+                    t-att-disabled="!this.env.model.lineCanBeEdited(line)">
+                    <i class="fa fa-2x fa-pencil"/>
+                </button>
+            </t>
+        </xpath>
+    </t>
+</templates>

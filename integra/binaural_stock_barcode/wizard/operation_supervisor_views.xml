@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_operation_supervisor" model="ir.actions.act_window">
+        <field name="name">Operation Supervisor</field>
+        <field name="res_model">stock.operation.supervisor</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_operation_supervisor_form" model="ir.ui.view">
+        <field name="name">operation.supervisor.form</field>
+        <field name="model">stock.operation.supervisor</field>
+        <field name="arch" type="xml">
+            <form string="Operation Supervisor">
+                <field name="company_id" invisible="1"/>
+                <field name="stock_picking_type_ids" widget="one2many" mode="tree" nolabel="1">
+                    <tree editable="top" >
+                        <control>
+                            <!-- This is a button to hide add line -->
+                            <button />
+                        </control>
+                        <field name="type_steps" />
+                        <field name="company_id" invisible="1"/>
+                        <field name="warehouse_id"/>
+                        <field name="supervisor_required_to_edit"/>
+                        <field name="supervisor_required_for_incomplete_qty" />
+                    </tree>
+                </field>
+                <footer>
+                    <button string="Confirm" type="object" class="btn-primary" name="action_confirm"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <menuitem
+        id="supervisor_settings_wizard_form_view_menuitem"
+        name="Ajustes de Supervisor de Operaciones"
+        parent="stock.menu_stock_config_settings"
+        action="action_operation_supervisor"
+        sequence="100"/>
+</odoo>
