@@ -106,6 +106,7 @@ class MemberInDebtReport(models.Model):
                 DECLARE 
                     _effective_date DATE;
                     _tmp_next_date DATE;
+                    _invoice_paid_for_fee_period DATE;
                     _day_end_date_payment INTEGER;
                     _is_postpaid BOOLEAN;
                     _current_amount double precision;
@@ -138,13 +139,26 @@ class MemberInDebtReport(models.Model):
 
                     WHILE _tmp_next_date <= (date_trunc('month', NOW()) + INTERVAL '1 month')::DATE + (_day_end_date_payment -1) LOOP
                         RAISE NOTICE 'Processing date: %', _tmp_next_date;
+                        
+                        SELECT 
+                            account_move.fee_period
+                        INTO _invoice_paid_for_fee_period
+                        FROM account_move
+                        WHERE
+                            account_move.partner_id = 37693
+                            AND account_move.state = 'posted'
+                            AND account_move.fee_period IS NOT NULL
+                            AND date_part('year', _tmp_next_date) = date_part('year', account_move.fee_period)
+                            AND date_part('month', _tmp_next_date) = date_part('month', account_move.fee_period)
+                            AND (
+                                account_move.payment_state = 'paid'
+                                OR account_move.payment_state = 'in_payment'
+                            )
+                        ORDER BY account_move.fee_period DESC;
 
-                        IF invoice_fee_period IS NOT NULL AND EXTRACT(DAY FROM invoice_fee_period) > _day_end_date_payment THEN
-                            IF EXTRACT(MONTH FROM _tmp_next_date) = EXTRACT(MONTH FROM invoice_fee_period) 
-                            AND EXTRACT(YEAR FROM _tmp_next_date) = EXTRACT(YEAR FROM invoice_fee_period) THEN
-                                _tmp_next_date := _tmp_next_date + INTERVAL '1 month';
-                                CONTINUE;
-                            END IF;
+                        IF _invoice_paid_for_fee_period IS NOT NULL THEN
+                            _tmp_next_date := _tmp_next_date + INTERVAL '1 month';
+                            CONTINUE;
                         END IF;
 
                         IF EXTRACT(DAY FROM CURRENT_DATE) < _day_end_date_payment THEN
@@ -164,7 +178,7 @@ class MemberInDebtReport(models.Model):
                             OR pdl.date_end IS NULL 
                         ORDER BY pdl.date_end ASC 
                         LIMIT 1;
-                        
+
                         IF _current_amount IS NOT NULL THEN
                             _amount := _current_amount;
                         END IF;
