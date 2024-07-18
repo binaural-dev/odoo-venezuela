@@ -23,6 +23,8 @@ odoo.define("binaural_pos.PosState", function(require) {
         this.currency = loadedData["res.currency"][0];
         this.foreign_currency = loadedData["res.currency"][1];
         this.prefix_vats = loadedData["prefix_vats"];
+        this.cities = loadedData["res.country.city"];
+        this.cities.sort((a, b) => a.name.localeCompare(b.name));
       }
 
 

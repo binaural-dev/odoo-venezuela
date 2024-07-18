@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="binaural_farming_view_form_stock_production_lot" model="ir.ui.view">
+        <field name="name">binaural.farming.view.form.stock.production.lot</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="stock.view_production_lot_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[1]" position="before">
+                <page string="Farming">
+                    <group string="Identification">
+                        <group>
+                            <field name="image" widget="image" class="oe_avatar"/>         
+                        </group>
+                        <group>
+                            <field name="production_types" />
+                            <field name="publishing_on_the_web" />
+                            <field name="gender" />
+                            <field name="name_lot" />
+                            <field name="tatto_left" />
+                            <field name="tatto_right" />
+                            <field name="adga_registration_number" />
+                            <field name="asoembra_registration_number" />
+                            <field name="date_of_birth" widget="date"/>
+                            <field name="specie_id" widget="selection" required="1"/>
+                            <field name="lot_race_id" domain="[('specie_id', '=', specie_id)]"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Breeder and Owner">
+                            <field name="res_partner_owner_id" readonly="0"/>
+                            <field name="proprietary_acronym"/>
+                            <field name="lot_breeder_ids" readonly="0"/>
+                        </group>
+                        <group string="Pedigree">
+                            <field name="names_parents" />
+                            <field name="names_parents_paternal" />
+                            <field name="names_parents_maternal" />
+                            <field name="parent_father_id"
+                                   domain="[('id','!=', id),('gender','=','male')]"
+                            />
+                            <field name="parent_mother_id" 
+                                   domain="[('id','!=', id),('gender','=','female')]"
+                            />
+                        </group>
+                    </group>
+                    <group string="Ancestry milk production data" attrs="{'invisible': [('production_types', '!=', 'dairy_breeds')]}">
+                        <field name="lot_ancestry_ids">
+                            <tree editable="bottom">
+                                <field name="name"/>
+                                <field name="first_milk_sample" />
+                                <field name="first_day_sample" />
+                                <field name="second_milk_sample" />
+                                <field name="second_day_sample" />
+                                <field name="third_milk_sample" />
+                                <field name="third_day_sample" />
+                            </tree>
+                        </field>
+                    </group>
+                    <group string="Morphological Evaluation" attrs="{'invisible': [('production_types', '!=', 'dairy_breeds')]}">
+                        <field name="lot_morphological_ids">
+                            <tree editable="bottom">
+                                <field name="types_morphological_id" />
+                                <field name="valuation_quantity" />
+                                <field name="types_qualitative_evaluation_id" />
+                            </tree>
+                        </field>
+                        <group>
+                            <field name="amount_total_evaluation"/>
+                            <field name="final_quantification_id" />
+                        </group>
+                    </group>    
+                    <group string="births and number of offspring" attrs="{'invisible': [('production_types', '!=', 'meat_breeds')]}">
+                        <group>
+                            <field name="first_birth" />
+                            <field name="second_birth" />
+                            <field name="third_birth" /> 
+                        </group>
+                    </group>
+                    <group string="Weight of offspring" attrs="{'invisible': [('production_types', '!=', 'meat_breeds')]}">
+                        <field name="lot_weight_offspring_ids">
+                            <tree editable="bottom">
+                                <field name="name"/>
+                                <!-- First offspring -->
+                                <field name="first_number_offspring" />
+                                <field name="first_birth_weight" />
+                                <!-- Second offspring -->    
+                                <field name="second_number_offspring" />
+                                <field name="second_birth_weight" />
+                                <!-- Third offspring -->
+                                <field name="third_number_offspring" />
+                                <field name="third_birth_weight" />
+                            </tree>
+                        </field>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

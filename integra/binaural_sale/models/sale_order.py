@@ -43,6 +43,7 @@ class SaleOrder(models.Model):
         default=0.0,
         store=True,
         readonly=False,
+        tracking=True,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
@@ -387,7 +388,7 @@ class SaleOrder(models.Model):
                 if invoice_id.payment_state == block_order_invoice_payment_state:
                     invoice_count_payment_state += 1
 
-            if invoice_id.invoice_date_due < today_date:
+            if invoice_id.invoice_date_due and invoice_id.invoice_date_due < today_date:
                 amount_total_overdue += invoice_id.amount_total
                 invoice_count_date_expired += 1
 

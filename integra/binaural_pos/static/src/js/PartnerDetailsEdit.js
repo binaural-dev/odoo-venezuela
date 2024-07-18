@@ -24,6 +24,7 @@ odoo.define("binaural_pos.PartnerDetailsEdit", function(require) {
           vat: this.props.partner.vat || "",
           prefix_vat: this.props.partner.prefix_vat || "V",
           name: this.props.partner.name || "",
+          city_id: this.props.partner.city_id && this.props.partner.city_id[0],
         }
       }
 

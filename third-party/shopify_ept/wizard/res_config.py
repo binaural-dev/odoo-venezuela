@@ -250,8 +250,8 @@ class ResConfigSettings(models.TransientModel):
                                            help="Select Pricelist, This price list used to import the "
                                                 "product price and set this pricelist in Shopify sale order")
     shopify_compare_pricelist_id = fields.Many2one("product.pricelist", string="Shopify Compare Price Pricelist",
-                                           help="Select Pricelist, This price list used to import the "
-                                                "product price and set this pricelist in Shopify sale order")
+                                                   help="Select Pricelist, This price list used to import the "
+                                                        "product price and set this pricelist in Shopify sale order")
     shopify_stock_field = fields.Many2one("ir.model.fields", string="Stock Field",
                                           help="Select inventory field for shopify products")
     shopify_section_id = fields.Many2one("crm.team", "Shopify Sales Team", help="Set the sales team for shopify orders")
@@ -399,7 +399,11 @@ class ResConfigSettings(models.TransientModel):
     return_location_id = fields.Many2one('stock.location', 'Return Location',
                                          domain=lambda self: self._get_default_return_location())
     update_qty_to_invoice_order_webhook = fields.Boolean("Want to changes to invoice as per update Quantity",
-                                              help="If checked, it will update invoice based on updated quantity")
+                                                         help="If checked, it will update invoice based on updated quantity")
+    credit_note_register_payment = fields.Boolean("Want to create register payment for credit note",
+                                                  help="If checked, it will create a payment for credit note")
+    credit_note_payment_journal = fields.Many2one("account.journal", string="Credit Note Payment Journal",
+                                                           help=" Selected Journal will be set in Credit note Payment journal.")
 
     @api.onchange("shopify_instance_id")
     def onchange_shopify_instance_id(self):
@@ -460,6 +464,8 @@ class ResConfigSettings(models.TransientModel):
             self.stock_validate_for_return = instance.stock_validate_for_return
             self.return_location_id = instance.return_location_id and instance.return_location_id.id or False
             self.update_qty_to_invoice_order_webhook = instance.update_qty_to_invoice_order_webhook
+            self.credit_note_register_payment = instance.credit_note_register_payment or False
+            self.credit_note_payment_journal = instance.credit_note_payment_journal or False
 
     def execute(self):
         """This method used to set value in an instance of configuration.
@@ -476,7 +482,8 @@ class ResConfigSettings(models.TransientModel):
             values["auto_import_product"] = self.auto_import_product or False
             values["shopify_sync_product_with"] = self.shopify_sync_product_with
             values["shopify_pricelist_id"] = self.shopify_pricelist_id and self.shopify_pricelist_id.id or False
-            values["shopify_compare_pricelist_id"] = self.shopify_compare_pricelist_id and self.shopify_compare_pricelist_id.id or False
+            values[
+                "shopify_compare_pricelist_id"] = self.shopify_compare_pricelist_id and self.shopify_compare_pricelist_id.id or False
             values["shopify_stock_field"] = self.shopify_stock_field and self.shopify_stock_field.id or False
             values["shopify_section_id"] = self.shopify_section_id and self.shopify_section_id.id or False
             values["shopify_order_prefix"] = self.shopify_order_prefix
@@ -530,6 +537,8 @@ class ResConfigSettings(models.TransientModel):
             values["return_location_id"] = self.return_location_id and self.return_location_id.id or False
             product_webhook_changed = customer_webhook_changed = order_webhook_changed = False
             values['update_qty_to_invoice_order_webhook'] = self.update_qty_to_invoice_order_webhook
+            values['credit_note_register_payment'] = self.credit_note_register_payment
+            values['credit_note_payment_journal'] = self.credit_note_payment_journal or False
             if instance.create_shopify_products_webhook != self.create_shopify_products_webhook:
                 product_webhook_changed = True
             if instance.create_shopify_customers_webhook != self.create_shopify_customers_webhook:
@@ -679,7 +688,7 @@ class ResConfigSettings(models.TransientModel):
                 'sync_product_with_images': self.shopify_sync_product_with_images or False,
                 'shopify_sync_product_with': self.shopify_sync_product_with or False,
                 'shopify_pricelist_id': self.shopify_pricelist_id and self.shopify_pricelist_id.id or False,
-                'shopify_compare_pricelist_id' : self.shopify_compare_pricelist_id and self.shopify_compare_pricelist_id.id or False,
+                'shopify_compare_pricelist_id': self.shopify_compare_pricelist_id and self.shopify_compare_pricelist_id.id or False,
                 'shopify_section_id': self.shopify_section_id and self.shopify_section_id.id or False,
                 'is_use_default_sequence': self.shopify_is_use_default_sequence,
                 'shopify_order_prefix': self.shopify_order_prefix or False,
@@ -734,7 +743,8 @@ class ResConfigSettings(models.TransientModel):
                 "is_shopify_create_schedule": self.is_shopify_create_schedule,
                 "shopify_user_ids": [(6, 0, self.shopify_user_ids.ids)],
                 "shopify_activity_type_id": self.shopify_activity_type_id and self.shopify_activity_type_id.id or False,
-                "shopify_date_deadline": self.shopify_date_deadline or False
+                "shopify_date_deadline": self.shopify_date_deadline or False,
+                "credit_note_payment_journal": self.credit_note_payment_journal or False,
             })
 
             if product_webhook_changed:

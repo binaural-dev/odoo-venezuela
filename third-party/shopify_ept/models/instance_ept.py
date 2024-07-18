@@ -359,6 +359,10 @@ class ShopifyInstanceEpt(models.Model):
     return_location_id = fields.Many2one('stock.location', 'Return Location')
     update_qty_to_invoice_order_webhook = fields.Boolean("Want to changes to invoice as per update Quantity",
                                                          help="If checked, it will update invoice based on updated quantity")
+    credit_note_register_payment = fields.Boolean("Want to create register payment for credit note",
+                                                  help="If checked, it will create a payment for credit note")
+    credit_note_payment_journal = fields.Many2one("account.journal", string="Credit Note Payment Journal",
+                                                  help=" Selected Journal will be set in Credit note Payment journal.")
 
     _sql_constraints = [('unique_host', 'unique(shopify_host)',
                          "Instance already exists for given host. Host must be Unique for the instance!")]

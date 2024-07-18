@@ -139,7 +139,6 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
         this.ClearTotalRetentions();
         $("#requireReceipt").val("");
         const { data, status, taxpayer_type, msg } = invoices
-        const taxpayer = taxpayer_type
         const is204 = status === 204;
         const is400 = status === 400;
         if(is400){
@@ -214,9 +213,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           return new Date(a_date) - new Date(b_date);
         });
         const first_expired_line = lines_ordered_by_maturity_date[0];
-
-        console.log("LINES", line.line_ids);
-        console.log("LINES ORDERED", lines_ordered_by_maturity_date);
+        const first_expired_line_amount_residual = first_expired_line["amount_residual"].toFixed(decimal_number);
 
         amount_residual = amount_residual.toFixed(decimal_number);
         amount_total = amount_total.toFixed(decimal_number);
@@ -234,7 +231,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
 																		<label class="form-label">Importe adeudado (cuota): </label>
                                     <label class="form-text text-primary">${symbolBefore}</label>
 																		<label class="form-text text-primary">
-																			${first_expired_line["amount_residual"]} 
+																			${first_expired_line_amount_residual} 
 																		</label>
 																		<label class="form-text">(${first_expired_line["date_maturity"]})</label>
                                 </div>
@@ -270,8 +267,6 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           amount_detained = amount_detained.toFixed(decimal_number);
           let dif_iva = amount_tax - amount_detained;
           dif_iva = dif_iva.toFixed(decimal_number);
-          amount_tax = amount_tax.toFixed(decimal_number);
-          amount_untaxed = amount_untaxed.toFixed(decimal_number);
           let amount_detained_vef,
             dif_iva_vef = null;
           let amount_detained_vef_line,
