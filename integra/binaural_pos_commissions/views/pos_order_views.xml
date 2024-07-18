@@ -10,6 +10,7 @@
                     readonly="1"
                     widget="many2many_tags" 
                     />
+                <field name="pricelist_item_id" invisible="1"/>
             </xpath>
         </field>
     </record>

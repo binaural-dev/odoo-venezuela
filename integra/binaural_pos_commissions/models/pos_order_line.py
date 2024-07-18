@@ -7,6 +7,7 @@ class PosOrderLine(models.Model):
     commission_policy_line_image_ids = fields.Many2many(
         "commission.policy.line.image", string="Policy Line Images", index=True, copy=False
     )
+    pricelist_item_id = fields.Many2one("product.pricelist.item")
 
     @api.model
     def get_commission_policy_line_image(self, days):

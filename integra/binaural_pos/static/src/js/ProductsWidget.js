@@ -21,7 +21,6 @@ odoo.define('binaural_pos.ProductsWidget', function(require) {
 
         return list.filter((el) => {
           if (el.detailed_type != 'product') {
-            console.log(el.display_name, el.detailed_type)
             return true
           }
           return el.qty_available > 0

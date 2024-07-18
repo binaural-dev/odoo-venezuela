@@ -59,3 +59,9 @@ class PosOrder(models.Model):
                 default_pos_order_ids=self.ids,
             ),
         }
+
+    def _get_fields_for_order_line(self):
+        """This function is here to be overriden"""
+        res = super()._get_fields_for_order_line(self)
+        res.append("pricelist_item_id")
+        return res

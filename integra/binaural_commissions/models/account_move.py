@@ -105,6 +105,9 @@ class AccountMove(models.Model):
                 continue
             record.commission_payment_state = "process"
 
+    def get_reversed_entry(self):
+        return self.reversed_entry_id
+
     @api.depends(
         "amount_residual",
         "collection_days",
@@ -128,7 +131,7 @@ class AccountMove(models.Model):
 
             total = False
             if record.move_type == "out_refund":
-                out_invoice = record.reversed_entry_id
+                out_invoice = record.get_reversed_entry()
 
                 for line in record.invoice_line_ids:
                     out_invoice_line = out_invoice.invoice_line_ids.filtered(
@@ -349,11 +352,11 @@ class AccountMove(models.Model):
                 continue
 
             out_refund_id = self.browse(int(invoice))
-            if not out_refund_id or not out_refund_id.reversed_entry_id:
+            if not out_refund_id or not out_refund_id.get_reversed_entry():
                 continue
 
             amount_total = 0
-            out_invoice_id = out_refund_id.reversed_entry_id
+            out_invoice_id = out_refund_id.get_reversed_entry()
 
             for out_refund_line in out_refund_id.invoice_line_ids:
                 if out_refund_line.product_id.id in out_invoice_id.invoice_line_ids.product_id.ids:

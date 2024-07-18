@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.0.0.0.1",
+    "version": "16.0.0.0.2",
     # any module necessary for this one to work correctly
     "depends": ["base", "point_of_sale", "binaural_pos", "binaural_commissions"],
     # always loaded
@@ -16,6 +16,12 @@
         "views/pos_order_views.xml",
         "views/res_config_settings_views.xml",
     ],
+    "assets": {
+        "point_of_sale.assets": [
+            "binaural_pos_commissions/static/src/js/*.js",
+            # "binaural_pos/static/src/xml/*.xml",
+        ],
+    },
     "images": ["static/description/icon.png"],
     "application": True,
     "binaural": True,

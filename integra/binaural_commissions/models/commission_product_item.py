@@ -156,11 +156,11 @@ class CommissionPolicyItem(models.Model):
         items = CommisionPolicesItem.search(
             [("product_id", "in", product_ids.ids), ("applied_on", "=", "1_product")]
         )
-        if len(brand_ids) > 1:
+        if len(brand_ids) > 0:
             items += CommisionPolicesItem.search(
                 [("brand_id", "in", brand_ids), ("applied_on", "=", "2_brand")]
             )
-        if len(category_ids) > 1:
+        if len(category_ids) > 0:
             items += CommisionPolicesItem.search(
                 [
                     ("category_id", "in", category_ids),
