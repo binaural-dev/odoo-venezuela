@@ -145,7 +145,7 @@ class MemberInDebtReport(models.Model):
                         INTO _invoice_paid_for_fee_period
                         FROM account_move
                         WHERE
-                            account_move.partner_id = 37693
+                            account_move.partner_id = p_id
                             AND account_move.state = 'posted'
                             AND account_move.fee_period IS NOT NULL
                             AND date_part('year', _tmp_next_date) = date_part('year', account_move.fee_period)
@@ -154,7 +154,8 @@ class MemberInDebtReport(models.Model):
                                 account_move.payment_state = 'paid'
                                 OR account_move.payment_state = 'in_payment'
                             )
-                        ORDER BY account_move.fee_period DESC;
+                        ORDER BY account_move.fee_period DESC
+                        LIMIT 1;
 
                         IF _invoice_paid_for_fee_period IS NOT NULL THEN
                             _tmp_next_date := _tmp_next_date + INTERVAL '1 month';
