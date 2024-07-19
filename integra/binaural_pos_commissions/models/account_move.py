@@ -14,5 +14,4 @@ class AccountMove(models.Model):
             return reversed_id 
 
         invoice = self.invoice_line_ids.pos_order_line_ids.order_id.refunded_order_ids.account_move
-        _logger.info(invoice)
         return self.reversed_entry_id
