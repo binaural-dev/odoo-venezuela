@@ -112,6 +112,7 @@ class AccountMove(models.Model):
         "amount_residual",
         "collection_days",
         "invoice_reception_date",
+        "reversal_move",
         "invoice_date",
         "first_payment_date",
         "last_payment_date",

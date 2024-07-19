@@ -13,3 +13,4 @@ class ResCompany(models.Model):
     pos_show_just_products_with_available_qty = fields.Boolean()
     pos_move_to_draft = fields.Boolean()
     pos_search_cne = fields.Boolean()
+    pos_unreconcile_moves = fields.Boolean()

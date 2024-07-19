@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240527\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240718\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-17 18:07+0000\n"
-"PO-Revision-Date: 2024-06-17 18:07+0000\n"
+"POT-Creation-Date: 2024-07-19 21:29+0000\n"
+"PO-Revision-Date: 2024-07-19 21:29+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -174,6 +174,13 @@ msgstr ""
 "Venta) si la sesiona la que corresponde esta abierta"
 
 #. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PartnerDetailsEdit.xml:0
+#, python-format
+msgid "City"
+msgstr "Ciudad"
+
+#. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_res_company
 msgid "Companies"
 msgstr "Compañías"
@@ -186,7 +193,7 @@ msgstr "Opciones de configuración"
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_res_partner
 msgid "Contact"
-msgstr ""
+msgstr "Contacto"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__create_uid
@@ -223,7 +230,8 @@ msgstr "Moneda alterna para la compañía"
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Default journal to receipt account moves"
-msgstr "Diario contable por defecto para generar recibos de ventas"
+msgstr ""
+"Diario conable por defecto para generar recibos como asientos contables"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -420,9 +428,23 @@ msgid "Is Foreign Currency"
 msgstr "Es moneda alterna"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid ""
+"It is allowed to break reconciliation of payments associated with the POS\n"
+"                                    if the session it corresponds to is open"
+msgstr ""
+"Se permite romper conciliacion de pagos asociados al POS "
+"si la sesion a la que corresponde esta abierta"
+
+#. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_account_move
 msgid "Journal Entry"
 msgstr "Asiento contable"
+
+#. module: binaural_pos
+#: model:ir.model,name:binaural_pos.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_config__keep_journal
@@ -490,9 +512,21 @@ msgid "No Taxes"
 msgstr "Sin impuesto"
 
 #. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PartnerDetailsEdit.xml:0
+#, python-format
+msgid "None"
+msgstr ""
+
+#. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "POS Configuration"
 msgstr "Configuración de POS"
+
+#. module: binaural_pos
+#: model:ir.model,name:binaural_pos.model_account_partial_reconcile
+msgid "Partial Reconcile"
+msgstr "Conciliación parcial"
 
 #. module: binaural_pos
 #. odoo-javascript
@@ -608,6 +642,11 @@ msgid "Pos Move To Draft"
 msgstr "Editar el estatus de los asientos contables"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_account_move_line__pos_order_line_ids
+msgid "Pos Order Line"
+msgstr "Linea de Orden"
+
+#. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_config__pos_search_cne
 #: model:ir.model.fields,field_description:binaural_pos.field_res_company__pos_search_cne
 #: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_search_cne
@@ -634,6 +673,12 @@ msgstr "Mostrar solamente los productos disponibles"
 #: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_tax_inside
 msgid "Pos Tax Inside"
 msgstr "Impuestos incluidos"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_res_company__pos_unreconcile_moves
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__pos_unreconcile_moves
+msgid "Pos Unreconcile Moves"
+msgstr "Permitir romper conciliación de pagos"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
@@ -699,6 +744,11 @@ msgstr "Diario de recibo"
 #: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
 msgid "Sales Details"
 msgstr "Detalle de ventas"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_order__sales_order
+msgid "Sales Order"
+msgstr "Comercial"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -824,17 +874,17 @@ msgid "Validate"
 msgstr "Validar"
 
 #. module: binaural_pos
-#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
-#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
-msgid "Ventas"
-msgstr ""
-
-#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
 #, python-format
 msgid "Validate Product in Warehouse"
 msgstr "Caja tiene otro almacen asignado"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "Ventas"
+msgstr ""
 
 #. module: binaural_pos
 #. odoo-javascript
@@ -855,6 +905,14 @@ msgstr ""
 " está abierta"
 
 #. module: binaural_pos
+#. odoo-python
+#: code:addons/binaural_pos/models/account_partial_reconcile.py:0
+#, python-format
+msgid ""
+"You cannot reconcile a payment linked to a POS session that is still open"
+msgstr ""
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/TicketScreen.js:0
 #, python-format
@@ -872,8 +930,3 @@ msgstr ""
 #, python-format
 msgid "the quantity cannot be negative"
 msgstr "La cantidad no puede ser negativa"
-
-#. module: binaural_pos
-#: model:ir.model.fields,field_description:binaural_pos.field_pos_order__sales_order
-msgid "Sales Order"
-msgstr "Comercial"
