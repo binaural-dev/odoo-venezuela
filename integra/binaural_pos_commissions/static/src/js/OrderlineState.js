@@ -16,8 +16,6 @@ const BinauralOrderline = (Orderline) =>
       super.set_unit_price(price)
       this.pricelist_item = !!this.product.get_pricelist_item(this.order.pricelist) ? this.product.get_pricelist_item(this.order.pricelist).id : false
     }
-
-
     export_as_JSON() {
       let res = super.export_as_JSON()
       res["pricelist_item_id"] = this.pricelist_item

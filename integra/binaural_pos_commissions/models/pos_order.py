@@ -7,6 +7,7 @@ class PosOrder(models.Model):
     commission_invoice_date_field = fields.Char(readonly=True, copy=False)
     compute_commission_when = fields.Char(readonly=True, copy=False)
     priority_commission_policy_type = fields.Char(readonly=True, copy=False)
+    commission_payment_state = fields.Selection(related="account_move.commission_payment_state")
 
     def action_pos_order_paid(self):
         res = super().action_pos_order_paid()
@@ -64,4 +65,9 @@ class PosOrder(models.Model):
         """This function is here to be overriden"""
         res = super()._get_fields_for_order_line(self)
         res.append("pricelist_item_id")
+        return res
+
+    def _export_for_ui(self, order):
+        res = super()._export_for_ui(order)
+        res["commission_payment_state"] = order.commission_payment_state
         return res

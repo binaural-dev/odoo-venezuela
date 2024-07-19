@@ -401,9 +401,11 @@ class AccountMove(models.Model):
             invoice_ids |= out_refund_id
 
         reversal_move_id = self.reversal_move_id - invoice_ids
-        if reversal_move_id.payment_state == "reversed":
-            for out_refund_line in reversal_move_id.invoice_line_ids:
-                total_commission += calculate_amounts(out_refund_line, self)
+        for reversal_id in reversal_move_id:
+            if reversal_id.payment_state == "reversed":
+                invoice_ids += reversal_id
+                for out_refund_line in reversal_id.invoice_line_ids:
+                    total_commission += calculate_amounts(out_refund_line, self)
 
         return invoice_ids, total_commission
 

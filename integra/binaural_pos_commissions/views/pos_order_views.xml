@@ -5,12 +5,44 @@
         <field name="model">pos.order</field>
         <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field 
+                    name="commission_payment_state" 
+                    widget="badge" 
+                    groups="binaural_commissions.group_commission_user"
+                    decoration-muted="commission_payment_state == 'not_paid'"
+                    decoration-success="commission_payment_state == 'paid'" 
+                    decoration-info="commission_payment_state == 'process'"
+                    optional="show" 
+                    string="Payment State (Commission)"
+                    />
+            </xpath>
             <xpath expr="//field[@name='lines']/tree[1]/field[@name='tax_ids']" position="after">
                 <field name="commission_policy_line_image_ids"
                     readonly="1"
                     widget="many2many_tags" 
                     />
                 <field name="pricelist_item_id" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_order_tree" model="ir.ui.view">
+        <field name="name">pos.order.view.tree</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='state']" position="after">
+                <field 
+                    name="commission_payment_state" 
+                    widget="badge" 
+                    groups="binaural_commissions.group_commission_user"
+                    decoration-muted="commission_payment_state == 'not_paid'"
+                    decoration-success="commission_payment_state == 'paid'" 
+                    decoration-info="commission_payment_state == 'process'"
+                    optional="show" 
+                    string="Payment State (Commission)"
+                    />
             </xpath>
         </field>
     </record>
