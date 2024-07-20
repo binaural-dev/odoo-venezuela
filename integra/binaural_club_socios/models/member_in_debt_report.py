@@ -143,38 +143,19 @@ class MemberInDebtReport(models.Model):
                     LIMIT 1;
 
                     IF _invoice_paid_for_fee_period IS NULL THEN
-                        _effective_date := start_date;
-
-                        -- 		IF _is_postpaid THEN
-                        -- 			_effective_date := (date_trunc('month', _effective_date) + INTERVAL '1 month');
-                        --      END IF;
-
+                        _effective_date := date_trunc('month', start_date) ;
                     ELSE
-                        _effective_date := _invoice_paid_for_fee_period;
+                        _effective_date := date_trunc('month', _invoice_paid_for_fee_period) + INTERVAL '1 month';
                     END IF;
-
-                    _effective_date := date_trunc('month', _effective_date);
 
                     _tmp_next_date := _effective_date;
 
-                -- 	IF _effective_date <= CURRENT_DATE AND EXTRACT(DAY FROM CURRENT_DATE) >= _day_end_date_payment THEN
-                -- 		_tmp_next_date := _effective_date;
-                -- 	ELSE
-                -- 		IF EXTRACT(DAY FROM CURRENT_DATE) < _day_end_date_payment THEN
-                -- 			_tmp_next_date := date_trunc('month', _effective_date) + INTERVAL '1 month';
-                -- 		ELSE
-                -- 			_tmp_next_date := date_trunc('month', _effective_date);
-                -- 		END IF;
-                -- 	END IF;
-
-                    WHILE _tmp_next_date <= (date_trunc('month', NOW()) + INTERVAL '1 month')::DATE + (_day_end_date_payment -1) LOOP
+                    WHILE _tmp_next_date <= date_trunc('month', NOW()) LOOP
                         RAISE NOTICE 'Processing date: %', _tmp_next_date;
 
-                        IF EXTRACT(DAY FROM CURRENT_DATE) < _day_end_date_payment THEN
-                            IF EXTRACT(MONTH FROM _tmp_next_date) = EXTRACT(MONTH FROM NOW()) 
-                            AND EXTRACT(YEAR FROM _tmp_next_date) = EXTRACT(YEAR FROM NOW()) THEN
-                                EXIT;
-                            END IF;
+                        IF (_is_postpaid = 't' OR EXTRACT(DAY FROM CURRENT_DATE) < _day_end_date_payment) AND EXTRACT(MONTH FROM _tmp_next_date) >= EXTRACT(MONTH FROM NOW()) 
+                        AND EXTRACT(YEAR FROM _tmp_next_date) >= EXTRACT(YEAR FROM NOW()) THEN
+                            EXIT;
                         END IF;
 
                         SELECT 
@@ -206,8 +187,7 @@ class MemberInDebtReport(models.Model):
                     END LOOP;
                 END;
 
-
-                $$ LANGUAGE plpgsql;
+            $$ LANGUAGE plpgsql;
         """
 
         return sql_function_get_members_pending_debt
