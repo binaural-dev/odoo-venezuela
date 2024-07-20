@@ -55,7 +55,6 @@ class MemberInDebtReport(models.Model):
                 (get_members_pending_debt(
                     partner.id,
                     partner.action_number,
-                    invoice.fee_period,
                     partner.start_date
                 )).*
         """
@@ -101,66 +100,75 @@ class MemberInDebtReport(models.Model):
     # Declaring Functions
     def _sql_function_get_members_pending_debt(self):
         sql_function_get_members_pending_debt = """
-            CREATE OR REPLACE FUNCTION PUBLIC.get_members_pending_debt(p_id BIGINT, act_number BIGINT, invoice_fee_period DATE, start_date DATE)
+            CREATE OR REPLACE FUNCTION PUBLIC.get_members_pending_debt(p_id BIGINT, act_number BIGINT, start_date DATE)
                 RETURNS TABLE(partner_id BIGINT, action_number BIGINT, quota_period DATE, amount FLOAT) AS $$
-                DECLARE 
+                DECLARE
                     _effective_date DATE;
                     _tmp_next_date DATE;
                     _invoice_paid_for_fee_period DATE;
                     _day_end_date_payment INTEGER;
                     _is_postpaid BOOLEAN;
+                    _max_fee_period_amount double precision;
                     _current_amount double precision;
                     _amount double precision;
                 BEGIN
                     SELECT day_end_date_payment INTO _day_end_date_payment FROM partner_config LIMIT 1;
                     SELECT is_postpaid INTO _is_postpaid FROM partner_config LIMIT 1;
 
-                    IF invoice_fee_period IS NULL THEN
+                    -- Obtener el monto de cuota mas reciente
+                    SELECT 
+                        pdl.amount
+                    INTO _max_fee_period_amount
+                    FROM pending_debt_list pdl 
+                    WHERE 
+                        pdl.date_end IS NOT NULL 
+                    ORDER BY pdl.date_end DESC 
+                    LIMIT 1;
+
+                    -- 	Obtener la fecha de periodo de cuota mas reciente
+                    SELECT 
+                        account_move.fee_period
+                    INTO 
+                        _invoice_paid_for_fee_period
+                    FROM account_move
+                    WHERE
+                        account_move.partner_id = p_id
+                        AND account_move.state = 'posted'
+                        AND account_move.fee_period IS NOT NULL
+                        AND (
+                            account_move.payment_state = 'paid'
+                            OR account_move.payment_state = 'in_payment'
+                        )
+                    ORDER BY account_move.fee_period DESC
+                    LIMIT 1;
+
+                    IF _invoice_paid_for_fee_period IS NULL THEN
                         _effective_date := start_date;
+
+                        -- 		IF _is_postpaid THEN
+                        -- 			_effective_date := (date_trunc('month', _effective_date) + INTERVAL '1 month');
+                        --      END IF;
+
                     ELSE
-                        _effective_date := invoice_fee_period;
+                        _effective_date := _invoice_paid_for_fee_period;
                     END IF;
 
                     _effective_date := date_trunc('month', _effective_date);
 
-                    IF _is_postpaid THEN
-                        _effective_date := (date_trunc('month', _effective_date) + INTERVAL '1 month');
-                    END IF;
+                    _tmp_next_date := _effective_date;
 
-                    IF _effective_date <= CURRENT_DATE AND EXTRACT(DAY FROM CURRENT_DATE) >= _day_end_date_payment THEN
-                        _tmp_next_date := _effective_date;
-                    ELSE
-                        IF EXTRACT(DAY FROM CURRENT_DATE) < _day_end_date_payment THEN
-                            _tmp_next_date := date_trunc('month', _effective_date) + INTERVAL '1 month';
-                        ELSE
-                            _tmp_next_date := date_trunc('month', _effective_date);
-                        END IF;
-                    END IF;
+                -- 	IF _effective_date <= CURRENT_DATE AND EXTRACT(DAY FROM CURRENT_DATE) >= _day_end_date_payment THEN
+                -- 		_tmp_next_date := _effective_date;
+                -- 	ELSE
+                -- 		IF EXTRACT(DAY FROM CURRENT_DATE) < _day_end_date_payment THEN
+                -- 			_tmp_next_date := date_trunc('month', _effective_date) + INTERVAL '1 month';
+                -- 		ELSE
+                -- 			_tmp_next_date := date_trunc('month', _effective_date);
+                -- 		END IF;
+                -- 	END IF;
 
                     WHILE _tmp_next_date <= (date_trunc('month', NOW()) + INTERVAL '1 month')::DATE + (_day_end_date_payment -1) LOOP
                         RAISE NOTICE 'Processing date: %', _tmp_next_date;
-                        
-                        SELECT 
-                            account_move.fee_period
-                        INTO _invoice_paid_for_fee_period
-                        FROM account_move
-                        WHERE
-                            account_move.partner_id = p_id
-                            AND account_move.state = 'posted'
-                            AND account_move.fee_period IS NOT NULL
-                            AND date_part('year', _tmp_next_date) = date_part('year', account_move.fee_period)
-                            AND date_part('month', _tmp_next_date) = date_part('month', account_move.fee_period)
-                            AND (
-                                account_move.payment_state = 'paid'
-                                OR account_move.payment_state = 'in_payment'
-                            )
-                        ORDER BY account_move.fee_period DESC
-                        LIMIT 1;
-
-                        IF _invoice_paid_for_fee_period IS NOT NULL THEN
-                            _tmp_next_date := _tmp_next_date + INTERVAL '1 month';
-                            CONTINUE;
-                        END IF;
 
                         IF EXTRACT(DAY FROM CURRENT_DATE) < _day_end_date_payment THEN
                             IF EXTRACT(MONTH FROM _tmp_next_date) = EXTRACT(MONTH FROM NOW()) 
@@ -168,7 +176,6 @@ class MemberInDebtReport(models.Model):
                                 EXIT;
                             END IF;
                         END IF;
-
 
                         SELECT 
                             pdl.amount
@@ -184,6 +191,10 @@ class MemberInDebtReport(models.Model):
                             _amount := _current_amount;
                         END IF;
 
+                        IF _amount IS NULL THEN
+                            _amount := _max_fee_period_amount;
+                        END IF;
+
                         RETURN QUERY
                         SELECT 
                             p_id AS partner_id,
@@ -194,6 +205,7 @@ class MemberInDebtReport(models.Model):
                         _tmp_next_date := _tmp_next_date + INTERVAL '1 month';
                     END LOOP;
                 END;
+
 
                 $$ LANGUAGE plpgsql;
         """
