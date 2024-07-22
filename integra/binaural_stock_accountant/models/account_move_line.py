@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
+
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
@@ -7,8 +8,8 @@ class AccountMoveLine(models.Model):
         compute="_compute_liters_per_unit_total", store=True, digits='Stock Weight'
     )
 
-    @api.depends("quantity", "product_id")
+    @api.depends("quantity", "product_id", "product_uom_id")
     def _compute_liters_per_unit_total(self):
         for line in self:
             line.liters_per_unit_total = 0
-            line.liters_per_unit_total = line.quantity * line.product_id.liters_per_unit
+            line.liters_per_unit_total = line.quantity * (line.product_uom_id.factor_inv * line.product_id.liters_per_unit)
