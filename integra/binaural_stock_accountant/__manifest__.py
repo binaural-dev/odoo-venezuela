@@ -1,25 +1,20 @@
 {
-    "name": "Binaural Inventario y Ventas",
-    "summary": """Agrega Validacion de  warehouse relacionados en ventas.""",
+    "name": "Binaural Inventario y Contabilidad",
+    "summary": """Agrega campos de litros por producto en Stock.Accountant cuando es Contabilidad.""",
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     # Categories can be used to filter modules in modules listing
     # Check https://github.com/odoo/odoo/blob/16.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     "category": "Hidden",
-    "license": "LGPL-3",
-    "version": "16.0.0.0.5",
+    "version": "16.0.0.0.4",
     # any module necessary for this one to work correctly
     "depends": [
-        "binaural_stock",
-        "binaural_sale",
-        "stock",
+        "account",
     ],
     "data": [
         # "security/ir_rule.xml",
-        "views/stock_picking.xml",
-        "views/sale_order.xml"
+        "views/account_move.xml",
     ],
     "auto_install": True,
-    "binaural": True,
 }
