@@ -19,6 +19,19 @@ class AccountMove(models.Model):
     company_subsidiary = fields.Boolean(
         related='company_id.subsidiary', store=True, string="Company Subsidiary",
     )
+
+    journal_id = fields.Many2one(
+        'account.journal',
+        string='Journal',
+        compute='_compute_journal_id',
+        inverse='_inverse_journal_id', store=True, readonly=False, precompute=True,
+        required=True,
+        states={'draft': [('readonly', False)]},
+        check_company=True,
+        domain=lambda self: (
+            f"[('id', 'in', suitable_journal_ids), ('subsidiary_id', 'in', {self.env.user.subsidiary_ids.ids})]"
+        ),
+    )
     
     # It's needed to inherit the create and write methods to update the analytic distribution of the
     # lines when the analytic account is changed. The compute method isn't used because it is
