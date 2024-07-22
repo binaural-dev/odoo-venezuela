@@ -479,3 +479,19 @@ msgstr ""
 #, python-format
 msgid "{}. Only has {} units of the {} demanded."
 msgstr "{}. Solo tiene {} unidades de {} exigidas."
+
+#. module: binaural_sale
+#: model:ir.model.fields.selection,name:binaural_sale.selection__product_pricelist_item__applied_on__brand
+msgid "Brand"
+msgstr "Marca"
+
+#. module: binaural_sale
+#: model:ir.model.fields,field_description:binaural_sale.field_product_pricelist_item__brand_id
+msgid "Brand to product"
+msgstr "Marca del producto"
+
+
+#. module: binaural_sale
+#: model:ir.model.fields,field_description:binaural_sale.field_product_pricelist_item__applied_on
+msgid "Apply On"
+msgstr "Aplicar sobre"

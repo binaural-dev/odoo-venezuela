@@ -12,6 +12,7 @@
     "data": [
         "views/sale_order_views.xml",
         "views/sale_report_view.xml",
+        "views/product_pricelist_item_views.xml",
         "reports/report_sale.xml",
     ],
     "auto_install": True,
