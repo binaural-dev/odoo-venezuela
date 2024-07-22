@@ -204,6 +204,12 @@ msgid "Last Updated on"
 msgstr ""
 
 #. module: binaural_purchase
+#: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order_line__liters_per_unit_total
+#: model:ir.model.fields,field_description:binaural_purchase.field_purchase_report__liters_per_unit_total
+msgid "Liters Per Unit Total"
+msgstr "Litros por unidad"
+
+#. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_purchase_order__manually_set_rate
 msgid "Manually Set Rate"
 msgstr "Actualizar Tasa Manualmente"
@@ -237,6 +243,11 @@ msgstr "Pedido de compra"
 #: model:ir.model,name:binaural_purchase.model_purchase_order_line
 msgid "Purchase Order Line"
 msgstr "Línea pedido de compra"
+
+#. module: binaural_purchase
+#: model:ir.model,name:binaural_purchase.model_purchase_report
+msgid "Purchase Report"
+msgstr "Informe de Compras"
 
 #. module: binaural_purchase
 #: model:ir.model.fields,help:binaural_purchase.field_purchase_order__foreign_inverse_rate
@@ -355,6 +366,22 @@ msgstr ""
 "Al marcar esta opción, la tasa de la orden de compra se actualizará usando "
 "la fecha de la orden de compra cada vez que cambie. De lo contrario, cuando "
 "la tasa ya está establecida, no se actualizará."
+
+#. module: binaural_purchase
+#. odoo-python
+#: code:addons/binaural_purchase/models/purchase_order.py:0
+#, python-format
+msgid "You cannot place a currency other than the base of the system."
+msgstr "No puede colocar una moneda que no sea la base del sistema."
+
+#. module: binaural_purchase
+#. odoo-python
+#: code:addons/binaural_purchase/models/res_partner.py:0
+#, python-format
+msgid ""
+"You cannot set the purchase currency for a partner, as it the purchase "
+"orders must use the base currency of the company."
+msgstr ""
 
 #. module: binaural_purchase
 #: model:ir.model.fields,field_description:binaural_purchase.field_product_product__percentage_tariff_code
