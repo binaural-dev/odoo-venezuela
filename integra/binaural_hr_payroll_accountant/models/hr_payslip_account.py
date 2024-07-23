@@ -55,18 +55,26 @@ class HrPayslip(models.Model):
             )
 
         locale = self._context.get("lang") or "es_VE"
+        
+        if not payslips_to_post:
+            return True
+
         # Map all payslips by structure journal and pay slips month.
         # {'journal_id': {'month': [slip_ids]}}
         slip_mapped_data = defaultdict(
             lambda: defaultdict(lambda: self.env["hr.payslip"])
         )
+
         for slip in payslips_to_post:
             slip_mapped_data[slip.struct_id.journal_id.id][
                 slip.date or fields.Date().end_of(slip.date_to, "month")
             ] |= slip
+
         month = format_date(slip.date, "MMMM Y", locale=locale).capitalize()
+
         if len(payslips_to_post) == 1:
             employee = slip.employee_id
+
         for journal_id in slip_mapped_data:  # For each journal_id.
             for slip_date in slip_mapped_data[journal_id]:  # For each month.
                 line_ids = []
