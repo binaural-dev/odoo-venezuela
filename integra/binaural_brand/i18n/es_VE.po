@@ -114,7 +114,7 @@ msgstr "Marca"
 #. module: binaural_brand
 #: model:ir.model,name:binaural_brand.model_stock_move_line
 msgid "Product Moves (Stock Move Line)"
-msgstr ""
+msgstr "Movimientos de producto (línea de movimiento de inventario)"
 
 #. module: binaural_brand
 #: model:ir.actions.act_window,name:binaural_brand.product_brand_action
@@ -131,7 +131,7 @@ msgstr ""
 #. module: binaural_brand
 #: model:ir.model,name:binaural_brand.model_stock_move
 msgid "Stock Move"
-msgstr ""
+msgstr "Movimiento de inventario"
 
 #. module: binaural_brand
 #: model:ir.model,name:binaural_brand.model_stock_quantity_history
@@ -152,4 +152,4 @@ msgstr "Marca del producto"
 #. module: binaural_brand
 #: model:ir.model,name:binaural_brand.model_stock_picking
 msgid "Transfer"
-msgstr "Transferir"
+msgstr "Transferencia"
