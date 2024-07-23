@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+mobile_subsidiary_diary,mobile_subsidiary_diary,model_mobile_subsidiary_diary,,1,1,1,1

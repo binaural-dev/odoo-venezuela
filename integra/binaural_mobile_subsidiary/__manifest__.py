@@ -16,7 +16,7 @@
         "binaural_subsidiary"
     ],
     "data": [
-
+        "data/ir.model.access.csv"
     ],
     "images": ["static/description/icon.png"],
     "application": True,
