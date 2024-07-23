@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="binaural_stock_barcode.SupervisorCheck" owl="1">
+        <div class="popup-container">
+            <div class="popup-supervisor">
+                <select class="o_input" t-ref="supervisor_id">
+                    <option/>
+                    <t t-foreach="supervisor_ids" t-as="supervisor" t-key="supervisor.id">
+                        <option t-att-value='supervisor.id'>
+                            <t t-out="supervisor.name" />
+                        </option>
+                    </t>
+                </select>
+                <input type="password" class="o_input" t-ref="password" t-on-keyup="onEnter" />
+                <div class="buttons-container" >
+                    <button class="btn btn-danger o_save button-all-space" t-on-click="cancelSupervisor">Cancel</button>
+                    <button class="btn btn-primary o_save button-all-space" t-on-click="checkSupervisor">Check</button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="MainComponent" t-inherit="stock_barcode.MainComponent" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[@class='o_barcode_header']" position="inside">
+            <t t-if='displaySupervisorChecker'>
+                <SupervisorCheck component="this" type="this.state.type_supervisor" setDisplay="(val) => this.setDisplaySupervisorChecker(val)"/>
+            </t>
+        </xpath>
+    </t>
+
+</templates>

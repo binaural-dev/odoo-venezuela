@@ -69,7 +69,6 @@
                                     <tr style="border-bottom: 2px solid black">
                                         <th style="width:140px;text-align:center;">Artículo</th>
                                         <th style="width:140px;text-align:center;">Descripción</th>
-                                        <th style="width:140px;text-align:center;">Marca</th>
                                         <th style="width:140px;text-align:center;">Stock</th>
                                         <th style="width:140px;text-align:center;">Costo</th>
                                         <th style="width:140px;text-align:center;" t-if="last_cost">Ultimo Costo</th>
@@ -85,7 +84,6 @@
                                             <tr class="tr-inside">
                                                 <td style="text-align:center"><label t-out="product['default_code']"/></td>
                                                 <td style="text-align:center" class="tr-back"><label t-out="product['name']"/></td>
-                                                <td style="text-align:center"><label t-out="product['brand_id'][1] if product['brand_id'] else ''"/></td>
                                                 <td style="text-align:center" class="tr-back"><label t-out="product['qty_available']"/></td>
                                                 <td style="text-align:center">
                                                     <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'before'" style="padding-right:3px;"/>

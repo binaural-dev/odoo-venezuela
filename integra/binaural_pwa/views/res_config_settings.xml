@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="binaural_pwa_res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">binaural.pwa.res.config.settings.view.form</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="100"/>
+        <field name="inherit_id" ref="droggol_theme_common.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <div id="pwa_settings" position="inside">
+
+                <div class="col-12 o_setting_box" name="Binaural_pwa_settings" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                    <div class="o_setting_right_pane">
+                        <label for="custom_manifest"/>
+                        <div class="text-muted">
+                            <p>
+                                Set the custom json manifest. <br />
+                                * Open the url /pwa/1/manifest.json then use the content as template. <br />
+                                * Or use PWABuilder to generate a custom manifest.json then paste de content here.
+                            </p>
+                        </div>
+                        <div class="content-group">
+                            <div class="mt16">
+                                <field name="custom_manifest" style="width: 100%;" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 o_setting_box" name="Binaural_mobile_app_settings" attrs="{'invisible': [('dr_pwa_activated', '=', False)]}">
+                    <div class="o_setting_right_pane">
+                        <label for="assetlink"/>
+                        <div class="text-muted">
+                            <p>
+                                Set the custom assetslinks.json with sha256_cert_fingerprints in play console side bar menu/settings/app signing/ after publish.
+                            </p>
+                        </div>
+                        <div class="content-group">
+                            <div class="mt16">
+                                <field name="assetlink" style="width: 100%;" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="stock_picking_distribution_form_view" model="ir.ui.view">
+        <field name="name">stock.picking.distribution.form.view</field>
+        <field name="model">stock.picking.distribution</field>
+        <field name="inherit_id" ref="binaural_stock_distribution.stock_picking_distribution_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vehicle_id']" position="before">
+                <field 
+                    name="seller_id"
+                    options="{'no_create': True, 'no_create_edit': True}"
+                    attrs="{'readonly': [('state','=', 'done')]}"/>
+            </xpath>
+            <xpath expr="//field[@id='picking_ids']" position="attributes">
+                <attribute name="attrs">
+{'readonly': [('state','=', 'done')], 'invisible': [('seller_id', '!=', False)]}
+                </attribute>
+            </xpath>
+            <xpath expr="//field[@id='picking_ids']" position="after">
+                <field 
+                    name="picking_seller_ids" 
+                    widget="many2many" 
+                    attrs="{'readonly': [('state','=', 'done')], 'invisible': [('seller_id', '=', False)]}"
+                    domain="[('picking_type_id','=',stock_picking_type_id),('state','=','done'),('is_invoiced','=',True), ('seller_id','=',seller_id),('distribution_id','=',False)]">
+                    <tree>
+                        <!-- Dont remove readonly in this fields -->
+                        <!-- 
+                                ░░░░░░░░░░░█▀▀░░█░░░░░░
+                                ░░░░░░▄▀▀▀▀░░░░░█▄▄░░░░
+                                ░░░░░░█░█░░░░░░░░░░▐░░░
+                                ░░░░░░▐▐░░░░░░░░░▄░▐░░░
+                                ░░░░░░█░░░░░░░░▄▀▀░▐░░░
+                                ░░░░▄▀░░░░░░░░▐░▄▄▀░░░░
+                                ░░▄▀░░░▐░░░░░█▄▀░▐░░░░░
+                                ░░█░░░▐░░░░░░░░▄░█░░░░░
+                                ░░░█▄░░▀▄░░░░▄▀▐░█░░░░░
+                                ░░░█▐▀▀▀░▀▀▀▀░░▐░█░░░░░
+                                ░░▐█▐▄░░▀░░░░░░▐░█▄▄░░░
+                                ░░░▀▀▄░░░░░░░░▄▐▄▄▄▀░░░
+                                ░░░░░░░░░░░░░░░░░░░░░░░
+                        -->
+                        <field name="name"/>
+                        <field name="partner_id" readonly="1"/>
+                        <field name="scheduled_date" readonly="1"/>
+                        <field name="seller_id" readonly="1"/>
+                        <field name="package_qty" readonly="1"/>
+                        <field name="amount_invoiced" readonly="1"/>
+                        <field name="origin" readonly="1"/>
+                    </tree>
+                </field>
+            </xpath>
+        </field>
+    </record>
+</odoo>

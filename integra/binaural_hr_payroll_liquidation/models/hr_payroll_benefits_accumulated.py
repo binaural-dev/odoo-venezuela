@@ -217,6 +217,13 @@ class HrPayrollBenefit(models.Model):
                 else maximum_of_days
             )
 
+            if employee.last_annual_calculated_benefits:
+                months_diff = relativedelta.relativedelta(
+                    fields.Date.today(), employee.last_quarterly_calculated_benefits
+                ).months
+                if months_diff < 12:
+                    continue
+
             employee._get_benefits(benefits_days, is_annual=True)
 
     @api.model
@@ -242,12 +249,15 @@ class HrPayrollBenefit(models.Model):
                 )
                 if not any(benefits_accumulated):
                     continue
+                if employee.last_calculated_benefits_interest == fields.Date.today():
+                    continue
 
                 daily_interests = (
                     benefits_accumulated[-1]["available_benefits"] * daily_interest_rate,
                     benefits_accumulated[-1]["foreign_available_benefits"] * daily_interest_rate,
                 )
                 employee._register_payroll_benefits(interests=daily_interests)
+                employee.last_calculated_benefits_interest = fields.Date.today()
 
     @api.model
     def get_benefits_for_employee(self, employee_id):
