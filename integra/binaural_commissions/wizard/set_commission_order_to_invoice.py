@@ -13,7 +13,7 @@ class SetCommissionOrderToInvoice(models.TransientModel):
     overwrite_commission = fields.Boolean(default=True)
 
     def get_orders(self):
-        return self.sale_order_ids.filtered(lambda x: x.state not in ["done", "sale"])
+        return self.sale_order_ids
 
     def get_order_lines(self):
         return self.get_orders().order_line

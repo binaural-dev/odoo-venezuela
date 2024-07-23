@@ -28,6 +28,13 @@ class PosOrder(models.Model):
                     line.sale_order_line_id.commission_policy_line_image_ids
                 )
 
+        for line in lines:
+            if line.refunded_orderline_id:
+                line.commission_policy_line_image_ids = (
+                    line.refunded_orderline_id.commission_policy_line_image_ids
+                )
+                lines -= line
+
         self.env["commission.policy"].assing_commission_policy_line_images_to_lines(lines)
 
     def set_company_settings(self):

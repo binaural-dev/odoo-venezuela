@@ -8,7 +8,6 @@ const BinauralTicketScreen = (TicketScreen) =>
 
     async _onDoRefund() {
       const order = this.getSelectedSyncedOrder();
-      console.log(order.commission_payment_state)
       if (order.commission_payment_state !== "not_paid") {
         return await this.showPopup('ErrorPopup', {
           title: "Error",
