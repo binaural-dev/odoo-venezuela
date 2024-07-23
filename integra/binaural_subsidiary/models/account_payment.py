@@ -1,4 +1,5 @@
 from odoo import fields, models, _
+from odoo.osv import expression
 
 
 class AccountPayment(models.Model):
@@ -23,11 +24,15 @@ class AccountPayment(models.Model):
         """
         Get all journals having at least one payment method for inbound/outbound depending on the payment_type.
         """
-        journals = self.env['account.journal'].search([
+        domain = [
             ('company_id', 'in', self.company_id.ids),
-            ('type', 'in', ('bank', 'cash')),
-            ('subsidiary_id', 'in', self.env.user.subsidiary_ids.ids)
-        ])
+            ('type', 'in', ('bank', 'cash'))
+        ]
+
+        domain = expression.AND([domain, ['|', ('subsidiary_id', 'in', self.env.user.subsidiary_ids.ids), ('subsidiary_id', '=', False)]])
+
+        journals = self.env['account.journal'].search(domain)
+
         for pay in self:
             if pay.payment_type == 'inbound':
                 pay.available_journal_ids = journals.filtered(
