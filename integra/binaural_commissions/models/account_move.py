@@ -179,19 +179,26 @@ class AccountMove(models.Model):
         for record in self:
             commission_discount = 0
             discount_invoice_ids = self.env["account.move"]
+            
+            if record.reversed_entry_id:
+                record.reversed_entry_id._compute_discount_invoice()
 
             if (
                 not record.currency_id.is_zero(record.amount_residual)
                 or record.move_type != "out_invoice"
             ):
+                _logger.info("PASO 1")
                 record.discount_invoice_ids = False
                 record.commission_discount = False
                 continue
 
             if not record.invoice_payments_widget:
+                _logger.info("PASO 2")
                 record.discount_invoice_ids = False
                 record.commission_discount = False
                 continue
+
+            _logger.info("PASO 3")
 
             discount_invoice_ids, commission_discount = record.get_discount_invoice(
                 record.invoice_payments_widget

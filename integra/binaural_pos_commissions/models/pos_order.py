@@ -7,7 +7,9 @@ class PosOrder(models.Model):
     commission_invoice_date_field = fields.Char(readonly=True, copy=False)
     compute_commission_when = fields.Char(readonly=True, copy=False)
     priority_commission_policy_type = fields.Char(readonly=True, copy=False)
-    commission_payment_state = fields.Selection(related="account_move.commission_payment_state")
+    commission_payment_state = fields.Selection(
+        related="account_move.commission_payment_state", store=True
+    )
 
     def action_pos_order_paid(self):
         res = super().action_pos_order_paid()
@@ -49,6 +51,7 @@ class PosOrder(models.Model):
         res["commission_invoice_date_field"] = self.commission_invoice_date_field
         res["compute_commission_when"] = self.compute_commission_when
         res["priority_commission_policy_type"] = self.priority_commission_policy_type
+        res["invoice_reception_date"] = fields.Date.today()
         return res
 
     def set_commission_from_sale(self):

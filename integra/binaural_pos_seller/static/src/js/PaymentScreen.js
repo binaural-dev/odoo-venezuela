@@ -27,7 +27,7 @@ odoo.define("binaural_pos_seller.PaymentScreen", function (require) {
       }
       async _isOrderValid(isForceValidate){
         let Valid = super._isOrderValid(isForceValidate)
-        if(this.currentOrder.get_seller() == ""){
+        if(!this.currentOrder.get_seller()){
           this.showPopup('ErrorPopup', {
             title: this.env._t('Seller Required'),
             body: this.env._t(
