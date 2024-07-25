@@ -11,16 +11,17 @@
                 name="currency_id" 
                 position="after"
             >
+                <field name="selectable_sale_journal_ids" invisible="1" />
                 <field 
                     name="dairy_fiscal"
                     options="{'no_create': True, 'no_edit': True}" 
-                    domain="[('type', '=', 'sale'),('fiscal', '=', True)]" 
+                    domain="[('id', 'in', selectable_sale_journal_ids), ('fiscal', '=', True)]"
                     attrs="{'required': [('dairy_no_fiscal', '=', False), ('is_subsidiary', '=', True)], 'invisible': [('is_subsidiary', '=', False)]  }"
                 />
                 <field 
                     name="dairy_no_fiscal" 
                     options="{'no_create': True, 'no_edit': True}" 
-                    domain="[('type', '=', 'sale'),('fiscal', '=', False)]" 
+                    domain="[('id', 'in', selectable_sale_journal_ids), ('fiscal', '=', False)]"
                     attrs="{'required': [('dairy_fiscal', '=', False), ('is_subsidiary', '=', True)], 'invisible': [('is_subsidiary', '=', False)]  }"
                 />
             </field>
