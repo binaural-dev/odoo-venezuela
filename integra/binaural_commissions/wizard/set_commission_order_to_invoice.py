@@ -60,6 +60,7 @@ class SetCommissionOrderToInvoice(models.TransientModel):
         orders.assing_commission_policy_line_images_to_order_lines()
 
         self.get_invoices().write(data_write)
+        self.get_invoices()._compute_payment_dates()
         self.get_invoices().calculate_commission()
 
         if sum([len(order_message) + len(invoice_message) + len(invoice_paid_message)]) == 0:
