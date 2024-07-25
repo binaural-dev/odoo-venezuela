@@ -6,7 +6,7 @@
         <field name="model">product.catalog.wizard</field>
         <field name="inherit_id" ref="sh_product_catalog_generator.generate_product_catalog_wizard_view"/>
         <field name="arch" type="xml">
-
+            
             <xpath expr="//button[@name='print_report_xls']" position="attributes">
                 <attribute name="attrs">{'invisible':['|',('catalog_type', '=', 'category'),('style','not in',['style_1'])]}</attribute>
             </xpath>
@@ -67,12 +67,16 @@
                 <field name="padding_sides"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
                 <field name="border_width"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
                 <field name="order_by_name"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
+                <field name="price_without_tax"  attrs="{ 'invisible': [('style','not in',['style_6'])] }" />
             </field>
             <xpath expr="//field[@name='style']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//field[@name='style']" position="after">
                 <field name="style_mod" widget="radio"/>
+            </xpath>
+            <xpath expr="//field[@name='sh_price_decimal_places']" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
         </field>
     </record>

@@ -1,7 +1,7 @@
 {
     "name": "Binaural Ganaderia Website",
     "summary": "Modulo para información de Ganaderia en Sitio Web",
-    "version": "16.0.0.0.6",
+    "version": "16.0.0.0.13",
     "category": "Stock",
     "license": "LGPL-3",
     "author": "BinauralDev",

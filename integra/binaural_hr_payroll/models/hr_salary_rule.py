@@ -113,29 +113,3 @@ class HrSalaryRule(models.Model):
                 )
             except Exception as e:
                 self._raise_error(localdict, _("Wrong python code defined for:"), e)
-
-
-#     def _get_new_worked_days_lines(self):
-#         if self.struct_id.category == "liquidation":
-#             worked_days_line_values = self._get_worked_day_lines(check_out_of_contract=False)
-
-#         worked_days_lines = self.worked_days_line_ids.browse([])
-#         work_entry_basic = self.env.ref("binaural_nomina.hr_work_entry_binaural_basic").id
-#         sum_worked_days = sum(x["number_of_days"] for x in worked_days_line_values)
-
-#         for r in worked_days_line_values:
-#             r["payslip_id"] = self.id
-#             if (
-#                 r["work_entry_type_id"] == work_entry_basic
-#                 and self.struct_id.category == "salary"
-#                 and self.schedule_payment != "days"
-#             ):
-#                 if sum_worked_days > (30 if self.date_from.month != 2 else 28):
-#                     r["number_of_days"] -= sum_worked_days - (
-#                         30 if self.date_from.month != 2 else 28
-#                     )
-#                 if sum_worked_days >= 28 and self.date_from.month == 2:
-#                     r["number_of_days"] += 30 - sum_worked_days
-#             worked_days_lines |= worked_days_lines.new(r)
-
-#         return worked_days_lines

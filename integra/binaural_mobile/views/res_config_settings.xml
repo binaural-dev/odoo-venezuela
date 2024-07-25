@@ -185,42 +185,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="row mt16 o_settings_container">
-                    <div class="col-12 o_setting_box" name="Binaural_mobile_app_settings">
-                        <div class="o_setting_right_pane">
-                            <label for="custom_manifest"/>
-                            <div class="text-muted">
-                                <p>
-                                    Set the custom json manifest. <br />
-                                    * Open the url /pwa/1/manifest.json then use the content as template. <br />
-                                    * Or use PWABuilder to generate a custom manifest.json then paste de content here.
-                                </p>
-                            </div>
-                            <div class="content-group">
-                                <div class="mt16">
-                                    <field name="custom_manifest" style="width: 100%;" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row mt16 o_settings_container">
-                    <div class="col-12 o_setting_box" name="Binaural_mobile_app_settings">
-                        <div class="o_setting_right_pane">
-                            <label for="assetlink"/>
-                            <div class="text-muted">
-                                <p>
-                                    Set the custom assetslinks.json with sha256_cert_fingerprints in play console side bar menu/settings/app signing/ after publish.
-                                </p>
-                            </div>
-                            <div class="content-group">
-                                <div class="mt16">
-                                    <field name="assetlink" style="width: 100%;" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </xpath>
 
         </field>

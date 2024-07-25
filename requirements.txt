@@ -2,4 +2,5 @@ bravado_core
 swagger_spec_validator
 jsonschema==3.2.0
 pdf2image
+xmltodict
 git+https://github.com/binaural-dev/python-sdk.git

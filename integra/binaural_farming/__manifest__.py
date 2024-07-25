@@ -1,7 +1,7 @@
 {
     "name": "Binaural Ganaderia",
     "summary": "Modulo para información de Ganaderia",
-    "version": "16.0.0.0.21",
+    "version": "16.0.0.0.25",
     "category": "Stock",
     "license": "LGPL-3",
     "author": "BinauralDev",
@@ -19,6 +19,7 @@
         'views/stock_lot_breeder_views.xml',
         'views/stock_lot_qualitative_valuation_views.xml',
         'views/stock_lot_type_morphological_views.xml',
+        'views/stock_specie.xml',
         
     ],
     "depends": [

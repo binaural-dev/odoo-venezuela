@@ -740,11 +740,15 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
                 const partner_child = getDirection([ ...client.child_ids ], addr_type);
                 $selection.empty();
                 if(partner_child.length == 0){
-                  $selection.append(`<option value="${client.id}">${client.street || "No Apply"}</option>`);
+                    $selection.append(`<option value="${client.id}">${client.street || "No Aplica"}</option>`);
                 }else{
-                  partner_child.forEach((el) => {
-                      $selection.append(`<option value="${el.id}">${el.street || "No Apply"}</option>`);
-                  })
+                    if(client.street){
+                        $selection.append(`<option value="${client.id}">${client.street}</option>`);
+                    }
+
+                    partner_child.forEach((el) => {
+                        $selection.append(`<option value="${el.id}">${el.street || "No Aplica"}</option>`);
+                    })
                 }
             });
             

@@ -6,3 +6,5 @@ from . import stock_lot_ancestral_milk_production
 from . import stock_lot_type_morphological
 from . import stock_lot_qualitative_valuation
 from . import stock_lot_evaluation_morphological
+from . import stock_lot_weight_offspring
+from . import stock_specie

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_config_settings_binaural_invoice_lot" model="ir.ui.view">
+            <field name="name">res.config.settings.binaural.invoice.lot</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='binaural_rate_settings']" position="after">
+                    <h2>Batch Invoicing Configuration</h2>
+                    <div class="row mt16 o_settings_container" name="batch_invoicing_settings">
+                        <div class="o_setting_right_pane">
+                            <group colspan="4" col="4">
+                                <field name="batchs_journal_id"/>
+                            </group>
+                            <div class="text-muted">
+                                Select the journal for batch invoicing
+                            </div>
+                        </div>
+		    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

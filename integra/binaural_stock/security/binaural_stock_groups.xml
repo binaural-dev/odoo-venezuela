@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <data noupdate="1">
+    <data>
 
         <record id="group_product_available_quantity_on_sale" model="res.groups">
             <field name="name">Group Product Available Quantity on Sale</field>
@@ -49,7 +49,7 @@
         </record>
 
         <record id="group_block_type_inventory_transfers_expeditions" model="res.groups">
-            <field name="name">Block Type Inventory Transfers Expeditions</field>
+            <field name="name">Block Type Inventory Transfers Expeditions (Do not add a new product to the Dispatch)</field>
             <field name="category_id" ref="base.module_category_hidden"/>
         </record>
 
