@@ -47,9 +47,9 @@ odoo.define('binaural_pos.ProductScreen', function(require) {
 
       }
 
-      async _setValue(inputValue) {
+      async _setValue(inputValue, ignore_barcode_strict_code = false) {
 
-        const is_barcode_strict_mode_invalid = this.is_barcode_strict_mode_invalid();
+        const is_barcode_strict_mode_invalid = this.is_barcode_strict_mode_invalid() && !ignore_barcode_strict_code;
 
         if (is_barcode_strict_mode_invalid && !(inputValue == "" || inputValue == "remove")) return;
 
