@@ -5,7 +5,7 @@
             <div class="button confirm dynamic-size" t-on-click="onClickButtonCurrency">
                 <span 
                     class="input-type">
-                    <t t-esc="state.currency.name"/> <i class="fa fa-refresh" role="img" />
+                    <t t-esc="state.foreign_currency.name"/> <i class="fa fa-refresh" role="img" />
                 </span>
             </div>
         </xpath>

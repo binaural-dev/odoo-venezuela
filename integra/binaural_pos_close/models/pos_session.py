@@ -1,6 +1,10 @@
 from odoo import api, fields, models, _, Command
 from odoo.exceptions import AccessError, UserError, ValidationError
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class PosSession(models.Model):
     _inherit = "pos.session"
@@ -393,20 +397,48 @@ class PosSession(models.Model):
         if not sessions:
             raise UserError(_("There is no cash payment method for this PoS Session"))
 
-        new_amount = amount
-        foreign_amount = 0
-        if (
-            extras.get("currency", False)
-            and extras.get("currency") != self.company_id.currency_id.id
-        ):
-            new_amount = 0
-            foreign_amount = amount
+        is_base = extras.get("currency") == self.env.company.currency_id.id
+
+        def get_rate(is_base):
+            if is_base:
+                return 1
+
+            currency_id = (
+                self.env.company.currency_id if is_base else self.env.company.currency_foreign_id
+            )
+            foreign_currency_id = (
+                self.env.company.currency_foreign_id if is_base else self.env.company.currency_id
+            )
+
+            return self.env["res.currency"]._get_conversion_rate(
+                currency_id, foreign_currency_id, self.env.company, fields.Date.context_today(self)
+            )
+
+        def get_foreign_rate(is_base):
+            if not is_base:
+                return 1
+
+            currency_id = (
+                self.env.company.currency_id if is_base else self.env.company.currency_foreign_id
+            )
+            foreign_currency_id = (
+                self.env.company.currency_foreign_id if is_base else self.env.company.currency_id
+            )
+
+            return self.env["res.currency"]._get_conversion_rate(
+                currency_id, foreign_currency_id, self.env.company, fields.Date.context_today(self)
+            )
+
+        new_amount = amount * get_rate(is_base)
+        foreign_amount = amount * get_foreign_rate(is_base)
 
         self.env["account.bank.statement.line"].create(
             [
                 {
                     "pos_session_id": session.id,
-                    "journal_id": session.foreign_cash_journal_id.id,
+                    "journal_id": session.cash_journal_id.id
+                    if is_base
+                    else session.foreign_cash_journal_id.id,
                     "amount": sign * new_amount,
                     "foreign_amount": sign * foreign_amount,
                     "date": fields.Date.context_today(self),
