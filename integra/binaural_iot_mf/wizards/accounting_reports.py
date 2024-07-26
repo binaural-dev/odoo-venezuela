@@ -40,9 +40,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         res = super()._fields_sale_book_line(move, taxes)
         if not self.with_fiscal_machine:
             return res
-        res["document_number"] = move.mf_invoice_number
-        res["mf_reportz"] = move.mf_reportz
-        res["mf_serial"] = move.mf_serial
+        res["document_number"] = move.mf_invoice_number if move.mf_invoice_number else "-"
+        res["mf_reportz"] = move.mf_reportz if move.mf_reportz else "-"
+        res["mf_serial"] = move.mf_serial if move.mf_serial else "-"
         res["number_invoice_affected"] = move.reversed_entry_id.mf_invoice_number or "" 
         return res
 

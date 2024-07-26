@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240318\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240702\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-20 14:58+0000\n"
-"PO-Revision-Date: 2024-03-20 14:58+0000\n"
+"POT-Creation-Date: 2024-07-12 21:36+0000\n"
+"PO-Revision-Date: 2024-07-12 21:36+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -98,7 +98,14 @@ msgstr ""
 
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_template_arcv
-msgid "<span text-align=\"center\">Agente de Retención</span>"
+msgid ""
+"<span text-align=\"center\" style=\"font-weight: bold;\">Agente de "
+"Retencion</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_template_arcv
+msgid "<span text-align=\"center\" style=\"font-weight: bold;\">Beneficiario</span>"
 msgstr ""
 
 #. module: binaural_payment_extension
@@ -389,7 +396,7 @@ msgstr "Alícuota"
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__allowed_lines_move_ids
 msgid "Allowed Lines Move"
-msgstr "Apuntes permitidas"
+msgstr "Apuntes permitidos"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__related_amount_subtract_fees
@@ -536,9 +543,14 @@ msgid "Code of the withholding voucher"
 msgstr "Referencia del Comprobante"
 
 #. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_islr_customer
+msgid "Codigo"
+msgstr ""
+
+#. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_res_company
 msgid "Companies"
-msgstr "compañías"
+msgstr "Compañías"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__company_id
@@ -562,6 +574,7 @@ msgid "Comprobante de retención de Impuesto Sobre La Renta (ISLR)"
 msgstr ""
 
 #. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__code
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_payment_concept_line__code
 msgid "Concept code"
 msgstr "Código de concepto"
@@ -574,7 +587,7 @@ msgstr ""
 #. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_res_config_settings
 msgid "Config Settings"
-msgstr "Configuraciones"
+msgstr "Opciones de configuración"
 
 #. module: binaural_payment_extension
 #: model:ir.model,name:binaural_payment_extension.model_res_partner
@@ -796,7 +809,7 @@ msgstr "Actividad Económica"
 #: model:ir.ui.menu,name:binaural_payment_extension.menu_economic_branch
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.view_economic_branch_from_binaural_payment_extension
 msgid "Economic branch"
-msgstr "Rama Económica"
+msgstr "Ramo Económico"
 
 #. module: binaural_payment_extension
 #: model:ir.model.fields,field_description:binaural_payment_extension.field_account_payment_register__edit_retention_fields
@@ -1138,6 +1151,11 @@ msgstr ""
 #. module: binaural_payment_extension
 #: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_template_arcv
 msgid "Impuesto <br/>retenido"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:binaural_payment_extension.report_template_arcv
+msgid "Impuesto retenido<br/>acumulado"
 msgstr ""
 
 #. module: binaural_payment_extension
@@ -1917,6 +1935,14 @@ msgid "Retentions"
 msgstr "Retenciones"
 
 #. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention__code_visible
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_account_retention_line__code_visible
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_company__code_visible
+#: model:ir.model.fields,field_description:binaural_payment_extension.field_res_config_settings__code_visible
+msgid "See payment concept code"
+msgstr "Ver código concepto de pago"
+
+#. module: binaural_payment_extension
 #. odoo-python
 #: code:addons/binaural_payment_extension/models/account_retention.py:0
 #, python-format
@@ -2288,13 +2314,6 @@ msgstr "La factura no tiene impuesto"
 
 #. module: binaural_payment_extension
 #. odoo-python
-#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
-#, python-format
-msgid "The partner does not have a type of person"
-msgstr "El contacto no tiene tipo de persona"
-
-#. module: binaural_payment_extension
-#. odoo-python
 #: code:addons/binaural_payment_extension/models/account_move.py:0
 #, python-format
 msgid "The partner has no withholding type."
@@ -2575,8 +2594,9 @@ msgstr "No puedes añadir retenciones con el mismo nombre."
 msgid ""
 "You cannot delete a hold linked to a posted entry. It is necessary to cancel"
 " the retention before being deleted"
-msgstr "No puede eliminar una retención vinculada a un asiento publicado. "
-"Es necesario anular la retención antes de ser eliminada."
+msgstr ""
+"No puede eliminar una retención vinculada a un asiento publicado. Es "
+"necesario anular la retención antes de ser eliminada."
 
 #. module: binaural_payment_extension
 #. odoo-python

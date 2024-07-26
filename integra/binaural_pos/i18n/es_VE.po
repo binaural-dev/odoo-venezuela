@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231227\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240527\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-09 15:08+0000\n"
-"PO-Revision-Date: 2024-04-09 15:08+0000\n"
+"POT-Creation-Date: 2024-06-17 18:07+0000\n"
+"PO-Revision-Date: 2024-06-17 18:07+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -23,16 +23,30 @@ msgid " is out of stock."
 msgstr " no tiene suficiente stock"
 
 #. module: binaural_pos
-#. odoo-python
-#: code:addons/binaural_pos/models/pos_session.py:0
-#, python-format
-msgid "%s POS payment of %s in %s"
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "&gt;$"
 msgstr ""
+
+#. module: binaural_pos
+#: model:ir.actions.report,print_report_name:binaural_pos.action_payment_report_pos
+msgid "'Payment Report.pdf'"
+msgstr "'Reporte de Pagos.pdf'"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "+ New Shop"
 msgstr "+ Nuevo terminal"
+
+#. module: binaural_pos
+#: model:ir.model.fields.selection,name:binaural_pos.selection__pos_payment_report__show_categories__1_level
+msgid "1st Level"
+msgstr "1er Nivel"
+
+#. module: binaural_pos
+#: model:ir.model.fields.selection,name:binaural_pos.selection__pos_payment_report__show_categories__2_level
+msgid "2nd Level"
+msgstr "2do Nivel"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -73,6 +87,11 @@ msgid "Amount total"
 msgstr "Monto Total"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_method__apply_one_cross_move
+msgid "Apply One Cross Move"
+msgstr "Aplicar un único asiento de ajuste"
+
+#. module: binaural_pos
 #: model:res.groups,name:binaural_pos.group_authorized_discount_pos
 msgid "Authorized discount pos"
 msgstr "Descuento autorizado pos"
@@ -90,6 +109,16 @@ msgid "Base Amount"
 msgstr "Base Imponible"
 
 #. module: binaural_pos
+#: model:ir.model.fields.selection,name:binaural_pos.selection__pos_payment_report__show_categories__both
+msgid "Both"
+msgstr "Ambos"
+
+#. module: binaural_pos
+#: model:ir.model.fields.selection,name:binaural_pos.selection__pos_payment_report__type_report__by_cash_register
+msgid "By Cash Register"
+msgstr "Por Caja"
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/TicketScreen.js:0
 #, python-format
@@ -104,6 +133,28 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Calculate IGTF with payments made in USD"
 msgstr "Calcula el IGTF con los pagos realizados en USD"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.pos_payment_report
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "Cantidad"
+msgstr ""
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "Categoria"
+msgstr ""
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__category_ids
+msgid "Categories"
+msgstr "Categorias"
 
 #. module: binaural_pos
 #: model:res.groups,name:binaural_pos.group_change_price_on_pos_order
@@ -123,13 +174,6 @@ msgstr ""
 "Venta) si la sesiona la que corresponde esta abierta"
 
 #. module: binaural_pos
-#. odoo-python
-#: code:addons/binaural_pos/models/pos_session.py:0
-#, python-format
-msgid "Combine %s POS payments from %s"
-msgstr ""
-
-#. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_res_company
 msgid "Companies"
 msgstr "Compañías"
@@ -142,7 +186,17 @@ msgstr "Opciones de configuración"
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_res_partner
 msgid "Contact"
-msgstr "Contacto"
+msgstr ""
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__create_date
+msgid "Created on"
+msgstr "Creado en"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_method__cross_account_journal
@@ -169,8 +223,7 @@ msgstr "Moneda alterna para la compañía"
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Default journal to receipt account moves"
-msgstr ""
-"Diario conable por defecto para generar recibos como asientos contables"
+msgstr "Diario contable por defecto para generar recibos de ventas"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -178,16 +231,20 @@ msgid "Deletes automatically products without free qty on POS"
 msgstr "Eliminar automáticamente los productos sin disponibilidad del POS"
 
 #. module: binaural_pos
-#. odoo-javascript
-#: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
-#, python-format
-msgid "Deny Order"
-msgstr "Orden denegada"
-
-#. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
 msgid "Disc:"
 msgstr "Descuento:"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__display_name
+msgid "Display Name"
+msgstr "Nombre a mostrar"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "Distribución del Reporte"
+msgstr ""
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.pos_config_form_view_validation
@@ -203,6 +260,11 @@ msgid "Document"
 msgstr "Documento"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__end_date
+msgid "End Date"
+msgstr "Fecha Final"
+
+#. module: binaural_pos
 #. odoo-python
 #: code:addons/binaural_pos/models/res_partner.py:0
 #, python-format
@@ -212,6 +274,12 @@ msgid ""
 msgstr ""
 "Error al conectar con el CNE, por favor revise su conexión a internet o "
 "intente más tarde"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "FISCAL"
+msgstr ""
 
 #. module: binaural_pos
 #. odoo-javascript
@@ -304,11 +372,27 @@ msgid "Foreign total:"
 msgstr "Total alterno:"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "Formas de Pago"
+msgstr ""
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/xml/FullRefundButton.xml:0
 #, python-format
 msgid "Full refund"
 msgstr "Reembolso total"
+
+#. module: binaural_pos
+#: model:ir.model.fields.selection,name:binaural_pos.selection__pos_payment_report__type_report__general
+msgid "General"
+msgstr ""
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__id
+msgid "ID"
+msgstr ""
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_res_company__module_binaural_base_igtf
@@ -329,13 +413,6 @@ msgstr "IGTF en TPV"
 #, python-format
 msgid "Invoice"
 msgstr "Factura"
-
-#. module: binaural_pos
-#. odoo-python
-#: code:addons/binaural_pos/models/pos_payment.py:0
-#, python-format
-msgid "Invoice payment for %s (%s) using %s"
-msgstr ""
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_method__is_foreign_currency
@@ -361,9 +438,36 @@ msgstr ""
 "proxima orden"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report____last_update
+msgid "Last Modified on"
+msgstr ""
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Manage advance payments"
 msgstr "Pago de anticipos"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "Moneda"
+msgstr ""
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "NOTAS"
+msgstr ""
 
 #. module: binaural_pos
 #. odoo-javascript
@@ -399,11 +503,23 @@ msgid "Pay"
 msgstr "Pagar"
 
 #. module: binaural_pos
+#: model:ir.actions.act_window,name:binaural_pos.action_pos_payment_report
+#: model:ir.actions.report,name:binaural_pos.action_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.pos_payment_report
+msgid "Payment Report"
+msgstr "Reporte de Pagos"
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
 #, python-format
 msgid "Payment method"
 msgstr "Metodo de pago"
+
+#. module: binaural_pos
+#: model:ir.ui.menu,name:binaural_pos.menu_pos_payment_report
+msgid "Payment report"
+msgstr "Reporte de Pagos"
 
 #. module: binaural_pos
 #. odoo-javascript
@@ -423,6 +539,9 @@ msgstr ""
 
 #. module: binaural_pos
 #. odoo-python
+#: code:addons/binaural_pos/models/pos_session.py:0
+#: code:addons/binaural_pos/models/pos_session.py:0
+#: code:addons/binaural_pos/models/pos_session.py:0
 #: code:addons/binaural_pos/models/pos_session.py:0
 #: code:addons/binaural_pos/models/pos_session.py:0
 #: code:addons/binaural_pos/models/pos_session.py:0
@@ -448,6 +567,11 @@ msgid "Point of Sale Details"
 msgstr "Detalles del Punto de Venta"
 
 #. module: binaural_pos
+#: model:ir.model,name:binaural_pos.model_pos_payment_report
+msgid "Point of Sale Details Report"
+msgstr "Punto de Venta Reporte de Detalles"
+
+#. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_pos_order_line
 msgid "Point of Sale Order Lines"
 msgstr "Líneas de pedido de Punto de Venta"
@@ -471,6 +595,11 @@ msgstr "Pagos en puntos de venta"
 #: model:ir.model,name:binaural_pos.model_pos_session
 msgid "Point of Sale Session"
 msgstr "Sesión TPV"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__pos_config_ids
+msgid "Pos Config"
+msgstr "Cajas"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_res_company__pos_move_to_draft
@@ -510,6 +639,11 @@ msgstr "Impuestos incluidos"
 #: model_terms:ir.ui.view,arch_db:binaural_pos.report_saledetails
 msgid "Price Unit"
 msgstr "Precio unitario"
+
+#. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.pos_payment_report
+msgid "Print"
+msgstr "Imprimir"
 
 #. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
@@ -585,9 +719,19 @@ msgid "Settings on this page will apply to this point of sale."
 msgstr "Las configuraciones en esta pagina se aplicaran a este punto de venta"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__show_categories
+msgid "Show Categories"
+msgstr "Mostrar categorias"
+
+#. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Show free quantity on POS"
 msgstr "Mostrar la cantidad disponible en el punto de venta"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__start_date
+msgid "Start Date"
+msgstr "Fecha de Inicio"
 
 #. module: binaural_pos
 #. odoo-javascript
@@ -617,8 +761,15 @@ msgstr "Impuestos:"
 #. odoo-python
 #: code:addons/binaural_pos/controllers/controller.py:0
 #, python-format
-msgid "The product's '%s' is not found in warehouse %s"
-msgstr "El producto '%s' no se encuentra en el almacén %s."
+msgid "The product's '%s' You do not have enough stock in the warehouse %s"
+msgstr "El producto '%s' no tiene suficiente stock en el almacén '%s'"
+
+#. module: binaural_pos
+#. odoo-python
+#: code:addons/binaural_pos/controllers/controller.py:0
+#, python-format
+msgid "The product's '%s' not available in stock warehouse %s"
+msgstr "Los productos '%s' no están disponibles en el almacén %s"
 
 #. module: binaural_pos
 #: model:ir.model.fields,help:binaural_pos.field_pos_payment__foreign_rate
@@ -654,6 +805,11 @@ msgid "Transfer"
 msgstr "Transferir"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__type_report
+msgid "Type Report"
+msgstr "Tipo de Reporte"
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/NumpadWidget.js:0
 #, python-format
@@ -668,11 +824,17 @@ msgid "Validate"
 msgstr "Validar"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "Ventas"
+msgstr ""
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
 #, python-format
 msgid "Validate Product in Warehouse"
-msgstr "Validar el producto en el almacén"
+msgstr "Caja tiene otro almacen asignado"
 
 #. module: binaural_pos
 #. odoo-javascript
@@ -698,6 +860,11 @@ msgstr ""
 #, python-format
 msgid "You want to refund all products"
 msgstr "Desea reembolsar todos los productos"
+
+#. module: binaural_pos
+#: model:ir.model,name:binaural_pos.model_report_binaural_pos_payment_report_pos
+msgid "report.binaural_pos.payment_report_pos"
+msgstr ""
 
 #. module: binaural_pos
 #. odoo-javascript

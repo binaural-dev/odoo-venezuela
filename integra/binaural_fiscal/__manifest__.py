@@ -17,4 +17,5 @@
         "views/account_journal.xml",
         "views/account_move.xml",
     ],
+    "binaural": True,
 }

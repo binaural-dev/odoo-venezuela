@@ -83,20 +83,29 @@ class SaleOrder(models.Model):
                 invoice.invoice_user_id = self.user_id.id
 
         return res
+    
+    def _get_journal_id(self):
+        self.ensure_one()
+
+        if self.tax_included:
+            return self.env.company.dairy_fiscal
+
+        return self.env.company.dairy_no_fiscal
 
     @api.depends("tax_included")
     def _compute_journal_id(self):
         for sale in self:
-            if sale.tax_included:
-                journal = sale.env.company.dairy_fiscal
-            else:
-                journal = sale.env.company.dairy_no_fiscal
+            journal_id = sale._get_journal_id()
 
-            if sale.invoice_ids:
-                for invoice in sale.invoice_ids:
-                    if invoice.state == "draft":
-                        invoice.journal_id = journal.id
-            sale.journal_id = journal.id
+            sale.journal_id = journal_id.id
+
+            for invoice in sale.invoice_ids:
+                if invoice.state != "draft":
+                    continue
+
+                invoice.journal_id = journal_id.id
+
+            
 
     @api.depends("state", "invoice_ids")
     def _compute_state_seller(self):

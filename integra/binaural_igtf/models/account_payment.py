@@ -34,7 +34,7 @@ class AccountPaymentIgtf(models.Model):
         compute="_compute_igtf_amount",
         store=True,
         help="IGTF Amount",
-        digits=(16, 2),
+        # digits=(16, 6), Change field Float to Monetary odoo 17
     )
 
     amount_with_igtf = fields.Float(

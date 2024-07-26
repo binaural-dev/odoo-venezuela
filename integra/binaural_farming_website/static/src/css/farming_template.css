@@ -1,0 +1,188 @@
+.animal-title {
+    font-weight: bold;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    font-size: 14px;   
+}
+
+.title_span{
+  white-space: normal;
+  text-transform: uppercase;
+}
+
+.card_image {
+  height: calc(13*1.2rem);
+  padding: 0;
+  position:relative;
+}
+
+.image_box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.div_image_box{
+  width: 100%; 
+  max-width: 400px; 
+  height: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.div_image_box::before {
+  content: "";
+  display: block;
+  padding-top: 100%; /* Mantiene la relación de aspecto cuadrada */
+}
+
+.family-tree {
+  width: 750px;
+  display:block;
+  margin: 50px auto;
+}
+
+.family-tree .tree-nodo {
+  float:left;
+  width: 33%;
+  height: 220px;
+  position:relative;
+}
+
+.family-tree .tree-ejemplar {
+  width: 100%;
+  height:200px;
+  display: block;
+  position:relative;
+  border-right:1px solid gray;
+  margin:20px 0;
+}
+
+.family-tree .tree-padres {
+  width: 100%;
+  height:100px;
+  display: block;
+  position:relative;
+  margin:10px 0;
+  border-right:1px solid gray;
+}
+.family-tree .tree-abuelos {
+  width: 100%;
+  height:50px;
+  display: block;
+  position:relative;
+  margin:5px 0;
+}
+.family-tree p {
+  line-height: normal;
+  padding: 0 15px;
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  /*
+  para asignar recuadro a cada nombre
+  border:1px solid silver;
+  eliminar los demás bordes
+  */ 
+}
+
+/* TABLA DE ANCESTROS */
+table.redTable {
+    border: 2px solid #A40808;
+    background-color: #EEE7DB;
+    width: 100%;
+    text-align: center;
+    border-collapse: collapse;
+}
+table.redTable td, table.redTable th {
+    border: 1px solid #AAAAAA;
+    padding: 3px 2px;
+}
+table.redTable tbody td {
+    font-size: 13px;
+}
+table.redTable tr:nth-child(even) {
+    background: #F5C8BF;
+}
+table.redTable thead {
+    background: #A40808;
+}
+.thead-red{
+  background: #A40808;
+}
+
+table.redTable thead th {
+    font-size: 19px;
+    font-weight: bold;
+    color: #FFFFFF;
+    text-align: center;
+    border-left: 2px solid #A40808;
+}
+table.redTable thead th:first-child {
+    border-left: none;
+}
+
+table.redTable tfoot td {
+    font-size: 13px;
+}
+table.redTable tfoot .links {
+    text-align: right;
+}
+table.redTable tfoot .links a{
+    display: inline-block;
+    background: #FFFFFF;
+    color: #A40808;
+    padding: 2px 8px;
+    border-radius: 5px;
+}
+
+/* TABLA Evaluacion morfologica  */
+table.greenTable {
+    border: 2px solid #27A40F;
+    background-color: #EEE7DB;
+    width: 100%;
+    text-align: center;
+    border-collapse: collapse;
+  }
+  table.greenTable td, table.greenTable th {
+    border: 1px solid #AAAAAA;
+    padding: 3px 2px;
+  }
+  table.greenTable tbody td {
+    font-size: 13px;
+  }
+  table.greenTable tr:nth-child(even) {
+    background: #B8F5A4;
+  }
+  table.greenTable thead {
+    background: #47A400;
+  }
+  table.greenTable thead th {
+    font-size: 19px;
+    font-weight: bold;
+    color: #FFFFFF;
+    text-align: center;
+    border-left: 2px solid #13A403;
+  }
+  table.greenTable thead th:first-child {
+    border-left: none;
+  }
+  
+  table.greenTable tfoot td {
+    font-size: 13px;
+  }
+  table.greenTable tfoot .links {
+    text-align: right;
+  }
+  table.greenTable tfoot .links a{
+    display: inline-block;
+    background: #FFFFFF;
+    color: #A40808;
+    padding: 2px 8px;
+    border-radius: 5px;
+  }

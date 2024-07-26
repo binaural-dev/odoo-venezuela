@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "16.0.1.0.7",
+    "version": "16.0.1.0.10",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -20,6 +20,7 @@
     # always loaded
     "data": [
         "security/res_groups.xml",
+        "data/ir_cron.xml",
         "views/res_config_settings.xml",
         "views/sale_order.xml",
         "views/product_pricelist_item_views.xml",
@@ -27,4 +28,5 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
+    "binaural": True,
 }

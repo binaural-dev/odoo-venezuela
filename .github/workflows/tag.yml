@@ -1,26 +1,32 @@
 name: tag
-on:  
-  push:
-    branches:
-      - release-16
+on:
+  schedule:
+    - cron: '0 12 * * 2,4'
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     if: github.repository == 'binaural-dev/integra'
     steps:
-      - uses: actions/checkout@v2
+      - name: Obtener token de instalación de GitHub App
+        id: get_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v3
       - name: Bump version and push tag
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ steps.get_token.outputs.token }}
           default_bump: false
-      - name: Create a GitHub release
-        uses: ncipollo/release-action@v1
+      - uses: peterjgrainger/action-create-branch@v2.2.0
+        env:
+          GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
         with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
-          generateReleaseNotes: true
-        if: ${{ steps.tag_version.outputs.new_tag }}
+          branch: '${{ steps.tag_version.outputs.new_tag }}'
+          sha: '${{ github.event.push.head.sha }}'
+
 

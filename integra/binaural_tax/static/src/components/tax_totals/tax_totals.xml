@@ -6,6 +6,11 @@
         t-inherit="account.TaxGroupComponent" 
         t-inherit-mode="extension" 
         owl="1">
+        <xpath expr="//tr/td[2]/t[@t-if]/t[@t-else]/span/span" position="replace">
+            <span class="o_tax_group_amount_value o_list_monetary">
+                <t t-out="props.taxGroup.formatted_tax_group_amount"/>
+            </span>
+        </xpath>
         <xpath expr="//tr" position="before">
             <tr>
                 <td class="o_td_label">
@@ -28,7 +33,6 @@
                         </t>
                         <t t-else="">
                             <span class="o_tax_group_edit" t-on-click.prevent="() => this.setState('edit')">
-                                <i class="fa fa-pencil me-2"/>
                                 <span class="o_tax_group_amount_value">
                                     <t t-out="props.taxGroup.formatted_tax_group_base_amount"/>
                                 </span>

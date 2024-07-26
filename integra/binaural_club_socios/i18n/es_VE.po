@@ -4,21 +4,16 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230925\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-01 14:30+0000\n"
-"PO-Revision-Date: 2023-12-01 14:30+0000\n"
+"POT-Creation-Date: 2024-07-13 16:05+0000\n"
+"PO-Revision-Date: 2024-07-13 16:05+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__supplier_invoice_count
-msgid "# Vendor Bills"
-msgstr "# Facturas de proveedores"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__type
@@ -95,6 +90,7 @@ msgstr "Formulario de Acción de Socio"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__state_action
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__state_action
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
 msgid "Action State"
 msgstr "Estado de la Acción"
 
@@ -113,13 +109,13 @@ msgstr "Tipo de Acción"
 #: code:addons/binaural_club_socios/models/action_partner.py:0
 #, python-format
 msgid "Action changed to %s, by %s"
-msgstr ""
+msgstr "Acción cambiada to %s, by %s"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__action_number_related
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__action_number_related
 msgid "Action related"
-msgstr ""
+msgstr "Acción relacionada"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_status_action_batch__actions_ids
@@ -149,9 +145,19 @@ msgid "Active"
 msgstr "Activo"
 
 #. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Active Action"
+msgstr "Acción Activa"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__active_lang_count
 msgid "Active Lang Count"
 msgstr "Contador de idiomas activos"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Active Partners"
+msgstr "Socios Activos"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__activity_ids
@@ -161,7 +167,7 @@ msgstr "Actividades"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__activity_exception_decoration
 msgid "Activity Exception Decoration"
-msgstr "Decoración de Actividad  de Excepción"
+msgstr "Decoración de Actividad de Excepción"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__activity_state
@@ -171,7 +177,7 @@ msgstr "Estado de la actividad"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__activity_type_icon
 msgid "Activity Type Icon"
-msgstr "Ícono de tipo de actvidad"
+msgstr "Ícono de tipo de actividad"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__mobile_phone_two
@@ -307,16 +313,6 @@ msgid "Attachment Count"
 msgstr "Nº de archivos adjuntos"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__receipt_reminder_email
-msgid ""
-"Automatically send a confirmation email to the vendor X days before the "
-"expected receipt date, asking him to confirm the exact date."
-msgstr ""
-"Envíe automáticamente un correo electrónico de confirmación al proveedor X "
-"días antes de la fecha de recepción prevista, pidiéndole que confirme la "
-"fecha exacta."
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__avatar_1920
 msgid "Avatar"
 msgstr ""
@@ -370,17 +366,23 @@ msgstr "Lista de denegación"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__mobile_blacklisted
 msgid "Blacklisted Phone Is Mobile"
-msgstr ""
+msgstr "El teléfono en la lista negra es móvil"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__phone_blacklisted
 msgid "Blacklisted Phone is Phone"
-msgstr ""
+msgstr "El teléfono en la lista negra es Fijo"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_bounce
 msgid "Bounce"
 msgstr "Rebote"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__business_name
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__business_name
+msgid "Business Name"
+msgstr "Razón Social"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__business_name_usufruct
@@ -397,6 +399,11 @@ msgstr ""
 #: model:ir.actions.act_window,name:binaural_club_socios.action_status_batch_wizard_action
 msgid "Cambiar estado de acciones en lote"
 msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__can_publish
+msgid "Can Publish"
+msgstr "Puede publicar"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__can_access_club
@@ -651,20 +658,25 @@ msgid "Date remove suspend"
 msgstr "Fecha en que se removio la suspensión"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__reminder_date_before_receipt
-msgid "Days Before Receipt"
-msgstr "Días antes de la recepción"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__prev_state_partner__deceased
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__state_partner__deceased
 msgid "Deceased"
 msgstr "Fallecido"
 
 #. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Deceased Partners"
+msgstr "Socios Fallecidos"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__trust
 msgid "Degree of trust you have in this debtor"
 msgstr "Grado de confianza en este deudor"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Discontinued Partners"
+msgstr "Socios Suspendidos"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__display_name
@@ -777,32 +789,32 @@ msgstr "Establecer Prorroga:(%s)"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__expiration_alert_subject
 msgid "Expiration Alert Mail Subject"
-msgstr ""
+msgstr "Asunto del correo de alerta de vencimiento"
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_partner_config_view_form
 msgid "Expiration alert"
-msgstr ""
+msgstr "Alerta de caducidad"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__expiration_alert_body
 msgid "Expiration alert mail body"
-msgstr ""
+msgstr "Cuerpo del correo de alerta de vencimiento"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__extension_alert_subject
 msgid "Extension Alert Mail Subject"
-msgstr ""
+msgstr "Asunto del correo de alerta de extensión"
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_partner_config_view_form
 msgid "Extension alert"
-msgstr ""
+msgstr "Extension alert"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__extension_alert_body
 msgid "Extension alert mailing body"
-msgstr ""
+msgstr "Cuerpo del correo de alerta de extensión"
 
 #. module: binaural_club_socios
 #. odoo-python
@@ -852,22 +864,12 @@ msgstr "Femenino"
 msgid ""
 "Field used to store sanitized phone number. Helps speeding up searches and "
 "comparisons."
-msgstr ""
+msgstr "Campo utilizado para almacenar el número de teléfono desinfectado. Ayuda a acelerar las búsquedas y comparaciones."
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_account_position_id
 msgid "Fiscal Position"
 msgstr "Posición fiscal"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__followup_line_id
-msgid "Follow-up Level"
-msgstr "Nivel del seguimiento"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__followup_status
-msgid "Follow-up Status"
-msgstr "Estado del seguimiento"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__message_follower_ids
@@ -929,10 +931,20 @@ msgid "Holder"
 msgstr "Tenedor"
 
 #. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Holder Partners"
+msgstr "Socios Tenedores"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__action_partner__state__honorary
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__status_action_batch__status__honorary
 msgid "Honorary"
 msgstr "Honorario"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Honorary Action"
+msgstr "Acción Honorario"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__id
@@ -1034,6 +1046,11 @@ msgid "Inactive"
 msgstr "Inactivo"
 
 #. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Inactive Partners"
+msgstr "Socios Inactivos"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__mobile_blacklisted
 msgid ""
 "Indicates if a blacklisted sanitized phone number is a mobile number. Helps "
@@ -1071,9 +1088,19 @@ msgid "Is Follower"
 msgstr "Es un seguidor"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__is_postpaid
+msgid "Is Postpaid"
+msgstr "¿Es Pospago?"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__is_public
 msgid "Is Public"
 msgstr "Es público"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__is_published
+msgid "Is Published"
+msgstr "Está publicado"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__is_company
@@ -1263,16 +1290,6 @@ msgid "Message for Invoice"
 msgstr "Mensaje para factura"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__purchase_warn_msg
-msgid "Message for Purchase Order"
-msgstr "Mensaje para el pedido de compra"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__sale_warn_msg
-msgid "Message for Sales Order"
-msgstr "Mensaje para el pedido de venta"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__picking_warn_msg
 msgid "Message for Stock Picking"
 msgstr "Mensaje para recolección de stock"
@@ -1343,11 +1360,6 @@ msgid "Next Activity Type"
 msgstr "Siguiente tipo de actividad"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__followup_next_action_date
-msgid "Next reminder"
-msgstr "Siguiente recordatorio"
-
-#. module: binaural_club_socios
 #. odoo-python
 #: code:addons/binaural_club_socios/models/res_partner.py:0
 #: code:addons/binaural_club_socios/models/res_partner.py:0
@@ -1358,6 +1370,11 @@ msgid ""
 msgstr ""
 "No hay configuración de socios registrada por favor contacte al "
 "administrador del sistema"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_res_partner
+msgid "Nombre de la empresa"
+msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__email_normalized
@@ -1381,13 +1398,6 @@ msgstr "Número de acción"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_needaction_counter
 msgid "Number of Actions"
 msgstr "Número de acciones"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__reminder_date_before_receipt
-msgid "Number of days to send reminder email before the promised receipt date"
-msgstr ""
-"Número de días para enviar un correo electrónico de recordatorio antes de la"
-" fecha de recepción prometida"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__message_has_error_counter
@@ -1416,6 +1426,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_club_socios.field_member_in_debt_report__action_number
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_view_account_move_search
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_view_account_payment_search
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
 msgid "Número de Acción"
 msgstr ""
 
@@ -1436,11 +1447,6 @@ msgid "Office Phone"
 msgstr "Teléfono de oficina"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__on_time_rate
-msgid "On-Time Delivery Rate"
-msgstr "Tasa de entrega a tiempo"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__online_partner_information
 msgid "Online Partner Information"
 msgstr "Información en línea del socio "
@@ -1449,16 +1455,6 @@ msgstr "Información en línea del socio "
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner_previous__date_exec
 msgid "Operation Date"
 msgstr "Fecha operación"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__followup_responsible_id
-msgid ""
-"Optionally you can assign a user to this field, which will make him "
-"responsible for the activities. If empty, we will find someone responsible."
-msgstr ""
-"Tiene la opción de asignar un usuario a este campo, de tal manera que será "
-"responsable de todas las actividades. Si lo deja vacío, encontraremos a "
-"alguien responsable."
 
 #. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__member_gender__other
@@ -1480,16 +1476,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_club_socios.field_partner_config__out_email_alert_associates
 msgid "Outgoing mail for partner alert"
 msgstr "Correo de salida para alerta de asociados"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__on_time_rate
-msgid ""
-"Over the past x days; the number of products received on time divided by the"
-" number of ordered products.x is either the System Parameter "
-"purchase_stock.on_time_delivery_days or the default 365"
-msgstr ""
-"El número de productos recibidos a tiempo por el número de productos "
-"ordenados en los últimos 12 meses."
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__parent_name
@@ -1578,7 +1564,7 @@ msgstr "Socio a suspender"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__same_company_registry_partner_id
 msgid "Partner with same Company Registry"
-msgstr ""
+msgstr "Contacto con el mismo registro de empresa"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__same_vat_partner_id
@@ -1728,32 +1714,12 @@ msgid "Pronto Pago"
 msgstr ""
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__purchase_line_ids
-msgid "Purchase Lines"
-msgstr "Líneas de compra"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__purchase_warn
-msgid "Purchase Order"
-msgstr "Pedido de compra"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__purchase_order_count
-msgid "Purchase Order Count"
-msgstr "Nº de pedidos de compra"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_establish_extension__reason
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__reason
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__reason
 #: model:ir.model.fields,field_description:binaural_club_socios.field_suspend_partner__reason
 msgid "Reason"
 msgstr "Motivo"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__receipt_reminder_email
-msgid "Receipt Reminder"
-msgstr "Recordatorio de recibo"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__ref
@@ -1774,11 +1740,6 @@ msgstr "Empresa relacionada"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__partner_id
 msgid "Related Partner"
 msgstr "Contacto relacionada"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__followup_reminder_type
-msgid "Reminders"
-msgstr "Recordatorios"
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_form_remove_suspend_partner
@@ -1807,11 +1768,6 @@ msgid "Reporte de Socios con Mora"
 msgstr ""
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__followup_responsible_id
-msgid "Responsible"
-msgstr "Responsable"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__activity_user_id
 msgid "Responsible User"
 msgstr "Usuario responsable"
@@ -1822,30 +1778,20 @@ msgid "Rif"
 msgstr ""
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__is_seo_optimized
+msgid "SEO optimized"
+msgstr "SEO Optimizado"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_action_partner__message_has_sms_error
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__message_has_sms_error
 msgid "SMS Delivery error"
 msgstr "Error de entrega del SMS"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__sale_order_count
-msgid "Sale Order Count"
-msgstr "Nº de pedidos de venta"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__sale_order_ids
-msgid "Sales Order"
-msgstr "Pedido de venta"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__team_id
 msgid "Sales Team"
 msgstr "Equipo de ventas"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__sale_warn
-msgid "Sales Warnings"
-msgstr "Advertencias de ventas"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__user_id
@@ -1870,8 +1816,6 @@ msgstr ""
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__invoice_warn
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__picking_warn
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__purchase_warn
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__sale_warn
 msgid ""
 "Selecting the \"Warning\" option will notify user with the message, "
 "Selecting \"Blocking Message\" will throw an exception with the message and "
@@ -1886,6 +1830,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__self
 msgid "Self"
 msgstr "Sí mismo"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__seo_name
+msgid "Seo name"
+msgstr "Nombre SEO"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__member_gender
@@ -1967,6 +1916,11 @@ msgid "Special"
 msgstr "Especial"
 
 #. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Special Action"
+msgstr "Acción Especial"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__type_relation__special_children
 msgid "Special Children"
 msgstr "Hijo(a) Especial"
@@ -2028,11 +1982,6 @@ msgstr "Calle"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__street2
 msgid "Street2"
 msgstr "Calle2"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_purchase_currency_id
-msgid "Supplier Currency"
-msgstr "Moneda de Proveedor"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__supplier_rank
@@ -2108,7 +2057,7 @@ msgstr "Suspensión removida:(%s)"
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__category_id
 msgid "Tags"
-msgstr "Categorías"
+msgstr "Etiquetas"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__vat
@@ -2136,12 +2085,9 @@ msgid ""
 "country format. You can use '/' to indicate that the partner is not subject "
 "to tax."
 msgstr ""
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__followup_next_action_date
-msgid "The date before which no follow-up action should be taken."
-msgstr ""
-"La fecha antes de la cual no se debe realizar ninguna acción de seguimiento."
+"El número de identificación fiscal. Los valores establecidos aquí se "
+"validarán según el formato del país. Puede utilizar \"/\" para indicar que "
+"el contacto no está sujeto a impuestos."
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__property_account_position_id
@@ -2150,6 +2096,11 @@ msgid ""
 msgstr ""
 "La posición fiscal determina los impuestos/cuentas utilizados para este "
 "contacto. "
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,help:binaural_club_socios.field_res_users__website_url
+msgid "The full URL to access the document through the website."
+msgstr "La URL completa para acceder al documento a través del sitio web."
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__user_id
@@ -2176,6 +2127,8 @@ msgid ""
 "The registry number of the company. Use it if it is different from the Tax "
 "ID. It must be unique across all partners of a same country"
 msgstr ""
+"El número registrado de la empresa. Úselo si es diferente al NIF. Debe ser "
+"único para todos los contactos del mismo país"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__property_stock_customer
@@ -2210,15 +2163,6 @@ msgid ""
 msgstr ""
 "Se utilizará esta cuenta en lugar de la cuenta predeterminada como la cuenta"
 " por cobrar de la empresa actual"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,help:binaural_club_socios.field_res_users__property_purchase_currency_id
-msgid ""
-"This currency will be used, instead of the default one, for purchases from "
-"the current partner"
-msgstr ""
-"Se utilizará esta moneda, en lugar de la predeterminada, para las compras de"
-" la pareja actual"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__email_normalized
@@ -2273,19 +2217,9 @@ msgid "Title"
 msgstr "Título"
 
 #. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__total_due
-msgid "Total Due"
-msgstr "Adeudo Total"
-
-#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__total_invoiced
 msgid "Total Invoiced"
 msgstr "Total facturado"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__total_overdue
-msgid "Total Overdue"
-msgstr "Total de Vencido"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__debit
@@ -2313,10 +2247,20 @@ msgid "Total de Socios en Mora"
 msgstr ""
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__translated_display_name
+msgid "Translated Display Name"
+msgstr "Nombre de visualización traducido"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__action_partner__state__treasury
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__status_action_batch__status__treasury
 msgid "Treasury"
 msgstr "Tesorería"
+
+#. module: binaural_club_socios
+#: model_terms:ir.ui.view,arch_db:binaural_club_socios.res_partner_view_search_binaural_club_socios
+msgid "Treasury Action"
+msgstr "Acción Tesorería"
 
 #. module: binaural_club_socios
 #. odoo-python
@@ -2345,21 +2289,6 @@ msgstr "Clasificación"
 #: model:ir.model.fields.selection,name:binaural_club_socios.selection__action_partner_previous__type_operation__unlink
 msgid "Ulink"
 msgstr "Desvincular"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__unpaid_invoice_ids
-msgid "Unpaid Invoice"
-msgstr "Factura sin pagar"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__unpaid_invoices_count
-msgid "Unpaid Invoices Count"
-msgstr "Recuento de facturas impagadas"
-
-#. module: binaural_club_socios
-#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__unreconciled_aml_ids
-msgid "Unreconciled Aml"
-msgstr "AML no conciliado"
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__barcode
@@ -2395,6 +2324,11 @@ msgid "Users"
 msgstr "Usuarios"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields.selection,name:binaural_club_socios.selection__res_partner__type_relation__usufruct_partner
+msgid "Usufruct Partner"
+msgstr "Titular Usufructo"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_partner__vat_usufruct
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__vat_usufruct
 msgid "Vat Usufruct"
@@ -2409,6 +2343,16 @@ msgstr "Ubicación de proveedor"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__property_supplier_payment_term_id
 msgid "Vendor Payment Terms"
 msgstr "Plazo de pago del proveedor"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_published
+msgid "Visible on current website"
+msgstr "Visible en el sitio web actual"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__visitor_ids
+msgid "Visitors"
+msgstr "Visitantes"
 
 #. module: binaural_club_socios
 #. odoo-python
@@ -2436,10 +2380,45 @@ msgid "Website Messages"
 msgstr "Mensajes del sitio web"
 
 #. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_description
+msgid "Website Partner Full Description"
+msgstr "Descripción completa del socio para sitio web"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_short_description
+msgid "Website Partner Short Description"
+msgstr "Descripción corta del socio para sitio web"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_url
+msgid "Website URL"
+msgstr "URL del sitio web"
+
+#. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_action_partner__website_message_ids
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__website_message_ids
 msgid "Website communication history"
 msgstr "Historial de comunicaciones del sitio web"
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_meta_description
+msgid "Website meta description"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_meta_keywords
+msgid "Website meta keywords"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_meta_title
+msgid "Website meta title"
+msgstr ""
+
+#. module: binaural_club_socios
+#: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__website_meta_og_img
+msgid "Website opengraph image"
+msgstr ""
 
 #. module: binaural_club_socios
 #: model:ir.model.fields,help:binaural_club_socios.field_res_users__tz

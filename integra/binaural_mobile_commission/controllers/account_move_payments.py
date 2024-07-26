@@ -12,7 +12,6 @@ from odoo.http import request
 from odoo.osv import expression
 from odoo.tools import float_is_zero
 
-
 _logger = logging.getLogger(__name__)
 
 class AccountMovePayments(AccountMovePayments):
@@ -116,6 +115,7 @@ class AccountMovePayments(AccountMovePayments):
                     "data": account_move_results,
                     "count": acc_move_count,
                     "total_count": all_acc_move_count,
+                    "taxpayer_type": partner_ids[0].taxpayer_type,
                 }
             )
 

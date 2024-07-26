@@ -98,6 +98,8 @@ class BinauralWebsiteSale(WebsiteSale):
 
         If there are not errors calls the original method.
         """
+        if request.env.user._is_public():
+            return request.redirect('/web/login')
         errors = post.get("errors", False)
         if not errors:
             return super().cart(access_token=access_token, revive=revive, **post)
@@ -226,6 +228,9 @@ class BinauralWebsiteSale(WebsiteSale):
         self, product_id, line_id=None, add_qty=None, set_qty=None, display=True,
         product_custom_attribute_values=None, no_variant_attribute_values=None, **kw
     ):
+        if request.env.user._is_public():
+            return NotFound()
+        
         order = request.website.sale_get_order(force_create=True)
         if order.state != "draft":
             request.website.sale_reset()

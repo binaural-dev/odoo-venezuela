@@ -19,4 +19,5 @@
     "assets": {
         "web.assets_backend": ["binaural_tax/static/src/components/**/*"],
     },
+    "binaural": True,
 }

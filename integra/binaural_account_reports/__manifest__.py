@@ -20,4 +20,5 @@
         "data/menuitems.xml",
         "views/account_report_views.xml",
     ],
+    "binaural":True,
 }

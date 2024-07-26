@@ -222,8 +222,8 @@ class PurchaseOrder(models.Model):
             rate_values = Rate.compute_rate(
                 purchase.foreign_currency_id.id, date_order or fields.Date.today()
             )
-            purchase.foreign_rate = rate_values["foreign_rate"]
-            purchase.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
+            purchase.foreign_rate = rate_values.get("foreign_rate", 0)
+            purchase.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):

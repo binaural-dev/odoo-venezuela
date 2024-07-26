@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="binauralbot_url" model="ir.config_parameter">
+        <field name="key">binaural_base.binauralbot_url</field>
+        <field name="value">https://binaural.odoo.com</field>
+    </record>
+</odoo>

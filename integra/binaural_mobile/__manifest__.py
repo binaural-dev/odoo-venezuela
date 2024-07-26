@@ -9,7 +9,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.0.2.2.11",
+    "version": "16.0.2.3.11",
     "category": "Human Resources/Stock/Sales/Invoicing",
     "depends": [
         "web",
@@ -21,7 +21,6 @@
         "binaural_sale",
         "binaural_stock",
         "binaural_payment_extension",
-        'binaural_advance_payment',
         "theme_prime",
         "product",
     ],
@@ -46,7 +45,8 @@
         "views/pwa.xml",
         "views/website_sale_wishlist_template.xml",
         "views/account_payment.xml",
-        "views/product_template.xml"
+        "views/product_template.xml",
+        "views/res_partner.xml",
     ],
     "assets": {
         "web.assets_frontend": [
@@ -58,4 +58,5 @@
     },
     "images": ["static/description/icon.png"],
     "application": True,
+    "binaural": True,
 }

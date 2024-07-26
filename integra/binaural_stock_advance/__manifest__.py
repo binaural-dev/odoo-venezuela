@@ -29,4 +29,5 @@
         "views/product_product.xml",
 
     ],
+    "binaural": True,
 }

@@ -141,3 +141,10 @@ msgstr "Balance de Comprobación"
 #: model:ir.ui.menu,name:binaural_fiscal_inspector.xml_retention_islr_fiscal
 msgid "XML Retenciones de ISLR"
 msgstr ""
+
+#. module: binaural_fiscal_inspector
+#. odoo-python
+#: code:addons/binaural_fiscal_inspector/models/account_move.py:0
+#, python-format
+msgid "Your user is not allowed to break reconciliation."
+msgstr "Su usuario no puede romper la conciliación."

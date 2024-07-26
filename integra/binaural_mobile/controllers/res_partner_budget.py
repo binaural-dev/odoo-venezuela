@@ -29,6 +29,7 @@ FIELDNAMES = [
     "active",
     "seller_ids",
     "display_name",
+    "plus_code",
 ]
 CHILDFIELDNAMES = ["street", "id", "type"]
 CHILD_TYPES = ["invoice", "delivery"]
@@ -149,6 +150,7 @@ class ResPartnerBudget(http.Controller):
         state=False, municipality=False, 
         parish=False, parent_id=False,
         city=False,
+        plus_code='',
         type="contact", **kwargs
         ):
         
@@ -178,7 +180,8 @@ class ResPartnerBudget(http.Controller):
                     "type": type,
                     "is_public":True,
                     "seller_ids": [request.env.user.employee_id.id],
-                    "parent_id": parent_id
+                    "parent_id": parent_id,
+                    "plus_code": plus_code,
                 })
                 
                 return data
