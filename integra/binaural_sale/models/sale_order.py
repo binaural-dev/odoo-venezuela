@@ -43,6 +43,7 @@ class SaleOrder(models.Model):
         default=0.0,
         store=True,
         readonly=False,
+        tracking=True,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
@@ -199,8 +200,8 @@ class SaleOrder(models.Model):
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id, sale.date_order.date() or fields.Date.today()
             )
-            sale.foreign_rate = rate_values["foreign_rate"]
-            sale.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
+            sale.foreign_rate = rate_values.get("foreign_rate", 0)
+            sale.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):

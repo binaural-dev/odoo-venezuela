@@ -1,4 +1,8 @@
 from odoo import _, api, fields, models
+from odoo.osv import expression
+
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
@@ -19,7 +23,18 @@ class AccountMove(models.Model):
     company_subsidiary = fields.Boolean(
         related='company_id.subsidiary', store=True, string="Company Subsidiary",
     )
-    
+
+    @api.depends('company_id', 'invoice_filter_type_domain')
+    def _compute_suitable_journal_ids(self):
+        for m in self:
+            journal_type = m.invoice_filter_type_domain or 'general'
+            company_id = m.company_id.id or self.env.company.id
+            domain = [('company_id', '=', company_id), ('type', '=', journal_type)]
+
+            domain = expression.AND([domain, ['|', ('subsidiary_id', 'in', self.env.user.subsidiary_ids.ids), ('subsidiary_id', '=', False)]])
+
+            m.suitable_journal_ids = self.env['account.journal'].search(domain)
+
     # It's needed to inherit the create and write methods to update the analytic distribution of the
     # lines when the analytic account is changed. The compute method isn't used because it is
     # called before the write method and we need the old analytic account to update the analytic
@@ -122,3 +137,44 @@ class AccountMove(models.Model):
                     for subsidiary in subsidiary_id:
                         subsidiary_id = subsidiary
                     move.account_analytic_id = self.env['account.analytic.account'].search([('id', '=', subsidiary_id)])
+
+    def _search_default_journal(self):
+        if self.payment_id and self.payment_id.journal_id:
+            return self.payment_id.journal_id
+        if self.statement_line_id and self.statement_line_id.journal_id:
+            return self.statement_line_id.journal_id
+        if self.statement_line_ids.statement_id.journal_id:
+            return self.statement_line_ids.statement_id.journal_id[:1]
+
+        journal_types = self._get_valid_journal_types()
+        company_id = (self.company_id or self.env.company).id
+        domain = [('company_id', '=', company_id), ('type', 'in', journal_types)]
+        domain = expression.AND([domain, ['|', ('subsidiary_id', 'in', self.env.user.subsidiary_ids.ids), ('subsidiary_id', '=', False)]])
+
+        _logger.warning('-----domain----domain------------')
+        _logger.warning(domain)
+        _logger.warning('---------------------')
+
+        journal = None
+        # the currency is not a hard dependence, it triggers via manual add_to_compute
+        # avoid computing the currency before all it's dependences are set (like the journal...)
+        if self.env.cache.contains(self, self._fields['currency_id']):
+            currency_id = self.currency_id.id or self._context.get('default_currency_id')
+            if currency_id and currency_id != self.company_id.currency_id.id:
+                currency_domain = domain + [('currency_id', '=', currency_id)]
+                journal = self.env['account.journal'].search(currency_domain, limit=1)
+
+        if not journal:
+            journal = self.env['account.journal'].search(domain, limit=1)
+
+        if not journal:
+            company = self.env['res.company'].browse(company_id)
+
+            error_msg = _(
+                "No journal could be found in company %(company_name)s for any of those types: %(journal_types)s",
+                company_name=company.display_name,
+                journal_types=', '.join(journal_types),
+            )
+            raise UserError(error_msg)
+
+        return journal

@@ -16,7 +16,6 @@ FIELDSPRODUCTS=[
     "free_qty",
     "virtual_available",
     "default_code",
-    "brand_id",
     "standard_price",
 ]
 
@@ -27,6 +26,9 @@ class StockQuantityHistoryInh(models.TransientModel):
     warehouse_search_id = fields.Many2one("stock.location")
 
     except_products_at_zero = fields.Boolean()
+
+    def get_fields_products(self):
+        return FIELDSPRODUCTS
     
     def open_at_date_test(self):
         self._compute_quantities_dict()

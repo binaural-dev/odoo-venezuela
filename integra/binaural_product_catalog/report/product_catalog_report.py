@@ -21,7 +21,6 @@ class ProductCatalogReport(models.AbstractModel):
     @api.model
     def _prepare_product_dict(self, record, price, data, currency_id):
         def get_price(self, price):
-
             if data.get("price_without_tax"):
                 return self.product_tmpl_id.taxes_id.compute_all(price, currency_id, 1)["total_excluded"]
             else:
@@ -34,12 +33,13 @@ class ProductCatalogReport(models.AbstractModel):
             "name": record.name,
             "cat_name": record.categ_id.name,
             "image": record.image_1920,
-            "price": formatLang(self.env, get_price(record, price), currency_obj=currency_id, digits=data["sh_price_decimal_places"]),
+            "price": formatLang(self.env, get_price(record, price), currency_obj=currency_id, digits=currency_id.decimal_places),
             "description": record.description_sale,
             "template_id": record.product_tmpl_id.id,
             "currency_id": currency_id.symbol,
             "uom": record.uom_id.name,
             "quantity": record.quantity,
+            "list_price": formatLang(self.env, record.list_price , currency_obj=currency_id, digits=currency_id.decimal_places)
         }
 
     @api.model
