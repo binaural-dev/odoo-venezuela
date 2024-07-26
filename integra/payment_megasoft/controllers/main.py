@@ -13,7 +13,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-PAYMENT_URL = "https://paytest.megasoft.com.ve/payment"
+PAYMENT_URL = "https://e-payment.megasoft.com.ve/"
 
 
 class MegasoftController(http.Controller):
