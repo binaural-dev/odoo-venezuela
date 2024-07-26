@@ -30,6 +30,7 @@ const MegasoftMixin = {
         }
         const payment = await ajax.jsonRpc('/get_config_payment', 'call', {values: processingValues}        
         ).then(function (data) {
+            console.log("Data megasoft")
             console.log(data)
             if (data[0] == "Error: 404"){
                 console.log(data)
