@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240117\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-22 23:01+0000\n"
-"PO-Revision-Date: 2024-07-22 23:01+0000\n"
+"POT-Creation-Date: 2024-07-26 22:30+0000\n"
+"PO-Revision-Date: 2024-07-26 22:30+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -86,9 +86,6 @@ msgstr "Es Sucursal"
 
 #. module: binaural_subsidiary
 #: model:ir.model,name:binaural_subsidiary.model_account_journal
-#: model:ir.model.fields,field_description:binaural_subsidiary.field_account_bank_statement_line__journal_id
-#: model:ir.model.fields,field_description:binaural_subsidiary.field_account_move__journal_id
-#: model:ir.model.fields,field_description:binaural_subsidiary.field_account_payment__journal_id
 msgid "Journal"
 msgstr "Diario"
 
@@ -101,6 +98,15 @@ msgstr "Asiento contable"
 #: model:ir.model,name:binaural_subsidiary.model_account_move_line
 msgid "Journal Item"
 msgstr "Apunte contable"
+
+#. module: binaural_subsidiary
+#. odoo-python
+#: code:addons/binaural_subsidiary/models/account_move.py:0
+#, python-format
+msgid ""
+"No journal could be found in company %(company_name)s for any of those "
+"types: %(journal_types)s"
+msgstr "No se pudo encontrar ningún diario en la empresa %(company_name)s para ninguno de estos tipos: %(journal_types)s"
 
 #. module: binaural_subsidiary
 #: model_terms:ir.ui.view,arch_db:binaural_subsidiary.view_account_journal_form
@@ -123,14 +129,14 @@ msgid "Purchase Report"
 msgstr "Informe de Compras"
 
 #. module: binaural_subsidiary
-#: model:ir.model,name:binaural_subsidiary.model_ir_rule
-msgid "Record Rule"
-msgstr "Regla de registro"
-
-#. module: binaural_subsidiary
 #: model:ir.model,name:binaural_subsidiary.model_account_payment_register
 msgid "Register Payment"
 msgstr "Registrar pago"
+
+#. module: binaural_subsidiary
+#: model:ir.model,name:binaural_subsidiary.model_ir_rule
+msgid "Rule"
+msgstr "Regla"
 
 #. module: binaural_subsidiary
 #: model:ir.model,name:binaural_subsidiary.model_sale_report
