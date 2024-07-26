@@ -25,7 +25,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         move_model = self.env["account.move"]
         domain = self._get_domain()
-        moves = move_model.search(domain).sorted(lambda m: int(m.mf_invoice_number))
+        moves = move_model.search(domain, order="invoice_date asc")
         return moves
 
     def sale_book_fields(self):
@@ -43,7 +43,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         res["document_number"] = move.mf_invoice_number if move.mf_invoice_number else "-"
         res["mf_reportz"] = move.mf_reportz if move.mf_reportz else "-"
         res["mf_serial"] = move.mf_serial if move.mf_serial else "-"
-        res["number_invoice_affected"] = move.reversed_entry_id.mf_invoice_number or "" 
+        res["number_invoice_affected"] = move.reversed_entry_id.mf_invoice_number or ""
         return res
 
     def update_amounts(self, cumulative, amounts):
@@ -102,83 +102,94 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         }
         cumulative = init_cumulative.copy()
 
+        agrouped_by_date = {}
         for move in moves:
-            if not agrouped_by_report_z.get(str(move.mf_serial)+"_"+str(move.mf_reportz)):
-                agrouped_by_report_z[str(move.mf_serial)+"_"+str(move.mf_reportz)] = move
+            if not agrouped_by_date.get(str(move.create_date.strftime("%d-%m-%Y"))):
+                agrouped_by_date[str(move.create_date.strftime("%d-%m-%Y"))] = move
             else:
-                agrouped_by_report_z[str(move.mf_serial)+"_"+str(move.mf_reportz)] |= move
+                agrouped_by_date[str(move.create_date.strftime("%d-%m-%Y"))] |= move
 
-        for report in agrouped_by_report_z.items():
-            range_start = 0
-            range_last = 0
-            data = {}
-            cumulative = init_cumulative.copy()
-            for index, move in enumerate(report[1]):
-                next_move = move
-                is_last_move = False
-                if (index + 1) < len(report[1]):
-                    next_move = report[1][index + 1]
+        for date_moves in agrouped_by_date.items():
+            for move in date_moves[1].sorted(lambda m: int(m.mf_invoice_number)):
+                if not agrouped_by_report_z.get(str(move.mf_serial) + "_" + str(move.mf_reportz)):
+                    agrouped_by_report_z[str(move.mf_serial) + "_" + str(move.mf_reportz)] = move
                 else:
-                    is_last_move = True
+                    agrouped_by_report_z[str(move.mf_serial) + "_" + str(move.mf_reportz)] |= move
 
-                amounts = self._determinate_amount_taxeds(move)
-                cumulative = self.update_amounts(cumulative, amounts)
+            for report in agrouped_by_report_z.items():
+                range_start = 0
+                range_last = 0
+                data = {}
+                cumulative = init_cumulative.copy()
+                for index, move in enumerate(report[1]):
+                    next_move = move
+                    is_last_move = False
+                    if (index + 1) < len(report[1]):
+                        next_move = report[1][index + 1]
+                    else:
+                        is_last_move = True
 
-                if range_start == 0:
-                    range_start = move.mf_invoice_number
+                    amounts = self._determinate_amount_taxeds(move)
+                    cumulative = self.update_amounts(cumulative, amounts)
 
+                    if range_start == 0:
+                        range_start = move.mf_invoice_number
 
-                if move.move_type in ["out_invoice", "out_refund"]:
+                    if move.move_type in ["out_invoice", "out_refund"]:
+                        if (
+                            move.partner_id.prefix_vat == "J"
+                            or move.partner_id.taxpayer_type != "ordinary"
+                            or move.move_type != "out_invoice"
+                        ):
+                            if cumulative["amount_taxed"] != amounts["amount_taxed"]:
+                                data = {
+                                    "move_type": move.move_type,
+                                    "range_start": range_start,
+                                    "range_end": range_last
+                                    if range_last != 0
+                                    else move.mf_invoice_number,
+                                    "date": move.invoice_date,
+                                    "mf_reportz": move.mf_reportz,
+                                    "mf_serial": move.mf_serial,
+                                }
+                                range_last = 0
+                                sale_book_lines.append(
+                                    self._fields_sale_book_group_line(data, cumulative)
+                                )
+                            sale_book_lines.append(self._fields_sale_book_line(move, amounts))
+                            cumulative = init_cumulative.copy()
+                            range_start = 0
+                            continue
 
-                    if (
-                        move.partner_id.prefix_vat == "J"
-                        or move.partner_id.taxpayer_type != "ordinary"
-                        or move.move_type != "out_invoice"
-                    ):
-                        if cumulative["amount_taxed"] != amounts["amount_taxed"]:
+                        if (
+                            (
+                                (
+                                    self._format_date(move.invoice_date)
+                                    != self._format_date(next_move.invoice_date)
+                                )
+                                or next_move.partner_id.prefix_vat == "J"
+                                or next_move.partner_id.taxpayer_type != "ordinary"
+                                or next_move.move_type != "out_invoice"
+                            )
+                            or is_last_move
+                        ) and move.partner_id.taxpayer_type == "ordinary":
                             data = {
                                 "move_type": move.move_type,
                                 "range_start": range_start,
-                                "range_end": range_last if range_last != 0 else move.mf_invoice_number,
+                                "range_end": move.mf_invoice_number,
                                 "date": move.invoice_date,
                                 "mf_reportz": move.mf_reportz,
                                 "mf_serial": move.mf_serial,
                             }
-                            range_last = 0
-                            sale_book_lines.append(self._fields_sale_book_group_line(data, cumulative))
-                        sale_book_lines.append(self._fields_sale_book_line(move, amounts))
-                        cumulative = init_cumulative.copy()
-                        range_start = 0
-                        continue
-
-                    if (
-                        (
-                            (
-                                self._format_date(move.invoice_date)
-                                != self._format_date(next_move.invoice_date)
+                            sale_book_lines.append(
+                                self._fields_sale_book_group_line(data, cumulative)
                             )
-                            or next_move.partner_id.prefix_vat == "J"
-                            or next_move.partner_id.taxpayer_type != "ordinary"
-                            or next_move.move_type != "out_invoice"
-                        )
-                        or is_last_move
-                    ) and move.partner_id.taxpayer_type == "ordinary":
+                            cumulative = init_cumulative.copy()
+                            range_start = 0
+                            continue
 
-                        data = {
-                            "move_type": move.move_type,
-                            "range_start": range_start,
-                            "range_end": move.mf_invoice_number,
-                            "date": move.invoice_date,
-                            "mf_reportz": move.mf_reportz,
-                            "mf_serial": move.mf_serial,
-                        }
-                        sale_book_lines.append(self._fields_sale_book_group_line(data, cumulative))
-                        cumulative = init_cumulative.copy()
-                        range_start = 0
-                        continue
-
-                    if not is_last_move and move.partner_id.taxpayer_type == "ordinary":
+                        if not is_last_move and move.partner_id.taxpayer_type == "ordinary":
+                            range_last = move.mf_invoice_number
+                            continue
                         range_last = move.mf_invoice_number
-                        continue
-                    range_last = move.mf_invoice_number
         return sale_book_lines
