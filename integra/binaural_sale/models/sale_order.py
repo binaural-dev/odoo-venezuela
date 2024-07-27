@@ -191,7 +191,7 @@ class SaleOrder(models.Model):
         # If the user doesn't want to update the foreign rate using the date order, then don't
         # compute the rate when it is not zero.
         for sale in self:
-            if sale.manually_set_rate or sale.foreign_inverse_rate:
+            if sale.manually_set_rate or sale.website_id:
                 continue
             if not self.env.company.update_sale_order_rate_using_date_order and not float_is_zero(
                 sale.foreign_rate, precision_rounding=self.env.company.currency_id.rounding
