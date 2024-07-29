@@ -15,7 +15,9 @@ class ResUsers(models.Model):
     )
 
     subsidiary_ids = fields.Many2many(
-        "account.analytic.account", string="Subsidiaries", domain=[("is_subsidiary", "=", True)]
+        "account.analytic.account", 
+        string="Subsidiaries", 
+        domain=[("is_subsidiary", "=", True)]
     )
 
     is_required_subsidiary = fields.Boolean(
@@ -32,10 +34,19 @@ class ResUsers(models.Model):
 
             record.is_required_subsidiary = some_has_subsidiary
 
+    def _get_vals_on_base_admin_user_subsidiary_ids(self, vals):
+        base_admin_user = self.env.ref('base.user_admin')
+        subsidiary_ids = self.env["account.analytic.account"].search([("is_subsidiary", "=", True)])
+        
+        if self.id == base_admin_user.id:
+            vals['subsidiary_ids'] = [[6, False, subsidiary_ids.ids]]
+
+        return vals
+
     @api.constrains("subsidiary_id", "subsidiary_ids", "active")
     def _check_subsidiary(self):
         for user in self.filtered(lambda u: u.active):
-
+            
             if not user.is_required_subsidiary:
                 continue
 
@@ -48,3 +59,10 @@ class ResUsers(models.Model):
                         subsidiary_allowed=", ".join(user.mapped("subsidiary_ids.name")),
                     )
                 )
+
+    def write(self, vals):
+        vals = self._get_vals_on_base_admin_user_subsidiary_ids(vals)
+
+        res = super().write(vals)
+
+        return res
