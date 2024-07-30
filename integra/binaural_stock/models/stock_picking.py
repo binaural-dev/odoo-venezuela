@@ -37,6 +37,8 @@ class StockPicking(models.Model):
         if picking_id:
             picking_id = picking_id[0]
         else:
+            if not pickings:
+                raise UserError(_("does not have results from other pickings"))
             picking_id = pickings[0]
         action["context"] = dict(
             self._context,

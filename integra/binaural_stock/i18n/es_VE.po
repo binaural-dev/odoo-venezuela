@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240527\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240719\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-14 17:43+0000\n"
-"PO-Revision-Date: 2024-06-14 17:43+0000\n"
+"POT-Creation-Date: 2024-07-30 18:21+0000\n"
+"PO-Revision-Date: 2024-07-30 18:21+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -127,7 +127,9 @@ msgstr ""
 
 #. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_block_type_inventory_transfers_expeditions
-msgid "Block Type Inventory Transfers Expeditions"
+msgid ""
+"Block Type Inventory Transfers Expeditions (Do not add a new product to the "
+"Dispatch)"
 msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
 
 #. module: binaural_stock
@@ -163,7 +165,7 @@ msgstr "Compañía"
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -351,6 +353,11 @@ msgid "My Activity Deadline"
 msgstr ""
 
 #. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr ""
+
+#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_date_deadline
 msgid "Next Activity Deadline"
 msgstr ""
@@ -463,7 +470,7 @@ msgstr "Ubicaciones Físicas"
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_picking_type
 msgid "Picking Type"
-msgstr "Tipo de albarán"
+msgstr "Tipo de recolección"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__picks_count
@@ -535,7 +542,7 @@ msgstr "Cantidad"
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_quant
 msgid "Quants"
-msgstr "Cantidad"
+msgstr ""
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -629,7 +636,7 @@ msgstr ""
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_picking
 msgid "Transfer"
-msgstr "Transferencia"
+msgstr "Albarán"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__type_delivery_step
@@ -729,6 +736,13 @@ msgstr "No tiene permiso para hacer transferencias de tipo de Expedicion"
 #: model:ir.actions.server,name:binaural_stock.correction_quantity_product_template
 msgid "correction quantity product template"
 msgstr ""
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "does not have results from other pickings"
+msgstr "No tiene resultados de otros pickings"
 
 #. module: binaural_stock
 #: model:ir.actions.report,name:binaural_stock.inventory_valuation_report
