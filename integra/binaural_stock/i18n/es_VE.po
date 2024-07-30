@@ -470,7 +470,7 @@ msgstr "Ubicaciones Físicas"
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_picking_type
 msgid "Picking Type"
-msgstr "Tipo de recolección"
+msgstr "Tipo de albarán"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__picks_count
@@ -542,7 +542,7 @@ msgstr "Cantidad"
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_quant
 msgid "Quants"
-msgstr ""
+msgstr "Cantidad"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -636,7 +636,7 @@ msgstr ""
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_picking
 msgid "Transfer"
-msgstr "Albarán"
+msgstr "Transferencia"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__type_delivery_step
