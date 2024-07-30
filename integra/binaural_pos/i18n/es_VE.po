@@ -910,7 +910,7 @@ msgstr ""
 #, python-format
 msgid ""
 "You cannot reconcile a payment linked to a POS session that is still open"
-msgstr "No puede conciliación de un pago vinculado a una sesión de POS que aún está abierta"
+msgstr "No puede romper conciliación de un pago vinculado a una sesión de POS que aún está abierta"
 
 #. module: binaural_pos
 #. odoo-javascript
