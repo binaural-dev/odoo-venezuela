@@ -1,4 +1,5 @@
-from odoo import fields, models, _
+from odoo import fields, models, _, api
+from odoo.osv import expression
 
 
 class AccountPayment(models.Model):
@@ -10,6 +11,7 @@ class AccountPayment(models.Model):
         domain=lambda self: (
             f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
         ),
+        default=lambda self: self.env.user.subsidiary_id.id,
         tracking=True,
     )
 
@@ -18,6 +20,29 @@ class AccountPayment(models.Model):
         store=True,
         string="Company Subsidiary",
     )
+
+    def _compute_available_journal_ids(self):
+        """
+        Get all journals having at least one payment method for inbound/outbound depending on the payment_type.
+        """
+        domain = [
+            ('company_id', 'in', self.company_id.ids),
+            ('type', 'in', ('bank', 'cash'))
+        ]
+
+        domain = expression.AND([domain, ['|', ('subsidiary_id', 'in', self.env.user.subsidiary_ids.ids), ('subsidiary_id', '=', False)]])
+
+        journals = self.env['account.journal'].search(domain)
+
+        for pay in self:
+            if pay.payment_type == 'inbound':
+                pay.available_journal_ids = journals.filtered(
+                    lambda j: j.company_id == pay.company_id and j.inbound_payment_method_line_ids.ids != []
+                )
+            else:
+                pay.available_journal_ids = journals.filtered(
+                    lambda j: j.company_id == pay.company_id and j.outbound_payment_method_line_ids.ids != []
+                )
 
     def _synchronize_to_moves(self, changed_fields):
         """

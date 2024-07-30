@@ -4,7 +4,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.0.5.2.4",
+    "version": "16.0.5.2.8",
     "category": "Accountant",
     "depends": [
         "base",
@@ -29,6 +29,7 @@
         "views/purchase_order.xml",
         "views/res_users.xml",
         "views/sale_order.xml",
+        "views/account_journal.xml",
         "views/menuitems.xml",
         "views/res_config_settings.xml",
         "wizard/account_payment_register.xml",

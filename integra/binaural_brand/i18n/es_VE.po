@@ -134,6 +134,11 @@ msgid "Stock Move"
 msgstr "Movimiento de inventario"
 
 #. module: binaural_brand
+#: model:ir.model,name:binaural_brand.model_stock_quantity_history
+msgid "Stock Quantity History"
+msgstr "Historia de Stock Quant"
+
+#. module: binaural_brand
 #: model:ir.model.fields,help:binaural_brand.field_product_product__brand_id
 #: model:ir.model.fields,help:binaural_brand.field_product_template__brand_id
 #: model:ir.model.fields,help:binaural_brand.field_stock_move__brand_id

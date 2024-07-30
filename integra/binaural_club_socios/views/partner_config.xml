@@ -11,6 +11,7 @@
                     <field name="day_end_date_payment" />
                     <field name="previous_days_alert_associates"/>
                     <field name="out_email_alert_associates" />
+                    <field name="is_postpaid" />
                     <field name="active" />
                     <field name="company_id" />
                 </tree>
@@ -30,9 +31,10 @@
                             <field name="age_limit_for_associated_children"/>
                             <field name="day_end_date_payment" />
                             <field name="previous_days_alert_associates"/>
-                            </group>
-                            <group>
+                        </group>
+                        <group>
                             <field name="out_email_alert_associates" />
+                            <field name="is_postpaid" />
                             <field name="active" />
                             <field name="company_id" invisible="1"/>
                             </group>

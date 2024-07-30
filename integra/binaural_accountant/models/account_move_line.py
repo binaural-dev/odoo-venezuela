@@ -94,13 +94,10 @@ class AccountMoveLine(models.Model):
     def _compute_name(self):
         lines_without_name = self.filtered(lambda l: not l.name)
         res = super(AccountMoveLine, lines_without_name)._compute_name()
-        receivable_and_payable_account_types = {"asset_receivable", "liability_payable"}
-        for line in self:
-            if not (
-                line.account_id
-                and line.account_id.account_type in receivable_and_payable_account_types
-            ):
-                continue
+        for line in self.filtered(
+            lambda l: l.move_type in ("out_invoice", "out_receipt")
+            and l.account_id.account_type == "asset_receivable"
+        ):
             line.name = line.move_id.name
         return res
 

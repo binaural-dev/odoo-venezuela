@@ -56,6 +56,7 @@ class GenerateProductCatalogWizard(models.TransientModel):
     padding_sides = fields.Float('Margin sides', default=lambda self: self.env.company.padding_sides)
     border_width = fields.Integer('Border width', default=lambda self: self.env.company.border_width)
     primary_color = fields.Char('Primary color', default=lambda self: self.env.company.primary_color)
+    price_without_tax = fields.Boolean(string="Price without tax")
 
     style_mod = fields.Selection(
         selection = [
