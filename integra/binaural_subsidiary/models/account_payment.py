@@ -1,4 +1,4 @@
-from odoo import fields, models, _
+from odoo import fields, models, _, api
 from odoo.osv import expression
 
 
@@ -11,6 +11,7 @@ class AccountPayment(models.Model):
         domain=lambda self: (
             f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
         ),
+        default=lambda self: self.env.user.subsidiary_id.id,
         tracking=True,
     )
 
@@ -42,7 +43,6 @@ class AccountPayment(models.Model):
                 pay.available_journal_ids = journals.filtered(
                     lambda j: j.company_id == pay.company_id and j.outbound_payment_method_line_ids.ids != []
                 )
-
 
     def _synchronize_to_moves(self, changed_fields):
         """
