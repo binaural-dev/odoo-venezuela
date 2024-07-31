@@ -86,3 +86,10 @@ class AccountPayment(models.Model):
                     payment.account_analytic_id = self.env["account.analytic.account"].search(
                         [("id", "=", subsidiary_id)]
                     )
+                    
+    def action_post(self):
+        self.journal_id.check_journal_selected(self.account_analytic_id)
+
+        res = super().action_post()
+        
+        return res

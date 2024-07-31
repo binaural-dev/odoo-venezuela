@@ -37,6 +37,8 @@ class AccountMove(models.Model):
 
             m.suitable_journal_ids = self.env['account.journal'].search(domain)
 
+
+
     # It's needed to inherit the create and write methods to update the analytic distribution of the
     # lines when the analytic account is changed. The compute method isn't used because it is
     # called before the write method and we need the old analytic account to update the analytic
@@ -75,6 +77,7 @@ class AccountMove(models.Model):
         We need to extend the write method because the compute method is called before the write
         method and we need the old subsidiary to update the analytic distribution.
         """
+
         if not vals.get("account_analytic_id") or not self.line_ids:
             return super().write(vals)
         old_account_analytic_id = str(self.account_analytic_id.id)
@@ -178,3 +181,10 @@ class AccountMove(models.Model):
             raise UserError(error_msg)
 
         return journal
+
+    def action_post(self):
+        self.journal_id.check_journal_selected(self.account_analytic_id)
+
+        res = super().action_post()
+        
+        return res

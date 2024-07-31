@@ -47,3 +47,11 @@ class PurchaseOrder(models.Model):
         for record in self:
             domain = get_domain_subsidiaries_suitable_journals(domain, record.account_analytic_id.id)
             record.suitable_journal_ids = self.env["account.journal"].search(domain)
+
+    def button_confirm(self):
+        for order in self:
+            order.journal_invoice_id.check_journal_selected(order.account_analytic_id)
+
+        res = super().button_confirm()
+
+        return res

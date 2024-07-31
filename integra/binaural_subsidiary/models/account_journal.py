@@ -1,4 +1,5 @@
 from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError, UserError
 from odoo.osv import expression
 
 import logging
@@ -34,9 +35,9 @@ class AccountJournal(models.Model):
 
 
     @api.model
-    def get_domain_subsidiaries_suitable_journals(self, domain, record_parent_subsidiary_id = None):
+    def get_domain_subsidiaries_suitable_journals(self, domain, id_record_parent_subsidiary = None):
 
-        if not record_parent_subsidiary_id:
+        if not id_record_parent_subsidiary:
             domain = expression.AND(
             [
                 domain, 
@@ -51,9 +52,19 @@ class AccountJournal(models.Model):
             [
                 domain, 
                 [
-                    '|', ('subsidiary_id', '=', record_parent_subsidiary_id), ('subsidiary_id', '=', False)
+                    '|', ('subsidiary_id', '=', id_record_parent_subsidiary), ('subsidiary_id', '=', False)
                 ]
             ]
         )
 
         return domain
+
+    def check_journal_selected(self, account_analytic_id):
+        if self.subsidiary_id.id == account_analytic_id.id:
+            return
+
+        raise UserError(
+            _(
+                "The subsidiary of either journal and record must be the same",
+            )
+        )
