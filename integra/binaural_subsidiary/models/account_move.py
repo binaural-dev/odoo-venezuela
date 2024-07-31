@@ -24,14 +24,16 @@ class AccountMove(models.Model):
         related='company_id.subsidiary', store=True, string="Company Subsidiary",
     )
 
-    @api.depends('company_id', 'invoice_filter_type_domain')
+    @api.depends('company_id', 'invoice_filter_type_domain', 'account_analytic_id')
     def _compute_suitable_journal_ids(self):
         for m in self:
             journal_type = m.invoice_filter_type_domain or 'general'
             company_id = m.company_id.id or self.env.company.id
             domain = [('company_id', '=', company_id), ('type', '=', journal_type)]
 
-            domain = expression.AND([domain, ['|', ('subsidiary_id', 'in', self.env.user.subsidiary_ids.ids), ('subsidiary_id', '=', False)]])
+            get_domain_subsidiaries_suitable_journals = self.env["account.journal"].get_domain_subsidiaries_suitable_journals
+
+            domain = get_domain_subsidiaries_suitable_journals(domain, m.account_analytic_id.id)
 
             m.suitable_journal_ids = self.env['account.journal'].search(domain)
 
@@ -146,14 +148,12 @@ class AccountMove(models.Model):
         if self.statement_line_ids.statement_id.journal_id:
             return self.statement_line_ids.statement_id.journal_id[:1]
 
+        get_domain_subsidiaries_suitable_journals = self.env["account.journal"].get_domain_subsidiaries_suitable_journals
+
         journal_types = self._get_valid_journal_types()
         company_id = (self.company_id or self.env.company).id
         domain = [('company_id', '=', company_id), ('type', 'in', journal_types)]
-        domain = expression.AND([domain, ['|', ('subsidiary_id', 'in', self.env.user.subsidiary_ids.ids), ('subsidiary_id', '=', False)]])
-
-        _logger.warning('-----domain----domain------------')
-        _logger.warning(domain)
-        _logger.warning('---------------------')
+        domain = get_domain_subsidiaries_suitable_journals(domain)
 
         journal = None
         # the currency is not a hard dependence, it triggers via manual add_to_compute

@@ -1,4 +1,8 @@
 from odoo import _, api, fields, models
+from odoo.osv import expression
+
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class AccountJournal(models.Model):
@@ -27,3 +31,29 @@ class AccountJournal(models.Model):
             if record.subsidiary_id:
                 continue
             record.subsidiary_id = self.env.user.subsidiary_id  if record.company_subsidiary else None
+
+
+    @api.model
+    def get_domain_subsidiaries_suitable_journals(self, domain, record_parent_subsidiary_id = None):
+
+        if not record_parent_subsidiary_id:
+            domain = expression.AND(
+            [
+                domain, 
+                [
+                    '|', ('subsidiary_id', 'in', self.env.user.subsidiary_ids.ids), ('subsidiary_id', '=', False)
+                ]
+            ])
+
+            return domain
+    
+        domain = expression.AND(
+            [
+                domain, 
+                [
+                    '|', ('subsidiary_id', '=', record_parent_subsidiary_id), ('subsidiary_id', '=', False)
+                ]
+            ]
+        )
+
+        return domain
