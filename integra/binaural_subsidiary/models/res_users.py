@@ -16,8 +16,8 @@ class ResUsers(models.Model):
 
     subsidiary_ids = fields.Many2many(
         "account.analytic.account", 
-        string="Subsidiaries", 
-        domain=[("is_subsidiary", "=", True)]
+        string="Subsidiaries",
+        domain=[("is_subsidiary", "=", True)],
     )
 
     is_required_subsidiary = fields.Boolean(
@@ -66,3 +66,12 @@ class ResUsers(models.Model):
         res = super().write(vals)
 
         return res
+                
+    def _create_user_from_template(self, values):
+        if not self.env.company.subsidiary:
+            return super()._create_user_from_template(values)
+
+        values["subsidiary_id"] = self.env.ref("binaural_subsidiary.analytic_main_subsidiary").id
+        values["subsidiary_ids"] = [self.env.ref("binaural_subsidiary.analytic_main_subsidiary").id]
+
+        return super()._create_user_from_template(values)
