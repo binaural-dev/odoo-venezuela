@@ -33,10 +33,26 @@ class ResUsers(models.Model):
             some_has_subsidiary = any(x == True for x in subsidiary_values)
 
             record.is_required_subsidiary = some_has_subsidiary
+            
+    def _assign_default_required_subsidiary_to_user(self):
+        self.ensure_one()
+        
+        if self.subsidiary_ids:
+            return
+
+        default_subsidiary_id = self.env.ref("binaural_subsidiary.analytic_main_subsidiary")
+
+        self.write({
+            "subsidiary_ids": [default_subsidiary_id.id],
+            "subsidiary_id": default_subsidiary_id.id,
+        })
+
 
     @api.constrains("subsidiary_id", "subsidiary_ids", "active")
     def _check_subsidiary(self):
         for user in self.filtered(lambda u: u.active):
+
+            user._assign_default_required_subsidiary_to_user()
 
             if not user.is_required_subsidiary:
                 continue
@@ -50,7 +66,7 @@ class ResUsers(models.Model):
                         subsidiary_allowed=", ".join(user.mapped("subsidiary_ids.name")),
                     )
                 )
-                
+
     def _create_user_from_template(self, values):
         if not self.env.company.subsidiary:
             return super()._create_user_from_template(values)
