@@ -48,12 +48,19 @@ class ResUsers(models.Model):
         })
 
 
+    def _get_vals_on_base_admin_user_subsidiary_ids(self, vals):
+        base_admin_user = self.env.ref('base.user_admin')
+        subsidiary_ids = self.env["account.analytic.account"].search([("is_subsidiary", "=", True)])
+        
+        if self.id == base_admin_user.id:
+            vals['subsidiary_ids'] = [[6, False, subsidiary_ids.ids]]
+
+        return vals
+
     @api.constrains("subsidiary_id", "subsidiary_ids", "active")
     def _check_subsidiary(self):
         for user in self.filtered(lambda u: u.active):
-
-            user._assign_default_required_subsidiary_to_user()
-
+            
             if not user.is_required_subsidiary:
                 continue
 
@@ -67,6 +74,13 @@ class ResUsers(models.Model):
                     )
                 )
 
+    def write(self, vals):
+        vals = self._get_vals_on_base_admin_user_subsidiary_ids(vals)
+
+        res = super().write(vals)
+
+        return res
+                
     def _create_user_from_template(self, values):
         if not self.env.company.subsidiary:
             return super()._create_user_from_template(values)
