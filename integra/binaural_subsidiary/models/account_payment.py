@@ -1,5 +1,8 @@
 from odoo import fields, models, _, api
 from odoo.osv import expression
+from odoo.exceptions import ValidationError, UserError
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class AccountPayment(models.Model):
@@ -86,10 +89,10 @@ class AccountPayment(models.Model):
                     payment.account_analytic_id = self.env["account.analytic.account"].search(
                         [("id", "=", subsidiary_id)]
                     )
-                    
-    def action_post(self):
-        self.journal_id.check_journal_selected(self.account_analytic_id)
 
-        res = super().action_post()
-        
-        return res
+    @api.onchange('journal_id', 'account_analytic_id')
+    def _onchange_subsidiary_related_fields(self):
+        for record in self:
+            if not record.journal_id:
+                continue
+            record.journal_id.check_journal_selected(record.account_analytic_id.id)

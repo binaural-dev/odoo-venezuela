@@ -84,8 +84,10 @@ class AccountJournal(models.Model):
 
         return dict_record_fetched
 
-    def check_journal_selected(self, account_analytic_id):
-        if self.subsidiary_id.id == account_analytic_id.id:
+    def check_journal_selected(self, id_account_analytic):
+        self.ensure_one()
+
+        if self.subsidiary_id.id in [False, id_account_analytic]:
             return
 
         raise UserError(
