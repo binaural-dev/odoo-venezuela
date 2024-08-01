@@ -17,9 +17,12 @@ class StockPicking(models.Model):
 
     def _get_action_picking_delivery_type(self, picking_type):
         # action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
-        pickings = self.search(
-            ["&", ("origin", "=", self.origin), ("type_delivery_step", "=", picking_type)]
-        )
+        pickings = self.env["stock.picking"]
+        if self.group_id:
+            pickings = self.search(
+                ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", picking_type)]
+            )
+            pickings -= self
         action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
 
         if len(pickings) > 1:
@@ -65,7 +68,7 @@ class StockPicking(models.Model):
     outs_count = fields.Integer(compute="_compute_stock_pickings_by_origin")
 
     def _get_picks(self, assigned=False):
-        if not self._origin.id:
+        if not self.group_id:
             return 0
         domain = [
             "&",
@@ -79,7 +82,7 @@ class StockPicking(models.Model):
         return self.search_count(domain)
 
     def _get_packs(self, assigned=False):
-        if not self._origin.id:
+        if not self.group_id:
             return 0
         domain = [
             "&",
@@ -93,7 +96,7 @@ class StockPicking(models.Model):
         return self.search_count(domain)
 
     def _get_outs(self, assigned=False):
-        if not self._origin.id:
+        if not self.group_id:
             return 0
         domain = [
             "&",
