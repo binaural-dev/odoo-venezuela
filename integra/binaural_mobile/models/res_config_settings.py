@@ -74,3 +74,8 @@ class ResConfigSettings(models.TransientModel):
         string="Include taxes in prices",
         readonly=False
     )
+
+    company_mobile = fields.Boolean(
+        related="company_id.company_mobile", 
+        readonly=False
+    )

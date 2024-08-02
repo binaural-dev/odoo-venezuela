@@ -23,4 +23,5 @@ class ResConfigSettings(models.TransientModel):
 
     company_seller = fields.Boolean(
         related='company_id.company_seller',
+        readonly=False
     )
