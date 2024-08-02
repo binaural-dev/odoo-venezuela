@@ -43,10 +43,3 @@ class AccountPaymentRegister(models.TransientModel):
                 ])
 
             wizard.available_journal_ids = available_journal_ids.filtered( lambda w: w.subsidiary_id.id in [False, wizard.account_analytic_id.id])
-
-    @api.onchange('journal_id', 'account_analytic_id')
-    def _onchange_subsidiary_related_fields(self):
-        for record in self:
-            if not record.journal_id:
-                continue
-            record.journal_id.check_journal_selected(record.account_analytic_id.id)
