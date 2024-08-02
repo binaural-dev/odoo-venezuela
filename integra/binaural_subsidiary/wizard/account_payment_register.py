@@ -1,4 +1,6 @@
 from odoo import api, fields, models, _
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class AccountPaymentRegister(models.TransientModel):
@@ -10,6 +12,7 @@ class AccountPaymentRegister(models.TransientModel):
         domain=lambda self: (
             f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
         ),
+        readonly=True
     )
 
     company_subsidiary = fields.Boolean(
@@ -24,3 +27,26 @@ class AccountPaymentRegister(models.TransientModel):
         for payment in payments:
             payment.account_analytic_id = self.account_analytic_id.id
         return payments
+
+    @api.depends('payment_type', 'company_id', 'can_edit_wizard', 'account_analytic_id')
+    def _compute_available_journal_ids(self):
+        for wizard in self:
+            available_journal_ids = self.env['account.journal']
+
+            if wizard.can_edit_wizard:
+                batch = wizard._get_batches()[0]
+                available_journal_ids = wizard._get_batch_available_journals(batch)
+            else:
+                available_journal_ids = self.env['account.journal'].search([
+                    ('company_id', '=', wizard.company_id.id),
+                    ('type', 'in', ('bank', 'cash')),
+                ])
+
+            wizard.available_journal_ids = available_journal_ids.filtered( lambda w: w.subsidiary_id.id in [False, wizard.account_analytic_id.id])
+
+    @api.onchange('journal_id', 'account_analytic_id')
+    def _onchange_subsidiary_related_fields(self):
+        for record in self:
+            if not record.journal_id:
+                continue
+            record.journal_id.check_journal_selected(record.account_analytic_id.id)
