@@ -27,6 +27,21 @@
                         <div class="o_setting_left_pane">
                             <div class="content-group">
                                 <div class="mt16">
+                                    <field name="company_seller"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="company_seller"/>
+                            <div class="text-muted">
+                                Activate Sellers in this company
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" attrs="{'invisible': [('company_seller', '=', False)]}">
+                        <div class="o_setting_left_pane">
+                            <div class="content-group">
+                                <div class="mt16">
                                     <field name="multiple_sellers"/>
                                 </div>
                             </div>
@@ -38,7 +53,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-6 o_setting_box">
+                    <div class="col-12 col-lg-6 o_setting_box" attrs="{'invisible': [('company_seller', '=', False)]}">
                         <div class="o_setting_left_pane">
                             <div class="content-group">
                                 <div class="mt16">
