@@ -227,7 +227,7 @@ msgstr "Las líneas de facturas deben tener solo una sucursal"
 #, python-format
 msgid ""
 "The journal has been used in payments, account movements or purchase orders"
-msgstr "No se puede configurar la sucursal en el diario porque ya posee movimientos asociados a otra sucursal"
+msgstr "No se puede configurar la sucursal en el diario, porque posee movimientos sin sucursal o asociados a otra sucursal"
 
 #. module: binaural_subsidiary
 #. odoo-python
