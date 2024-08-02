@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240513\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240727\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-21 19:24+0000\n"
-"PO-Revision-Date: 2024-05-21 19:24+0000\n"
+"POT-Creation-Date: 2024-08-02 21:07+0000\n"
+"PO-Revision-Date: 2024-08-02 21:07+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -362,6 +362,11 @@ msgid "Action Needed"
 msgstr ""
 
 #. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
+msgid "Activate App Mobile in this company"
+msgstr "Activar la APP en esta empresa"
+
+#. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile__activity_ids
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_igtf__activity_ids
 msgid "Activities"
@@ -692,9 +697,16 @@ msgid "Company"
 msgstr "Compañía"
 
 #. module: binaural_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_company__company_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_config_settings__company_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_sale_order__company_mobile
+msgid "Company Mobile"
+msgstr "APP en Copañía"
+
+#. module: binaural_mobile
 #: model:ir.model,name:binaural_mobile.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
@@ -721,6 +733,11 @@ msgstr "Confirmado"
 #, python-format
 msgid "Consumable"
 msgstr "Consumible"
+
+#. module: binaural_mobile
+#: model:ir.model,name:binaural_mobile.model_res_partner
+msgid "Contact"
+msgstr "Contacto"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.product_variant_selector_dialog
@@ -795,12 +812,6 @@ msgstr "Creando pago"
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_methods__currency_id
 msgid "Currency"
 msgstr "Moneda"
-
-#. module: binaural_mobile
-#: model:ir.model.fields,field_description:binaural_mobile.field_res_company__custom_manifest
-#: model:ir.model.fields,field_description:binaural_mobile.field_res_config_settings__custom_manifest
-msgid "Custom Manifest"
-msgstr "Manifest Personalizado"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.payments_list_portal
@@ -1008,6 +1019,7 @@ msgstr ""
 #. module: binaural_mobile
 #. odoo-javascript
 #: code:addons/binaural_mobile/static/src/js/portal_payment.js:0
+#: code:addons/binaural_mobile/static/src/js/portal_payment.js:0
 #, python-format
 msgid "Facturas:"
 msgstr ""
@@ -1068,16 +1080,6 @@ msgstr "Tasa foranea"
 #: model:ir.model.fields,field_description:binaural_mobile.field_res_config_settings__retentions_draft_or_published
 msgid "Generate customer retentions in status"
 msgstr "Generar retenciones de clientes en estado:"
-
-#. module: binaural_mobile
-#: model:ir.model.fields,help:binaural_mobile.field_res_company__assetlink
-#: model:ir.model.fields,help:binaural_mobile.field_res_config_settings__assetlink
-msgid ""
-"Generate using PWA Builder and search inside the .zip generate the "
-"assetslinks.json file and pase the content here."
-msgstr ""
-"Generar usando PWA Builder y buscar dentro del .zip el archivo "
-"assetslinks.json and coloca el contenido aquí."
 
 #. module: binaural_mobile
 #: model:ir.model.fields.selection,name:binaural_mobile.selection__res_company__shop_catalog_view_mode__grid
@@ -1175,7 +1177,6 @@ msgstr "Indica si un pedido de venta incluye impuestos."
 #. odoo-python
 #: code:addons/binaural_mobile/models/sale_order.py:0
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_line__invoice_id
-
 #, python-format
 msgid "Invoice"
 msgstr "Factura"
@@ -1324,6 +1325,13 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_methods__write_date
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile_proof__write_date
 msgid "Last Updated on"
+msgstr ""
+
+#. module: binaural_mobile
+#. odoo-python
+#: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
+#, python-format
+msgid "Line record not Found with id %s"
 msgstr ""
 
 #. module: binaural_mobile
@@ -1669,14 +1677,6 @@ msgid "Odoo Odoo"
 msgstr ""
 
 #. module: binaural_mobile
-#: model:ir.model.fields,help:binaural_mobile.field_res_company__custom_manifest
-#: model:ir.model.fields,help:binaural_mobile.field_res_config_settings__custom_manifest
-msgid "Open the url /pwa/1/manifest.json then use the content as template"
-msgstr ""
-"Abrir la url /pwa/1/manifest.json, luego utilizar el contenido como "
-"referencia."
-
-#. module: binaural_mobile
 #: model:ir.model.fields,field_description:binaural_mobile.field_res_company__order_payment
 msgid "Order Payment"
 msgstr "Orden de pago"
@@ -1833,6 +1833,19 @@ msgid "Payments Mobile With IGTF"
 msgstr "Pagos Movil con IGTF"
 
 #. module: binaural_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_partner__plus_code
+#: model:ir.model.fields,field_description:binaural_mobile.field_res_users__plus_code
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_mobile_partner_inherit_view_form
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Plus Code"
+msgstr ""
+
+#. module: binaural_mobile
+#: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_budget_form
+msgid "Plus Code:"
+msgstr ""
+
+#. module: binaural_mobile
 #: model:res.groups,name:binaural_mobile.group_sellers_show_quantity_available
 msgid "Portal / Dont show quantity available"
 msgstr "Portal / No mostrar cantidad disponible"
@@ -1966,6 +1979,11 @@ msgstr "Archivo del comprobante"
 #: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile__proof_payment_id
 msgid "Proof Payment"
 msgstr "Comprobante de pago"
+
+#. module: binaural_mobile
+#: model:ir.model.fields,field_description:binaural_mobile.field_payment_mobile__proof_payment_domain
+msgid "Proof Payment Domain"
+msgstr ""
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.payment_mobile_proof_view_tree
@@ -2131,7 +2149,7 @@ msgstr "Pedido de venta"
 #. module: binaural_mobile
 #: model:ir.model,name:binaural_mobile.model_sale_order_line
 msgid "Sales Order Line"
-msgstr "Línea de pedido de venta"
+msgstr "Línea pedido de venta"
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.portal_my_home_menu_budget
@@ -2207,27 +2225,6 @@ msgstr "Servicio"
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
 msgid "Set default shop catalog view mode"
 msgstr "Establece la vista predeterminada del catálogo de la tienda"
-
-#. module: binaural_mobile
-#: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
-msgid ""
-"Set the custom assetslinks.json with sha256_cert_fingerprints in play "
-"console side bar menu/settings/app signing/ after publish."
-msgstr ""
-"Configure los enlaces de activos assetlink.json con sha256_cert_fingerprints"
-" en play console Menú de la barra lateral/configuración/firma de "
-"aplicaciones/después de la publicación."
-
-#. module: binaural_mobile
-#: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
-msgid ""
-"Set the custom json manifest. <br/>\n"
-"                                    * Open the url /pwa/1/manifest.json then use the content as template. <br/>\n"
-"                                    * Or use PWABuilder to generate a custom manifest.json then paste de content here."
-msgstr ""
-"Asignar manifest personalizado. <br/>\n"
-"                                    * Abrir la url /pwa/1/manifest.json, luego utilizar el contenido como referencia. <br/>\n"
-"                                    * Utiliza la pagina PWABuilder para generar un manifest.json personalizado luego pega el contenido aquí."
 
 #. module: binaural_mobile
 #: model_terms:ir.ui.view,arch_db:binaural_mobile.binaural_movil_app_res_config_settings_view_form
@@ -2340,7 +2337,6 @@ msgstr "Impuesto incluido en el precio"
 
 #. module: binaural_mobile
 #. odoo-python
-
 #: code:addons/binaural_mobile/controllers/invoice_portal.py:0
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
 #: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
@@ -2370,6 +2366,13 @@ msgstr "La orden de venta no existe."
 #: model:ir.model.fields,help:binaural_mobile.field_payment_mobile_methods__currency_id
 msgid "The currency used to enter statement"
 msgstr "La moneda utilizada para ingresar el estado"
+
+#. module: binaural_mobile
+#. odoo-python
+#: code:addons/binaural_mobile/controllers/sale_order_budget.py:0
+#, python-format
+msgid "The order with status \"%s\" cannot be edited"
+msgstr ""
 
 #. module: binaural_mobile
 #: model:ir.model.fields,help:binaural_mobile.field_payment_mobile_igtf__currency_id
