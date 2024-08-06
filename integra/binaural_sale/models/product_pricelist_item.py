@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
 
 
 class ProductPricelistItem(models.Model):
@@ -6,6 +6,8 @@ class ProductPricelistItem(models.Model):
 
     price_without_tax = fields.Float(compute="_compute_prices_with_tax")
     price_with_tax = fields.Float(compute="_compute_prices_with_tax")
+
+    # ====== COMPUTE METHODS =======#
 
     @api.depends("price")
     def _compute_prices_with_tax(self):

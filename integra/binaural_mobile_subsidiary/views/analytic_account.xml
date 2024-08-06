@@ -16,13 +16,13 @@
                     name="dairy_fiscal"
                     options="{'no_create': True, 'no_edit': True}" 
                     domain="[('id', 'in', selectable_sale_journal_ids), ('fiscal', '=', True)]"
-                    attrs="{'required': [('dairy_no_fiscal', '=', False), ('is_subsidiary', '=', True)], 'invisible': [('is_subsidiary', '=', False)]  }"
+                    attrs="{'invisible': [('is_subsidiary', '=', False)]}"
                 />
                 <field 
                     name="dairy_no_fiscal" 
                     options="{'no_create': True, 'no_edit': True}" 
                     domain="[('id', 'in', selectable_sale_journal_ids), ('fiscal', '=', False)]"
-                    attrs="{'required': [('dairy_fiscal', '=', False), ('is_subsidiary', '=', True)], 'invisible': [('is_subsidiary', '=', False)]  }"
+                    attrs="{'invisible': [('is_subsidiary', '=', False)]}"
                 />
             </field>
             

@@ -21,5 +21,16 @@ class ResConfigSettings(models.TransientModel):
         string="Calculate based on the total purchase amount",
         readonly=False
     )
-
     
+    use_same_account_stock_valuation_to_category = fields.Boolean(
+        related="company_id.use_same_account_stock_valuation_to_category", readonly=False
+    )
+
+    category_cost_account_id = fields.Many2one(
+        related="company_id.category_cost_account_id", readonly=False
+    )
+
+    @api.onchange("use_same_account_stock_valuation_to_category")
+    def _onchange_use_same_account_stock_valuation_to_category(self):
+        if not self.use_same_account_stock_valuation_to_category:
+            self.category_cost_account_id = False

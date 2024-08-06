@@ -21,7 +21,6 @@
             <xpath expr="//field[@name='fixed_price']" position="after">
                 <field name="price_with_tax"/>
             </xpath>
-            
         </field>
     </record>
 

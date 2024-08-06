@@ -9,7 +9,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.0.0.0.1",
+    "version": "16.0.0.0.2",
     "category": "Human Resources/Stock/Sales/Invoicing",
     "depends": [
         "binaural_mobile",
@@ -21,4 +21,5 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "binaural": True,
+    "auto_install": True,
 }
