@@ -333,9 +333,7 @@ class AccountMove(models.Model):
         move = self._create_payment_move(line_vals, payment)
 
         account_move_lines = [
-            line.id
-            for line in move.line_ids
-            if line.name in ("ANTICIPO/CLIENTE", "ANTICIPO/PROVEEDOR")
+            line.id for line in move.line_ids if line.account_id == lines.account_id
         ]
         lines += self.env["account.move.line"].browse(account_move_lines)
         lines.reconcile()
@@ -343,7 +341,7 @@ class AccountMove(models.Model):
         cta_fv_lines = [
             line.id
             for line in move.line_ids
-            if line.name in ("CUENTA POR COBRAR CLIENTE", "CUENTA POR PAGAR PROVEEDOR")
+            if line.account_id.account_type in ("asset_receivable", "liability_payable")
         ]
         cta_fv = self.env["account.move.line"].browse(cta_fv_lines)
 
