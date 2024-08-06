@@ -90,8 +90,6 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         sale_book_lines = []
         moves = self.search_moves()
 
-        agrouped_by_report_z = {}
-
         init_cumulative = {
             "tax_base_exempt_aliquot": 0,
             "amount_taxed": 0,
@@ -104,17 +102,20 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         agrouped_by_date = {}
         for move in moves:
-            if not agrouped_by_date.get(str(move.create_date.strftime("%d-%m-%Y"))):
-                agrouped_by_date[str(move.create_date.strftime("%d-%m-%Y"))] = move
+            key = str(move.create_date.strftime("%d-%m-%Y"))
+            if not agrouped_by_date.get(key):
+                agrouped_by_date[key] = move
             else:
-                agrouped_by_date[str(move.create_date.strftime("%d-%m-%Y"))] |= move
+                agrouped_by_date[key] |= move
 
         for date_moves in agrouped_by_date.items():
+            agrouped_by_report_z = {}
             for move in date_moves[1].sorted(lambda m: int(m.mf_invoice_number)):
-                if not agrouped_by_report_z.get(str(move.mf_serial) + "_" + str(move.mf_reportz)):
-                    agrouped_by_report_z[str(move.mf_serial) + "_" + str(move.mf_reportz)] = move
+                key = str(move.mf_serial) + "_" + str(move.mf_reportz)
+                if not agrouped_by_report_z.get(key):
+                    agrouped_by_report_z[key] = move
                 else:
-                    agrouped_by_report_z[str(move.mf_serial) + "_" + str(move.mf_reportz)] |= move
+                    agrouped_by_report_z[key] |= move
 
             for report in agrouped_by_report_z.items():
                 range_start = 0
