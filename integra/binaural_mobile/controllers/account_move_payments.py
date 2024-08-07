@@ -9,6 +9,10 @@ from odoo.http import request
 from odoo.osv import expression
 from odoo.tools import float_is_zero
 
+import os
+import sys
+
+
 from . import utils
 
 _logger = logging.getLogger(__name__)
@@ -202,7 +206,12 @@ class AccountMovePayments(http.Controller):
                         )
                     )
                     for line in account_move_result["line_ids"]:
+
+                        if not line.get("date_maturity", False):
+                            continue
+
                         line["date_maturity"] = line["date_maturity"].strftime(date_format)
+
                     account_move_results.append(account_move_result)
 
                 data.update(
