@@ -28,10 +28,6 @@ class StockQuan(models.Model):
         self = self.sudo()
         for record in self:
 
-            if isinstance(record.id, models.NewId):
-                record.product_alter_location_ids = None
-                continue
-
             record.product_alter_location_ids = record.search(
                 [
                     ("product_id", "=", record.product_id.id),
