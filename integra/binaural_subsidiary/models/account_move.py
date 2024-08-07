@@ -1,5 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.osv import expression
+from odoo.exceptions import ValidationError, UserError
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -24,16 +25,20 @@ class AccountMove(models.Model):
         related='company_id.subsidiary', store=True, string="Company Subsidiary",
     )
 
-    @api.depends('company_id', 'invoice_filter_type_domain')
+    @api.depends('company_id', 'invoice_filter_type_domain', 'account_analytic_id')
     def _compute_suitable_journal_ids(self):
         for m in self:
             journal_type = m.invoice_filter_type_domain or 'general'
             company_id = m.company_id.id or self.env.company.id
             domain = [('company_id', '=', company_id), ('type', '=', journal_type)]
 
-            domain = expression.AND([domain, ['|', ('subsidiary_id', 'in', self.env.user.subsidiary_ids.ids), ('subsidiary_id', '=', False)]])
+            get_domain_subsidiaries_suitable_journals = self.env["account.journal"].get_domain_subsidiaries_suitable_journals
+
+            domain = get_domain_subsidiaries_suitable_journals(domain, m.account_analytic_id.id)
 
             m.suitable_journal_ids = self.env['account.journal'].search(domain)
+
+
 
     # It's needed to inherit the create and write methods to update the analytic distribution of the
     # lines when the analytic account is changed. The compute method isn't used because it is
@@ -73,6 +78,7 @@ class AccountMove(models.Model):
         We need to extend the write method because the compute method is called before the write
         method and we need the old subsidiary to update the analytic distribution.
         """
+
         if not vals.get("account_analytic_id") or not self.line_ids:
             return super().write(vals)
         old_account_analytic_id = str(self.account_analytic_id.id)
@@ -146,14 +152,12 @@ class AccountMove(models.Model):
         if self.statement_line_ids.statement_id.journal_id:
             return self.statement_line_ids.statement_id.journal_id[:1]
 
+        get_domain_subsidiaries_suitable_journals = self.env["account.journal"].get_domain_subsidiaries_suitable_journals
+
         journal_types = self._get_valid_journal_types()
         company_id = (self.company_id or self.env.company).id
         domain = [('company_id', '=', company_id), ('type', 'in', journal_types)]
-        domain = expression.AND([domain, ['|', ('subsidiary_id', 'in', self.env.user.subsidiary_ids.ids), ('subsidiary_id', '=', False)]])
-
-        _logger.warning('-----domain----domain------------')
-        _logger.warning(domain)
-        _logger.warning('---------------------')
+        domain = get_domain_subsidiaries_suitable_journals(domain, self.env.user.subsidiary_id.id)
 
         journal = None
         # the currency is not a hard dependence, it triggers via manual add_to_compute
@@ -178,3 +182,11 @@ class AccountMove(models.Model):
             raise UserError(error_msg)
 
         return journal
+
+    @api.onchange('journal_id', 'account_analytic_id')
+    def _onchange_subsidiary_related_fields(self):
+        for record in self:
+            if not record.journal_id:
+                continue
+            record.journal_id.check_journal_selected(record.account_analytic_id.id)
+

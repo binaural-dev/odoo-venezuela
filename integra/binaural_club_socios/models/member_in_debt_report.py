@@ -91,7 +91,7 @@ class MemberInDebtReport(models.Model):
     
     def _from_sub_select_where(self):
         where_str = """
-            WHERE partner.action_number IS NOT NULL
+            WHERE partner.active = TRUE AND partner.action_number IS NOT NULL
             AND partner.state_partner IN ('active', 'holder');
         """
 
