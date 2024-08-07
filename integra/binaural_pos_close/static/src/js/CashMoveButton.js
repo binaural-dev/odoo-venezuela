@@ -42,7 +42,6 @@ const BinauralCashMoveButton = (CashMoveButton) =>
           this.showPopup('ErrorPopup', { title: printResult.message.title, body: printResult.message.body });
         }
       }
-      console.log(type)
       this.showNotification(
         _.str.sprintf(this.env._t('Successfully made a cash %s of %s.'), TRANSLATED_CASH_MOVE_TYPE[type], formattedAmount),
         3000

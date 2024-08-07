@@ -33,8 +33,6 @@ const BinauralPosState = (PosGlobalState) =>
         state.payments[res.defaultCashDetails.id] = { ...state.payments[res.defaultCashDetails.id], foreign_difference: 0 };
       }
 
-      if (cashControl) {
-      }
       return { ...res, foreignDefaultCashDetails, state: state }
     }
 

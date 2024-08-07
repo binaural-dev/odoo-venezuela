@@ -85,6 +85,52 @@ class PosSession(models.Model):
             session.foreign_cash_journal_id = cash_journal
         return res
 
+    @api.depends("payment_method_ids", "order_ids", "cash_register_balance_start")
+    def _compute_cash_balance(self):
+        for session in self:
+            cash_payment_method = session.payment_method_ids.filtered("is_cash_count")[:1]
+            if cash_payment_method:
+                total_cash_payment = 0.0
+                last_session = session.search(
+                    [("config_id", "=", session.config_id.id), ("id", "<", session.id)], limit=1
+                )
+                result = self.env["pos.payment"]._read_group(
+                    [
+                        ("session_id", "=", session.id),
+                        ("payment_method_id", "=", cash_payment_method.id),
+                    ],
+                    ["amount"],
+                    ["session_id"],
+                )
+                if result:
+                    total_cash_payment = result[0]["amount"]
+
+                if session.state == "closed":
+                    session.cash_register_total_entry_encoding = (
+                        session.cash_real_transaction + total_cash_payment
+                    )
+                else:
+                    session.cash_register_total_entry_encoding = (
+                        sum(
+                            session.statement_line_ids.filtered(
+                                lambda stat: stat.journal_id.id == self.cash_journal_id.id
+                            ).mapped("amount")
+                        )
+                        + total_cash_payment
+                    )
+
+                session.cash_register_balance_end = (
+                    last_session.cash_register_balance_end_real
+                    + session.cash_register_total_entry_encoding
+                )
+                session.cash_register_difference = (
+                    session.cash_register_balance_end_real - session.cash_register_balance_end
+                )
+            else:
+                session.cash_register_total_entry_encoding = 0.0
+                session.cash_register_balance_end = 0.0
+                session.cash_register_difference = 0.0
+
     @api.depends("payment_method_ids", "order_ids", "foreign_cash_register_balance_start")
     def _compute_foreign_cash_balance(self):
         for session in self:
@@ -195,7 +241,7 @@ class PosSession(models.Model):
 
         for cash_move in (
             self.sudo()
-            .statement_line_ids.filtered(lambda x: x.foreign_amount == 0)
+            .statement_line_ids.filtered(lambda stat: stat.journal_id.id == self.cash_journal_id.id)
             .sorted("create_date")
         ):
             if cash_move.amount > 0:
@@ -216,7 +262,9 @@ class PosSession(models.Model):
 
         for cash_move in (
             self.sudo()
-            .statement_line_ids.filtered(lambda x: x.foreign_amount != 0)
+            .statement_line_ids.filtered(
+                lambda stat: stat.journal_id.id == self.foreign_cash_journal_id.id
+            )
             .sorted("create_date")
         ):
             if cash_move.foreign_amount > 0:
@@ -261,10 +309,22 @@ class PosSession(models.Model):
                 "name": foreign_default_cash_payment_method_id.name,
                 "amount": last_session.cash_register_balance_end_real
                 + total_foreign_default_cash_payment_amount
-                + sum(self.sudo().statement_line_ids.mapped("amount")),
+                + sum(
+                    self.sudo()
+                    .statement_line_ids.filtered(
+                        lambda stat: stat.journal_id.id == self.foreign_cash_journal_id.id
+                    )
+                    .mapped("amount")
+                ),
                 "foreign_amount": last_session.foreign_cash_register_balance_end_real
                 + foreign_total_foreign_default_cash_payment_amount
-                + sum(self.sudo().statement_line_ids.mapped("foreign_amount")),
+                + sum(
+                    self.sudo()
+                    .statement_line_ids.filtered(
+                        lambda stat: stat.journal_id.id == self.foreign_cash_journal_id.id
+                    )
+                    .mapped("foreign_amount")
+                ),
                 "opening": last_session.cash_register_balance_end_real,
                 "foreign_opening": last_session.foreign_cash_register_balance_end_real,
                 "payment_amount": total_foreign_default_cash_payment_amount,
@@ -279,6 +339,13 @@ class PosSession(models.Model):
         if not self.config_id.cash_control:
             return res
 
+        res["default_cash_details"]["amount"] -= sum(
+            self.sudo()
+            .statement_line_ids.filtered(
+                lambda stat: stat.journal_id.id == self.foreign_cash_journal_id.id
+            )
+            .mapped("amount")
+        )
         res["default_cash_details"]["foreign_amount"] = 0
         res["default_cash_details"]["payment_foreign_amount"] = 0
         res["default_cash_details"]["foreign_opening"] = 0
@@ -296,17 +363,31 @@ class PosSession(models.Model):
         )
         if self.order_ids or self.sudo().statement_line_ids:
             self.foreign_cash_real_transaction = sum(
-                self.sudo().statement_line_ids.mapped("foreign_amount")
+                self.sudo()
+                .statement_line_ids.filtered(
+                    lambda stat: stat.journal_id.id == self.foreign_cash_journal_id.id
+                )
+                .mapped("foreign_amount")
             )
         self._post_foreign_statement_difference(self.foreign_cash_register_difference, False)
         return res
 
+    def _post_statement_difference(self, amount, is_opening):
+        res = super()._post_statement_difference(amount, is_opening)
+        return res
+
     def _post_foreign_statement_difference(self, amount, is_opening):
         if amount:
+            rate = self.env["res.currency"]._get_conversion_rate(
+                self.foreign_currency_id,
+                self.currency_id,
+                self.env.company,
+                fields.Date.context_today(self),
+            )
             if self.config_id.cash_control:
                 st_line_vals = {
                     "journal_id": self.foreign_cash_journal_id.id,
-                    "amount": 0,
+                    "amount": amount * rate,
                     "foreign_amount": amount,
                     "date": self.statement_line_ids.sorted()[-1:].date
                     or fields.Date.context_today(self),
@@ -375,16 +456,16 @@ class PosSession(models.Model):
         difference = cashbox_value - self.foreign_cash_register_balance_start
         self.foreign_cash_register_balance_start = cashbox_value
         self.sudo()._post_foreign_statement_difference(difference, True)
-        self._post_cash_details_message("Opening", difference, notes)
+        self._post_foreign_cash_details_message("Opening", difference, notes)
 
     def _post_foreign_cash_details_message(self, state, difference, notes):
         message = ""
         if difference:
             message = (
                 f"{state} difference: "
-                f"{self.foreign_currency_id.symbol + ' ' if self.foreign_currency_id.currency_id.position == 'before' else ''}"
-                f"{self.foreign_currency_id.currency_id.round(difference)} "
-                f"{self.foreign_currency_id.currency_id.symbol if self.foreign_currency_id.currency_id.position == 'after' else ''}<br/>"
+                f"{self.foreign_currency_id.symbol + ' ' if self.foreign_currency_id.position == 'before' else ''}"
+                f"{self.foreign_currency_id.round(difference)} "
+                f"{self.foreign_currency_id.symbol if self.foreign_currency_id.position == 'after' else ''}<br/>"
             )
         if notes:
             message += notes.replace("\n", "<br/>")
