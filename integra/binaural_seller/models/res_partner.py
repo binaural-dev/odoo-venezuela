@@ -8,6 +8,10 @@ _logger = logging.getLogger(__name__)
 class ResPartnerInherit(models.Model):
     _inherit = "res.partner"
 
+    def _default_company_id(self):
+        company_id = self.env.company.id
+        return company_id
+
     seller_ids = fields.Many2many(
         "hr.employee",
         string="Sellers",
@@ -20,6 +24,11 @@ class ResPartnerInherit(models.Model):
     company_seller = fields.Boolean(
         related="company_id.company_seller",
     )
+    
+    """
+    in Odoo, the company_id is added when saving the contact, it is overwritten so that you can have the company from the beginning
+    """
+    company_id = fields.Many2one('res.company',  default=_default_company_id, index=True)
 
     @api.model
     def _commercial_fields(self):
