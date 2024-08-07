@@ -74,18 +74,4 @@
         </field>
     </record>
 
-    <record id="binaural_seller_res_config_settings_view_form" model="ir.ui.view">
-        <field name="name">binaural.seller.res.config.settings.view.form</field>
-        <field name="model">res.config.settings</field>
-        <field name="priority" eval="100"/>
-        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
-        <field name="arch" type="xml">
-            
-            <xpath expr="//field[@name='initial_seller']" position="attributes">
-                <attribute name="required">1</attribute>
-            </xpath>
-
-        </field>
-    </record>
-
 </odoo>

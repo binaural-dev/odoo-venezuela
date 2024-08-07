@@ -11,8 +11,3 @@ class ResCompany(models.Model):
     restrict_seller = fields.Boolean()
 
     company_seller = fields.Boolean()
-
-    @api.onchange("company_seller")
-    def _onchange_company_seller(self):
-        if not self.company_seller:
-            self.write({"company_seller": False})
