@@ -8,7 +8,8 @@
         <field name="arch" type="xml">
 
             <xpath expr="//page[@name='internal_notes']" position="before">
-                <page name="sellers_assigned" string="Sellers">
+                <field name="company_seller" invisible="1"/>
+                <page name="sellers_assigned" string="Sellers"  attrs="{'invisible': [('company_seller', '=', False)]}">
                     <field name="seller_ids" nolabel="1">
                         <tree create="False" delete="False" multi_edit="False" edit="False" editable="top" no_open="1">
                             <field name="name"/>

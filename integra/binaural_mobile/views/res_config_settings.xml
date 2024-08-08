@@ -22,10 +22,21 @@
         <field name="arch" type="xml">
             
             <xpath expr="//div[@name='Binaural_warehouse_settings']" position="after">
-                <div name="binaural_app_settings">
+                <div name="binaural_app_settings" attrs="{'invisible': [('company_seller', '=', False)]}">
                     <h2>APP Settings</h2>
                     <div class="row mt16 o_settings_container" >
                         <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                            <div class="o_setting_left_pane">
+                                <field name="company_mobile" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="company_mobile"/>
+                                <div class="text-muted">
+                                    Activate App Mobile in this company
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings" attrs="{'invisible': [('company_mobile', '=', False)]}">
                             <div class="o_setting_left_pane">
                             </div>
                             <div class="o_setting_right_pane">
@@ -40,7 +51,7 @@
                                 </group>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_retentions_settings">
+                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_retentions_settings" attrs="{'invisible': [('company_mobile', '=', False)]}">
                             <div class="o_setting_right_pane">
                                 <label for="retentions_draft_or_published"/>
                                 <div class="content-group">
@@ -57,9 +68,8 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="row mt16 o_settings_container">
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+
+                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings" attrs="{'invisible': [('company_mobile', '=', False)]}">
                             <div class="o_setting_left_pane">
                             </div>
                             <div class="o_setting_right_pane">
@@ -79,7 +89,7 @@
                         </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings" attrs="{'invisible': [('company_mobile', '=', False)]}">
                             <div class="o_setting_left_pane">
                             </div>
                             <div class="o_setting_right_pane">
@@ -89,14 +99,13 @@
                                 </div>
                                 <div class="content-group">
                                     <div class="mt16">
-                                        <field name="shop_catalog_view_mode" class="o_light_label" widget="radio" options="{'horizontal': true}" required="1"/>
+                                        <field name="shop_catalog_view_mode" class="o_light_label" widget="radio" 
+                                                options="{'horizontal': true}"  attrs="{'required': [('company_mobile', '=', True)]}"/>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="row mt16 o_settings_container">
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings" attrs="{'invisible': [('company_mobile', '=', False)]}">
                             <div class="o_setting_left_pane">
                             </div>
                             <div class="o_setting_right_pane">
@@ -106,12 +115,13 @@
                                 </div>
                                 <div class="content-group">
                                     <div class="mt16">
-                                        <field name="payment_methods_in_app" options="{'no_create': True, 'no_edit': True}" widget="many2many_tags" domain="[('type', 'in', ('cash','bank'))]" required="1"/>
+                                        <field name="payment_methods_in_app" options="{'no_create': True, 'no_edit': True}" widget="many2many_tags" 
+                                                domain="[('type', 'in', ('cash','bank'))]"  attrs="{'required': [('company_mobile', '=', True)]}"/>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_tax_settings">
+                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_tax_settings" attrs="{'invisible': [('company_mobile', '=', False)]}">
                             <div class="o_setting_left_pane">
                             </div>
                             <div class="o_setting_right_pane">
@@ -135,7 +145,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_retentions_settings">
+                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_retentions_settings" attrs="{'invisible': [('company_mobile', '=', False)]}">
                             <div class="o_setting_right_pane">
                                 <span>Customer billing journals</span>
                                 <div class="text-muted">
@@ -148,7 +158,7 @@
                                             name="dairy_fiscal" 
                                             options="{'no_create': True, 'no_edit': True}" 
                                             domain="[('type', '=', 'sale'),('fiscal', '=', True)]" 
-                                            attrs="{'required': [('dairy_no_fiscal', '=', False)]  }"
+                                            attrs="{'required': [('dairy_no_fiscal', '=', False), ('company_mobile', '=', True)]}"
                                         />
                                     </div>
                                 </div>
@@ -159,7 +169,7 @@
                                             name="dairy_no_fiscal" 
                                             options="{'no_create': True, 'no_edit': True}" 
                                             domain="[('type', '=', 'sale'),('fiscal', '=', False)]" 
-                                            attrs="{'required': [('dairy_fiscal', '=', False)]  }"
+                                            attrs="{'required': [('dairy_fiscal', '=', False), ('company_mobile', '=', True)]}"
                                         />
                                     </div>
                                     <div class="mt16">
@@ -168,9 +178,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="row mt16 o_settings_container">
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings" attrs="{'invisible': [('company_mobile', '=', False)]}">
                             <div class="o_setting_left_pane">
                             </div>
                             <div class="o_setting_right_pane">
@@ -180,7 +188,8 @@
                                 </div>
                                 <div class="content-group">
                                     <div class="mt16">
-                                        <field name="app_sales_diaries"  widget="many2many_tags" options="{'no_create': True, 'no_edit': True}" domain="[('type', '=', 'sale')]" required="1"/>
+                                        <field name="app_sales_diaries"  widget="many2many_tags" options="{'no_create': True, 'no_edit': True}" 
+                                            domain="[('type', '=', 'sale')]" attrs="{'required': [('company_mobile', '=', True)]}"/>
                                     </div>
                                 </div>
                             </div>

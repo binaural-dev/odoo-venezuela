@@ -63,6 +63,10 @@ class SaleOrder(models.Model):
         help="Journal used when a invoice is generated with or without taxes.",
     )
 
+    company_mobile = fields.Boolean(
+        related="company_id.company_mobile",
+    )
+
     def write(self, vals):
         if "note" in vals:
             self.manage_note_app()
@@ -79,11 +83,13 @@ class SaleOrder(models.Model):
         res = super()._create_invoices(grouped, final, date)  # contingence?
         for invoice in res:
             if invoice.state == "draft":
-                invoice.journal_id = self.journal_id.id
+                invoice.journal_id = (
+                    self.journal_id.id if self.company_mobile else invoice.journal_id.id
+                )
                 invoice.invoice_user_id = self.user_id.id
 
         return res
-    
+
     def _get_journal_id(self):
         self.ensure_one()
 
@@ -97,15 +103,13 @@ class SaleOrder(models.Model):
         for sale in self:
             journal_id = sale._get_journal_id()
 
-            sale.journal_id = journal_id.id
+            sale.journal_id = journal_id.id if self.company_mobile else False
 
             for invoice in sale.invoice_ids:
                 if invoice.state != "draft":
                     continue
 
-                invoice.journal_id = journal_id.id
-
-            
+                invoice.journal_id = journal_id.id if self.company_mobile else False
 
     @api.depends("state", "invoice_ids")
     def _compute_state_seller(self):
@@ -158,6 +162,7 @@ class SaleOrder(models.Model):
                             }
                         )
 
+
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
@@ -175,7 +180,7 @@ class SaleOrderLine(models.Model):
             )
             line.price_unit_with_tax = taxes["total_included"]
 
-    @api.onchange('product_id')
+    @api.onchange("product_id")
     def _onchange_product_id_warning(self):
         res = super()._compute_tax_id()
         self.order_id.set_tax_lines()
