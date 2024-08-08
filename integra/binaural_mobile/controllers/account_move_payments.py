@@ -9,10 +9,6 @@ from odoo.http import request
 from odoo.osv import expression
 from odoo.tools import float_is_zero
 
-import os
-import sys
-
-
 from . import utils
 
 _logger = logging.getLogger(__name__)
