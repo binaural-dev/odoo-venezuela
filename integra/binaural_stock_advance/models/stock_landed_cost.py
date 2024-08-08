@@ -76,6 +76,14 @@ class StockLandedCost(models.Model):
             )
             cost.update(rate_values)
 
+    @api.onchange("cost_lines")
+    def _onchange_split_method(self):
+        if "by_percentage" in [line.split_method for line in self.cost_lines]:
+            for line in self.cost_lines:
+                if line.split_method != "by_percentage":
+                    line.split_method = "by_percentage"
+
+
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
         """
@@ -211,7 +219,21 @@ class StockLandedCost(models.Model):
         )
 
     def button_validate(self):
-        res = super().button_validate()
+        is_percentage = "by_percentage" in [line.split_method for line in self.cost_lines]
+        all_percentage = all(line.split_method == "by_percentage" for line in self.cost_lines)
+
+        if not is_percentage:
+            res = super().button_validate()
+        elif is_percentage and not self.company_id.use_same_account_stock_valuation_to_category:
+            res = super().button_validate()
+        elif (
+            self.company_id.use_same_account_stock_valuation_to_category
+            and all_percentage
+        ):
+            res = self._button_validate_move_cost()
+        else:
+            res = super().button_validate()
+
         for line in self._get_lines_with_updatable_latest_standard_price():
             product = line.product_id
             latest_standard_price = line.latest_standard_price
@@ -286,4 +308,125 @@ class StockLandedCost(models.Model):
                         for cost_line, val_amount in val_to_cost_lines.items()
                     ):
                         return False
+        return True
+
+    def _button_validate_move_cost(self):
+        self._check_can_validate()
+        cost_without_adjusment_lines = self.filtered(lambda c: not c.valuation_adjustment_lines)
+        if cost_without_adjusment_lines:
+            cost_without_adjusment_lines.compute_landed_cost()
+        if not self._check_sum():
+            raise UserError(
+                _(
+                    "Cost and adjustments lines do not match. You should maybe recompute the landed costs."
+                )
+            )
+
+        for cost in self:
+            cost = cost.with_company(cost.company_id)
+            move = self.env["account.move"]
+            move_vals = {
+                "journal_id": cost.account_journal_id.id,
+                "date": cost.date,
+                "ref": cost.name,
+                "line_ids": [],
+                "move_type": "entry",
+            }
+            valuation_layer_ids = []
+            cost_to_add_byproduct = defaultdict(lambda: 0.0)
+            for line in cost.valuation_adjustment_lines.filtered(lambda line: line.move_id):
+                remaining_qty = sum(line.move_id.stock_valuation_layer_ids.mapped("remaining_qty"))
+                linked_layer = line.move_id.stock_valuation_layer_ids[:1]
+
+                # Prorate the value at what's still in stock
+                cost_to_add = (
+                    remaining_qty / line.move_id.product_qty
+                ) * line.additional_landed_cost
+                if not cost.company_id.currency_id.is_zero(cost_to_add):
+                    valuation_layer = self.env["stock.valuation.layer"].create(
+                        {
+                            "value": cost_to_add,
+                            "unit_cost": 0,
+                            "quantity": 0,
+                            "remaining_qty": 0,
+                            "stock_valuation_layer_id": linked_layer.id,
+                            "description": cost.name,
+                            "stock_move_id": line.move_id.id,
+                            "product_id": line.move_id.product_id.id,
+                            "stock_landed_cost_id": cost.id,
+                            "company_id": cost.company_id.id,
+                        }
+                    )
+                    linked_layer.remaining_value += cost_to_add
+                    valuation_layer_ids.append(valuation_layer.id)
+                # Update the AVCO
+                product = line.move_id.product_id
+                if product.cost_method == "average":
+                    cost_to_add_byproduct[product] += cost_to_add
+                # Products with manual inventory valuation are ignored because they do not need to create journal entries.
+                if product.valuation != "real_time":
+                    continue
+                # `remaining_qty` is negative if the move is out and delivered proudcts that were not
+                # in stock.
+                qty_out = 0
+                if line.move_id._is_in():
+                    qty_out = line.move_id.product_qty - remaining_qty
+                elif line.move_id._is_out():
+                    qty_out = line.move_id.product_qty
+                move_vals["line_ids"] += line._create_accounting_entries(move, qty_out)
+
+            # batch standard price computation avoid recompute quantity_svl at each iteration
+            products = (
+                self.env["product.product"]
+                .browse(p.id for p in cost_to_add_byproduct.keys())
+                .with_company(cost.company_id)
+            )
+            for product in products:  # iterate on recordset to prefetch efficiently quantity_svl
+                if not float_is_zero(
+                    product.quantity_svl, precision_rounding=product.uom_id.rounding
+                ):
+                    product.sudo().with_context(disable_auto_svl=True).standard_price += (
+                        cost_to_add_byproduct[product] / product.quantity_svl
+                    )
+
+            # >>> Binaural
+            category_account_id = products.categ_id.property_stock_valuation_account_id
+            new_lines = []
+            new_lines.append(
+                [
+                    0,
+                    0,
+                    {
+                        "name": f"{self.name}",
+                        "account_id": category_account_id.id,
+                        "debit": self.amount_total,
+                    },
+                ]
+            )
+
+            for line in self.cost_lines:
+                new_lines.append(
+                    [
+                        0,
+                        0,
+                        {
+                            "name": f"{line.name} - {self.name}",
+                            "account_id": line.account_id.id,
+                            "credit": line.price_unit,
+                        },
+                    ]
+                )
+
+            move_vals["line_ids"] = new_lines
+            # <<< Binaural
+            move_vals["stock_valuation_layer_ids"] = [(6, None, valuation_layer_ids)]
+            # We will only create the accounting entry when there are defined lines (the lines will be those linked to products of real_time valuation category).
+            cost_vals = {"state": "done"}
+            if move_vals.get("line_ids"):
+                move = move.create(move_vals)
+                cost_vals.update({"account_move_id": move.id})
+            cost.write(cost_vals)
+            if cost.account_move_id:
+                move._post()
+            cost.reconcile_landed_cost()
         return True

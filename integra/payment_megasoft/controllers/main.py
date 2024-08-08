@@ -43,7 +43,19 @@ class MegasoftController(http.Controller):
             prefix_vat = partner.prefix_vat
             vat = partner.vat
             # Amount
-            amount = values["amount"]
+            
+            company_id = request.env["website"].sudo().get_current_website().company_id
+            Rate = request.env["res.currency.rate"]
+
+            rate_values = Rate.compute_rate(company_id.currency_foreign_id.id, fields.Date.today())
+            amount = (
+                round(
+                    (rate_values["foreign_rate"] * values["amount"]),
+                    company_id.currency_foreign_id.decimal_places,
+                )
+                if company_id.currency_id.id == request.env.ref("base.USD").id
+                else values["amount"]
+            )
             # Reference
             reference = values["reference"]
 

@@ -1,7 +1,7 @@
 
 {
     'name': 'Payment Provider: Megasoft',
-    'version': '16.0.0.1.1',
+    'version': '16.0.0.1.3',
     'sequence': 350,
     'category': 'Accounting/Payment Providers',
     'summary': "Este modulo permite habilitar un nuevo metodo de pago con Megasoft.",
@@ -19,7 +19,7 @@
     'application': False,
     'assets': {
         'web.assets_frontend': [
-            'payment_megasoft/static/src/css/megasoft.css',
+            # 'payment_megasoft/static/src/css/megasoft.css', es para no perder el disenio de la pagina de megasoft, es plantilla para mandarlo a ellos
             'payment_megasoft/static/src/js/payment_form.js',
             # 'payment_megasoft/static/src/js/post_processing.js',
         ],

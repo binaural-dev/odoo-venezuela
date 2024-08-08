@@ -11,7 +11,8 @@ class StockQuan(models.Model):
     _inherit = "stock.quant"
 
     product_alter_location_ids = fields.Many2many(
-        "stock.quant", compute="_compute_product_alter_location_ids"
+        "stock.quant", 
+        compute="_compute_product_alter_location_ids"
     )
     is_physical_location = fields.Boolean(compute="_compute_is_physical_location", store=True)
 
@@ -26,6 +27,7 @@ class StockQuan(models.Model):
     def _compute_product_alter_location_ids(self):
         self = self.sudo()
         for record in self:
+
             record.product_alter_location_ids = record.search(
                 [
                     ("product_id", "=", record.product_id.id),
