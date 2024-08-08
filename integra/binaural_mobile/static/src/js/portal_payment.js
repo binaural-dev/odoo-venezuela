@@ -200,13 +200,14 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           journal_id,
           amount_residual,
         } = line;
+        
         const lines_ordered_by_maturity_date = line.line_ids.sort(function (
           a,
           b
         ) {
 
           
-          if (!(a.date_maturity && a.date_maturity)) return;
+          if (!(a.date_maturity && b.date_maturity)) return;
 
           const a_date = a.date_maturity.split("/");
           [a_date[0], a_date[1]] = [a_date[1], a_date[0]];
