@@ -83,7 +83,9 @@ class SaleOrder(models.Model):
         res = super()._create_invoices(grouped, final, date)  # contingence?
         for invoice in res:
             if invoice.state == "draft":
-                invoice.journal_id = self.journal_id.id if self.company_mobile else False
+                invoice.journal_id = (
+                    self.journal_id.id if self.company_mobile else invoice.journal_ids
+                )
                 invoice.invoice_user_id = self.user_id.id
 
         return res
