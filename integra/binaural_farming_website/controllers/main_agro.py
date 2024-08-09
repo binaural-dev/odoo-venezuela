@@ -59,7 +59,7 @@ class MainAgro(http.Controller):
             if search and search_in:
                 domain = expression.AND([domain, self._get_search_domain_lots(search_in, search)])
             
-            lot_count = request.env["stock.lot"].search_count(domain)
+            lot_count = request.env["stock.lot"].sudo().search_count(domain)
 
             pager = agro_pager(
                 url=url,
@@ -72,7 +72,7 @@ class MainAgro(http.Controller):
                 step=_items_per_page,
             )
 
-            lot_ids = request.env["stock.lot"].search(
+            lot_ids = request.env["stock.lot"].sudo().search(
                 domain, limit=_items_per_page, offset=pager["offset"]
             )
             return request.render(
@@ -92,7 +92,7 @@ class MainAgro(http.Controller):
         
         if service:
             url += f"/{service}"
-        lot_id = request.env["stock.lot"].browse(lot_id)
+        lot_id = request.env["stock.lot"].sudo().browse(lot_id)
         if not lot_id:
             raise NotFound()
 
