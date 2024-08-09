@@ -200,10 +200,15 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           journal_id,
           amount_residual,
         } = line;
+        
         const lines_ordered_by_maturity_date = line.line_ids.sort(function (
           a,
           b
         ) {
+
+          
+          if (!(a.date_maturity && b.date_maturity)) return;
+
           const a_date = a.date_maturity.split("/");
           [a_date[0], a_date[1]] = [a_date[1], a_date[0]];
 
@@ -214,6 +219,9 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
         });
         const first_expired_line = lines_ordered_by_maturity_date[0];
         const first_expired_line_amount_residual = first_expired_line["amount_residual"].toFixed(decimal_number);
+
+        const date_maturity = first_expired_line["date_maturity"];
+        const date_maturity_elem = date_maturity ? `(${date_maturity})` : '';
 
         amount_residual = amount_residual.toFixed(decimal_number);
         amount_total = amount_total.toFixed(decimal_number);
@@ -233,7 +241,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
 																		<label class="form-text text-primary">
 																			${first_expired_line_amount_residual} 
 																		</label>
-																		<label class="form-text">(${first_expired_line["date_maturity"]})</label>
+																		<label class="form-text">${date_maturity_elem}</label>
                                 </div>
                                 <div>
                                     <label class="form-text ">Total: </label>
