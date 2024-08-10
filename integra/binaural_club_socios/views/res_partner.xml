@@ -20,8 +20,14 @@
             <xpath expr="//group/group/div" position="after">
 	            <field name="supplier_rank" invisible="1"/>
 	            <field name="customer_rank" invisible="1"/>
-                <field name="action_number" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
-                <field name="type_relation" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+                <field name="hide_action_number" invisible="1" />
+                <field name="readonly_action_number" invisible="1" />
+
+                <field name="action_number" 
+                    attrs="{ 'invisible': ['|',('hide_action_number','=', True), ('type_relation','!=','partner')], 'readonly': ['|', ('active', '=', False), ('readonly_action_number', '=', True)] }"
+                />
+                <field name="parent_action_number" attrs="{'invisible':['|',('hide_action_number','=', True), ('type_relation','=','partner')]}"/>
+                <field name="type_relation" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)], 'readonly': ['|', ('active', '=', False), ('readonly_action_number', '=', True)]}"/>
                 <field name="state_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="state_partner" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="associate_parent" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>

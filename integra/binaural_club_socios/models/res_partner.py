@@ -1,6 +1,7 @@
 from odoo import models, api, exceptions, fields, _
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from odoo.exceptions import UserError
 import logging
 
 _logger = logging.getLogger()
@@ -9,15 +10,24 @@ _logger = logging.getLogger()
 class ResPartner(models.Model):
     _inherit = "res.partner"
 
-    def actions_active(self):
-        actions = []
-        partner_action = self.env["res.partner"].search([("action_number", "!=", False)])
-        for x in partner_action:
-            actions.append(x.action_number.number)
-        return [("number", "not in", actions)]  # tesoreria es disponible para asignar
+    action_number = fields.Many2one(
+        "action.partner", 
+        string="Action Number", 
+        domain=[("owner_id", "=", False)],
+    )
 
-    action_number = fields.Many2one("action.partner", string="Action Number", domain=actions_active)
-    action_number_related = fields.Many2one("action.partner", string="Action related")
+    parent_action_number = fields.Many2one(
+        "action.partner",
+        string="Action Number",
+        compute="_compute_parent_action_number",
+        store=True
+    )
+
+    hide_action_number = fields.Boolean(
+        compute="_compute_hide_action_number"
+    )
+
+    readonly_action_number =  fields.Boolean()
 
     is_solvent_related = fields.Boolean(string="Is solvent?")
 
@@ -180,6 +190,56 @@ class ResPartner(models.Model):
     user_remove_suspend = fields.Many2one("res.users", string="User remove suspend")
     date_remove_suspend = fields.Date(string="Date remove suspend")
 
+    @api.constrains('action_number', 'type_relation')
+    def _check_action_number(self):
+        for record in self:
+
+            action_number = record.action_number
+            partner_active = record.active
+
+            if record.type_relation != "partner" or not action_number:
+                record.readonly_action_number = False
+                continue
+
+            if not action_number.owner_id and partner_active:
+                action_number.owner_id = record.id
+                record.readonly_action_number = True
+                continue
+
+            if action_number.owner_id.id == record.id:
+                continue
+
+            if not partner_active:
+                raise UserError(
+                _(
+                    "Action %s can't be assigned to inactive partner.",
+                    action_number.number
+                )
+            )
+
+            raise UserError(
+                _(
+                    "Action %s is being used by %s.",
+                    action_number.number,
+                    action_number.owner_id.name
+                )
+            )
+
+    @api.depends('supplier_rank', 'customer_rank')
+    def _compute_hide_action_number(self):
+        for record in self:
+            record.hide_action_number = record.supplier_rank > 0 or record.customer_rank == 0
+
+    @api.depends('parent_id.action_number', 'type_relation')
+    def _compute_parent_action_number(self):
+        for record in self:
+            if not record.type_relation or record.type_relation == "partner":
+                record.parent_action_number = None
+                continue
+
+            record.action_number = None
+            record.parent_action_number = record.parent_id.action_number
+
     @api.onchange("birthday")
     def _onchange_birthday(self):
         self._calculate_partner_birthday()
@@ -230,6 +290,7 @@ class ResPartner(models.Model):
             if not partner.is_solvent or not partner.active:
                 raise exceptions.UserError(_("You cannot transfer a delinquent or inactive share."))
 
+            partner.action_number.action_transfer()
             partner.active = False
 
             partner.message_post(
@@ -244,17 +305,6 @@ class ResPartner(models.Model):
             for parent_id in partner.child_ids:
                 parent_id.active = False
 
-            values_action = {
-                "name": partner.name,
-                "identification": str(partner.prefix_vat) + str(partner.vat),
-                "date_start": partner.start_date,
-                "date_end": partner.end_date_partner,
-                "action_id": partner.action_number.id,
-                "type_operation": "unlink",
-                "name_exec": self.env.user.name,
-                "date_exec": fields.Date.today(),
-            }
-            self.env["action.partner.previous"].sudo().create(values_action)
 
     def action_approve_vote(self):
         for partner in self:
@@ -397,3 +447,18 @@ class ResPartner(models.Model):
                 name = "%s - %s" % (partner.action_number.number, name)
             res.append((partner.id, name))
         return res
+
+
+    def cron_reset_action_number(self):
+        records = self.env["res.partner"].search([
+            ("type_relation", "!=", "partner"),
+            ("action_number", "!=", False)
+        ])
+        
+        records.write({
+            "action_number": None
+        })
+
+        _logger.warning('-----------ROWS AFFECTED----------')
+        _logger.warning(records)
+        _logger.warning('---------------------')
