@@ -189,6 +189,7 @@ class ResPartner(models.Model):
     # campos referentes a remover suspension
     user_remove_suspend = fields.Many2one("res.users", string="User remove suspend")
     date_remove_suspend = fields.Date(string="Date remove suspend")
+    has_ownership_conflict = fields.Boolean()
 
     @api.constrains('action_number', 'type_relation')
     def _check_action_number(self):
@@ -449,16 +450,84 @@ class ResPartner(models.Model):
         return res
 
 
-    def cron_reset_action_number(self):
+    def action_resolve_ownership_conflict(self):
+        for record in self:
+            owner_ids = self.env["res.partner"].search([
+                ("action_number", "=", record.action_number.id),
+                ("id", "!=", record.id)
+            ])
+
+            if not owner_ids:
+                continue
+
+            owner_ids.write({
+                "action_number": None,
+                "has_ownership_conflict": False,
+            })
+            
+            record.action_number.owner_id = record.id
+
+            record.has_ownership_conflict = False
+
+    @api.model
+    def _show_ownership_conflict_resolve_button(self):
+        action_number_ids = self.env["action.partner"].search([])
+
+        exist_ownership_conflict = False
+
+        for record in action_number_ids:
+
+            owner_ids = self.env["res.partner"].search([
+                ("action_number", "=", record.id)
+            ])
+
+            if len(owner_ids) <= 1:
+                continue
+
+            owner_ids.write({
+                "has_ownership_conflict": True,
+            })
+
+            exist_ownership_conflict = True
+
+        return exist_ownership_conflict
+
+    def _reset_action_number(self):
+        self.ensure_one()
+        
+        action_number = self.action_number
+
+        if self.type_relation == "partner" or not action_number:
+            self.readonly_action_number = bool(action_number)
+            return False
+
+        self.readonly_action_number = False
+
+        if self.id == action_number.owner_id.id:
+            self.action_number.owner_id = None
+
+        self.action_number = None
+
+        return True
+
+    def _reset_ownership_action_number(self):
+        for record in self:
+            record._reset_action_number()
+
+            if record.type_relation == "partner" and record.action_number:
+                record.action_number.owner_id = record.id
+
+    def cron_resolve_ownership_action_number(self):
         records = self.env["res.partner"].search([
-            ("type_relation", "!=", "partner"),
             ("action_number", "!=", False)
         ])
-        
-        records.write({
-            "action_number": None
-        })
 
-        _logger.warning('-----------ROWS AFFECTED----------')
-        _logger.warning(records)
-        _logger.warning('---------------------')
+        exist_ownership_conflict = self._show_ownership_conflict_resolve_button()
+
+        if exist_ownership_conflict:
+            _logger.warning('--------exist_ownership_conflict-------------')
+            _logger.warning(exist_ownership_conflict)
+            _logger.warning('---------------------')
+            return False
+
+        records._reset_ownership_action_number()

@@ -69,6 +69,26 @@ class ActionPartner(models.Model):
         string='Beneficiaries',
         store=True
     )
+    
+    @api.constrains('owner_id')
+    def _check_owner_id(self):
+        for record in self:
+
+            # If everything is fine just one owner must to be
+            owner_ids = self.env["res.partner"].search([
+                ("action_number", "=", self.id)
+            ])
+            
+            if len(owner_ids) <= 1:
+                continue
+
+            raise ValidationError(
+                _(
+                    "Action %s is being used by more than one owner. Resolve ownership conflict: %s.",
+                    self.number,
+                    ", ".join(owner_ids.mapped("vat"))
+                )
+            )
 
     def _prep_action_partner_previous(self):
         self.ensure_one()
