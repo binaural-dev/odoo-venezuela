@@ -8,7 +8,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Technical",
-    "version": "16.0.0.0.1",
+    "version": "17.0.1.0.0",
     "depends": ["web_domain_field"],
     "data": [
         # 'security/ir.model.access.csv',
