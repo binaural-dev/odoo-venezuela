@@ -4,7 +4,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Hidden",
-    "version": "16.0.1.0.0",
+    "version": "17.0.1.0.0",
     # any module necessary for this one to work correctly
     "depends": ["binaural_rate", "account_payment"],
     "auto_install": True,
