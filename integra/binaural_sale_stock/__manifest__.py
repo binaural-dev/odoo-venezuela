@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     "name": "Binaural Ventas Inventario",
     "summary": """Personalizaciones a entre Ventas e Inventario""",
@@ -6,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.16.0.11",
+    "version": "17.0.1.0.0",
     "depends": ["sale_stock"],
     "data": [],
     "application": True,
