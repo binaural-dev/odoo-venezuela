@@ -5,7 +5,7 @@
     "name": """Base API""",
     "summary": """Basic function and methods of API for openapi or XML-RPC""",
     "category": "Hidden",
-    "version": "16.0.1.0.1",
+    "version": "17.0.1.0.0",
     "application": False,
     "author": "IT-Projects LLC, Anvar Kildebekov",
     "support": "apps@itpp.dev",
