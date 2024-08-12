@@ -1,7 +1,6 @@
-
 {
     'name': 'Payment Provider: Megasoft',
-    'version': '16.0.0.1.3',
+    'version': "17.0.1.0.0",
     'sequence': 350,
     'category': 'Accounting/Payment Providers',
     'summary': "Este modulo permite habilitar un nuevo metodo de pago con Megasoft.",
