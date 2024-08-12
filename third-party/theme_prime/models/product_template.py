@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019-Present Droggol Infotech Private Limited. (<https://www.droggol.com/>)
 
 from odoo.osv import expression
@@ -28,7 +27,7 @@ class ProductTemplate(models.Model):
         if self.env['product.pricelist'].browse(pricelist_id).write_date > catch_date_obj:
             return True
 
-        product_grouped_data = self.env['product.template'].read_group([('sale_ok', '=', True)], ['write_date:max'], ['sale_ok'])
+        product_grouped_data = self.env['product.template']._read_group([('sale_ok', '=', True)], ['sale_ok'], ['write_date:max'])
         if product_grouped_data:
             product_date = product_grouped_data[0].get('write_date')
             if product_date > catch_date_obj:
