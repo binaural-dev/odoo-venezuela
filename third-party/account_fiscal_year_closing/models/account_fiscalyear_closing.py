@@ -653,15 +653,15 @@ class AccountFiscalyearClosingMapping(models.Model):
         start = self.fyc_config_id.fyc_id.date_start
         end = self.fyc_config_id.fyc_id.date_end
         company_id = self.fyc_config_id.fyc_id.company_id.id
-        return self.env["account.move.line"].read_group(
+        return self.env["account.move.line"]._read_group(
             [
                 ("company_id", "=", company_id),
                 ("account_id", "=", account.id),
                 ("date", ">=", start),
                 ("date", "<=", end),
             ],
-            ["partner_id", "credit", "debit"],
-            ["partner_id"],
+            ['partner_id'],
+            ['credit:sum', 'debit:sum'],
         )
 
 
