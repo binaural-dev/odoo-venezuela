@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     "name": "Binaural FT",
     "summary": """
@@ -8,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.1.0.2",
+    "version": "17.0.1.0.0",
     "depends": [
         "point_of_sale",
         "binaural_pos_receipt",
