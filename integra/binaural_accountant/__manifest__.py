@@ -28,7 +28,6 @@
         "views/account_move.xml",
         "views/account_move_line.xml",
         "views/account_payment.xml",
-        "views/res_partner.xml",
         "views/ir_property.xml",
         "report/account_invoice_details.xml",
         "report/all_payment_report.xml",

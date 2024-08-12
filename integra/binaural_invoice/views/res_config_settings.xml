@@ -13,12 +13,10 @@
                             <div class="o_setting_left_pane">
                             </div>
                             <div class="o_setting_right_pane">
-                                <group colspan="2" col="4">
-                                    <field name="max_product_invoice"/>
-                                </group>
-                                <div class="text-muted">
-                                   Limit the number of products on an invoice 
+                                <div>
+                                    Limit the number of products on an invoice 
                                 </div>
+                                <field name="max_product_invoice"/>
                             </div>
                         </div>
 
