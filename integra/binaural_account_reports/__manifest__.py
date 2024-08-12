@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "16.0.5.5.4",
+    "version": "17.0.1.0.0",
     # any module necessary for this one to work correctly
     "depends": ["base", "account_reports", "binaural_accountant"],
     # always loaded
