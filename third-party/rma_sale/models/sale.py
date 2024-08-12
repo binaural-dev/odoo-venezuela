@@ -18,8 +18,8 @@ class SaleOrder(models.Model):
     rma_count = fields.Integer(string="RMA count", compute="_compute_rma_count")
 
     def _compute_rma_count(self):
-        rma_data = self.env["rma"].read_group(
-            [("order_id", "in", self.ids)], ["order_id"], ["order_id"]
+        rma_data = self.env["rma"]._read_group(
+            [("order_id", "in", self.ids)], ['order_id'], ['__count']
         )
         mapped_data = {r["order_id"][0]: r["order_id_count"] for r in rma_data}
         for record in self:
