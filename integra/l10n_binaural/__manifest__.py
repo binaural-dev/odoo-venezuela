@@ -1,6 +1,6 @@
 {
     "name": "Binaural plan de cuentas",
-    "version": "1.0.0",
+    "version": "17.0.1.0.0",
     "category": "Accounting/Localizations/Account Charts",
     "license": "LGPL-3",
     "depends": ["base", "account", "account_accountant", "stock", "sale", "contacts"],
