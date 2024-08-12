@@ -370,8 +370,7 @@ class ResPartner(models.Model):
                             }
                         )
 
-    def name_get(self):
-        res = []
+    def _compute_display_name(self):
         for partner in self:
             name = partner.name or ""
 
@@ -395,5 +394,4 @@ class ResPartner(models.Model):
                 name = name.replace("\n", "<br/>")
             if partner.action_number:
                 name = "%s - %s" % (partner.action_number.number, name)
-            res.append((partner.id, name))
-        return res
+            partner.display_name = name
