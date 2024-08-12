@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019-Present Droggol Infotech Private Limited. (<https://www.droggol.com/>)
 
 from PIL import ImageColor
@@ -19,7 +18,7 @@ class DrProductLabel(models.Model):
     active = fields.Boolean(default=True)
 
     def _compute_product_count(self):
-        label_data = self.env['product.template'].read_group([('dr_label_id', 'in', self.ids)], ['dr_label_id'], ['dr_label_id'])
+        label_data = self.env['product.template']._read_group([('dr_label_id', 'in', self.ids)], ['dr_label_id'], ['__count'])
         mapped_data = dict([(x['dr_label_id'][0], x['dr_label_id_count']) for x in label_data])
         for label in self:
             label.product_count = mapped_data.get(label.id, 0)

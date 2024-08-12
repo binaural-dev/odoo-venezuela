@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019-Present Droggol Infotech Private Limited. (<https://www.droggol.com/>)
 
 {
     'name': 'Droggol Theme Common',
     'description': 'Droggol Theme Common',
     'category': 'eCommerce',
-    'version': '16.0.0.1.3',
+    'version': "17.0.1.0.0",
     'depends': [
         'sale_product_configurator',
         'website_sale_comparison',

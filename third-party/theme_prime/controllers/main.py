@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019-Present Droggol Infotech Private Limited. (<https://www.droggol.com/>)
 
 import base64
@@ -49,7 +48,7 @@ class ThemePrimeWebsiteSale(WebsiteSale):
         # Rating
         ratings = request.httprequest.args.getlist('rating')
         if ratings and search_rating:
-            result = request.env['rating.rating'].sudo().read_group([('res_model', '=', 'product.template')], ['rating:avg'], groupby=['res_id'], lazy=False)
+            result = request.env['rating.rating'].sudo()._read_group([('res_model', '=', 'product.template')], ['res_id'], aggregates=['rating:avg'])
             rating_product_ids = []
             for rating in ratings:
                 rating_product_ids.extend([item['res_id'] for item in result if item['rating'] >= int(rating)])
@@ -364,7 +363,7 @@ class ThemePrimeMainClass(http.Controller):
 
     def _get_bestseller_products(self, old_limit):
         past_date = datetime.now() - timedelta(days=30)
-        result = request.env['sale.report'].sudo().read_group([('date', '>', past_date), ('website_id', '=', request.website.id), ('state', 'in', ['sale', 'done'])], ['product_tmpl_id', 'product_uom_qty:sum'], ['product_tmpl_id'], orderby="product_uom_qty desc")
+        result = request.env['sale.report'].sudo()._read_group([('date', '>', past_date), ('website_id', '=', request.website.id), ('state', 'in', ['sale', 'done'])], ['product_tmpl_id'], ['product_uom_qty:sum'], order='product_uom_qty desc')
         return [product_line['product_tmpl_id'][0] for product_line in result], None if len(result) else old_limit, None
 
     def _get_shop_related_data(self, options):

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #################################################################################
 # Author      : Webkul Software Pvt. Ltd. (<https://webkul.com/>)
 # Copyright(c): 2015-Present Webkul Software Pvt. Ltd.
@@ -17,7 +16,7 @@
     "name":  "POS Keyboard Shortcuts",
     "summary":  """Odoo POS Keyboard Shortcuts module allows to use Shortcuts for your Odoo POS. You can define various hotkeys on your keyboards to create shortcuts.Shortcut|Keyboard ShortCuts|Hotkeys|Custom Keyboard ShortCuts""",
     "category":  "Point of Sale",
-    "version":  "1.1.2",
+    "version": "17.0.1.0.0",
     "author":  "Webkul Software Pvt. Ltd.",
     "license":  "Other proprietary",
     "website":  "https://store.webkul.com/Odoo-POS-Keyboard-Shortcuts.html",
