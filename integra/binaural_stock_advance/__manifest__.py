@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     "name": "Binaural Importaciones",
     "summary": """
@@ -9,7 +8,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.13.0.0",
+    "version": "17.0.1.0.0",
     "depends": [
         "base",
         "stock",
