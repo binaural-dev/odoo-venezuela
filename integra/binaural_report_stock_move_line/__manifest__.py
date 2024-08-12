@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     "name": "Binaural Reporte de movimientos en stock",
     "summary": """
@@ -8,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock/Report",
-    "version": "16.0.16.0.5",
+    "version": "17.0.1.0.0",
     "depends": [
         "binaural_stock",        
         "purchase",
