@@ -8,7 +8,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.1.0.0",
+    "version": "17.0.1.0.0",
     "depends": [
         "meli_oerp_multiple",
     ],
