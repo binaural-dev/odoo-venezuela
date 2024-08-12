@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from odoo import models, fields, tools, api, osv
 from odoo.tools.translate import _
 

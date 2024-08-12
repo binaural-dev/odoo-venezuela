@@ -320,11 +320,10 @@ class Rma(models.Model):
         # It is enough to count the moves to know how many pickings
         # there are because there will be a unique move linked to the
         # same picking and the same rma.
-        rma_data = self.env["stock.move"].read_group(
+        rma_data = self.env["stock.move"]._read_group(
             [("rma_id", "in", self.ids)],
-            ["rma_id", "picking_id"],
-            ["rma_id", "picking_id"],
-            lazy=False,
+            ['rma_id', 'picking_id'],
+            ['__count'],
         )
         mapped_data = Counter(map(lambda r: r["rma_id"][0], rma_data))
         for record in self:

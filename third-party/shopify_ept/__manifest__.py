@@ -1,7 +1,7 @@
 {
     # App information
     'name': 'Shopify Odoo Connector',
-    'version': '16.0.6.5.2',
+    'version': "17.0.1.0.0",
     'category': 'Sales',
     'summary': 'Our Shopify Connector helps you in integrating and managing your Shopify store with Odoo by providing the most useful features of Product and Order Synchronization. This solution is compatible with our other apps i.e. Amazon, ebay, magento, Inter Company Transfer, Shipstation.Apart from Odoo Shopify Connector, we do have other ecommerce solutions or applications such as Woocommerce connector, Magento Connector, and also we have solutions for Marketplace Integration such as Odoo Amazon Connector, Odoo eBay Connector, Odoo Walmart Connector, Odoo Bol.com Connector.Aside from ecommerce integration and ecommerce marketplace integration, we also provide solutions for various operations, such as shipping , logistics , shipping labels , and shipping carrier management with our shipping integration, known as the Shipstation connector.For the customers who are into Dropship business, we do provide EDI Integration that can help them manage their Dropshipping business with our Dropshipping integration or Dropshipper integration.It is listed as Dropshipping EDI integration and Dropshipper EDI integration.Emipro applications can be searched with different keywords like Amazon integration, Shopify integration, Woocommerce integration, Magento integration, Amazon vendor center module, Amazon seller center module, Inter company transfer, Ebay integration, Bol.com integration, inventory management, warehouse transfer module, dropship and dropshipper integration and other Odoo integration application or module..',
     'license': 'OPL-1',

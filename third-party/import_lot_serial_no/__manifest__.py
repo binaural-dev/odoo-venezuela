@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 # Part of BrowseInfo. See LICENSE file for full copyright and licensing details.
 {
     'name': 'Import Lot/Serial Number in Picking-Receipt and Transfer from Excel File',
-    'version': '16.0.0.3',
+    'version': "17.0.1.0.0",
     'category': 'extra tools',
     'summary': 'Apps for import serial number import Lot number import lot number in picking import lot in picking import lot in receipt import serial number import serial number in picking import serial in picking import serial in receipt import lot serial in picking',
     'description': """

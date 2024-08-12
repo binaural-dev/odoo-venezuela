@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (C) Softhealer Technologies.
 {
     'name': 'Product Price Checker',
@@ -9,7 +8,7 @@
 
     'support': 'support@softhealer.com',
 
-    'version': '16.0.2',
+    'version': "17.0.1.0.0",
 
     "license": "OPL-1",
 

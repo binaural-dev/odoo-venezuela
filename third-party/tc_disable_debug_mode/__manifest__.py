@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 
 {
   "name"                 :  "Disable Developer Mode",
   "summary"              :  """Allow to Disable Developer Mode or Disable Debug Mode For Users.""",
   "category"             :  "Tools",
-  "version"              :  "16.0.1.0.0",
+  "version": "17.0.1.0.0",
   "sequence"             :  7,
   "website": "https://www.titanscodetech.com",
   "author"               :  "Titans Code Tech",

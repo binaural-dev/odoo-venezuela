@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 {
     'name': "All in one Hide Menu and Buttons - All Hide Menu, Button, Actions",
-    'version': '16.0.0.3',
+    'version': "17.0.1.0.0",
     "category" : "Extra Tools",
     'summary': 'Hide all in one Hide button hide action button hide create button hide duplicate button hide export button hide import button hide delete button hide edit button hide print button hide all button hide field hide any menu hide submenu hide menu hide report',
     "description": """

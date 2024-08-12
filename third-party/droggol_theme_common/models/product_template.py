@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019-Present Droggol Infotech Private Limited. (<https://www.droggol.com/>)
 
 from odoo import api, fields, models, Command
@@ -123,7 +122,7 @@ class ProductTemplate(models.Model):
         # Rating
         ratings = options.get('rating')
         if ratings:
-            result = self.env['rating.rating'].sudo().read_group([('res_model', '=', 'product.template')], ['rating:avg'], groupby=['res_id'], lazy=False)
+            result = self.env['rating.rating'].sudo()._read_group([('res_model', '=', 'product.template')], ['res_id'], aggregates=['rating:avg'])
             rating_product_ids = []
             for rating in ratings:
                 rating_product_ids.extend([item['res_id'] for item in result if item['rating'] >= int(rating)])

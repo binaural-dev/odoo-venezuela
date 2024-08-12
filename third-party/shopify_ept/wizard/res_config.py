@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # See LICENSE file for full copyright and licensing details.
 from odoo import models, fields, api, _, SUPERUSER_ID
 from odoo.exceptions import UserError
