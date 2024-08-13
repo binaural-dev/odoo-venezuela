@@ -26,19 +26,19 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-6 o_setting_box" attrs="{'invisible': [('company_seller', '=', False)]}">
+                    <div class="col-12 col-lg-6 o_setting_box" invisible="not company_seller">
                         <div class="o_setting_left_pane">
                         </div>
                         <div class="o_setting_right_pane">
                             <label for="initial_seller"/>
                             <div class="content-group">
                                 <div class="mt16">
-                                    <field name="initial_seller"  domain="[('is_seller','=', True)]" attrs="{'required': [('company_seller', '=', True)]}"/>
+                                    <field name="initial_seller"  domain="[('is_seller','=', True)]" required="company_seller"/>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-6 o_setting_box" attrs="{'invisible': [('company_seller', '=', False)]}">
+                    <div class="col-12 col-lg-6 o_setting_box" invisible="not company_seller">
                         <div class="o_setting_left_pane">
                             <div class="content-group">
                                 <div class="mt16">
@@ -53,7 +53,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-6 o_setting_box" attrs="{'invisible': [('company_seller', '=', False)]}">
+                    <div class="col-12 col-lg-6 o_setting_box" invisible="not company_seller">
                         <div class="o_setting_left_pane">
                             <div class="content-group">
                                 <div class="mt16">
