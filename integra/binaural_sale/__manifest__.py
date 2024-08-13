@@ -24,6 +24,7 @@
         "views/res_config_settings.xml",
         "views/sale_order.xml",
         "views/product_pricelist_item_views.xml",
+        "views/res_partner.xml",
         "views/menuitems.xml",
     ],
     "images": ["static/description/icon.png"],

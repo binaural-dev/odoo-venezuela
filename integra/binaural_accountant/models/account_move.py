@@ -62,7 +62,6 @@ class AccountMove(models.Model):
         string="VAT",
         help="VAT of the partner",
         compute="_compute_vat",
-        readonly=False,
     )
 
     financial_document = fields.Boolean(default=False, copy=False)
