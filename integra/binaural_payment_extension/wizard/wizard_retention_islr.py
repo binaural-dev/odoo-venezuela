@@ -9,6 +9,9 @@ import pandas as pd
 from odoo.http import request
 import os
 
+import logging
+_logger = logging.getLogger(__name__)
+
 
 class RetentionIslrReport(models.TransientModel):
     _name = "wizard.retention.islr"
@@ -129,20 +132,10 @@ class RetentionIslrReport(models.TransientModel):
         data2 = data2.getvalue()
         return data2
 
-    def _retention_islr_excel(self, current_company=False):
-        foreign_currency_id = self.env.company.currency_foreign_id.id
-        search_domain = self._get_domain()
-        search_domain += [
-            ("type", "in", ["in_invoice"]),
-            ("type_retention", "in", ["islr"]),
-            ("state", "in", ["emitted"]),
-        ]
-
-        if current_company:
-            search_domain += [("company_id", "=", current_company.id)]
-
-        docs = self.env["account.retention"].search(search_domain, order="id asc")
-        dic = OrderedDict(
+    @api.model
+    def _get_retention_islr_excel_model_row(self):
+        
+        new_model_row = OrderedDict(
             [
                 ("ID Sec", 0),
                 ("RIF Retenido", ""),
@@ -154,39 +147,79 @@ class RetentionIslrReport(models.TransientModel):
                 ("Porcentaje de retención", 0.00),
             ]
         )
-        lista = []
-        op = 1
-        for i in docs:
-            for il in i.retention_line_ids:
-                dict = OrderedDict()
-                dict.update(dic)
-                dict["ID Sec"] = op
-                dict["RIF Retenido"] = i.partner_id.prefix_vat + i.partner_id.vat
-                pi = str(i.date_accounting)
-                fpi = datetime.strptime(pi, "%Y-%m-%d")
+        
+        return new_model_row
 
-                if len(il.move_id.name) > 10:
-                    dict["Número factura"] = il.move_id.name[-10:]
-                else:
-                    dict["Número factura"] = il.move_id.name
-                dict["Control Número"] = il.move_id.correlative
-                dict["Fecha Operación"] = fpi.strftime("%d/%m/%Y")
-                concept = ""
-                alicuota = ""
-                for x in il.payment_concept_id.line_payment_concept_ids:
-                    if x.type_person_id.name == i.partner_id.type_person_id.name:
-                        concept = x.code
-                        alicuota = x.tariff_id.percentage if x.tariff_id else ""
-                        break
-                dict["Código Concepto"] = concept
-                dict["Monto Operación"] = (
-                    round(il.foreign_invoice_amount, 2) if foreign_currency_id == 3 else il.invoice_amount
-                )
-                dict["Porcentaje de retención"] = alicuota
-                lista.append(dict)
-                op += 1
-        tabla = pd.DataFrame(lista)
-        return tabla
+    @api.model    
+    def _get_retention_islr_excel_row(self, row_idx, ret_line_id, is_vef_currency):
+
+        new_row = self._get_retention_islr_excel_model_row()
+
+        ret_id = ret_line_id.retention_id
+
+        new_row["ID Sec"] = row_idx
+
+        new_row["RIF Retenido"] = ret_id.partner_id.prefix_vat + ret_id.partner_id.vat
+
+        pi = str(ret_id.date_accounting)
+
+        fpi = datetime.strptime(pi, "%Y-%m-%d")
+
+        new_row["Número factura"] = ret_line_id.move_id.name[-10:] if len(ret_line_id.move_id.name) > 10 else ret_line_id.move_id.name
+
+        new_row["Control Número"] = ret_line_id.move_id.correlative
+
+        new_row["Fecha Operación"] = fpi.strftime("%d/%m/%Y")
+
+        concept = ""
+        alicuota = ""
+
+        for l_pay_concept_id in ret_line_id.payment_concept_id.line_payment_concept_ids:
+            if l_pay_concept_id.type_person_id.name == ret_id.partner_id.type_person_id.name:
+                concept = l_pay_concept_id.code
+                alicuota = l_pay_concept_id.tariff_id.percentage if l_pay_concept_id.tariff_id else ""
+                break
+
+        new_row["Código Concepto"] = concept
+
+        new_row["Monto Operación"] = (
+            round(ret_line_id.foreign_invoice_amount, 2) if is_vef_currency else ret_line_id.invoice_amount
+        )
+
+        new_row["Porcentaje de retención"] = alicuota
+
+        return new_row
+
+    def _retention_islr_excel(self, current_company=False):
+        is_vef_currency = self.env.ref("base.VEF").id == self.env.company.currency_foreign_id.id
+
+        search_domain = self._get_domain(current_company.id)
+
+        search_domain += [
+            ("type", "in", ["in_invoice"]),
+            ("type_retention", "in", ["islr"]),
+            ("state", "in", ["emitted"]),
+        ]
+
+        retention_ids = self.env["account.retention"].search(search_domain, order="id asc")
+
+        table_rows = []
+
+        retention_line_ids = retention_ids.mapped("retention_line_ids")
+
+        row_idx = 1
+
+        for retention_line_id in retention_line_ids:
+
+            new_row = self._get_retention_islr_excel_row(row_idx, retention_line_id, is_vef_currency)
+
+            table_rows.append(new_row)
+
+            row_idx += 1
+
+        table = pd.DataFrame(table_rows)
+
+        return table
 
     def _table_retention_islr(self, wizard=False, current_company=False):
         if wizard:
