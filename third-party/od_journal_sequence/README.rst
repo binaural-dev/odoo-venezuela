@@ -1,4 +1,4 @@
-Journal Sequence For Odoo 16
+Journal Sequence For Odoo 17
 ============================
 
 * Configure Sequence For Journals
@@ -14,7 +14,7 @@ Tech
 
 Installation
 ============
-- www.odoo.com/documentation/16.0/setup/install.html
+- www.odoo.com/documentation/17.0/setup/install.html
 - Install our custom addon
 
 Authors

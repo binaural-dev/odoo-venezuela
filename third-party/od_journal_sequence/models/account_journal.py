@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 
@@ -117,3 +119,5 @@ class AccountJournal(models.Model):
     def _create_sequence(self, vals, refund=False):
         seq_vals = self._prepare_sequence(vals, refund=refund)
         return self.env["ir.sequence"].sudo().create(seq_vals)
+
+
