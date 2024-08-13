@@ -1,6 +1,7 @@
 from odoo import api, fields, models, Command, _
 from odoo.tools import float_compare
 from odoo.exceptions import UserError
+from odoo.tools import frozendict, formatLang, format_date, float_compare, Query
 from datetime import date, timedelta
 import traceback
 
@@ -22,7 +23,7 @@ class AccountMoveLine(models.Model):
     foreign_price = fields.Float(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
-        digits="Tasa",
+        digits="Foreign Product Price",
         store=True,
         readonly=False,
     )
@@ -46,8 +47,8 @@ class AccountMoveLine(models.Model):
     foreign_balance = fields.Monetary(
         currency_field="foreign_currency_id",
         compute="_compute_foreign_balance",
+        inverse="_inverse_foreign_balance",
         store=True,
-        precompute=True,
     )
 
     foreign_debit_adjustment = fields.Monetary(
@@ -126,14 +127,34 @@ class AccountMoveLine(models.Model):
             else:
                 line.foreign_price_total = line.foreign_subtotal = foreign_subtotal
 
-    @api.depends("foreign_credit", "foreign_debit")
+    def _credit_debit_balance(self):
+        self.ensure_one()
+        self.write(
+            {
+                "foreign_debit": abs(self.foreign_balance) if self.foreign_balance > 0 else 0.0,
+                "foreign_credit": abs(self.foreign_balance) if self.foreign_balance < 0 else 0.0,
+            }
+        )
+
+    @api.depends("foreign_credit", "foreign_debit", "foreign_subtotal")
     def _compute_foreign_balance(self):
         for line in self:
-            if line.move_id.is_invoice(include_receipts=True):
+
+            if line.display_type == "product" and line.move_id.is_invoice(include_receipts=True):
+                sign = line.move_id.direction_sign
                 # This may be needed to be changed in the future, when taking into account
                 # moves that are not invoices.
-                line.foreign_balance = 0.0
-            line.foreign_balance = line.foreign_debit - line.foreign_credit
+                line.foreign_balance = sign * line.foreign_subtotal
+
+            if line.move_id.is_invoice(include_receipts=True):
+                line._credit_debit_balance()
+
+            if line.balance != 0 and line.foreign_balance == 0:
+                line.foreign_balance = line.foreign_debit - line.foreign_credit
+
+    def _inverse_foreign_balance(self):
+        for line in self:
+            line._credit_debit_balance()
 
     @api.depends("foreign_rate", "balance")
     def _compute_amount_currency(self):
@@ -510,3 +531,44 @@ class AccountMoveLine(models.Model):
                     "foreign_credit": abs(line.foreign_credit),
                 }
             )
+
+    @api.depends(
+        "foreign_inverse_rate",
+        "foreign_currency_id",
+        "foreign_rate",
+        "foreign_price",
+    )
+    def _compute_all_tax(self):
+        res = super(AccountMoveLine, self)._compute_all_tax()
+        for line in self:
+            sign = line.move_id.direction_sign
+
+            if line.display_type == "product" and line.move_id.is_invoice(True):
+                amount_currency = sign * line.foreign_price * (1 - line.discount / 100)
+                handle_price_include = True
+                quantity = line.quantity
+            else:
+                amount_currency = line.amount_currency * line.move_id.foreign_inverse_rate
+                handle_price_include = False
+                quantity = 1
+
+            compute_all_currency = line.tax_ids.compute_all(
+                amount_currency,
+                currency=line.foreign_currency_id,
+                quantity=quantity,
+                product=line.product_id,
+                partner=line.move_id.partner_id or line.partner_id,
+                is_refund=line.is_refund,
+                handle_price_include=handle_price_include,
+                include_caba_tags=line.move_id.always_tax_exigible,
+                fixed_multiplicator=sign,
+            )
+
+            for tax in compute_all_currency["taxes"]:
+                for key in list(line.compute_all_tax.keys()):
+                    if not key.get("tax_repartition_line_id", False):
+                        continue
+
+                    if tax["tax_repartition_line_id"] == key["tax_repartition_line_id"]:
+                        line.compute_all_tax[key]["foreign_balance"] = tax["amount"]
+        return res
