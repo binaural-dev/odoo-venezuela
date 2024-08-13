@@ -5,8 +5,10 @@ from lxml import etree
 from collections import defaultdict
 from odoo.tools.misc import formatLang
 from odoo.tools import float_compare
+from odoo.tools.float_utils import float_round
 
 import logging
+
 _logger = logging.getLogger(__name__)
 
 
@@ -335,6 +337,84 @@ class AccountMove(models.Model):
                 )
 
     def compute_line_ids_foreign_debit_and_credit(self):
+        self.ensure_one()
+        is_invoice = self.is_invoice(include_receipts=True)
+        payment = self.payment_id
+        # If the move is a retention payment we need to use the retention_foreign_amount of the
+        # payment to compute the foreign debit/credit.
+        if (
+            payment
+            and "retention_foreign_amount" in self.env["account.payment"]._fields
+            and payment.is_retention
+        ):
+            for line in self.line_ids:
+                line.update({"foreign_debit": 0, "foreign_credit": 0})
+                if line.debit != 0:
+                    line.foreign_debit = payment.retention_foreign_amount
+                if line.credit != 0:
+                    line.foreign_credit = payment.retention_foreign_amount
+        else:
+            line_foreign_currency_id = [
+                line
+                for line in self.line_ids
+                if line.currency_id == self.env.company.currency_foreign_id
+            ]
+
+            for line in self.line_ids.sorted(lambda l: l.tax_ids, reverse=True):
+                # If the line is an adjustment line, the foreign debit and foreign credit will be
+                # the foreign debit and foreign credit adjustment fields.
+                if line.not_foreign_recalculate:
+                    continue
+
+                # If the line is an adjustment line, the foreign debit and foreign credit will be
+                # the foreign debit and foreign credit adjustment fields.
+                if (line.foreign_debit_adjustment + line.foreign_credit_adjustment) != 0:
+                    line.foreign_debit = abs(line.foreign_debit_adjustment)
+                    line.foreign_credit = abs(line.foreign_credit_adjustment)
+                    continue
+
+                if (
+                    len(self.line_ids) == 2
+                    and len(line_foreign_currency_id) == 1
+                    and line_foreign_currency_id[0].id != line.id
+                ):
+                    line_foreign_id = line_foreign_currency_id[0]
+                    if (
+                        line_foreign_id.foreign_debit_adjustment
+                        + line_foreign_id.foreign_credit_adjustment
+                    ) != 0:
+                        line.foreign_debit = abs(line.foreign_debit_adjustment)
+                        line.foreign_credit = abs(line.foreign_credit_adjustment)
+                    else:
+                        line.foreign_debit = (
+                            abs(line_foreign_id.amount_currency)
+                            if line_foreign_id.amount_currency < 0
+                            else 0
+                        )
+                        line.foreign_credit = (
+                            abs(line_foreign_id.amount_currency)
+                            if line_foreign_id.amount_currency > 0
+                            else 0
+                        )
+                    continue
+
+                if (
+                    len(line_foreign_currency_id) == len(self.line_ids)
+                    and line.amount_currency != 0
+                ):
+                    if line.amount_currency > 0:
+                        line.foreign_debit = abs(line.amount_currency)
+
+                    if line.amount_currency < 0:
+                        line.foreign_credit = abs(line.amount_currency)
+
+                    continue
+
+                if not is_invoice:
+                    line.foreign_debit = line.debit * self.foreign_inverse_rate
+                    line.foreign_credit = line.credit * self.foreign_inverse_rate
+
+    def legacy_compute_line_ids_foreign_debit_and_credit(self):
         """
         This method is used to compute the foreign debit and foreign credit of the line_ids field
         (journal entries) based on certain parameters.
@@ -483,21 +563,32 @@ class AccountMove(models.Model):
                 lines_with_same_tax = self.line_ids.filtered(
                     lambda l: l.tax_ids and l.tax_ids.name == line_name
                 )
+
                 if not (lines_with_same_tax and line_name):
                     line.foreign_debit = line.debit * self.foreign_inverse_rate
                     line.foreign_credit = line.credit * self.foreign_inverse_rate
                     continue
 
-                line.foreign_debit = (
-                    sum(lines_with_same_tax.mapped("foreign_debit"))
-                    * lines_with_same_tax[0].tax_ids[0].amount
-                    / 100
-                )
-                line.foreign_credit = (
-                    sum(lines_with_same_tax.mapped("foreign_credit"))
-                    * lines_with_same_tax[0].tax_ids[0].amount
-                    / 100
-                )
+                def amount_by_line(lines, balance="debit"):
+                    amount = 0
+                    for line in lines:
+                        balance_amount = line.foreign_debit
+                        if balance == "credit":
+                            balance_amount = line.foreign_credit
+                        tax_amount = line.tax_ids._compute_amount(
+                            float_round(balance_amount, precision_rounding=line.foreign_currency_id.rounding),
+                            balance_amount,
+                        )
+                        if self.env.company.tax_calculation_rounding_method == "round_globally":
+                            amount += tax_amount
+                        else:
+                            amount += float_round(
+                                tax_amount, precision_rounding=line.foreign_currency_id.rounding
+                            )
+                    return amount
+
+                line.foreign_debit = amount_by_line(lines_with_same_tax,"debit")
+                line.foreign_credit = amount_by_line(lines_with_same_tax,"credit")
 
         account_payable_or_receivable_line = self.line_ids.filtered(
             lambda l: l.account_id.account_type in receivable_and_payable_account_types
@@ -613,8 +704,8 @@ class AccountMove(models.Model):
             date_field = "invoice_date" if is_sale else "date"
             rate_date = getattr(move, date_field) or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
-            move.foreign_rate = rate_values.get("foreign_rate",0)
-            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate",0)
+            move.foreign_rate = rate_values.get("foreign_rate", 0)
+            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -667,12 +758,14 @@ class AccountMove(models.Model):
     def _get_payments(self, line_ids):
         self.ensure_one()
 
-        move_ids = line_ids.mapped('move_id.id')
+        move_ids = line_ids.mapped("move_id.id")
 
         if not move_ids:
             return []
 
-        payment_related = self.env['account.payment'].search([('move_id', 'in', move_ids)], order='id desc')
+        payment_related = self.env["account.payment"].search(
+            [("move_id", "in", move_ids)], order="id desc"
+        )
 
         return payment_related
 
@@ -700,8 +793,12 @@ class AccountMove(models.Model):
                 account_analytic_by_line_id[line_id.id] = ""
                 continue
 
-            account_analytic_ids_ids = [int(analytic_id) for analytic_id in line_id.analytic_distribution.keys()]
-            account_analytic_ids = self.env["account.analytic.account"].browse(account_analytic_ids_ids)
+            account_analytic_ids_ids = [
+                int(analytic_id) for analytic_id in line_id.analytic_distribution.keys()
+            ]
+            account_analytic_ids = self.env["account.analytic.account"].browse(
+                account_analytic_ids_ids
+            )
 
             if not account_analytic_ids:
                 account_analytic_by_line_id[line_id.id] = ""
@@ -719,7 +816,6 @@ class AccountMove(models.Model):
 
         return account_analytic_by_line_id
 
-
     def _get_retention_payment_move_ids(self, line_ids):
         self.ensure_one()
 
@@ -727,8 +823,12 @@ class AccountMove(models.Model):
             return []
 
         retention_ids = line_ids.mapped("move_id.retention_islr_line_ids.retention_id")
-        retention_ids = retention_ids + line_ids.mapped("move_id.retention_iva_line_ids.retention_id")
-        retention_ids = retention_ids + line_ids.mapped("move_id.retention_municipal_line_ids.retention_id")
+        retention_ids = retention_ids + line_ids.mapped(
+            "move_id.retention_iva_line_ids.retention_id"
+        )
+        retention_ids = retention_ids + line_ids.mapped(
+            "move_id.retention_municipal_line_ids.retention_id"
+        )
 
         retention_payment_move_ids = retention_ids.payment_ids.mapped("move_id")
 
@@ -740,18 +840,18 @@ class AccountMove(models.Model):
     def get_account_move_report_data(self):
         self.ensure_one()
 
-        doc_title = ''
-        doc_date = ''
+        doc_title = ""
+        doc_date = ""
         main_move_concept = self.ref
-        main_move_payment_concept = ''
+        main_move_payment_concept = ""
         payment_related_move_ids = []
 
         main_move = {
-            'name': self.name,
+            "name": self.name,
         }
 
         line_ids_ids = self._get_account_move_line_related()
-        line_ids = self.env['account.move.line'].browse(line_ids_ids)
+        line_ids = self.env["account.move.line"].browse(line_ids_ids)
         account_analytic_by_line_id = self._account_analytic_by_line_id(line_ids)
 
         payment_move_ids = self._get_payments(line_ids)
@@ -762,7 +862,7 @@ class AccountMove(models.Model):
             doc_date = first_payment.date
 
             main_move_payment_concept = first_payment.concept
-            payment_related_move_ids = payment_move_ids.mapped('move_id.id')
+            payment_related_move_ids = payment_move_ids.mapped("move_id.id")
 
             if self.amount_residual == 0:
                 doc_title = first_payment.name
@@ -771,15 +871,17 @@ class AccountMove(models.Model):
         data = {
             "doc_ids": line_ids_ids,
             "docs": line_ids,
-            'doc_title': doc_title,
-            'doc_date': doc_date,
-            'main_move': self,
-            'main_move_concept': main_move_concept,
-            'main_move_payment_concept': main_move_payment_concept,
-            'payment_related_move_ids': payment_related_move_ids,
-            'retention_payment_move_ids': retention_payment_move_ids,
-            'account_analytic_by_line_id': account_analytic_by_line_id,
-            'group_analytic_accounting': self.env.user.has_group("analytic.group_analytic_accounting"),
+            "doc_title": doc_title,
+            "doc_date": doc_date,
+            "main_move": self,
+            "main_move_concept": main_move_concept,
+            "main_move_payment_concept": main_move_payment_concept,
+            "payment_related_move_ids": payment_related_move_ids,
+            "retention_payment_move_ids": retention_payment_move_ids,
+            "account_analytic_by_line_id": account_analytic_by_line_id,
+            "group_analytic_accounting": self.env.user.has_group(
+                "analytic.group_analytic_accounting"
+            ),
         }
 
         return data
@@ -828,4 +930,61 @@ class AccountMove(models.Model):
                             round(invoice.partner_id.credit_limit, decimal_places),
                         )
                     )
+        return res
+
+    @api.depends(
+        "invoice_line_ids.compute_all_tax",
+        "foreign_inverse_rate",
+        "foreign_currency_id",
+        "foreign_rate",
+    )
+    def _compute_needed_terms(self):
+        res = super()._compute_needed_terms()
+
+        for invoice in self:
+            is_draft = invoice.id != invoice._origin.id
+            sign = 1 if invoice.is_inbound(include_receipts=True) else -1
+            if invoice.is_invoice(True) and invoice.invoice_line_ids:
+                invoice._compute_tax_totals()
+                if invoice.invoice_payment_term_id:
+                    if is_draft:
+                        tax_amount_currency = 0.0
+                        untaxed_amount_currency = 0.0
+                        for line in invoice.invoice_line_ids:
+                            untaxed_amount_currency += line.foreign_subtotal
+                            tax_amount_currency += line.foreign_price_total - line.foreign_subtotal
+                        untaxed_amount = untaxed_amount_currency
+                        tax_amount = tax_amount_currency
+                    else:
+                        tax_amount = (
+                            invoice.foreign_total_billed - invoice.foreign_taxable_income
+                        ) * sign
+                        untaxed_amount = (invoice.foreign_taxable_income) * sign
+
+                    invoice_payment_terms = invoice.invoice_payment_term_id._compute_terms(
+                        date_ref=invoice.invoice_date
+                        or invoice.date
+                        or fields.Date.context_today(invoice),
+                        currency=invoice.foreign_currency_id,
+                        tax_amount_currency=tax_amount,
+                        tax_amount=tax_amount,
+                        untaxed_amount_currency=untaxed_amount,
+                        untaxed_amount=untaxed_amount,
+                        company=invoice.company_id,
+                        sign=sign,
+                    )
+
+                    for term in invoice_payment_terms:
+                        for key in list(invoice.needed_terms.keys()):
+                            if key["date_maturity"] == fields.Date.to_date(term.get("date")):
+                                invoice.needed_terms[key] = {
+                                    **invoice.needed_terms[key],
+                                    "foreign_balance": term["company_amount"],
+                                }
+                else:
+                    for key in list(invoice.needed_terms.keys()):
+                        invoice.needed_terms[key] = {
+                            **invoice.needed_terms[key],
+                            "foreign_balance": sign * invoice.foreign_total_billed,
+                        }
         return res

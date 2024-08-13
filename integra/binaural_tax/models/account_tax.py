@@ -150,25 +150,19 @@ class AccountTax(models.Model):
                     }
                 )
 
+        tax_values_list = []
+        for base_line in foreign_base_lines:
+            tax_values_list += self._compute_taxes_for_single_line(base_line)[1]
+
         if foreign_tax_lines:
             for tax_line in foreign_tax_lines:
                 tax_line["currency"] = currency
                 tax_line["tax_amount"] = 0.0
-                for tax in taxes:
-                    if tax_line["tax_repartition_line"].tax_id.id == tax["tax"].id:
-                        tax_amount = tax_line["tax_repartition_line"].tax_id._compute_amount(
-                            float_round(tax["base"], precision_rounding=currency.rounding),
-                            tax["price"],
+                for tax in tax_values_list:
+                    if tax["tax_repartition_line"].id == tax_line["tax_repartition_line"].id:
+                        tax_line["tax_amount"] += float_round(
+                            tax["amount"], precision_digits=currency.decimal_places
                         )
-                        if self.env.company.tax_calculation_rounding_method == "round_globally":
-                            tax_line["tax_amount"] += tax_amount
-                        else:
-                            tax_line["tax_amount"] += float_round(
-                                tax_amount, precision_rounding=currency.rounding
-                            )
 
-                tax_line["tax_amount"] = float_round(
-                    tax_line["tax_amount"], precision_rounding=currency.rounding
-                )
 
         return foreign_base_lines, foreign_tax_lines

@@ -1,97 +1,17 @@
 from odoo.tests import Form
-from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from .common import BinauralAccountTestInvoicingCommon
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo import Command, fields
 from datetime import timedelta
 
 
+import logging
+_logger = logging.getLogger(__name__)
+
+
 @tagged("account_tax", "post_install", "-at_install")
-class TestAccountTax(AccountTestInvoicingCommon):
-    @classmethod
-    def setUpClass(cls, chart_template_ref=None):
-        """
-        l10n_ve is required to run this test
-        """
-        super().setUpClass(chart_template_ref="l10n_ve.ve_chart_template_amd")
-        cls.env.company.write(
-            {
-                "currency_id": cls.env.ref("base.USD").id,
-                "currency_foreign_id": cls.env.ref("base.VEF").id,
-            }
-        )
-        tax_group_obj = cls.env["account.tax.group"]
-        tax_obj = cls.env["account.tax"]
-
-        cls.partner = cls.env["res.partner"].create(
-            {
-                "name": "Test Partner",
-                "email": "",
-                "vat": "27436422",
-            }
-        )
-
-        cls.tax_group = tax_group_obj.create({"name": "IVA SALES", "sequence": 1})
-
-        cls.tax0 = tax_obj.create(
-            {
-                "name": "EXENTO",
-                "type_tax_use": "sale",
-                "amount_type": "percent",
-                "amount": "0.00",
-                "description": "EXENTO",
-                "tax_group_id": cls.tax_group.id,
-            }
-        )
-
-        cls.tax1 = tax_obj.create(
-            {
-                "name": "IVA 16",
-                "type_tax_use": "sale",
-                "amount_type": "percent",
-                "amount": "16.00",
-                "description": "IVA 16",
-                "tax_group_id": cls.tax_group.id,
-            }
-        )
-
-        cls.tax2 = tax_obj.create(
-            {
-                "name": "IVA 8",
-                "type_tax_use": "sale",
-                "amount_type": "percent",
-                "amount": "8.00",
-                "description": "IVA 8",
-                "tax_group_id": cls.tax_group.id,
-            }
-        )
-
-        cls.tax3 = tax_obj.create(
-            {
-                "name": "IVA 31",
-                "type_tax_use": "sale",
-                "amount_type": "percent",
-                "amount": "31.00",
-                "description": "IVA 31",
-                "tax_group_id": cls.tax_group.id,
-            }
-        )
-
-        base_vef = cls.env.ref("base.VEF")
-
-        base_vef.write(
-            {
-                "rate_ids": [
-                    Command.create(
-                        {
-                            "name": fields.Date.today() - timedelta(days=1),
-                            "company_rate": 25,
-                        }
-                    ),
-                ]
-            }
-        )
-
+class TestAccountTax(BinauralAccountTestInvoicingCommon):
     def test01(self):
         """
         Check if the foreign currency is configurated
@@ -145,6 +65,8 @@ class TestAccountTax(AccountTestInvoicingCommon):
                 "invoice_date": fields.Date.today() - timedelta(days=1),
                 "foreign_currency_id": self.env.ref("base.VEF").id,
                 "foreign_rate": 25.0,
+                "foreign_inverse_rate": 25.0,
+                "manually_set_rate": True,
                 "invoice_line_ids": invoice_lines_vals,
             }
         )
@@ -164,4 +86,104 @@ class TestAccountTax(AccountTestInvoicingCommon):
             (4.78, self.tax3),
         ]
         invoice = self._create_document_for_tax_totals_test(lines)
+
+        expected_tax_0_amount = 0
+        expected_tax_1_amount = 219.88
+        expected_tax_2_amount = 646.66
+        expected_tax_3_amount = 811.9
+
+        tax_0_amount = 0
+        tax_1_amount = 0
+        tax_2_amount = 0
+        tax_3_amount = 0
+
+        for tax in invoice.tax_totals["groups_by_foreign_subtotal"]["Base imponible"]:
+            if tax["tax_group_id"] == self.tax0.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_0_amount)
+                tax_0_amount = tax["tax_group_amount"]
+            if tax["tax_group_id"] == self.tax1.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_1_amount)
+                tax_1_amount = tax["tax_group_amount"]
+            if tax["tax_group_id"] == self.tax2.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_2_amount)
+                tax_2_amount = tax["tax_group_amount"]
+            if tax["tax_group_id"] == self.tax3.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_3_amount)
+                tax_3_amount = tax["tax_group_amount"]
+
+        for line in invoice.line_ids.filtered(lambda line: line.display_type == "tax"):
+            if line.tax_line_id == self.tax0:
+                self.assertEqual(abs(line.foreign_balance), tax_0_amount)
+            if line.tax_line_id == self.tax1:
+                self.assertEqual(abs(line.foreign_balance), tax_1_amount)
+            if line.tax_line_id == self.tax2:
+                self.assertEqual(abs(line.foreign_balance), tax_2_amount)
+            if line.tax_line_id == self.tax3:
+                self.assertEqual(abs(line.foreign_balance), tax_3_amount)
+
+        payment_term = sum(
+            invoice.line_ids.filtered(lambda line: line.display_type == "payment_term").mapped("foreign_balance")
+        )
+
+        self.assertEqual(invoice.tax_totals["foreign_amount_untaxed"], 49587.75)
         self.assertEqual(invoice.tax_totals["foreign_amount_total"], 51266.19)
+        self.assertEqual(payment_term, invoice.tax_totals["foreign_amount_total"])
+
+    def test_03(self):
+        """
+        Test taxes in foreign currency
+        """
+        self.change_tax_included()
+        lines = [
+            (9.97, self.tax1),
+            (123.33, self.tax2),
+            (99.98, self.tax3),
+            (0.45, self.tax0),
+            (1500.00, self.tax0),
+            (45, self.tax1),
+            (200, self.tax2),
+            (4.78, self.tax3),
+        ]
+        invoice = self._create_document_for_tax_totals_test(lines)
+
+        expected_tax_0_amount = 0
+        expected_tax_1_amount = 189.55
+        expected_tax_2_amount = 598.76
+        expected_tax_3_amount = 619.76
+
+        tax_0_amount = 0
+        tax_1_amount = 0
+        tax_2_amount = 0
+        tax_3_amount = 0
+
+        for tax in invoice.tax_totals["groups_by_foreign_subtotal"]["Base imponible"]:
+            if tax["tax_group_id"] == self.tax0.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_0_amount)
+                tax_0_amount = tax["tax_group_amount"]
+            if tax["tax_group_id"] == self.tax1.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_1_amount)
+                tax_1_amount = tax["tax_group_amount"]
+            if tax["tax_group_id"] == self.tax2.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_2_amount)
+                tax_2_amount = tax["tax_group_amount"]
+            if tax["tax_group_id"] == self.tax3.tax_group_id.id:
+                self.assertEqual(tax["tax_group_amount"], expected_tax_3_amount)
+                tax_3_amount = tax["tax_group_amount"]
+
+        for line in invoice.line_ids.filtered(lambda line: line.display_type == "tax"):
+            if line.tax_line_id == self.tax0:
+                self.assertEqual(abs(line.foreign_balance), tax_0_amount)
+            if line.tax_line_id == self.tax1:
+                self.assertEqual(abs(line.foreign_balance), tax_1_amount)
+            if line.tax_line_id == self.tax2:
+                self.assertEqual(abs(line.foreign_balance), tax_2_amount)
+            if line.tax_line_id == self.tax3:
+                self.assertEqual(abs(line.foreign_balance), tax_3_amount)
+
+        payment_term = sum(
+            invoice.line_ids.filtered(lambda line: line.display_type == "payment_term").mapped("foreign_balance")
+        )
+
+        self.assertEqual(invoice.tax_totals["foreign_amount_untaxed"], 48179.68)
+        self.assertEqual(invoice.tax_totals["foreign_amount_total"], 49587.75)
+        self.assertEqual(payment_term, invoice.tax_totals["foreign_amount_total"])
