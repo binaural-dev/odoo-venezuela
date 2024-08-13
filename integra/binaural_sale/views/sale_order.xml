@@ -9,7 +9,7 @@
 			
             <xpath expr="//field[@name='partner_id']" position="replace">
 				<field name="partner_id_domain" invisible="1"/>
-				<field name="filter_partner" readonly="[('state', 'in', ['sale', 'done'])]" groups="!binaural_sale.contact_filter_sale_order_group"/>
+				<field name="filter_partner" readonly="state in ['sale', 'done']" groups="!binaural_sale.contact_filter_sale_order_group"/>
 				<field name="filter_partner" invisible="1" groups="binaural_sale.contact_filter_sale_order_group"/>
 				<field name="partner_id" domain="partner_id_domain" context="{'res_partner_search_mode': 'customer', 'show_address': 1}" options="{&quot;always_reload&quot;: True}"/>
 				<field name="manually_set_rate"/>
@@ -31,48 +31,47 @@
 			
             <xpath expr="//notebook" position="inside">
 				<page string="Foreign currency" name="foreign_currency">
-					<group>
-						<field name="foreign_currency_id" invisible="1"/>
-						<field name="foreign_inverse_rate" invisible="1" string="Foreign inverse rate" />
-						<field name="foreign_inverse_rate" groups="base.group_no_one"/>
-						<field name="foreign_rate"/>
-					</group>
-					<group class="oe_subtotal_footer oe_right" colspan="2" name="sale_total">
-						<field name="tax_totals" widget="account-tax-foreign-totals-field" nolabel="1" colspan="2" readonly="1"/>
+					<group name="foreign_tax_totals">
+						<group>
+							<field name="foreign_currency_id" invisible="1"/>
+							<field name="foreign_inverse_rate" invisible="1" string="Foreign inverse rate" />
+							<field name="foreign_inverse_rate" groups="base.group_no_one"/>
+							<field name="foreign_rate"/>
+						</group>
+						<group class="oe_subtotal_footer" colspan="2" name="sale_total">
+							<field name="tax_totals" widget="account-tax-foreign-totals-field" nolabel="1" colspan="2" readonly="1"/>
+						</group>
 					</group>
 				</page>
 			</xpath>
-			
-            <!-- <xpath expr="//button[@id='create_invoice'][1]" position="replace">
-				<button id="create_invoice" name="%(sale.action_view_sale_advance_payment_inv)d" string="Create Invoice" type="action" class="btn-primary" data-hotkey="q" 
-                invisible="[('invoice_status', '!=', 'to invoice')]" groups="!binaural_sale.create_invoice_sale_order_group"/>
-			</xpath> -->
-			
-            <!-- <xpath expr="//button[@id='create_invoice_percentage'][1]" position="replace">
-				<button id="create_invoice_percentage" name="%(sale.action_view_sale_advance_payment_inv)d" string="Create Invoice" type="action" 
-                context="{'default_advance_payment_method': 'percentage'}" data-hotkey="q" 
-                invisible="['|',('invoice_status', '!=', 'no'), ('state', '!=', 'sale')]" groups="!binaural_sale.create_invoice_sale_order_group"/>
-			</xpath> -->
+
+			<xpath expr="//button[@id='create_invoice_percentage'][1]" position="attributes">
+				<attribute name="groups">!binaural_sale.create_invoice_sale_order_group</attribute>
+			</xpath>
+
+			<xpath expr="//button[@id='create_invoice'][1]" position="attributes">
+				<attribute name="groups">!binaural_sale.create_invoice_sale_order_group</attribute>
+			</xpath>
 			
             <xpath expr="//sheet//group[1]//div[3]" position="replace">
 				<field name="pricelist_id" invisible="1"/>
 				<div groups="binaural_sale.pricelist_sale_order_group" class="o_row">
 					<field name="pricelist_id" readonly="1" options="{'no_open':True,'no_create': True}"/>
 					<button name="action_update_prices" type="object" string=" Update Prices" help="Recompute all prices based on this pricelist" class="btn-link mb-1 px-0" 
-                    icon="fa-refresh" confirm="This will update all unit prices based on the currently set pricelist." 
-                    invisible="['|', ('show_update_pricelist', '=', False), ('state', 'in', ['sale', 'done', 'cancel'])]"/>
+							icon="fa-refresh" confirm="This will update all unit prices based on the currently set pricelist." 
+							invisible="not show_update_pricelist or state in ['sale', 'done', 'cancel']"/>
 				</div>
 				<div groups="!binaural_sale.pricelist_sale_order_group" class="o_row">
 					<field name="pricelist_id" options="{'no_open':True,'no_create': True}"/>
 					<button name="action_update_prices" type="object" string=" Update Prices" help="Recompute all prices based on this pricelist" class="btn-link mb-1 px-0" 
-                    icon="fa-refresh" confirm="This will update all unit prices based on the currently set pricelist." 
-                    invisible="['|', ('show_update_pricelist', '=', False), ('state', 'in', ['sale', 'done', 'cancel'])]"/>
+							icon="fa-refresh" confirm="This will update all unit prices based on the currently set pricelist." 
+							invisible="not show_update_pricelist or state in ['sale', 'done', 'cancel']"/>
 				</div>
 			</xpath>
 			
-            <field name="payment_term_id" position="replace">
-                <field name="payment_term_id" options="{'no_open':True,'no_create': True}" groups="!binaural_sale.payment_terms_sale_order_group"/>
-            </field>
+			<xpath expr="//field[@name='payment_term_id']" position="attributes">
+				<attribute name="groups">!binaural_sale.payment_terms_sale_order_group</attribute>
+			</xpath>
 			
             <xpath expr="//notebook/page[1]//tree/field[@name='price_unit']" position="replace">
 				<field name="price_unit" readonly="1" groups="binaural_sale.edit_product_line_pricing_sale_order_group"/>
