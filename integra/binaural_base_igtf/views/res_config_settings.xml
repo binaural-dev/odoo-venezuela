@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
         <record id="res_config_settings_binaural_rate" model="ir.ui.view">
@@ -7,13 +6,24 @@
             <field name="inherit_id" ref="binaural_tax.res_config_settings_binaural_taxes"/>
             <field name="arch" type="xml">
                 <xpath expr="//div[@id='base_igtf_setting']" position="inside">
-                    <br/>
-                    <field name="module_binaural_igtf" invisible="1"/>
+                    <div class="o_setting_left_pane">
+                        <field name="module_binaural_igtf" />
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <div class="content-group">
+                            <div class="row">
+                                <label for="module_binaural_igtf" class="col-lg-12 o_light_label" string="Facturación con IGTF"/>
+                                <div class="text-muted">
+                                    Show suggestion of the igtf amount based on the total amount of the Order
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <div class="o_setting_left_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_left_pane">
                         <field name="show_igtf_suggested_sale_order" />
                     </div>
-                    <div class="o_setting_right_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_right_pane">
                         <div class="content-group">
                             <div class="row">
                                 <label for="show_igtf_suggested_sale_order" class="col-lg-12 o_light_label"/>
@@ -24,10 +34,10 @@
                         </div>
                     </div>
 
-                    <div class="o_setting_left_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_left_pane">
                         <field name="show_igtf_suggested_account_move"/>
                     </div>
-                    <div class="o_setting_right_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_right_pane">
                         <div class="content-group">
                             <div class="row">
                                 <label for="show_igtf_suggested_account_move" class="col-lg-12 o_light_label"/>
@@ -40,9 +50,9 @@
 
                     <br/>
 
-                    <div class="o_setting_left_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_left_pane">
                     </div>
-                    <div class="o_setting_right_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_right_pane">
                         <div class="content-group">
                             <div class="row">
                                 <label for="igtf_percentage" class="col-lg-6 o_light_label"/>
@@ -51,9 +61,9 @@
                         </div>
                     </div>
 
-                    <div class="o_setting_left_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_left_pane">
                     </div>
-                    <div class="o_setting_right_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_right_pane">
                         <div class="content-group">
                             <div class="row">
                                 <label for="customer_account_igtf_id" class="col-lg-6 o_light_label"/>
@@ -62,9 +72,9 @@
                         </div>
                     </div>
 
-                    <div class="o_setting_left_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_left_pane">
                     </div>
-                    <div class="o_setting_right_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_right_pane">
                         <div class="content-group">
                             <div class="row">
                                 <label for="supplier_account_igtf_id" class="col-lg-6 o_light_label"/>
@@ -73,9 +83,9 @@
                         </div>
                     </div>
 
-                    <div class="o_setting_left_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_left_pane">
                     </div>
-                    <div class="o_setting_right_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_right_pane">
                         <div class="content-group">
                             <div class="row">
                                 <label for="journal_igtf_expense" class="col-lg-6 o_light_label"/>
@@ -84,9 +94,9 @@
                         </div>
                     </div>
 
-                    <div class="o_setting_left_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_left_pane">
                     </div>
-                    <div class="o_setting_right_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_right_pane">
                         <div class="content-group">
                             <div class="row">
                                 <label for="igtf_account_expense" class="col-lg-6 o_light_label"/>
@@ -95,9 +105,9 @@
                         </div>
                     </div>
 
-                    <div class="o_setting_left_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_left_pane">
                     </div>
-                    <div class="o_setting_right_pane" attrs="{'invisible': [('module_binaural_igtf', '=', False)]}">
+                    <div class="o_setting_right_pane">
                         <div class="content-group">
                             <div class="row">
                                 <label for="igtf_two_percentage_account" class="col-lg-6 o_light_label"/> 
