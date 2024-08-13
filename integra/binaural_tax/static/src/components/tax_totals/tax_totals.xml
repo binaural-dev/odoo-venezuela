@@ -49,7 +49,7 @@
         </xpath>
     </t>
 
-    <t t-name="TaxTotalsField" t-inherit="account.TaxTotalsField" t-inherit-mode="extension" owl="1">
+    <t t-name="binaural_tax.TaxTotalsField" t-inherit="account.TaxTotalsField" t-inherit-mode="extension" owl="1">
         <xpath expr="//table[1]/tbody[1]/t[1]" position="before">
             <tr t-if="totals.discount_amount and totals.show_discount">
                 <td class="o_td_label">
@@ -78,7 +78,7 @@
         </xpath>
     </t>
 
-    <t t-name="TaxForeignTotalsField" owl="1">
+    <t t-name="binaural_tax.TaxForeignTotalsField" owl="1">
         <table t-if="totals" class="oe_right">
             <tbody>
                 <tr t-if="totals.foreign_discount_amount and totals.show_discount">
