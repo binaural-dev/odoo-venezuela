@@ -10,8 +10,7 @@
             <xpath expr="//field[@name='user_id']" position="after">
                 <field name="sellers_available" invisible="1"/>
                 <field name="company_seller" invisible="1"/>
-                <field name="seller_id" attrs="{'readonly': [('state', '!=', 'draft')], 
-                                                'invisible': [('company_seller', '=', False)]}"/>
+                <field name="seller_id" invisible="not company_seller" readonly="state != 'draft'"/>
             </xpath>
 
         </field>

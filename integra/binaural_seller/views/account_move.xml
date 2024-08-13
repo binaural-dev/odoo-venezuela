@@ -9,15 +9,14 @@
             <field name="invoice_user_id" position="after">
                 <field name="sellers_available" invisible="1"/>
                 <field name="company_seller" invisible="1"/>
-                <field name="seller_id" attrs="{'readonly': [('state', '!=', 'draft')], 
-                                                'invisible': [('company_seller', '=', False)]}"/>
+                <field name="seller_id" readonly="state != 'draft'" invisible="not company_seller"/>
             </field>
             
             <field name="partner_shipping_id" position="after">
                 <field name="sellers_available" invisible="1"/>
                 <field name="company_seller" invisible="1"/>
-                <field name="seller_id" attrs="{'readonly': [('state', '!=', 'draft')], 
-                        'invisible': ['|',('move_type', '!=', 'out_receipt'),('company_seller', '=', False)]}"/>
+                <field name="seller_id" readonly="state != 'draft'" 
+                    invisible="not company_seller or move_type != 'out_receipt'"/>
             </field>
         </field>
     </record>
