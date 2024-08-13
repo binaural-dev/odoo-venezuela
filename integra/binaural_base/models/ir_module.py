@@ -36,7 +36,6 @@ class Module(models.Model):
         )
         binauralbot_id = self.env['ir.config_parameter'].sudo().get_param('binaural_base.binauralbot_id')
         if not binauralbot_id:
-            _logger.warning("Binauralbot id not defined")
             return False
 
         for record in data:
