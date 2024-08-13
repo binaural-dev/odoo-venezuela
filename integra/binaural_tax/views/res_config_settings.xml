@@ -148,8 +148,8 @@
                         </div>
                     </div>
 
-                    <h2 attrs="{'invisible': [('config_deductible_tax', '!=', True)]}">Non-deductible in Purchases</h2>
-                    <div class="row mt16 o_settings_container" attrs="{'invisible': [('config_deductible_tax', '!=', True)]}" name="binaural_tax_purchase_no_deductible">
+                    <h2 invisible="not config_deductible_tax">Non-deductible in Purchases</h2>
+                    <div class="row mt16 o_settings_container" invisible="not config_deductible_tax" name="binaural_tax_purchase_no_deductible">
                         <div class="col-12 col-lg-6 o_setting_box" id="binaural_tax_purchase_no_deductible_setting">
                             <div class="o_setting_left_pane">
                             </div>

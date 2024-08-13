@@ -88,7 +88,7 @@
 		<field name="inherit_id" ref="sale.view_quotation_tree"/>
 		<field name="arch" type="xml">
 			<xpath expr="//field[@name='amount_total']" position="after">
-				<field name="foreign_currency_id" invisible="1"/>
+				<field name="foreign_currency_id" column_invisible="True"/>
 				<field name="foreign_total_billed" sum="Foreign Amount total" widget="monetary" options="{'currency_field': 'foreign_currency_id'}" decoration-bf="1"/>
 			</xpath>
 		</field>
@@ -106,7 +106,7 @@
 			</xpath>
 			<xpath expr="//field[@name='activity_ids']" position="after">
 				<field name="foreign_rate" optional="hide"/>
-				<field name="foreign_currency_id" invisible="1"/>
+				<field name="foreign_currency_id" column_invisible="True"/>
 				<field name="foreign_total_billed" optional="hide" options="{'currency_field': 'foreign_currency_id'}"/>
 			</xpath>
 		</field>

@@ -12,7 +12,6 @@
         "base",
         "web",
         "account_accountant",
-        "account_sequence",
         "binaural_tax",
         "binaural_contact",
         "binaural_rate",

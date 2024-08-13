@@ -33,7 +33,7 @@
 			<field name="product_tmpl_id" position="attributes">
 				<attribute name="invisible">false</attribute>
 			</field>
-			<field name="price_with_tax" position="replace"/>
+			<!-- <field name="price_with_tax" position="replace"/> -->
 			<field name="min_quantity" position="attributes">
 				<attribute name="optional">hide</attribute>
 			</field>
