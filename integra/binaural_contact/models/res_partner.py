@@ -45,7 +45,7 @@ class ResPartner(models.Model):
                 if prefix_vat == "V" and not name and prefix_vat in ["V", "E"]:
                     name, flag = binaural_cne_query.get_default_name_by_vat(self, prefix_vat, vat)
                     if not flag:
-                       continue 
+                        continue
                     vals["name"] = name
         return super(ResPartner, self).create(vals_list)
 
@@ -56,7 +56,7 @@ class ResPartner(models.Model):
                 if not re.match(pattern, record.vat):
                     raise MissingError(_("The vat field only accepts numbers"))
 
-    @api.onchange("vat","prefix_vat")
+    @api.onchange("vat", "prefix_vat")
     def _onchange_(self):
         """This function assign the name of the person by the vat number and the prefix of the vat number
         calling the function get_default_name_by_vat from binaural_cne_query
