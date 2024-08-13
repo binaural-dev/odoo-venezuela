@@ -974,7 +974,7 @@ class AccountMove(models.Model):
                         sign=sign,
                     )
 
-                    for term in invoice_payment_terms:
+                    for term in invoice_payment_terms['line_ids']:
                         for key in list(invoice.needed_terms.keys()):
                             if key["date_maturity"] == fields.Date.to_date(term.get("date")):
                                 invoice.needed_terms[key] = {

@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <report
-        id="binaural_accountant.action_report_all_payments"
-        model="payment.report"
-        string="Informe de pagos"
-        menu="False"
-        report_type="qweb-pdf"
-        name="binaural_accountant.financial_all_payments"
-        file="binaural_accountant.financial_all_payments"
-    />
+    <record id="binaural_accountant.action_report_all_payments" model="ir.actions.report">
+        <field name="name">Informe de pagos</field>
+        <field name="model">payment.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">binaural_accountant.financial_all_payments</field>
+        <field name="report_file">binaural_accountant.financial_all_payments</field>
+    </record>
 
 
     <template id="binaural_accountant.financial_all_payments">

@@ -97,7 +97,7 @@ class TestAccountTax(BinauralAccountTestInvoicingCommon):
         tax_2_amount = 0
         tax_3_amount = 0
 
-        for tax in invoice.tax_totals["groups_by_foreign_subtotal"]["Base imponible"]:
+        for tax in invoice.tax_totals["groups_by_foreign_subtotal"]["Subtotal"]:
             if tax["tax_group_id"] == self.tax0.tax_group_id.id:
                 self.assertEqual(tax["tax_group_amount"], expected_tax_0_amount)
                 tax_0_amount = tax["tax_group_amount"]
@@ -156,7 +156,7 @@ class TestAccountTax(BinauralAccountTestInvoicingCommon):
         tax_2_amount = 0
         tax_3_amount = 0
 
-        for tax in invoice.tax_totals["groups_by_foreign_subtotal"]["Base imponible"]:
+        for tax in invoice.tax_totals["groups_by_foreign_subtotal"]["Subtotal"]:
             if tax["tax_group_id"] == self.tax0.tax_group_id.id:
                 self.assertEqual(tax["tax_group_amount"], expected_tax_0_amount)
                 tax_0_amount = tax["tax_group_amount"]
