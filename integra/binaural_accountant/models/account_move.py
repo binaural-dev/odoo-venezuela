@@ -415,6 +415,17 @@ class AccountMove(models.Model):
                     line.foreign_debit = line.debit * self.foreign_inverse_rate
                     line.foreign_credit = line.credit * self.foreign_inverse_rate
 
+                if line.display_type == "product" and line.move_id.is_invoice(include_receipts=True):
+                    sign = line.move_id.direction_sign
+                    balance = sign * line.foreign_subtotal
+                    line.write(
+                        {
+                            "foreign_debit": abs(balance) if balance > 0 else 0.0,
+                            "foreign_credit": abs(balance) if balance < 0 else 0.0,
+                        }
+                    )
+
+
     def legacy_compute_line_ids_foreign_debit_and_credit(self):
         """
         This method is used to compute the foreign debit and foreign credit of the line_ids field

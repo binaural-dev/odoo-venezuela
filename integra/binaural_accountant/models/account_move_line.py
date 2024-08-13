@@ -130,34 +130,15 @@ class AccountMoveLine(models.Model):
             else:
                 line.foreign_price_total = line.foreign_subtotal = foreign_subtotal
 
-    def _credit_debit_balance(self):
-        self.ensure_one()
-        self.write(
-            {
-                "foreign_debit": abs(self.foreign_balance) if self.foreign_balance > 0 else 0.0,
-                "foreign_credit": abs(self.foreign_balance) if self.foreign_balance < 0 else 0.0,
-            }
-        )
-
-    @api.depends("foreign_credit", "foreign_debit", "foreign_subtotal")
+    @api.depends("foreign_credit", "foreign_debit")
     def _compute_foreign_balance(self):
         for line in self:
-
-            if line.display_type == "product" and line.move_id.is_invoice(include_receipts=True):
-                sign = line.move_id.direction_sign
-                # This may be needed to be changed in the future, when taking into account
-                # moves that are not invoices.
-                line.foreign_balance = sign * line.foreign_subtotal
-
-            if line.move_id.is_invoice(include_receipts=True):
-                line._credit_debit_balance()
-
-            if line.balance != 0 and line.foreign_balance == 0:
-                line.foreign_balance = line.foreign_debit - line.foreign_credit
+            line.foreign_balance = line.foreign_debit - line.foreign_credit
 
     def _inverse_foreign_balance(self):
         for line in self:
-            line._credit_debit_balance()
+            line.foreign_debit = abs(line.foreign_balance) if line.foreign_balance > 0 else 0.0
+            line.foreign_credit = abs(line.foreign_balance) if line.foreign_balance < 0 else 0.0
 
     @api.depends("foreign_rate", "balance")
     def _compute_amount_currency(self):
