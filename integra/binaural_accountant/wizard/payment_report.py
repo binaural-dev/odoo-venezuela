@@ -1,9 +1,6 @@
 from odoo import api, fields, exceptions, http, models, _
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 
-import logging
-_logger = logging.getLogger(__name__)
-
 
 class PaymentReport(models.TransientModel):
     _name = "payment.report"
@@ -28,7 +25,6 @@ class PaymentReport(models.TransientModel):
                 "end_date": self.end_date,
             }
         }
-        _logger.info("BBIIIIIIIIIIIII %s", self.env.ref("binaural_accountant.action_report_all_payments") )
         return self.env.ref("binaural_accountant.action_report_all_payments").report_action(
             self, data=data
         )
