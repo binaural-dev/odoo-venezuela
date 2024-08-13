@@ -5,7 +5,6 @@ class AccountAnalyticLine(models.Model):
     _inherit = "account.analytic.line"
 
     foreign_amount = fields.Monetary(
-        "Foreign Amount",
         currency_field="foreign_currency_id",
         default=0.0,
     )
