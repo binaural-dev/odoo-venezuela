@@ -11,6 +11,7 @@
     # any module necessary for this one to work correctly
     "depends": [
         "account",
+        "stock"
     ],
     "data": [
         # "security/ir_rule.xml",
