@@ -17,7 +17,7 @@
 					<field name="foreign_currency_id" invisible="1"/>
 				</xpath>
 				<xpath expr="//notebook" position="inside">
-					<page name="iva_retention" string="IVA Retentions" attrs="{'invisible': [('fiscal', '=', False)]}" invisible="not fiscal">
+					<page name="iva_retention" string="IVA Retentions" invisible="not fiscal or not fiscal">
 						<field name="retention_iva_line_ids" nolabel="1" readonly="1" invisible="not fiscal">
 							<tree editable='bottom'>
 								<!-- Invisible Fields -->
@@ -43,7 +43,7 @@
 							</tree>
 						</field>
 					</page>
-					<page name="islr_retention" string="ISLR Retentions" attrs="{'invisible': [('fiscal', '=', False)]}" invisible="not fiscal">
+					<page name="islr_retention" string="ISLR Retentions" invisible="not fiscal or not fiscal">
 						<field name="retention_islr_line_ids" nolabel="1" readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'">
 							<tree editable='bottom'>
 								<!-- Invisible Fields -->
