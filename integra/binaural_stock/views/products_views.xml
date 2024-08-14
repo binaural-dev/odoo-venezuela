@@ -45,6 +45,7 @@
 		<field name="model">product.template</field>
 		<field name="inherit_id" ref="product.product_template_form_view"/>
 		<field name="arch" type="xml">
+			<!-- invertir mostrar precios? -->
 			<label for="standard_price" position="attributes">
 				<attribute name="groups">binaural_stock.group_show_standard_price</attribute>
 			</label>
@@ -78,11 +79,8 @@
 		<field name="model">product.template</field>
 		<field name="inherit_id" ref="stock.product_template_form_view_procurement_button"/>
 		<field name="arch" type="xml">
-
-			<xpath expr="//button[1]" position="before">
-				
-			</xpath>
-			<!-- <xpath expr="//button[@name='action_open_quants']" position="before">
+			<xpath expr="//button[@name='action_update_quantity_on_hand']" position="after">
+				<!-- invertir el grupo? -->
 				<t groups="binaural_stock.group_product_available_quantity_on_sale">
 					<button type="object" name="button_dummy" class="oe_stat_button" icon="fa-cubes" invisible="type != 'product'">
 						<div class="o_field_widget o_stat_info" name="quantity">
@@ -90,11 +88,11 @@
 								<field name="quantity" widget="statinfo" nolabel="1" class="mr4"/>
 								<field name="uom_name"/>
 							</span>
-							<span class="o_stat_text">Available Quantity To Sale</span>
+							<span class="o_stat_text"> Available Quantity To Sale</span>
 						</div>
 					</button>
 				</t>
-			</xpath> -->
+			</xpath>
 		</field>
 	</record>
 
@@ -103,22 +101,19 @@
 		<field name="model">product.product</field>
 		<field name="inherit_id" ref="stock.product_form_view_procurement_button"/>
 		<field name="arch" type="xml">
-			<xpath expr="//button[1]" position="before">
-				
-			</xpath>
-			<!-- <xpath expr="//button[@name='action_open_quants']" position="before">
+			<xpath expr="//button[@name='action_update_quantity_on_hand']" position="after">
 				<t groups="binaural_stock.group_product_available_quantity_on_sale">
 					<button type="object" name="button_dummy" class="oe_stat_button" icon="fa-cubes" invisible="type != 'product'">
-						<div class="o_field_widget o_stat_info" name="quantity">
+						<div class="o_field_widget o_stat_info" name="quantity"> 
 							<span class="o_stat_value" widget="statinfo">
 								<field name="free_qty" widget="statinfo" nolabel="1" class="mr4"/>
 								<field name="uom_name"/>
 							</span>
-							<span class="o_stat_text">Available Quantity To Sale</span>
+							<span class="o_stat_text"> Available Quantity To Sale</span>
 						</div>
 					</button>
 				</t>
-			</xpath> -->
+			</xpath>
 		</field>
 	</record>
     
