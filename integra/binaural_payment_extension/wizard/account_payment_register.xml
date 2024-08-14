@@ -52,15 +52,15 @@
 									<field name="aliquot"/>
 									<field name="related_percentage_tax_base" optional="hide"/>
 									<!-- Amounts -->
-									<field name="invoice_total" widget="monetary" attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" column_invisible="not parent.base_currency_is_vef"/>
-									<field name="invoice_amount" widget="monetary" attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" column_invisible="not parent.base_currency_is_vef"/>
-									<field name="iva_amount" widget="monetary" attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', False)]}" column_invisible="not parent.base_currency_is_vef"/>
+									<field name="invoice_total" widget="monetary" column_invisible="not parent.base_currency_is_vef"/>
+									<field name="invoice_amount" widget="monetary" column_invisible="not parent.base_currency_is_vef"/>
+									<field name="iva_amount" widget="monetary" column_invisible="not parent.base_currency_is_vef"/>
 									<field name="retention_amount" widget="monetary" />
 									<!-- Foreign Amounts -->
-									<field name="foreign_invoice_amount" widget="monetary" attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}" column_invisible="parent.base_currency_is_vef"/>
-									<field name="foreign_iva_amount" widget="monetary" attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}" column_invisible="parent.base_currency_is_vef"/>
-									<field name="foreign_invoice_total" widget="monetary" attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}" column_invisible="parent.base_currency_is_vef"/>
-									<field name="foreign_retention_amount" widget="monetary" attrs="{'column_invisible': [('parent.base_currency_is_vef', '=', True)]}" column_invisible="parent.base_currency_is_vef"/>
+									<field name="foreign_invoice_amount" widget="monetary" column_invisible="parent.base_currency_is_vef"/>
+									<field name="foreign_iva_amount" widget="monetary" column_invisible="parent.base_currency_is_vef"/>
+									<field name="foreign_invoice_total" widget="monetary" column_invisible="parent.base_currency_is_vef"/>
+									<field name="foreign_retention_amount" widget="monetary" column_invisible="parent.base_currency_is_vef"/>
 								</tree>
 							</field>
 						</page>
