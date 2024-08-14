@@ -11,6 +11,8 @@
     "depends": [
         "base",
         "purchase",
+        "binaural_contact",
+        "binaural_fiscal",
         "binaural_tax",
         "binaural_rate",
         "binaural_filter_partner",

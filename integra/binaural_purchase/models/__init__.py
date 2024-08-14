@@ -1,4 +1,4 @@
-from . import account_invoice
+from . import account_move
 from . import product_template
 from . import product_template_tariff
 from . import purchase_order
