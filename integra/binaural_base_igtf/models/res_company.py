@@ -4,7 +4,7 @@ from odoo import fields, models
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    is_igtf = fields.Boolean(related="module_binaural_igtf")
+    is_igtf = fields.Boolean("IGTF active",related="module_binaural_igtf")
     customer_account_igtf_id = fields.Many2one(
         "account.account", domain=[("account_type", "=", "liability_current")]
     )
