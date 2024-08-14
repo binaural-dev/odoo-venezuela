@@ -6,7 +6,8 @@
 		<field name="inherit_id" ref="product.product_template_kanban_view"/>
 		<field name="arch" type="xml">
 			<xpath expr="//div[@name='product_lst_price']" position="after">
-				<div name="product_lst_price" class="mt-1">                    Price + IVA:                    
+				<div name="product_lst_price" class="mt-1">           
+					Price + IVA:                    
 					<field name="price_with_tax" widget="monetary" options="{'currency_field': 'currency_id', 'field_digits': True}"/>
 				</div>
 			</xpath>
@@ -72,12 +73,16 @@
 		</field>
 	</record>
 
-	<record id="product_template_form_view_procurement_button" model="ir.ui.view">
+	<record id="product_template_form_view_procurement_button_binaural_stock" model="ir.ui.view">
 		<field name="name">product.template.form.view.procurement.button.binaural.stock</field>
 		<field name="model">product.template</field>
 		<field name="inherit_id" ref="stock.product_template_form_view_procurement_button"/>
 		<field name="arch" type="xml">
-			<xpath expr="//button[@name='action_open_quants']" position="before">
+
+			<xpath expr="//button[1]" position="before">
+				
+			</xpath>
+			<!-- <xpath expr="//button[@name='action_open_quants']" position="before">
 				<t groups="binaural_stock.group_product_available_quantity_on_sale">
 					<button type="object" name="button_dummy" class="oe_stat_button" icon="fa-cubes" invisible="type != 'product'">
 						<div class="o_field_widget o_stat_info" name="quantity">
@@ -89,16 +94,19 @@
 						</div>
 					</button>
 				</t>
-			</xpath>
+			</xpath> -->
 		</field>
 	</record>
 
-	<record model="ir.ui.view" id="product_form_view_procurement_button">
+	<record model="ir.ui.view" id="product_form_view_procurement_button_binaural_stock">
 		<field name="name">product.product.form.view.procurement.button.binaural.stock</field>
 		<field name="model">product.product</field>
 		<field name="inherit_id" ref="stock.product_form_view_procurement_button"/>
 		<field name="arch" type="xml">
-			<xpath expr="//button[@name='action_open_quants']" position="before">
+			<xpath expr="//button[1]" position="before">
+				
+			</xpath>
+			<!-- <xpath expr="//button[@name='action_open_quants']" position="before">
 				<t groups="binaural_stock.group_product_available_quantity_on_sale">
 					<button type="object" name="button_dummy" class="oe_stat_button" icon="fa-cubes" invisible="type != 'product'">
 						<div class="o_field_widget o_stat_info" name="quantity">
@@ -110,7 +118,7 @@
 						</div>
 					</button>
 				</t>
-			</xpath>
+			</xpath> -->
 		</field>
 	</record>
     

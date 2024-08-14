@@ -44,7 +44,7 @@
                 <attribute name="groups">!binaural_stock.group_hide_print_button_for_inventory_transfers</attribute>
             </xpath>
 
-            <!-- QUE PASO CON ESTO -->
+            <!-- ?? -->
             <xpath expr="//button[@name='do_unreserve']" position="attributes">   
                 <attribute name="groups">!binaural_stock.group_hide_override_button_for_inventory_transfers</attribute>
             </xpath>
@@ -91,17 +91,17 @@
         </field>
     </record>
 
-    <!-- <record id="delivery_inherit_binaural_stock" model="ir.ui.view">
+    <record id="delivery_inherit_binaural_stock" model="ir.ui.view">
         <field name="name">stock.picking.view.form.inherit</field>
         <field name="model">stock.picking</field>
-        <field name="inherit_id" ref="delivery.view_picking_withcarrier_out_form"/>
+        <field name="inherit_id" ref="stock_delivery.view_picking_withcarrier_out_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='weight'][1]" position="replace">
                 <field name="change_weight" invisible="1"/>
-                <field name="weight" class="oe_inline" attrs="{'invisible': [('change_weight', '!=', True)], 'readonly': [('state', 'in', ['done','cancel'])]}"/>
-                <field name="weight" class="oe_inline" attrs="{'invisible': [('change_weight', '!=', False)]}"/>
+                <field name="weight" class="oe_inline" invisible="not change_weight" readonly="state in ['done', 'cancel']"/>
+                <field name="weight" class="oe_inline" invisible="change_weight"/>
             </xpath>
         </field>
-    </record> -->
+    </record>
 
 </odoo>
