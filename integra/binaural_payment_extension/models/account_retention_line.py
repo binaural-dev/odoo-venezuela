@@ -119,7 +119,6 @@ class AccountRetentionLine(models.Model):
     )
     foreign_invoice_total = fields.Float(string="Foreign total invoiced")
     foreign_iva_amount = fields.Float(string="Foreign IVA")
-    foreign_retention_amount = fields.Float()
     foreign_currency_rate = fields.Float(string="Rate")
 
     @api.depends("retention_id.type_retention", "move_id")
