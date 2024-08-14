@@ -124,14 +124,15 @@ class StockPicking(models.Model):
         res = super().create(vals_list)
         self.move_line_ids_without_package.sorted(key=lambda x: x.priority_location)
         self.move_line_ids.sorted(key=lambda x: x.priority_location)
-        self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
+        # self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
         return res
 
     def write(self, vals):
         res = super().write(vals)
         self.move_line_ids_without_package.sorted(key=lambda x: x.priority_location)
         self.move_line_ids.sorted(key=lambda x: x.priority_location)
-        self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
+        # funcionalidad?
+        # self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
         keys_to_check = [
             "move_line_ids_without_package",
             "move_line_nosuggest_ids",
@@ -153,6 +154,7 @@ class StockPicking(models.Model):
             "binaural_stock.group_block_type_inventory_transfers_expeditions"
         )
         if block_transfer_expedition:
+
             picking_type = (
                 self.env["stock.picking.type"].search(
                     [("id", "=", vals.get("picking_type_id", False))]
