@@ -6,9 +6,9 @@
         <field name="model">account.payment</field>
         <field name="inherit_id" ref="account.view_account_payment_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='is_internal_transfer']" position="after">
+            <xpath expr="//field[@name='payment_type']" position="before">
                 <field name="destination_account_id" />
-                <field name="is_advance_payment" string="Is advance payment" attrs="{'readonly' : [('state', '=', 'posted')]}"/>
+                <field name="is_advance_payment" string="Is advance payment" readonly="state == 'posted'"/>
             </xpath>
         </field>
     </record>

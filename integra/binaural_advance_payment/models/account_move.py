@@ -374,16 +374,7 @@ class AccountMove(models.Model):
         :param partial_id: The id of an existing partial reconciled with the current invoice.
         """
 
-        self.js_remove_outstanding_advance_payment(partial_id)
-        return super().js_remove_outstanding_partial(partial_id)
-
-    def js_remove_outstanding_advance_payment(self, partial_id):
-        """Remove the given partial reconciliation from the current invoice.
-
-        :param partial_id: The id of an existing partial reconciled with the current invoice.
-
-        """
-
+        # self.js_remove_outstanding_advance_payment(partial_id)
         partial_advance_payment = self.env["account.partial.reconcile"].browse(partial_id)
 
         move_line_partial = self.env["account.move.line"].browse(
@@ -394,6 +385,7 @@ class AccountMove(models.Model):
             and move_line_partial.payment_id_advance.is_advance_payment
         ):
             move_line_partial.move_id.button_cancel()
+            return
 
         move_line_partial = self.env["account.move.line"].browse(
             partial_advance_payment.debit_move_id.id
@@ -403,3 +395,6 @@ class AccountMove(models.Model):
             and move_line_partial.payment_id_advance.is_advance_payment
         ):
             move_line_partial.move_id.button_cancel()
+            return
+
+        return super().js_remove_outstanding_partial(partial_id)
