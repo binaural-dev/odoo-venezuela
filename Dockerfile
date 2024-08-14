@@ -34,6 +34,7 @@ RUN apt-get update && \
         python3-setuptools \
         python3-slugify \
         python3-vobject \
+        python3-pandas \
         python3-watchdog \
         python3-xlrd \
         python3-xlwt \
