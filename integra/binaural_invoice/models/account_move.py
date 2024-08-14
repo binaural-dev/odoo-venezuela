@@ -25,7 +25,7 @@ class AccountMove(models.Model):
 
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
-    @api.constrains("correlative", "is_contingency")
+    @api.constrains("correlative", "journal_id.is_contingency")
     def _check_correlative(self):
         AccountMove = self.env["account.move"]
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
