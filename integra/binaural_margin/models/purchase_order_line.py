@@ -7,35 +7,26 @@ class PurchaseOrderLine(models.Model):
         compute="_compute_list_price",
         digits="Product Price",
         store=True,
-        groups="base.group_user",
     )
     margin = fields.Float(
         compute="_compute_margin",
         digits="Product Price",
         store=True,
-        groups="base.group_user",
-        precompute=True,
     )
     margin_percent = fields.Float(
         "Margin (%)",
         compute="_compute_margin",
         store=True,
-        groups="base.group_user",
-        precompute=True,
     )
     latest_standard_price_margin = fields.Float(
         compute="_compute_margin",
         digits="Product Price",
         store=True,
-        groups="base.group_user",
-        precompute=True,
     )
     latest_standard_price_margin_percent = fields.Float(
         "Latest Standard Price Margin (%)",
         compute="_compute_margin",
         store=True,
-        groups="base.group_user",
-        precompute=True,
     )
 
     @api.depends("product_id")

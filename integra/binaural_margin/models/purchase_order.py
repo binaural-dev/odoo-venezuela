@@ -4,7 +4,7 @@ from odoo import api, fields, models
 class SaleOrder(models.Model):
     _inherit = "purchase.order"
 
-    margin = fields.Monetary("Margin", compute='_compute_margin', store=True)
+    margin = fields.Monetary(compute='_compute_margin', store=True)
     margin_percent = fields.Float("Margin (%)", compute='_compute_margin', store=True, group_operator="avg")
 
     @api.depends('order_line.margin', 'amount_untaxed')
@@ -22,7 +22,7 @@ class SaleOrder(models.Model):
                 [
                     ('order_id', 'in', self.ids),
                 ], ['order_id'], ['margin:sum'])
-            mapped_data = {m['order_id'][0]: m['margin'] for m in grouped_order_lines_data}
+            mapped_data = {order.id: margin for order, margin in grouped_order_lines_data}
             for order in self:
                 order.margin = mapped_data.get(order.id, 0.0)
                 order.margin_percent = order.amount_untaxed and order.margin/order.amount_untaxed
