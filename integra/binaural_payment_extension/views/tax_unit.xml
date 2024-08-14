@@ -55,8 +55,6 @@
             <field name="context">{"search_default_status":True}</field>
         </record>
         
-    
     </data>
     
-
 </odoo>

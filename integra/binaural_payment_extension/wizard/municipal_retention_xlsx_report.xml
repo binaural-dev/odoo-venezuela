@@ -10,7 +10,6 @@
                         <field name="date_start" />
                         <field name="date_end" />
                     </group>
-
                 </sheet>
                 <footer>
                     <div style="display: flex; justify-content: center">

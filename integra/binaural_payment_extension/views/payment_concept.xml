@@ -64,9 +64,7 @@
             <field name="view_mode">tree,kanban,form</field>
             <field name="context">{"search_default_status":True}</field>
         </record>
-
     
     </data>
     
-
 </odoo>

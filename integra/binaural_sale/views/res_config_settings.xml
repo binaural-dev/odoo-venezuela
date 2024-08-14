@@ -12,7 +12,7 @@
                 <xpath expr="//block[@name='binaural_setting_container']" position="inside">
                     <h2>Sales Configuration</h2>
                     <div class="row mt16 o_settings_container" name="binaural_sale_settings">
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_left_pane">
                                 <field name="use_invoice_rate_from_sale_order"/>
                             </div>
@@ -24,7 +24,7 @@
                                 </div> 
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_left_pane">
                                 <field name="not_allow_sell_products" />
                             </div>
@@ -35,7 +35,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                        <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_left_pane">
                                 <field name="update_sale_order_rate_using_date_order"/>
                             </div>
@@ -52,7 +52,7 @@
                     <div name="binaural_block_confirm">
                         <h2>Block order confirmationn</h2>
                         <div class="row mt16 o_settings_container">
-                            <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                            <div class="col-12 col-lg-6 o_setting_box">
                                 <div class="o_setting_left_pane"/>
                                 <div class="o_setting_right_pane">
                                     <group colspan="4" col="4">
@@ -63,7 +63,7 @@
                                     </div> 
                                 </div>
                             </div>
-                            <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
+                            <div class="col-12 col-lg-6 o_setting_box">
                                 <div class="o_setting_left_pane"/>
                                 <div class="o_setting_right_pane">
                                     <group colspan="4" col="4">
