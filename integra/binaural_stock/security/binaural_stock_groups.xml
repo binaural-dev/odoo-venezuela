@@ -8,11 +8,6 @@
             <field name="category_id" ref="base.module_category_hidden"/>
         </record>
 
-        <record id="group_show_standard_price" model="res.groups">
-            <field name="name">Show standard price on the product form view</field>
-            <field name="category_id" ref="base.module_category_hidden"/>
-        </record>
-
         <record id="group_hide_print_button_for_inventory_transfers" model="res.groups">
             <field name="name">Hide Print Button for Inventory Transfers</field>
             <field name="category_id" ref="base.module_category_hidden"/>
