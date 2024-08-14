@@ -104,7 +104,7 @@ class RetentionIslrReport(models.TransientModel):
         worksheet2.write("G2", "Periodo")
         worksheet2.write("H2", range_month)
         worksheet2.merge_range("A2:B2", "Ruta de descarga:", merge_format)
-        worksheet2.write("C2", "C:/Users/Public")
+        worksheet2.write("C2", "C:/Users/Public/")
         columnas = list(datos.columns.values)
         columns2 = [{"header": r} for r in columnas]
         data = datos.values.tolist()
@@ -226,7 +226,8 @@ class RetentionIslrReport(models.TransientModel):
         domain = [
             ("slip_id.date_to", ">=", self.date_start), 
             ("slip_id.date_to", "<=", self.date_end),
-            ("salary_rule_id.code", "=", "PM-ISLR")
+            ("salary_rule_id.code", "=", "PM-ISLR"),
+            ("slip_id.state", "in", ["done", "paid"])
         ]
 
         if current_company_id:
@@ -256,22 +257,21 @@ class RetentionIslrReport(models.TransientModel):
 
         fpi = datetime.strptime(pi, "%Y-%m-%d")
 
-        new_row["Número factura"] = slip_id.number[-10:] if len(slip_id.number) > 10 else slip_id.number
+        new_row["Número factura"] = 0
 
-        new_row["Control Número"] = slip_line_id.sequence
+        new_row["Control Número"] = "NA"
 
         new_row["Fecha Operación"] = fpi.strftime("%d/%m/%Y")
 
-        new_row["Código Concepto"] = "001"
+        new_row["Código Concepto"] = 1
 
         new_row["Monto Operación"] = (
-            round(slip_line_id.foreign_total, 2) if is_vef_currency else slip_line_id.total
+            (round(slip_line_id.foreign_total, 2) if is_vef_currency else slip_line_id.total) * -1
         )
 
         new_row["Porcentaje de retención"] = slip_id.employee_id.porc_ari
 
         return new_row
-
 
     def _get_from_payslip_retention_islr_excel_rows(self, table_rows, row_idx, current_company=False):
         is_vef_currency = self.env.ref("base.VEF").id == self.env.company.currency_foreign_id.id
@@ -293,6 +293,8 @@ class RetentionIslrReport(models.TransientModel):
         table_rows, table_rows_count = self._get_retention_islr_excel_rows([], 0, current_company)
 
         table_rows, table_rows_count = self._get_from_payslip_retention_islr_excel_rows(table_rows, table_rows_count, current_company)
+
+        table_rows = sorted(table_rows, key=lambda row: row['Fecha Operación'])
 
         table = pd.DataFrame(table_rows)
 
