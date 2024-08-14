@@ -25,26 +25,27 @@
                 <field name="picks_count" invisible="1"/>
                 <field name="packs_count" invisible="1"/>
                 <field name="outs_count" invisible="1"/>
-                <button type="object" name="action_get_picks" class="oe_stat_button" icon="fa-cubes" groups="stock.group_stock_user" attrs="{'invisible': [('picks_count', '&lt;', 1)]}">
+                <button type="object" name="action_get_picks" class="oe_stat_button" icon="fa-cubes" groups="stock.group_stock_user" invisible="picks_count &lt; 1">
                     <field name="picks_count" widget="statinfo" string="PICKS"/>
                 </button>
-                <button type="object" name="action_get_packs" class="oe_stat_button" icon="fa-cube" groups="stock.group_stock_user" attrs="{'invisible': [('packs_count', '&lt;', 1)]}">
+                <button type="object" name="action_get_packs" class="oe_stat_button" icon="fa-cube" groups="stock.group_stock_user" invisible="packs_count &lt; 1">
                     <field name="packs_count" widget="statinfo" string="PACKS"/>
                 </button>
-                <button type="object" name="action_get_outs" class="oe_stat_button" icon="fa-truck" groups="stock.group_stock_user" attrs="{'invisible': [('outs_count', '&lt;', 1)]}">
+                <button type="object" name="action_get_outs" class="oe_stat_button" icon="fa-truck" groups="stock.group_stock_user" invisible="outs_count &lt; 1">
                     <field name="outs_count" widget="statinfo" string="OUTS"/>
                 </button>
             </xpath>
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="type_delivery_step" invisible="1"/>
-                <field name="package_qty" attrs="{'invisible': [('type_delivery_step','!=','out')]}"/>
+                <field name="package_qty" invisible="type_delivery_step != 'out'"/>
             </xpath>
 
             <xpath expr="//form/header/button[@name='%(stock.action_report_delivery)d']" position="attributes">
                 <attribute name="groups">!binaural_stock.group_hide_print_button_for_inventory_transfers</attribute>
             </xpath>
 
-            <xpath expr="//button[@name='do_unreserve']" position="attributes">
+            <!-- QUE PASO CON ESTO -->
+            <xpath expr="//button[@name='do_unreserve']" position="attributes">   
                 <attribute name="groups">!binaural_stock.group_hide_override_button_for_inventory_transfers</attribute>
             </xpath>
 
@@ -90,7 +91,7 @@
         </field>
     </record>
 
-    <record id="delivery_inherit_binaural_stock" model="ir.ui.view">
+    <!-- <record id="delivery_inherit_binaural_stock" model="ir.ui.view">
         <field name="name">stock.picking.view.form.inherit</field>
         <field name="model">stock.picking</field>
         <field name="inherit_id" ref="delivery.view_picking_withcarrier_out_form"/>
@@ -101,6 +102,6 @@
                 <field name="weight" class="oe_inline" attrs="{'invisible': [('change_weight', '!=', False)]}"/>
             </xpath>
         </field>
-    </record>
+    </record> -->
 
 </odoo>
