@@ -51,4 +51,6 @@ class PurchaseOrder(models.Model):
     @api.constrains('account_analytic_id', 'journal_invoice_id')
     def _constraint_change_subsidiary_id(self):
         for record in self:
+            if not record.journal_invoice_id:
+                continue
             record.journal_invoice_id.check_journal_selected(record.account_analytic_id.id)
