@@ -21,4 +21,7 @@ class ProductCategory(models.Model):
         property_cost_method = "average"
         property_valuation = "real_time"
 
-        return self.property_cost_method == property_cost_method and self.property_valuation == property_valuation
+        return (
+            self.property_cost_method == property_cost_method
+            and self.property_valuation == property_valuation
+        )
