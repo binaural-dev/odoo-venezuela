@@ -1,9 +1,16 @@
-odoo.define('binaural_mobile.portal_invoices_seller', function(require) {
-    'use strict';
+/** @odoo-module */
 
-    const publicWidget = require('web.public.widget');
-    const ajax = require('web.ajax');
-    const { _t } = require('web.core');
+import publicWidget from "@web/legacy/js/public/public_widget";
+import { _t } from "@web/core/l10n/translation";
+import { Dialog } from "@web/core/dialog/dialog";
+import { jsonrpc } from "@web/core/network/rpc_service";
+
+// odoo.define('binaural_mobile.portal_invoices_seller', function(require) {
+//     'use strict';
+
+//     const publicWidget = require('web.public.widget');
+//     const ajax = require('web.ajax');
+//     const { _t } = require('web.core');
 
     publicWidget.registry.portalInvoicesSeller = publicWidget.Widget.extend({
         selector: '.o_portal_invoices_seller',
@@ -33,7 +40,7 @@ odoo.define('binaural_mobile.portal_invoices_seller', function(require) {
         buildTaxesInvoice: async function(){
             if ($("#invoice_id").val() == '' || !$("#invoice").prop('checked')) return
             let invoiceId = $("#invoice_id").val(); 
-            const products = await ajax.jsonRpc('/get_tax_invoices', 'call', {
+            const products = await jsonrpc('/get_tax_invoices', 'call', {
                 "invoice_id" : invoiceId,
             })
             const { status, data } = products;
@@ -96,4 +103,4 @@ odoo.define('binaural_mobile.portal_invoices_seller', function(require) {
         },
 
     });
-});
+// });

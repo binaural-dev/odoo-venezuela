@@ -16,29 +16,24 @@ _logger = logging.getLogger(__name__)
 class CustomerPortalInh(CustomerPortal):
     def _prepare_quotations_domain(self, partner):
         employee_id = request.env.user.employee_id
-        if employee_id.is_seller:
-            return [
-                ("message_partner_ids", "child_of", [partner.commercial_partner_id.id]),
-                ("state", "in", ["sent", "cancel", "draft"]),
-                ("seller_id", "=", employee_id.id),
-            ]
-        return [
+        domain = [
             ("message_partner_ids", "child_of", [partner.commercial_partner_id.id]),
             ("state", "in", ["sent", "cancel"]),
         ]
+        if employee_id.is_seller:
+            domain.append(("state", "in", ["sent", "cancel", "draft"]))
+            domain.append(("seller_id", "=", employee_id.id))
+        return domain
 
     def _prepare_orders_domain(self, partner):
         employee_id = request.env.user.employee_id
-        if employee_id.is_seller:
-            return [
-                ("message_partner_ids", "child_of", [partner.commercial_partner_id.id]),
-                ("state", "in", ["sale", "done"]),
-                ("seller_id", "=", employee_id.id),
-            ]
-        return [
+        domain = [
             ("message_partner_ids", "child_of", [partner.commercial_partner_id.id]),
             ("state", "in", ["sale", "done"]),
         ]
+        if employee_id.is_seller:
+            domain.append(("seller_id", "=", employee_id.id))
+        return domain
 
     def _get_searchbar_inputs_payments(self):
         return {
@@ -54,37 +49,8 @@ class CustomerPortalInh(CustomerPortal):
             search_domain = expression.OR([search_domain, [("name", "ilike", search)]])
         return search_domain
 
-    @http.route(
-        ["/my/quotes", "/my/quotes/page/<int:page>"], type="http", auth="user", website=True
-    )
-    def portal_my_quotes(self, search=None, search_in="name", filterby=None, **kwargs):
-        values = self._prepare_sale_portal_rendering_values(
-            quotation_page=True, search=search, search_in=search_in, filterby=filterby, **kwargs
-        )
-        request.session["my_quotations_history"] = values["quotations"].ids[:100]
-        return request.render("sale.portal_my_quotations", values)
-
-    @http.route(
-        ["/my/orders", "/my/orders/page/<int:page>"], type="http", auth="user", website=True
-    )
-    def portal_my_orders(self, search=None, search_in="name", filterby=None, **kwargs):
-        values = self._prepare_sale_portal_rendering_values(
-            quotation_page=False, search=search, search_in=search_in, filterby=filterby, **kwargs
-        )
-        request.session["my_orders_history"] = values["orders"].ids[:100]
-        return request.render("sale.portal_my_orders", values)
-
     def _prepare_sale_portal_rendering_values(
-        self,
-        page=1,
-        date_begin=None,
-        date_end=None,
-        sortby=None,
-        quotation_page=False,
-        search=None,
-        search_in="name",
-        filterby=None,
-        **kwargs
+        self, page=1, date_begin=None, date_end=None, sortby=None, quotation_page=False,search=None, search_in="name", filterby=None, **kwargs
     ):
         SaleOrder = request.env["sale.order"]
 
@@ -164,7 +130,7 @@ class CustomerPortalInh(CustomerPortal):
             "all": {"label": _("All"), "domain": []},
             "invoices": {
                 "label": _("Invoices"),
-                "domain": [("move_type", "=", ("out_invoice", "out_refund"))],
+                "domain": [("state", "=", ("out_invoice", "out_refund"))],
             },
             "bills": {
                 "label": _("Bills"),
@@ -247,6 +213,9 @@ class PortalAccountInh(PortalAccount):
             "d_next_installment_payment_date_this_month",
             "d_next_installment_payment_date_next_month",
         ):
+            _logger.warning("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            _logger.warning(searchbar_filters)
+            _logger.warning(filterby)
             domain += searchbar_filters[filterby]["domain"]
 
         if search and search_in:
@@ -267,18 +236,12 @@ class PortalAccountInh(PortalAccount):
             invoices = AccountInvoice.search(
                 domain, order=order, limit=_items_per_page, offset=pager_offset
             )
-            _logger.warning("INVOICES: %s", invoices.mapped("next_installment_date"))
-            _logger.warning("STart of next month: %s", date_utils.start_of(next_month, "month"))
-            _logger.warning(
-                "STart of next month type: %s", type(date_utils.start_of(next_month, "month"))
-            )
             if filterby == "d_next_installment_payment_date_this_month":
                 res = invoices.filtered(
                     lambda i: i.next_installment_date
                     and i.next_installment_date >= today
                     and i.next_installment_date <= date_utils.end_of(today, "month")
                 )
-                _logger.warning("RESSS: %s", res)
                 return res
             if filterby == "d_next_installment_payment_date_next_month":
                 res = invoices.filtered(
@@ -317,40 +280,43 @@ class PortalAccountInh(PortalAccount):
         )
         return values
 
-    def _get_invoices_domain(self):
-        domain = [
-            ("state", "not in", ("cancel", "draft")),
-        ]
-        user_id = request.env.user
-
-        if user_id.employee_id.is_seller:
-            domain = expression.AND(
-                [
-                    domain,
-                    [("seller_id", "=", user_id.employee_id.id), ("move_type", "=", "out_invoice")],
-                ]
-            )
+    def _get_invoices_domain(self, m_type=None):
+        if m_type in ['in', 'out']:
+            move_type = [m_type+move for move in ('_invoice', '_refund', '_receipt')]
         else:
-            domain = expression.AND(
-                [
-                    domain,
+            domain = [
+                ("state", "not in", ("cancel", "draft")),
+            ]
+            user_id = request.env.user
+
+            if user_id.employee_id.is_seller:
+                domain = expression.AND(
                     [
-                        ("partner_id", "=", user_id.id),
-                        (
-                            "move_type",
-                            "in",
+                        domain,
+                        [("seller_id", "=", user_id.employee_id.id), ("move_type", "=", "out_invoice")],
+                    ]
+                )
+            else:
+                domain = expression.AND(
+                    [
+                        domain,
+                        [
+                            ("partner_id", "=", user_id.id),
                             (
-                                "out_invoice",
-                                "out_refund",
-                                "in_invoice",
-                                "in_refund",
-                                "out_receipt",
-                                "in_receipt",
+                                "move_type",
+                                "in",
+                                (
+                                    "out_invoice",
+                                    "out_refund",
+                                    "in_invoice",
+                                    "in_refund",
+                                    "out_receipt",
+                                    "in_receipt",
+                                ),
                             ),
-                        ),
-                    ],
-                ]
-            )
+                        ],
+                    ]
+                )
 
         return domain
 
@@ -454,6 +420,10 @@ class PortalAccountInh(PortalAccount):
                         ("create_date", ">=", date_utils.start_of(last_2_year, "year")),
                         ("create_date", "<=", date_utils.end_of(last_2_year, "year")),
                     ],
+                },
+                "invoices": {
+                    "label": _("Invoices"),
+                    "domain": [("move_type", "in", ("out_invoice", "out_refund"))],
                 },
             }
         return {

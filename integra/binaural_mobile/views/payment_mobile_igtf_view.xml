@@ -10,7 +10,7 @@
                 <field name="seller_id"/>
                 <field name="partner_id" />
                 <field name="amount_igtf"/>
-                <field name="currency_id" invisible="1"/>
+                <field name="currency_id" column_invisible="True"/>
                 <field name="state"/>
             </tree>
         </field>
@@ -22,8 +22,8 @@
         <field name="arch" type="xml">
             <form edit="false">
                 <header>
-                    <button string="Mark as posted" name="posted_igtf" type="object" class="oe_highlight" attrs="{'invisible':[('state','in',['posted','cancel'])]}"/>
-                    <button string="Cancel" name="cancel_igtf" type="object" class="oe_highlight" attrs="{'invisible':[('state','in',['cancel'])]}"/>
+                    <button string="Mark as posted" name="posted_igtf" type="object" class="oe_highlight" invisible="state in ['posted', 'cancel']"/>
+                    <button string="Cancel" name="cancel_igtf" type="object" class="oe_highlight" invisible="state == 'cancel'"/>
                     <field name="state" widget="statusbar" statusbar_colors='{"to_posted":"red","posted":"blue"}'/>
                 </header>
                 <sheet>

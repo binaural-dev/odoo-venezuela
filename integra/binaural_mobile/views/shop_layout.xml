@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     
-    <template id="product_item_list_1-1" inherit_id="theme_prime.shop_layout">
+    <!-- <template id="product_item_list_1-1" inherit_id="theme_prime.shop_layout">
         <xpath expr="//div[3]/div[2]//div[2]//t[1]" position="replace">
             <t t-if="request.env.user.employee_id.is_seller">
                 
@@ -15,6 +15,6 @@
                 </t>
             </t>
         </xpath>
-    </template>
+    </template> -->
 
 </odoo>
