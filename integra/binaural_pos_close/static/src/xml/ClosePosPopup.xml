@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <t t-name="ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table[1]/thead[1]/tr[1]/th[2]" position="attributes">
+            <attribute name="style">width: 20%</attribute>
+        </xpath>
         <xpath expr="//table[1]/thead[1]/tr[1]/th[2]" position="after">
-            <th>Expected <t t-esc="env.pos.foreign_currency.symbol"/></th>
+            <th class="text-end" style="width: 20%">Expected <t t-esc="env.pos.foreign_currency.symbol"/></th>
         </xpath>
 
         <xpath expr="//t[@t-if='cashControl']/tbody[1]/tr[1]/td[2]" position="after">
