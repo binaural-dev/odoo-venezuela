@@ -365,6 +365,11 @@ msgid "My Activity Deadline"
 msgstr ""
 
 #. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr ""
+
+#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_date_deadline
 msgid "Next Activity Deadline"
 msgstr ""
@@ -759,6 +764,13 @@ msgstr "No tiene permiso para hacer transferencias de tipo de Expedicion"
 #: model:ir.actions.server,name:binaural_stock.correction_quantity_product_template
 msgid "correction quantity product template"
 msgstr ""
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "does not have results from other pickings"
+msgstr "No tiene resultados de otros pickings"
 
 #. module: binaural_stock
 #: model:ir.actions.report,name:binaural_stock.inventory_valuation_report
