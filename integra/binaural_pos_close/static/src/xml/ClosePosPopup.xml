@@ -5,7 +5,7 @@
             <attribute name="style">width: 20%</attribute>
         </xpath>
         <xpath expr="//table[1]/thead[1]/tr[1]/th[2]" position="after">
-            <th class="text-end" style="width: 20%">Expected <t t-esc="env.pos.foreign_currency.symbol"/></th>
+            <th style="width: 20%">Expected <t t-esc="env.pos.foreign_currency.symbol"/></th>
         </xpath>
 
         <xpath expr="//t[@t-if='cashControl']/tbody[1]/tr[1]/td[2]" position="after">
