@@ -112,9 +112,9 @@ class StockPicking(models.Model):
     @api.depends("picks_count", "packs_count", "outs_count")
     def _compute_stock_pickings_by_origin(self):
         for record in self:
-            record.picks_count = record._get_picks()
-            record.packs_count = record._get_packs()
-            record.outs_count = record._get_outs()
+            record.picks_count = len(record._get_picks())
+            record.packs_count = len(record._get_packs())
+            record.outs_count = len(record._get_outs())
 
     type_delivery_step = fields.Selection(
         [
