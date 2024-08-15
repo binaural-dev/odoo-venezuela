@@ -7,11 +7,11 @@
 			<field name="model">account.move</field>
 			<field name="inherit_id" ref="account.view_move_form"/>
 			<field name="arch" type="xml">
-				<xpath expr="//field[@name='vat']" position="after">
+                <xpath expr="//field[@name='vat']/.." position="after">
 					<field name="generate_iva_retention" invisible="move_type not in ('in_invoice', 'in_receipt', 'in_refund') or not fiscal" />
-					<field name="iva_voucher_number" readonly="1" />
-					<field name="islr_voucher_number" readonly="1" />
-					<field name="municipal_voucher_number" readonly="1" />
+					<field name="iva_voucher_number" readonly="1" invisible="move_type == 'entry'"/>
+					<field name="islr_voucher_number" readonly="1" invisible="move_type == 'entry'"/>
+					<field name="municipal_voucher_number" readonly="1" invisible="move_type == 'entry'"/>
 					<field name="base_currency_is_vef" invisible="1"/>
 					<field name="company_currency_id" invisible="1"/>
 					<field name="foreign_currency_id" invisible="1"/>

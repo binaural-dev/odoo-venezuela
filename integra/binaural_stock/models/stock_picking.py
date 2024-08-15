@@ -9,6 +9,7 @@ _logger = logging.getLogger(__name__)
 from odoo.exceptions import ValidationError
 from odoo.exceptions import UserError
 
+
 class StockPicking(models.Model):
     _inherit = "stock.picking"
 
@@ -64,25 +65,25 @@ class StockPicking(models.Model):
     def _get_picks(self, assigned=False):
         domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "pick")]
         if assigned:
-            domain = expression.AND([[("state", "in", ["assigned","waiting"])], domain])
+            domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
     def _get_packs(self, assigned=False):
         domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "pack")]
         if assigned:
-            domain = expression.AND([[("state", "in", ["assigned","waiting"])], domain])
+            domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
     def _get_outs(self, assigned=False):
         domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "out")]
         if assigned:
-            domain = expression.AND([[("state", "in", ["assigned","waiting"])], domain])
+            domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
-    @api.depends("picks_count","packs_count","outs_count")
+    @api.depends("picks_count", "packs_count", "outs_count")
     def _compute_stock_pickings_by_origin(self):
         for record in self:
             record.picks_count = len(record._get_picks())
@@ -107,8 +108,9 @@ class StockPicking(models.Model):
             record.type_delivery_step = record.picking_type_id._get_type_steps()
 
     change_weight = fields.Boolean(
-        related='company_id.change_weight',
+        related="company_id.change_weight",
     )
+
     def _compute_is_out(self):
         for record in self:
             record.is_out = (
@@ -122,25 +124,26 @@ class StockPicking(models.Model):
         res = super().create(vals_list)
         self.move_line_ids_without_package.sorted(key=lambda x: x.priority_location)
         self.move_line_ids.sorted(key=lambda x: x.priority_location)
-        self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
+        # self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
         return res
-    
-    def write(self,vals):
+
+    def write(self, vals):
         res = super().write(vals)
         self.move_line_ids_without_package.sorted(key=lambda x: x.priority_location)
         self.move_line_ids.sorted(key=lambda x: x.priority_location)
-        self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
+        # funcionalidad?
+        # self.move_line_nosuggest_ids.sorted(key=lambda x: x.priority_location)
         keys_to_check = [
             "move_line_ids_without_package",
             "move_line_nosuggest_ids",
-            "move_ids_without_package"
+            "move_ids_without_package",
         ]
         matched_key = None
         for key in keys_to_check:
             if key in vals:
                 matched_key = key
                 break
-        
+
         if matched_key:
             self.validate_block_transfers_expedition(write=vals, matched_key=matched_key)
 
@@ -151,38 +154,73 @@ class StockPicking(models.Model):
             "binaural_stock.group_block_type_inventory_transfers_expeditions"
         )
         if block_transfer_expedition:
+
             picking_type = (
-                self.env["stock.picking.type"].search([("id", "=", vals.get("picking_type_id", False))])
+                self.env["stock.picking.type"].search(
+                    [("id", "=", vals.get("picking_type_id", False))]
+                )
                 if vals
                 else self.picking_type_id
             )
             if picking_type.code == "outgoing":
                 if write and matched_key:
                     for move_line in write[matched_key]:
+
                         if isinstance(move_line[1], str):
                             raise UserError(_("You cannot add products to shipment-type transfers"))
-                    
+
                         if isinstance(move_line[1], int):
                             if not move_line[2]:
-                                raise UserError(_("You cannot add products to shipment-type transfers"))
-                                
-                            if "quantity_done" in move_line[2] or "qty_done" in move_line[2]:
+                                raise UserError(
+                                    _("You cannot add products to shipment-type transfers")
+                                )
+
+                            if "quantity" in move_line[2] or "quantity" in move_line[2]:
                                 lines = self[matched_key]
                                 for line in lines:
                                     if line.id == move_line[1]:
-                                        
-                                        if "quantity_done" in move_line[2]:
-                                            quantity_done = move_line[2].get("quantity_done")
+
+                                        if "quantity" in move_line[2]:
+                                            quantity_done = move_line[2].get("quantity")
                                             if line.product_uom_qty < quantity_done:
-                                                raise UserError(_("You cannot make transfers larger than the demand"))
-                                        elif "qty_done" in move_line[2]:
-                                            quantity_done = move_line[2].get("qty_done")
+                                                raise UserError(
+                                                    _(
+                                                        "You cannot make transfers larger than the demand"
+                                                    )
+                                                )
+                                        elif "quantity" in move_line[2]:
+                                            quantity_done = move_line[2].get("quantity")
+                                            # if line.quantity_product_uom < quantity_done: ??
                                             if line.reserved_uom_qty < quantity_done:
-                                                raise UserError(_("You cannot make transfers larger than the reserved quantity"))
-                            
-                else: raise UserError(_("You do not have permission to make shipment-type transfers"))
+                                                raise UserError(
+                                                    _(
+                                                        "You cannot make transfers larger than the reserved quantity"
+                                                    )
+                                                )
+
+                else:
+                    raise UserError(_("You do not have permission to make shipment-type transfers"))
 
     def action_assign(self):
         if self.type_delivery_step != "pick":
             self = self.with_context(skip_physical_location=True)
         return super().action_assign()
+
+    def do_unreserve(self):
+        if self.env.user.has_group(
+            "binaural_stock.group_hide_override_button_for_inventory_transfers"
+        ):
+            raise UserError(_("You can't Override Inventory Transfers"))
+        return super().do_unreserve()
+
+    def action_toggle_is_locked(self):
+        if self.env.user.has_group(
+            "binaural_stock.group_hide_unlock_lock_button_for_inventory_transfers"
+        ):
+            raise UserError(_("You can't unlock or lock Inventory Transfers"))
+        return super().action_toggle_is_locked()
+
+    def button_scrap(self):
+        if self.env.user.has_group("binaural_stock.group_hide_discard_inventory_transfers_button"):
+            raise UserError(_("You can't Discard Inventory Transfers"))
+        return super().button_scrap()
