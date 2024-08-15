@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240527\n"
+"Project-Id-Version: Odoo Server 17.0+e-20240814\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-14 17:43+0000\n"
-"PO-Revision-Date: 2024-06-14 17:43+0000\n"
+"POT-Creation-Date: 2024-08-15 13:22+0000\n"
+"PO-Revision-Date: 2024-08-15 13:22+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -28,10 +28,10 @@ msgid "- Barcode \"%s\" already assigned to product(s): %s"
 msgstr "- Còdigo de barras \"%s\" ya ha sido asignado al producto(s): %s"
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.product_form_view_procurement_button
-#: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_form_view_procurement_button
-msgid "<span class=\"o_stat_text\">Available Quantity To Sale</span>"
-msgstr "<span class=\"o_stat_text\">Cantidad Disponible para Vender</span>"
+#: model_terms:ir.ui.view,arch_db:binaural_stock.product_form_view_procurement_button_binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_form_view_procurement_button_binaural_stock
+msgid "<span class=\"o_stat_text\"> Available Quantity To Sale</span>"
+msgstr "<span class=\"o_stat_text\"> Cantidad Disponible para Vender</span>"
 
 #. module: binaural_stock
 #. odoo-python
@@ -132,8 +132,11 @@ msgstr "Bloquear campo de Litros por unidad"
 
 #. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_block_type_inventory_transfers_expeditions
-msgid "Block Type Inventory Transfers Expeditions"
-msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
+msgid ""
+"Block Type Inventory Transfers Expeditions (Do not add a new product to the "
+"Dispatch)"
+msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones (No agregue un nuevo producto al "
+"Despacho)"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
@@ -158,7 +161,7 @@ msgstr ""
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_product_category__company_id
@@ -168,7 +171,7 @@ msgstr "Compañía"
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -520,7 +523,7 @@ msgstr "Otras Ubicaciones del Producto"
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_product_category
 msgid "Product Category"
-msgstr "Categoría de producto"
+msgstr "Categoría del producto"
 
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_move_line
@@ -529,13 +532,13 @@ msgstr "Movimientos de producto (línea de movimiento de inventario)"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_move_line__product_tag_ids
-msgid "Product Tags"
+msgid "Product Template Tags"
 msgstr "Etiquetas de Producto"
 
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_product_product
 msgid "Product Variant"
-msgstr "Variantes de producto"
+msgstr "Variante del producto"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_product_product__quantity
@@ -579,11 +582,6 @@ msgid "Show Location Available"
 msgstr "Otras Ubicaciones del Producto"
 
 #. module: binaural_stock
-#: model:res.groups,name:binaural_stock.group_show_standard_price
-msgid "Show standard price on the product form view"
-msgstr "Mostrar costo en la vista del producto"
-
-#. module: binaural_stock
 #: model:ir.model.fields,help:binaural_stock.field_stock_location__activity_state
 msgid ""
 "Status based on activities\n"
@@ -605,7 +603,7 @@ msgstr "Movimiento de inventario"
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_quantity_history
 msgid "Stock Quantity History"
-msgstr "Historia de Stock Quant"
+msgstr "Historial de Stock Quant"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
@@ -701,10 +699,31 @@ msgstr ""
 
 #. module: binaural_stock
 #. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "You can't Discard Inventory Transfers"
+msgstr "No puedes descartar transferencias de inventario"
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "You can't Override Inventory Transfers"
+msgstr "No puedes anular las transferencias de inventario"
+
+#. module: binaural_stock
+#. odoo-python
 #: code:addons/binaural_stock/models/product_product.py:0
 #, python-format
 msgid "You can't create products"
 msgstr "No puedes crear productos"
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "You can't unlock or lock Inventory Transfers"
+msgstr "No puede desbloquear o bloquear las transferencias de inventario"
 
 #. module: binaural_stock
 #. odoo-python

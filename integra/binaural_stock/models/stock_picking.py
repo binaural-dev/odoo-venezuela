@@ -205,3 +205,22 @@ class StockPicking(models.Model):
         if self.type_delivery_step != "pick":
             self = self.with_context(skip_physical_location=True)
         return super().action_assign()
+
+    def do_unreserve(self):
+        if self.env.user.has_group(
+            "binaural_stock.group_hide_override_button_for_inventory_transfers"
+        ):
+            raise UserError(_("You can't Override Inventory Transfers"))
+        return super().do_unreserve()
+
+    def action_toggle_is_locked(self):
+        if self.env.user.has_group(
+            "binaural_stock.group_hide_unlock_lock_button_for_inventory_transfers"
+        ):
+            raise UserError(_("You can't unlock or lock Inventory Transfers"))
+        return super().action_toggle_is_locked()
+
+    def button_scrap(self):
+        if self.env.user.has_group("binaural_stock.group_hide_discard_inventory_transfers_button"):
+            raise UserError(_("You can't Discard Inventory Transfers"))
+        return super().button_scrap()
