@@ -36,7 +36,7 @@ class AccountReport(models.Model):
         Inherits the original method to return the currency table of the foreign currency in cases
         in which the user is trying to get a report in the foreign currency.
         """
-        is_foreign_currency = get_is_foreign_currency(self.env)
+        is_foreign_currency = get_is_foreign_currency(self)
         if not is_foreign_currency:
             return super()._get_query_currency_table(options)
         user_company = self.env.company
@@ -90,18 +90,21 @@ class AccountReport(models.Model):
 
         self.env["ir.ui.menu"].create(menu_item_vals)
 
+    # TODO Ver porque al cambiar el filtro de las unidades de redondeo vuelve a cambiar el formato
+    ##### del reporte a la moneda base
     @api.model
     def format_value(
         self, options, value, currency=None, blank_if_zero=False, figure_type=None, digits=1
     ):
-        usd_report = True if (self.env.context.get("usd_report") or self.usd) else False
-        currency_id = currency or (
-            self.env.ref("base.USD").id if usd_report else self.env.ref("base.VEF").id
+        is_foreign_currency = get_is_foreign_currency(self)
+        company = self.env.company
+        currency_id = (
+            company.currency_foreign_id.id if is_foreign_currency else company.currency_id.id
         )
+        _logger.warning("Currency id: %s", currency_id)
 
         return super().format_value(options, value, currency_id, blank_if_zero, figure_type, digits)
 
-    @api.model
     def _format_value(
         self, options, value, currency=False, blank_if_zero=True, figure_type=None, digits=1
     ):
@@ -109,15 +112,40 @@ class AccountReport(models.Model):
         Ensure that if the report is in USD, the amount is displayed in its appropiate format.
         Everything else is the same as the original method.
         """
-        _logger.warning("AAAAAAAAA on AAAAAAAAAA")
-        usd_report = True if (self.env.context.get("usd_report") or self.usd) else False
-        currency_to_search = self.env.ref("base.USD") if usd_report else self.env.ref("base.VEF")
+        _logger.warning("CURRENCY: %s", currency)
+        is_foreign_currency = get_is_foreign_currency(self)
+        company = self.env.company
         currency_to_use = (
-            self.env["res.currency"].browse(currency) if currency else currency_to_search
+            company.currency_foreign_id if is_foreign_currency else company.currency_id
         )
+        _logger.warning("Currency to use: %s", currency_to_use)
         return super()._format_value(
             options, value, currency_to_use, blank_if_zero, figure_type, digits
         )
+
+    # TODO Ver porque al cambiar el filtro de las unidades de redondeo vuelve a cambiar el formato
+    ##### del reporte a la moneda base
+    def _get_rounding_unit_names(self):
+        """
+        Inherits the original method so the rounding unit names filter uses the currency that's
+        being used on the report instead of the company's.
+
+        This means that when the report is being consulted on the foreign currency, the foreign
+        currency is the one that's gonna be used on the filter.
+        """
+        is_foreign_currency = get_is_foreign_currency(self)
+        if not is_foreign_currency:
+            return super()._get_rounding_unit_names()
+
+        currency_symbol = self.env.company.currency_foreign_id.symbol
+        rounding_unit_names = [
+            ("decimals", ".%s" % currency_symbol),
+            ("units", "%s" % currency_symbol),
+            ("thousands", "K%s" % currency_symbol),
+            ("millions", "M%s" % currency_symbol),
+        ]
+
+        return dict(rounding_unit_names)
 
     def export_file(self, options, file_generator):
         """
@@ -142,7 +170,7 @@ class AccountReport(models.Model):
         Overrides the original method to add the foreign_balance field to the query, so that we
         can get the balance in foreign currency.
         """
-        is_foreign_currency = get_is_foreign_currency(self.env)
+        is_foreign_currency = get_is_foreign_currency(self)
         if not is_foreign_currency:
             return super()._compute_formula_batch_with_engine_tax_tags(
                 options, date_scope, formulas_dict, current_groupby, next_groupby, offset, limit
@@ -333,7 +361,7 @@ class AccountReport(models.Model):
         We just change the query to get the foreign_balance instead of the balance, the rest is
         the same as the original method.
         """
-        is_foreign_currency = get_is_foreign_currency(self.env)
+        is_foreign_currency = get_is_foreign_currency(self)
         if not is_foreign_currency:
             return super()._compute_formula_batch_with_engine_domain(
                 options,
@@ -471,7 +499,7 @@ class AccountReport(models.Model):
         We just change the query to get the foreign_balance instead of the balance, the rest is
         the same as the original method.
         """
-        is_foreign_currency = get_is_foreign_currency(self.env)
+        is_foreign_currency = get_is_foreign_currency(self)
         if not is_foreign_currency:
             return super()._compute_formula_batch_with_engine_account_codes(
                 options, date_scope, formulas_dict, current_groupby, next_groupby, offset, limit
@@ -653,7 +681,7 @@ class AccountReport(models.Model):
         Inherits the original function to change the currency in which the value is rounded in case
         the report is called on the foreign currency of the system.
         """
-        if not get_is_foreign_currency(self.env):
+        if not get_is_foreign_currency(self):
             return super()._compute_totals_no_batch_aggregation(
                 column_group_options,
                 formulas_dict,
@@ -904,7 +932,7 @@ class AccountReportCustomHandler(models.AbstractModel):
         string
             The piece of SQL code that goes on the position of the amounts rows for the query.
         """
-        report_in_foreign_currency = get_is_foreign_currency(self.env)
+        report_in_foreign_currency = get_is_foreign_currency(self.env["account.report"])
         amounts_query = {
             True: """
                 ROUND(account_move_line.foreign_debit, currency_table.precision)   AS debit,
@@ -932,7 +960,8 @@ class AccountReportCustomHandler(models.AbstractModel):
             The piece of SQL code that goes on the position of the sums of the amounts rows for the
             query.
         """
-        report_in_foreign_currency = get_is_foreign_currency(self.env)
+        _logger.warning("SELF FILEDS: %s", self._fields)
+        report_in_foreign_currency = get_is_foreign_currency(self.env["account.report"])
         amounts_query = {
             True: """
                 COALESCE(SUM(ROUND(account_move_line.foreign_debit, currency_table.precision)), 0.0) AS debit,

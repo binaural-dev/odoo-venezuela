@@ -17,7 +17,7 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
             + ([current_groupby] if current_groupby else [])
         )
 
-        report_in_foreign_currency = get_is_foreign_currency(self.env)
+        report_in_foreign_currency = get_is_foreign_currency(report)
 
         def minus_days(date_obj, days):
             return fields.Date.to_string(date_obj - relativedelta(days=days))
