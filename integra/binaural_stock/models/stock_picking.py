@@ -17,9 +17,12 @@ class StockPicking(models.Model):
 
     def _get_action_picking_delivery_type(self, picking_type):
         # action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
-        pickings = self.search(
-            ["&", ("origin", "=", self.origin), ("type_delivery_step", "=", picking_type)]
-        )
+        pickings = self.env["stock.picking"]
+        if self.group_id:
+            pickings = self.search(
+                ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", picking_type)]
+            )
+            pickings -= self
         action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
 
         if len(pickings) > 1:
@@ -38,6 +41,8 @@ class StockPicking(models.Model):
         if picking_id:
             picking_id = picking_id[0]
         else:
+            if not pickings:
+                raise UserError(_("does not have results from other pickings"))
             picking_id = pickings[0]
         action["context"] = dict(
             self._context,
@@ -63,21 +68,42 @@ class StockPicking(models.Model):
     outs_count = fields.Integer(compute="_compute_stock_pickings_by_origin")
 
     def _get_picks(self, assigned=False):
-        domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "pick")]
+        if not self.group_id:
+            return 0
+        domain = [
+            "&",
+            ("group_id", "=", self.group_id.id),
+            ("type_delivery_step", "=", "pick"),
+            ("id", "!=", self.id),
+        ]
         if assigned:
             domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
     def _get_packs(self, assigned=False):
-        domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "pack")]
+        if not self.group_id:
+            return 0
+        domain = [
+            "&",
+            ("group_id", "=", self.group_id.id),
+            ("type_delivery_step", "=", "pack"),
+            ("id", "!=", self.id),
+        ]
         if assigned:
             domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
 
     def _get_outs(self, assigned=False):
-        domain = ["&", ("group_id", "=", self.group_id.id), ("type_delivery_step", "=", "out")]
+        if not self.group_id:
+            return 0
+        domain = [
+            "&",
+            ("group_id", "=", self.group_id.id),
+            ("type_delivery_step", "=", "out"),
+            ("id", "!=", self.id),
+        ]
         if assigned:
             domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
@@ -86,9 +112,9 @@ class StockPicking(models.Model):
     @api.depends("picks_count", "packs_count", "outs_count")
     def _compute_stock_pickings_by_origin(self):
         for record in self:
-            record.picks_count = len(record._get_picks())
-            record.packs_count = len(record._get_packs())
-            record.outs_count = len(record._get_outs())
+            record.picks_count = record._get_picks()
+            record.packs_count = record._get_packs()
+            record.outs_count = record._get_outs()
 
     type_delivery_step = fields.Selection(
         [
