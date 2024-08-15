@@ -27,7 +27,7 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
 
         # Create the currency table.
         # As the currency table is the same whatever the comparisons, create it only once.
-        ct_query = self.env["res.currency"]._get_query_currency_table(options)
+        ct_query = report._get_query_currency_table(options)
 
         amounts_query = self._get_sums_amount_rows_query()
 
@@ -139,7 +139,7 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
             tables, where_clause, where_params = report._query_get(
                 group_options, domain=additional_domain, date_scope="strict_range"
             )
-            ct_query = self.env["res.currency"]._get_query_currency_table(group_options)
+            ct_query = self._get_query_currency_table(group_options)
             query = f"""
                 (SELECT
                     account_move_line.id,
@@ -202,7 +202,7 @@ class GeneralLedgerCustomHandler(models.AbstractModel):
             options
         ).items():
             new_options = self._get_options_initial_balance(options_group)
-            ct_query = self.env['res.currency']._get_query_currency_table(new_options)
+            ct_query = self._get_query_currency_table(new_options)
             domain = [('account_id', 'in', account_ids)]
             if new_options.get('include_current_year_in_unaff_earnings'):
                 domain += [('account_id.include_initial_balance', '=', True)]

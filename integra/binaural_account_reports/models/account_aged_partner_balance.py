@@ -51,6 +51,9 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
                 )
                 rslt.update(
                     {
+                        "invoice_date": query_res["invoice_date"][0]
+                        if len(query_res["invoice_date"]) == 1
+                        else None,
                         "due_date": query_res["due_date"][0]
                         if len(query_res["due_date"]) == 1
                         else None,
@@ -76,6 +79,7 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
             else:
                 rslt.update(
                     {
+                        "invoice_date": None,
                         "due_date": None,
                         "amount_currency": None,
                         "currency_id": None,
@@ -105,7 +109,7 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
             options, "strict_range", domain=[("account_id.account_type", "=", internal_type)]
         )
 
-        currency_table = self.env["res.currency"]._get_query_currency_table(options)
+        currency_table = report._get_query_currency_table(options)
         always_present_groupby = (
             "period_table.period_index, currency_table.rate, currency_table.precision"
         )
@@ -146,6 +150,7 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
                 %s * SUM(account_move_line.amount_residual_currency) AS amount_currency,
                 ARRAY_AGG(DISTINCT account_move_line.partner_id) AS partner_id,
                 ARRAY_AGG(account_move_line.payment_id) AS payment_id,
+                ARRAY_AGG(DISTINCT move.invoice_date) AS invoice_date,
                 ARRAY_AGG(DISTINCT COALESCE(account_move_line.date_maturity, account_move_line.date)) AS report_date,
                 ARRAY_AGG(DISTINCT account_move_line.expected_pay_date) AS expected_date,
                 ARRAY_AGG(DISTINCT account.code) AS account_name,
@@ -159,6 +164,7 @@ class AccountPartnerBalanceCustomHandler(models.AbstractModel):
 
             JOIN account_journal journal ON journal.id = account_move_line.journal_id
             JOIN account_account account ON account.id = account_move_line.account_id
+            JOIN account_move move ON move.id = account_move_line.move_id
             JOIN {currency_table} ON currency_table.company_id = account_move_line.company_id
 
             LEFT JOIN LATERAL (

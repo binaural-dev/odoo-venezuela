@@ -9,8 +9,6 @@
         <field name="default_opening_date_filter">this_month</field>
         <field name="search_bar" eval="True"/>
         <field name="load_more_limit" eval="80"/>
-        <field name="main_template">account_reports.template_general_ledger_report</field>
-        <field name="line_template">account_reports.line_template_general_ledger_report</field>
         <field name="custom_handler_model_id" ref="model_account_daily_ledger_report_handler"/>
         <field name="column_ids">
             <record id="general_ledger_report_debit" model="account.report.column">

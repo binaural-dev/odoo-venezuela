@@ -9,6 +9,9 @@ from ast import literal_eval
 from collections import defaultdict
 from ..tools.utils import get_is_foreign_currency
 from psycopg2 import sql
+import logging
+
+_logger = logging.getLogger(__name__)
 
 ACCOUNT_CODES_ENGINE_SPLIT_REGEX = re.compile(r"(?=[+-])")
 
@@ -26,6 +29,42 @@ class AccountReport(models.Model):
     usd = fields.Boolean(
         string="USD", default=False, help="Check this if the report is gonna be displayed in USD."
     )
+
+    @api.model
+    def _get_query_currency_table(self, options):
+        """
+        Inherits the original method to return the currency table of the foreign currency in cases
+        in which the user is trying to get a report in the foreign currency.
+        """
+        is_foreign_currency = get_is_foreign_currency(self.env)
+        if not is_foreign_currency:
+            return super()._get_query_currency_table(options)
+        user_company = self.env.company
+        user_currency = user_company.currency_foreign_id
+        if options.get("multi_company", False):
+            companies = self.env.companies
+            conversion_date = options["date"]["date_to"]
+            currency_rates = companies.mapped("currency_foreign_id")._get_rates(
+                user_company, conversion_date
+            )
+        else:
+            companies = user_company
+            currency_rates = {user_currency.id: 1.0}
+
+        conversion_rates = []
+        for company in companies:
+            conversion_rates.extend(
+                (
+                    company.id,
+                    currency_rates[user_company.currency_foreign_id.id]
+                    / currency_rates[company.currency_foreign_id.id],
+                    user_currency.decimal_places,
+                )
+            )
+        query = "(VALUES %s) AS currency_table(company_id, rate, precision)" % ",".join(
+            "(%s, %s, %s)" for i in companies
+        )
+        return self.env.cr.mogrify(query, conversion_rates).decode(self.env.cr.connection.encoding)
 
     def _create_menu_item_for_report(self):
         """
@@ -52,46 +91,33 @@ class AccountReport(models.Model):
         self.env["ir.ui.menu"].create(menu_item_vals)
 
     @api.model
-    def format_value(self, value, currency=False, blank_if_zero=True, figure_type=None, digits=1):
+    def format_value(
+        self, options, value, currency=None, blank_if_zero=False, figure_type=None, digits=1
+    ):
+        usd_report = True if (self.env.context.get("usd_report") or self.usd) else False
+        currency_id = currency or (
+            self.env.ref("base.USD").id if usd_report else self.env.ref("base.VEF").id
+        )
+
+        return super().format_value(options, value, currency_id, blank_if_zero, figure_type, digits)
+
+    @api.model
+    def _format_value(
+        self, options, value, currency=False, blank_if_zero=True, figure_type=None, digits=1
+    ):
         """
         Ensure that if the report is in USD, the amount is displayed in its appropiate format.
         Everything else is the same as the original method.
         """
-        if figure_type == "none":
-            return value
-
-        if value is None:
-            return ""
-
-        if figure_type == "monetary":
-            # If the report is in USD, we want to display the amount in its appropiate format
-            usd_report = True if (self.env.context.get("usd_report") or self.usd) else False
-            currency = currency or (
-                self.env.ref("base.USD") if usd_report else self.env.ref("base.VEF")
-            )
-            digits = None
-        elif figure_type == "integer":
-            currency = None
-            digits = 0
-        elif figure_type in ("date", "datetime"):
-            return format_date(self.env, value)
-        else:
-            currency = None
-
-        if self.is_zero(value, currency=currency, figure_type=figure_type, digits=digits):
-            if blank_if_zero:
-                return ""
-            # don't print -0.0 in reports
-            value = abs(value)
-
-        if self._context.get("no_format"):
-            return value
-        formatted_amount = formatLang(self.env, value, currency_obj=currency, digits=digits)
-
-        if figure_type == "percentage":
-            return f"{formatted_amount}%"
-
-        return formatted_amount
+        _logger.warning("AAAAAAAAA on AAAAAAAAAA")
+        usd_report = True if (self.env.context.get("usd_report") or self.usd) else False
+        currency_to_search = self.env.ref("base.USD") if usd_report else self.env.ref("base.VEF")
+        currency_to_use = (
+            self.env["res.currency"].browse(currency) if currency else currency_to_search
+        )
+        return super()._format_value(
+            options, value, currency_to_use, blank_if_zero, figure_type, digits
+        )
 
     def export_file(self, options, file_generator):
         """
@@ -130,7 +156,7 @@ class AccountReport(models.Model):
             all_expressions |= expressions
         tags = all_expressions._get_matching_tags()
 
-        currency_table_query = self.env["res.currency"]._get_query_currency_table(options)
+        currency_table_query = self._get_query_currency_table(options)
         groupby_sql = f"account_move_line.{current_groupby}" if current_groupby else None
         tables, where_clause, where_params = self._query_get(options, date_scope)
         tail_query, tail_params = self._get_engine_query_tail(offset, limit)
@@ -299,6 +325,7 @@ class AccountReport(models.Model):
         next_groupby,
         offset=0,
         limit=None,
+        warnings=None,
     ):
         """
         Overrides the original method to compute the formula in the foreign currency if needed.
@@ -341,7 +368,7 @@ class AccountReport(models.Model):
         )
 
         groupby_sql = f"account_move_line.{current_groupby}" if current_groupby else None
-        ct_query = self.env["res.currency"]._get_query_currency_table(options)
+        ct_query = self._get_query_currency_table(options)
 
         rslt = {}
 
@@ -436,6 +463,7 @@ class AccountReport(models.Model):
         next_groupby,
         offset=0,
         limit=None,
+        warnings=None,
     ):
         """
         Overrides the original method to compute the formulas on the foreign currency if needed.
@@ -537,7 +565,7 @@ class AccountReport(models.Model):
         # Run main query
         tables, where_clause, where_params = self._query_get(options, date_scope)
 
-        currency_table_query = self.env["res.currency"]._get_query_currency_table(options)
+        currency_table_query = self._get_query_currency_table(options)
         extra_groupby_sql = f", account_move_line.{current_groupby}" if current_groupby else ""
         extra_select_sql = (
             f", account_move_line.{current_groupby} AS grouping_key" if current_groupby else ""
