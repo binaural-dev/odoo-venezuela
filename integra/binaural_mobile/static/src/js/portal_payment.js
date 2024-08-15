@@ -1,10 +1,9 @@
-odoo.define("binaural_mobile.payments_portal_form", function (require) {
-  "use strict";
+/** @odoo-module */
 
-  const publicWidget = require("web.public.widget");
-  const ajax = require("web.ajax");
-  const { _t } = require("web.core");
-  const Dialog = require('web.Dialog');
+import publicWidget from "@web/legacy/js/public/public_widget";
+import { _t } from "@web/core/l10n/translation";
+import { Dialog } from "@web/core/dialog/dialog";
+import { jsonrpc } from "@web/core/network/rpc_service";
 
   publicWidget.registry.PaymentsPortalForm = publicWidget.Widget.extend({
     selector: ".payments_portal_form",
@@ -132,7 +131,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
       if ($("#diary").val() != "") {
         const partner_id = $("#clients").val();
         const type_dairy = $("#diary").val();
-        const invoices = await ajax.jsonRpc("/payments/account_move", "call", {
+        const invoices = await jsonrpc("/payments/account_move", "call", {
           partner_id: partner_id,
           type_dairy: type_dairy,
         });
@@ -494,7 +493,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
     SetSymbolCurrencyInput: async function () {
       const dairy = $("#diary_pay").val();
       if (dairy != "") {
-        const dairySym = await ajax.jsonRpc(
+        const dairySym = await jsonrpc(
           "/payments/get_symbol_currency",
           "call",
           {
@@ -543,7 +542,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
     },
 
     SetRateCurrency: async function () {
-      const currencyDay = await ajax.jsonRpc(
+      const currencyDay = await jsonrpc(
         "/payments/get_currency_rate",
         "call",
         {
@@ -621,7 +620,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
         const symbolBefore = positionSymbol === "before" ? $symbol.val() : "";
 
         if ($("#currency_id").val() != currency) {
-          const convertedCurrency = await ajax.jsonRpc(
+          const convertedCurrency = await jsonrpc(
             "/payments/convert_currency",
             "call",
             {
@@ -759,7 +758,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           $("#required_igtf").val() == "true"
         ) {
           const amount = +$("#amount_to_payment").val();
-          const valueIGTF = await ajax.jsonRpc(
+          const valueIGTF = await jsonrpc(
             "/payments/get_value_igtf",
             "call",
             {}
@@ -968,12 +967,12 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
 
       if (amountTotal > 0) {
         let totalPay = +$("#total_payment").val();
-        const paymentTotalPartial = await ajax.jsonRpc(
+        const paymentTotalPartial = await jsonrpc(
           "/payment_total_or_partial",
           "call",
           {}
         );
-        // const installmentPayments = await ajax.jsonrpc(
+        // const installmentPayments = await jsonrpc(
         //   "/installment_payments",
         //   "call",
         //   {}
@@ -1091,7 +1090,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
       const attachId =
         $("#attach_id").val() == "0" ? false : $("#attach_id").val();
 
-      const responsePayment = await ajax.jsonRpc(
+      const responsePayment = await jsonrpc(
         "/payments/register_payment",
         "call",
         {
@@ -1158,7 +1157,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
     onClickRemoveAttach: async function (ev) {
       if ($("#attach_id").val() != "") {
         const attachId = $("#attach_id").val();
-        const deleteAttach = await ajax.jsonRpc("/delete_attachment", "call", {
+        const deleteAttach = await jsonrpc("/delete_attachment", "call", {
           attach_id: attachId,
         });
         const { status } = deleteAttach;
@@ -1169,5 +1168,4 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
         $("#remove_attach").attr("disabled", true);
       }
     },
-  });
 });

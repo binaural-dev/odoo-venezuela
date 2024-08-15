@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-  <template id="website_header_call_to_action" inherit_id="website.header_call_to_action">
+  <!-- <template id="website_header_call_to_action" inherit_id="website.header_call_to_action">
     <xpath expr="//section[@class='s_text_block']/div[1]/a[hasclass('btn_cta')]" position="replace">
         <a href="/contactus" class="btn btn-primary btn_cta" t-if="not request.env.user.employee_id.is_seller">
             Contáctenos
@@ -20,7 +20,7 @@
             <span>Crear pago</span>
         </a>
     </xpath>
-  </template>
+  </template> -->
 
     <template id="budget_link" name="Budget">
         <t t-nocache="The number of products is dynamic, this rendering cannot be cached." 
@@ -101,7 +101,7 @@
         </xpath>
     </template>
 
-    <template id="template_header_slogan" inherit_id="website.template_header_slogan">
+    <!-- <template id="template_header_slogan" inherit_id="website.template_header_slogan">
         <xpath expr="//t[@t-foreach='website.menu_id.child_id']" position="after">
             <t t-call="binaural_mobile.budget_link">
                 <t t-set="_text" t-value="True"/>
@@ -110,9 +110,9 @@
                 <t t-set="_link_class" t-value="'nav-link'"/>
             </t>
         </xpath>
-    </template>
+    </template> -->
 
-    <template id="template_header_contact" inherit_id="website.template_header_contact">
+    <!-- <template id="template_header_contact" inherit_id="website.template_header_contact">
         <xpath expr="//t[@t-foreach='website.menu_id.child_id']" position="after">
             <t t-call="binaural_mobile.budget_link">
                 <t t-set="_text" t-value="True"/>
@@ -179,7 +179,7 @@
                 <t t-set="show_cart" t-value="true"/>
             </t>
         </xpath>
-    </template>
+    </template> -->
 
     <template id="website_sale.add_grid_or_list_option" active="True" name="Grid or List button">
         <t t-set="_activeClasses">border-primary</t>

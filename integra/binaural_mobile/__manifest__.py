@@ -21,7 +21,7 @@
         "binaural_sale",
         "binaural_stock",
         "binaural_payment_extension",
-        "theme_prime",
+        # "theme_prime",
         "product",
     ],
     "data": [
@@ -42,7 +42,7 @@
         "views/payment_mobile_view.xml",
         "views/payment_mobile_igtf_view.xml",
         "views/payment_mobile_menu.xml",
-        "views/pwa.xml",
+        # "views/pwa.xml",
         "views/website_sale_wishlist_template.xml",
         "views/account_payment.xml",
         "views/product_template.xml",
