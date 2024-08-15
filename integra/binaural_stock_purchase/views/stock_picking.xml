@@ -9,7 +9,7 @@
             
             <field name="backorder_id" position="after">
                 <field name="purchase_order_id" invisible="1"/>
-                <field name="purchase_invoice" string="Nº Factura" attrs="{'invisible':[('purchase_order_id' ,'=', False)]}"/>
+                <field name="purchase_invoice" string="Nº Factura" invisible="not purchase_order_id"/>
             </field>
 
         </field>
