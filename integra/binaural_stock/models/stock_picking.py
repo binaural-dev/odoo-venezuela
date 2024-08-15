@@ -69,7 +69,7 @@ class StockPicking(models.Model):
 
     def _get_picks(self, assigned=False):
         if not self.group_id:
-            return 0
+            return self.env["stock.picking"]
         domain = [
             "&",
             ("group_id", "=", self.group_id.id),
@@ -83,7 +83,7 @@ class StockPicking(models.Model):
 
     def _get_packs(self, assigned=False):
         if not self.group_id:
-            return 0
+            return self.env["stock.picking"]
         domain = [
             "&",
             ("group_id", "=", self.group_id.id),
@@ -97,7 +97,7 @@ class StockPicking(models.Model):
 
     def _get_outs(self, assigned=False):
         if not self.group_id:
-            return 0
+            return self.env["stock.picking"]
         domain = [
             "&",
             ("group_id", "=", self.group_id.id),
