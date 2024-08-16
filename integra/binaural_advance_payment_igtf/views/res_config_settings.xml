@@ -6,9 +6,9 @@
             <field name="name">res.config.settings.binaural.advance.payment.igtf</field>
             <field name="model">res.config.settings</field>
             <field name="priority" eval="101"/>
-            <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
+            <field name="inherit_id" ref="binaural_base.res_config_settings_view_form_binaural_base"/>
             <field name="arch" type="xml">
-                <xpath expr="//div[@name='binaural_rate_settings']" position="after">
+                <xpath expr="//block[@name='binaural_setting_container']" position="inside">
                     <h2>Advance Payment IGTF</h2>
                     <div class="row mt16 o_settings_container" name="binaural_advance_payment_account_settings">
                         <div class="o_setting_right_pane">

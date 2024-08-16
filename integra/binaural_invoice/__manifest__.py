@@ -9,6 +9,7 @@
     "category": "Accounting/Localizations/Account Chart",
     # any module necessary for this one to work correctly
     "depends": [
+        "binaural_base",
         "binaural_accountant",
         "binaural_contact",
         "binaural_fiscal",

@@ -16,6 +16,7 @@
         "binaural_contact",
         "binaural_invoice",
         "binaural_filter_partner",
+        "binaural_base"
     ],
     # always loaded
     "data": [

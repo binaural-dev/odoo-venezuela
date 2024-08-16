@@ -3,9 +3,9 @@
         <record id="res_config_settings_binaural_rate" model="ir.ui.view">
             <field name="name">res.config.settings.binaural.rate</field>
             <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="binaural_tax.res_config_settings_binaural_taxes"/>
+            <field name="inherit_id" ref="binaural_base.res_config_settings_view_form_binaural_base"/>
             <field name="arch" type="xml">
-                <xpath expr="//div[@id='base_igtf_setting']" position="inside">
+                <xpath expr="//block[@name='binaural_setting_container']" position="inside">
                     <div class="o_setting_left_pane">
                         <field name="module_binaural_igtf" />
                     </div>
