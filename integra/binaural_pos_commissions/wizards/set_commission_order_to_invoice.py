@@ -14,9 +14,7 @@ class SetCommissionOrderToInvoice(models.TransientModel):
 
     def get_orders(self):
         if self.pos_order_ids:
-            return self.pos_order_ids.filtered(
-                lambda x: x.state in ["paid", "posted", "invoiced"]
-            )
+            return self.pos_order_ids.filtered(lambda x: x.state in ["paid", "posted", "invoiced"])
         return super().get_orders()
 
     def get_order_lines(self):
@@ -28,3 +26,17 @@ class SetCommissionOrderToInvoice(models.TransientModel):
         if self.pos_order_ids:
             return self.get_orders().account_move
         return super().get_invoices()
+
+    def remove_commissions(self, orders):
+        res = super().remove_commissions(orders)
+        if orders._name == "sale.order":
+            for order in orders:
+                order.pos_order_line_ids.commission_policy_line_image_ids = False
+        return res
+
+    def write_documents(self, orders):
+        res = super().write_documents(orders)
+        if orders._name == "sale.order":
+            for order in orders:
+                order.pos_order_line_ids.order_id.assing_commission_policy_line_images_to_order_lines()
+        return res

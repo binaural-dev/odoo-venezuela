@@ -21,6 +21,25 @@ class SetCommissionOrderToInvoice(models.TransientModel):
     def get_invoices(self):
         return self.get_orders().invoice_ids
 
+    def remove_commissions(self,orders):
+        self.get_order_lines().commission_policy_line_image_ids = False
+        self.get_invoices().invoice_line_ids.commission_image_id = False
+
+    def write_documents(self, orders):
+        data_write = {
+            "commission_invoice_date_field": self.company_id.commission_invoice_date_field,
+            "compute_commission_when": self.company_id.compute_commission_when,
+            "priority_commission_policy_type": "/".join(
+                self.env["commission.policy.type"].search([]).mapped("name")
+            ),
+        }
+        orders.write(data_write)
+        orders.assing_commission_policy_line_images_to_order_lines()
+        self.get_invoices().write(data_write)
+        self.get_invoices()._compute_payment_dates()
+        self.get_invoices().calculate_commission()
+        return data_write
+
     def action_confirm(self):
         order_message = []
         invoice_message = []
@@ -44,24 +63,9 @@ class SetCommissionOrderToInvoice(models.TransientModel):
                 .move_id.mapped("name")
             )
             invoice_paid_message = (orders - available_orders).mapped("name")
+            self.remove_commissions(orders)
 
-            self.get_order_lines().commission_policy_line_image_ids = False
-            self.get_invoices().invoice_line_ids.commission_image_id = False
-
-        data_write = {
-            "commission_invoice_date_field": self.company_id.commission_invoice_date_field,
-            "compute_commission_when": self.company_id.compute_commission_when,
-            "priority_commission_policy_type": "/".join(
-                self.env["commission.policy.type"].search([]).mapped("name")
-            ),
-        }
-
-        orders.write(data_write)
-        orders.assing_commission_policy_line_images_to_order_lines()
-
-        self.get_invoices().write(data_write)
-        self.get_invoices()._compute_payment_dates()
-        self.get_invoices().calculate_commission()
+        self.write_documents(orders)
 
         if sum([len(order_message) + len(invoice_message) + len(invoice_paid_message)]) == 0:
             return True

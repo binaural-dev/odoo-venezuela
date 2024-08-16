@@ -13,7 +13,6 @@
                     decoration-muted="commission_payment_state == 'not_paid'"
                     decoration-success="commission_payment_state == 'paid'" 
                     decoration-info="commission_payment_state == 'process'"
-                    optional="show" 
                     string="Payment State (Commission)"
                     />
             </xpath>
@@ -40,7 +39,7 @@
                     decoration-muted="commission_payment_state == 'not_paid'"
                     decoration-success="commission_payment_state == 'paid'" 
                     decoration-info="commission_payment_state == 'process'"
-                    optional="show" 
+                    optional="hide" 
                     string="Payment State (Commission)"
                     />
             </xpath>
