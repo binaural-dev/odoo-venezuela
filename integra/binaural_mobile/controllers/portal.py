@@ -281,6 +281,7 @@ class PortalAccountInh(PortalAccount):
         return values
 
     def _get_invoices_domain(self, m_type=None):
+        domain = []
         if m_type in ['in', 'out']:
             move_type = [m_type+move for move in ('_invoice', '_refund', '_receipt')]
         else:

@@ -98,8 +98,8 @@ class PortalAccount(PortalAccount):
     )
     def portal_my_invoice_seller(self, invoice_id=None, access_token=None, **kw):
         invoice = request.env["account.move"].sudo().browse(invoice_id)
-        states = invoice._fields["payment_state"].selection
-        payment_state = invoice.payment_state
+        # states = invoice._fields["payment_state"].selection
+        # payment_state = invoice.payment_state
         symbol_currency = request.env.company.currency_id
         translations = {
             "not_paid": "No pagadas",
@@ -110,17 +110,17 @@ class PortalAccount(PortalAccount):
             "invoicing_legacy": "Factura Sistema Anterior"
         }
 
-        for state in states:
-            if state[0] == payment_state:
-                payment_state = translations.get(state[0], state[1])
-                break
+        # for state in states:
+        #     if state[0] == payment_state:
+        #         payment_state = translations.get(state[0], state[1])
+        #         break
 
         return request.render(
             "binaural_mobile.portal_invoices_seller",
             {
                 "currency": symbol_currency,
                 "invoice": invoice,
-                "payment_state": payment_state,
+                # "payment_state": payment_state,
                 "no_footer": True
             },
         )

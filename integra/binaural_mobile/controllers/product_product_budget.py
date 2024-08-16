@@ -46,7 +46,7 @@ class ProductProductBudget(http.Controller):
         packaging_ids = product_ids.mapped("packaging_ids")
 
         filtered_dict_product_ids = []
-
+        # if packaging_ids:
         for dict_product_id in dict_product_ids:
             current_packaging_ids = packaging_ids.filtered(lambda pack_id: self._filter_product_packaging_id(pack_id, dict_product_id))
             # qty_available = dict_product_id["qty_available"]
@@ -56,7 +56,7 @@ class ProductProductBudget(http.Controller):
 
             #     if qty_available < default_packaging_id.qty:
             #         continue
-
+            _logger.warning(packaging_ids)
             dict_packaging_ids = current_packaging_ids.read(["id", "name", "qty", "product_uom_id", "sales", "purchase"])
             dict_product_id["packaging_ids"] = dict_packaging_ids
             
@@ -168,7 +168,7 @@ class ProductProductBudget(http.Controller):
 
         dict_product_ids = self.get_url_image_product(result)
 
-        dict_product_ids = self._get_products_with_packaging(dict_product_ids, record_product_ids)
+        # dict_product_ids = self._get_products_with_packaging(dict_product_ids, record_product_ids)
 
         data.update({
             "data": dict_product_ids, 
@@ -211,7 +211,7 @@ class ProductProductBudget(http.Controller):
         for product in product_ids:
             for value in product:
                 rec = utils.browse_model_data("product.product", value.get("id"))
-                sha = hashlib.sha512(str(getattr(rec, "__last_update")).encode("utf-8")).hexdigest()[:7]
+                sha = hashlib.sha512(str(getattr(rec, 'name')).encode("utf-8")).hexdigest()[:7]
                 product_cpy = value.copy()
                 product_id = str(value.get("id"))
                 url_img = f"/web/image/product.product/{product_id}/image_1024?unique={sha}"

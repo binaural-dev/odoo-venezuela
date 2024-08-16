@@ -88,11 +88,7 @@ class AccountPaymentPayments(http.Controller):
                     .search([("id", "=", int(dairy_type))])
                     .fiscal
                 )
-                partner = (
-                    request.env["res.partner"]
-                    .sudo()
-                    .search([("id", "=", int(partner_id))])
-                )
+                partner = request.env["res.partner"].sudo().search([("id", "=", int(partner_id))])
                 taxpayer = partner.taxpayer_type
                 seller_id = request.env.user.employee_id.id
                 payments_igtf = request.env["payment.mobile.igtf"]
@@ -146,7 +142,7 @@ class AccountPaymentPayments(http.Controller):
                             for payment in advance_lines:
                                 total_residual = payment.amount_residual
                                 if total_residual < 0 and invoice.amount_residual != 0:
-                                    (payment + invoice).sudo().reconcile(from_app=True)
+                                    (payment + invoice).sudo().reconcile()
                                     advance_pays += payment.move_id.payment_id
 
                 if payments:
@@ -161,9 +157,6 @@ class AccountPaymentPayments(http.Controller):
                     )
                 pays_registered += pays_retention_registered
                 pays_registered += advance_pays
-
-                _logger.warning(pays_registered)
-
 
                 pays_app_methods = request.env["payment.mobile.methods"]
                 pays_app_lines = request.env["payment.mobile.line"]
@@ -191,7 +184,7 @@ class AccountPaymentPayments(http.Controller):
                                         pays_app_lines += self.create_line_app(
                                             pay_r, invoice_id, company, advance_account_customer_ids
                                         )
-                            
+
                     pays_app_method = request.env["payment.mobile.methods"].create(
                         {
                             "journal_id": pay_r.journal_id.id,
@@ -226,7 +219,7 @@ class AccountPaymentPayments(http.Controller):
                                     }
                                 )
 
-                if (type_fiscal and taxpayer != "ordinary"):
+                if type_fiscal and taxpayer != "ordinary":
                     if company.retentions_draft_or_published == "0" and retentions:
                         for retention in retentions:
                             retention.sudo().action_cancel()
@@ -380,7 +373,7 @@ class AccountPaymentPayments(http.Controller):
                 total_residual += payment.amount_residual
 
             if total_residual < 0:
-                (pays + invoice).sudo().reconcile(from_app=True)
+                (pays + invoice).sudo().reconcile()
 
         return pays_registered, payments_igtf
 
@@ -403,9 +396,9 @@ class AccountPaymentPayments(http.Controller):
                 "currency_id": company.currency_id.id,
                 "invoice_id": invoice.id,
                 "payment_related": payment.id,
-                "use_balance": True
-                if advance and payment.destination_account_id.id in advance
-                else False,
+                "use_balance": (
+                    True if advance and payment.destination_account_id.id in advance else False
+                ),
             }
         )
         return pays_app_line

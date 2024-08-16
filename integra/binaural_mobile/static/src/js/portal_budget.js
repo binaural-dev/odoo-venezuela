@@ -3,7 +3,7 @@
 import publicWidget from "@web/legacy/js/public/public_widget";
 import { _t } from "@web/core/l10n/translation";
 import { Dialog } from "@web/core/dialog/dialog";
-import { jsonrpc } from "@web/core/network/rpc_service";
+import { jsonrpc, RPCError } from "@web/core/network/rpc_service";
 
 
 // odoo.define('binaural_mobile.portal_budget_form', function(require) {
@@ -69,16 +69,16 @@ import { jsonrpc } from "@web/core/network/rpc_service";
                     dataType: 'json',
                     data:  term => ({query: term}),
                     results: (data) => {
-                        const { status, data:dt } = data;
-                        const is400e = status === 400;
-                        if (is400e) return 
+                        const { status, data: dt } = data;
+                        if (status === 404 || !dt) return {}; 
+                        
                         const ret = [];
-                        _.each(dt, function (client) {
-                            const { id: clientId } = client
+                        dt.forEach(client => { 
+                            const { id: clientId } = client;
                             const isExistclient = ret.find(client => client.id === clientId);
-
+            
                             if (isExistclient) return;
-
+            
                             ret.push({
                                 id: client.id,
                                 text: client.display_name,
@@ -86,8 +86,8 @@ import { jsonrpc } from "@web/core/network/rpc_service";
                             });
                             self.partners.push(client); 
                         });
-
-                        return {results: ret};
+            
+                        return { results: ret };
                     }
                     
                 },
@@ -543,7 +543,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
                 domain['product'] = productCode;
             }
 
-            const products = await jsonrpc('/budget/product', 'call', domain);
+            const products = await jsonrpc('/budget/product', domain);
 
             const resp = JSON.parse(products);
 
@@ -627,8 +627,17 @@ import { jsonrpc } from "@web/core/network/rpc_service";
         // load
 
         _loadSettings: async function () {
-            const settings = await jsonrpc('/settings/read', 'call', {});
-            this.settings = settings;
+            try {
+                let a = true
+                const settings = await jsonrpc('/settings/read', {a:a})
+                this.settings = settings;
+            } catch (error) {
+                if (error instanceof RPCError) {
+                    alert(error.data.message);
+                } else {
+                    return Promise.reject(error);
+                }
+            }
         },
 
         SearchFilterInputs : async function (data, tag){
@@ -641,7 +650,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
         },
 
         loadOrder: async function(buildTax = false) {
-            const order = await jsonrpc('/budget/order/read', 'call', {
+            const order = await jsonrpc('/budget/order/read', {
                 "sale_id" : parseInt($("#number_order_value").val()),
             })
             const { status, data } = order;
@@ -659,7 +668,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
             if ($("#number_order_value").val() == '') return
             const tax_included = $("#invoice").prop('checked')
             const note = $("#note").val()
-            const products = await jsonrpc('/budget/include_tax', 'call', {
+            const products = await jsonrpc('/budget/include_tax', {
                 "sale_id" : parseInt($("#number_order_value").val()),
                 "tax_included" : tax_included,
                 "note": note
@@ -672,8 +681,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
 
         _createOrder: async function (orders) {
             if($("#number_order_value").val()) return;
-
-            const products = await jsonrpc('/budget/order/create', 'call',
+            const products = await jsonrpc('/budget/order/create',
                 {"order" :orders.void}
             )
             const { status, data, msg} = products;
@@ -703,7 +711,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
                 line.sale_order_id.id = +$("#number_order_value").val()
             })
 
-            const products = await jsonrpc('/budget/create/order/line', 'call',
+            const products = await jsonrpc('/budget/create/order/line',
                 {"sale_orders": orders.withValues}
             )
             const { status:st, data:dt, msg } = products;
@@ -843,7 +851,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
         confirm_or_Cancel_Budget: async function(confirm) {
             if ($("#number_order_value").val() == '') return
             const id_order = $("#number_order_value").val()
-            const budget = await jsonrpc('/budget/confirm_or_cancel_order', 'call', {
+            const budget = await jsonrpc('/budget/confirm_or_cancel_order', {
                 "sale_id" : parseInt(id_order),
                 "confirm" : confirm
             })
@@ -901,13 +909,13 @@ import { jsonrpc } from "@web/core/network/rpc_service";
 
             let dont_show_quantity_available = false
             try{
-              dont_show_quantity_available = await self._rpc(
-                {
-                  "model": "res.users",
-                  "method":"has_group",
-                  "args": ['binaural_mobile.group_sellers_show_quantity_available']
-                }
-              )
+                dont_show_quantity_available = await self._rpc(
+                    {
+                    "model": "res.users",
+                    "method":"has_group",
+                    "args": ['binaural_mobile.group_sellers_show_quantity_available']
+                    }
+                )
             }catch(e){}
 
             products.forEach(product => {
@@ -918,11 +926,11 @@ import { jsonrpc } from "@web/core/network/rpc_service";
                 const hasPackageFactorValid = stock_packaging && packaging_ids.length > 0 && packaged_product;
 
                 if(!dont_show_quantity_available){
-                  if(quantity == 0 && !allow_out_of_stock_order && type != "product") {
-                      displayQtyOrType = type
-                  }else{
-                      displayQtyOrType = quantity.toFixed(2) + ' ' + uom_id[1]
-                  }
+                    if(quantity == 0 && !allow_out_of_stock_order && type != "product") {
+                        displayQtyOrType = type
+                    }else{
+                        displayQtyOrType = quantity.toFixed(2) + ' ' + uom_id[1]
+                    }
                 }
 
                 if(hasPackageFactorValid) {
@@ -1040,7 +1048,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
 
             const resp = await jsonrpc(
                 '/budget/order/line/edit', 
-                'call',
+               
                 params,
                 settings
             )
@@ -1310,7 +1318,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
         _onChangeFee: async function(ev){
             if ($("#number_order_value").val() == '') return
             
-            const saleOrder = await jsonrpc('/budget/update_pricelist', 'call',{
+            const saleOrder = await jsonrpc('/budget/update_pricelist',{
                 "budget": $("#number_order_value").val(),
                 "fee": $("#fee_value").val(),
             });
@@ -1379,8 +1387,8 @@ import { jsonrpc } from "@web/core/network/rpc_service";
                 this._onClickExitProducts()
                 $("#table_inside").empty();
             } catch (error) {
-                // this.showError(error)
-                Dialog.alert(this,error, { title: 'Error' });
+                this.showError(error)
+                // Dialog.alert(this,error, { title: 'Error' });
             }
         },
 
@@ -1417,7 +1425,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
             const tr = $(ev.target).closest('tr');
             const id = tr.find('input').val()
             const id_order = $("#number_order_value").val()
-            const products = await jsonrpc('/budget/delete_line', 'call', {
+            const products = await jsonrpc('/budget/delete_line', {
                 "sale_order_id" : parseInt(id_order),
                 "line_id" : parseInt(id)
             })
@@ -1466,7 +1474,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
         _onClickRegisterClient: async function(ev){
             if($("#identification").val().trim() && $("#nameClient").val().trim() && 
                 $("#streetDirection").val().trim() && $("#prefixClient").val().trim() != ""){
-                const registerClient = await jsonrpc('/budget/create_client', 'call', {
+                const registerClient = await jsonrpc('/budget/create_client', {
                     "prefix":$("#prefixClient").val(),
                     "vat": $("#identification").val(),
                     "street": $("#streetDirection").val(),
@@ -1502,7 +1510,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
             if($("#identification").val().trim() && $("#prefixClient").val().trim()){
                 const prefix = $("#prefixClient").val()
                 const vat = $("#identification").val()
-                const nameClient = await jsonrpc('/budget/get_name_client', 'call', {
+                const nameClient = await jsonrpc('/budget/get_name_client', {
                     "prefix":prefix,
                     "vat": vat,
                 })
@@ -1605,7 +1613,7 @@ import { jsonrpc } from "@web/core/network/rpc_service";
         _onChangeClient: async function ({target}) {
             this._loadContactSelectOptions(this.partners, target.value);
             if($("#number_order_value").val()){
-                const partner = await jsonrpc('/budget/update_partner', 'call',
+                const partner = await jsonrpc('/budget/update_partner',
                     {
                         "budget" :$("#number_order_value").val(),
                         "partner" : $("#client").val(),
