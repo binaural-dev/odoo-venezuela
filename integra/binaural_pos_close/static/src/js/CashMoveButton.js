@@ -4,6 +4,7 @@
 import CashMoveButton from "point_of_sale.CashMoveButton";
 import Registries from 'point_of_sale.Registries';
 import { _t } from 'web.core';
+import { renderToString } from '@web/core/utils/render';
 
 const TRANSLATED_CASH_MOVE_TYPE = {
   in: _t('Entrada'),
