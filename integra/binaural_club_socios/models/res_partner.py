@@ -18,7 +18,7 @@ class ResPartner(models.Model):
 
     parent_action_number = fields.Many2one(
         "action.partner",
-        string="Action Number",
+        string="Action Number Partner Related",
         compute="_compute_parent_action_number",
         store=True
     )
@@ -70,7 +70,7 @@ class ResPartner(models.Model):
         [("action", "Action"), ("extension", "Extension")],
         string="Member Type",
         related="action_number.type_action",
-        track_visibility="onchange",
+        track_visibility="onchange"
     )
 
     business_name = fields.Char()
@@ -197,11 +197,15 @@ class ResPartner(models.Model):
 
             action_number = record.action_number
             partner_active = record.active
+            
+            has_action_number = bool(action_number)
 
-            if record.type_relation != "partner" or not action_number:
-                record.readonly_action_number = False
+            record.readonly_action_number = bool(has_action_number)
+            
+            if not has_action_number:
                 continue
 
+            # Assign owner of action_number
             if not action_number.owner_id and partner_active:
                 action_number.owner_id = record.id
                 record.readonly_action_number = True
@@ -238,7 +242,6 @@ class ResPartner(models.Model):
                 record.parent_action_number = None
                 continue
 
-            record.action_number = None
             record.parent_action_number = record.parent_id.action_number
 
     @api.onchange("birthday")
@@ -520,29 +523,13 @@ class ResPartner(models.Model):
 
         return exist_ownership_conflict
 
-    def _reset_action_number(self):
-        self.ensure_one()
-        
-        action_number = self.action_number
-
-        if self.type_relation == "partner" or not action_number:
-            self.readonly_action_number = bool(action_number)
-            return False
-
-        self.readonly_action_number = False
-
-        if self.id == action_number.owner_id.id:
-            self.action_number.owner_id = None
-
-        self.action_number = None
-
-        return True
-
     def _reset_ownership_action_number(self):
         for record in self:
-            record._reset_action_number()
 
-            if record.type_relation == "partner" and record.action_number:
+            has_action_number = bool(record.action_number)
+            record.readonly_action_number = bool(has_action_number)
+
+            if has_action_number:
                 record.action_number.owner_id = record.id
 
     def cron_resolve_ownership_action_number(self):

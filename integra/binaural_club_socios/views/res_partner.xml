@@ -24,10 +24,8 @@
                 <field name="readonly_action_number" invisible="1" />
                 <field name="has_ownership_conflict" invisible="1" />
 
-                <field name="action_number" 
-                    attrs="{ 'invisible': ['|',('hide_action_number','=', True), ('type_relation','!=','partner')], 'readonly': ['|', ('active', '=', False), ('readonly_action_number', '=', True)] }"
-                />
-                <field name="parent_action_number" attrs="{'invisible':['|',('hide_action_number','=', True), ('type_relation','=','partner')]}"/>
+                <field name="action_number" attrs="{'invisible':[('hide_action_number','=', True)], 'readonly': ['|', ('active', '=', False), ('readonly_action_number', '=', True)]}" />
+                <field name="parent_action_number" attrs="{'invisible':['|',('hide_action_number','=', True), ('action_number','!=', False)]}"/>
                 <field name="type_relation" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)], 'readonly': ['|', ('active', '=', False), ('readonly_action_number', '=', True)]}"/>
                 <field name="state_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="state_partner" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
