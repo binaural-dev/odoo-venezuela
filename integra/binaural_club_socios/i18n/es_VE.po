@@ -99,8 +99,8 @@ msgstr "Acción requerida"
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__action_number
 #: model:ir.model.fields,field_description:binaural_club_socios.field_res_users__parent_action_number
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_view_searh_action_partner
-msgid "Action Number"
-msgstr "Número de acción"
+msgid "Action Number Partner Related"
+msgstr "Número de acción contacto padre asociado"
 
 #. module: binaural_club_socios
 #: model_terms:ir.ui.view,arch_db:binaural_club_socios.binaural_club_socios_view_tree_action_partner
