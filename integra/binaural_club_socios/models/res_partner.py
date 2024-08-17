@@ -192,44 +192,44 @@ class ResPartner(models.Model):
     date_remove_suspend = fields.Date(string="Date remove suspend")
     has_ownership_conflict = fields.Boolean()
 
-    # @api.constrains('action_number', 'type_relation')
-    # def _check_action_number(self):
-    #     for record in self:
+    @api.constrains('action_number', 'type_relation')
+    def _check_action_number(self):
+        for record in self:
 
-    #         action_number = record.action_number
-    #         partner_active = record.active
+            action_number = record.action_number
+            partner_active = record.active
             
-    #         has_action_number = bool(action_number)
+            has_action_number = bool(action_number)
 
-    #         record.readonly_action_number = bool(has_action_number)
+            record.readonly_action_number = bool(has_action_number)
             
-    #         if not has_action_number:
-    #             continue
+            if not has_action_number:
+                continue
 
-    #         # Assign owner of action_number
-    #         if not action_number.owner_id and partner_active:
-    #             action_number.owner_id = record.id
-    #             record.readonly_action_number = True
-    #             continue
+            # Assign owner of action_number
+            if not action_number.owner_id and partner_active:
+                action_number.owner_id = record.id
+                record.readonly_action_number = True
+                continue
 
-    #         if action_number.owner_id.id == record.id:
-    #             continue
+            if action_number.owner_id.id == record.id:
+                continue
 
-    #         if not partner_active:
-    #             raise UserError(
-    #             _(
-    #                 "Action %s can't be assigned to inactive partner.",
-    #                 action_number.number
-    #             )
-    #         )
+            if not partner_active:
+                raise UserError(
+                _(
+                    "Action %s can't be assigned to inactive partner.",
+                    action_number.number
+                )
+            )
 
-    #         raise UserError(
-    #             _(
-    #                 "Action %s is being used by %s.",
-    #                 action_number.number,
-    #                 action_number.owner_id.name
-    #             )
-    #         )
+            raise UserError(
+                _(
+                    "Action %s is being used by %s.",
+                    action_number.number,
+                    action_number.owner_id.name
+                )
+            )
 
     @api.depends('supplier_rank', 'customer_rank')
     def _compute_hide_action_number(self):
