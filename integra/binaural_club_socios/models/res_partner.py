@@ -70,7 +70,8 @@ class ResPartner(models.Model):
         [("action", "Action"), ("extension", "Extension")],
         string="Member Type",
         related="action_number.type_action",
-        track_visibility="onchange"
+        track_visibility="onchange",
+        store=True
     )
 
     business_name = fields.Char()
