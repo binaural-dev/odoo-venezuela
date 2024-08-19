@@ -85,6 +85,12 @@ class CommissionPolicyItem(models.Model):
             if record.applied_on == "3_category":
                 record.name = f"{POLICY_TYPE.get(record.applied_on,'')}: {record.category_id.name}"
 
+    @api.onchange("applied_on")
+    def _onchange_applied_on(self):
+        self.product_id = False
+        self.brand_id = False
+        self.category_id = False
+
     @api.constrains("product_id")
     def _constraint_product_id(self):
         for record in self:
