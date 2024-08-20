@@ -1,58 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-    <template id="portal_my_home_payments" customize_show="True" inherit_id="portal.portal_my_home" priority="50">
-        <!-- <xpath expr="//div[1]/div[2]" position="inside">
+    <!-- ADD Menus in /my Portal -->
+    <template id="portal_my_home_payments" name="Show payments" customize_show="True" inherit_id="portal.portal_my_home" priority="50">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
+            <t t-set="portal_client_category_enable" t-value="True"/>
+        </xpath>
+        <div id="portal_client_category" position="inside">
             <t t-if="request.env.user.employee_id.is_seller">
-                <a t-attf-href="/shop"  class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
-                    Products
-                </a>
-                <t t-set="payment_count" t-value="request.env['payment.mobile'].search_count([
-                    ('company_id', '=', request.env.company.id),
-                    ('seller_id', '=', request.env.user.employee_id.id),
-                    ('seller_id_user', '=', user_id.id)
-                ])"/>
-                <t t-set="user" t-value="request.env.user"/>
-                <t t-if="not user.has_group('binaural_mobile.group_sellers_cant_create_payments')">
-                    <a t-attf-href="/payment_list"  class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
-                        Payments
-                        <span class="badge text-bg-secondary rounded-pill" 
-                        t-out="payment_count"/>
-                    </a>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/account/static/src/img/Bill.svg'"/>
+                    <t t-set="title">Payments</t>
+                    <t t-set="url" t-value="'/payment_list'"/>
+                    <t t-set="text">Pagos pagos</t>
+                    <t t-set="placeholder_count" t-value="'payments_count'"/>
+                </t>
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="icon" t-value="'/sale/static/src/img/bag.svg'"/>
+                    <t t-set="title">Shop</t>
+                    <t t-set="url" t-value="'/shop'"/>
+                    <t t-set="text">Product for Sale</t>
+                    <t t-set="placeholder_count" t-value="'products_count'"/>
                 </t>
             </t>
-        </xpath> -->
-        <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
-            <t t-set="portal_vendor_category_enable" t-value="True"/>
-        </xpath>
-        <div id="portal_vendor_category" position="inside">
-            <t t-call="portal.portal_docs_entry">
-                <!-- <t t-set="icon" t-value="'/sale/static/src/img/bag.svg'"/> -->
-                <t t-set="title">Payments</t>
-                <t t-set="url" t-value="'/payment_list'"/>
-                <t t-set="text">Pagos pagos</t>
-                <t t-set="placeholder_count" t-value="'order_count'"/>
-            </t>
-            <!-- <t t-call="portal.portal_docs_entry">
-                <t t-set="icon" t-value="'/purchase/static/src/img/calculator.svg'"/>
-                <t t-set="text">Follow orders you have to fulfill</t>
-                <t t-set="title">Our Orders</t>
-                <t t-set="url" t-value="'/my/purchase'"/>
-                <t t-set="placeholder_count" t-value="'purchase_count'"/>
-            </t> -->
         </div>
-        <!-- <xpath expr="//div[hasclass('o_portal_docs')]" position="before">
-            <t t-set="portal_payments_enable" t-value="True"/>
-        </xpath>
-        <div id="portal_payments" position="inside">
-            <t t-call="portal.portal_docs_entry">
-                <t t-set="icon" t-value="'/sale/static/src/img/bag.svg'"/>
-                <t t-set="title">Payments</t>
-                <t t-set="url" t-value="'/payment_list'"/>
-                <t t-set="text">Pagos pagos</t>
-                <t t-set="placeholder_count" t-value="'order_count'"/>
-            </t>
-        </div> -->
     </template>
 
     

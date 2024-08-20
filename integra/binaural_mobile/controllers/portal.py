@@ -14,6 +14,20 @@ _logger = logging.getLogger(__name__)
 
 
 class CustomerPortalInh(CustomerPortal):
+
+    def _prepare_home_portal_values(self, counters):
+        """To get the count of my time off in portal"""
+        values = super()._prepare_home_portal_values(counters)
+        user_id = request.env.user
+        if user_id.employee_id.is_seller:
+            if 'payments_count' in counters:
+                values['payments_count'] = 1
+            if 'products_count' in counters:
+                values['products_count'] = 1
+            if 'bill_count' in counters:
+                values['bill_count'] = 0
+        return values
+
     def _prepare_quotations_domain(self, partner):
         employee_id = request.env.user.employee_id
         domain = [
