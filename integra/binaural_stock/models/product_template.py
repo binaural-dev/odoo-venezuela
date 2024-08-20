@@ -8,6 +8,7 @@ _logger = logging.getLogger(__name__)
 
 class ProductTemplate(models.Model):
     _inherit = "product.template"
+    _order = "priority_location asc"
 
     quantity = fields.Float(
         compute="_compute_available_quantity",
@@ -20,9 +21,22 @@ class ProductTemplate(models.Model):
         string="Alternate Code",
         help="Alternate code for the product",
     )
+    physical_location_id = fields.Many2one(
+        "stock.location",
+        string="Physical Location",
+        default=lambda self: self.env.company.main_warehouse_id.lot_stock_id.id,
+        domain=[("usage", "=", "internal")],
+        tracking=True,
+    )
+
+    priority_location = fields.Integer(
+        string="Priority", related="physical_location_id.priority", store=True
+    )
 
     price_with_tax = fields.Float(compute="_compute_prices_with_tax")
     price_without_tax = fields.Float(compute="_compute_prices_with_tax")
+
+    liters_per_unit = fields.Float(digits='Stock Weight')
 
     def button_dummy(self):
         # TDE FIXME: this button is very interesting

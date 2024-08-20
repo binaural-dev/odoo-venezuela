@@ -14,4 +14,5 @@
         # 'security/ir.model.access.csv',
         "views/stock_picking.xml",
     ],
+    "binaural": True,
 }

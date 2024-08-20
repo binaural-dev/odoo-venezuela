@@ -4,16 +4,21 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231204\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240719\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-07 13:11+0000\n"
-"PO-Revision-Date: 2023-12-07 13:11+0000\n"
+"POT-Creation-Date: 2024-07-30 18:21+0000\n"
+"PO-Revision-Date: 2024-07-30 18:21+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: binaural_stock
+#: model:ir.actions.report,print_report_name:binaural_stock.action_packaging_picking
+msgid "'Packaging tags - %s' % (object.name)"
+msgstr "'Etiqueta de Cajas- %s' % (object.name)"
 
 #. module: binaural_stock
 #. odoo-python
@@ -34,6 +39,31 @@ msgstr "<span class=\"o_stat_text\">Cantidad Disponible para Vender</span>"
 #, python-format
 msgid "A packaging already uses the barcode"
 msgstr "Un empaque ya usa el código de barras"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_needaction
+msgid "Action Needed"
+msgstr "Acción Necesaria"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_ids
+msgid "Activities"
+msgstr "Actividades"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Decoración de Excepción de Actividad"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_state
+msgid "Activity State"
+msgstr "Estado de la Actividad"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "Tipo de Actividad Icono"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -78,9 +108,9 @@ msgid "Artículo"
 msgstr ""
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Assign Serial Numbers"
-msgstr "Asignar números de serie"
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_attachment_count
+msgid "Attachment Count"
+msgstr "Cantidad de Adjuntos"
 
 #. module: binaural_stock
 #. odoo-python
@@ -96,9 +126,24 @@ msgstr ""
 "%s"
 
 #. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_block_liters_per_unit
+msgid "Block Liters Per Unit"
+msgstr "Bloquear campo de Litros por unidad"
+
+#. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_block_type_inventory_transfers_expeditions
-msgid "Block Type Inventory Transfers Expeditions"
+msgid ""
+"Block Type Inventory Transfers Expeditions (Do not add a new product to the "
+"Dispatch)"
 msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
+msgid ""
+"By turning on this option, when carrying out an inventory movement where you"
+" check the availability of the product for sale, it will be reserved from a "
+"single negative location in case they are found in other locations.."
+msgstr ""
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__change_weight
@@ -108,14 +153,14 @@ msgid "Change Weight"
 msgstr "Cambiar de peso"
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.packaging_picking_item
+msgid "Ciudad:"
+msgstr ""
+
+#. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_res_company
 msgid "Companies"
 msgstr "Compañías"
-
-#. module: binaural_stock
-#: model:res.groups,name:binaural_stock.group_change_weight_picking
-msgid "Change Weight in Picking"
-msgstr "Cambiar peso en Picking"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_product_category__company_id
@@ -125,7 +170,7 @@ msgstr "Compañía"
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -138,34 +183,19 @@ msgid "Costo Total"
 msgstr ""
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.packaging_picking_item
+msgid "Date:"
+msgstr "Fecha:"
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.res_config_settings_view_form_binaural_stock
 msgid "Define a main sell's warehouse."
 msgstr "Define un almacén de ventas principal."
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Demand"
-msgstr "Demanda"
-
-#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Descripción"
 msgstr ""
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Description"
-msgstr "Descripción"
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Details"
-msgstr "Detalles"
-
-#. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Done"
-msgstr "Hecho"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.view_stock_quantity_history_inherit_binaural_stock
@@ -183,9 +213,19 @@ msgid "Fecha:"
 msgstr ""
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Forecast Report"
-msgstr "Informe de pronóstico"
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_follower_ids
+msgid "Followers"
+msgstr "Seguidores"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "Seguidores (Partner)"
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr ""
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__group_product_available_quantity_on_sale
@@ -196,6 +236,11 @@ msgstr "Grupo de Cantidad Disponible para Vender"
 #: model:res.groups,name:binaural_stock.group_product_available_quantity_on_sale
 msgid "Group Product Available Quantity on Sale"
 msgstr "Grupo de Cantidad Disponible para Vender"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__has_message
+msgid "Has Message"
+msgstr "Tiene Mensaje"
 
 #. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_hide_cancel_button_from_inventory_transfers
@@ -234,14 +279,68 @@ msgid "Hide Validate Inventory Transfers Button"
 msgstr "Ocultar Botón Validar de las Transferencias de Inventario"
 
 #. module: binaural_stock
+#: model:ir.model.fields.selection,name:binaural_stock.selection__stock_picking__type_delivery_step__in
+#: model:ir.model.fields.selection,name:binaural_stock.selection__stock_picking_type__type_steps__in
+msgid "IN"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields.selection,name:binaural_stock.selection__stock_picking__type_delivery_step__int
+#: model:ir.model.fields.selection,name:binaural_stock.selection__stock_picking_type__type_steps__int
+msgid "INT"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_exception_icon
+msgid "Icon"
+msgstr "Icono"
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__activity_exception_icon
+msgid "Icon to indicate an exception activity."
+msgstr "Icono para indicar una actividad de excepción."
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr "si está marcado, los nuevos mensajes requieren su atención."
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__message_has_error
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr "Si está marcado, algunos mensajes tienen un error de entrega."
+
+#. module: binaural_stock
+#: model:ir.model,name:binaural_stock.model_stock_location
+msgid "Inventory Locations"
+msgstr "Ubicaciones de inventario"
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Inventory:"
 msgstr "Inventario:"
 
 #. module: binaural_stock
-#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__is_out
-msgid "Is Out"
-msgstr ""
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_is_follower
+msgid "Is Follower"
+msgstr "Es Seguidor"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_quant__is_physical_location
+msgid "Is Physical Location"
+msgstr "Es Ubicación Física"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_main_attachment_id
+msgid "Main Attachment"
+msgstr "Adjunto Principal"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_product_product__liters_per_unit
+#: model:ir.model.fields,field_description:binaural_stock.field_product_template__liters_per_unit
+msgid "Liters Per Unit"
+msgstr "Litros por unidad"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__main_warehouse_id
@@ -250,14 +349,144 @@ msgid "Main Warehouse"
 msgstr "Almacén Principal"
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
-msgid "Marca"
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_has_error
+msgid "Message Delivery error"
 msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_ids
+msgid "Messages"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_summary
+msgid "Next Activity Summary"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_type_id
+msgid "Next Activity Type"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.packaging_picking_item
+msgid "Note:"
+msgstr "Nota"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_needaction_counter
+msgid "Number of Actions"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_has_error_counter
+msgid "Number of errors"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields.selection,name:binaural_stock.selection__stock_picking__type_delivery_step__out
+#: model:ir.model.fields.selection,name:binaural_stock.selection__stock_picking_type__type_steps__out
+msgid "OUT"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "OUTS"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__outs_count
+msgid "Outs Count"
+msgstr "Cantidad de Outs"
+
+#. module: binaural_stock
+#: model:ir.model.fields.selection,name:binaural_stock.selection__stock_picking__type_delivery_step__pack
+#: model:ir.model.fields.selection,name:binaural_stock.selection__stock_picking_type__type_steps__pack
+msgid "PACK"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "PACKS"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields.selection,name:binaural_stock.selection__stock_picking__type_delivery_step__pick
+#: model:ir.model.fields.selection,name:binaural_stock.selection__stock_picking_type__type_steps__pick
+msgid "PICK"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
+msgid "PICKS"
+msgstr ""
+
+#. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.packaging_picking_item
+msgid "Package"
+msgstr "Cajas"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__package_qty
 msgid "Package Qty"
 msgstr "Número de Cajas"
+
+#. module: binaural_stock
+#: model:ir.actions.report,name:binaural_stock.action_packaging_picking
+msgid "Packaging tags"
+msgstr "Etiquetas de Cajas"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__packs_count
+msgid "Packs Count"
+msgstr "Cantidad de Packs"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_product_product__physical_location_id
+#: model:ir.model.fields,field_description:binaural_stock.field_product_template__physical_location_id
+msgid "Physical Location"
+msgstr "Ubicacion Física"
+
+#. module: binaural_stock
+#: model:ir.actions.act_window,name:binaural_stock.action_stock_quant
+#: model:ir.ui.menu,name:binaural_stock.menu_stock_quant
+msgid "Physical Locations"
+msgstr "Ubicaciones Físicas"
+
+#. module: binaural_stock
+#: model:ir.model,name:binaural_stock.model_stock_picking_type
+msgid "Picking Type"
+msgstr "Tipo de albarán"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__picks_count
+msgid "Picks Count"
+msgstr "Cantidad de Picks"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_kanban_view
@@ -277,9 +506,23 @@ msgid "Price Without Tax"
 msgstr "Precio sin impuestos"
 
 #. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_product_product__priority_location
+#: model:ir.model.fields,field_description:binaural_stock.field_product_template__priority_location
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__priority
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_move__priority_location
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_move_line__priority_location
+msgid "Priority"
+msgstr "Prioridad"
+
+#. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_product_template
 msgid "Product"
 msgstr "Producto"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_quant__product_alter_location_ids
+msgid "Product Alter Location"
+msgstr "Otras Ubicaciones del Producto"
 
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_product_category
@@ -289,7 +532,7 @@ msgstr "Categoría de producto"
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_move_line
 msgid "Product Moves (Stock Move Line)"
-msgstr "Movimientos de Producto (Stock Move Line)"
+msgstr "Movimientos de producto (línea de movimiento de inventario)"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_move_line__product_tag_ids
@@ -308,14 +551,24 @@ msgid "Quantity"
 msgstr "Cantidad"
 
 #. module: binaural_stock
+#: model:ir.model,name:binaural_stock.model_stock_quant
+msgid "Quants"
+msgstr "Cantidad"
+
+#. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
 msgid "Rango:"
 msgstr ""
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Reserved"
-msgstr "Reservada"
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__activity_user_id
+msgid "Responsible User"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr ""
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.product_template_tree_view
@@ -328,9 +581,23 @@ msgid "Show Available Quantity From All Warehouses"
 msgstr "Mostrar la Cantidad Disponible en Todos los Almacenes."
 
 #. module: binaural_stock
+#: model_terms:ir.ui.view,arch_db:binaural_stock.stock_physical_quant_form_view
+msgid "Show Location Available"
+msgstr "Otras Ubicaciones del Producto"
+
+#. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_show_standard_price
 msgid "Show standard price on the product form view"
 msgstr "Mostrar costo en la vista del producto"
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -338,9 +605,9 @@ msgid "Stock"
 msgstr ""
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Stock Moves"
-msgstr ""
+#: model:ir.model,name:binaural_stock.model_stock_move
+msgid "Stock Move"
+msgstr "Movimiento de inventario"
 
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_quantity_history
@@ -360,6 +627,13 @@ msgstr "La Disponibilidad del Producto para la Venta."
 
 #. module: binaural_stock
 #. odoo-python
+#: code:addons/binaural_stock/models/stock_location.py:0
+#, python-format
+msgid "The priority must be greater than 0."
+msgstr "La prioridad debe ser mayor que 0."
+
+#. module: binaural_stock
+#. odoo-python
 #: code:addons/binaural_stock/models/product_template.py:0
 #, python-format
 msgid "This product must have only one tax."
@@ -373,7 +647,22 @@ msgstr ""
 #. module: binaural_stock
 #: model:ir.model,name:binaural_stock.model_stock_picking
 msgid "Transfer"
-msgstr "Transferir"
+msgstr "Transferencia"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking__type_delivery_step
+msgid "Type Delivery Step"
+msgstr "Operación"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_picking_type__type_steps
+msgid "Type Steps"
+msgstr "Operación"
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr ""
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.report_inventory_valuation_template
@@ -381,15 +670,16 @@ msgid "Ultimo Costo"
 msgstr ""
 
 #. module: binaural_stock
-#: model_terms:ir.ui.view,arch_db:binaural_stock.view_picking_form
-msgid "Unit of Measure"
-msgstr "Unidad de medida"
-
-#. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__use_main_warehouse
 #: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__use_main_warehouse
 msgid "Use Main Warehouse"
 msgstr "Usar un Almacén Principal"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_res_company__use_physical_location
+#: model:ir.model.fields,field_description:binaural_stock.field_res_config_settings__use_physical_location
+msgid "Use Physical Location"
+msgstr "Usar ubicaciones Físicas"
 
 #. module: binaural_stock
 #: model_terms:ir.ui.view,arch_db:binaural_stock.stock_move_line_tree_view
@@ -405,6 +695,23 @@ msgstr ""
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_quantity_history__warehouse_search_id
 msgid "Warehouse Search"
 msgstr "Buscar en Almacen"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_stock_location__website_message_ids
+msgid "Website Messages"
+msgstr ""
+
+#. module: binaural_stock
+#: model:ir.model.fields,help:binaural_stock.field_stock_location__website_message_ids
+msgid "Website communication history"
+msgstr ""
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/product_product.py:0
+#, python-format
+msgid "You can't create products"
+msgstr "No puedes crear productos"
 
 #. module: binaural_stock
 #. odoo-python
@@ -426,7 +733,8 @@ msgstr "No puedes hacer que las transferencias sean mayor que la demanda"
 #: code:addons/binaural_stock/models/stock_picking.py:0
 #, python-format
 msgid "You cannot make transfers larger than the reserved quantity"
-msgstr "You cannot make transfers larger than the reserved quantity"
+msgstr ""
+"No puedes hacer que las transferencias sean mayor que la cantidad reservada"
 
 #. module: binaural_stock
 #. odoo-python
@@ -434,6 +742,18 @@ msgstr "You cannot make transfers larger than the reserved quantity"
 #, python-format
 msgid "You do not have permission to make shipment-type transfers"
 msgstr "No tiene permiso para hacer transferencias de tipo de Expedicion"
+
+#. module: binaural_stock
+#: model:ir.actions.server,name:binaural_stock.correction_quantity_product_template
+msgid "correction quantity product template"
+msgstr ""
+
+#. module: binaural_stock
+#. odoo-python
+#: code:addons/binaural_stock/models/stock_picking.py:0
+#, python-format
+msgid "does not have results from other pickings"
+msgstr "No tiene resultados de otros pickings"
 
 #. module: binaural_stock
 #: model:ir.actions.report,name:binaural_stock.inventory_valuation_report

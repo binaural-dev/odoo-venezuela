@@ -31,4 +31,5 @@
             ),
         ],
     },
+    "binaural": True,
 }

@@ -15,4 +15,5 @@
         "views/stock_picking_views.xml",
         "views/account_move_views.xml"
     ],
+    "binaural": True,
 }

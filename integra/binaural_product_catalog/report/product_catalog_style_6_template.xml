@@ -116,14 +116,13 @@
 
         .card-catalog-container {
           width:260px;
-          border-bottom: 1px solid #1D1E1C;
           margin: 0;
           vertical-align: top;
 
           display: inline-table;
 
           margin-right: -20px;
-          margin-bottom: 30px;
+          margin-bottom: 40px;
 
         }
 
@@ -162,7 +161,7 @@
 
         .card-catalog__body {
           padding: 0px 5px;
-          padding-top: 5px;
+          padding-bottom: 8px;
         }
 
         .card-catalog__title {
@@ -292,9 +291,8 @@
                       </div>
 
                     </div>
-
-                    <div class="card-catalog__strip custom-bg-primary card-catalog__strip--footer" t-if="price" t-attf-style="background: {{primary_color or ''}};">
-                      <span class="card-catalog__title  helvetica-bold white">Precio: <span t-esc="o.get('price', 0)"/></span>
+                    <div class="card-catalog__strip custom-bg-primary card-catalog__strip--footer" t-attf-style="background: {{primary_color or ''}};">
+                        <span class="card-catalog__title helvetica-bold white">Precio: <t t-esc="o.get('price', 0)"/></span>
                     </div>
 
                     <div class="card-catalog__specifications">

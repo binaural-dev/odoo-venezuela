@@ -11,4 +11,5 @@
     "depends": ["theme_prime","website_sale"],
     "images": ["static/description/icon.png"],
     "application": True,
+    "binaural": True,
 }

@@ -18,4 +18,5 @@
         ]
     },
     "license": "LGPL-3",
+    "binaural": True,
 }

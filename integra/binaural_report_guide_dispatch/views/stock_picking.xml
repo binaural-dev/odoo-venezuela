@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_picking_form_binaural_report_guide_dispatch" model="ir.ui.view">
+        <field name="name">view.stock.picking.form.binaural.escpos</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+	    <field name="partner_id" position="after">
+            <field name="available_invoice_ids" invisible="1"/>    
+            <field name="invoice_id" />
+            </field>
+        </field>
+    </record> 
+</odoo>

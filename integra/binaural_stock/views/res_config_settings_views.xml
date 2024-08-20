@@ -19,6 +19,16 @@
                         </div>
                     </div>
 
+                    <div class="col-5 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane">
+                            <field name="use_physical_location" class="oe_inline"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="use_physical_location" />
+                            <div class="text-muted">By turning on this option, when carrying out an inventory movement where you check the availability of the product for sale, it will be reserved from a single negative location in case they are found in other locations..</div>
+                        </div>
+                    </div>
+
                     <div class="col-6 col-lg-6 o_setting_box">
                         <div class="o_setting_left_pane">
                             <field name="use_main_warehouse"/>

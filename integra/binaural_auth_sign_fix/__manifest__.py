@@ -11,4 +11,5 @@
         "views/auth_signup.xml",
     ],
     "installable": True,
+    "binaural":True,
 }

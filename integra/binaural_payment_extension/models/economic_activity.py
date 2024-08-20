@@ -31,6 +31,6 @@ class EconomicActivity(models.Model):
     def name_get(self):
         res = []
         for activity in self:
-            res.append((activity.id, activity.name + " - " + activity.branch_id.name))
+            res.append((activity.id, activity.name + " - " + activity.branch_id.name + " - " + activity.municipality_id.name))
         return res
 

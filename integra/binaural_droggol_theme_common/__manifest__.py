@@ -16,4 +16,5 @@
         "views/product_attribute.xml",
     
     ],
+    "binaural": True,
 }

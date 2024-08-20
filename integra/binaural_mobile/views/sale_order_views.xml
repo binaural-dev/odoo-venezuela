@@ -7,7 +7,9 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='payment_term_id']" position="after">
-                <field name="tax_included" attrs="{'readonly': [('state', 'in', ['sale', 'done'])]}"/>
+                <field name="company_mobile" invisible="1"/>
+                <field name="tax_included" attrs="{'readonly': [('state', 'in', ['sale', 'done'])], 
+                                                    'invisible': [('company_mobile', '=', False)]}"/>
             </xpath>
         </field>
     </record>

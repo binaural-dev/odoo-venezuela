@@ -12,7 +12,6 @@ from odoo.http import request
 from odoo.osv import expression
 from odoo.tools import float_is_zero
 
-
 _logger = logging.getLogger(__name__)
 
 class AccountMovePayments(AccountMovePayments):
@@ -108,7 +107,12 @@ class AccountMovePayments(AccountMovePayments):
                     ["amount_residual", "date_maturity"]
                 )
                 for line in account_move_result["line_ids"]:
+
+                    if not line.get("date_maturity", False):
+                        continue
+
                     line["date_maturity"] = line["date_maturity"].strftime(date_format)
+
                 account_move_results.append(account_move_result)
 
             data.update(
@@ -116,6 +120,7 @@ class AccountMovePayments(AccountMovePayments):
                     "data": account_move_results,
                     "count": acc_move_count,
                     "total_count": all_acc_move_count,
+                    "taxpayer_type": partner_ids[0].taxpayer_type,
                 }
             )
 

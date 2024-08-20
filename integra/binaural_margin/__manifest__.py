@@ -16,4 +16,5 @@
         "views/account_move.xml",
     ],
     "application": True,
+    "binaural": True,
 }

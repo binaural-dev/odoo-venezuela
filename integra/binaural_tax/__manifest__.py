@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.0.0.9",
+    "version": "16.0.0.0.10",
     # any module necessary for this one to work correctly
     "depends": ["base", "account", "binaural_rate"],
     # always loaded
@@ -19,4 +19,5 @@
     "assets": {
         "web.assets_backend": ["binaural_tax/static/src/components/**/*"],
     },
+    "binaural": True,
 }

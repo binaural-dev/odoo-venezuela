@@ -1,15 +1,15 @@
-import logging
 import json
-
+import logging
+from datetime import datetime
 from pprint import pprint
-from odoo import http, _
-from odoo.tools import float_is_zero
+
+from dateutil.relativedelta import relativedelta
+from odoo import _, fields, http
 from odoo.http import request
 from odoo.osv import expression
-from odoo import fields
+from odoo.tools import float_is_zero
+
 from . import utils
-from dateutil.relativedelta import relativedelta
-from datetime import datetime
 
 _logger = logging.getLogger(__name__)
 
@@ -31,6 +31,7 @@ FIELDPARTNER = [
     "total_due",
     "withholding_type_id",
     "display_name",
+    "taxpayer_type",
 ]
 FIELDNAMES = [
     "id",
@@ -69,10 +70,12 @@ class AccountMovePayments(http.Controller):
         seller_portal_id = request.env.user.employee_id.id
 
         common_domain = [
-            ("seller_ids", "=", seller_portal_id),
             ("is_public", "=", True),
             ("type", "=", "contact"),
         ]
+
+        if not request.env.user.has_group("binaural_mobile.group_sellers_show_all_client"):
+            common_domain += [('seller_ids', '=', seller_portal_id)]
 
         domain_name = common_domain + [("name", "=ilike", "%" + (query or "") + "%")]
         domain_vat = common_domain + [("vat", "=ilike", "%" + (query or "") + "%")]
@@ -85,23 +88,34 @@ class AccountMovePayments(http.Controller):
             data.update({"status": 404, "msg": _("not found clients")})
             return json.dumps(data)
 
-        advance_customer_id = request.env.company.advance_customer_account_id.id
+        module_advance_payment = (
+            request.env["ir.module.module"]
+            .sudo()
+            .search([("name", "ilike", "binaural_advance_payment")], limit=1)
+        )
+        advance_payment_installed = module_advance_payment.state == "installed"
+        if advance_payment_installed:
+            advance_customer_id = request.env.company.advance_customer_account_id.id
 
-        for partner in partners:
-            domain_customer = [
-                ("partner_id", "=", partner.get("id")),
-                ("account_id", "=", advance_customer_id),
-                ("move_id.state", "=", "posted"),
-            ]
+            for partner in partners:
+                domain_customer = [
+                    ("partner_id", "=", partner.get("id")),
+                    ("account_id", "=", advance_customer_id),
+                    ("move_id.state", "=", "posted"),
+                ]
 
-            advance_lines = request.env["account.move.line"].search(domain_customer)
+                advance_lines = request.env["account.move.line"].search(domain_customer)
 
-            credit_partner = 0
+                credit_partner = 0
 
-            for line in advance_lines:
-                credit_partner += line.filtered(lambda l: not l.reconciled).amount_residual
+                for line in advance_lines:
+                    credit_partner += line.filtered(lambda l: not l.reconciled).amount_residual
 
-            partner["credit_partner"] = credit_partner
+                partner["credit_partner"] = credit_partner
+        else:
+            for partner in partners:
+
+                partner["credit_partner"] = 0
 
         data.update(
             {
@@ -188,7 +202,12 @@ class AccountMovePayments(http.Controller):
                         )
                     )
                     for line in account_move_result["line_ids"]:
+
+                        if not line.get("date_maturity", False):
+                            continue
+
                         line["date_maturity"] = line["date_maturity"].strftime(date_format)
+
                     account_move_results.append(account_move_result)
 
                 data.update(
@@ -196,6 +215,7 @@ class AccountMovePayments(http.Controller):
                         "data": account_move_results,
                         "count": acc_move_count,
                         "total_count": all_acc_move_count,
+                        "taxpayer_type": partner_ids[0].taxpayer_type,
                     }
                 )
 

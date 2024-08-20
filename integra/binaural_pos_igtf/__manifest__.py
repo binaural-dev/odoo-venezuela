@@ -18,4 +18,5 @@
         ],
     },
     "application": True,
+    "binaural": True,
 }

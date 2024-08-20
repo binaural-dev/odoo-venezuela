@@ -47,7 +47,9 @@ class ValidateQtyProducts(http.Controller):
                 warehouse_id_pos = (
                     request.env["stock.picking.type"].browse(picking_type_id[0]).warehouse_id
                 )
-                if product_id and product_id.detailed_type in ['product','consu']:
+                current_product = product_qty_position
+                product_qty_position += 1
+                if product_id and product_id.detailed_type in ['product',]:
                     stock_quant = request.env["stock.quant"].search(
                         [
                             ("product_tmpl_id", "=", product_id.id),
@@ -55,29 +57,31 @@ class ValidateQtyProducts(http.Controller):
                             ("product_tmpl_id.type", "!=", "service"),
                         ]
                     )
-                    product_in_warehouse_pos = False
-                    quantity_available = 0.0
-                    for quant in stock_quant:
-                        if warehouse_id_pos == quant.warehouse_id:
-                            product_in_warehouse_pos = True
-                            quantity_available += (
-                                quant.available_quantity if quant.available_quantity > 0 else 0
-                            )
+                    if stock_quant:
+                        product_in_warehouse_pos = False
+                        quantity_available = 0.0
+                        for quant in stock_quant:
+                            if warehouse_id_pos == quant.warehouse_id:
+                                product_in_warehouse_pos = True
+                                quantity_available += (
+                                    quant.available_quantity if quant.available_quantity > 0 else 0
+                                )
 
-                    if qty[product_qty_position] > quantity_available and product_in_warehouse_pos:
-                        data.update(
-                            {
-                                "msg_error": _(
-                                    "The product's '%s' You do not have enough stock in the warehouse %s",
-                                    product_id.name,
-                                    warehouse_id_pos.name,
-                                ),
-                            }
-                        )
-                        return data
-                    if not product_in_warehouse_pos and quantity_available == 0:
-                        products_name += f"{product_id.name} ,"
-                    product_qty_position += 1
+                        if qty[current_product] > quantity_available and product_in_warehouse_pos:
+                            data.update(
+                                {
+                                    "msg_error": _(
+                                        "The product's '%s' You do not have enough stock in the warehouse %s",
+                                        product_id.name,
+                                        warehouse_id_pos.name,
+                                    ),
+                                }
+                            )
+                            return data
+                        if not product_in_warehouse_pos and quantity_available == 0:
+                            products_name += f"{product_id.name} ,"
+                        continue
+                    products_name += f"{product_id.name} ,"
 
         if products_name:
             data.update(
@@ -90,5 +94,5 @@ class ValidateQtyProducts(http.Controller):
                 }
             )
 
-            return data
+        return data
     

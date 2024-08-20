@@ -22,4 +22,5 @@
             "binaural_pos_seller/static/src/xml/*.xml",
         ]
     },
+    "binaural": True,
 }

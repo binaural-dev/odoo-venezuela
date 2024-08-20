@@ -16,4 +16,5 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
+    "binaural": True,
 }
