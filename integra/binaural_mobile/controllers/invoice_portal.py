@@ -10,15 +10,6 @@ from . import utils
 _logger = logging.getLogger(__name__)
 
 FIELDINVOICE = ["product_id", "price_subtotal", "tax_ids"]
-MOVETYPES = [
-    "out_invoice",
-    "out_refund",
-    "in_invoice",
-    "in_refund",
-    "out_receipt",
-    "in_receipt",
-]
-
 
 class PortalAccount(PortalAccount):
     @http.route(
@@ -40,7 +31,7 @@ class PortalAccount(PortalAccount):
             domain = [
                 ("invoice_user_id", "=", user_id.id),
                 ("state", "not in", ("cancel", "draft")),
-                ("move_type", "in", MOVETYPES),
+                ("move_type", "!=", "entry"),
             ]
 
             domain = expression.OR(
@@ -49,7 +40,7 @@ class PortalAccount(PortalAccount):
                     [
                         ("seller_id", "=", user_id.employee_id.id),
                         ("state", "not in", ("cancel", "draft")),
-                        ("move_type", "in", MOVETYPES),
+                        ("move_type", "!=", "entry"),
                     ],
                 ]
             )
