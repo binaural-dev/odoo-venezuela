@@ -62,6 +62,11 @@ class AccountRetentionLine(models.Model):
     payment_concept_id = fields.Many2one(
         "payment.concept", "Payment concept", ondelete="cascade", index=True
     )
+    code=fields.Char(
+        related="payment_concept_id.line_payment_concept_ids.code"
+    )
+    code_visible=fields.Boolean(
+        related='company_id.code_visible')
     economic_activity_id = fields.Many2one(
         "economic.activity",
         ondelete="cascade",
@@ -168,8 +173,8 @@ class AccountRetentionLine(models.Model):
             # Payment concept of the line
             payment_concept = record.payment_concept_id.line_payment_concept_ids
             for line in payment_concept:
-                if not record.move_id.partner_id.type_person_id:
-                    raise UserError(_("The partner does not have a type of person"))
+                # if not record.move_id.partner_id.type_person_id:
+                #     raise UserError(_("The partner does not have a type of person"))
 
                 if record.move_id.partner_id.type_person_id.id == line.type_person_id.id:
                     # compare the type_person_id of the partner with the type_person_id of the

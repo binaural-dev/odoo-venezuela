@@ -9,3 +9,5 @@ class PosPaymentMethod(models.Model):
     cross_account_journal = fields.Many2one("account.journal", domain=[("type", "=", "general")])
 
     cross_journal = fields.Many2one("account.journal", domain=[("type", "in", ("bank", "cash"))])
+
+    apply_one_cross_move = fields.Boolean(default=False)

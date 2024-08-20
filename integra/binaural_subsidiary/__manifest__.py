@@ -4,7 +4,7 @@
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
-    "version": "16.0.5.2.3",
+    "version": "16.0.6.0.2",
     "category": "Accountant",
     "depends": [
         "base",
@@ -29,6 +29,7 @@
         "views/purchase_order.xml",
         "views/res_users.xml",
         "views/sale_order.xml",
+        "views/account_journal.xml",
         "views/menuitems.xml",
         "views/res_config_settings.xml",
         "wizard/account_payment_register.xml",
@@ -37,4 +38,5 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "post_init_hook": "activate_series_invoicing",
+    "binaural": True,
 }

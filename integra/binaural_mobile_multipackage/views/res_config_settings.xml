@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="binaural_movil_app_res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">binaural.movil.app.res.config.settings.view.form</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="100"/>
+        <field name="inherit_id" ref="binaural_rate.res_config_settings_binaural_rate"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//div[@name='Binaural_mobile_app_tax_settings']" position="after">
+
+                <div 
+                    class="col-12 col-lg-6 o_setting_box"
+                    name="binaural_mobile_use_multiple_packaging_settings"
+                    groups="product.group_stock_packaging"
+                >
+                    <div class="o_setting_left_pane">
+                        <field name="use_multiple_packaging"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="use_multiple_packaging"/>
+                        <div class="text-muted">
+                            Set if you want to show a list of packaing available to select creating a sale order on the app.
+                        </div>
+                    </div>
+                </div>
+
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

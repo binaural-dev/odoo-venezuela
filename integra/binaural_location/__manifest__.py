@@ -22,4 +22,5 @@ parroquias. 
         "views/menus.xml",
     ],
     "application": True,
+    "binaural": True,
 }

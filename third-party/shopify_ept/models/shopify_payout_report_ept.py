@@ -678,7 +678,7 @@ class ShopifyPaymentReportEpt(models.Model):
                               statement_line.amount)
                 log_lines.append({"message": message,
                                   "shopify_payout_report_line_id": transaction_line.id})
-                statement_line.button_undo_reconciliation()
+                statement_line.action_undo_reconciliation()
         return log_lines
 
     def shopify_reconcile_bank_statement_line_ept(self, statement_line_id, move_line_id):

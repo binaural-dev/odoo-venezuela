@@ -41,4 +41,5 @@
         "wizard/set_commission_order_to_invoice.xml",
     ],
     "application": True,
+    "binaural":True,
 }

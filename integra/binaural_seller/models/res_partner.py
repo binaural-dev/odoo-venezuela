@@ -8,6 +8,10 @@ _logger = logging.getLogger(__name__)
 class ResPartnerInherit(models.Model):
     _inherit = "res.partner"
 
+    def _default_company_id(self):
+        company_id = self.env.company.id
+        return company_id
+
     seller_ids = fields.Many2many(
         "hr.employee",
         string="Sellers",
@@ -16,6 +20,15 @@ class ResPartnerInherit(models.Model):
         default=lambda self: self.env.company.initial_seller,
         domain=[("is_seller", "=", True)],
     )
+
+    company_seller = fields.Boolean(
+        related="company_id.company_seller",
+    )
+    
+    """
+    in Odoo, the company_id is added when saving the contact, it is overwritten so that you can have the company from the beginning
+    """
+    company_id = fields.Many2one('res.company',  default=_default_company_id, index=True)
 
     @api.model
     def _commercial_fields(self):
@@ -31,10 +44,10 @@ class ResPartnerInherit(models.Model):
         return res
 
     @api.model_create_multi
-    def create(self, vals_list): 
+    def create(self, vals_list):
         for vals in vals_list:
             default_seller = [(6, 0, self.env.company.initial_seller.ids)]
-            vals['seller_ids'] = vals.get('seller_ids', default_seller)
+            vals["seller_ids"] = vals.get("seller_ids", default_seller)
 
         partners = super().create(vals_list)
         partners.sellers_validate()
@@ -51,16 +64,16 @@ class ResPartnerInherit(models.Model):
         for partner in self.filtered(
             lambda p: p != self.env.ref("binaural_seller.res_partner_1", raise_if_not_found=False)
         ):
-            employee_seller = self.env["hr.employee"].search(
-                [
-                    ("company_id", "=", self.env.company.id), 
-                    ("is_seller", "=", True)
-                ], limit=1
-            )
-            if employee_seller:
-                if not self.env.company.multiple_sellers and len(partner.seller_ids) > 1:
-                    raise UserError(
-                        _("You are only allowed to assign a salesperson to the customer")
-                    )
-                if not len(partner.seller_ids):
-                    raise UserError(_("The customer must have at least one salesperson assigned"))
+            if partner.company_seller:
+                employee_seller = self.env["hr.employee"].search(
+                    [("company_id", "=", self.env.company.id), ("is_seller", "=", True)], limit=1
+                )
+                if employee_seller:
+                    if not self.env.company.multiple_sellers and len(partner.seller_ids) > 1:
+                        raise UserError(
+                            _("You are only allowed to assign a salesperson to the customer")
+                        )
+                    if not len(partner.seller_ids):
+                        raise UserError(
+                            _("The customer must have at least one salesperson assigned")
+                        )

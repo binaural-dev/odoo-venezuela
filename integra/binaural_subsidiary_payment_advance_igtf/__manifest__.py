@@ -8,10 +8,12 @@
     "author": "Binauraldev",
     "category": "Accounting",
     "version": "16.0",
+    "license": "LGPL-3",
     # any module necessary for this one to work correctly
     "depends": ["binaural_subsidiary", "binaural_advance_payment_igtf"],
     # always loaded
     "data": [
     ],
     "auto_install": True,
+    "binaural": True,
 }

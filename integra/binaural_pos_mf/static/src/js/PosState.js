@@ -115,7 +115,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
 
           invoice['invoice_lines'] = order.orderlines.map((el) => {
 
-            if (!!el.customerNote){
+            if (!!el.customerNote) {
               let split = el.customerNote.split("\n")
               for (let i = 0; i < split.length; i++) {
                 invoice["info"].push(`${split[i]}`)
@@ -182,6 +182,7 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
             throw new Error(data["message"])
           }
           const response = await this.print_out_invoice(data)
+          console.log(response)
           this.env.services.ui.unblock()
           if (!response.valid) {
             throw new Error(response["message"])

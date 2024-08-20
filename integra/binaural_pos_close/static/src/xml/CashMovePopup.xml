@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="CashMovePopup" t-inherit="point_of_sale.CashMovePopup" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[@t-on-click='confirm']" position="before">
+            <div class="button confirm dynamic-size" t-on-click="onClickButtonCurrency">
+                <span 
+                    class="input-type">
+                    <t t-esc="state.foreign_currency.name"/> <i class="fa fa-refresh" role="img" />
+                </span>
+            </div>
+        </xpath>
+        <xpath expr="//div[@t-on-click='confirm']/span[1]" position="replace">
+            <t t-if="state.is_base">
+                <span t-esc="env.pos.format_currency(state.parsedAmount)"/>
+            </t>
+            <t t-else="">
+                <span t-esc="env.pos.format_foreign_currency(state.parsedAmount)"/>
+            </t>
+        </xpath>
+        <xpath expr="//div[hasclass('input-field')]" position="replace">
+            <div class="input-field" t-on-input="handleInputChange">
+                <input type="text" name="amount" t-ref="input-amount-ref" t-on-keypress="_onAmountKeypress" t-model="state.inputAmount"/>
+                <t t-if="state.currency.symbol.length > 1">
+                    <span class="left-currency" t-esc="state.currency.symbol" />
+                </t>
+                <t t-else="">
+                    <span class="currency" t-esc="state.currency.symbol" />
+                </t>
+            </div>
+        </xpath>
+    </t>
+</templates>

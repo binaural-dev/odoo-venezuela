@@ -13,4 +13,5 @@
         "meli_oerp_multiple",
     ],
     "images": ["static/description/icon.png"],
+    "binaural":True,
 }

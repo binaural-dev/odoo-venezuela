@@ -1,9 +1,6 @@
 from dateutil.relativedelta import relativedelta
 from datetime import date, datetime
 from math import ceil, floor
-import logging
-
-_logger = logging.getLogger(__name__)
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
@@ -40,7 +37,7 @@ class HrEmployee(models.Model):
     )
 
     holidays_accrued = fields.Float(compute="_compute_holidays_accrued")
-    average_annual_wage = fields.Float()
+    foreign_holidays_accrued = fields.Float(compute="_compute_holidays_accrued")
 
     @api.depends("entry_date", "departure_date")
     def _compute_seniority(self):
@@ -83,33 +80,50 @@ class HrEmployee(models.Model):
     def _compute_holidays_accrued(self):
         for employee in self:
             employee.holidays_accrued = 0
+            employee.foreign_holidays_accrued = 0
             if not employee.contract_id:
                 continue
             salary_type = employee.contract_id.salary_type
-            employee.holidays_accrued = 0
             employee_salary_payments = employee.get_all_payroll_moves()
 
             if salary_type and employee_salary_payments:
+                last_month_payment = employee_salary_payments[-1]
                 if salary_type == "fixed":
-                    employee.holidays_accrued = employee_salary_payments[-1]["total_accrued"]
-                else:
-                    last_month_accrued = employee_salary_payments[-1]["total_accrued"]
-                    second_to_last_month_accrued = (
-                        employee_salary_payments[-2]["total_accrued"]
-                        if len(employee_salary_payments) > 1
-                        else 0
-                    )
-                    third_to_last_month_accrued = (
-                        employee_salary_payments[-3]["total_accrued"]
-                        if len(employee_salary_payments) > 2
-                        else 0
-                    )
+                    employee.holidays_accrued = last_month_payment["total_accrued"]
+                    employee.foreign_holidays_accrued = last_month_payment["foreign_total_accrued"]
+                    continue
 
-                    employee.holidays_accrued = (
-                        last_month_accrued
-                        + second_to_last_month_accrued
-                        + third_to_last_month_accrued
-                    ) / 3
+                last_month_accrued = (
+                    last_month_payment["total_accrued"],
+                    last_month_payment["foreign_total_accrued"],
+                )
+                second_to_last_month_accrued = (
+                    (
+                        employee_salary_payments[-2]["total_accrued"],
+                        employee_salary_payments[-2]["foreign_total_accrued"],
+                    )
+                    if len(employee_salary_payments) > 1
+                    else (0, 0)
+                )
+                third_to_last_month_accrued = (
+                    (
+                        employee_salary_payments[-3]["total_accrued"],
+                        employee_salary_payments[-3]["foreign_total_accrued"],
+                    )
+                    if len(employee_salary_payments) > 2
+                    else (0, 0)
+                )
+
+                employee.holidays_accrued = (
+                    last_month_accrued[0]
+                    + second_to_last_month_accrued[0]
+                    + third_to_last_month_accrued[0]
+                ) / 3
+                employee.foreign_holidays_accrued = (
+                    last_month_accrued[1]
+                    + second_to_last_month_accrued[1]
+                    + third_to_last_month_accrued[1]
+                ) / 3
 
     def get_vacation_bonus_days_alicuot(self):
         self.ensure_one()
@@ -184,14 +198,24 @@ class HrEmployee(models.Model):
     def get_profit_sharing_wage(self):
         self.ensure_one()
         if self.company_id.profit_sharing_type == "annual_avg":
-            return self._compute_employee_average_wage() / 30
+            return self._get_average_wage() / 30
 
         moves = self.get_all_payroll_moves()
         if not moves:
             raise UserError(_("There are no payslips for the employee: %s", self.name))
         return moves[-1]["total_accrued"] / 30
 
-    def _compute_employee_average_wage(self):
+    def get_foreign_profit_sharing_wage(self):
+        self.ensure_one()
+        if self.company_id.profit_sharing_type == "annual_avg":
+            return self._get_average_wage(True) / 30
+
+        moves = self.get_all_payroll_moves()
+        if not moves:
+            raise UserError(_("There are no payslips for the employee: %s", self.name))
+        return moves[-1]["foreign_total_accrued"] / 30
+
+    def _get_average_wage(self, get_foreign=False):
         self.ensure_one()
         moves = self._get_payroll_moves_grouped_by_months_of_a_specific_year()
         if not moves:
@@ -199,16 +223,20 @@ class HrEmployee(models.Model):
 
         last_month = int(moves[-1]["month"])
         last_month_wage = moves[-1]["total_accrued"]
+        last_month_foreign_wage = moves[-1]["foreign_total_accrued"]
         for month in range(last_month + 1, 13):
             moves.append(
                 {
                     "month": month,
                     "total_accrued": last_month_wage,
+                    "foreign_total_accrued": last_month_foreign_wage,
                 }
             )
-        annual_average = sum(move["total_accrued"] for move in moves) / len(moves)
+        if get_foreign:
+            annual_average = sum(move["foreign_total_accrued"] for move in moves) / len(moves)
+        else:
+            annual_average = sum(move["total_accrued"] for move in moves) / len(moves)
 
-        self.average_annual_wage = annual_average
         return annual_average
 
     def _get_payroll_moves_grouped_by_months_of_a_specific_year(self, year=datetime.today().year):
@@ -311,8 +339,10 @@ class HrEmployee(models.Model):
             return 0
 
         additional_days = self.company_id.additional_vacation_days_after_first_year
-        annual_vacation_days = self.company_id.first_year_vacation_days
-        bonus_days_of_the_current_year = annual_vacation_days + (seniority_years * additional_days)
+        annual_vacation_bonus_days = self.company_id.first_year_vacation_days + 1
+        bonus_days_of_the_current_year = annual_vacation_bonus_days + (
+            seniority_years * additional_days
+        )
 
         vacation_slips = self.env["hr.payroll.move"].search(
             [
@@ -322,7 +352,9 @@ class HrEmployee(models.Model):
         )
         bonus_days_taken = sum(slip.vacation_bonus_days for slip in vacation_slips)
 
-        total_employee_bonus_days = sum(range(annual_vacation_days, bonus_days_of_the_current_year))
+        total_employee_bonus_days = sum(
+            range(annual_vacation_bonus_days, bonus_days_of_the_current_year)
+        )
         return total_employee_bonus_days - bonus_days_taken
 
     def get_fractional_vacation_days(self, is_bonus=False):

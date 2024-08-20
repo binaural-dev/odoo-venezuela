@@ -8,6 +8,8 @@
                 <search string="">
                     <filter name="action_number" string="Numero de Acción" context="{'group_by': 'action_number'}" />
                     <filter name="partner_id" string="Socio" context="{'group_by': 'partner_id'}" />
+                    <field name="partner_id"/>
+                    <field name="action_number"/>
                 </search>
             </field>
         </record>

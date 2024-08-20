@@ -18,12 +18,12 @@ msgstr ""
 #. module: binaural_stock_sale
 #: model:ir.model.fields,field_description:binaural_stock_sale.field_stock_picking__sale_invoice
 msgid "Number"
-msgstr ""
+msgstr "Numero"
 
 #. module: binaural_stock_sale
 #: model:ir.model.fields,field_description:binaural_stock_sale.field_stock_picking__sale_order_id
 msgid "Sale Order"
-msgstr ""
+msgstr "Ordenes de venta"
 
 #. module: binaural_stock_sale
 #: model:ir.model,name:binaural_stock_sale.model_sale_order
@@ -44,3 +44,9 @@ msgstr "Transferir"
 #: model_terms:ir.ui.view,arch_db:binaural_stock_sale.view_picking_form_binaural_stock_sale
 msgid "Set Commercial"
 msgstr "Agregar Comercial"
+
+#. module: binaural_stock_sale
+#: model:ir.model.fields,field_description:binaural_stock_sale.field_sale_order_line__liters_per_unit_total
+#: model:ir.model.fields,field_description:binaural_stock_sale.field_sale_report__liters_per_unit_total
+msgid "Liters Per Unit Total"
+msgstr "Total de litros por unidad"

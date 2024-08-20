@@ -203,12 +203,14 @@ msgid "Price"
 msgstr "Precio"
 
 #. module: binaural_product_catalog
-#: model:ir.model.fields,field_description:binaural_product_catalog.field_res_company__primary_color
-msgid "Primary Color"
-msgstr "Color Primario"
+#: model:ir.model.fields,field_description:binaural_product_catalog.field_product_catalog_wizard__price_without_tax
+msgid "Price without tax"
+msgstr "Precio sin IVA"
 
 #. module: binaural_product_catalog
 #: model:ir.model.fields,field_description:binaural_product_catalog.field_product_catalog_wizard__primary_color
+#: model:ir.model.fields,field_description:binaural_product_catalog.field_res_company__primary_color
+#: model:ir.model.fields,field_description:binaural_product_catalog.field_res_config_settings__primary_color
 msgid "Primary color"
 msgstr "Color primario"
 
@@ -285,11 +287,13 @@ msgstr ""
 
 #. module: binaural_product_catalog
 #: model:ir.model.fields,field_description:binaural_product_catalog.field_product_catalog_wizard__style
+#: model:ir.model.fields,field_description:binaural_product_catalog.field_product_catalog_wizard__style_mod
 msgid "Style"
 msgstr "Estilo"
 
 #. module: binaural_product_catalog
 #: model:ir.model.fields.selection,name:binaural_product_catalog.selection__product_catalog_wizard__style__style_1
+#: model:ir.model.fields.selection,name:binaural_product_catalog.selection__product_catalog_wizard__style_mod__style_1
 msgid "Style 1"
 msgstr "Estilo 1"
 
@@ -315,6 +319,7 @@ msgstr "estilo 5"
 
 #. module: binaural_product_catalog
 #: model:ir.model.fields.selection,name:binaural_product_catalog.selection__product_catalog_wizard__style__style_6
+#: model:ir.model.fields.selection,name:binaural_product_catalog.selection__product_catalog_wizard__style_mod__style_6
 msgid "Style 6"
 msgstr "Estilo 6"
 
@@ -327,6 +332,11 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_product_catalog.style_6
 msgid "UOM:"
 msgstr ""
+
+#. module: binaural_product_catalog
+#: model:ir.model.fields,field_description:binaural_product_catalog.field_product_catalog_wizard__border
+msgid "With Border"
+msgstr "Con bordes"
 
 #. module: binaural_product_catalog
 #: model:ir.model,name:binaural_product_catalog.model_report_sh_product_catalog_generator_product_catalog_doc

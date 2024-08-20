@@ -366,12 +366,11 @@ class ShopifyProductProductEpt(models.Model):
             catch = ""
             while results:
                 page_info = ""
-                if not shopify.ShopifyResource.connection.response:
-                    link = results.metadata and results.metadata.get('headers', {}).get('Link', {})
-                else:
-                    link = shopify.ShopifyResource.connection.response.headers.get(
-                        "Link") if shopify.ShopifyResource.connection.response.headers.get(
-                        "Link") else shopify.ShopifyResource.connection.response.headers.get("link")
+                link = (results.metadata.get('headers', {}).get('Link') or
+                        results.metadata.get('headers', {}).get('link') or
+                        shopify.ShopifyResource.connection.response.headers.get('Link') or
+                        shopify.ShopifyResource.connection.response.headers.get('link'))
+
                 if not link or not isinstance(link, str):
                     continue
                 for page_link in link.split(","):
@@ -834,13 +833,14 @@ class ShopifyProductProductEpt(models.Model):
             message = "Location not found for instance %s while update stock" % instance.name
             self.shopify_create_log(instance, message, model)
 
-        if not self._context.get('is_process_from_selected_product'):
-            shopify_templates = self.check_available_products_in_shopify(instance)
-            if shopify_templates:
-                shopify_products = shopify_templates.shopify_product_ids.filtered(
-                    lambda p: p.inventory_management == 'shopify')
+        # if not self._context.get('is_process_from_selected_product'):
+        #     shopify_templates = self.check_available_products_in_shopify(instance)
+        #     if shopify_templates:
+        #         shopify_products = shopify_templates.shopify_product_ids.filtered(
+        #             lambda p: p.inventory_management == 'shopify')
 
-        shopify_products = shopify_products.filtered(lambda l: l.product_id.id in product_ids)
+        shopify_products = shopify_products.filtered(
+            lambda l: l.product_id.id in product_ids and l.inventory_management == 'shopify')
         export_stock_data = []
         for location_id in location_ids:
             shopify_location_warehouse = location_id.export_stock_warehouse_ids or False

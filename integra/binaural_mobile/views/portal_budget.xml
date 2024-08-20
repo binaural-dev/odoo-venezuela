@@ -102,6 +102,18 @@
                                 </select>
                             </t>
                         </div>
+
+                        <label class="col-sm-2 form-text">Plus Code:</label>
+                        <div class="col-sm-4">
+                            <t t-if="budget">
+                                <a class="form-label cancel_confirmed_input" id="plus_code_label" disabled="disabled" t-attf-href="{{budget.partner_id.plus_code}}" target="_blank">
+                                  <t t-out="budget.partner_id.plus_code"/>  
+                                </a>
+                            </t>
+                            <t t-else="">
+                                <a class="form-label cancel_confirmed_input" id="plus_code_label" target="_blank"/>
+                            </t>
+                        </div>
                     </div>
                     <div class="row mb-2">
                         <t t-if="budget and budget.state in ['cancel', 'sale']">
@@ -253,6 +265,7 @@
                     </div>
                     <br />
                     <div class="row mb-2">
+                        <label id="product-table-note" class="text-secondary form-text mb-3"></label>
                         <table class="table table-primary table-striped">
                             <thead id="product_head" style="display: none;">
                             <tr>
@@ -426,6 +439,12 @@
                                                 <input type="text" class="register-client form-control" id="numberPhone" placeholder="0426-123-1234"/>
                                             </div>
                                         </div>
+                                        <div class="row mb-2">
+                                            <label class="form-text col-sm-2">Plus Code</label>
+                                            <div class="col-sm-4">
+                                                <input type="text" class="register-client form-control" id="plus_code" placeholder="Plus Code"/>
+                                            </div>
+                                        </div>
 
                                         <input type="hidden" value="contact" id="typeContactCreateClientModal" />
                                     </div>
@@ -453,13 +472,13 @@
                     </t>
                     
                     
-                    <div class="modal fade" id="errorQty" tabindex="-1" aria-labelledby="errorQtyLabel"  aria-modal="true" role="dialog">
+                    <div class="modal fade" id="errorQty" tabindex="-1" aria-labelledby="errorQtyLabel"  aria-modal="true" role="dialog" style="z-index:1500;">
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-header">
                                 </div>
                                 <div class="modal-body">
-                                    <div class="alert alert-danger" role="alert">
+                                    <div class="alert alert-danger" role="alert" id="errorQtyMsg">
                                         Check the units of the product
                                     </div>
                                 </div>

@@ -24,4 +24,5 @@
             "binaural_pos_mobile/static/src/js/*.js",
         ],
     },
+    "binaural": True,
 }

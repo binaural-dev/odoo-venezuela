@@ -28,93 +28,6 @@
                                 <label for="unique_tax"/>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="base_taxes_setting">
-                            <h3>Sale</h3>
-                            <div class="o_setting_left_pane">
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="exent_aliquot_sale" class="col-lg-6 o_light_label"/>
-                                        <field name="exent_aliquot_sale"/>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="o_setting_left_pane">
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="general_aliquot_sale" class="col-lg-6 o_light_label"/>
-                                        <field name="general_aliquot_sale"/>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="o_setting_left_pane">
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="reduced_aliquot_sale" class="col-lg-6 o_light_label"/>
-                                        <field name="reduced_aliquot_sale"/>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="o_setting_left_pane">
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="extend_aliquot_sale" class="col-lg-6 o_light_label"/>
-                                        <field name="extend_aliquot_sale"/>
-                                    </div>
-                                </div>
-                            </div>
-                            <br/>
-                            <h3>Purchase</h3>
-                            <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="exent_aliquot_purchase" class="col-lg-6 o_light_label"/>
-                                        <field name="exent_aliquot_purchase"/>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="o_setting_left_pane">
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="general_aliquot_purchase" class="col-lg-6 o_light_label"/>
-                                        <field name="general_aliquot_purchase"/>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="o_setting_left_pane">
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="reduced_aliquot_purchase" class="col-lg-6 o_light_label"/>
-                                        <field name="reduced_aliquot_purchase"/>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="o_setting_left_pane">
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div class="content-group">
-                                    <div class="row">
-                                        <label for="extend_aliquot_purchase" class="col-lg-6 o_light_label"/>
-                                        <field name="extend_aliquot_purchase"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                         <div class="col-12 col-lg-6 o_setting_box" id="show_discount_on_moves_setting">
                             <div class="o_setting_left_pane">
                                 <field name="show_discount_on_moves"/>
@@ -125,6 +38,140 @@
                         </div>
 
                     </div>
+                    <h2>Sales Book Configuration</h2>
+                    <div class="row mt16 o_settings_container" name="binaural_tax_sale">
+                        <div class="col-12 col-lg-6 o_setting_box" id="binaural_tax_sale_setting">
+
+                            <!-- <div class="col-12 o_setting_box"> -->
+                                <div class="o_setting_left_pane">
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <div class="content-group">
+                                        <div class="row">
+                                            <label for="exent_aliquot_sale" class="col-lg-6 o_light_label"/>
+                                            <field name="exent_aliquot_sale"/>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <label for="general_aliquot_sale" class="col-lg-6 o_light_label"/>
+                                        <field name="general_aliquot_sale"/>
+                                    </div>
+                                    <div class="row">
+                                        <label for="reduced_aliquot_sale" class="col-lg-6 o_light_label"/>
+                                        <field name="reduced_aliquot_sale"/>
+                                    </div>
+                                    <div class="row">
+                                        <label for="extend_aliquot_sale" class="col-lg-6 o_light_label"/>
+                                        <field name="extend_aliquot_sale"/>
+                                    </div>
+                                </div>
+                            <!-- </div> -->
+
+                            <!-- <div class="col-12 col-lg-6 o_setting_box"> -->
+                                
+                            <!-- </div> -->
+                            
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <br/>
+                                <br/>
+                                <br/>
+                                <field name="not_show_reduced_aliquot_sale"/>
+                                <field name="not_show_extend_aliquot_sale"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <br/>
+                                <br/>
+                                <br/>
+                                <label for="not_show_reduced_aliquot_sale"/>
+                                <br/>
+                                <label for="not_show_extend_aliquot_sale"/>
+                            </div>
+                        </div>
+                    </div>
+                            
+                    <h2>Purchases Book Configuration</h2>
+                    <div class="row mt16 o_settings_container" name="binaural_tax_purchase">
+                        <div class="col-12 col-lg-6 o_setting_box" id="binaural_tax_purchase_setting">
+                            <div class="o_setting_left_pane">
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <div class="content-group">
+                                    <div class="row">
+                                        <label for="exent_aliquot_purchase" class="col-lg-6 o_light_label"/>
+                                        <field name="exent_aliquot_purchase"/>
+                                    </div>
+                                    <div class="row">
+                                        <label for="general_aliquot_purchase" class="col-lg-6 o_light_label"/>
+                                        <field name="general_aliquot_purchase"/>
+                                    </div>
+                                    <div class="row">
+                                        <label for="reduced_aliquot_purchase" class="col-lg-6 o_light_label"/>
+                                        <field name="reduced_aliquot_purchase"/>
+                                    </div>
+                                    <div class="row">
+                                        <label for="extend_aliquot_purchase" class="col-lg-6 o_light_label"/>
+                                        <field name="extend_aliquot_purchase"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                                        
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <br/>
+                                <br/>
+                                <br/>
+                                <field name="not_show_reduced_aliquot_purchase"/>
+                                <field name="not_show_extend_aliquot_purchase"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <br/>
+                                <br/>
+                                <br/>
+                                <label for="not_show_reduced_aliquot_purchase"/>
+                                <label for="not_show_extend_aliquot_purchase"/>
+                            </div>
+                        </div>
+                            
+                    </div>
+
+                    <div class="row mt16 o_settings_container" name="binaural_tax_purchase">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="config_deductible_tax"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="config_deductible_tax" string="Use non-deductible taxes on purchases"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2 attrs="{'invisible': [('config_deductible_tax', '!=', True)]}">Non-deductible in Purchases</h2>
+                    <div class="row mt16 o_settings_container" attrs="{'invisible': [('config_deductible_tax', '!=', True)]}" name="binaural_tax_purchase_no_deductible">
+                        <div class="col-12 col-lg-6 o_setting_box" id="binaural_tax_purchase_no_deductible_setting">
+                            <div class="o_setting_left_pane">
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <div class="content-group">
+                                    <div class="row">
+                                        <label for="no_deductible_general_aliquot_purchase" class="col-lg-6 o_light_label"/>
+                                        <field name="no_deductible_general_aliquot_purchase"/>
+                                    </div>
+                                    <div class="row">
+                                        <label for="no_deductible_reduced_aliquot_purchase" class="col-lg-6 o_light_label"/>
+                                        <field name="no_deductible_reduced_aliquot_purchase"/>
+                                    </div>
+                                    <div class="row">
+                                        <label for="no_deductible_extend_aliquot_purchase" class="col-lg-6 o_light_label"/>
+                                        <field name="no_deductible_extend_aliquot_purchase"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </xpath>
             </field>
         </record>

@@ -561,6 +561,7 @@
                 <div style="width:5%">Fact Nro</div>
                 <div style="width:7%">Nro de Control</div>
                 <div style="width:5%">Fecha</div>
+                <div t-if="retention.retention_line_ids[0].code_visible" style="width:5%">Código</div>
                 <div style="width:15%">Concepto</div>
                 <div style="width:15%">Total Factura</div>
                 <div style="width:15%">Base de Retención</div>
@@ -610,6 +611,11 @@
                             <t t-else="">
                                 <span>--</span>
                             </t>
+                        </div>
+                        <!--Codigo-->
+                        <div t-if="line.code_visible" style="width:5%">
+                                <span t-if="line.code" t-esc="line.code"/>
+                                <span t-else="">--</span>
                         </div>
                         <!-- Concepto-->
                         <div style="width:15%">
@@ -713,9 +719,12 @@
                     <div class="col-auto" style="width:7%">
                         <span style="visibility:hidden">--</span>
                     </div>
-                    <div class="" style="width:12%">
+                    <div t-if="retention.retention_line_ids[0].code_visible" class="" style="width:3%">
 			<span t-esc="imp" t-options='{"widget": "float", "precision": get_digits}' />
                     </div>
+                    <div t-else="" class="" style="width:12%">
+                        <span t-esc="imp" t-options='{"widget": "float", "precision": get_digits}' />
+                    </div>               
                 </div>
             </div>
         </div>

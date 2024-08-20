@@ -9,3 +9,5 @@ class ResCompany(models.Model):
     multiple_sellers = fields.Boolean()
 
     restrict_seller = fields.Boolean()
+
+    company_seller = fields.Boolean()

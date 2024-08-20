@@ -60,6 +60,7 @@
 					<field name="employee_id"/>
 					<field name="employee_vat"/>
 					<field name="employee_department_id"/>
+					<field name="name"/>
 					<field name="employee_job_id"/>
 					<field name="category_id"/>
 					<field name="date_from"/>
@@ -77,6 +78,7 @@
 					<field name="employee_name"/>
 					<field name="employee_vat"/>
 					<field name="employee_department_id"/>
+					<field name="name"/>
 					<field name="employee_job_id"/>
 					<group expand="1" string="Group By">
 						<filter name="employe_id" context="{'group_by':'employee_id'}"/>

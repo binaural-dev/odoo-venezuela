@@ -80,7 +80,9 @@ class AccountTax(models.Model):
 
         res["groups_by_foreign_subtotal"] = foreign_taxes["groups_by_subtotal"]
         res["foreign_subtotals"] = foreign_taxes["subtotals"]
+        res["foreign_amount_untaxed"] = foreign_taxes["amount_untaxed"]
         res["foreign_amount_total"] = foreign_taxes["amount_total"]
+        res["foreign_formatted_amount_untaxed"] = foreign_taxes["formatted_amount_untaxed"]
         res["foreign_formatted_amount_total"] = foreign_taxes["formatted_amount_total"]
 
         res["show_discount"] = self.env.company.show_discount_on_moves

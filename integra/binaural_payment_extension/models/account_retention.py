@@ -113,6 +113,10 @@ class AccountRetention(models.Model):
         states={"draft": [("readonly", False)]},
         help="Retentions",
     )
+    
+    code_visible=fields.Boolean(
+        related='company_id.code_visible')
+    
     payment_ids = fields.One2many(
         "account.payment",
         "retention_id",
@@ -596,22 +600,27 @@ class AccountRetention(models.Model):
                 retention.date = today
 
             move_ids = retention.mapped("retention_line_ids.move_id")
-            if retention.type_retention == "iva":
-                move_ids.write({"iva_voucher_number": retention.number})
-            elif retention.type_retention == "islr":
-                move_ids.write({"islr_voucher_number": retention.number})
-            elif retention.type_retention == "municipal":
-                move_ids.write({"municipal_voucher_number": retention.number})
+            self.set_voucher_number_in_invoice(move_ids, retention)
+            
             if not retention.payment_ids:
                 payments = retention.create_payment_from_retention_form()
                 retention.payment_ids = payments.ids
+
             if retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._set_sequence()
-                move_ids.write({"iva_voucher_number": retention.number})
+                self.set_voucher_number_in_invoice(move_ids, retention)
 
         self.payment_ids.write({"date": self.date_accounting})
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
+
+    def set_voucher_number_in_invoice(self, move, retention):
+        if retention.type_retention == "iva":
+            move.write({"iva_voucher_number": retention.number})
+        elif retention.type_retention == "islr":
+            move.write({"islr_voucher_number": retention.number})
+        elif retention.type_retention == "municipal":
+            move.write({"municipal_voucher_number": retention.number})
 
     def action_print_municipal_retention_xlsx(self):
         self.ensure_one()

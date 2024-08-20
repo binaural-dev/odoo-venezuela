@@ -198,6 +198,7 @@ class AccountMoveRetention(models.Model):
         retention_vals = {
             "payment_ids": [Command.link(payment.id)],
             "date_accounting": self.date,
+            "date": self.date if self.move_type == "in_invoice" else False,
             "type_retention": type_retention,
             "type": "in_invoice",
             "partner_id": self.partner_id.id,

@@ -88,7 +88,18 @@ class AccountMoveLine(models.Model):
                         line.amount_currency / line.move_id.payment_id.foreign_inverse_rate
                     )
                 else:
-                    raise UserError (_("The rate should be greater than zero"))
+                    raise UserError(_("The rate should be greater than zero"))
+
+    @api.depends("product_id", "move_id.name")
+    def _compute_name(self):
+        lines_without_name = self.filtered(lambda l: not l.name)
+        res = super(AccountMoveLine, lines_without_name)._compute_name()
+        for line in self.filtered(
+            lambda l: l.move_type in ("out_invoice", "out_receipt")
+            and l.account_id.account_type == "asset_receivable"
+        ):
+            line.name = line.move_id.name
+        return res
 
     @api.depends("price_unit", "foreign_inverse_rate")
     def _compute_foreign_price(self):

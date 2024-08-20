@@ -26,4 +26,5 @@
             "binaural_pos_website/static/src/js/**/*",
         ],
     },
+    "binaural": True,
 }

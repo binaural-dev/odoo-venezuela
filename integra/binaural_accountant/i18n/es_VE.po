@@ -542,6 +542,12 @@ msgid "Last Updated on"
 msgstr ""
 
 #. module: binaural_accountant
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_invoice_report__liters_per_unit_total
+#: model:ir.model.fields,field_description:binaural_accountant.field_account_move_line__liters_per_unit_total
+msgid "Liters Per Unit Total"
+msgstr "Litros por unidad"
+
+#. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.financial_all_payments
 msgid "Logo"
 msgstr ""
@@ -907,6 +913,13 @@ msgstr ""
 #, python-format
 msgid "docids empty"
 msgstr ""
+
+#. module: binaural_accountant
+#. odoo-python
+#: code:addons/binaural_accountant/report/account_invoice_details_report.py:0
+#, python-format
+msgid "The time zone is not registered, log in to your profile and configure it."
+msgstr "La zona horaria no está registrada, accede a tu perfil y configúrala."
 
 #. module: binaural_accountant
 #: model_terms:ir.ui.view,arch_db:binaural_accountant.account_report_document

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<record id="product_pricelist_item_form_view" model="ir.ui.view">
+		<field name="name">product.pricelist.item.form</field>
+		<field name="model">product.pricelist.item</field>
+		<field name="inherit_id" ref="product.product_pricelist_item_form_view" />
+		<field name="arch" type="xml">
+			<xpath expr="//field[@name='applied_on']" position="after">
+				<field name="brand_id" options="{'no_create':1}" 
+				attrs="{'invisible':[('applied_on', '!=', 'brand')],'required':[('applied_on', '=', 'brand')]}"/>
+			</xpath>
+		</field>
+	</record>
+</odoo>

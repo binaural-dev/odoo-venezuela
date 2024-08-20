@@ -3,7 +3,14 @@
 
 
 
+
+
+
+
+
+
 TODO: add repo description.
+
 
 TODO: add missing modules description.
 
@@ -13,7 +20,8 @@ Modulos
 ----------------
 Modulo | Descripción
 --- | ---
-[Binaural Compras](integra/binaural_purchase) | Permite visualizar los pedidos de compra en dólares y bolívares.
+[Binaural Compras](integra/binaural_purchase) | Permite visualizar los pedidos de compra en dólares y 
+bolívares.
 [Binaural Informes contables](integra/binaural_account_reports) | Permite visualizar los reportes contables en dólares y bolívares.
 
 [//]: # (end addons)
@@ -48,3 +56,6 @@ Correo electrónico: contacto@binauraldev.com.
 Github: https://github.com/binaural-dev.
 
 [//]: # (end author)
+
+
+

@@ -37,6 +37,13 @@ class BinauralWebsiteSale(WebsiteSale):
         """
         order = request.website.sale_get_order()
 
+        company_id = request.env["website"].sudo().get_current_website().company_id
+        Rate = request.env["res.currency.rate"]
+
+        rate_values = Rate.compute_rate(company_id.currency_foreign_id.id, fields.Date.today())
+        order.foreign_rate = rate_values["foreign_rate"]
+        order.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
+
         values = {"website_sale_order": order, "date": fields.Date.today()}
 
         redirection = self.checkout_redirection(order)
@@ -98,6 +105,8 @@ class BinauralWebsiteSale(WebsiteSale):
 
         If there are not errors calls the original method.
         """
+        if request.env.user._is_public():
+            return request.redirect('/web/login')
         errors = post.get("errors", False)
         if not errors:
             return super().cart(access_token=access_token, revive=revive, **post)
@@ -226,6 +235,9 @@ class BinauralWebsiteSale(WebsiteSale):
         self, product_id, line_id=None, add_qty=None, set_qty=None, display=True,
         product_custom_attribute_values=None, no_variant_attribute_values=None, **kw
     ):
+        if request.env.user._is_public():
+            return NotFound()
+        
         order = request.website.sale_get_order(force_create=True)
         if order.state != "draft":
             request.website.sale_reset()

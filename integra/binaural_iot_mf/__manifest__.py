@@ -1,16 +1,16 @@
 {
-    "name": "Binaural IoT - The Factory HKA",
-    "version": "16.0.3.3.6",
+    "name": "Binaural IoT - Maquina Fiscal",
+    "version": "16.0.3.3.8",
     "category": "Accounting",
-    "summary": "The Factory HKA (SDK) en IoT",
+    "summary": "The Factory HKA (SDK) y Pnp Desarrollos en IoT",
     "license": "LGPL-3",
     "description": """
-    Implementacion de SDK de The Factory HKA (VE) a Internet of Things (IoT) y
+    Implementacion de SDK de The Factory HKA (VE) y PnP desarrollos a Internet of Things (IoT) y
     compatibilidad con Odoo.
     """,
     "sequence": "1",
     "author": "Binaural C.A - Odoo Gold Partner",
-    "maintainer": "@andyengh",
+    "maintainer": "andyengh",
     "support": "contacto@binaural.dev",
     "website": "https://binauraldev.com",
     "depends": ["iot", "account","web","binaural_invoice","binaural_tax_payer"],
@@ -26,14 +26,11 @@
     ],
     "assets": {
         "web.assets_backend": [
-            "binaural_iot_mf/static/src/js/action_mf_16.js",
-            "binaural_iot_mf/static/src/js/iot_longpolling.js",
+            "binaural_iot_mf/static/src/js/*.js",
         ],
-        "web.assets_qweb":[
-            "binaural_iot_mf/static/src/js/*.xml"
-            ]
     },
     "installable": True,
     "application": False,
     "auto_install": False,
+    "binaural": True,
 }
