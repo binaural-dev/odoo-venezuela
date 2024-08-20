@@ -16,6 +16,7 @@
         "binaural_subsidiary"
     ],
     "data": [
+        "security/ir.model.access.csv",
         "views/analytic_account.xml"
     ],
     "images": ["static/description/icon.png"],

@@ -26,9 +26,23 @@
 	                        <group>
 		                        <field name="type_action"/>
                                 <field name="number"/>
+                                <field name="owner_id" readonly="1"/>
                             </group>
                         </group>
 	                    <notebook>
+                            <page string="Other Beneficiaries">
+	                            <field 
+                                    name="beneficiary_partner_ids" 
+                                    nolabel="1"
+                                    readonly="1"
+                                >
+			                        <tree editable="bottom">
+			                            <field name="name"/>
+                                        <field name="vat" string="Identification"/>
+                                        <field name="type_relation"/>
+			                        </tree>
+			                    </field>
+                            </page>
                             <page string="Previous Partners">
 	                            <field name="partners_previous_ids" nolabel="1">
 			                        <tree editable="bottom">

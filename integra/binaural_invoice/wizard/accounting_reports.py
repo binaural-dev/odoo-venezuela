@@ -4,7 +4,8 @@ from io import BytesIO
 
 import xlsxwriter
 from dateutil.relativedelta import relativedelta
-from odoo import fields, models
+from odoo import fields, models, _
+from odoo.exceptions import UserError
 from xlsxwriter import utility
 
 _logger = logging.getLogger(__name__)
@@ -52,6 +53,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     currency_system = fields.Boolean(string="Report in currency system", default=False)
 
     def _fields_sale_book_line(self, move, taxes):
+        if not move.invoice_date:
+            raise UserError(_("Check the move %s does not have an invoice date", move.name))
         multiplier = -1 if move.move_type == "out_refund" else 1
         return {
             "_id": move.id,
@@ -75,6 +78,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         }
 
     def _fields_purchase_book_line(self, move, taxes):
+        if not move.invoice_date:
+            raise UserError(_("Check the move %s does not have an invoice date", move.name))
         multiplier = -1 if move.move_type == "in_refund" else 1
         fields_purchase_book_line = {
             "_id": move.id,

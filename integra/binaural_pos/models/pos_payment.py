@@ -36,7 +36,7 @@ class PosPayment(models.Model):
         for payment in self:
             payment_move = move_id.filtered(
                 lambda x: float_compare(
-                    payment.amount,
+                    abs(payment.amount),
                     x.amount_total,
                     precision_rounding=payment.pos_order_id.currency_id.rounding,
                 )

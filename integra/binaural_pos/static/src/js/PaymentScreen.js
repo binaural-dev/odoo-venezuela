@@ -48,6 +48,26 @@ odoo.define("binaural_pos.PaymentScreen", function (require) {
         this.render(true);
       }
 
+      async _isOrderValid(isForceValidate) {
+        let res = await super._isOrderValid(isForceValidate)
+        if (!this.currentOrder) {
+          return res
+        }
+
+        let amounts = this.currentOrder.get_paymentlines().map((el) => el.amount)
+        if (!amounts.every((el) => el != 0)) {
+          this.showPopup('ErrorPopup', {
+            title: this.env._t('Empty Paymentline'),
+            body: this.env._t(
+              "You can't validate with empty payment lines"
+            ),
+          });
+          return false
+
+        }
+        return res
+      }
+
       async showPaymentsOrigin() {
 
         let id = []

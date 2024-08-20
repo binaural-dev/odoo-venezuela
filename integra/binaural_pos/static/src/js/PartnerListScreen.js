@@ -17,17 +17,23 @@ odoo.define("binaural_pos.PartnerListScreen", function(require) {
       async updatePartnerList(event) {
         await super.updatePartnerList(event)
         if (event.code === "Enter" && this.partners.length === 0) {
-          this.env.services.ui.block()
-          await this.searchPartner()
-          if (this.partners.length === 0) {
+          try {
+            this.env.services.ui.block()
+            await this.searchPartner()
+            if (this.partners.length === 0) {
+              this.createPartner()
+            } else {
+              this.clickPartner(this.partners[0])
+            }
+            if (event.code === "Enter" && this.partners.length === 1) {
+              this.clickPartner(this.partners[0])
+            }
+          } catch (error) {
             this.createPartner()
-          } else {
-            this.clickPartner(this.partners[0])
+          } finally {
+            this.env.services.ui.unblock()
+
           }
-          this.env.services.ui.unblock()
-        }
-        if (event.code === "Enter" && this.partners.length === 1) {
-          this.clickPartner(this.partners[0])
         }
       }
 
@@ -35,7 +41,7 @@ odoo.define("binaural_pos.PartnerListScreen", function(require) {
         this.env.services.ui.block()
         try {
           let data = ""
-          if(!!this.env.pos.config.pos_search_cne){
+          if (!!this.env.pos.config.pos_search_cne) {
             data = await this.env.services.rpc({
               model: 'res.partner',
               method: 'get_default_name_by_vat_param',

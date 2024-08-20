@@ -10,6 +10,11 @@ _logger = logging.getLogger(__name__)
 class IotDeviceInherit(models.Model):
     _inherit = "iot.device"
 
+    manufacturer_type = fields.Selection(
+        selection=[("HKA", "The Factory HKA"), ("PnP", "PnP Desarrollos")],
+        string="Manufacturer Type",
+        compute="_compute_manufacturer_type",
+    )
     serial_machine = fields.Char(string="Serial of fiscal machine", default=False)
     max_amount_int = fields.Integer(compute="_compute_max_amounts")  # deprecated
     max_amount_decimal = fields.Integer(compute="_compute_max_amounts")  # deprecated
@@ -90,6 +95,17 @@ class IotDeviceInherit(models.Model):
 
     resume_range_from = fields.Date(default=fields.Date().today())
     resume_range_to = fields.Date(default=fields.Date().today())
+
+
+    def _compute_manufacturer_type(self):
+        for record in self:
+            if record.name.__contains__("HKA"):
+                record.manufacturer_type = "HKA"
+                continue
+            if record.name.__contains__("PnP"):
+                record.manufacturer_type = "PnP"
+                continue
+            record.manufacturer_type = False
 
     def configure_device(self):
         return {

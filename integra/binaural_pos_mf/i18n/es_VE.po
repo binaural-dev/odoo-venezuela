@@ -1,29 +1,71 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_pos_mf
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20240422\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-07-01 21:15+0000\n"
+"PO-Revision-Date: 2024-07-01 21:15+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
 #. module: binaural_pos_mf
-#: model_terms:ir.ui.view,arch_db:binaural_pos_mf.view_pos_session_form
-msgid "Are you sure you want to generate report Z?"
-msgstr "Estas seguro de generar el reporte Z?"
+#: model:ir.model.fields.selection,name:binaural_pos_mf.selection__account_move__sales_book_type__01-reg
+msgid "01-REG"
+msgstr ""
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields.selection,name:binaural_pos_mf.selection__account_move__sales_book_type__02-reg
+msgid "02-REG"
+msgstr ""
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields.selection,name:binaural_pos_mf.selection__account_move__sales_book_type__03-reg
+msgid "03-ANU"
+msgstr ""
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config__access_button_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_res_config_settings__pos_access_button_mf
+msgid "Access Button Mf"
+msgstr "Mostrar Reportes Fiscales"
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/DebugWidget.xml:0
+#, python-format
+msgid "Binaural"
+msgstr ""
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/js/FiscalMachinePopup.js:0
+#, python-format
+msgid "Cancel"
+msgstr "Cancelar"
 
 #. module: binaural_pos_mf
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_account_bank_statement_line__cashbox_id
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_account_move__cashbox_id
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_account_payment__cashbox_id
-#: model_terms:ir.ui.view,arch_db:binaural_pos_mf.account_move_form
 msgid "Cashbox invoiced"
 msgstr "Caja facturada"
 
 #. module: binaural_pos_mf
-#. openerp-web
-#: code:addons/binaural_pos_mf/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
-#, python-format
-msgid "Check if the fiscal printer is connected and try again."
-msgstr "Chequea que la impresora fiscal este conectada e intenta de nuevo."
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_payment_method__code_fiscal_printer
+msgid "Code Fiscal Printer"
+msgstr "Código en Maquina fiscal"
 
 #. module: binaural_pos_mf
-#. openerp-web
-#: code:addons/binaural_pos_mf/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
-#, python-format
-msgid "Check if the fiscal printer is connected and try again. Please"
-msgstr "Chequea que la impresora fiscal este conectada e intenta de nuevo. Por favor"
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_order__mf_reportz
+msgid "Codigo de reporte Z"
+msgstr ""
 
 #. module: binaural_pos_mf
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__company_id
@@ -31,9 +73,26 @@ msgid "Company"
 msgstr "Compañia"
 
 #. module: binaural_pos_mf
+#: model:ir.model,name:binaural_pos_mf.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/FiscalMachine.xml:0
+#, python-format
+msgid "Confirm"
+msgstr "Confirmar"
+
+#. module: binaural_pos_mf
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__create_uid
 msgid "Created by"
 msgstr "Creado por"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__create_date
+msgid "Created on"
+msgstr ""
 
 #. module: binaural_pos_mf
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__date_from
@@ -46,26 +105,34 @@ msgid "Date To"
 msgstr "Fecha Hasta"
 
 #. module: binaural_pos_mf
-#: model:ir.model.fields,field_description:binaural_pos_mf.field_account_move__display_name
-#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config__display_name
-#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_order__display_name
-#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_session__display_name
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__display_name
 msgid "Display Name"
 msgstr "Mostrar nombre"
 
 #. module: binaural_pos_mf
 #: model_terms:ir.ui.view,arch_db:binaural_pos_mf.pos_config_view_form_inherit
+#: model_terms:ir.ui.view,arch_db:binaural_pos_mf.res_config_settings_view_form
 msgid "Fiscal Data Module"
 msgstr "Maquina Fiscal"
 
 #. module: binaural_pos_mf
-#. openerp-web
-#: code:addons/binaural_pos_mf/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
-#: code:addons/binaural_pos_mf/static/src/js/Screens/PaymentScreen/PaymentScreen.js:0
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/js/FiscalMachinePopup.js:0
 #, python-format
-msgid "Fiscal print is not connected"
-msgstr "Maquina fiscal no conectada"
+msgid "Fiscal Reports"
+msgstr "Reportes Fiscales"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config__flag_21
+msgid "Flag 21"
+msgstr "Bandera 21"
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/DebugWidget.xml:0
+#, python-format
+msgid "GET ACTUAL ORDER"
+msgstr "Obtener Orden Actual"
 
 #. module: binaural_pos_mf
 #: model_terms:ir.ui.view,arch_db:binaural_pos_mf.wizard_sales_book_pos
@@ -73,12 +140,33 @@ msgid "Generar Informe"
 msgstr ""
 
 #. module: binaural_pos_mf
-#: model_terms:ir.ui.view,arch_db:binaural_pos_mf.view_pos_session_form
-msgid "Generate Report Z"
-msgstr "Generar Reporte Z"
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/ClosePosPopup.xml:0
+#, python-format
+msgid "Generate report X"
+msgstr ""
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/ClosePosPopup.xml:0
+#, python-format
+msgid "Generate report Z to close Report Z"
+msgstr ""
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config__has_cashbox
+msgid "Has Cashbox"
+msgstr "Tiene Caja registradora"
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__id
+msgid "ID"
+msgstr ""
 
 #. module: binaural_pos_mf
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config__iface_fiscal_data_module
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_session__iot_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_res_config_settings__iface_fiscal_data_module
 msgid "Iface Fiscal Data Module"
 msgstr "Maquina Fiscal"
 
@@ -88,19 +176,46 @@ msgid "Journal Entry"
 msgstr "Asiento contable"
 
 #. module: binaural_pos_mf
-#: model:ir.model.fields,field_description:binaural_pos_mf.field_account_move____last_update
-#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config____last_update
-#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_order____last_update
-#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_session____last_update
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/DebugWidget.xml:0
+#, python-format
+msgid "LOGGER THIS"
+msgstr ""
+
+#. module: binaural_pos_mf
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book____last_update
 msgid "Last Modified on"
 msgstr "Modificada por última vez"
 
 #. module: binaural_pos_mf
-#. openerp-web
-#: code:addons/binaural_pos_mf/static/src/xml/ChromeWidgets/DebugWidget.xml:0
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_wizard_sales_book__write_date
+msgid "Last Updated on"
+msgstr ""
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/Chrome.xml:0
 #, python-format
-msgid "PRINT INVOICE ORDER ACTUAL"
+msgid "Maquina Fiscal"
+msgstr ""
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/TicketScreen.xml:0
+#, python-format
+msgid "N Invoice"
+msgstr "NUmero de Factura"
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/DebugWidget.xml:0
+#, python-format
+msgid "PROGRAMACION"
 msgstr ""
 
 #. module: binaural_pos_mf
@@ -114,9 +229,69 @@ msgid "Point of Sale Orders"
 msgstr "Pedidos del TPV"
 
 #. module: binaural_pos_mf
+#: model:ir.model,name:binaural_pos_mf.model_pos_payment_method
+msgid "Point of Sale Payment Methods"
+msgstr "Métodos de pago en el punto de venta "
+
+#. module: binaural_pos_mf
 #: model:ir.model,name:binaural_pos_mf.model_pos_session
 msgid "Point of Sale Session"
 msgstr "Sesión TPV"
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/DebugWidget.xml:0
+#, python-format
+msgid "REPORT X"
+msgstr "Reporte X"
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/ClosePosPopup.xml:0
+#, python-format
+msgid "Report X"
+msgstr "Reporte X"
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/ClosePosPopup.xml:0
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_session__report_z
+#, python-format
+msgid "Report Z"
+msgstr "Repore Z"
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/Chrome.xml:0
+#, python-format
+msgid "Reporte Maquina Fiscal"
+msgstr ""
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/FiscalMachine.xml:0
+#, python-format
+msgid "Reporte X"
+msgstr ""
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/FiscalMachine.xml:0
+#, python-format
+msgid "Reporte Z"
+msgstr ""
+
+#. module: binaural_pos_mf
+#: model_terms:ir.ui.view,arch_db:binaural_pos_mf.wizard_sales_book_pos
+msgid "Reportes Contables"
+msgstr ""
+
+#. module: binaural_pos_mf
+#. odoo-javascript
+#: code:addons/binaural_pos_mf/static/src/xml/ReprintInvoiceButton.xml:0
+#, python-format
+msgid "Reprint Document"
+msgstr "Reimprimir Documento"
 
 #. module: binaural_pos_mf
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_account_bank_statement_line__sales_book_type
@@ -127,20 +302,29 @@ msgstr "Tipo de libro de ventas"
 
 #. module: binaural_pos_mf
 #: model:ir.actions.act_window,name:binaural_pos_mf.action_pos_sales_book
-#: model:ir.ui.menu,name:binaural_pos_mf.account_pos_sales_book
 msgid "Sales book"
 msgstr "Libro de ventas (por rango)"
 
 #. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_order__mf_invoice_number
+msgid "Sequencia en maquina fiscal"
+msgstr ""
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_order__fiscal_machine
+msgid "Serial de Maquina fiscal"
+msgstr ""
+
+#. module: binaural_pos_mf
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config__serial_machine
 #: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_session__serial_machine
 msgid "Serial of fiscal machine"
 msgstr "Serial de la maquina fiscal"
 
 #. module: binaural_pos_mf
-#: code:addons/binaural_pos_mf/models/pos_session.py:0
-#, python-format
-msgid "The serial of the fiscal machine has not been registered."
-msgstr "El serial de la maquina fiscal no ha sido registrado."
+#: model:ir.model.fields,field_description:binaural_pos_mf.field_pos_config__traditional_line
+msgid "Traditional Line"
+msgstr "Lineas Tradicionales"
 
 #. module: binaural_pos_mf
 #: model:ir.model,name:binaural_pos_mf.model_wizard_sales_book

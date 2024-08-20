@@ -99,7 +99,7 @@ class AccountReport(models.Model):
         is_foreign_currency = get_is_foreign_currency(self)
         company = self.env.company
         currency_id = (
-            company.currency_foreign_id.id if is_foreign_currency else company.currency_id.id
+            company.currency_foreign_id if is_foreign_currency else company.currency_id
         )
         _logger.warning("Currency id: %s", currency_id)
 
