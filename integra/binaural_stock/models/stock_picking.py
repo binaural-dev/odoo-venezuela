@@ -78,8 +78,8 @@ class StockPicking(models.Model):
         ]
         if assigned:
             domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
-            return self.search_count(domain, limit=1)
-        return self.search_count(domain)
+            return self.search(domain, limit=1)
+        return self.search(domain)
 
     def _get_packs(self, assigned=False):
         if not self.group_id:
@@ -92,8 +92,8 @@ class StockPicking(models.Model):
         ]
         if assigned:
             domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
-            return self.search_count(domain, limit=1)
-        return self.search_count(domain)
+            return self.search(domain, limit=1)
+        return self.search(domain)
 
     def _get_outs(self, assigned=False):
         if not self.group_id:
@@ -106,15 +106,15 @@ class StockPicking(models.Model):
         ]
         if assigned:
             domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
-            return self.search_count(domain, limit=1)
-        return self.search_count(domain)
+            return self.search(domain, limit=1)
+        return self.search(domain)
 
     @api.depends("picks_count", "packs_count", "outs_count")
     def _compute_stock_pickings_by_origin(self):
         for record in self:
-            record.picks_count = record._get_picks()
-            record.packs_count = record._get_packs()
-            record.outs_count = record._get_outs()
+            record.picks_count = len(record._get_picks())
+            record.packs_count = len(record._get_packs())
+            record.outs_count = len(record._get_outs())
 
     type_delivery_step = fields.Selection(
         [
