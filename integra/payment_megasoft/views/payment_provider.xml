@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="megasoft_payment_provider_form" model="ir.ui.view">
+        <field name="name">Megasoft Provider Form</field>
+        <field name="model">payment.provider</field>
+        <field name="inherit_id" ref="payment.payment_provider_form"/>
+        <field name="arch" type="xml">
+        <group name="provider_credentials" position="inside">
+                <group attrs="{'invisible': [('code', '!=', 'megasoft')]}" name="megasoft_credentials">
+                    <field name="megasoft_url" attrs="{'required':[('code', '=', 'megasoft'), ('state', '!=', 'disabled')]}"/>
+                    <field name="megasoft_user" attrs="{'required':[('code', '=', 'megasoft'), ('state', '!=', 'disabled')]}"/>
+                    <field name="megasoft_password" attrs="{'required':[('code', '=', 'megasoft'), ('state', '!=', 'disabled')]}" password="True"/>
+                    <field name="megasoft_cod_afiliation" attrs="{'required':[('code', '=', 'megasoft'), ('state', '!=', 'disabled')]}" password="True"/>
+                </group>
+        </group>
+        </field>
+    </record>
+
+</odoo>

@@ -34,3 +34,4 @@ sale.access_sale_order_portal,sale.order.portal,sale.model_sale_order,base.group
 account.access_account_invoice_portal,account.move.portal,account.model_account_move,base.group_portal,1,1,1,0
 base.access_res_partner_portal,res_partner group_portal,base.model_res_partner,base.group_portal,1,0,1,0
 analytic.access_account_analytic_line,access_account_analytic_line,analytic.model_account_analytic_line,base.group_portal,1,1,1,1
+website_sale_wishlist.access_product_wishlist_public,access_product_wishlist_public,website_sale_wishlist.model_product_wishlist,base.group_public,1,0,0,0

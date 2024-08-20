@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240527\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240422\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-17 18:07+0000\n"
-"PO-Revision-Date: 2024-06-17 18:07+0000\n"
+"POT-Creation-Date: 2024-06-03 19:42+0000\n"
+"PO-Revision-Date: 2024-06-03 19:42+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -61,6 +61,19 @@ msgstr ""
 #, python-format
 msgid "A Customer VAT Is Required"
 msgstr "El documento de identidad es requerido"
+
+#. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_config__activate_barcode_strict_mode
+#: model:ir.model.fields,field_description:binaural_pos.field_res_config_settings__activate_barcode_strict_mode
+msgid "Activate Barcode Strict Mode"
+msgstr "Activar Modo Estricto Barcode"
+
+#. module: binaural_pos
+#: model:ir.model.fields,help:binaural_pos.field_pos_config__activate_barcode_strict_mode
+#: model:ir.model.fields,help:binaural_pos.field_res_config_settings__activate_barcode_strict_mode
+#: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
+msgid "Activate product entry with barcode in strict mode"
+msgstr "Activar entrada de producto con código de barras en modo estricto"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_res_company__module_binaural_pos_advance_payment
@@ -174,6 +187,13 @@ msgstr ""
 "Venta) si la sesiona la que corresponde esta abierta"
 
 #. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PartnerDetailsEdit.xml:0
+#, python-format
+msgid "City"
+msgstr "Ciudad"
+
+#. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_res_company
 msgid "Companies"
 msgstr "Compañías"
@@ -186,7 +206,7 @@ msgstr "Opciones de configuración"
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_res_partner
 msgid "Contact"
-msgstr ""
+msgstr "Contacto"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__create_uid
@@ -258,6 +278,13 @@ msgstr "No permitir ventas si no hay disponibilidad suficiente"
 #, python-format
 msgid "Document"
 msgstr "Documento"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "Empty Paymentline"
+msgstr "Linea de Pago Vacía"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__end_date
@@ -490,6 +517,13 @@ msgid "No Taxes"
 msgstr "Sin impuesto"
 
 #. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/xml/PartnerDetailsEdit.xml:0
+#, python-format
+msgid "None"
+msgstr "Ninguno"
+
+#. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "POS Configuration"
 msgstr "Configuración de POS"
@@ -701,6 +735,11 @@ msgid "Sales Details"
 msgstr "Detalle de ventas"
 
 #. module: binaural_pos
+#: model:ir.model.fields,field_description:binaural_pos.field_pos_order__sales_order
+msgid "Sales Order"
+msgstr "Comercial"
+
+#. module: binaural_pos
 #: model_terms:ir.ui.view,arch_db:binaural_pos.res_config_settings_binaural_pos
 msgid "Search clients by vat number in CNE database"
 msgstr ""
@@ -802,7 +841,7 @@ msgstr ""
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_stock_picking
 msgid "Transfer"
-msgstr "Transferir"
+msgstr "Albarán"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__type_report
@@ -824,12 +863,6 @@ msgid "Validate"
 msgstr "Validar"
 
 #. module: binaural_pos
-#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
-#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
-msgid "Ventas"
-msgstr ""
-
-#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/js/ProductScreen.js:0
 #, python-format
@@ -837,11 +870,24 @@ msgid "Validate Product in Warehouse"
 msgstr "Caja tiene otro almacen asignado"
 
 #. module: binaural_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos
+#: model_terms:ir.ui.view,arch_db:binaural_pos.table_payment_report_pos_general
+msgid "Ventas"
+msgstr ""
+
+#. module: binaural_pos
 #. odoo-javascript
 #: code:addons/binaural_pos/static/src/xml/PaymentScreen.xml:0
 #, python-format
 msgid "View Payments Origin"
 msgstr "Ver Pagos del Origen"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "You can't validate with empty payment lines"
+msgstr "No puede validar con lineas de pago vacias"
 
 #. module: binaural_pos
 #. odoo-python
@@ -872,8 +918,3 @@ msgstr ""
 #, python-format
 msgid "the quantity cannot be negative"
 msgstr "La cantidad no puede ser negativa"
-
-#. module: binaural_pos
-#: model:ir.model.fields,field_description:binaural_pos.field_pos_order__sales_order
-msgid "Sales Order"
-msgstr "Comercial"

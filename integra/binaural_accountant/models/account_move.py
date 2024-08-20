@@ -43,6 +43,7 @@ class AccountMove(models.Model):
         default=0.0,
         store=True,
         readonly=False,
+        tracking=True,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
@@ -264,6 +265,9 @@ class AccountMove(models.Model):
         moves._compute_rate()
 
         for move in moves:
+            if move.move_type in ["out_refund","in_refund"] and move.reversed_entry_id:
+                move.foreign_rate = move.reversed_entry_id.foreign_rate
+                move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.today()

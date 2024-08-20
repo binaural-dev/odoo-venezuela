@@ -2,6 +2,8 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from lxml import etree
 from odoo.tools.float_utils import float_is_zero
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class PurchaseOrder(models.Model):
@@ -214,7 +216,13 @@ class PurchaseOrder(models.Model):
         res.currency.rate model.
         """
         Rate = self.env["res.currency.rate"]
+        ignore_rate_with_value = self.env.context.get("ignore_rate_with_value", False)
+
         for purchase in self:
+
+            if ignore_rate_with_value and purchase.foreign_rate:
+                continue
+
             if purchase.manually_set_rate:
                 continue
             if (
@@ -232,8 +240,8 @@ class PurchaseOrder(models.Model):
             rate_values = Rate.compute_rate(
                 purchase.foreign_currency_id.id, date_order or fields.Date.today()
             )
-            purchase.foreign_rate = rate_values["foreign_rate"]
-            purchase.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
+            purchase.foreign_rate = rate_values.get("foreign_rate", 0)
+            purchase.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -309,3 +317,7 @@ class PurchaseOrder(models.Model):
                     % ({"rate": purchase.foreign_rate, "last_rate": last_foreign_rate})
                 )
         return res
+
+    def read(self, fields=None, load='_classic_read'):
+        self.with_context(ignore_rate_with_value=True)._compute_rate()
+        return super().read(fields, load)

@@ -8,6 +8,9 @@ from datetime import datetime, timedelta
 from ..utils.utils_retention import load_retention_lines
 from collections import defaultdict
 
+import traceback
+
+
 import json
 import base64
 import logging
@@ -172,7 +175,7 @@ class AccountPaymentPayments(http.Controller):
                                 pay_r, invoice, company, advance_account_customer_ids
                             )
 
-                        if pay_r.is_advance_payment:
+                        if advance_payment_installed and pay_r.is_advance_payment:
                             for line in pay_r.move_id.line_ids:
                                 line_id = line.filtered(
                                     lambda line: line.account_id.account_type == "liability_current"
@@ -231,6 +234,7 @@ class AccountPaymentPayments(http.Controller):
 
             except Exception as e:
                 data.update({"status": 400, "msg": str(e)})
+                _logger.warning(traceback.format_exc())
         else:
             data.update({"status": 400, "msg": "Faltan parametros de registro"})
         return data

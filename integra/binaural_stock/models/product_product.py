@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from odoo import _, api, models, fields
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from odoo.tools.float_utils import float_round
 from odoo.osv import expression
 import logging
@@ -16,6 +16,12 @@ class ProductProduct(models.Model):
         # TDE FIXME: this button is very interesting
         # Variante del maldito Raiver e.e
         return True
+    
+    @api.model_create_multi
+    def create(self, vals_list):
+        if self.env.user.has_group("binaural_stock.group_block_type_inventory_transfers_expeditions"):
+            raise UserError(_("You can't create products"))
+        return super().create(vals_list)
 
     @api.constrains("barcode")
     def _check_barcode_uniqueness(self):

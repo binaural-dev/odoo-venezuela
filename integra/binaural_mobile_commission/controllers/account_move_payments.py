@@ -107,7 +107,12 @@ class AccountMovePayments(AccountMovePayments):
                     ["amount_residual", "date_maturity"]
                 )
                 for line in account_move_result["line_ids"]:
+
+                    if not line.get("date_maturity", False):
+                        continue
+
                     line["date_maturity"] = line["date_maturity"].strftime(date_format)
+
                 account_move_results.append(account_move_result)
 
             data.update(

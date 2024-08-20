@@ -45,13 +45,14 @@ class ResCompany(models.Model):
     dairy_no_fiscal = fields.Many2one("account.journal")
     app_sales_diaries = fields.Many2many("account.journal", relation="app_sales_diaries_rel")
     group_stock_packaging = fields.Boolean("Product Packagings")
-    custom_manifest = fields.Text(
-        help="Open the url /pwa/1/manifest.json then use the content as template"
-    )
-    assetlink = fields.Text(
-        help="Generate using PWA Builder and search inside the .zip generate the assetslinks.json file and pase the content here."
-    )
 
     allow_installment_payments = fields.Boolean(
         help="Check this if you want to allow payments by installments on the app.", default=False
     )
+
+    company_mobile = fields.Boolean()
+
+    @api.onchange('company_seller')
+    def _onchange_company_seller(self):
+        if not self.company_seller:
+            self.company_mobile = False

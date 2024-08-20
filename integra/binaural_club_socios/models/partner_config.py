@@ -49,3 +49,5 @@ class PartnerConfig(models.Model):
     )
 
     signature = fields.Binary(string="Signature")
+
+    is_postpaid = fields.Boolean()
