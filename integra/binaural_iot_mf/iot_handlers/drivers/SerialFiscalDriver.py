@@ -1048,8 +1048,8 @@ class SerialFiscalDriver(SerialDriver):
             return self.trama
         else:
             try:
-                connection.flushInput()
-                connection.flushOutput()
+                connection.reset_output_buffer()
+                connection.reset_input_buffer()
                 if self._HandleCTSRTS():
                     msj = self._AssembleQueryToSend(cmd)
                     self._write(msj)
@@ -1083,8 +1083,8 @@ class SerialFiscalDriver(SerialDriver):
     def _QueryCmd(self, cmd):
         connection = self._connection
         try:
-            connection.flushInput()
-            connection.flushOutput()
+            connection.reset_output_buffer()
+            connection.reset_input_buffer()
             if self._HandleCTSRTS():
                 msj = self._AssembleQueryToSend(cmd)
                 self._write(msj)
@@ -1109,8 +1109,8 @@ class SerialFiscalDriver(SerialDriver):
                 linea = msj[1:-1]
                 lrc = chr(self._Lrc(linea))
                 if lrc == msj[-1]:
-                    connection.flushInput()
-                    connection.flushOutput()
+                    connection.reset_output_buffer()
+                    connection.reset_input_buffer()
                     return msj
                 else:
                     break
@@ -1128,8 +1128,8 @@ class SerialFiscalDriver(SerialDriver):
                 linea = msj
                 lrc = chr(self._Lrc(linea))
                 if lrc == msj:
-                    connection.flushInput()
-                    connection.flushOutput()
+                    connection.reset_output_buffer()
+                    connection.reset_input_buffer()
                     return msj
                 else:
                     return msj
@@ -1196,9 +1196,9 @@ class SerialFiscalDriver(SerialDriver):
         _logger.info("WRITE: %s", msj.encode("latin-1"))
         connection.write(msj.encode("latin-1"))
 
-    def _read(self, bytes):
+    def _read(self, size):
         connection = self._connection
-        msj = connection.read(bytes)
+        msj = connection.read(size)
         _logger.info("READ: %s", msj)
         return msj.decode()
 
@@ -1262,8 +1262,8 @@ class SerialFiscalDriver(SerialDriver):
     def _UploadDataReport(self, cmd):
         connection = self._connection
         try:
-            connection.flushInput()
-            connection.flushOutput()
+            connection.reset_output_buffer()
+            connection.reset_input_buffer()
             if self._HandleCTSRTS():
                 msj = 1
                 msj = self._AssembleQueryToSend(cmd)
@@ -1294,8 +1294,8 @@ class SerialFiscalDriver(SerialDriver):
         counter = 0
         connection = self._connection
         try:
-            connection.flushInput()
-            connection.flushOutput()
+            connection.reset_output_buffer()
+            connection.reset_input_buffer()
             if self._HandleCTSRTS():
                 m = ""
                 msj = self._AssembleQueryToSend(cmd)
@@ -1328,8 +1328,8 @@ class SerialFiscalDriver(SerialDriver):
         arreglodemsj = []
         counter = 0
         try:
-            connection.flushInput()
-            connection.flushOutput()
+            connection.reset_output_buffer()
+            connection.reset_input_buffer()
             if self._HandleCTSRTS():
                 m = ""
                 msj = self._AssembleQueryToSend(cmd)
@@ -1517,12 +1517,13 @@ class SerialFiscalDriver(SerialDriver):
                 "valid": False,
                 "message": "No se completo el reporte Z",
             }
-            reportZ = self.GetS1PrinterData(True)
+            data_s1 = self.GetS1PrinterData(True).get("data",{})
             self.trama = self._States_Report("I0Z", 9)
+            _logger.info(data_s1)
             self.data["value"] = {
                 "valid": True,
                 "message": "Reporte Z Impreso correctamente",
-                "data": reportZ.__dict__,
+                "data": data_s1,
             }
             event_manager.device_changed(self)
             return self.data["value"]

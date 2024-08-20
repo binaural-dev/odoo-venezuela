@@ -23,6 +23,15 @@ odoo.define("binaural_pos_mf.Chrome", function(require) {
           });
         }
       }
+      get access_button_mf(){
+        if (!this.env.pos.config){
+          return false
+        }
+        return this.env.pos.config.access_button_mf
+      }
+      async showFiscalMachinePopup(){
+        await this.showPopup('FiscalMachinePopup');
+      }
     }
 
   Registries.Component.extend(Chrome, BinauralChrome);
