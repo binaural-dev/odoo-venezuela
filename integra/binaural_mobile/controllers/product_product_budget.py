@@ -1,11 +1,12 @@
-import logging
 import hashlib
 import json
+import logging
 
 from odoo import _, http
 from odoo.http import request
 from odoo.osv import expression
 from werkzeug import urls
+
 from . import utils
 
 _logger = logging.getLogger(__name__)
@@ -33,6 +34,36 @@ FIELDITEMS = ["id", "product_tmpl_id", "pricelist_id", "fixed_price", "min_quant
 
 
 class ProductProductBudget(http.Controller):
+    
+    def _filter_product_packaging_id(self, package_id, dict_product_id):
+        if package_id.id not in dict_product_id["packaging_ids"]:
+            return False
+
+        return True
+
+
+    def _get_products_with_packaging(self, dict_product_ids, product_ids):
+        packaging_ids = product_ids.mapped("packaging_ids")
+
+        filtered_dict_product_ids = []
+
+        for dict_product_id in dict_product_ids:
+            current_packaging_ids = packaging_ids.filtered(lambda pack_id: self._filter_product_packaging_id(pack_id, dict_product_id))
+            # qty_available = dict_product_id["qty_available"]
+
+            # if current_packaging_ids and not allow_out_of_stock_order:
+            #     default_packaging_id = current_packaging_ids[0]
+
+            #     if qty_available < default_packaging_id.qty:
+            #         continue
+
+            dict_packaging_ids = current_packaging_ids.read(["id", "name", "qty", "product_uom_id", "sales", "purchase"])
+            dict_product_id["packaging_ids"] = dict_packaging_ids
+            
+            filtered_dict_product_ids.append(dict_product_id)
+
+        return filtered_dict_product_ids
+
     @http.route(
         '/budget/product', type="json", auth="public", website=False, sitemap=False
     )
@@ -65,8 +96,7 @@ class ProductProductBudget(http.Controller):
             ]
         
         res_company = request.env["res.company"].sudo().search([])
-        settings = request.env['res.config.settings'].sudo().create({})
-        allow_out_of_stock_order = settings.allow_out_of_stock_order
+        allow_out_of_stock_order = request.env['res.config.settings'].sudo().get_values().get('allow_out_of_stock_order')
         
         if len(res_company) > 1:
             domain = expression.AND([domain, [("company_id", "=", company_id.id)]])
@@ -76,9 +106,10 @@ class ProductProductBudget(http.Controller):
             ids = [product[0] for product in search]
             domain = [("id", "in", ids)]
 
-        product_ids = utils.get_model_data(
-            "product.product", domain, FIELDNAMES, int(limit), int(offset)
+        record_product_ids = utils.search_model_data(
+            "product.product", domain, int(limit), int(offset), order="name asc, quantity desc"
         )
+        product_ids = record_product_ids.read(FIELDNAMES)
 
         product_ids = self.get_variant_tags(product_ids)
         result = list()
@@ -123,9 +154,6 @@ class ProductProductBudget(http.Controller):
         company_user = request.env.company
         for product_id in product_ids:
             for product in product_id:
-                if product["packaged_product"] and company_user.group_stock_packaging:
-                    line_qty_pack = request.env["product.packaging"].search([("id","=", product["packaging_ids"][0])]).qty
-                    product["packaging_ids"].append(line_qty_pack)
                 for product_price in products_pricelist_ids:
                     if product_price['product_tmpl_id'][0] == product['id']:
                         product["msg_price"] = _("Different price/s due to rate conditions")
@@ -138,14 +166,17 @@ class ProductProductBudget(http.Controller):
             )
             return json.dumps(data)
 
-        product_ids = self.get_url_image_product(result)
+        dict_product_ids = self.get_url_image_product(result)
+
+        dict_product_ids = self._get_products_with_packaging(dict_product_ids, record_product_ids)
+
         data.update({
-            "data": product_ids, 
-            "count": product_count, 
+            "data": dict_product_ids, 
+            "count": len(dict_product_ids), 
             "total_count": all_product_count,
             "stock_packaging": company_user.group_stock_packaging,
             "allow_out_of_stock_order": allow_out_of_stock_order,
-            })
+        })
 
         return json.dumps(data)
 
@@ -189,5 +220,3 @@ class ProductProductBudget(http.Controller):
                 products.append(product_cpy)
 
         return products
-
-    

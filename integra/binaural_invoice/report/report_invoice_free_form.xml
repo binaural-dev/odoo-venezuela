@@ -314,7 +314,7 @@
             <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_')+'.pdf')</field>
             <field name="binding_model_id" ref="account.model_account_move"/>
             <field name="binding_type">report</field>
-            <field name="groups_id" eval="[(6, 0, [ref('base.group_system')])]"/>
+            <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
         </record>
 
         <record id="account.account_invoices_without_payment" model="ir.actions.report">
@@ -327,7 +327,7 @@
             <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_')+'.pdf')</field>
             <field name="binding_model_id" ref="account.model_account_move"/>
             <field name="binding_type">report</field>
-            <field name="groups_id" eval="[(6, 0, [ref('base.group_system')])]"/>
+            <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
         </record>
     </data>
 

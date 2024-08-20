@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <record id="res_partner_kanban_view" model="ir.ui.view">
+	<field name="name">binaural_club_socios_res_partner_kanban_view</field>
+	<field name="model">res.partner</field>
+	<field name="inherit_id" ref="base.res_partner_kanban_view"/>
+	<field name="arch" type="xml">
+	    <kanban position="attributes">
+		<attribute name="default_order">action_number</attribute>
+	    </kanban>
+	</field>
+    </record>
+
     <record id="binaural_club_socios_form_res_partner" model="ir.ui.view">
         <field name="name">binaural_club_socios_form_res_partner</field>
         <field name="model">res.partner</field>
@@ -9,8 +20,13 @@
             <xpath expr="//group/group/div" position="after">
 	            <field name="supplier_rank" invisible="1"/>
 	            <field name="customer_rank" invisible="1"/>
-                <field name="action_number" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
-                <field name="type_relation" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+                <field name="hide_action_number" invisible="1" />
+                <field name="readonly_action_number" invisible="1" />
+                <field name="has_ownership_conflict" invisible="1" />
+
+                <field name="action_number" attrs="{'invisible':[('hide_action_number','=', True)], 'readonly': ['|', ('active', '=', False), ('readonly_action_number', '=', True)]}" />
+                <field name="parent_action_number" attrs="{'invisible':['|',('hide_action_number','=', True), ('action_number','!=', False)]}"/>
+                <field name="type_relation" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)], 'readonly': ['|', ('active', '=', False), ('readonly_action_number', '=', True)]}"/>
                 <field name="state_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="state_partner" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="associate_parent" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>
@@ -165,7 +181,22 @@
                 <xpath expr="//form//sheet" position="before">
                     <header attrs="{'invisible': ['|',('customer_rank','=',0),('supplier_rank','>', 0)]}"><!--Si no tiene padre es porque el es el padre (socio,asociado)-->
                         <!--boton traspaso de accion-->
-                        <button name="action_transfer" string="Action Transfer" type="object" confirm="¿Esta seguro de transferir la acción?" ></button >
+                        <button 
+                            name="action_transfer" 
+                            string="Action Transfer" 
+                            type="object" 
+                            confirm="¿Esta seguro de transferir la acción?" 
+                            attrs="{ 'invisible': [('has_ownership_conflict','=', True)]  }"
+                        />
+
+                        <button 
+                            name="action_resolve_ownership_conflict" 
+                            string="Resolve Ownership" type="object" 
+                            confirm="Are you sure to set this partner as the real owner?" 
+                            attrs="{ 'invisible': [('has_ownership_conflict','=', False)]  }"
+                            groups="base.group_erp_manager"
+                        />
+
                         <!--boton aprobar socio tenedor-->
                         <button name="action_approve_vote" confirm="Are you sure you approve of the Voting process?" string="Approve Voting Process" type="object" attrs="{'invisible': [('state_partner','!=', 'holder')]}"></button >
                         <!--boton establecer prorroga a socio-->
@@ -196,7 +227,7 @@
                 </field>
             </field>
     </record>
-        
+
     <record id="res_partner_view_search_binaural_club_socios" model="ir.ui.view">
         <field name="name">binaural.club.socios.search.res.partner</field>
         <field name="model">res.partner</field>
@@ -208,7 +239,54 @@
                     string="Número de Acción" 
                     filter_domain="['|','|', ('action_number','=',self),('parent_id.action_number','=',self),('associate_action.number','=',self) ]"
                 />
+		<field name="state_action" string="Action State"/>
                 <separator/>
+		<filter
+		    string="Active Action"
+		    name="active_action"
+		    domain="[('active','=',True), ('state_action', '=', 'active')]"
+		/>
+		<filter
+		    string="Special Action"
+		    name="special_action"
+		    domain="[('active','=',True), ('state_action', '=', 'special')]"
+		/>
+		<filter
+		    string="Honorary Action"
+		    name="honorary_action"
+		    domain="[('active','=',True), ('state_action', '=', 'honorary')]"
+		/>
+		<filter
+		    string="Treasury Action"
+		    name="treasury_action"
+		    domain="[('active','=',True), ('state_action', '=', 'treasury')]"
+		/>
+                <separator/>
+		<filter
+		    string="Active Partners"
+		    name="active_club_partners"
+		    domain="[('active','=',True), ('state_partner', '=', 'active')]"
+		/>
+		<filter
+		    string="Inactive Partners"
+		    name="inactive_club_partners"
+		    domain="[('active','=',True), ('state_partner', '=', 'inactive')]"
+		/>
+		<filter
+		    string="Discontinued Partners"
+		    name="discontinued_club_partners"
+		    domain="[('active','=',True), ('can_access_club', '=', False)]"
+		/>
+		<filter
+		    string="Deceased Partners"
+		    name="deceased_club_partners"
+		    domain="[('active','=',True), ('state_partner', '=', 'deceased')]"
+		/>
+		<filter
+		    string="Holder Partners"
+		    name="holder_club_partners"
+		    domain="[('active','=',True), ('state_partner', '=', 'holder')]"
+		/>
             </xpath>
         </field>
     </record>

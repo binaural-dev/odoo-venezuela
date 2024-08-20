@@ -1,10 +1,15 @@
 from odoo import fields, http, Command
 from odoo.http import request
 from odoo.osv import expression
+from odoo.exceptions import ValidationError
+
 
 from datetime import datetime, timedelta
 from ..utils.utils_retention import load_retention_lines
 from collections import defaultdict
+
+import traceback
+
 
 import json
 import base64
@@ -54,8 +59,10 @@ class AccountPaymentPayments(http.Controller):
         data = {"status": 200, "msg": "Success"}
 
         file = kwargs.get("file", False)
+        file2 = kwargs.get("file", False)
 
         if invoices and payments and partner_id or invoices and use_credit and partner_id:
+            partner_id = int(partner_id)
             invoices_id = []
             for invoice in invoices:
                 invoice_id = int(invoices[invoice]["idInvoice"])
@@ -152,9 +159,11 @@ class AccountPaymentPayments(http.Controller):
                         type_fiscal,
                         igtf_installed,
                     )
-
                 pays_registered += pays_retention_registered
                 pays_registered += advance_pays
+
+                _logger.warning(pays_registered)
+
 
                 pays_app_methods = request.env["payment.mobile.methods"]
                 pays_app_lines = request.env["payment.mobile.line"]
@@ -166,7 +175,7 @@ class AccountPaymentPayments(http.Controller):
                                 pay_r, invoice, company, advance_account_customer_ids
                             )
 
-                        if pay_r.is_advance_payment:
+                        if advance_payment_installed and pay_r.is_advance_payment:
                             for line in pay_r.move_id.line_ids:
                                 line_id = line.filtered(
                                     lambda line: line.account_id.account_type == "liability_current"
@@ -182,7 +191,7 @@ class AccountPaymentPayments(http.Controller):
                                         pays_app_lines += self.create_line_app(
                                             pay_r, invoice_id, company, advance_account_customer_ids
                                         )
-
+                            
                     pays_app_method = request.env["payment.mobile.methods"].create(
                         {
                             "journal_id": pay_r.journal_id.id,
@@ -201,6 +210,7 @@ class AccountPaymentPayments(http.Controller):
                         "payment_mobile_methods": pays_app_methods,
                         "payment_mobile_line": pays_app_lines,
                         "proof_payment_id": file,
+                        "proof_payment_domain": file2,
                         "is_fiscal": type_fiscal,
                         "state": "process",
                     }
@@ -224,6 +234,7 @@ class AccountPaymentPayments(http.Controller):
 
             except Exception as e:
                 data.update({"status": 400, "msg": str(e)})
+                _logger.warning(traceback.format_exc())
         else:
             data.update({"status": 400, "msg": "Faltan parametros de registro"})
         return data
@@ -247,7 +258,7 @@ class AccountPaymentPayments(http.Controller):
                     .create(
                         {
                             "type": "out_invoice",
-                            "partner_id": partner_id,
+                            "partner_id": int(partner_id),
                             "date_accounting": today_one,
                             "number": "/",
                             "date": today_one,
@@ -283,10 +294,10 @@ class AccountPaymentPayments(http.Controller):
                             ),
                         }
                     )
-
                     register_retention.action_post()
-                    for retention in register_retention.payment_ids:
-                        pays_retention_registered += retention
+                    for payment in register_retention.payment_ids:
+
+                        pays_retention_registered += payment
 
                     retentions += register_retention
                 else:

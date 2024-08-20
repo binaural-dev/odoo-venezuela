@@ -1,15 +1,15 @@
-import logging
 import json
-
+import logging
+from datetime import datetime
 from pprint import pprint
-from odoo import http, _
-from odoo.tools import float_is_zero
+
+from dateutil.relativedelta import relativedelta
+from odoo import _, fields, http
 from odoo.http import request
 from odoo.osv import expression
-from odoo import fields
+from odoo.tools import float_is_zero
+
 from . import utils
-from dateutil.relativedelta import relativedelta
-from datetime import datetime
 
 _logger = logging.getLogger(__name__)
 
@@ -70,10 +70,12 @@ class AccountMovePayments(http.Controller):
         seller_portal_id = request.env.user.employee_id.id
 
         common_domain = [
-            ("seller_ids", "=", seller_portal_id),
             ("is_public", "=", True),
             ("type", "=", "contact"),
         ]
+
+        if not request.env.user.has_group("binaural_mobile.group_sellers_show_all_client"):
+            common_domain += [('seller_ids', '=', seller_portal_id)]
 
         domain_name = common_domain + [("name", "=ilike", "%" + (query or "") + "%")]
         domain_vat = common_domain + [("vat", "=ilike", "%" + (query or "") + "%")]
@@ -200,7 +202,12 @@ class AccountMovePayments(http.Controller):
                         )
                     )
                     for line in account_move_result["line_ids"]:
+
+                        if not line.get("date_maturity", False):
+                            continue
+
                         line["date_maturity"] = line["date_maturity"].strftime(date_format)
+
                     account_move_results.append(account_move_result)
 
                 data.update(

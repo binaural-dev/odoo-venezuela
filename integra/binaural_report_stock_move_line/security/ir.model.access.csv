@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_binaural_stock_move_line_report,binaural.report.stock.move.line.stock_move_line_report,model_stock_move_line_report,base.group_user,1,1,1,1

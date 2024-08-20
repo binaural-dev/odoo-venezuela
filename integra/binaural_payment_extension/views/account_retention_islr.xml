@@ -22,7 +22,7 @@
 			<field name="company_currency_id" invisible="1"/>
 			<field name="foreign_currency_id" invisible="1"/>
 			<field name="allowed_lines_move_ids" invisible="1"/>
-
+            <field name="code_visible" invisible="1"/>
                         <field name="type" force_save="1" select="2"/>
                         <field name="type_retention" force_save="1" select="2" invisible="1"/>
                         <field name="partner_id" on_change="onchange_partner_id(type,partner_id)" select="1"  attrs="{'invisible':[('type','=', False)],'readonly':[('state','in',['emitted','cancel'])]}"/>
@@ -40,7 +40,8 @@
 				<field
 				    name="move_id"
 				    domain="['&amp;',('id', 'in', parent.allowed_lines_move_ids), ('islr_voucher_number', '=',False),('journal_id.fiscal','=',True)]"
-				/>
+				/> 
+                                <field name="code" attrs="{'column_invisible': [('parent.code_visible' , '=' , False)] }"/>
                                 <field name="company_id" optional="hide" groups="base.group_multi_company"/>
                                 <field name="payment_concept_id" force_save="1"/>
                                 <field name="is_retention_client" invisible="1"/>

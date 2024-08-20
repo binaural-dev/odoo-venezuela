@@ -93,6 +93,15 @@ class SaleOrderBudget(http.Controller):
 
         return False
 
+    @http.route("/settings/read", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
+    def get_settings(self, **kwargs):
+        allow_out_of_stock_order = request.env['res.config.settings'].sudo().get_values().get('allow_out_of_stock_order')  # Crear una instancia temporal de res.config.settings
+
+        return {
+            "allow_out_of_stock_order": allow_out_of_stock_order,
+        }
+
+
     @http.route(
         "/budget/order", type="http", methods=["GET"], auth="public", website=False, sitemap=False
     )
@@ -196,7 +205,6 @@ class SaleOrderBudget(http.Controller):
                             )
                             return data
                     sale.action_confirm()
-                    sale._create_analytic_account()
                 elif confirm == "cancel":
                     sale.action_cancel()
                 return data
@@ -335,16 +343,21 @@ class SaleOrderBudget(http.Controller):
         company_user = request.env.company
 
         if not (product_id.packaged_product and company_user.group_stock_packaging):
-            return 1
+            return []
 
         packaging_ids = product_id.packaging_ids
 
         if not packaging_ids:
-            return 1
+            return []
 
-        first_packaging_qty = packaging_ids[0].qty
+        packages = []
 
-        return first_packaging_qty
+        for packaging_id in packaging_ids:
+            package = packaging_id.read(["id", "name", "qty", "product_uom_id", "sales", "purchase"])
+
+            packages.extend(package)
+
+        return packages
     
     def _get_product_uom(self, product_id):
         return product_id.uom_id.name
@@ -381,8 +394,9 @@ class SaleOrderBudget(http.Controller):
                 product_qty = request.env["product.template"].sudo().search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
                 product_id_id = int(order_line["product_id"][0])
                 product_id = request.env["product.product"].browse([product_id_id])
+                order_line["packaged_product"] = product_id.packaged_product
                 order_line["qty_available"] = product_qty
-                order_line["packaging_qty"] = self._get_product_packaging(product_id)
+                order_line["packaging_ids"] = self._get_product_packaging(product_id)
                 order_line["uom"] = self._get_product_uom(product_id)
 
             if request.env.company.mobile_show_tax_type == "include_tax":
@@ -397,6 +411,7 @@ class SaleOrderBudget(http.Controller):
                     tax = request.env["account.tax"].search([("id","=", line["tax_id"][0])])
                     value_tax = tax.amount
                     description_tax = tax.description
+
                 line["tax_id"].append(description_tax)
                 line["tax_id"].append(value_tax)
 
@@ -448,7 +463,7 @@ class SaleOrderBudget(http.Controller):
             for order_line in sale_order["order_line"]:
                 product_qty = request.env["product.template"].sudo().search([('id', '=', int(order_line["product_template_id"][0]))]).quantity
                 order_line["qty_available"] = product_qty
-                order_line["packaging_qty"] = self._get_product_packaging(order_line)
+                order_line["packaging_ids"] = self._get_product_packaging(order_line)
 
             if request.env.company.mobile_show_tax_type == "include_tax":
                 for line in sale_order["order_line"]:
@@ -565,7 +580,7 @@ class SaleOrderBudget(http.Controller):
                 return data.update({"status": 400, "msg": e})
         else:
             data = {
-                "status": 200,
+                "status": 400,
                 "data": None,
                 "message": _("An already processed quotation can't be modified."),
             }
@@ -730,8 +745,7 @@ class SaleOrderBudget(http.Controller):
             warehouse_id = line.warehouse_id.id
             lang = line.order_id.partner_id.lang or request.env.user.lang or "es_VE"
             product = line.product_id.with_context(warehouse=warehouse_id, lang=lang)
-            settings = request.env['res.config.settings'].sudo().create({})  # Crear una instancia temporal de res.config.settings
-            allow_out_of_stock_order = settings.allow_out_of_stock_order
+            allow_out_of_stock_order = request.env['res.config.settings'].sudo().get_values().get('allow_out_of_stock_order')  # Crear una instancia temporal de res.config.settings
 
             if product.free_qty < line.product_uom_qty and not allow_out_of_stock_order:
                 message = _(

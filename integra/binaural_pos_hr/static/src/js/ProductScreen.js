@@ -16,6 +16,8 @@ odoo.define("binaural_pos_hr.ProductScreen", function (require) {
           ? inputValue
           : parseFloat(inputValue);
 
+        let ignore_barcode_strict_code = false
+
         // Supervisor check for removing an item or reducing quantity
         if (
           this.env.pos.numpadMode === "quantity" &&
@@ -28,12 +30,15 @@ odoo.define("binaural_pos_hr.ProductScreen", function (require) {
           if (!confirmed) {
             return super._setValue(currentQuantity);
           }
+
+          ignore_barcode_strict_code = true;
         }
 
         if (inputValue === "" && currentQuantity === 0) {
           return super._setValue("remove");
         }
-        return super._setValue(...arguments);
+
+        return super._setValue(inputValue, ignore_barcode_strict_code);
       }
 
       async _requireSupervisorApproval() {

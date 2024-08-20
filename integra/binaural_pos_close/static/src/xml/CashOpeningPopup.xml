@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="CashOpeningPopup" t-inherit="point_of_sale.CashOpeningPopup" t-inherit-mode="extension" owl="1">
+        <xpath expr="//span[@class='info-title']" position="inside">
+            <t t-out="currency.symbol">Opening cash</t>
+        </xpath>
+        <xpath expr="//div[@class='opening-cash-section']" position="after">
+            <div class="opening-cash-section">
+                <span class="info-title">Opening cash <t t-out="foreign_currency.symbol"/></span>
+                <div class="cash-input-sub-section" t-on-input="handleInputForeignChange">
+                    <input class="pos-input" t-ref="openingForeignCashInput"/>
+                    <div class="button icon" t-on-click="openForeignDetailsPopup">
+                        <i class="fa fa-calculator" role="img" title="Open the money details popup"/>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//div[@t-on-click='confirm']" position="replace">
+            <div class="button dynamic-size" t-on-click="confirm">
+                Open session
+                <span t-esc="env.pos.format_currency(state.openingCash)"/> | 
+                <span t-esc="env.pos.format_foreign_currency(state.openingForeignCash)"/>
+            </div>
+        </xpath>
+        <xpath expr="//MoneyDetailsPopup" position="attributes">
+            <attribute name="currency">state.currencyDetails</attribute>
+        </xpath>
+    </t>
+</templates>

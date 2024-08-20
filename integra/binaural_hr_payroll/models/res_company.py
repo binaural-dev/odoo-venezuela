@@ -31,21 +31,6 @@ class ResCompany(models.Model):
             "Profit Sharing Days Quantity must be a positive number",
         ),
         (
-            "benefits_days_per_month",
-            "CHECK(benefits_days_per_month >= 0)",
-            "Benefits Days Per Month must be a positive number",
-        ),
-        (
-            "benefits_days_per_year",
-            "CHECK(benefits_days_per_year >= 0)",
-            "Benefits Days Per Year must be a postitive number",
-        ),
-        (
-            "maximum_benefits_days_per_year",
-            "CHECK(maximum_benefits_days_per_year >= 0)",
-            "Maximum Benefits Days Per Year must be a positive number",
-        ),
-        (
             "provisions_cron_day",
             "CHECK(provisions_cron_day >= 1 AND provisions_cron_day <= 30)",
             "The value of Provisions Cron Day must be between 1 and 30",
@@ -87,17 +72,3 @@ class ResCompany(models.Model):
         default="last_wage",
     )
     profit_sharing_days_qty = fields.Integer(string="Profit Sharing Days Quantity", default=60)
-
-    # Benefits
-    benefits_days_per_month = fields.Integer(default=5)
-    benefits_days_per_year = fields.Integer(default=2)
-    maximum_benefits_days_per_year = fields.Integer(default=30)
-    benefits_interest_computation_type = fields.Selection(
-        [("escrow", "Escrow"), ("internal", "Internal")],
-        help="Whether the benefits interest is computed internally or by escrow",
-        default="escrow",
-    )
-    benefits_interest_monthly_rate = fields.Float()
-    benefits_computation_type = fields.Selection(
-        [("monthly", "Monthly"), ("quarterly", "Quarterly")], default="monthly"
-    )

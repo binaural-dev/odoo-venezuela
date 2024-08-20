@@ -25,6 +25,10 @@ class AccountMove(models.Model):
         domain=_get_domain_seller,
     )
 
+    company_seller = fields.Boolean(
+        related='company_id.company_seller',
+    )
+
     @api.depends("partner_id")
     def _compute_sellers_available(self):
         for invoice in self:
@@ -36,7 +40,7 @@ class AccountMove(models.Model):
     def create(self, vals_list):
         invoices = super().create(vals_list)
         for invoice in invoices:
-            if invoice.invoice_origin and invoice.move_type == "out_invoice":
+            if invoice.invoice_origin and invoice.move_type == "out_invoice" and invoice.company_seller:
                 sale_order = self.env["sale.order"].search(
                     [
                         ("name", "=", invoice.invoice_origin),
@@ -50,10 +54,15 @@ class AccountMove(models.Model):
         res = super().action_post()
         multiple_seller_config = self.env.company.multiple_sellers
         for invoice in self:
-            if not invoice.seller_id and invoice.move_type in (
-                "out_invoice",
-                "out_refund",
-                "out_receipt",
+            if (
+                not invoice.seller_id
+                and invoice.move_type
+                in (
+                    "out_invoice",
+                    "out_refund",
+                    "out_receipt",
+                )
+                and invoice.company_seller
             ):
                 if not invoice.partner_id.seller_ids:
                     raise UserError(_("The customer must have at least one salesperson assigned"))
@@ -82,6 +91,8 @@ class AccountMove(models.Model):
 
     @api.onchange("partner_id")
     def _onchange_partner_id(self):
-        self.seller_id = (
-            self.partner_id.seller_ids[0] if len(self.partner_id.seller_ids) == 1 else False
-        )
+        if self.company_seller:
+            self.seller_id = (
+                self.partner_id.seller_ids[0] if len(self.partner_id.seller_ids) == 1 else False
+            )
+        self.seller_id = False

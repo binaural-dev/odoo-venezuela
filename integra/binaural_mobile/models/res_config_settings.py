@@ -63,9 +63,6 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
     )
 
-    custom_manifest = fields.Text(related="company_id.custom_manifest", readonly=False)
-    assetlink = fields.Text(related="company_id.assetlink", readonly=False)
-
     allow_installment_payments = fields.Boolean()
     
     mobile_show_tax_type = fields.Selection(
@@ -75,5 +72,10 @@ class ResConfigSettings(models.TransientModel):
     mobile_tax_include = fields.Boolean(
         related="company_id.mobile_tax_include", 
         string="Include taxes in prices",
+        readonly=False
+    )
+
+    company_mobile = fields.Boolean(
+        related="company_id.company_mobile", 
         readonly=False
     )

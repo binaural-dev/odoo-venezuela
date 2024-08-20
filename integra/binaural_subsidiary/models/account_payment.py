@@ -1,4 +1,8 @@
-from odoo import fields, models, _
+from odoo import fields, models, _, api
+from odoo.osv import expression
+from odoo.exceptions import ValidationError, UserError
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class AccountPayment(models.Model):
@@ -10,6 +14,7 @@ class AccountPayment(models.Model):
         domain=lambda self: (
             f"[('is_subsidiary', '=', True),('id', 'in', {self.env.user.subsidiary_ids.ids})]"
         ),
+        default=lambda self: self.env.user.subsidiary_id.id,
         tracking=True,
     )
 
@@ -18,6 +23,31 @@ class AccountPayment(models.Model):
         store=True,
         string="Company Subsidiary",
     )
+
+    @api.depends('payment_type', 'account_analytic_id')
+    def _compute_available_journal_ids(self):
+        """
+        Get all journals having at least one payment method for inbound/outbound depending on the payment_type.
+        """
+        domain = [
+            ('company_id', 'in', self.company_id.ids),
+            ('type', 'in', ('bank', 'cash'))
+        ]
+
+        get_domain_subsidiaries_suitable_journals = self.env["account.journal"].get_domain_subsidiaries_suitable_journals
+
+        for pay in self:
+            domain = get_domain_subsidiaries_suitable_journals(domain, pay.account_analytic_id.id)
+            journals = self.env['account.journal'].search(domain)
+
+            if pay.payment_type == 'inbound':
+                pay.available_journal_ids = journals.filtered(
+                    lambda j: j.company_id == pay.company_id and j.inbound_payment_method_line_ids.ids != []
+                )
+            else:
+                pay.available_journal_ids = journals.filtered(
+                    lambda j: j.company_id == pay.company_id and j.outbound_payment_method_line_ids.ids != []
+                )
 
     def _synchronize_to_moves(self, changed_fields):
         """
@@ -59,3 +89,10 @@ class AccountPayment(models.Model):
                     payment.account_analytic_id = self.env["account.analytic.account"].search(
                         [("id", "=", subsidiary_id)]
                     )
+
+    @api.onchange('journal_id', 'account_analytic_id')
+    def _onchange_subsidiary_related_fields(self):
+        for record in self:
+            if not record.journal_id:
+                continue
+            record.journal_id.check_journal_selected(record.account_analytic_id.id)

@@ -43,6 +43,7 @@ class SaleOrder(models.Model):
         default=0.0,
         store=True,
         readonly=False,
+        tracking=True,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
@@ -190,7 +191,7 @@ class SaleOrder(models.Model):
         # If the user doesn't want to update the foreign rate using the date order, then don't
         # compute the rate when it is not zero.
         for sale in self:
-            if sale.manually_set_rate:
+            if sale.manually_set_rate or "website_id" in sale._fields and sale.website_id:
                 continue
             if not self.env.company.update_sale_order_rate_using_date_order and not float_is_zero(
                 sale.foreign_rate, precision_rounding=self.env.company.currency_id.rounding
@@ -199,8 +200,8 @@ class SaleOrder(models.Model):
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id, sale.date_order.date() or fields.Date.today()
             )
-            sale.foreign_rate = rate_values["foreign_rate"]
-            sale.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
+            sale.foreign_rate = rate_values.get("foreign_rate", 0)
+            sale.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -372,6 +373,7 @@ class SaleOrder(models.Model):
                 "|",
                 ("payment_state", "=", block_order_invoice_payment_state),
                 ("invoice_date_due", "<", today_date),
+                ("move_type", "=", "out_invoice"),
             ]
         )
 
@@ -387,7 +389,7 @@ class SaleOrder(models.Model):
                 if invoice_id.payment_state == block_order_invoice_payment_state:
                     invoice_count_payment_state += 1
 
-            if invoice_id.invoice_date_due < today_date:
+            if invoice_id.invoice_date_due and invoice_id.invoice_date_due < today_date:
                 amount_total_overdue += invoice_id.amount_total
                 invoice_count_date_expired += 1
 

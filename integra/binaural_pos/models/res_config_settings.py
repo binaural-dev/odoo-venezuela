@@ -31,6 +31,10 @@ class ResConfigSettings(models.TransientModel):
     )
     pos_search_cne = fields.Boolean(related="company_id.pos_search_cne", readonly=False)
     pos_keep_journal = fields.Boolean(related="pos_config_id.keep_journal", readonly=False)
+    activate_barcode_strict_mode = fields.Boolean(
+        related='pos_config_id.activate_barcode_strict_mode',
+        readonly=False
+    )
 
     # @api.onchange("module_binaural_pos_igtf")
     # def _onchange_module_binaural_pos_igtf(self):

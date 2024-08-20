@@ -23,3 +23,15 @@ class ResCompany(models.Model):
         service_products = self.env['product.product'].search(domain)
         return service_products
         
+    use_same_account_stock_valuation_to_category = fields.Boolean()
+    category_cost_account_id = fields.Many2one("account.account")
+
+    def write(self, vals):
+        if "category_cost_account_id" in vals:
+            category = vals.get("category_cost_account_id", False)
+            if category:
+                self.env["product.category"].search([]).write(
+                    {"property_stock_valuation_account_id": category}
+                )
+
+        return super().write(vals)
