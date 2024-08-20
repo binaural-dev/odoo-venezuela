@@ -6,5 +6,5 @@ jsonschema==3.2.0
 pdf2image
 xmltodict
 git+https://github.com/binaural-dev/python-sdk.git
-cryptography==42.0.4
+cryptography==35.0.0
 watchdog
