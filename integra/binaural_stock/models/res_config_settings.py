@@ -15,6 +15,10 @@ class ResConfigSettings(models.TransientModel):
         "stock.warehouse", related="company_id.main_warehouse_id", readonly=False
     )
     change_weight = fields.Boolean(
-        related='company_id.change_weight',
+        related="company_id.change_weight",
+        readonly=False,
+    )
+    use_physical_location = fields.Boolean(
+        related="company_id.use_physical_location",
         readonly=False,
     )

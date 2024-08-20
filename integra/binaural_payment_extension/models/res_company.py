@@ -45,3 +45,4 @@ class ResCompany(models.Model):
         "account.withholding.type",
         string="The condition of this taxpayer requires the withholding of",
     )
+    code_visible=fields.Boolean(string="See payment concept code")

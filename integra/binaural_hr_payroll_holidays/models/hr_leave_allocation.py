@@ -43,3 +43,4 @@ class HrLeaveAllocation(models.Model):
                 }
             )
             vacation_allocation.action_confirm()
+            employee.last_vacation_allocation_date = fields.Date.today()

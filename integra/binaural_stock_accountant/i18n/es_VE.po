@@ -1,0 +1,32 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_stock_accountant
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20240514\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-05-28 12:18+0000\n"
+"PO-Revision-Date: 2024-05-28 12:18+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_stock_accountant
+#: model:ir.model,name:binaural_stock_accountant.model_account_invoice_report
+msgid "Invoices Statistics"
+msgstr "Estadísticas de facturas"
+
+#. module: binaural_stock_accountant
+#: model:ir.model,name:binaural_stock_accountant.model_account_move_line
+msgid "Journal Item"
+msgstr ""
+
+#. module: binaural_stock_accountant
+#: model:ir.model.fields,field_description:binaural_stock_accountant.field_account_invoice_report__liters_per_unit_total
+#: model:ir.model.fields,field_description:binaural_stock_accountant.field_account_move_line__liters_per_unit_total
+msgid "Liters Per Unit Total"
+msgstr "Total de litros por unidad"

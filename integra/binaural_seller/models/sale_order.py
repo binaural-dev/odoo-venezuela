@@ -27,6 +27,10 @@ class SaleOrder(models.Model):
         domain=_get_domain_seller,
     )
 
+    company_seller = fields.Boolean(
+        related='company_id.company_seller',
+    )
+
     @api.depends("partner_id")
     def _compute_sellers_available(self):
         for sale in self:
@@ -38,7 +42,7 @@ class SaleOrder(models.Model):
         res = super().action_confirm()
         multiple_seller_config = self.env.company.multiple_sellers
         for order in self:
-            if order.seller_id:
+            if order.seller_id or not order.company_seller:
                 continue
 
             if not order.partner_id.seller_ids:
@@ -66,6 +70,9 @@ class SaleOrder(models.Model):
 
     @api.onchange("partner_id")
     def _onchange_partner_id(self):
-        self.seller_id = (
-            self.partner_id.seller_ids[0] if len(self.partner_id.seller_ids) == 1 else False
-        )
+        if self.company_seller:
+            self.seller_id = (
+                self.partner_id.seller_ids[0] if len(self.partner_id.seller_ids) == 1 else False
+            )
+            return
+        self.seller_id = False

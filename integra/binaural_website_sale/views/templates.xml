@@ -167,4 +167,24 @@
 	
 	</template>
 
+	<template id="total" name="Total foreign" inherit_id="website_sale.total">
+		<xpath expr="//tr[@id='order_total'][1]" position="after">
+			<t t-if="website_sale_order.foreign_rate">
+				<tr id="foreign_order_total">
+					<td class="text-end border-top border-bottom-0"><strong>Total Foreign: </strong></td>
+					<td class="text-xl-end border-top border-bottom-0">
+						<strong t-field="website_sale_order.foreign_total_billed" class="monetary_field"/>
+					</td>
+				</tr>
+				<tr id="foreign_rate">
+					<td class="text-end border-top border-bottom-0">Rate: </td>
+					<td class="text-xl-end border-top border-bottom-0">
+						<strong t-out="website_sale_order.foreign_rate" class="monetary_field"
+							t-options='{"widget": "monetary", "display_currency": website_sale_order.foreign_currency_id}'/>
+					</td>
+				</tr>
+			</t>
+		</xpath>
+	</template>
+
 </odoo> 

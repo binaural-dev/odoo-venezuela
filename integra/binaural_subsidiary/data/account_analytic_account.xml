@@ -1,14 +1,17 @@
-<data>
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <data noupdate="1">
 
-    <record id="analytic_main_subsidiary_plan" model="account.analytic.plan">
-        <field name="name">Main Subsidiary Plan</field>
-        <field name="default_applicability">unavailable</field>
-    </record>
+        <record id="analytic_main_subsidiary_plan" model="account.analytic.plan">
+            <field name="name">Main Subsidiary Plan</field>
+            <field name="default_applicability">unavailable</field>
+        </record>
 
-    <record id="analytic_main_subsidiary" model="account.analytic.account">
-        <field name="name">Main Subsidiary</field>
-        <field name="plan_id" ref="binaural_subsidiary.analytic_main_subsidiary_plan"/>
-        <field name="is_subsidiary" eval="True" />
-    </record>
+        <record id="analytic_main_subsidiary" model="account.analytic.account">
+            <field name="name">Main Subsidiary</field>
+            <field name="plan_id" ref="binaural_subsidiary.analytic_main_subsidiary_plan"/>
+            <field name="is_subsidiary" eval="True" />
+        </record>
 
-</data>
+    </data>
+</odoo>

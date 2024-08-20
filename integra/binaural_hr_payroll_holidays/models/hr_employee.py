@@ -1,6 +1,4 @@
 from odoo import api, fields, models
-from collections import defaultdict
-from odoo.addons.resource.models.resource_mixin import timezone_datetime
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -8,6 +6,8 @@ _logger = logging.getLogger(__name__)
 
 class HrEmpoyee(models.Model):
     _inherit = "hr.employee"
+
+    last_vacation_allocation_date = fields.Date()
 
     @api.model
     def get_employees_having_entry_date_month_and_day(self, date_to_check=fields.Date.today()):
@@ -23,10 +23,13 @@ class HrEmpoyee(models.Model):
         Returns
         -------
         hr.employee recordset
-            The employees which entry day and month are the same as the ones on the date passed as parameter.
+            The employees which entry day and month are the same as the ones on the date passed as
+            parameter.
         """
 
-        employees = self.search([("active", "=", True)])
+        employees = self.search(
+            [("active", "=", True), ("last_vacation_allocation_date", "!=", date_to_check)]
+        )
         month = date_to_check.month
         day = date_to_check.day
         return employees.filtered(

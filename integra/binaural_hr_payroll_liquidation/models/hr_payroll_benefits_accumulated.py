@@ -4,6 +4,9 @@ from dateutil import relativedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
+import logging
+_logger = logging.getLogger(__name__)
+
 
 class HrPayrollBenefit(models.Model):
     _name = "hr.payroll.benefits.accumulated"
@@ -188,12 +191,20 @@ class HrPayrollBenefit(models.Model):
 
         employees = self.env["hr.employee"].search([])
         for employee in employees:
+            seniority = employee._get_seniority_in_years()
+
+            # Annual benefits calculation should start on the second year of the employee.
+            if seniority < 2:
+                continue
+
             entry_date = employee.entry_date
+
             if not entry_date or today.day != entry_date.day or today.month != entry_date.month:
                 continue
 
-            days_per_year = employee.company_id.benefits_days_per_year
-            if not days_per_year:
+            benefits_days_per_year = employee.company_id.benefits_days_per_year
+
+            if not benefits_days_per_year:
                 raise UserError(
                     _("The benefits days per month are not defined on the configuration.")
                 )
@@ -204,18 +215,20 @@ class HrPayrollBenefit(models.Model):
                     _("The maximum benefits days per year are not defined on the configuration.")
                 )
 
-            seniority = employee._get_seniority_in_years()
-            # Annual benefits calculation should start on the second year of the employee.
-            if seniority < 2:
-                continue
-
-            days_per_employee_years = days_per_year * seniority
+            days_per_employee_years = employee.get_benefits_days_total()
 
             benefits_days = (
                 days_per_employee_years
                 if days_per_employee_years < maximum_of_days
                 else maximum_of_days
             )
+
+            if employee.last_annual_calculated_benefits:
+                months_diff = relativedelta.relativedelta(
+                    fields.Date.today(), employee.last_quarterly_calculated_benefits
+                ).months
+                if months_diff < 12:
+                    continue
 
             employee._get_benefits(benefits_days, is_annual=True)
 
@@ -242,12 +255,15 @@ class HrPayrollBenefit(models.Model):
                 )
                 if not any(benefits_accumulated):
                     continue
+                if employee.last_calculated_benefits_interest == fields.Date.today():
+                    continue
 
                 daily_interests = (
                     benefits_accumulated[-1]["available_benefits"] * daily_interest_rate,
                     benefits_accumulated[-1]["foreign_available_benefits"] * daily_interest_rate,
                 )
                 employee._register_payroll_benefits(interests=daily_interests)
+                employee.last_calculated_benefits_interest = fields.Date.today()
 
     @api.model
     def get_benefits_for_employee(self, employee_id):
