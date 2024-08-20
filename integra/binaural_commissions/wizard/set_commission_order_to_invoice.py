@@ -2,7 +2,7 @@ from odoo import fields, models, _
 from odoo.exceptions import ValidationError
 
 
-class SetCommissionOrderToInvoice(models.Model):
+class SetCommissionOrderToInvoice(models.TransientModel):
     _name = "set.commission.order.to.invoice"
     _description = "Set Commission Order To Invoice"
 
@@ -12,25 +12,20 @@ class SetCommissionOrderToInvoice(models.Model):
     sale_order_ids = fields.Many2many("sale.order")
     overwrite_commission = fields.Boolean(default=True)
 
-    def action_confirm(self):
-        order_message = []
-        invoice_message = []
-        invoice_paid_message = []
+    def get_orders(self):
+        return self.sale_order_ids
 
-        available_orders = self.sale_order_ids.filtered(lambda x: not x.has_invoices_paid)
+    def get_order_lines(self):
+        return self.get_orders().order_line
 
-        if self.overwrite_commission:
-            order_message = available_orders.order_line.filtered(
-                lambda x: x.commission_policy_line_image_ids
-            ).order_id.mapped("name")
-            invoice_message = available_orders.invoice_ids.invoice_line_ids.filtered(
-                lambda x: x.commission_image_id
-            ).move_id.mapped("name")
-            invoice_paid_message = (self.sale_order_ids - available_orders).mapped("name")
+    def get_invoices(self):
+        return self.get_orders().invoice_ids
 
-            available_orders.order_line.commission_policy_line_image_ids = False
-            available_orders.invoice_ids.invoice_line_ids.commission_image_id = False
+    def remove_commissions(self,orders):
+        self.get_order_lines().commission_policy_line_image_ids = False
+        self.get_invoices().invoice_line_ids.commission_image_id = False
 
+    def write_documents(self, orders):
         data_write = {
             "commission_invoice_date_field": self.company_id.commission_invoice_date_field,
             "compute_commission_when": self.company_id.compute_commission_when,
@@ -38,15 +33,39 @@ class SetCommissionOrderToInvoice(models.Model):
                 self.env["commission.policy.type"].search([]).mapped("name")
             ),
         }
+        orders.write(data_write)
+        orders.assing_commission_policy_line_images_to_order_lines()
+        self.get_invoices().write(data_write)
+        self.get_invoices()._compute_payment_dates()
+        self.get_invoices().calculate_commission()
+        return data_write
 
-        if self.sale_order_ids.filtered(lambda x: x.state not in ["done", "sale"]):
-            raise ValidationError(_("Only orders in state 'Sale' or 'Done' can be processed"))
+    def action_confirm(self):
+        order_message = []
+        invoice_message = []
+        invoice_paid_message = []
+        orders = self.get_orders()
 
-        available_orders.write(data_write)
-        available_orders.assing_commission_policy_line_images_to_order_lines()
+        available_orders = orders
 
-        available_orders.invoice_ids.write(data_write)
-        available_orders.invoice_ids.calculate_commission()
+        if orders._name == "sale.order":
+            available_orders = orders.filtered(lambda x: not x.has_invoices_paid)
+
+        if self.overwrite_commission:
+            order_message = (
+                self.get_order_lines()
+                .filtered(lambda x: x.commission_policy_line_image_ids)
+                .order_id.mapped("name")
+            )
+            invoice_message = (
+                self.get_invoices()
+                .invoice_line_ids.filtered(lambda x: x.commission_image_id)
+                .move_id.mapped("name")
+            )
+            invoice_paid_message = (orders - available_orders).mapped("name")
+            self.remove_commissions(orders)
+
+        self.write_documents(orders)
 
         if sum([len(order_message) + len(invoice_message) + len(invoice_paid_message)]) == 0:
             return True
@@ -76,7 +95,8 @@ class SetCommissionOrderToInvoice(models.Model):
         if len(invoice_paid_message) > 0:
             message.append(
                 _(
-                    """The order(s) already had invoices paid, They have not been processed""",)
+                    """The order(s) already had invoices paid, They have not been processed""",
+                )
             )
 
         return {

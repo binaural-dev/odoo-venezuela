@@ -11,8 +11,6 @@ odoo.define("binaural_pos_seller.OrderState", function(require) {
         class BinauralOrderStateSeller extends Order {
             constructor(data, opt) {
                 super(...arguments);
-
-                this.seller_id = false;
             }
             set_seller(seller){
             this.assert_editable();
@@ -25,14 +23,24 @@ odoo.define("binaural_pos_seller.OrderState", function(require) {
                 let seller = this.seller_id;
                 return seller ? seller.name : "";
             }
-
+            init_from_JSON(json){
+              super.init_from_JSON(...arguments)
+              this.seller_id = json.seller_id ? json.seller_id : false
+            }
             export_as_JSON() {
                 let json = super.export_as_JSON();
-                json["seller_id"] = this.seller_id.id;
+                json["seller_id"] = this.seller_id ? this.seller_id.id : false;
                 return json;
             }
             get rate_from_lines() {
                 let rate = super.rate_from_lines
+
+                Object.values(this.pos.toRefundLines).forEach(el => {
+                  console.log("EL",el)
+                  if(el.seller_id){
+                    this.set_seller(el.seller_id)
+                  }
+                })
                 if (this.pos.config.use_seller_from_order != "from_order"){
                   return rate
                 }

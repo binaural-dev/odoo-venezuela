@@ -23,7 +23,9 @@ class AccountMove(models.Model):
     total_commission = fields.Float(
         compute="_compute_total_commission_of_invoice", store=True, copy=False
     )
-    discount_invoice_ids = fields.Many2many("account.move", compute="_compute_discount_invoice")
+    discount_invoice_ids = fields.Many2many(
+        "account.move", compute="_compute_discount_invoice", compute_sudo=True
+    )
     commission_invoice_date_field = fields.Char(readonly=True, copy=False)
     compute_commission_when = fields.Char(readonly=True, copy=False)
     priority_commission_policy_type = fields.Char(readonly=True, copy=False)
@@ -43,6 +45,7 @@ class AccountMove(models.Model):
     )
     commission_discount = fields.Float(
         compute="_compute_discount_invoice",
+        compute_sudo=True,
         store=True,
         copy=False,
         help="Discount of corrective payments",
@@ -102,10 +105,14 @@ class AccountMove(models.Model):
                 continue
             record.commission_payment_state = "process"
 
+    def get_reversed_entry(self):
+        return self.reversed_entry_id
+
     @api.depends(
         "amount_residual",
         "collection_days",
         "invoice_reception_date",
+        "reversal_move_id",
         "invoice_date",
         "first_payment_date",
         "last_payment_date",
@@ -125,10 +132,12 @@ class AccountMove(models.Model):
 
             total = False
             if record.move_type == "out_refund":
-                out_invoice = record.reversed_entry_id
+                out_invoice = record.get_reversed_entry()
 
                 for line in record.invoice_line_ids:
-                    out_invoice_line = out_invoice.invoice_line_ids.filtered(lambda x: x.product_id == line.product_id)
+                    out_invoice_line = out_invoice.invoice_line_ids.filtered(
+                        lambda x: x.product_id == line.product_id
+                    )
                     if not out_invoice_line.commission_image_id:
                         continue
                     line.commission_image_id = out_invoice_line.commission_image_id
@@ -137,22 +146,22 @@ class AccountMove(models.Model):
                 return
 
             for line in record.invoice_line_ids:
-                if line.sale_line_ids.commission_policy_line_image_ids:
-                    commission_id = line.sale_line_ids.get_commission_policy_line_image(
-                        record.collection_days
+                commission_id = line.get_commission(record.collection_days)
+                if not commission_id:
+                    continue
+
+                if len(commission_id) > 1:
+                    raise ValidationError(
+                        _(
+                            "The commission policy has more than one record with the same date range."
+                        )
                     )
 
-                    if commission_id and len(commission_id) > 1:
-                        raise ValidationError(
-                            _(
-                                "The commission policy has more than one record with the same date range."
-                            )
-                        )
-                    line.commission_image_id = commission_id
-                    line.commission_amount = line.price_subtotal * (
-                        line.commission_image_id.commission / 100
-                    )
-                    total += line.commission_amount
+                line.commission_image_id = commission_id
+                line.commission_amount = line.price_subtotal * (
+                    line.commission_image_id.commission / 100
+                )
+                total += line.commission_amount
             record.total_commission = total
 
     @api.depends("invoice_date_due", "invoice_date")
@@ -170,6 +179,9 @@ class AccountMove(models.Model):
         for record in self:
             commission_discount = 0
             discount_invoice_ids = self.env["account.move"]
+            
+            if record.reversed_entry_id:
+                record.reversed_entry_id._compute_discount_invoice()
 
             if (
                 not record.currency_id.is_zero(record.amount_residual)
@@ -331,6 +343,36 @@ class AccountMove(models.Model):
         invoice_ids = self.env["account.move"]
         total_commission = 0
 
+        def calculate_amounts(out_refund_line, out_invoice_id) -> int:
+            amount_total = 0
+            if out_refund_line.product_id.id in out_invoice_id.invoice_line_ids.product_id.ids:
+                out_invoice_line = out_invoice_id.invoice_line_ids.filtered(
+                    lambda inv: inv.product_id.id == out_refund_line.product_id.id
+                )
+                amount_total += self.calculate_commission_product(
+                    out_refund_line.price_subtotal,
+                    out_invoice_line.commission_image_id.commission,
+                    out_refund_line.move_id.currency_id.decimal_places,
+                )
+            else:
+                subtotal = sum(
+                    out_invoice_id.invoice_line_ids.filtered(
+                        lambda line: line.commission_image_id
+                    ).mapped("price_subtotal")
+                )
+                if not subtotal:
+                    return 0
+
+                percentaje = float_round(
+                    (out_refund_line.price_subtotal * 100) / subtotal,
+                    self.currency_id.decimal_places,
+                )
+
+                discount = out_invoice_id.total_commission * percentaje / 100
+                amount_total += discount
+
+            return amount_total
+
         if not invoice_payments_widget.get("content", False):
             return invoice_ids, total_commission
 
@@ -344,38 +386,14 @@ class AccountMove(models.Model):
                 continue
 
             out_refund_id = self.browse(int(invoice))
-            if not out_refund_id or not out_refund_id.reversed_entry_id:
+            if not out_refund_id or not out_refund_id.get_reversed_entry():
                 continue
 
             amount_total = 0
-            out_invoice_id = out_refund_id.reversed_entry_id
+            out_invoice_id = out_refund_id.get_reversed_entry()
 
             for out_refund_line in out_refund_id.invoice_line_ids:
-                if out_refund_line.product_id.id in out_invoice_id.invoice_line_ids.product_id.ids:
-                    out_invoice_line = out_invoice_id.invoice_line_ids.filtered(
-                        lambda inv: inv.product_id.id == out_refund_line.product_id.id
-                    )
-                    amount_total += self.calculate_commission_product(
-                        out_refund_line.price_subtotal,
-                        out_invoice_line.commission_image_id.commission,
-                        out_refund_id.currency_id.decimal_places,
-                    )
-                else:
-                    subtotal = sum(
-                        out_invoice_id.invoice_line_ids.filtered(
-                            lambda line: line.commission_image_id
-                        ).mapped("price_subtotal")
-                    )
-                    if not subtotal:
-                        continue
-
-                    percentaje = float_round(
-                        (out_refund_line.price_subtotal * 100) / subtotal,
-                        self.currency_id.decimal_places,
-                    )
-
-                    discount = out_invoice_id.total_commission * percentaje / 100
-                    amount_total += discount 
+                amount_total += calculate_amounts(out_refund_line, out_invoice_id)
 
             percentaje = float_round(
                 (payment.get("amount", 0) * 100) / out_refund_id.amount_total,
@@ -385,6 +403,13 @@ class AccountMove(models.Model):
                 amount_total * (percentaje / 100), precision_digits=self.currency_id.decimal_places
             )
             invoice_ids |= out_refund_id
+
+        reversal_move_id = self.reversal_move_id - invoice_ids
+        for reversal_id in reversal_move_id:
+            if reversal_id.payment_state == "reversed":
+                invoice_ids += reversal_id
+                for out_refund_line in reversal_id.invoice_line_ids:
+                    total_commission += calculate_amounts(out_refund_line, self)
 
         return invoice_ids, total_commission
 

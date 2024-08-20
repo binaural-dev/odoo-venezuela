@@ -67,6 +67,11 @@ class PosOrder(models.Model):
     def get_payments_order_refund(self):
         return self.payment_ids.read()
 
+    def _prepare_invoice_line(self, order_line):
+        res = super()._prepare_invoice_line(order_line)
+        res["pos_order_line_ids"] = order_line
+        return res
+
 class PosOrderLine(models.Model):
     _inherit = "pos.order.line"
 
