@@ -126,6 +126,11 @@ msgstr ""
 "%s"
 
 #. module: binaural_stock
+#: model:res.groups,name:binaural_stock.group_block_liters_per_unit
+msgid "Block Liters Per Unit"
+msgstr "Bloquear campo de Litros por unidad"
+
+#. module: binaural_stock
 #: model:res.groups,name:binaural_stock.group_block_type_inventory_transfers_expeditions
 msgid ""
 "Block Type Inventory Transfers Expeditions (Do not add a new product to the "
@@ -330,6 +335,12 @@ msgstr "Es Ubicación Física"
 #: model:ir.model.fields,field_description:binaural_stock.field_stock_location__message_main_attachment_id
 msgid "Main Attachment"
 msgstr "Adjunto Principal"
+
+#. module: binaural_stock
+#: model:ir.model.fields,field_description:binaural_stock.field_product_product__liters_per_unit
+#: model:ir.model.fields,field_description:binaural_stock.field_product_template__liters_per_unit
+msgid "Liters Per Unit"
+msgstr "Litros por unidad"
 
 #. module: binaural_stock
 #: model:ir.model.fields,field_description:binaural_stock.field_res_company__main_warehouse_id

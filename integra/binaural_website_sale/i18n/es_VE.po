@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240228\n"
+"Project-Id-Version: Odoo Server 16.0+e-20240527\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-08 17:57+0000\n"
-"PO-Revision-Date: 2024-03-08 17:57+0000\n"
+"POT-Creation-Date: 2024-07-26 20:40+0000\n"
+"PO-Revision-Date: 2024-07-26 20:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,6 +26,11 @@ msgid "<span>Send Quotation</span>"
 msgstr "<span>Enviar Presupuestos</span>"
 
 #. module: binaural_website_sale
+#: model_terms:ir.ui.view,arch_db:binaural_website_sale.total
+msgid "<strong>Total Foreign: </strong>"
+msgstr "<strong>Total Alterno: </strong>"
+
+#. module: binaural_website_sale
 #: model_terms:ir.ui.view,arch_db:binaural_website_sale.res_config_settings_view_form
 msgid "Binaural Website Sale Config"
 msgstr "Configuración de sitio web Binaural"
@@ -39,12 +44,12 @@ msgstr "Enviar Presupuesto"
 #. module: binaural_website_sale
 #: model:ir.model,name:binaural_website_sale.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "compañías"
 
 #. module: binaural_website_sale
 #: model:ir.model,name:binaural_website_sale.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Configuraciones"
 
 #. module: binaural_website_sale
 #: model_terms:ir.ui.view,arch_db:binaural_website_sale.product
@@ -82,12 +87,18 @@ msgstr "Producto"
 #. module: binaural_website_sale
 #: model_terms:ir.ui.view,arch_db:binaural_website_sale.res_config_settings_view_form
 msgid "Public users cannot see Available Quantities of products"
-msgstr "Los usuarios públicos no pueden ver cantidades disponibles de productos"
+msgstr ""
+"Los usuarios públicos no pueden ver cantidades disponibles de productos"
 
 #. module: binaural_website_sale
 #: model_terms:ir.ui.view,arch_db:binaural_website_sale.res_config_settings_view_form
 msgid "Public users cannot see the Price of the products"
 msgstr "Los usuarios públicos no pueden ver el precio de los productos"
+
+#. module: binaural_website_sale
+#: model_terms:ir.ui.view,arch_db:binaural_website_sale.total
+msgid "Rate:"
+msgstr "Tasa: "
 
 #. module: binaural_website_sale
 #: model_terms:ir.ui.view,arch_db:binaural_website_sale.product_default_code_inherit
