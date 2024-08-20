@@ -49,3 +49,10 @@ class ResCompany(models.Model):
     allow_installment_payments = fields.Boolean(
         help="Check this if you want to allow payments by installments on the app.", default=False
     )
+
+    company_mobile = fields.Boolean()
+
+    @api.onchange('company_seller')
+    def _onchange_company_seller(self):
+        if not self.company_seller:
+            self.company_mobile = False

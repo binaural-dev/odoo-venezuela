@@ -561,7 +561,7 @@
                 <div style="width:5%">Fact Nro</div>
                 <div style="width:7%">Nro de Control</div>
                 <div style="width:5%">Fecha</div>
-                <div t-if="retention.retention_line_ids[0].code_visible" style="width:5%">Codigo</div>
+                <div t-if="retention.retention_line_ids[0].code_visible" style="width:5%">Código</div>
                 <div style="width:15%">Concepto</div>
                 <div style="width:15%">Total Factura</div>
                 <div style="width:15%">Base de Retención</div>

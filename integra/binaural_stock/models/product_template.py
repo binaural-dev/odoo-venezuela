@@ -36,6 +36,8 @@ class ProductTemplate(models.Model):
     price_with_tax = fields.Float(compute="_compute_prices_with_tax")
     price_without_tax = fields.Float(compute="_compute_prices_with_tax")
 
+    liters_per_unit = fields.Float(digits='Stock Weight')
+
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Maldito Raiver e.e

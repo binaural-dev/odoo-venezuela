@@ -170,6 +170,21 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="activate_barcode_strict_mode_container">
+                            <div class="o_setting_left_pane">
+                                <field name="activate_barcode_strict_mode"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <div>
+                                    <label for="activate_barcode_strict_mode"/>
+                                    <div class="text-muted">
+                                        Activate product entry with barcode in strict mode
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </xpath>
             </field>
