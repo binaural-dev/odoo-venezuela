@@ -1,26 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-  <!-- <template id="website_header_call_to_action" inherit_id="website.header_call_to_action">
-    <xpath expr="//section[@class='s_text_block']/div[1]/a[hasclass('btn_cta')]" position="replace">
-        <a href="/contactus" class="btn btn-primary btn_cta" t-if="not request.env.user.employee_id.is_seller">
-            Contáctenos
-        </a>
-        <a 
-        href="/budget" 
-        t-attf-class="btn btn-primary btn_create_budget" 
-        t-if="request.env.user.employee_id.is_seller and not show_create_payment_menuitem">
-            <span>Crear presupuesto</span>
-        </a>
-        <t t-set="user" t-value="request.env.user"/>
-        <a 
-        href="/payments"
-        t-attf-class="btn btn-primary btn_create_budget" 
-        t-if="user.employee_id.is_seller and show_create_payment_menuitem and not user.has_group('binaural_mobile.group_sellers_cant_create_payments')">
-            <span>Crear pago</span>
-        </a>
-    </xpath>
-  </template> -->
+    <template id="header_call_to_action_app" inherit_id="website.header_call_to_action">
+        <xpath expr="//a[1]" position="replace">
+            <t t-set="user" t-value="request.env.user"/>
+            <t t-if="user.employee_id.is_seller">
+                <a 
+                    href="/budget" 
+                    t-attf-class="oe_unremovable btn btn-primary btn_cta btn_create_budget" 
+                    t-if="not show_create_payment_menuitem">
+                    <span>Crear presupuesto</span>
+                </a>
+                <a 
+                    href="/payments"
+                    t-attf-class="oe_unremovable btn btn-primary btn_cta btn_create_budget" 
+                    t-if="show_create_payment_menuitem and not user.has_group('binaural_mobile.group_sellers_cant_create_payments')">
+                    <span>Crear pago</span>
+                </a>
+            </t>
+            <t t-else="">
+                <a href="/contactus" class="oe_unremovable btn btn-primary btn_cta">Contact Us</a>
+            </t>
+        </xpath>
+    </template>
 
     <template id="budget_link" name="Budget">
         <t t-nocache="The number of products is dynamic, this rendering cannot be cached." 

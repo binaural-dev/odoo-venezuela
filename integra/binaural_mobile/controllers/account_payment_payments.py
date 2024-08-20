@@ -427,8 +427,7 @@ class AccountPaymentPayments(http.Controller):
         if not attach_id:
             data.update({"status": 400, "msg": "the file was not sent"})
             return data
-        int(attach_id)
-        file = request.env["payment.mobile.proof"].search([("id", "=", attach_id)])
+        file = request.env["payment.mobile.proof"].browse(int(attach_id))
         file.unlink()
         return data
 

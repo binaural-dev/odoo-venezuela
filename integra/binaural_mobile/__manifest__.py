@@ -37,7 +37,6 @@
         "views/sale_order_views.xml",
         "views/sale_portal_templates.xml",
         "views/account_portal_template.xml",
-        # "views/shop_layout.xml",
         "views/templates.xml",
         "views/payment_mobile_view.xml",
         "views/payment_mobile_igtf_view.xml",
