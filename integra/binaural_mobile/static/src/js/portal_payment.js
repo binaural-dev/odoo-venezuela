@@ -1180,4 +1180,3 @@ const selectedPartner = (partners, selected_partner) => {
   const copy = [...partners];
   const result = copy.filter(partner => partner.id === selected_partner);
   return result[0]; 
-}

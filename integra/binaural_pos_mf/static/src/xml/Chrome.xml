@@ -7,5 +7,11 @@
                 <p> Maquina Fiscal</p>
             </div>
         </xpath>
+        <xpath expr="//div[hasclass('pos-branding')]" position="inside">
+            <div t-if="access_button_mf" class="cash-move-button" t-on-click="showFiscalMachinePopup">
+                <i class="fa fa-fw fa-print" role="img"></i>
+                <p>Reporte Maquina Fiscal</p>
+            </div>
+        </xpath>
     </t>
 </templates>

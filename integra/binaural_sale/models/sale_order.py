@@ -372,6 +372,7 @@ class SaleOrder(models.Model):
                 "|",
                 ("payment_state", "=", block_order_invoice_payment_state),
                 ("invoice_date_due", "<", today_date),
+                ("move_type", "=", "out_invoice"),
             ]
         )
 

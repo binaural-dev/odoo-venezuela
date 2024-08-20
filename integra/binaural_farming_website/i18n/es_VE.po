@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20240606\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-27 17:37+0000\n"
-"PO-Revision-Date: 2024-06-27 17:37+0000\n"
+"POT-Creation-Date: 2024-07-12 18:26+0000\n"
+"PO-Revision-Date: 2024-07-12 18:26+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -41,7 +41,7 @@ msgstr "3ER PARTO"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
-msgid "<span class=\"badge bg-primary \">-</span>"
+msgid "<span class=\"badge badge-mothers\">-</span>"
 msgstr ""
 
 #. module: binaural_farming_website
@@ -51,10 +51,15 @@ msgstr ""
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<span class=\"badge bg-secondary\">-</span>"
+msgstr ""
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
 msgid ""
 "<span class=\"badge title_span\">\n"
-"                                    Ancestral milk production data\n"
-"                                </span>"
+"                                        Ancestral milk production data\n"
+"                                    </span>"
 msgstr ""
 "<span class=\"badge title_span\">\n"
 "                                Datos de producción de leche de ancestros\n"
@@ -64,8 +69,8 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
 msgid ""
 "<span class=\"badge title_span\">\n"
-"                                    Births and number of offspring\n"
-"                                </span>"
+"                                        Births and number of offspring\n"
+"                                    </span>"
 msgstr ""
 "<span class=\"badge title_span\">\n"
 "                                    Partos y número de crías\n"
@@ -76,8 +81,19 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
 msgid ""
 "<span class=\"badge title_span\">\n"
-"                                    Morphological evaluation\n"
-"                                </span>"
+"                                        Breeder and owner information\n"
+"                                    </span>"
+msgstr ""
+"<span class=\"badge title_span\">\n"
+"                                Datos del criador y propietario\n"
+"                            </span>"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid ""
+"<span class=\"badge title_span\">\n"
+"                                        Morphological evaluation\n"
+"                                    </span>"
 msgstr ""
 "<span class=\"badge title_span\">\n"
 "                                Valoración morfológica\n"
@@ -87,23 +103,12 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
 msgid ""
 "<span class=\"badge title_span\">\n"
-"                                    Weight of offspring\n"
-"                                </span>"
+"                                        Weight of offspring\n"
+"                                    </span>"
 msgstr ""
 "<span class=\"badge title_span\">\n"
 "                                    Peso de la crías\n"
 "                                </span>"
-
-#. module: binaural_farming_website
-#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
-msgid ""
-"<span class=\"badge title_span\">\n"
-"                                Breeder and owner information\n"
-"                            </span>"
-msgstr ""
-"<span class=\"badge title_span\">\n"
-"                                Datos del criador y propietario\n"
-"                            </span>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
@@ -170,6 +175,11 @@ msgstr "<strong>Fecha de nacimiento</strong><br/>"
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
 msgid "<strong>Breeder: </strong>"
 msgstr "<strong>Criador: </strong>"
+
+#. module: binaural_farming_website
+#: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot
+msgid "<strong>Gender: </strong>"
+msgstr "<strong>Genero: </strong>"
 
 #. module: binaural_farming_website
 #: model_terms:ir.ui.view,arch_db:binaural_farming_website.agro_animal_lot

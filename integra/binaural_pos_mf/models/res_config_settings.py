@@ -7,3 +7,6 @@ class ResConfigSettings(models.TransientModel):
     iface_fiscal_data_module = fields.Many2one(
         related="pos_config_id.iface_fiscal_data_module", readonly=False
     )
+    pos_access_button_mf = fields.Boolean(
+        related="pos_config_id.access_button_mf", readonly=False
+    )
