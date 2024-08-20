@@ -200,10 +200,15 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
           journal_id,
           amount_residual,
         } = line;
+        
         const lines_ordered_by_maturity_date = line.line_ids.sort(function (
           a,
           b
         ) {
+
+          
+          if (!(a.date_maturity && b.date_maturity)) return;
+
           const a_date = a.date_maturity.split("/");
           [a_date[0], a_date[1]] = [a_date[1], a_date[0]];
 
@@ -214,6 +219,9 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
         });
         const first_expired_line = lines_ordered_by_maturity_date[0];
         const first_expired_line_amount_residual = first_expired_line["amount_residual"].toFixed(decimal_number);
+
+        const date_maturity = first_expired_line["date_maturity"];
+        const date_maturity_elem = date_maturity ? `(${date_maturity})` : '';
 
         amount_residual = amount_residual.toFixed(decimal_number);
         amount_total = amount_total.toFixed(decimal_number);
@@ -233,7 +241,7 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
 																		<label class="form-text text-primary">
 																			${first_expired_line_amount_residual} 
 																		</label>
-																		<label class="form-text">(${first_expired_line["date_maturity"]})</label>
+																		<label class="form-text">${date_maturity_elem}</label>
                                 </div>
                                 <div>
                                     <label class="form-text ">Total: </label>
@@ -587,112 +595,119 @@ odoo.define("binaural_mobile.payments_portal_form", function (require) {
     },
 
     _onClickSave_payment: async function (ev) {
-      if (
-        $("#diary_pay").val() != "" &&
-        $("#amount_to_payment").val() != "" &&
-        $("#reference_number").val() != ""
-      ) {
-        const tbody = $("#pay_methods");
-        let decimal_number = +$("#decimal").val();
-        const text = $("#diary_pay").find(":selected").text();
-        const text_val = $("#diary_pay").find(":selected").val();
-        let payment = parseFloat(+$("#amount_to_payment").val()).toFixed(
-          decimal_number
-        );
-        const reference = $("#reference_number").val();
-        const date = $("#payday").val();
-        const $symbol = $("#symbol");
-        const currency = $("#currency").val();
-        const positionSymbol = $("#position").val();
-        const igtfAmount = +$("#igtf_pay").val();
-        let igtf_include = ``;
-        let convert = "";
-        let convert_symbol = "";
-
-        const symbolAfter = positionSymbol === "after" ? $symbol.val() : "";
-        const symbolBefore = positionSymbol === "before" ? $symbol.val() : "";
-
-        if ($("#currency_id").val() != currency) {
-          const convertedCurrency = await ajax.jsonRpc(
-            "/payments/convert_currency",
-            "call",
-            {
-              currency: currency,
-              amount: payment,
-            }
-          );
-          let { data, status } = convertedCurrency;
-          const is400 = status === 400;
-          if (is400) return;
-
-          convert = parseFloat(+$("#amount_to_payment").val()).toFixed(
-            +$("#currency_foreign_id").val()
-          );
-
-          payment = data.toFixed(decimal_number);
-
-          const symbolConverted = $("#symbol-dairy").text();
-          const positionConverted = $("#position_symbol").val();
-
-          const symbolAfterConverted =
-            positionConverted === "after" ? symbolConverted : "";
-          const symbolBeforeConverted =
-            positionConverted === "before" ? symbolConverted : "";
-
-          convert_symbol = `${symbolBeforeConverted} ${convert} ${symbolAfterConverted}`;
-        }
-
-        const paySymbol = `${symbolBefore} ${payment} ${symbolAfter}`;
-
-        if ($("#pay_edit").val() != "") {
-          const trPosition = +$("#pay_edit").val();
-          const $table = $("#pay_methods");
-          const $cell = $table.find("tr").eq(trPosition);
-          $cell.remove();
-        }
-
-        if (igtfAmount != "" && $("#requireReceipt").val() == "true") {
-          igtf_include = `
-                    <br/>
-                    <label class="form-text" style="padding-left:87px;">IGTF Sugerido: $ ${igtfAmount.toFixed(
-                      decimal_number
-                    )}</label>
-                    <input type="hidden" id="igtf_amount" value="${igtfAmount}"/>
-                    `;
-        }
-        tbody.append(`
-                <tr>
-                    <td>
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <button type="button" class="btn btn-outline-danger fa fa-times delete_payment"></button>
-                                <button type="button" class="btn btn-outline-primary fa fa-pencil edit_payment"></button>
-                                <input type="hidden" value="${text_val}" id="dairy_val"/>
-                                <label class="form-label">${text}</label>
-                                <input type="hidden" id="reference" value="${reference}"/>
-                                <input type="hidden" id="date_to_pay" value="${date}"/>
-                                ${igtf_include}
-                            </div>
-                            <div>
-                                <input type="hidden" id="currency_" value="${currency}"/>
-                                <label class="form-text text-primary" id="payment_l">${paySymbol}</label>
-                                <input type="hidden" id="payment" value="${payment}"/><br/>
-                                <label class="form-text text-secondary" id="payment_convert_l">${convert_symbol}</label>
-                                <input type="hidden" id="payment_convert" value="${convert}"/>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                `);
-
-        this.Empty_inputs();
-        this.Set_day_today();
-        this.CalculateTotal();
-        this.validate_payment_method_invoices();
-        $(".hidden_pay").show();
-        $(".disabled-pay").attr("disabled", true);
-        $("#payment_method").modal("hide");
+      let inputsRequest = ['#diary_pay', '#amount_to_payment', '#reference_number',]
+      let emptyInput = ''
+      inputsRequest.forEach(function (id) {
+          if ($(id).val().trim() === '') {
+              emptyInput = id;
+              return false;
+          }
+          $(id).removeClass('is-invalid');
+      });
+      if (emptyInput) {
+        $(emptyInput).addClass('is-invalid')
+        return
       }
+      const tbody = $("#pay_methods");
+      let decimal_number = +$("#decimal").val();
+      const text = $("#diary_pay").find(":selected").text();
+      const text_val = $("#diary_pay").find(":selected").val();
+      let payment = parseFloat(+$("#amount_to_payment").val()).toFixed(
+        decimal_number
+      );
+      const reference = $("#reference_number").val();
+      const date = $("#payday").val();
+      const $symbol = $("#symbol");
+      const currency = $("#currency").val();
+      const positionSymbol = $("#position").val();
+      const igtfAmount = +$("#igtf_pay").val();
+      let igtf_include = ``;
+      let convert = "";
+      let convert_symbol = "";
+
+      const symbolAfter = positionSymbol === "after" ? $symbol.val() : "";
+      const symbolBefore = positionSymbol === "before" ? $symbol.val() : "";
+
+      if ($("#currency_id").val() != currency) {
+        const convertedCurrency = await ajax.jsonRpc(
+          "/payments/convert_currency",
+          "call",
+          {
+            currency: currency,
+            amount: payment,
+          }
+        );
+        let { data, status } = convertedCurrency;
+        const is400 = status === 400;
+        if (is400) return;
+
+        convert = parseFloat(+$("#amount_to_payment").val()).toFixed(
+          +$("#currency_foreign_id").val()
+        );
+
+        payment = data.toFixed(decimal_number);
+
+        const symbolConverted = $("#symbol-dairy").text();
+        const positionConverted = $("#position_symbol").val();
+
+        const symbolAfterConverted =
+          positionConverted === "after" ? symbolConverted : "";
+        const symbolBeforeConverted =
+          positionConverted === "before" ? symbolConverted : "";
+
+        convert_symbol = `${symbolBeforeConverted} ${convert} ${symbolAfterConverted}`;
+      }
+
+      const paySymbol = `${symbolBefore} ${payment} ${symbolAfter}`;
+
+      if ($("#pay_edit").val() != "") {
+        const trPosition = +$("#pay_edit").val();
+        const $table = $("#pay_methods");
+        const $cell = $table.find("tr").eq(trPosition);
+        $cell.remove();
+      }
+
+      if (igtfAmount != "" && $("#requireReceipt").val() == "true") {
+        igtf_include = `
+                  <br/>
+                  <label class="form-text" style="padding-left:87px;">IGTF Sugerido: $ ${igtfAmount.toFixed(
+                    decimal_number
+                  )}</label>
+                  <input type="hidden" id="igtf_amount" value="${igtfAmount}"/>
+                  `;
+      }
+      tbody.append(`
+              <tr>
+                  <td>
+                      <div class="d-flex justify-content-between">
+                          <div>
+                              <button type="button" class="btn btn-outline-danger fa fa-times delete_payment"></button>
+                              <button type="button" class="btn btn-outline-primary fa fa-pencil edit_payment"></button>
+                              <input type="hidden" value="${text_val}" id="dairy_val"/>
+                              <label class="form-label">${text}</label>
+                              <input type="hidden" id="reference" value="${reference}"/>
+                              <input type="hidden" id="date_to_pay" value="${date}"/>
+                              ${igtf_include}
+                          </div>
+                          <div>
+                              <input type="hidden" id="currency_" value="${currency}"/>
+                              <label class="form-text text-primary" id="payment_l">${paySymbol}</label>
+                              <input type="hidden" id="payment" value="${payment}"/><br/>
+                              <label class="form-text text-secondary" id="payment_convert_l">${convert_symbol}</label>
+                              <input type="hidden" id="payment_convert" value="${convert}"/>
+                          </div>
+                      </div>
+                  </td>
+              </tr>
+              `);
+
+      this.Empty_inputs();
+      this.Set_day_today();
+      this.CalculateTotal();
+      this.validate_payment_method_invoices();
+      $(".hidden_pay").show();
+      $(".disabled-pay").attr("disabled", true);
+      $("#payment_method").modal("hide");
     },
 
     CalculateTotal: function () {

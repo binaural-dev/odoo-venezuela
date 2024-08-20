@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+
+    <record id="view_account_analytic_account_form" model="ir.ui.view">
+        <field name="name">binaural.subsidiary.view.account.analytic.account.form</field>
+        <field name="model">account.analytic.account</field>
+        <field name="inherit_id" ref="analytic.view_account_analytic_account_form"/>
+        <field name="arch" type="xml">
+            <field 
+                name="currency_id" 
+                position="after"
+            >
+                <field name="selectable_sale_journal_ids" invisible="1" />
+                <field 
+                    name="dairy_fiscal"
+                    options="{'no_create': True, 'no_edit': True}" 
+                    domain="[('id', 'in', selectable_sale_journal_ids), ('fiscal', '=', True)]"
+                    attrs="{'invisible': [('is_subsidiary', '=', False)]}"
+                />
+                <field 
+                    name="dairy_no_fiscal" 
+                    options="{'no_create': True, 'no_edit': True}" 
+                    domain="[('id', 'in', selectable_sale_journal_ids), ('fiscal', '=', False)]"
+                    attrs="{'invisible': [('is_subsidiary', '=', False)]}"
+                />
+            </field>
+            
+        </field>
+    </record>
+
+
+</odoo>

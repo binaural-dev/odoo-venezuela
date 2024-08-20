@@ -37,6 +37,13 @@ class BinauralWebsiteSale(WebsiteSale):
         """
         order = request.website.sale_get_order()
 
+        company_id = request.env["website"].sudo().get_current_website().company_id
+        Rate = request.env["res.currency.rate"]
+
+        rate_values = Rate.compute_rate(company_id.currency_foreign_id.id, fields.Date.today())
+        order.foreign_rate = rate_values["foreign_rate"]
+        order.foreign_inverse_rate = rate_values["foreign_inverse_rate"]
+
         values = {"website_sale_order": order, "date": fields.Date.today()}
 
         redirection = self.checkout_redirection(order)

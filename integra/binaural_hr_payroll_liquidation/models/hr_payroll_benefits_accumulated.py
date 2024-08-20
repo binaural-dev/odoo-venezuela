@@ -4,6 +4,9 @@ from dateutil import relativedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
+import logging
+_logger = logging.getLogger(__name__)
+
 
 class HrPayrollBenefit(models.Model):
     _name = "hr.payroll.benefits.accumulated"
@@ -188,12 +191,20 @@ class HrPayrollBenefit(models.Model):
 
         employees = self.env["hr.employee"].search([])
         for employee in employees:
+            seniority = employee._get_seniority_in_years()
+
+            # Annual benefits calculation should start on the second year of the employee.
+            if seniority < 2:
+                continue
+
             entry_date = employee.entry_date
+
             if not entry_date or today.day != entry_date.day or today.month != entry_date.month:
                 continue
 
-            days_per_year = employee.company_id.benefits_days_per_year
-            if not days_per_year:
+            benefits_days_per_year = employee.company_id.benefits_days_per_year
+
+            if not benefits_days_per_year:
                 raise UserError(
                     _("The benefits days per month are not defined on the configuration.")
                 )
@@ -204,12 +215,7 @@ class HrPayrollBenefit(models.Model):
                     _("The maximum benefits days per year are not defined on the configuration.")
                 )
 
-            seniority = employee._get_seniority_in_years()
-            # Annual benefits calculation should start on the second year of the employee.
-            if seniority < 2:
-                continue
-
-            days_per_employee_years = days_per_year * seniority
+            days_per_employee_years = employee.get_benefits_days_total()
 
             benefits_days = (
                 days_per_employee_years

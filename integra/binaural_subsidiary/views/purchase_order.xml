@@ -7,11 +7,16 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='date_order']" position="before">
                 <field name="company_subsidiary" invisible='1'/>   
+                <field name="suitable_journal_ids" invisible='1'/>
                 <field name="account_analytic_id" 
                 attrs="{'invisible': [('company_subsidiary', '=', False)],
                         'required': [('company_subsidiary', '=', True)],
                         'readonly': [('state', '!=', 'draft')]}"/>
             </xpath>
+
+            <field name="journal_invoice_id" position="attributes">
+                <attribute name="domain">[('id', 'in', suitable_journal_ids)]</attribute>
+            </field>
         </field>
     </record>
 

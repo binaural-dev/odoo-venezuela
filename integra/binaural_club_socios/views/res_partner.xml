@@ -20,8 +20,13 @@
             <xpath expr="//group/group/div" position="after">
 	            <field name="supplier_rank" invisible="1"/>
 	            <field name="customer_rank" invisible="1"/>
-                <field name="action_number" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
-                <field name="type_relation" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
+                <field name="hide_action_number" invisible="1" />
+                <field name="readonly_action_number" invisible="1" />
+                <field name="has_ownership_conflict" invisible="1" />
+
+                <field name="action_number" attrs="{'invisible':[('hide_action_number','=', True)], 'readonly': ['|', ('active', '=', False), ('readonly_action_number', '=', True)]}" />
+                <field name="parent_action_number" attrs="{'invisible':['|',('hide_action_number','=', True), ('action_number','!=', False)]}"/>
+                <field name="type_relation" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)], 'readonly': ['|', ('active', '=', False), ('readonly_action_number', '=', True)]}"/>
                 <field name="state_action" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="state_partner" attrs="{'invisible':['|',('supplier_rank','>', 0),('customer_rank','=',0)]}"/>
                 <field name="associate_parent" attrs="{'invisible':['|',('supplier_rank','>', 0),('member_type','!=','extention')]}"/>
@@ -176,7 +181,22 @@
                 <xpath expr="//form//sheet" position="before">
                     <header attrs="{'invisible': ['|',('customer_rank','=',0),('supplier_rank','>', 0)]}"><!--Si no tiene padre es porque el es el padre (socio,asociado)-->
                         <!--boton traspaso de accion-->
-                        <button name="action_transfer" string="Action Transfer" type="object" confirm="¿Esta seguro de transferir la acción?" ></button >
+                        <button 
+                            name="action_transfer" 
+                            string="Action Transfer" 
+                            type="object" 
+                            confirm="¿Esta seguro de transferir la acción?" 
+                            attrs="{ 'invisible': [('has_ownership_conflict','=', True)]  }"
+                        />
+
+                        <button 
+                            name="action_resolve_ownership_conflict" 
+                            string="Resolve Ownership" type="object" 
+                            confirm="Are you sure to set this partner as the real owner?" 
+                            attrs="{ 'invisible': [('has_ownership_conflict','=', False)]  }"
+                            groups="base.group_erp_manager"
+                        />
+
                         <!--boton aprobar socio tenedor-->
                         <button name="action_approve_vote" confirm="Are you sure you approve of the Voting process?" string="Approve Voting Process" type="object" attrs="{'invisible': [('state_partner','!=', 'holder')]}"></button >
                         <!--boton establecer prorroga a socio-->

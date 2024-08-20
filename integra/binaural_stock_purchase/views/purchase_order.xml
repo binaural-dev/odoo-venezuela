@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_purchase_order_form_binaural_stock_purchase" model="ir.ui.view">
+        <field name="name">view.purchase.order.form.binaural.stock.purchase</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='taxes_id']" position="after">
+                <field name="liters_per_unit_total" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

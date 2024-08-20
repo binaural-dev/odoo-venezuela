@@ -265,8 +265,9 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             }
 
             if (qtyReqNotMeetFactor) {
-                const minimunFactorPack= Math.trunc(qtyAvailable / qtyFactor);
-                return minimunFactorPack * qtyFactor;
+								const qtyReqCloserFactor = Math.trunc(qtyReq / qtyFactor) * qtyFactor
+								const minimumFactorPack = qtyAvailable > qtyReqCloserFactor ? qtyReqCloserFactor : qtyAvailable;
+								return minimumFactorPack;
             }
 
             return qtyReq;
@@ -1202,7 +1203,7 @@ odoo.define('binaural_mobile.portal_budget_form', function(require) {
             }
 
             if(qty % qtyPack != 0 && validateQtyFactor){
-                ev.target.value = ''
+                ev.target.value = inputElem.defaultValue;
                 throw `La cantidad no es un múltiplo de ${qtyPack}`;
             }
 
