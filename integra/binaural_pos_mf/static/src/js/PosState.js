@@ -147,23 +147,40 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
         return invoice
       }
       async print_out_invoice(data) {
-        let self = this;
         const fdm = this.useFiscalMachine();
+        if (!fdm) {
+          return reject({ "valid": false, "message": "No se ha configurado una maquina fiscal", })
+        }
         return new Promise(async (resolve, reject) => {
-          let response = await fdm.action({
-            action: `print_${data.type}`,
-            data: data,
-          })
-          if (!response["result"]) {
-            self.env.services.ui.unblock()
-            return reject({ "valid": false, "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
+          try {
+            let response = await fdm.action({
+              action: `print_${data.type}`,
+              data: data,
+            })
+            if (!response) {
+              return reject({ "valid": false, "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
+            }
+
+            if (!response["result"]) {
+              return reject({ "valid": false, "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
+            }
+
+            fdm.add_listener((iot_response) => {
+              fdm.remove_listener();
+              let { value, status } = iot_response
+              if (!!status && status.status == "error") {
+                reject({ valid: false, message: status.message_body })
+              }
+              if (!!value.valid) {
+                resolve(value)
+              } else {
+                reject(value)
+              }
+            })
+          } catch (err) {
+            reject({ "valid": false, "message": "No se ha podido establecer conexion con la Maquina Fiscal", })
           }
-          fdm.add_listener(data => {
-            fdm.remove_listener();
-            self.env.services.ui.unblock()
-            data.value.valid ? resolve(data["value"]) : reject(data["value"])
-          })
-        });
+        })
       }
       set_data_from_fiscal_machine(order, data) {
         order.fiscal_machine = data["serial_machine"] || false;
@@ -178,11 +195,9 @@ odoo.define("binaural_pos_mf.PosState", function(require) {
           this.env.services.ui.block()
           let data = await this.get_data_invoice(order)
           if (!data["valid"]) {
-            this.env.services.ui.unblock()
             throw new Error(data["message"])
           }
           const response = await this.print_out_invoice(data)
-          console.log(response)
           this.env.services.ui.unblock()
           if (!response.valid) {
             throw new Error(response["message"])
