@@ -7,17 +7,44 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet" position="before">
                 <header>
-                    <widget name="iot-mf-button" action="get_serial_machine" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
-                    <widget name="iot-mf-button" action="generate_report_z"  attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
-                    <widget name="iot-mf-button" action="generate_report_x" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
-                    <widget name="iot-mf-button" action="programacion" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
-                    <widget name="iot-mf-button" action="status_error" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
-                    <widget name="iot-mf-button" action="test" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
-                    <widget name="iot-mf-button" action="configure_device" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget 
+                        name="iot-mf-button" 
+                        action="get_serial_machine" 
+                        attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget 
+                        name="iot-mf-button" 
+                        action="generate_report_z"  
+                        attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget 
+                        name="iot-mf-button" 
+                        action="generate_report_x" 
+                        attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    <widget 
+                        name="iot-mf-button" 
+                        action="programacion" 
+                        attrs="{'invisible':['|',('type','!=', 'fiscal_data_module'),
+                            ('manufacturer_type','!=', 'HKA')]}"/>
+                    <widget 
+                        name="iot-mf-button" 
+                        action="status_error" 
+                        attrs="{'invisible':['|',('type','!=', 'fiscal_data_module'),
+                            ('manufacturer_type','!=', 'HKA')]}"/>
+                    <widget 
+                        name="iot-mf-button" 
+                        action="test" 
+                        attrs="{'invisible':['|',('type','!=', 'fiscal_data_module'),
+                            ('manufacturer_type','!=', 'HKA')]}"/>
+                    <widget 
+                        name="iot-mf-button" 
+                        action="configure_device" 
+                        attrs="{'invisible':['|',('type','!=', 'fiscal_data_module'),
+                            ('manufacturer_type','!=', 'HKA')]}"/>
                 </header>
             </xpath>
             <xpath expr="//notebook" position="inside">
-                <page string="Print Reports" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}">
+                <page string="Print Reports" attrs="{'invisible':['|',
+                    ('type','!=', 'fiscal_data_module'),
+                    ('manufacturer_type','!=', 'HKA')]}">
                     <group>
                         <group>
                             <field name="resume_range_from" placeholder="Date from"/>
@@ -26,7 +53,8 @@
                         </group>
                     </group>
                 </page>
-                <page string="Reprint Documents" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}">
+                <page string="Reprint Documents" attrs="{'invisible':['|',('type','!=', 'fiscal_data_module'),
+                    ('manufacturer_type','!=', 'HKA')]}">
                     <group>
                         <group>
                             <field name="reprint_type" placeholder="Type"/>
@@ -48,7 +76,8 @@
                         </group>
                     </group>
                 </page>
-                <page string="Tools" groups="base.group_no_one" attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}">
+                <page string="Tools" groups="base.group_no_one" attrs="{'invisible':['|',('type','!=', 'fiscal_data_module'),
+                    ('manufacturer_type','!=', 'HKA')]}">
                     <group>
                         <group>
                             <label for="payment_methods"/>
@@ -86,23 +115,32 @@
 
             <xpath expr="//field[@name='identifier']" position="after">
                 <field 
+                    name="manufacturer_type"
+                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                <field 
                     name="serial_machine"
                     attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
                 <field 
                     name="flag_21"
-                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    attrs="{'invisible':['|',
+                    ('type','!=', 'fiscal_data_module'),
+                    ('manufacturer_type','!=', 'HKA')]}"/>
                 <field 
                     name="flag_24"
-                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    attrs="{'invisible':['|',('type','!=', 'fiscal_data_module'),
+                    ('manufacturer_type','!=', 'HKA')]}"/>
                 <field 
                     name="show_version"
-                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    attrs="{'invisible':['|',('type','!=', 'fiscal_data_module'),
+                    ('manufacturer_type','!=', 'HKA')]}"/>
                 <field 
                     name="has_cashbox"
-                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    attrs="{'invisible':['|',('type','!=', 'fiscal_data_module'),
+                    ('manufacturer_type','!=', 'HKA')]}"/>
                 <field 
                     name="traditional_line"
-                    attrs="{'invisible':[('type','!=', 'fiscal_data_module')]}"/>
+                    attrs="{'invisible':['|',('type','!=', 'fiscal_data_module'),
+                    ('manufacturer_type','!=', 'HKA')]}"/>
             </xpath>
         </field>
     </record>

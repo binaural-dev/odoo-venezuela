@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_session_form" model="ir.ui.view">
+        <field name="name">pos.session.form</field>
+        <field name="model">pos.session</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_session_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group" position="inside">
+                <field name="foreign_currency_id" invisible="1"/>
+                <field name="foreign_cash_register_balance_start" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
+                <field name="foreign_cash_register_balance_end_real" attrs="{'invisible': [('state', '!=', 'closed')]}" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
+            </xpath>
+        </field>
+
+    </record>
+
+
+</odoo>

@@ -281,6 +281,13 @@ msgid "Document"
 msgstr "Documento"
 
 #. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "Empty Paymentline"
+msgstr "Linea de Pago Vacía"
+
+#. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__end_date
 msgid "End Date"
 msgstr "Fecha Final"
@@ -865,7 +872,7 @@ msgstr ""
 #. module: binaural_pos
 #: model:ir.model,name:binaural_pos.model_stock_picking
 msgid "Transfer"
-msgstr "Transferir"
+msgstr "Albarán"
 
 #. module: binaural_pos
 #: model:ir.model.fields,field_description:binaural_pos.field_pos_payment_report__type_report
@@ -905,6 +912,13 @@ msgstr ""
 #, python-format
 msgid "View Payments Origin"
 msgstr "Ver Pagos del Origen"
+
+#. module: binaural_pos
+#. odoo-javascript
+#: code:addons/binaural_pos/static/src/js/PaymentScreen.js:0
+#, python-format
+msgid "You can't validate with empty payment lines"
+msgstr "No puede validar con lineas de pago vacias"
 
 #. module: binaural_pos
 #. odoo-python
