@@ -35,3 +35,11 @@ class PosOrder(models.Model):
         res = super()._create_invoice(move_vals)
         res.write({"seller_id": move_vals["seller_id"]})
         return res
+
+    def _export_for_ui(self, order):
+        res = super()._export_for_ui(order)
+        seller = False
+        if order.seller_id:
+            seller = order.seller_id.read(["id","name"])[0]
+        res["seller_id"] = seller
+        return res

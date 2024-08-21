@@ -1,0 +1,130 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_pos_commissions
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20240718\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-07-23 19:41+0000\n"
+"PO-Revision-Date: 2024-07-23 19:41+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_pos_commissions
+#. odoo-javascript
+#: code:addons/binaural_pos_commissions/static/src/js/ProductState.js:0
+#, python-format
+msgid ""
+"An error occurred when loading product prices. Make sure all pricelists are "
+"available in the POS."
+msgstr "Ha ocurrido un error al cargar los precios de los productos."
+"Asegurate de que todas las tarifas esten disponibles en POS"
+
+#. module: binaural_pos_commissions
+#: model:ir.model.fields,field_description:binaural_pos_commissions.field_pos_order__commission_invoice_date_field
+msgid "Commission Invoice Date Field"
+msgstr "Fecha en factura cliente para la comisión"
+
+#. module: binaural_pos_commissions
+#: model:ir.model.fields,field_description:binaural_pos_commissions.field_pos_order__commission_payment_state
+msgid "Commission Payment State"
+msgstr "Estado de Pago de Comisión"
+
+#. module: binaural_pos_commissions
+#: model:ir.model,name:binaural_pos_commissions.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: binaural_pos_commissions
+#: model:ir.model.fields,field_description:binaural_pos_commissions.field_pos_order__compute_commission_when
+msgid "Compute Commission When"
+msgstr "Calcular Comisión Con"
+
+#. module: binaural_pos_commissions
+#: model:ir.model,name:binaural_pos_commissions.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
+
+#. module: binaural_pos_commissions
+#: model:ir.model.fields,field_description:binaural_pos_commissions.field_set_commission_order_to_invoice__is_pos
+msgid "Is Pos"
+msgstr "Es de POS"
+
+#. module: binaural_pos_commissions
+#: model:ir.model,name:binaural_pos_commissions.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: binaural_pos_commissions
+#: model:ir.model,name:binaural_pos_commissions.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: binaural_pos_commissions
+#: model:ir.model.fields,help:binaural_pos_commissions.field_pos_order__commission_payment_state
+msgid "Payment State (Commission Invoice)"
+msgstr "Estado de Pago (Factura de Comisión)"
+
+#. module: binaural_pos_commissions
+#: model_terms:ir.ui.view,arch_db:binaural_pos_commissions.view_pos_order_form
+#: model_terms:ir.ui.view,arch_db:binaural_pos_commissions.view_pos_order_tree
+msgid "Payment State (Commission)"
+msgstr "Estado de Pago (Comisión)"
+
+#. module: binaural_pos_commissions
+#: model:ir.model,name:binaural_pos_commissions.model_pos_order_line
+msgid "Point of Sale Order Lines"
+msgstr "Líneas de pedido de Punto de Venta"
+
+#. module: binaural_pos_commissions
+#: model:ir.model,name:binaural_pos_commissions.model_pos_order
+msgid "Point of Sale Orders"
+msgstr "Pedidos del TPV"
+
+#. module: binaural_pos_commissions
+#: model:ir.model.fields,field_description:binaural_pos_commissions.field_pos_order_line__commission_policy_line_image_ids
+msgid "Policy Line Images"
+msgstr "Imágenes de Línea de Política"
+
+#. module: binaural_pos_commissions
+#: model:ir.model.fields,field_description:binaural_pos_commissions.field_set_commission_order_to_invoice__pos_order_ids
+msgid "Pos Order"
+msgstr "Orden de PoS"
+
+#. module: binaural_pos_commissions
+#: model:ir.model.fields,field_description:binaural_pos_commissions.field_pos_order_line__pricelist_item_id
+msgid "Pricelist Item"
+msgstr "Elemento de Lista de Precio"
+
+#. module: binaural_pos_commissions
+#: model:ir.model.fields,field_description:binaural_pos_commissions.field_pos_order__priority_commission_policy_type
+msgid "Priority Commission Policy Type"
+msgstr "Prioridad del tipo de Politica de Comisión"
+
+#. module: binaural_pos_commissions
+#: model:ir.model,name:binaural_pos_commissions.model_set_commission_order_to_invoice
+msgid "Set Commission Order To Invoice"
+msgstr "Establecer Comisión desde la Orden a Factura"
+
+#. module: binaural_pos_commissions
+#. odoo-python
+#: code:addons/binaural_pos_commissions/models/pos_order.py:0
+#, python-format
+msgid "Set Commission Order to Invoice"
+msgstr "Establecer Comisión desde la Orden a Factura"
+
+#. module: binaural_pos_commissions
+#: model:ir.actions.server,name:binaural_pos_commissions.action_set_commission_from_pos
+msgid "Set Commission from POS"
+msgstr "Establecer comisión desde POS"
+
+#. module: binaural_pos_commissions
+#: model:ir.model.fields,field_description:binaural_pos_commissions.field_res_company__use_image_from_sale_order
+#: model:ir.model.fields,field_description:binaural_pos_commissions.field_res_config_settings__pos_use_image_from_sale_order
+msgid "Use Image From Sale Order"
+msgstr "Usar imagen de Comision en POS desde el Pedido de Venta"

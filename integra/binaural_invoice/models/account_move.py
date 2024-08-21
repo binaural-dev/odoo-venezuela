@@ -84,9 +84,7 @@ class AccountMove(models.Model):
                 if not self.validate_payment(payment):
                     continue
 
-                account_payment_id = payment.get("account_payment_id", False)
-                if account_payment_id:
-                    dates.append(payment.get("date", False))
+                dates.append(payment.get("date", False))
 
             if len(dates) > 0:
                 last_date = fields.Date.from_string(max(dates))
