@@ -97,33 +97,17 @@ class PortalAccount(PortalAccount):
         "/my/invoices/<int:invoice_id>/seller_invoice", type="http", auth="public", website=True
     )
     def portal_my_invoice_seller(self, invoice_id=None, access_token=None, **kw):
+        user = request.env.user
         invoice = request.env["account.move"].sudo().browse(invoice_id)
-        states = invoice._fields["payment_state"].selection
-        payment_state = invoice.payment_state
+        if not user.employee_id.is_seller or invoice.seller_id.id != user.employee_id.id:
+            return request.redirect("/my/home")
         symbol_currency = request.env.company.currency_id
-        translations = {
-            "not_paid": "No pagadas",
-            "in_payment": "En proceso de pago",
-            "paid": "Pagado",
-            "partial": "Pagado Parcialmente",
-            "reversed": "Revertido",
-            "invoicing_legacy": "Factura Sistema Anterior"
-        }
-
-        for state in states:
-            if state[0] == payment_state:
-                payment_state = translations.get(state[0], state[1])
-                break
 
         return request.render(
             "binaural_mobile.portal_invoices_seller",
-            {
-                "currency": symbol_currency,
-                "invoice": invoice,
-                "payment_state": payment_state,
-                "no_footer": True
-            },
+            {"currency": symbol_currency, "invoice": invoice, "no_footer": True},
         )
+
 
     @http.route("/get_tax_invoices", type="json", auth="public", website=True)
     def get_tax_invoices(self, invoice_id=None, **kw):
