@@ -1,2 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_rma_internal_user,internal_user_rma,product.model_product_product,rma.rma_group_user_own,1,0,0,0

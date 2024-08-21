@@ -1,8 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<odoo>
-    <template id="portal_budget_form" name="portal_budget_form" inherit_id="binaural_mobile.portal_budget_form">
-        <xpath expr="//div/form[1]" position="after">
-            <t t-call="binaural_mobile_multipackage.mobile_modal_multiple_packaging"/>
-        </xpath>
-    </template>
-</odoo>

@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_stock_picking_cart,stock_picking_cart,model_stock_picking_cart,,1,1,1,1
-access_stock_operation_supervisor,stock_operation_supervisor,model_stock_operation_supervisor,,1,1,1,1
-access_stock_picking_time,stock_picking_time,model_stock_picking_time,,1,1,1,1
-access_stock_picking_operation,stock_picking_incomplete_wizard,model_stock_picking_incomplete,,1,1,1,1

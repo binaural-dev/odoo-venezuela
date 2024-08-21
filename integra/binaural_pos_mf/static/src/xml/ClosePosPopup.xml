@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<templates id="template" xml:space="preserve">
-    <t t-name="ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension" owl="1">
-        <xpath expr="//footer[hasclass('footer')]" position="inside">
-            <div class="button" t-on-click="generate_report_z" title="Generate report Z to close Report Z">Report Z</div>
-            <div class="button" t-on-click="generate_report_x" title="Generate report X">Report X</div>
-        </xpath>
-    </t>
-</templates>

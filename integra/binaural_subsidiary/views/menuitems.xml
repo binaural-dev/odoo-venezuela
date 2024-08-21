@@ -1,7 +1,0 @@
-<odoo>
-    <menuitem
-	id="menu_subisidiary_configuration"
-	name="Subsidiaries"
-	parent="account.menu_finance_configuration"
-	action="action_account_analytic_subsidiary"/>
-</odoo>
