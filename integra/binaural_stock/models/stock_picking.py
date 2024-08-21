@@ -67,6 +67,8 @@ class StockPicking(models.Model):
     packs_count = fields.Integer(compute="_compute_stock_pickings_by_origin")
     outs_count = fields.Integer(compute="_compute_stock_pickings_by_origin")
 
+    ##TODO Considerar si se pueden refactorizar estas funciones y dejar una sola a la que se le pase
+    ###### el tipo de picking.
     def _get_picks(self, assigned=False):
         if not self.group_id:
             return self.env["stock.picking"]
@@ -108,6 +110,7 @@ class StockPicking(models.Model):
             domain = expression.AND([[("state", "in", ["assigned", "waiting"])], domain])
             return self.search(domain, limit=1)
         return self.search(domain)
+    ##END TODO
 
     @api.depends("picks_count", "packs_count", "outs_count")
     def _compute_stock_pickings_by_origin(self):

@@ -85,6 +85,7 @@ class PortalAccount(PortalAccount):
             {"currency": symbol_currency, "invoice": invoice, "no_footer": True},
         )
 
+
     @http.route("/get_tax_invoices", type="json", auth="public", website=True)
     def get_tax_invoices(self, invoice_id=None, **kw):
         data = {"status": 200, "msg": _("Success")}
