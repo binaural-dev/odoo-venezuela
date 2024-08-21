@@ -1,14 +1,10 @@
 FROM ubuntu:jammy
 MAINTAINER Odoo S.A. <info@odoo.com>
 
-# USER root
-USER root
+SHELL ["/bin/bash", "-xo", "pipefail", "-c"]
 
-# Install debian packages
-RUN set -x ; \
-    apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends apt-transport-https build-essential ca-certificates curl ffmpeg file flake8 fonts-freefont-ttf fonts-noto-cjk gawk gnupg gsfonts libldap2-dev libjpeg9-dev libsasl2-dev libxslt1-dev lsb-release npm ocrmypdf sed sudo unzip xfonts-75dpi zip zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Generate locale C.UTF-8 for postgres and general locale data
+ENV LANG C.UTF-8
 
 # Retrieve the target architecture to install the correct wkhtmltopdf package
 ARG TARGETARCH
