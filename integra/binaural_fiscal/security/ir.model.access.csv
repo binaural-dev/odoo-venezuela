@@ -1,3 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_fiscal_journals,Fiscal Journals,account.model_account_journal,binaural_fiscal.access_fiscal_journals,1,1,1,0
-access_no_fiscal_journals,No Fiscal Journals,account.model_account_journal,binaural_fiscal.access_no_fiscal_journals,1,1,1,0

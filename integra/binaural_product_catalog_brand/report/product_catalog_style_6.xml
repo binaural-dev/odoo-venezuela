@@ -1,9 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<odoo>
-  <template id="style_6" inherit_id="binaural_product_catalog.style_6">
-      <xpath expr="//div[@class='card-catalog__specifications']" position="inside">
-          <p class="helvetica-bold" t-if="show_brand">Marca: <span t-esc="o.get('brand', '')"/>
-          </p>
-    </xpath>
-  </template>
-</odoo>

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<templates id="template" xml:space="preserve">
-    <t t-name="ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension" owl="1">
-        <xpath expr="//footer[hasclass('footer')]" position="inside">
-            <div class="button" t-on-click="close_pdv" title="Close PDV">Cerrar PDV</div>
-            <div t-if="env.pos.config.pre_close" class="button" t-on-click="pre_close_pdv" title="Close PDV">Pre-Cerrar PDV</div>
-        </xpath>
-    </t>
-</templates>

@@ -1,6 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_hr_allowance,access_hr_allowance,model_hr_allowance,,1,1,1,0
-access_hr_allowance_line,access_hr_allowance_line,model_hr_allowance_line,,1,1,1,1
-access_hr_payroll_move_hr_user,access_hr_payroll_move_hr_user,model_hr_payroll_move,hr.group_hr_user,1,0,0,0
-access_hr_payroll_move_hr_manager,access_hr_payroll_move_hr_manager,model_hr_payroll_move,hr.group_hr_manager,1,1,1,1
-access_binaural_hr_payslip_payment_methods,access_binaural_hr_payslip_payment_methods,model_hr_payslip_payment_methods,,1,1,1,1
