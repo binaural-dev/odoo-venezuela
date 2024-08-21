@@ -1,17 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+	<template id="portal_my_home_menu_invoices_seller" inherit_id="account.portal_my_home_menu_invoice" priority="30">
+		<xpath expr="//li[2]" position="replace">
+			<t t-if="request.env.user.employee_id.is_seller">
+				<li t-if="invoice" class="breadcrumb-item active">
+					<a t-if="invoice" t-attf-href="/my/invoices?{{ keep_query() }}">Invoices</a>
+				</li>
+			</t>
+		</xpath>
+	</template>
 
-    <template id="portal_my_home_menu_invoices_seller"  inherit_id="account.portal_my_home_menu_invoice" priority="30">
-        <xpath expr="//li[2]" position="replace">
-            <t t-if="request.env.user.employee_id.is_seller">
-                <li t-if="invoice" class="breadcrumb-item active">
-                    <a t-if="invoice" t-attf-href="/my/invoices?{{ keep_query() }}">Invoices</a>
-                </li>
+	<!-- Codicionar y agregar items en /my Portal -->
+	<template id="portal_my_home_invoice" name="Show Invoices &amp; Bills" inherit_id="account.portal_my_home_invoice" customize_show="True" priority="30">
+		<xpath expr="//div[2]/t[1]" position="replace">
+			<t t-if="not request.env.user.employee_id.is_seller">
+				<t t-call="portal.portal_docs_entry">
+					<t t-set="icon" t-value="'/account/static/src/img/Bill.svg'"/>
+					<t t-set="title">Our Invoices</t>
+					<t t-set="url" t-value="'/my/invoices?filterby=bills'"/>
+					<t t-set="text">Follow, download or pay our invoices</t>
+					<t t-set="placeholder_count" t-value="'bill_count'"/>
+				</t>
+			</t>
+		</xpath>
+		<xpath expr="//div[1]/t[1]" position="replace">
+			<t t-call="portal.portal_docs_entry" t-if="request.env.user.employee_id.is_seller">
+                <t t-set="icon" t-value="'/account/static/src/img/Bill.svg'"/>
+                <t t-set="title">Your Invoices</t>
+                <t t-set="url" t-value="'/my/invoices'"/>
+                <t t-set="text">Invoices for Seller</t>
+                <t t-set="placeholder_count" t-value="'invoice_count'"/>
             </t>
-        </xpath>
-    </template>
+			<t t-call="portal.portal_docs_entry" t-else="">
+                <t t-set="icon" t-value="'/account/static/src/img/Bill.svg'"/>
+                <t t-set="title">Your Invoices</t>
+                <t t-set="url" t-value="'/my/invoices?filterby=invoices'"/>
+                <t t-set="text">Follow, download or pay your invoices</t>
+                <t t-set="placeholder_count" t-value="'invoice_count'"/>
+            </t>
+		</xpath>
+	</template>
 
-    <template id="portal_invoices_seller" name="Invoice">
+	<template id="portal_invoices_seller" name="Invoice">
 		<t t-call="portal.portal_layout">
 			<t t-set="breadcrumbs_searchbar" t-value="True"/>
 			<t t-call="portal.portal_searchbar">
@@ -112,5 +142,4 @@
 			</div>
 		</t>
 	</template>
-
 </odoo>

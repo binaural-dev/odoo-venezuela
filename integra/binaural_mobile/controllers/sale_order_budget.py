@@ -96,7 +96,6 @@ class SaleOrderBudget(http.Controller):
     @http.route("/settings/read", type="json", methods=["POST"], auth="public", website=False, sitemap=False)
     def get_settings(self, **kwargs):
         allow_out_of_stock_order = request.env['res.config.settings'].sudo().get_values().get('allow_out_of_stock_order')  # Crear una instancia temporal de res.config.settings
-
         return {
             "allow_out_of_stock_order": allow_out_of_stock_order,
         }

@@ -1,5 +1,5 @@
 from odoo import api, fields, models
-from odoo.addons.theme_prime.controllers.main import ThemePrimePWA
+# from odoo.addons.theme_prime.controllers.main import ThemePrimePWA
 
 
 class ResCompany(models.Model):

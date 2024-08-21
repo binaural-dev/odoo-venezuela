@@ -8,7 +8,7 @@
     # for the full list
     "category": "Hidden",
     "license": "LGPL-3",
-    "version": "16.0.0.0.6",
+    "version": "17.0.1.0.0",
     # any module necessary for this one to work correctly
     "depends": [
         "binaural_stock",

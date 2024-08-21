@@ -2,13 +2,14 @@
     "name": "Binaural Facturación",
     "summary": """
        Modulo para contabilidad Venezolana """,
-    "version": "16.0.3.2.3",
+    "version": "17.0.1.0.0",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
     # any module necessary for this one to work correctly
     "depends": [
+        "binaural_base",
         "binaural_accountant",
         "binaural_contact",
         "binaural_fiscal",

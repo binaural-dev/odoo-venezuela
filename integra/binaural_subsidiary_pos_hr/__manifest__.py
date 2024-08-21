@@ -4,7 +4,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Point Of Sale",
-    "version": "16.0.0.0.3",
+    "version": "17.0.1.0.0",
     "depends": ["binaural_subsidiary_pos", "binaural_pos_hr"],
     "data": [
 

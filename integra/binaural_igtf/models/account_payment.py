@@ -8,11 +8,6 @@ _logger = logging.getLogger(__name__)
 class AccountPaymentIgtf(models.Model):
     _inherit = "account.payment"
 
-    def default_is_igtf(self):
-        return self.env.company.is_igtf or False
-
-    is_igtf = fields.Boolean(string="IGTF", default=default_is_igtf, help="IGTF", store=True)
-
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
         default=False,
@@ -41,39 +36,39 @@ class AccountPaymentIgtf(models.Model):
         string="Amount with IGTF", compute="_compute_amount_with_igtf", store=True
     )
 
-    @api.depends("is_igtf", "partner_id")
+    @api.depends("partner_id")
     def _compute_igtf_percentage(self):
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
             if (
-                payment.is_igtf_on_foreign_exchange and
-                payment.env.company.taxpayer_type == "special"
+                payment.is_igtf_on_foreign_exchange
+                and payment.env.company.taxpayer_type == "special"
                 and payment.partner_id.taxpayer_type != "special"
                 and payment.partner_type == "supplier"
             ):
                 payment.igtf_percentage = 2.0
 
-    @api.depends("amount", "is_igtf", "igtf_amount")
+    @api.depends("amount", "igtf_amount")
     def _compute_amount_with_igtf(self):
         for payment in self:
             if not payment.amount_with_igtf:
                 payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
-    @api.depends("journal_id", "is_igtf")
+    @api.depends("journal_id")
     def _compute_is_igtf(self):
         for payment in self:
-            if payment.journal_id.is_igtf and payment.journal_id.fiscal and payment.is_igtf:
+            if payment.journal_id.is_igtf and payment.journal_id.fiscal:
                 payment.is_igtf_on_foreign_exchange = True
 
-    @api.depends("amount", "is_igtf")
+    @api.depends("amount")
     def _compute_igtf_amount(self):
         for payment in self:
             if not payment.igtf_amount:
                 payment.igtf_amount = 0.0
-                if payment.is_igtf and payment.journal_id.is_igtf and payment.journal_id.fiscal:
+                if payment.journal_id.is_igtf and payment.journal_id.fiscal:
                     payment.igtf_amount = payment.amount * (payment.igtf_percentage / 100)
 
-    def _prepare_move_line_default_vals(self, write_off_line_vals=None):
+    def _prepare_move_line_default_vals(self, write_off_line_vals=None, force_balance=None):
         """Prepare values to create a new account.move.line for a payment.
         this method adds the igtf in the move line values to be created depending on the payment type
 
@@ -86,7 +81,7 @@ class AccountPaymentIgtf(models.Model):
 
         vals = super(AccountPaymentIgtf, self)._prepare_move_line_default_vals(write_off_line_vals)
 
-        if self.igtf_percentage == 3:
+        if self.igtf_percentage == self.env.company.igtf_percentage:
             self._create_igtf_moves_in_payments(vals)
 
         if self.igtf_percentage == 2:
@@ -111,7 +106,7 @@ class AccountPaymentIgtf(models.Model):
                 "partner_id": self.partner_id.id,
                 "manually_set_rate": True,
                 "payment_igtf_id": self.id,
-                "foreign_rate":self.foreign_rate,
+                "foreign_rate": self.foreign_rate,
                 "foreign_inverse_rate": self.foreign_inverse_rate,
                 "ref": "IGTF EXPENSE SUPPLIER" + self.name,
                 "line_ids": [
@@ -155,11 +150,15 @@ class AccountPaymentIgtf(models.Model):
         )
 
         for payment in self:
-            if payment.is_igtf and payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
+            _logger.info(payment.amount)
+            _logger.info(payment.is_igtf_on_foreign_exchange)
+            if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
+                _logger.info("HERE")
                 if payment.payment_type == "inbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
 
                     if not vals_igtf:
+                        _logger.info("IN")
                         payment._prepare_inbound_move_line_igtf_vals(vals)
                     else:
                         raise UserError(_("IGTF already exists in the move line values"))
@@ -167,6 +166,7 @@ class AccountPaymentIgtf(models.Model):
                 if payment.payment_type == "outbound":
                     vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
                     if not vals_igtf:
+                        _logger.info("OUT")
                         payment._prepare_outbound_move_line_igtf_vals(vals)
                     else:
                         raise UserError(_("IGTF already exists in the move line values"))
@@ -195,7 +195,7 @@ class AccountPaymentIgtf(models.Model):
                 "currency_id": self.currency_id.id,
                 "amount_currency": -igtf_amount,
                 "account_id": igtf_account
-                if self.igtf_percentage == 3
+                if self.igtf_percentage == self.env.company.igtf_percentage
                 else igtf_account_two_percentage,
                 "partner_id": self.partner_id.id,
             }
@@ -227,7 +227,7 @@ class AccountPaymentIgtf(models.Model):
                 "currency_id": self.currency_id.id,
                 "amount_currency": igtf_amount,
                 "account_id": igtf_account
-                if self.igtf_percentage == 3
+                if self.igtf_percentage == self.env.company.igtf_percentage
                 else igtf_account_two_percentage,
                 "partner_id": self.partner_id.id,
             }
@@ -286,30 +286,36 @@ class AccountPaymentIgtf(models.Model):
                         continue
 
                     if self.id == payment_id:
-                        return abs(payment['amount'])
+                        return abs(payment["amount"])
             return self.amount
 
-
         for payment in self:
-            if (payment.reconciled_invoice_ids or payment.reconciled_bill_ids) and payment.is_igtf_on_foreign_exchange:
+            if (
+                payment.reconciled_invoice_ids or payment.reconciled_bill_ids
+            ) and payment.is_igtf_on_foreign_exchange:
                 for invoice in payment.reconciled_invoice_ids:
                     if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                        invoice.bi_igtf = invoice.bi_igtf - (get_payment_amount_invoice(payment, invoice) * self.foreign_rate)
+                        invoice.bi_igtf = invoice.bi_igtf - (
+                            get_payment_amount_invoice(payment, invoice) * self.foreign_rate
+                        )
                     else:
-                        invoice.bi_igtf = invoice.bi_igtf - get_payment_amount_invoice(payment, invoice)
+                        invoice.bi_igtf = invoice.bi_igtf - get_payment_amount_invoice(
+                            payment, invoice
+                        )
 
                 for bill in payment.reconciled_bill_ids:
                     if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
-                        bill.bi_igtf = bill.bi_igtf - (get_payment_amount_invoice(payment, bill) * self.foreign_rate)
+                        bill.bi_igtf = bill.bi_igtf - (
+                            get_payment_amount_invoice(payment, bill) * self.foreign_rate
+                        )
                     else:
                         bill.bi_igtf = bill.bi_igtf - get_payment_amount_invoice(payment, bill)
-        
+
                 move = self.env["account.move"].search([("payment_igtf_id", "=", payment.id)])
                 if move:
                     move.button_draft()
 
         return super(AccountPaymentIgtf, self).action_draft()
-
 
     def get_bi_igtf(self):
         self.ensure_one()
@@ -318,4 +324,3 @@ class AccountPaymentIgtf(models.Model):
             amount_without_difference = amount_without_difference * self.foreign_rate
 
         return amount_without_difference
-

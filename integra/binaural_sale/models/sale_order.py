@@ -33,7 +33,6 @@ class SaleOrder(models.Model):
         string="VAT",
         help="VAT of the partner",
         compute="_compute_vat",
-        readonly=False,
     )
 
     foreign_rate = fields.Float(
@@ -426,8 +425,8 @@ class SaleOrder(models.Model):
         skip_not_allow_sell_products_validation = self.env.context.get(
             "skip_not_allow_sell_products_validation", False
         )
-        if self.env.company.not_allow_sell_products and not skip_not_allow_sell_products_validation:
-            for order in self:
+        for order in self:
+            if self.env.company.not_allow_sell_products and not skip_not_allow_sell_products_validation:
                 for line in order.order_line:
                     if (
                         line.product_id.detailed_type == "product"

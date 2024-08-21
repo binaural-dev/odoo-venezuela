@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ##############################################################################
 #
 #    You should have received a copy of the GNU General Public License
@@ -9,7 +8,7 @@
 {
     'name': 'MercadoLibre Stock Management Extension / Mercado Libre Publisher Extension',
     'summary': 'MercadoLibre Stock Management Extension / Mercado Libre Publisher Extension',
-    'version': '16.0.23.12',
+    'version': "17.0.1.0.0",
     'author': 'Moldeo Interactive',
     'website': 'https://www.moldeointeractive.com',
     "category": "Sales",

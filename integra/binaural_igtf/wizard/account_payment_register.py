@@ -34,16 +34,18 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         store=True,
     )
 
-    @api.depends("journal_id","currency_id")
+    @api.depends("journal_id", "currency_id")
     def _compute_check_igtf(self):
         for payment in self:
             payment.is_igtf = False
-            if payment.currency_id.id == 2 and payment.journal_id.currency_id.id == 2:
+            if (
+                payment.currency_id.id == self.env.ref("base.USD").id
+                and payment.journal_id.currency_id.id == self.env.ref("base.USD").id
+            ):
                 for line in payment.line_ids:
                     if (
                         self.env.company.taxpayer_type == "ordinary"
                         and line.move_id.move_type == "out_invoice"
-                        
                     ):
                         payment.is_igtf = False
                     if (
@@ -52,9 +54,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                         and line.move_id.move_type == "in_invoice"
                     ):
                         payment.is_igtf = False
-                    
-                    payment.is_igtf = self.env.company.is_igtf
-            
+
+                    payment.is_igtf = True
 
     @api.depends("is_igtf")
     def _compute_igtf_percentage(self):
@@ -64,7 +65,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 payment.env.company.taxpayer_type == "special"
                 and payment.partner_id.taxpayer_type != "special"
                 and payment.partner_type == "supplier"
-
             ):
                 payment.igtf_percentage = 2.0
 
@@ -86,11 +86,10 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             if (
                 payment.journal_id.is_igtf
                 and payment.journal_id.fiscal
-                and payment.is_igtf
-                and payment.currency_id.name == "USD"
+                and payment.currency_id.id == self.env.ref("base.USD").id
             ):
                 payment.is_igtf_on_foreign_exchange = True
-            
+
             else:
                 payment.is_igtf_on_foreign_exchange = False
 
@@ -99,10 +98,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in self:
             payment.igtf_amount = 0.0
             if (
-                payment.is_igtf
-                and payment.journal_id.fiscal
+                payment.journal_id.fiscal
                 and payment.journal_id.is_igtf
-                and payment.currency_id.name == "USD"
+                and payment.currency_id.id == self.env.ref("base.USD").id
                 and payment.is_igtf_on_foreign_exchange
             ):
                 payment_amount = payment.amount
@@ -139,8 +137,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in res:
             if (
                 payment.journal_id.is_igtf == True
-                and payment.is_igtf
-                and payment.currency_id.name == "USD"
+                and payment.currency_id.id == self.env.ref("base.USD").id
                 and payment.is_igtf_on_foreign_exchange
             ):
                 if self.igtf_percentage != 3:
@@ -152,10 +149,14 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
 
                 if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                     if payment.reconciled_invoice_ids:
-                        payment.reconciled_invoice_ids.bi_igtf += self.amount_without_difference * self.foreign_rate
+                        payment.reconciled_invoice_ids.bi_igtf += (
+                            self.amount_without_difference * self.foreign_rate
+                        )
 
                     if payment.reconciled_bill_ids:
-                        payment.reconciled_bill_ids.bi_igtf += self.amount_without_difference * self.foreign_rate
+                        payment.reconciled_bill_ids.bi_igtf += (
+                            self.amount_without_difference * self.foreign_rate
+                        )
                 else:
                     if payment.reconciled_invoice_ids:
                         payment.reconciled_invoice_ids.bi_igtf += self.amount_without_difference

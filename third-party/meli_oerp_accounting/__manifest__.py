@@ -1,6 +1,6 @@
 {
     "name": "MercadoLibre Accounting / Mercado Libre Publisher Extension",
-    'version': '16.0.23.10',
+    'version': "17.0.1.0.0",
     'author': 'Moldeo Interactive',
     'website': 'https://www.moldeointeractive.com',
     'category': 'Sale',

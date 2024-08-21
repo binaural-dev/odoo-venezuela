@@ -41,7 +41,7 @@
                             </group>
                         </group>
                         <group>
-                            <field name="accumulated_rate_ids" attrs="{'invisible': [('accumulated_rate', '=', False)]}">
+                            <field name="accumulated_rate_ids" invisible="not accumulated_rate">
                                 <tree editable="bottom" string="Accumulated fees">
                                     <field name="name"/>
                                     <field name="start"/>
@@ -66,7 +66,6 @@
             </field>
         </record>
 
-
         <record id="action_fees" model="ir.actions.act_window">
             <field name="name">Fees</field>
             <field name="res_model">fees.retention</field>
@@ -75,9 +74,7 @@
             <field name="view_mode">tree,kanban,form</field>
             <field name="context">{"search_default_status":True}</field>
         </record>
-
     
     </data>
     
-
 </odoo>

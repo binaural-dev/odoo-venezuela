@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Breadcrumbs de Portal-Presupuesto -->
     <template id="portal_my_home_menu_budget" name="Portal layout : budget menu entries" inherit_id="portal.portal_breadcrumbs" priority="30">
         <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
             <li t-if="budget or quotation" class="breadcrumb-item active">

@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "16.0.19.1.7",
+    "version": "17.0.1.0.0",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -18,6 +18,7 @@
         "binaural_fiscal",
         "binaural_contact",
         "binaural_tax_payer",
+        "binaural_base",
         "product",
     ],
     # always loaded

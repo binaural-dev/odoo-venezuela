@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     "name": "Binaural Inventario",
     "summary": """
@@ -9,8 +8,8 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.16.0.17",
-    "depends": ["stock", "binaural_tax", "product", "binaural_rate", "delivery"],
+    "version": "17.0.1.0.0",
+    "depends": ["stock", "binaural_tax", "product", "binaural_rate", "delivery", "stock_delivery"],
     "data": [
         "security/security_binaural_stock.xml",
         "security/binaural_stock_groups.xml",

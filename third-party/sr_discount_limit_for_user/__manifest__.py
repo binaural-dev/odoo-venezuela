@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ##############################################################################
 #
 #    OpenERP, Open Source Management Solution
@@ -10,7 +9,7 @@
 
 {
     'name': 'Discount Limit Per Users',
-    'version': '16.0.0.0',
+    'version': "17.0.1.0.0",
     'category': 'Extra Addons',
     "license": "OPL-1",
     'summary': 'This app will helps you to set discount limit per users.',

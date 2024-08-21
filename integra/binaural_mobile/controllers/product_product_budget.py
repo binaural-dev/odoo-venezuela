@@ -60,7 +60,7 @@ class ProductProductBudget(http.Controller):
         packaging_ids = product_ids.mapped("packaging_ids")
 
         filtered_dict_product_ids = []
-
+        # if packaging_ids:
         for dict_product_id in dict_product_ids:
             current_packaging_ids = packaging_ids.filtered(
                 lambda pack_id: self._filter_product_packaging_id(pack_id, dict_product_id)
@@ -135,13 +135,13 @@ class ProductProductBudget(http.Controller):
             for product in product_batch:
                 product["msg_price"] = False
                 product["type"] = type_mapping.get(product["type"], product["type"])
-                products_without_pricelist.append(product["id"])
+                products_without_pricelist.append(product["product_tmpl_id"][0])
 
         domain_price = self._domain_product_pricelist_item(products_without_pricelist, fee, company_id)
         products_pricelist_ids = request.env["product.pricelist.item"].search_read(domain_price, FIELDITEMS)
 
         pricelist_product_map = {
-            price["id"]: price for price in products_pricelist_ids
+            price["product_tmpl_id"][0]: price for price in products_pricelist_ids
         }
 
         for product_batch in product_ids:
@@ -156,7 +156,7 @@ class ProductProductBudget(http.Controller):
 
         dict_product_ids = self.get_url_image_product(product_ids)
 
-        dict_product_ids = self._get_products_with_packaging(dict_product_ids, record_product_ids)
+        # dict_product_ids = self._get_products_with_packaging(dict_product_ids, record_product_ids)
 
         data.update(
             {

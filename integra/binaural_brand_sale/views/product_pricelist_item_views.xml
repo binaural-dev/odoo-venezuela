@@ -6,8 +6,7 @@
 		<field name="inherit_id" ref="product.product_pricelist_item_form_view" />
 		<field name="arch" type="xml">
 			<xpath expr="//field[@name='applied_on']" position="after">
-				<field name="brand_id" options="{'no_create':1}" 
-				attrs="{'invisible':[('applied_on', '!=', 'brand')],'required':[('applied_on', '=', 'brand')]}"/>
+				<field name="brand_id" options="{'no_create':1}" invisible="applied_on != 'brand'" required="applied_on == 'brand'"/>
 			</xpath>
 		</field>
 	</record>

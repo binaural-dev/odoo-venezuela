@@ -424,8 +424,7 @@ class ResPartner(models.Model):
                             }
                         )
 
-    def name_get(self):
-        res = []
+    def _compute_display_name(self):
         for partner in self:
             name = partner.name or ""
 

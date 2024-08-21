@@ -12,7 +12,14 @@ _logger = logging.getLogger(__name__)
 class AccountTax(models.Model):
     _inherit = "account.tax"
 
-    def _prepare_tax_totals(self, base_lines, currency, tax_lines=None, igtf_base_amount=False):
+    def _prepare_tax_totals(
+        self,
+        base_lines,
+        currency,
+        is_company_currency_requested=False,
+        tax_lines=None,
+        igtf_base_amount=False,
+    ):
         """
         This function add values and calculated of igtf on invoices
         ---------------
@@ -33,9 +40,14 @@ class AccountTax(models.Model):
             - foreign_amount_total_igtf: float
             - formatted_foreign_amount_total_igtf: str
         """
-        res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
+        res = super()._prepare_tax_totals(
+            base_lines,
+            currency,
+            tax_lines,
+            is_company_currency_requested=is_company_currency_requested,
+        )
 
-        invoice = self.env["account.move"] 
+        invoice = self.env["account.move"]
         order = False
         apply_igtf = False
         type_model = ""
@@ -80,7 +92,9 @@ class AccountTax(models.Model):
                 foreign_base_igtf = res.get("foreign_amount_total")
 
         igtf_base_amount = float_round(base_igtf or 0, precision_rounding=currency.rounding)
-        igtf_foreign_base_amount = float_round(foreign_base_igtf or 0, precision_rounding=foreign_currency.rounding)
+        igtf_foreign_base_amount = float_round(
+            foreign_base_igtf or 0, precision_rounding=foreign_currency.rounding
+        )
 
         if float_is_zero(igtf_base_amount, precision_rounding=currency.rounding) == False:
             apply_igtf = True

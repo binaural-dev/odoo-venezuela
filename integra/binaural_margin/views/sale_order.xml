@@ -13,7 +13,7 @@
                 <div class="text-nowrap" groups="base.group_user,binaural_margin.group_odoo_margin">
                     <field name="margin" class="oe_inline" groups="binaural_margin.group_odoo_margin"/>
                     <field name="amount_untaxed" invisible="1"/>
-                    <span class="oe_inline" attrs="{'invisible': [('amount_untaxed', '=', 0)]}" groups="binaural_margin.group_odoo_margin">
+                    <span class="oe_inline" invisible="amount_untaxed == 0" groups="binaural_margin.group_odoo_margin">
                         (<field name="margin_percent" nolabel="1" class="oe_inline" widget="percentage"/>)
                     </span>
                 </div>
@@ -39,7 +39,7 @@
             </field>
             <field name="margin_percent" position="replace">
                 <field name="margin_percent"
-                attrs="{'invisible': [('price_subtotal', '=', 0)]}"
+                invisible="price_subtotal == 0"
                 optional="hide" widget="percentage"
                 groups="binaural_margin.group_odoo_margin"/>    
             </field>

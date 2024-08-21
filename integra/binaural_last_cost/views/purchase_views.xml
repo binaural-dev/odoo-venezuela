@@ -5,7 +5,7 @@
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']/tree/field[@name='price_unit']" position="after">
-                <field name="latest_standard_price" groups="binaural_stock.group_show_standard_price"/>
+                <field name="latest_standard_price" groups="binaural_last_cost.group_show_standard_price"/>
                 <!--
                     This field needs to be readonly when the purchase is confirmed because it's used
                     to know if the latest standard price of the product was changed when the
@@ -13,9 +13,8 @@
                 -->
                 <field
                     name="update_latest_standard_price"
-                    attrs="{'readonly': [('state', '=', 'purchase')]}"
-                    groups="binaural_stock.group_show_standard_price"
-                />
+                    readonly="state == 'purchase'"
+                    groups="binaural_last_cost.group_show_standard_price"/>
             </xpath>
         </field>
     </record>

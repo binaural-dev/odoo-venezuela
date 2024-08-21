@@ -99,8 +99,8 @@ class PosSession(models.Model):
                         ("session_id", "=", session.id),
                         ("payment_method_id", "=", cash_payment_method.id),
                     ],
-                    ["amount"],
-                    ["session_id"],
+                    ['session_id'],
+                    ['amount:sum'],
                 )
                 if result:
                     total_cash_payment = result[0]["amount"]
@@ -147,8 +147,8 @@ class PosSession(models.Model):
                         ("session_id", "=", session.id),
                         ("payment_method_id", "=", cash_payment_method.id),
                     ],
-                    ["foreign_amount"],
-                    ["session_id"],
+                    ['session_id'],
+                    ['foreign_amount:sum'],
                 )
                 if result:
                     total_cash_payment = result[0]["foreign_amount"]

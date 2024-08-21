@@ -5,9 +5,9 @@
             <field name="name">res.config.settings.binaural.rate</field>
             <field name="model">res.config.settings</field>
             <field name="priority" eval="100"/>
-            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="inherit_id" ref="binaural_base.res_config_settings_view_form_binaural_base"/>
             <field name="arch" type="xml">
-                <xpath expr="//div[hasclass('settings')]" position="inside">
+                <xpath expr="//block[@name='binaural_setting_container']" position="inside">
                     <div class="app_settings_block mt-6" data-string="Binaural" string="Binaural" data-key="binaural_rate">
                         <h2>Rates Configuration</h2>
                         <div class="row mt16 o_settings_container" name="binaural_rate_settings">

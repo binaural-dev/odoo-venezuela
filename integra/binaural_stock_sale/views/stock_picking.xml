@@ -9,8 +9,8 @@
             
             <field name="backorder_id" position="after">
                 <field name="sale_order_id" invisible="1"/>
-                <field name="sale_user_id" string="Comercial" attrs="{'invisible':[('sale_order_id' ,'=', False)]}"/>
-                <field name="sale_invoice" string="Nº Factura" attrs="{'invisible':[('sale_order_id' ,'=', False)]}"/>
+                <field name="sale_user_id" string="Comercial" invisible="not sale_order_id"/>
+                <field name="sale_invoice" string="Nº Factura" invisible="not sale_order_id"/>
 
                 <button string="Set Commercial" name="set_sale_pos_order" type="object" class="oe_highlight" groups="base.group_no_one"/>
             </field>

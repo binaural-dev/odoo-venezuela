@@ -12,7 +12,7 @@ class PartnerLedgerCustomHandler(models.AbstractModel):
         amounts_query = self._get_sums_amount_rows_query()
 
         # Create the currency table.
-        ct_query = self.env["res.currency"]._get_query_currency_table(options)
+        ct_query = self._get_query_currency_table(options)
         for column_group_key, column_group_options in report._split_options_per_column_group(
             options
         ).items():
@@ -42,7 +42,7 @@ class PartnerLedgerCustomHandler(models.AbstractModel):
         queries = []
         params = []
         report = self.env.ref("account_reports.partner_ledger_report")
-        ct_query = self.env["res.currency"]._get_query_currency_table(options)
+        ct_query = self._get_query_currency_table(options)
 
         # Getting the string with the rows of the amounts
         amounts_query = self._get_sums_amount_rows_query()
@@ -103,7 +103,7 @@ class PartnerLedgerCustomHandler(models.AbstractModel):
             "(" + " OR ".join(directly_linked_aml_partner_clauses) + ")"
         )
 
-        ct_query = self.env["res.currency"]._get_query_currency_table(options)
+        ct_query = self._get_query_currency_table(options)
         queries = []
         all_params = []
         lang = self.env.lang or get_lang(self.env).code
