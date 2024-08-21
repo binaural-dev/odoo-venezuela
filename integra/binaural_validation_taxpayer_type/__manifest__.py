@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "1.0",
+    "version": "17.0.1.0.0",
     "depends": ["binaural_payment_extension"],
     "data": [
         "views/res_partner.xml",

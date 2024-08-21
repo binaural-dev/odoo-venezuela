@@ -4,7 +4,7 @@
             Modulo para crear regla de acceso que permite  a un usuario interno 
             sin ningun otro permiso a crear notas RMA
             """,
-    "version": "16.0.1.0.0",
+    "version": "17.0.1.0.0",
     "development_status": "Production/Stable",
     "category": "RMA",
     "website": "https://binauraldev.com/",

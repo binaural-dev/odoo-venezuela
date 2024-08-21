@@ -22,12 +22,10 @@ class CommissionPolicyLineImage(models.Model):
     )
     infinite = fields.Boolean()
 
-    def name_get(self):
-        values = []
+    def _compute_display_name(self):
         for record in self:
             range_date = f"[{record.date_from}, {record.date_to if not record.infinite else '∞'}]"
             if record.date_to == record.date_from and not record.infinite:
                 range_date = f"[{record.date_from}]"
-            values.append((record.id, f"{record.policy_type_id.name} {record.commission} % {range_date}"))
-        return values
+            record.display_name = f"{record.policy_type_id.name} {record.commission} % {range_date}"
 

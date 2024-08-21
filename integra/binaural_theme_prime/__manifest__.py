@@ -3,7 +3,7 @@
     "summary": """
         modulo para traducir campos del theme prime en sitio web""",
     "license": "LGPL-3",
-    "version": "16.0.2",
+    "version": "17.0.1.0.0",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Website",

@@ -1,6 +1,6 @@
 {
     "name": "Binaural Catalogo de Producto en Ventas",
-    "version": "16.0.1.0.0",
+    "version": "17.0.1.0.0",
     "category": "stock",
     "summary": """
         Este módulo se utiliza para agregar productos como la funcionalidad de agregar carrito

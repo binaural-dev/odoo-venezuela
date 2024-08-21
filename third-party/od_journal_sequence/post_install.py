@@ -3,8 +3,8 @@
 from odoo import SUPERUSER_ID, api
 
 
-def create_journal_sequences(cr, registry):
-    env = api.Environment(cr, SUPERUSER_ID, {})
+def create_journal_sequences(env):
+    env = api.Environment(env.cr, SUPERUSER_ID, {})
     journals = env["account.journal"].with_context(active_test=False).search([])
     for journal in journals:
         vals = {}

@@ -5,20 +5,16 @@ class SaleReport(models.Model):
     _inherit = "sale.report"
 
     margin_percent = fields.Float(
-        "Margin (%)", store=True, groups="base.group_user", precompute=True, group_operator="avg"
+        "Margin (%)", store=True, group_operator="avg"
     )
     latest_standard_price_margin = fields.Float(
         "Latest Cost Margin",
         store=True,
-        groups="base.group_user",
-        precompute=True,
         group_operator="avg",
     )
     latest_standard_price_margin_percent = fields.Float(
         "Latest Cost Margin (%)",
         store=True,
-        groups="base.group_user",
-        precompute=True,
         group_operator="avg",
     )
 

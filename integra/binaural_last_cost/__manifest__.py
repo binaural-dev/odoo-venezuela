@@ -8,9 +8,10 @@
     "license": "LGPL-3",
     "website": "https://binauraldev.com",
     "category": "Technical",
-    "version": "16.5",
+    "version": "17.0.1.0.0",
     "depends": ["product", "purchase", "stock_account", "stock", "sale"],
     "data": [
+        "security/res_groups.xml",
         "views/product_pricelist_views.xml",
         "views/product_views.xml",
         "views/purchase_views.xml",

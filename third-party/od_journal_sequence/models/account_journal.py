@@ -2,43 +2,30 @@
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
-import logging
-
-_logger = logging.getLogger(__name__)
 
 
 class AccountJournal(models.Model):
     _inherit = "account.journal"
 
-    sequence_id = fields.Many2one(
-        "ir.sequence",
-        string="Entry Sequence",
-        help="This field contains the information related to the numbering of the"
-        " journal entries of this journal.",
-        required=True,
-        copy=False,
-    )
-    sequence_number_next = fields.Integer(
-        string="Next Number",
-        help="The next sequence number will be used for the next invoice.",
-        compute="_compute_seq_number_next",
-        inverse="_inverse_seq_number_next",
-    )
-    refund_sequence_id = fields.Many2one(
-        "ir.sequence",
-        string="Credit Note Entry Sequence",
-        help="This field contains the information related to the "
-        "numbering of the credit note entries of this journal.",
-        copy=False,
-    )
-    refund_sequence_number_next = fields.Integer(
-        string="Credit Notes Next Number",
-        help="The next sequence number will be used for the next" "credit note.",
-        compute="_compute_refund_seq_number_next",
-        inverse="_inverse_refund_seq_number_next",
-    )
+    sequence_id = fields.Many2one('ir.sequence', string='Entry Sequence',
+                                  help="This field contains the information related to the numbering of the"
+                                       " journal entries of this journal.",
+                                  required=True, copy=False)
+    sequence_number_next = fields.Integer(string='Next Number',
+                                          help='The next sequence number will be used for the next invoice.',
+                                          compute='_compute_seq_number_next',
+                                          inverse='_inverse_seq_number_next')
+    refund_sequence_id = fields.Many2one('ir.sequence', string='Credit Note Entry Sequence',
+                                         help="This field contains the information related to the "
+                                              "numbering of the credit note entries of this journal.",
+                                         copy=False)
+    refund_sequence_number_next = fields.Integer(string='Credit Notes Next Number',
+                                                 help='The next sequence number will be used for the next'
+                                                      'credit note.',
+                                                 compute='_compute_refund_seq_number_next',
+                                                 inverse='_inverse_refund_seq_number_next')
 
-    @api.depends("sequence_id.use_date_range", "sequence_id.number_next_actual")
+    @api.depends('sequence_id.use_date_range', 'sequence_id.number_next_actual')
     def _compute_seq_number_next(self):
         for journal in self:
             if journal.sequence_id:
@@ -53,7 +40,7 @@ class AccountJournal(models.Model):
                 sequence = journal.sequence_id._get_current_sequence()
                 sequence.sudo().number_next = journal.sequence_number_next
 
-    @api.depends("refund_sequence_id.use_date_range", "refund_sequence_id.number_next_actual")
+    @api.depends('refund_sequence_id.use_date_range', 'refund_sequence_id.number_next_actual')
     def _compute_refund_seq_number_next(self):
         for journal in self:
             if journal.refund_sequence_id and journal.refund_sequence:
@@ -64,11 +51,7 @@ class AccountJournal(models.Model):
 
     def _inverse_refund_seq_number_next(self):
         for journal in self:
-            if (
-                journal.refund_sequence_id
-                and journal.refund_sequence
-                and journal.refund_sequence_number_next
-            ):
+            if journal.refund_sequence_id and journal.refund_sequence and journal.refund_sequence_number_next:
                 sequence = journal.refund_sequence_id._get_current_sequence()
                 sequence.sudo().number_next = journal.refund_sequence_number_next
 
@@ -76,9 +59,9 @@ class AccountJournal(models.Model):
     def _check_journal_sequence(self):
         for journal in self:
             if (
-                journal.refund_sequence_id
-                and journal.sequence_id
-                and journal.refund_sequence_id == journal.sequence_id
+                    journal.refund_sequence_id
+                    and journal.sequence_id
+                    and journal.refund_sequence_id == journal.sequence_id
             ):
                 raise ValidationError(
                     _(
@@ -89,7 +72,10 @@ class AccountJournal(models.Model):
                 )
             if journal.sequence_id and not journal.sequence_id.company_id:
                 raise ValidationError(
-                    _("The company is not set on sequence '%s' configured on " "journal '%s'.")
+                    _(
+                        "The company is not set on sequence '%s' configured on "
+                        "journal '%s'."
+                    )
                     % (journal.sequence_id.display_name, journal.display_name)
                 )
             if journal.refund_sequence_id and not journal.refund_sequence_id.company_id:
@@ -107,9 +93,9 @@ class AccountJournal(models.Model):
             if not vals.get("sequence_id"):
                 vals["sequence_id"] = self._create_sequence(vals).id
             if (
-                vals.get("type") in ("sale", "purchase")
-                and vals.get("refund_sequence")
-                and not vals.get("refund_sequence_id")
+                    vals.get("type") in ("sale", "purchase")
+                    and vals.get("refund_sequence")
+                    and not vals.get("refund_sequence_id")
             ):
                 vals["refund_sequence_id"] = self._create_sequence(vals, refund=True).id
         return super(AccountJournal, self).create(vals_list)
@@ -119,7 +105,8 @@ class AccountJournal(models.Model):
         code = vals.get("code") and vals["code"].upper() or ""
         prefix = "%s%s/%%(range_year)s/" % (refund and "R" or "", code)
         seq_vals = {
-            "name": "%s %s" % (vals.get("name", _("Sequence")), refund and _("Refund") + " " or ""),
+            "name": "%s %s"
+                    % (vals.get("name", _("Sequence")), refund and _("Refund") + " " or ""),
             "company_id": vals.get("company_id") or self.env.company.id,
             "implementation": "no_gap",
             "prefix": prefix,
@@ -133,59 +120,4 @@ class AccountJournal(models.Model):
         seq_vals = self._prepare_sequence(vals, refund=refund)
         return self.env["ir.sequence"].sudo().create(seq_vals)
 
-    def _init_column(self, column_name):
-        if column_name != "sequence_id":
-            return super()._init_column(column_name)
 
-        # fetch void columns
-        self.env.cr.execute(
-            """
-                SELECT
-                    id, code, company_id, invoice_reference_model, invoice_reference_type, name, type
-                FROM %s
-                WHERE sequence_id IS NULL
-            """
-            % self._table
-        )
-        account_journal_ids = self.env.cr.dictfetchall()
-        if not account_journal_ids:
-            return
-
-        # update existing columns
-        _logger.debug(
-            "Table '%s': setting default value of new column %s to unique values for each row",
-            self._table,
-            column_name,
-        )
-        query = f"""
-            INSERT INTO {self._table}(
-                id,
-                sequence_id,
-                code,
-                company_id,
-                invoice_reference_model,
-                invoice_reference_type,
-                name,
-                type
-            )
-            VALUES
-        """
-        for i, journal in enumerate(account_journal_ids):
-            query += f"""
-                (
-                    {journal['id']},
-                    {self._create_sequence(journal).id},
-                    '{journal['code']}',
-                    {journal['company_id']},
-                    '{journal['invoice_reference_model']}',
-                    '{journal['invoice_reference_type']}',
-                    '{journal['name']}',
-                    '{journal['type']}'
-                )
-            """
-            if i != len(account_journal_ids) - 1:
-                query += ","
-
-        query += "ON CONFLICT (id) DO UPDATE SET sequence_id = EXCLUDED.sequence_id"
-
-        self.env.cr._obj.execute(query)

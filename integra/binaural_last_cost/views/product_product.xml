@@ -7,7 +7,7 @@
         <field name="inherit_id" ref="stock.product_product_stock_tree" />
         <field name="arch" type="xml">
             <field name='display_name' position="after">
-                <field name="latest_standard_price" groups="binaural_stock.group_show_standard_price"/>
+                <field name="latest_standard_price" groups="binaural_last_cost.group_show_standard_price"/>
             </field>
         </field>
     </record>
@@ -19,7 +19,7 @@
         <field name="arch" type="xml">
             <filter name="services" position="after">
                 <filter string="Last Cost" name="last_cost_filter" 
-                domain="[('latest_standard_price', '>', 0)]" groups="binaural_stock.group_show_standard_price"
+                domain="[('latest_standard_price', '>', 0)]" groups="binaural_last_cost.group_show_standard_price"
                 />
             </filter>
         </field>

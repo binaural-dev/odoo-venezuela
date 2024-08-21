@@ -9,7 +9,7 @@
 
             <xpath expr="//page[@name='internal_notes']" position="before">
                 <field name="company_seller" invisible="1"/>
-                <page name="sellers_assigned" string="Sellers"  attrs="{'invisible': [('company_seller', '=', False)]}">
+                <page name="sellers_assigned" string="Sellers"  invisible="not company_seller">
                     <field name="seller_ids" nolabel="1">
                         <tree create="False" delete="False" multi_edit="False" edit="False" editable="top" no_open="1">
                             <field name="name"/>

@@ -98,7 +98,7 @@ class ResPartnerBudget(http.Controller):
         data = {"status": 200, "msg": "OK", "data": False}
         seller_portal_id = request.env.user.employee_id.id
         common_domain = [
-            ('is_public', '=', True),
+            # ('is_public', '=', True),
             ("type", "=", "contact")
         ]
 

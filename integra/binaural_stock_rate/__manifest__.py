@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 {
     "name": "Binaural Tasa Inventario",
     "summary": """
@@ -8,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock / Inventory",
-    "version": "16.4",
+    "version": "17.0.1.0.0",
     "depends": ["stock", "sale_stock", "purchase_stock", "binaural_sale", "binaural_purchase"],
     "data": [
         # 'security/ir.model.access.csv',

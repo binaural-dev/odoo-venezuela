@@ -12,6 +12,7 @@ from . import utils
 _logger = logging.getLogger(__name__)
 FIELDNAMES = [
     "id",
+    "product_tmpl_id",
     "name",
     "type",
     "display_name",
@@ -29,26 +30,41 @@ FIELDNAMES = [
     "product_template_attribute_value_ids",
 ]
 VARIANT_TAG_FIELDS = ["id", "name"]
-FIELDFILTERS = ["id", "search_name", "brand_id", "available_qty", "quantity",]
-FIELDITEMS = ["id", "product_tmpl_id", "pricelist_id", "fixed_price", "min_quantity", "compute_price", "applied_on"]
+FIELDFILTERS = [
+    "id",
+    "search_name",
+    "brand_id",
+    "available_qty",
+    "quantity",
+]
+FIELDITEMS = [
+    "id",
+    "product_tmpl_id",
+    "pricelist_id",
+    "fixed_price",
+    "min_quantity",
+    "compute_price",
+    "applied_on",
+]
 
 
 class ProductProductBudget(http.Controller):
-    
+
     def _filter_product_packaging_id(self, package_id, dict_product_id):
         if package_id.id not in dict_product_id["packaging_ids"]:
             return False
 
         return True
 
-
     def _get_products_with_packaging(self, dict_product_ids, product_ids):
         packaging_ids = product_ids.mapped("packaging_ids")
 
         filtered_dict_product_ids = []
-
+        # if packaging_ids:
         for dict_product_id in dict_product_ids:
-            current_packaging_ids = packaging_ids.filtered(lambda pack_id: self._filter_product_packaging_id(pack_id, dict_product_id))
+            current_packaging_ids = packaging_ids.filtered(
+                lambda pack_id: self._filter_product_packaging_id(pack_id, dict_product_id)
+            )
             # qty_available = dict_product_id["qty_available"]
 
             # if current_packaging_ids and not allow_out_of_stock_order:
@@ -56,20 +72,19 @@ class ProductProductBudget(http.Controller):
 
             #     if qty_available < default_packaging_id.qty:
             #         continue
-
-            dict_packaging_ids = current_packaging_ids.read(["id", "name", "qty", "product_uom_id", "sales", "purchase"])
+            dict_packaging_ids = current_packaging_ids.read(
+                ["id", "name", "qty", "product_uom_id", "sales", "purchase"]
+            )
             dict_product_id["packaging_ids"] = dict_packaging_ids
-            
+
             filtered_dict_product_ids.append(dict_product_id)
 
         return filtered_dict_product_ids
 
-    @http.route(
-        '/budget/product', type="json", auth="public", website=False, sitemap=False
-    )
+    @http.route("/budget/product", type="json", auth="public", website=False, sitemap=False)
     def get_product_product(self, fee=False, limit=0, offset=0, uid=False, **kw):
         """
-        This function is used to consult the products that are available 
+        This function is used to consult the products that are available
         when creating the quote by the seller, it consults the types of
           products that are available due to the configuration
 
@@ -81,26 +96,23 @@ class ProductProductBudget(http.Controller):
         """
         data = {"status": 200, "msg": _("Success")}
         name_search = kw.get("product")
-        company_id = request.env.user.company_id
-        
-        product_type = [('consu', company_id.product_type_consu),
-                ('service', company_id.product_type_service),
-                ('product', company_id.product_type_product)]
+        company_id = request.env["website"].get_current_website().company_id
+
+
+        product_type = [
+            ("consu", company_id.product_type_consu),
+            ("service", company_id.product_type_service),
+            ("product", company_id.product_type_product),
+        ]
 
         product_type = [ptype[0] for ptype in filter(lambda x: x[1], product_type)]
 
-        domain = [
-            ("active", "=", True), 
-            ("sale_ok", "=", True), 
-            ("type", "in", product_type),
-            ]
-        
-        res_company = request.env["res.company"].sudo().search([])
-        allow_out_of_stock_order = request.env['res.config.settings'].sudo().get_values().get('allow_out_of_stock_order')
-        
-        if len(res_company) > 1:
-            domain = expression.AND([domain, [("company_id", "=", company_id.id)]])
-        
+        domain = self._domain_products(product_type, company_id)
+
+        allow_out_of_stock_order = (
+            request.env["res.config.settings"].sudo().get_values().get("allow_out_of_stock_order")
+        )
+
         if name_search:
             search = utils.search_name("product.product", name_search, domain)
             ids = [product[0] for product in search]
@@ -112,73 +124,88 @@ class ProductProductBudget(http.Controller):
         product_ids = record_product_ids.read(FIELDNAMES)
 
         product_ids = self.get_variant_tags(product_ids)
-        result = list()
 
-        if 'product' in product_type:
-            product_product = product_ids.copy()
-            product_consu_service = product_ids.copy()
-            if not allow_out_of_stock_order:
-                product_product = list(filter(lambda product: (product.get('type') == "product" and product.get('quantity') > 0) , product_ids))
-            product_consu_service = list(filter(lambda product: product.get('type') in ['consu', 'service'], product_ids))
+        if "product" in product_type:
+            product_ids = self._filter_products_by_type(product_ids, allow_out_of_stock_order)
 
-            if len(product_product) > 0:
-                result.append(product_product)
-
-            if len(product_consu_service)> 0:
-                result.append(product_consu_service)
-
-            product_ids = result
+        type_mapping = {"service": _("Service"), "consu": _("Consumable"), "product": "product"}
 
         products_without_pricelist = []
+        for product_batch in product_ids:
+            for product in product_batch:
+                product["msg_price"] = False
+                product["type"] = type_mapping.get(product["type"], product["type"])
+                products_without_pricelist.append(product["product_tmpl_id"][0])
 
-        type_mapping = {
-            "service": _("Service"),
-            "consu": _("Consumable"),
-            "product": "product"
+        domain_price = self._domain_product_pricelist_item(products_without_pricelist, fee, company_id)
+        products_pricelist_ids = request.env["product.pricelist.item"].search_read(domain_price, FIELDITEMS)
+
+        pricelist_product_map = {
+            price["product_tmpl_id"][0]: price for price in products_pricelist_ids
         }
 
-        products_without_pricelist = []
-        for product_id in product_ids:
-            for product in product_id:
-                product["msg_price"] = False
-                product_type = type_mapping.get(product["type"], product["type"])
-                product["type"] = product_type
-                products_without_pricelist.append(product["id"])
+        for product_batch in product_ids:
+            for product in product_batch:
+                if product["product_tmpl_id"][0] in pricelist_product_map:
+                    product["msg_price"] = _("Different price/s due to rate conditions")
 
-        domain_price = [("product_tmpl_id", "in", products_without_pricelist), ("pricelist_id", "=", fee)]
-
-        if len(res_company) > 1:
-            domain_price = expression.AND([domain_price, [("company_id", "=", company_id.id)]])
-
-        products_pricelist_ids = request.env["product.pricelist.item"].search_read(domain_price, FIELDITEMS)
-        company_user = request.env.company
-        for product_id in product_ids:
-            for product in product_id:
-                for product_price in products_pricelist_ids:
-                    if product_price['product_tmpl_id'][0] == product['id']:
-                        product["msg_price"] = _("Different price/s due to rate conditions")
-
-        all_product_count = utils.get_model_count("product.product", domain)
         product_count = len(product_ids)
         if not product_count:
-            data.update(
-                {"status": 204, "msg": _("No products available"), "count": 0, "data": False}
-            )
+            data.update({"status": 204, "msg": _("No products available"), "count": 0, "data": False})
             return json.dumps(data)
 
-        dict_product_ids = self.get_url_image_product(result)
+        dict_product_ids = self.get_url_image_product(product_ids)
 
-        dict_product_ids = self._get_products_with_packaging(dict_product_ids, record_product_ids)
+        # dict_product_ids = self._get_products_with_packaging(dict_product_ids, record_product_ids)
 
-        data.update({
-            "data": dict_product_ids, 
-            "count": len(dict_product_ids), 
-            "total_count": all_product_count,
-            "stock_packaging": company_user.group_stock_packaging,
-            "allow_out_of_stock_order": allow_out_of_stock_order,
-        })
+        data.update(
+            {
+                "data": dict_product_ids,
+                "count": len(dict_product_ids),
+                "stock_packaging": company_id.group_stock_packaging,
+                "allow_out_of_stock_order": allow_out_of_stock_order,
+            }
+        )
 
         return json.dumps(data)
+    
+    def _filter_products_by_type(self, product_ids, allow_out_of_stock_order):
+        result = list()
+        product_product = product_ids.copy()
+        product_consu_service = product_ids.copy()
+        if not allow_out_of_stock_order:
+            product_product = list(
+                filter(
+                    lambda product: (
+                        product.get("type") == "product" and product.get("quantity") > 0
+                    ),
+                    product_ids,
+                )
+            )
+        product_consu_service = list(
+            filter(lambda product: product.get("type") in ["consu", "service"], product_ids)
+        )
+
+        result.append(product_product)
+
+        result.append(product_consu_service)
+        return result
+
+    def _domain_product_pricelist_item(self, products_without_pricelist, fee, company_id):
+        return [
+            ("product_tmpl_id", "in", products_without_pricelist),
+            ("pricelist_id", "=", fee),
+            ("company_id", "in", [company_id.id, False])
+        ]
+
+
+    def _domain_products(self, type_p, company_id):
+        return [
+            ("active", "=", True),
+            ("sale_ok", "=", True),
+            ("type", "in", type_p),
+            ("company_id", "in", [company_id.id, False])
+        ]
 
     def get_variant_tags(self, product_ids):
         products = []
@@ -211,7 +238,9 @@ class ProductProductBudget(http.Controller):
         for product in product_ids:
             for value in product:
                 rec = utils.browse_model_data("product.product", value.get("id"))
-                sha = hashlib.sha512(str(getattr(rec, "__last_update")).encode("utf-8")).hexdigest()[:7]
+                sha = hashlib.sha512(str(getattr(rec, "name")).encode("utf-8")).hexdigest()[
+                    :7
+                ]  # pendiente las imagenes
                 product_cpy = value.copy()
                 product_id = str(value.get("id"))
                 url_img = f"/web/image/product.product/{product_id}/image_1024?unique={sha}"

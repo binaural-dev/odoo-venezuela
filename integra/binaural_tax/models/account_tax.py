@@ -12,7 +12,9 @@ class AccountTax(models.Model):
     _inherit = "account.tax"
 
     @api.model
-    def _prepare_tax_totals(self, base_lines, currency, tax_lines=None):
+    def _prepare_tax_totals(
+        self, base_lines, currency, tax_lines=None, is_company_currency_requested=False
+    ):
         """
         This function adds the alternate currency tax amounts to tax_totals.
         In it, the parent function is executed 2 times, once for the original
@@ -46,7 +48,12 @@ class AccountTax(models.Model):
             raise ValidationError(_("No foreign currency configured in the company"))
 
         # Base Currency
-        res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
+        res = super()._prepare_tax_totals(
+            base_lines,
+            currency,
+            tax_lines,
+            is_company_currency_requested=is_company_currency_requested,
+        )
         res_without_discount = res.copy()
         has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
 
@@ -56,7 +63,10 @@ class AccountTax(models.Model):
                 base_line["discount"] = 0
 
             res_without_discount = super()._prepare_tax_totals(
-                base_without_discount, currency, tax_lines
+                base_without_discount,
+                currency,
+                tax_lines,
+                is_company_currency_requested=is_company_currency_requested,
             )
 
         foreign_base_lines, foreign_tax_lines = self.get_foreign_base_tax_lines(
@@ -65,7 +75,10 @@ class AccountTax(models.Model):
 
         # Foreign Currency
         foreign_taxes = super()._prepare_tax_totals(
-            foreign_base_lines, foreign_currency, foreign_tax_lines
+            foreign_base_lines,
+            foreign_currency,
+            foreign_tax_lines,
+            is_company_currency_requested=is_company_currency_requested,
         )
 
         foreign_taxes_without_discount = foreign_taxes.copy()
@@ -75,7 +88,10 @@ class AccountTax(models.Model):
                 foreign_base_line["discount"] = 0
 
             foreign_taxes_without_discount = super()._prepare_tax_totals(
-                foreign_without_discount, foreign_currency, foreign_tax_lines
+                foreign_without_discount,
+                foreign_currency,
+                foreign_tax_lines,
+                is_company_currency_requested=is_company_currency_requested,
             )
 
         res["groups_by_foreign_subtotal"] = foreign_taxes["groups_by_subtotal"]
@@ -88,16 +104,14 @@ class AccountTax(models.Model):
         res["show_discount"] = self.env.company.show_discount_on_moves
 
         res["subtotal"] = res_without_discount["amount_untaxed"]
-        res["formatted_subtotal"] = formatLang(
-            self.env, res["subtotal"], currency_obj=currency
-        )
+        res["formatted_subtotal"] = formatLang(self.env, res["subtotal"], currency_obj=currency)
 
         res["foreign_subtotal"] = foreign_taxes_without_discount["amount_untaxed"]
         res["foreign_formatted_subtotal"] = formatLang(
             self.env, res["foreign_subtotal"], currency_obj=foreign_currency
         )
 
-        res["discount_amount"] =  res["amount_untaxed"] - res_without_discount["amount_untaxed"]
+        res["discount_amount"] = res["amount_untaxed"] - res_without_discount["amount_untaxed"]
         res["formatted_discount_amount"] = formatLang(
             self.env, res["discount_amount"], currency_obj=currency
         )
@@ -136,25 +150,19 @@ class AccountTax(models.Model):
                     }
                 )
 
+        tax_values_list = []
+        for base_line in foreign_base_lines:
+            tax_values_list += self._compute_taxes_for_single_line(base_line)[1]
+
         if foreign_tax_lines:
             for tax_line in foreign_tax_lines:
                 tax_line["currency"] = currency
                 tax_line["tax_amount"] = 0.0
-                for tax in taxes:
-                    if tax_line["tax_repartition_line"].tax_id.id == tax["tax"].id:
-                        tax_amount = tax_line["tax_repartition_line"].tax_id._compute_amount(
-                            float_round(tax["base"], precision_rounding=currency.rounding),
-                            tax["price"],
+                for tax in tax_values_list:
+                    if tax["tax_repartition_line"].id == tax_line["tax_repartition_line"].id:
+                        tax_line["tax_amount"] += float_round(
+                            tax["amount"], precision_digits=currency.decimal_places
                         )
-                        if self.env.company.tax_calculation_rounding_method == "round_globally":
-                            tax_line["tax_amount"] += tax_amount
-                        else:
-                            tax_line["tax_amount"] += float_round(
-                                tax_amount, precision_rounding=currency.rounding
-                            )
 
-                tax_line["tax_amount"] = float_round(
-                    tax_line["tax_amount"], precision_rounding=currency.rounding
-                )
 
         return foreign_base_lines, foreign_tax_lines

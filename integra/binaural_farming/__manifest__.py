@@ -1,7 +1,7 @@
 {
     "name": "Binaural Ganaderia",
     "summary": "Modulo para información de Ganaderia",
-    "version": "16.0.0.0.25",
+    "version": "17.0.1.0.0",
     "category": "Stock",
     "license": "LGPL-3",
     "author": "BinauralDev",

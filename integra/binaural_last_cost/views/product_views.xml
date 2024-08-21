@@ -12,17 +12,11 @@
                 -->
                 <field
                     name="update_last_cost"
-                    attrs="{
-                        'invisible': [('variants_are_active', '=', True), ('product_variant_count', '>', 1), ('is_product_variant', '=', False)]
-                    }" groups="binaural_stock.group_show_standard_price"
-                />
+                    invisible="variants_are_active and product_variant_count &gt; 1 and not is_product_variant" groups="binaural_last_cost.group_show_standard_price"/>
                 <field
                     name="latest_standard_price"
-                    attrs="{
-                        'readonly': [('variants_are_active', '=', True), ('is_product_variant', '=', False)],
-                        'invisible': [('variants_are_active', '=', True), ('product_variant_count', '>', 1), ('is_product_variant', '=', False), ('update_last_cost', '=', False)]
-                    }" groups="binaural_stock.group_show_standard_price"
-                />
+                    invisible="variants_are_active and product_variant_count &gt; 1 and not is_product_variant and not update_last_cost"
+                    readonly="variants_are_active and not is_product_variant" groups="binaural_last_cost.group_show_standard_price"/>
             </div>
         </field>
     </record>
@@ -33,7 +27,7 @@
         <field name="inherit_id" ref="product.product_product_tree_view"/>
         <field name="arch" type="xml">
             <field name="standard_price" position="replace">
-                <field name="standard_price" groups="binaural_stock.group_show_standard_price"/>
+                <field name="standard_price" groups="binaural_last_cost.group_show_standard_price"/>
             </field>
         </field>
     </record>
@@ -44,8 +38,8 @@
         <field name="inherit_id" ref="product.product_variant_easy_edit_view"/>
         <field name="arch" type="xml">
             <field name="standard_price" position="replace">
-                <field name="standard_price" groups="binaural_stock.group_show_standard_price"/>
-                <field name="latest_standard_price" groups="binaural_stock.group_show_standard_price"/>
+                <field name="standard_price" groups="binaural_last_cost.group_show_standard_price"/>
+                <field name="latest_standard_price" groups="binaural_last_cost.group_show_standard_price"/>
             </field>
         </field>
     </record>
@@ -56,7 +50,7 @@
         <field name="inherit_id" ref="product.product_template_tree_view"/>
         <field name="arch" type="xml">
             <field name="standard_price" position="replace">
-                <field name="standard_price" groups="binaural_stock.group_show_standard_price"/>
+                <field name="standard_price" groups="binaural_last_cost.group_show_standard_price"/>
             </field>
         </field>
     </record>

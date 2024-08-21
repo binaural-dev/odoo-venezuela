@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "16.0.1.0.17",
+    "version": "17.0.1.0.0",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -16,6 +16,7 @@
         "binaural_contact",
         "binaural_invoice",
         "binaural_filter_partner",
+        "binaural_base"
     ],
     # always loaded
     "data": [
@@ -24,6 +25,7 @@
         "views/res_config_settings.xml",
         "views/sale_order.xml",
         "views/product_pricelist_item_views.xml",
+        "views/res_partner.xml",
         "views/menuitems.xml",
     ],
     "images": ["static/description/icon.png"],

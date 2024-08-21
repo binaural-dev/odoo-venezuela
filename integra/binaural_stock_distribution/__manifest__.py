@@ -5,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.1.0.2",
+    "version": "17.0.1.0.0",
     "depends": ["stock", "sale_stock", "binaural_sale_stock", "binaural_seller_stock", "fleet"],
     "data": [
         "security/ir.model.access.csv",

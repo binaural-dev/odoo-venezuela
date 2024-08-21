@@ -12,6 +12,11 @@
             <field name="name">Tasa</field>
             <field name="digits">2</field>
         </record>
+
+         <record forcecreate="True" id="alternative_price_product" model="decimal.precision">
+            <field name="name">Foreign Product Price</field>
+            <field name="digits">4</field>
+        </record>
         
     </data>
     

@@ -1,6 +1,6 @@
 {
-    "name": "Binaural IoT - Maquina Fiscal",
-    "version": "16.0.3.3.8",
+    "name": "Binaural IoT - The Factory HKA",
+    "version": "17.0.1.0.0",
     "category": "Accounting",
     "summary": "The Factory HKA (SDK) y Pnp Desarrollos en IoT",
     "license": "LGPL-3",

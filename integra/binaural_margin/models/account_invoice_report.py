@@ -4,7 +4,7 @@ from odoo import api, fields, models
 class AccountInvoiceReport(models.Model):
     _inherit = "account.invoice.report"
 
-    margin = fields.Float(digits="Product Price")
+    margin = fields.Float("Price Margin",digits="Product Price")
 
     margin_percent = fields.Float("Margin (%)", group_operator="avg")
 

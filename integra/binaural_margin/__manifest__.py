@@ -7,8 +7,8 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Sale",
-    "version": "1.9",
-    "depends": ["sale_margin","binaural_last_cost","sale","purchase"],
+    "version": "17.0.1.0.0",
+    "depends": ["sale_margin","binaural_last_cost","sale","purchase", "binaural_base"],
     "data": [
         "data/res_groups.xml",
         "views/sale_order.xml",

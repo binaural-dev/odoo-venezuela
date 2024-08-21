@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Stock/Inventory",
-    "version": "16.0.0.3",
+    "version": "17.0.1.0.0",
     "depends": ["stock", "sale", "binaural_brand"],
     "data": [
         "views/sale_order_views.xml",

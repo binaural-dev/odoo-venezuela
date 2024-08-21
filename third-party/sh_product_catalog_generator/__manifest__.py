@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Part of Softhealer Technologies.
 {
     "name": "Product Catalog Generator",
@@ -17,7 +16,7 @@
 
     "description": """Do you want to represent products in multiple catalogs? Do you want different catalog styles? so you are at the right place. This module helps you to customize the product catalog with the custom style. Here you can design your catalog with catalog type, catalog styles, image option with sizes, box per row, page break, show/hide price, show/hide description, show/hide product link, show/hide internal reference. You can develop your own catalog using this different customization. You can send the product catalog by email. We provide security groups for the product catalog. Generate Product Catalog Odoo, Create Custom Product Catalog, Make Own Product Catalog, Product Catalogue Module, Customize Product Catalogue, Product Catalog Template, Design Product Catalog, Develop Product Catalogue, Product Catalog Management, Product Catalogue Builder Odoo, Create Product Catalogue, Custom Product Catalog App, Make Own Product Catalog, Product Catalogue Module, Customize Product Catalogue, Product Catalog Template, Design Product Catalog, Develop Product Catalogue, Product Catalog Management, Product Catalogue Builder Odoo""",
 
-    "version": "16.0.3",
+    "version": "17.0.1.0.0",
 
     "depends": [
         'sale_management',

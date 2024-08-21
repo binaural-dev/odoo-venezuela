@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019-Present Droggol Infotech Private Limited. (<https://www.droggol.com/>)
 
 from odoo import fields, models
@@ -22,14 +21,12 @@ class DrWebsiteContent(models.Model):
     dr_tab_products_ids = fields.Many2many('product.template', 'product_template_tab_rel', 'tab_id', 'product_template_id', string='Tab Products')
     dr_offer_products_ids = fields.Many2many('product.template', 'product_template_offer_rel', 'offer_id', 'product_template_id', string='Offer Products')
 
-    def name_get(self):
-        result = []
+    def _compute_display_name(self):
         for content in self:
             name = content.name
             if content.identifier:
                 name = f'[{content.identifier}] {name}'
-            result.append((content.id, name))
-        return result
+            content.display_name = name
 
     def open_design_page(self):
         self.ensure_one()

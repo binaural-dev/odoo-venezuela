@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.1.0.17",
+    "version": "17.0.1.0.0",
     "depends": ["stock", "barcodes", "stock_barcode", "hr", "binaural_stock"],
     "data": [
         "security/ir.model.access.csv",

@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="account.view_account_payment_form" />
         <field name="arch" type="xml">
             <field name="partner_bank_id" position="after">
-                <field name="foreign_rate" attrs="{'readonly' : [('state' , '=' , 'posted')]}" />
+                <field name="foreign_rate" readonly="state == 'posted'" />
                 <field name="foreign_inverse_rate" invisible="1" />
                 <field name="foreign_inverse_rate" groups="base.group_no_one" />
             </field>

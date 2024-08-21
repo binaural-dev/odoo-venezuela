@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="0">
+    <data>
 			<record id="account_payment_method_manual_out" model="account.payment.method">
 					<field name="name">Online</field>
 					<field name="code">outbound_online</field>

@@ -153,11 +153,10 @@ class Access(models.Model):
                     % record.model
                 )
 
-    def name_get(self):
-        return [
-            (record.id, "{}/{}".format(record.namespace_id.name, record.model))
-            for record in self
-        ]
+    @api.depends('')
+    def _compute_display_name(self):
+        for record in self:
+            record.display_name = "{}/{}".format(record.namespace_id.name, record.model)
 
     def get_OAS_paths_part(self):
         model_name = self.model

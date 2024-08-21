@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 # Part of BrowseInfo. See LICENSE file for full copyright and licensing details.
 {
     'name': 'Import Mass products Lot/Serial Number in Picking-Receipt from Excel File',
-    'version': '16.0.0.0',
+    'version': "17.0.1.0.0",
     'category': 'Warehouse',
     'summary': 'import product serial number import product Lot import mass lot number in picking import lot in picking import mass lot in receipt import serial number import serial number in picking import mass serial in picking import multiple product serial in receipt',
     'description': """

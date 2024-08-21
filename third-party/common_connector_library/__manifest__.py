@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 # See LICENSE file for full copyright and licensing details.
 {
     'name': 'Common Connector Library',
-    'version': '16.0.3.0.3',
+    'version': "17.0.1.0.0",
     'category': 'Sales',
     'license': 'OPL-1',
     'author': 'Emipro Technologies Pvt. Ltd.',

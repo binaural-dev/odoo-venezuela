@@ -191,16 +191,6 @@ class PurchaseOrder(models.Model):
                 vat = str(rec.partner_id.vat)
             rec.vat = vat.upper()
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        """
-        Ensure that the foreign_rate and foreign_inverse_rate are computed when the purchase order
-        is created.
-        """
-        purchase_orders = super().create(vals_list)
-        purchase_orders._compute_rate()
-        return purchase_orders
-
     @api.onchange("name")
     def onchange_order_line(self):
         """

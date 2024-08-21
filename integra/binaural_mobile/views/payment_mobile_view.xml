@@ -11,7 +11,7 @@
 					<field name="seller_id" />
 					<field name="partner_id"/>
 					<field name="amount"/>
-					<field name="currency_id" invisible="1"/>
+					<field name="currency_id" column_invisible="True"/>
 					<field name="state" widget="badge"/>
 					<field name="create_date" />
 					<field name="company_id" groups="base.group_multi_company"/>
@@ -26,33 +26,30 @@
                 <form string="Paids">
                     <header>
 						<!-- <button string="Test Decimal" name="compute_test" type="object" class="oe_highlight"/> -->
-						<button string="Cancelar" name="cancel_payment" type="object" class="oe_highlight"  attrs="{'invisible':['|',('state','in',['cancel']),('verified_payment','=', True)]}"/>
+						<button string="Cancelar" name="cancel_payment" type="object" class="oe_highlight"  invisible="state == 'cancel' or verified_payment"/>
 						<field name="state" widget="statusbar" statusbar_colors='{"draft":"red","process":"blue"}'/>
 					</header>
                     <sheet>
                         <group>
 							<group>
-								<field name="partner_id" attrs="{'readonly':[('state','=','process')]}"/>
-								<field name="seller_id" attrs="{'readonly':[('state','=','process')]}"/>
-								<field name="proof_payment_id" domain="[('id','=', proof_payment_domain)]" attrs="{'invisible':[('proof_payment_id', '!=', False)]}"/>
+								<field name="partner_id" readonly="state == 'process'"/>
+								<field name="seller_id" readonly="state == 'process'"/>
+								<field name="proof_payment_id" domain="[('id','=', proof_payment_domain)]" invisible="proof_payment_id"/>
 								<field name="proof_payment_domain" invisible="1"/>
-								<field name="proof_file" widget="binary" filename="proof_name"
-								attrs="{'invisible':[('proof_payment_id', '=', False)]}"
-								/>
+								<field name="proof_file" widget="binary" filename="proof_name" invisible="not proof_payment_id"/>
 								<field name="proof_name" invisible="1"/>
 							</group>
 							<group>
 								<field name="verified_payment" />
 								<field name="amount"/>
-								<button string="Delete File" name="delete_file" type="object" class="oe_highlight" 
-								attrs="{'invisible':['|',('state','in',['cancel']),('proof_payment_id', '=', False)]}"/>
+								<button string="Delete File" name="delete_file" type="object" class="oe_highlight" invisible="state == 'cancel' or not proof_payment_id"/>
 								<field name="currency_id" invisible="1"/>
 							</group>
                         </group>
                         
                         <notebook>
 							<page name="mobile_lines" string="Lineas de pagos">
-								<field name="payment_mobile_line" attrs="{'readonly':[('state','=','process')]}">
+								<field name="payment_mobile_line" readonly="state == 'process'">
 									<tree name="mobile_lines_tree">
 										<field name="name"/>
 										<field name="invoice_id"/>
@@ -71,18 +68,18 @@
 										<field name="subtotal"/>
 										<field name="iva"/>
 										<field name="total_invoice"/>
-										<field name="currency_id" invisible="1"/>
-										<field name="foreign_currency_id" invisible="1"/>
+										<field name="currency_id" column_invisible="True"/>
+										<field name="foreign_currency_id" column_invisible="True"/>
 									</tree>
 								</field>
 							</page>
 							<page name="payment_mobile_methods_page" string="Payment methods">
-								<field name="payment_mobile_methods" attrs="{'readonly':[('state','=','process')]}">
+								<field name="payment_mobile_methods" readonly="state == 'process'">
 									<tree name="methods_lines_tree" editable="top" create="1" delete="1" multi_edit="1">
 										<field name="residual_payment"/>
 										<field name="journal_id"/>
 										<field name="amount"/>
-										<field name="currency_id" invisible="1"/>
+										<field name="currency_id" column_invisible="True"/>
 									</tree>
 								</field>
 							</page>

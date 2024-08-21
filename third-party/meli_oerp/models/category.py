@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 ##############################################################################
 #
 #    OpenERP, Open Source Management Solution
@@ -787,7 +786,8 @@ class mercadolibre_grid_row_col(models.Model):
     number = fields.Char(string="Number",required=True,index=True)
     unit = fields.Char(string="Unit",required=True,index=True)
 
-    def name_get(self):
+    @api.depends('')
+    def _compute_display_name(self):
         """Override because in general the name of the value is confusing if it
         is displayed without the name of the corresponding attribute.
         Eg. on product list & kanban views, on BOM form view
@@ -798,7 +798,8 @@ class mercadolibre_grid_row_col(models.Model):
         """
         #if not self._context.get('show_attribute', True):
         #    return super(mercadolibre_grid_row_col, self).name_get()
-        return [(col.att_id, "%s: %s" % (col.name, col.value)) for col in self]
+        for col in self:
+            col.display_name = "%s: %s" % (col.name, col.value)
 
     def prepare_vals( self, djson ):
         fields = {

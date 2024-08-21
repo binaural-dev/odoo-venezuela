@@ -7,8 +7,6 @@ class PurchaseReport(models.Model):
     margin = fields.Float(
         digits="Product Price",
         store=True,
-        groups="base.group_user",
-        precompute=True,
         group_operator="avg",
     )
 

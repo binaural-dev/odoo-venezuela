@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2019-Present Droggol Infotech Private Limited. (<https://www.droggol.com/>)
 
 {
@@ -6,7 +5,7 @@
     'description': 'Powerful multipurpose eCommerce theme suitable for all kind of businesses like Electronics, Fashion, Sports, Beauty, Furniture and many more.',
     'summary': 'Powerful multipurpose eCommerce theme suitable for all kind of businesses like Electronics, Fashion, Sports, Beauty, Furniture and many more.',
     'category': 'Theme/eCommerce',
-    'version': '16.0.0.1.3',
+    'version': "17.0.1.0.0",
     'depends': ['droggol_theme_common'],
 
     'license': 'OPL-1',

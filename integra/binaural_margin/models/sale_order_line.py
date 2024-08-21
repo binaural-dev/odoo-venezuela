@@ -8,13 +8,11 @@ class SaleOrderLine(models.Model):
         "Latest Cost Margin",
         compute="_compute_latest_standard_price_margin",
         store=True,
-        groups="base.group_user",
     )
     latest_standard_price_margin_percent = fields.Float(
         "Latest Cost Margin (%)",
         compute="_compute_latest_standard_price_margin",
         store=True,
-        groups="base.group_user",
     )
 
     @api.depends("product_uom_qty", "latest_standard_price")

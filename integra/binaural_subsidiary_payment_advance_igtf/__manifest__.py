@@ -7,7 +7,7 @@
     # for the full list
     "author": "Binauraldev",
     "category": "Accounting",
-    "version": "16.0",
+    "version": "17.0.1.0.0",
     "license": "LGPL-3",
     # any module necessary for this one to work correctly
     "depends": ["binaural_subsidiary", "binaural_advance_payment_igtf"],
