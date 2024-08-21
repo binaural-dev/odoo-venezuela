@@ -1,4 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_res_city,master_cities,model_res_country_city,base.group_user,1,1,1,1
-access_res_municipality,master_minicipalities,model_res_country_municipality,base.group_user,1,1,1,1
-access_country_parish,master_parish,model_res_country_parish,base.group_user,1,1,1,1

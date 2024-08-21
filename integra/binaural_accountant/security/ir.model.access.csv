@@ -1,3 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_account_invoices_details,access_account_invoices_details,model_account_invoices_details,base.group_user,1,1,1,1
-access_payment_report,access_payment_report,model_payment_report,base.group_user,1,1,1,1
