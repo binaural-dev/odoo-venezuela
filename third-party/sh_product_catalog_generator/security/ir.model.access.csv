@@ -1,6 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_product_catalog_user,access_product_catalog_user,model_product_catalog,sh_product_catalog_generator.sh_catalog_user,1,1,0,0
-access_product_catalog_manager,access_product_catalog_manager,model_product_catalog,sh_product_catalog_generator.sh_catalog_manager,1,1,1,1
-access_product_catalog_wizard,access_product_catalog_wizard,model_product_catalog_wizard,base.group_user,1,1,1,1
-access_default_before_pages,access_default_before_pages,model_default_before_pages,base.group_user,1,1,1,1
-access_default_after_pages,access_default_after_pages,model_default_after_pages,base.group_user,1,1,1,1
