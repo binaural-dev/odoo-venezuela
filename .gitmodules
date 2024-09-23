@@ -1,3 +1,6 @@
 [submodule "integra-addons"]
 	path = integra-addons
 	url = git@github.com:binaural-dev/integra-addons.git
+[submodule "third-party-addons"]
+	path = third-party-addons
+	url = git@github.com:binaural-dev/third-party-addons

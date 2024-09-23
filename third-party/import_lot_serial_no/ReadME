@@ -1,3 +1,0 @@
-16.0.0.1 ==> Fixed issue for invisible Import button based on condition, Error issue fixed.
-16.0.0.2 ==> Fixed issue of Validate button not display after import lot.
-16.0.0.3 ==> Fixed issue of when we import exsiting serial number for porduct at that time trace back occur.
