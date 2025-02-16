@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+    <record id="binaural_client_a" model="res.partner">
+        <field name="name">Cliente A</field>
+        <field name="property_account_receivable_id" ref="account_account_10104001"/>
+        <field name="property_account_payable_id" ref="account_account_10104001"/>
+        <field name="supplier_rank">0</field>
+        <field name="customer_rank">2</field>
+    </record>
+
+    <record id="binaural_client_b" model="res.partner">
+        <field name="name">Cliente B</field>
+        <field name="property_account_receivable_id" ref="account_account_10104001"/>
+        <field name="property_account_payable_id" ref="account_account_10104001"/>
+        <field name="supplier_rank">0</field>
+        <field name="customer_rank">2</field>
+    </record>
+
+    <record id="binaural_vendor_a" model="res.partner">
+        <field name="name">Proveedor A</field>
+        <field name="property_account_receivable_id" ref="account_account_20101004"/>
+        <field name="property_account_payable_id" ref="account_account_20101004"/>
+        <field name="supplier_rank">2</field>
+        <field name="customer_rank">0</field>
+    </record>
+
+    <record id="binaural_vendor_b" model="res.partner">
+        <field name="name">Proveedor B</field>
+        <field name="property_account_receivable_id" ref="account_account_20101004"/>
+        <field name="property_account_payable_id" ref="account_account_20101004"/>
+        <field name="supplier_rank">2</field>
+        <field name="customer_rank">0</field>
+    </record>
+  </data>
+</odoo>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+        <record id="ir_invoice_correlative" model="ir.actions.act_window">
+            <field name="name">control number</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">ir.sequence</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[('code', '=','invoice.correlative')]</field>
+        </record>
+        
+        <menuitem 
+        name="Control Number" 
+        id="control_number_menu" 
+        sequence="99"
+        groups="base.group_no_one"
+        parent="account.menu_finance_receivables"
+        action="ir_invoice_correlative"
+        />
+
+</odoo>

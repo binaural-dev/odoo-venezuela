@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="account_invoices_details_views" model="ir.ui.view">
+        <field name="name">account.invoices.details.view</field>
+        <field name="model">account.invoices.details</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Sales Details">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date_from" widget="date"/>
+                            <field name="date_to" widget="date"/>
+                            <field name="show_documents"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+            <footer>
+                <button name="%(l10n_ve_accountant.action_account_invoices_details_report)d" type="action" string="Print"/>
+            </footer>
+        </field>
+    </record>
+
+    <record id="action_account_invoices_details" model="ir.actions.act_window">
+        <field name="name">Sales Details</field>
+        <field name="res_model">account.invoices.details</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="l10n_ve_accountant.account_invoices_details_views"/>
+    </record>
+
+    <menuitem action="action_account_invoices_details" id="account_report_detail_sale_menu" parent="account.menu_finance_reports" sequence="5"/>
+</odoo>

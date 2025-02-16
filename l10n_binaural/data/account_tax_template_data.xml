@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+    <record id="IVA_16_SALE" model="account.tax.template">
+        <field name="name">IVA 16% Ventas</field>
+        <field name="type_tax_use">sale</field>
+        <field name="sequence">1</field>
+        <field name="amount">16.00</field>
+        <field name="amount_type">percent</field>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
+        <field name="tax_group_id" ref="l10n_binaural.tax_group_iva_16"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_20103003'),
+            }),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_20103003'),
+            }),
+        ]"/>
+    </record>
+
+    <record id="IVA_8_SALE" model="account.tax.template">
+        <field name="name">IVA 8% Ventas</field>
+        <field name="type_tax_use">sale</field>
+        <field name="sequence">1</field>
+        <field name="amount">8.00</field>
+        <field name="amount_type">percent</field>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
+        <field name="tax_group_id" ref="l10n_binaural.tax_group_iva_8"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_20103003'),
+            }),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_20103003'),
+            }),
+        ]"/>
+    </record>
+
+    <record id="IVA_31_SALE" model="account.tax.template">
+        <field name="name">IVA 31% Ventas</field>
+        <field name="type_tax_use">sale</field>
+        <field name="sequence">1</field>
+        <field name="amount">31.00</field>
+        <field name="amount_type">percent</field>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
+        <field name="tax_group_id" ref="l10n_binaural.tax_group_iva_31"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_20103003'),
+            }),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_20103003'),
+            }),
+        ]"/>
+    </record>
+
+    <record id="EXEMPT_SALE" model="account.tax.template">
+        <field name="name">Exento Ventas</field>
+        <field name="type_tax_use">sale</field>
+        <field name="sequence">1</field>
+        <field name="amount">16.00</field>
+        <field name="amount_type">percent</field>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
+        <field name="tax_group_id" ref="l10n_binaural.tax_group_iva_0"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {'repartition_type': 'tax'}),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {'repartition_type': 'tax'}),
+        ]"/>
+    </record>
+
+    <record id="IVA_16_PURCHASE" model="account.tax.template">
+        <field name="name">IVA 16% Compras</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="sequence">1</field>
+        <field name="amount">16.00</field>
+        <field name="amount_type">percent</field>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
+        <field name="tax_group_id" ref="l10n_binaural.tax_group_iva_16"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_10107002'),
+            }),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_10107002'),
+            }),
+        ]"/>
+    </record>
+
+    <record id="IVA_8_PURCHASE" model="account.tax.template">
+        <field name="name">IVA 8% Compras</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="sequence">1</field>
+        <field name="amount">8.00</field>
+        <field name="amount_type">percent</field>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
+        <field name="tax_group_id" ref="l10n_binaural.tax_group_iva_8"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_10107002'),
+            }),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_10107002'),
+            }),
+        ]"/>
+    </record>
+
+    <record id="IVA_31_PURCHASE" model="account.tax.template">
+        <field name="name">IVA 31% Compras</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="sequence">1</field>
+        <field name="amount">31.00</field>
+        <field name="amount_type">percent</field>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
+        <field name="tax_group_id" ref="l10n_binaural.tax_group_iva_31"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_10107002'),
+            }),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {
+                'repartition_type': 'tax',
+                'account_id': ref('account_activa_account_10107002'),
+            }),
+        ]"/>
+    </record>
+
+    <record id="EXEMPT_PURCHASE" model="account.tax.template">
+        <field name="name">Exento Compras</field>
+        <field name="type_tax_use">purchase</field>
+        <field name="sequence">1</field>
+        <field name="amount">16.00</field>
+        <field name="amount_type">percent</field>
+        <field name="chart_template_id" ref="l10n_binaural.l10n_chart_template_binaural"/>
+        <field name="tax_group_id" ref="l10n_binaural.tax_group_iva_0"/>
+        <field name="invoice_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {'repartition_type': 'tax'}),
+        ]"/>
+        <field name="refund_repartition_line_ids" eval="[(5, 0, 0),
+            (0,0, {'repartition_type': 'base'}),
+            (0,0, {'repartition_type': 'tax'}),
+        ]"/>
+    </record>
+  </data>
+</odoo>

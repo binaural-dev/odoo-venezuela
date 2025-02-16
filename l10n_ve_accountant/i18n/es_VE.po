@@ -1,0 +1,1020 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_accountant
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20241115\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-11-19 11:37+0000\n"
+"PO-Revision-Date: 2024-11-19 11:37+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.report,print_report_name:l10n_ve_accountant.action_account_report
+msgid "'Asiento contable %s' % (object.name)"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.report,print_report_name:l10n_ve_accountant.action_account_related_report
+msgid "'Asientos contables Relacionados %s' % (object.name)"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+msgid ""
+"<b>Warning: This invoice has been reset to draft.</b>\n"
+"                    Please note that you\n"
+"                    <b>should not modify the prices of the invoice lines</b>, \n"
+"                    as this will prevent the\n"
+"                    <b>“Reset to Draft”</b> button from being available again.\n"
+"                    When\n"
+"                    <b>inventory valuation is active</b>, modifying a confirmed invoice, changing the prices, \n"
+"                    and reconfirming it may result in an incorrect inventory valuation. \n"
+"                    This restriction avoids inconsistencies by preventing the creation of erroneous \n"
+"                    adjustment layers during repeated edits."
+msgstr ""
+"<b>Advertencia: Esta factura se ha restablecido a borrador.</b>\n"
+"                    Tenga en cuenta que\n"
+"                    <b>no debe modificar los precios de las líneas de la factura</b>, \n"
+"                    ya que esto impedirá que el botón\n"
+"                    <b>'Restablecer a Borrador'</b> vuelva a estar disponible.\n"
+"                    Cuando\n"
+"                    <b>la valoración de inventario está activa</b>, modificar una factura confirmada, cambiar los precios, \n"
+"                    y volver a confirmarla puede generar una valoración incorrecta del inventario. \n"
+"                    Esta restricción evita inconsistencias al impedir la creación de asientos de valoracion erróneos \n"
+"                    durante ediciones repetidas. Cualquier duda comunicarse con el equipo de soporte de Binaural."
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "<br/> ("
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "<strong style=\"font-size: 10px !important;\">Total</strong>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "<strong>Concepto pago:</strong>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "<strong>Concepto:</strong>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "<strong>Contabilizado por</strong>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_inherit_report_payment_receipt_document
+msgid "<strong>Cuenta Emisora: </strong>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_inherit_report_payment_receipt_document
+msgid "<strong>Cuenta Receptora: </strong>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "<strong>Emisión :</strong>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "<strong>Emitido el</strong>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "<strong>Emitido por</strong>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "<strong>Payments</strong>"
+msgstr "<strong>Cobros</strong>"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "<strong>Revisado por</strong>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "<strong>Total Sales</strong>"
+msgstr "Total de Ventas"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__amount_currency
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Amount in Currency"
+msgstr "Importe en moneda"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.constraint,message:l10n_ve_accountant.constraint_account_move_unique_name
+#: model:ir.model.constraint,message:l10n_ve_accountant.constraint_account_move_unique_name_ve
+msgid "Another entry with the same name already exists."
+msgstr "Ya existe un asiento con el mismo nombre."
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.report,name:l10n_ve_accountant.action_account_report
+msgid "Asiento Contable"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.report,name:l10n_ve_accountant.action_account_related_report
+msgid "Asientos Contables Relacionados"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Autorizado por:<br/><br/>"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "B.I"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "B.I/Discount"
+msgstr "B.I./Descuento"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_bank_statement_line
+msgid "Bank Statement Line"
+msgstr "Línea de extracto bancario"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "COMPROBANTE CONTABLE No."
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.form_wizard_all_payments
+msgid "Cancelar"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Cantidad de operaciones:"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Client"
+msgstr "Cliente"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Cliente"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__company_id
+msgid "Company"
+msgstr "Compañia"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__concept
+msgid "Concept"
+msgstr "Concepto"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_res_partner
+msgid "Contact"
+msgstr "Contacto"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__create_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__create_date
+msgid "Created on"
+msgstr "Creado en"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Date"
+msgstr "Fecha"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__date_from
+msgid "Date From"
+msgstr "Fecha de inicio"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__date_to
+msgid "Date To"
+msgstr "Fecha de Fin"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Date of issue:"
+msgstr "Fecha de emisión:"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Desde:"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__detailed_amounts
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__detailed_amounts
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__detailed_amounts
+msgid "Detailed Amounts"
+msgstr "Montos detallados"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Diario:"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Discount"
+msgstr "Descuento"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__display_name
+msgid "Display Name"
+msgstr "Nombre"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Documento"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Elaborado por:"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__end_date
+msgid "End Date"
+msgstr "Fecha de fin"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "FECHA:"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Fecha"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__financial_document
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__financial_document
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__financial_document
+msgid "Financial Document"
+msgstr "Documento financiero"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_inherit_report_payment_receipt_document
+msgid "Firma Autorizada"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_amount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_line_form_l10n_ve_invoice
+msgid "Foreign Amount"
+msgstr "Importe Alterno"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_invoice_tree
+msgid "Foreign Amount total"
+msgstr "Total alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_balance
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_balance
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_balance
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_balance
+msgid "Foreign Balance"
+msgstr "Saldo alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_credit
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_credit
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_credit
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_credit
+msgid "Foreign Credit"
+msgstr "Crédito alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_credit_adjustment
+msgid "Foreign Credit Adjustment"
+msgstr "Ajuste de crédito alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_currency_id
+msgid "Foreign Currency"
+msgstr "Moneda alterna"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "Foreign Currency "
+msgstr "Moneda alterna"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_debit
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_debit
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_debit
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_debit
+msgid "Foreign Debit"
+msgstr "Débito alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_debit_adjustment
+msgid "Foreign Debit Adjustment"
+msgstr "Ajuste de débito alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_inverse_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_inverse_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_inverse_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__credit_move_foreign_inverse_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_partial_reconcile__debit_move_foreign_inverse_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_inverse_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate
+msgid "Foreign Inverse Rate"
+msgstr "Tasa alterna inversa"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_price
+msgid "Foreign Price"
+msgstr "Precio alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__foreign_price_total
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_price_total
+msgid "Foreign Price Total"
+msgstr "Total alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move_line__foreign_price
+msgid "Foreign Price of the line"
+msgstr "Precio alterno de la linea"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__foreign_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__foreign_rate
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_invoice_report_search_l10n_ve_invoice
+msgid "Foreign Rate"
+msgstr "Tasa"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_invoice_report__foreign_rate
+msgid "Foreign Rate of the invoice"
+msgstr "Tasa alterna de la factura"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoice_report__foreign_subtotal
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_subtotal
+msgid "Foreign Subtotal"
+msgstr "Subtotal alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move_line__foreign_subtotal
+msgid "Foreign Subtotal of the line"
+msgstr "Subtotal alterno de la linea"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_taxable_income
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_taxable_income
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_taxable_income
+msgid "Foreign Taxable Income"
+msgstr "Base imponible alterna"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__foreign_taxable_income
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__foreign_taxable_income
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__foreign_taxable_income
+msgid "Foreign Taxable Income of the invoice"
+msgstr "Base imponible alterna de la factura"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_total_billed
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_total_billed
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_total_billed
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_invoice_report_search_l10n_ve_invoice
+msgid "Foreign Total Billed"
+msgstr "Total alterno facturado"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__foreign_total_billed
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__foreign_total_billed
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__foreign_total_billed
+msgid "Foreign Total Billed of the invoice"
+msgstr "Total alterno facturado de la factura"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_invoice_report__foreign_price_total
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_invoice_report__foreign_subtotal
+msgid "Foreign Total of the invoice"
+msgstr "Total alterno de la linea."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move_line__foreign_price_total
+msgid "Foreign Total of the line"
+msgstr "Total alterno de la linea."
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+msgid "Foreign currency"
+msgstr "Moneda alterna"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+msgid "Foreign inverse rate"
+msgstr "Tasa alterna inversa"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_invoice_report_search_l10n_ve_invoice
+msgid "Foreign price total"
+msgstr "Total alterno"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/report/all_payment_report.py:0
+#, python-format
+msgid "Form content is missing, this report cannot be printed."
+msgstr "Falta el contenido del formulario, este informe no se puede imprimir"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "From"
+msgstr "Desde"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.form_wizard_all_payments
+msgid "Generar"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Hasta:"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__id
+msgid "ID"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__payment_report__payment_type__inbound
+msgid "Inbound"
+msgstr "Recibido"
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.report,name:l10n_ve_accountant.action_report_all_payments
+#: model:ir.ui.menu,name:l10n_ve_accountant.bin_payment_all_report
+msgid "Informe de pagos"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
+#, python-format
+msgid "Instant payment"
+msgstr "Contado"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
+#, python-format
+msgid "Invoices"
+msgstr "Facturas"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_invoices_details
+msgid "Invoices Details"
+msgstr "Facturas Detalladas"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_invoice_report
+msgid "Invoices Statistics"
+msgstr "Estadísticas de facturas"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__is_reset_to_draft_for_price_change
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__is_reset_to_draft_for_price_change
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__is_reset_to_draft_for_price_change
+msgid "Is Reset To Draft For Price Change"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__journal_id
+msgid "Journal"
+msgstr "Diario"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_inherit_report_payment_receipt_document
+msgid "La cantidad de"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__last_foreign_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__last_foreign_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__last_foreign_rate
+msgid "Last Foreign Rate"
+msgstr "Ultima tasa"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details____last_update
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report____last_update
+msgid "Last Modified on"
+msgstr "Última modificación en"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__write_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__write_date
+msgid "Last Updated on"
+msgstr "Última actualización en"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Logo"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__manually_set_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__manually_set_rate
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__manually_set_rate
+msgid "Manually Set Rate"
+msgstr "Actualizar Tasa Manualmente"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Monto"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "N/C"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Net Amount"
+msgstr "Monto neto"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/sale_order.py:0
+#, python-format
+msgid ""
+"No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta "
+"por cobrar del cliente es de %s más %s en presupuesto da un total de %s "
+"superando el límite de ventas de %s. Por favor cancele el presupuesto o "
+"comuníquese con el administrador para aumentar el límite de crédito del "
+"cliente."
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid ""
+"No se ha confirmado la factura. Límite de crédito excedido. La cuenta por "
+"cobrar del cliente es de %s más %s en factura da un total de %s superando el"
+" límite de ventas de %s. Por favor cancele la factura o comuníquese con el "
+"administrador para aumentar el límite de crédito del cliente."
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__not_foreign_recalculate
+msgid "Not Foreign Recalculate"
+msgstr "No es extranjero Recalcular"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Nº Documento"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__payment_report__payment_type__outbound
+msgid "Outbound"
+msgstr "Enviado"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "Pag:"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_partial_reconcile
+msgid "Partial Reconcile"
+msgstr "Conciliación parcial"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__use_partner_credit_limit_order
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__use_partner_credit_limit_order
+msgid "Partner Order Limit"
+msgstr "Limite para la venta (Presupuesto)"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Payment"
+msgstr "Pago"
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.act_window,name:l10n_ve_accountant.action_report_all_payments_view
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.form_wizard_all_payments
+msgid "Payment Report"
+msgstr "Reporte de pagos"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_payment_term
+msgid "Payment Terms"
+msgstr "Condiciones de pago"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__payment_type
+msgid "Payment Type"
+msgstr "Tipo de pago"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_payment
+msgid "Payments"
+msgstr "Pagos"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_invoices_details_views
+msgid "Print"
+msgstr "Imprimir"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Proveedor"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_inverse_rate
+msgid ""
+"Rate that will be used as factor to multiply of the foreign currency for the"
+" payment and the moves created by the wizard."
+msgstr ""
+"Tasa que se usará como factor para multiplicar la moneda alterna para el "
+"pago y los asientos creados por el wizard."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__foreign_inverse_rate
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__foreign_inverse_rate
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move_line__foreign_inverse_rate
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_partial_reconcile__credit_move_foreign_inverse_rate
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_partial_reconcile__debit_move_foreign_inverse_rate
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__foreign_inverse_rate
+msgid ""
+"Rate that will be used as factor to multiply of the foreign currency for "
+"this move."
+msgstr ""
+"Tasa que se usará como factor para multiplicar la moneda alterna para este "
+"asiento."
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.server,name:l10n_ve_accountant.recompute_foreign_debit_and_credit_of_journal_entries
+msgid "Recompute foreign debit and credit of journal entries"
+msgstr "Recalcular debito y credito alterno de apuntes contables"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
+#, python-format
+msgid "Refund"
+msgstr "Devolucion"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_account_payment_register
+msgid "Register Payment"
+msgstr "Registrar pago"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Resumen de pagos"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Rif:&amp;nbsp;"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.report,name:l10n_ve_accountant.action_account_invoices_details_report
+msgid "Sale Details"
+msgstr "Detalle de ventas"
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.act_window,name:l10n_ve_accountant.action_account_invoices_details
+#: model:ir.ui.menu,name:l10n_ve_accountant.account_report_detail_sale_menu
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_invoices_details_views
+msgid "Sales Details"
+msgstr "Detalle de ventas"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Sales Report"
+msgstr "Informe de Ventas"
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.server,name:l10n_ve_accountant.abs_amount_line_ids_adjust
+msgid "Set Abs adjustment lines"
+msgstr "Establecer líneas de ajuste Abs"
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.server,name:l10n_ve_accountant.set_rate_payments_zero
+msgid "Set rate in payments with amount 0"
+msgstr "Actualizar Tasa"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__show_documents
+msgid "Show Documents"
+msgstr "Mostrar Documentos"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__start_date
+msgid "Start Date"
+msgstr "Fecha de Inicio"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Taxes"
+msgstr "Impuestos"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move_line__amount_currency
+msgid ""
+"The amount expressed in an optional other currency if it is a multi-currency"
+" entry."
+msgstr ""
+"La cantidad expresada en una moneda alternativa si se trata de un asiento "
+"multi-divisa."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "The rate has been updated from %(last_rate)s to %(rate)s "
+msgstr ""
+"La tasa ha sido actualizada de: %(last_rate)s a una tasa personalizada: "
+"%(rate)s"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_rate
+msgid "The rate of the payment"
+msgstr "La tasa del pago"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "The rate should be greater than zero"
+msgstr "La tasa debe ser superior a cero."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
+#, python-format
+msgid ""
+"The time zone is not registered, log in to your profile and configure it."
+msgstr "La zona horaria no está registrada, accede a tu perfil y configúrala."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "This product must have only one tax."
+msgstr "Estos productos debe tener un solo impuesto."
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "Total"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_move_line_tree
+msgid "Total Foreign Credit"
+msgstr "Total Crédito Alterno"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_move_line_tree
+msgid "Total Foreign Debit"
+msgstr "Total Débito Alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__total_taxed
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__total_taxed
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__total_taxed
+msgid "Total Taxed"
+msgstr "Total gravado"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__total_taxed
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__total_taxed
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__total_taxed
+msgid "Total Taxed of the invoice"
+msgstr "Total gravado de la factura"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Total:"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+msgid "Update account lines"
+msgstr "Actualizar Apuntes"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
+msgid "Usuario"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__vat
+msgid "VAT"
+msgstr "Identificación"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__vat
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__vat
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__vat
+msgid "VAT of the partner"
+msgstr "Identificación"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+msgid "Warning: This account move has a foreign balance of"
+msgstr "Alerta: Este asiento contable tiene un saldo alterno de"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move_line__foreign_credit_adjustment
+msgid "When setted, this field will be used to fill the foreign credit field"
+msgstr ""
+"Cuando se establezca, este campo se usará para llenar el campo de crédito "
+"alterno"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move_line__foreign_debit_adjustment
+msgid "When setted, this field will be used to fill the foreign debit field"
+msgstr ""
+"Cuando se establezca, este campo se usará para llenar el campo de débito "
+"alterno"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "You can only register payments for one foreign rate at a time."
+msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "You cannot place a currency other than the base of the system."
+msgstr "No puede colocar una moneda que no sea la base del sistema."
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_inherit_report_payment_receipt_document
+msgid "____________________________________________"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "ci/rif"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "créditos"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "cuenta"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/report/account_report.py:0
+#, python-format
+msgid "docids empty"
+msgstr "Documento vacío"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "documento"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "dpto"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "débitos"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "fecha"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "nombre"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_payment_report
+msgid "payment.report"
+msgstr "Reporte de pagos"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
+msgid "ref"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_report_l10n_ve_accountant_account_related_report_call
+msgid "report.l10n_ve_accountant.account_related_report_call"
+msgstr "Informe relacionado con la cuenta."
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_report_l10n_ve_accountant_account_report_call
+msgid "report.l10n_ve_accountant.account_report_call"
+msgstr "Informe de Cuenta"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_report_l10n_ve_accountant_financial_all_payments
+msgid "report.l10n_ve_accountant.financial_all_payments"
+msgstr "Informe de todos los Pagos Financieros"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_report_l10n_ve_accountant_report_account_invoices_details
+msgid "report.l10n_ve_accountant.report_account_invoices_details"
+msgstr "Informe de Detalles de Facturas de Cuentas"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
+msgid "to"
+msgstr "Hasta"

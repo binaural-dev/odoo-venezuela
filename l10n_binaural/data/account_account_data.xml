@@ -1,0 +1,1908 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<data noupdate="1">
+        <record id="account_account_1" model="account.account">
+            <field name="name">ACTIVO</field>
+            <field name="code">1</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_101" model="account.account">
+            <field name="name">ACTIVO CORRIENTE</field>
+            <field name="code">101</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10101" model="account.account">
+            <field name="name">CAJA</field>
+            <field name="code">10101</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10101001" model="account.account">
+            <field name="name">CAJA PRINCIPAL</field>
+            <field name="code">10101001</field>
+            <field name="account_type">asset_cash</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10101002" model="account.account">
+            <field name="name">CAJA CHICA</field>
+            <field name="code">10101002</field>
+            <field name="account_type">asset_cash</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10101003" model="account.account">
+            <field name="name">EFECTIVO EN DIVISAS POR DEPOSITAR </field>
+            <field name="code">10101003</field>
+            <field name="account_type">asset_cash</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10102" model="account.account">
+            <field name="name">BANCOS</field>
+            <field name="code">10102</field>
+            <field name="account_type">asset_cash</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10102001" model="account.account">
+            <field name="name">BANCO XXXXX</field>
+            <field name="code">10102001</field>
+            <field name="account_type">asset_cash</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10102002" model="account.account">
+            <field name="name">TRANSITORIA DE BANCO</field>
+            <field name="code">10102002</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10102003" model="account.account">
+            <field name="name">RECIBO PENDIENTE POR CONCILIAR</field>
+            <field name="code">10102003</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10102004" model="account.account">
+            <field name="name">PAGOS PENDIENTES POR CONCILIAR</field>
+            <field name="code">10102004</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10103" model="account.account">
+            <field name="name">ANTICIPOS</field>
+            <field name="code">10103</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10103001" model="account.account">
+            <field name="name">ANTICIPOS A PROVEEDOR</field>
+            <field name="code">10103001</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10104" model="account.account">
+            <field name="name">CUENTAS Y EFECTOS POR COBRAR</field>
+            <field name="code">10104</field>
+            <field name="account_type">asset_receivable</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10104001" model="account.account">
+            <field name="name">CUENTAS POR COBRAR CLIENTES</field>
+            <field name="code">10104001</field>
+            <field name="account_type">asset_receivable</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10104002" model="account.account">
+            <field name="name">CUENTAS POR COBRAR A TERCEROS</field>
+            <field name="code">10104002</field>
+            <field name="account_type">asset_receivable</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10104003" model="account.account">
+            <field name="name">CUENTAS POR COBRAR A EMPLEADOS</field>
+            <field name="code">10104003</field>
+            <field name="account_type">asset_receivable</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10105" model="account.account">
+            <field name="name">OTRAS CUENTAS POR COBRAR</field>
+            <field name="code">10105</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10105001" model="account.account">
+            <field name="name">CHEQUES DEVUELTO</field>
+            <field name="code">10105001</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10105002" model="account.account">
+            <field name="name">OTROS DEUDORES VARIOS</field>
+            <field name="code">10105002</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10106" model="account.account">
+            <field name="name">PREPAGADOS</field>
+            <field name="code">10106</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10106001" model="account.account">
+            <field name="name">SEGUROS PAGADOS POR ANTICIPADOS</field>
+            <field name="code">10106001</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10106002" model="account.account">
+            <field name="name">OTROS PREPAGADOS</field>
+            <field name="code">10106002</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10107" model="account.account">
+            <field name="name">ACTIVOS IMPUESTOS CORRIENTES</field>
+            <field name="code">10107</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10107001" model="account.account">
+            <field name="name">RETENCION IVA</field>
+            <field name="code">10107001</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10107002" model="account.account">
+            <field name="name">CREDITO FISCAL</field>
+            <field name="code">10107002</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10107003" model="account.account">
+            <field name="name">ANTICIPO DE ISLR</field>
+            <field name="code">10107003</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10107004" model="account.account">
+            <field name="name">RETENCION DE ISLR</field>
+            <field name="code">10107004</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10108" model="account.account">
+            <field name="name">INVENTARIO</field>
+            <field name="code">10108</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10108001" model="account.account">
+            <field name="name">INVENTARIO DE MERCANCIA</field>
+            <field name="code">10108001</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10108002" model="account.account">
+            <field name="name">INVENTARIO EN TRANSITO</field>
+            <field name="code">10108002</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_102" model="account.account">
+            <field name="name">ACTIVOS NO CORRIENTES</field>
+            <field name="code">102</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10201" model="account.account">
+            <field name="name">PROPIEDAD PLANTA Y EQUIPO</field>
+            <field name="code">10201</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10201001" model="account.account">
+            <field name="name">PROPIEDAD PLANTA Y EQUIPOS</field>
+            <field name="code">10201001</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10201002" model="account.account">
+            <field name="name">TERRENO</field>
+            <field name="code">10201002</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10201003" model="account.account">
+            <field name="name">EDIFICIOS</field>
+            <field name="code">10201003</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10201004" model="account.account">
+            <field name="name">MAQUINARIAS</field>
+            <field name="code">10201004</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10201005" model="account.account">
+            <field name="name">VEHICULOS</field>
+            <field name="code">10201005</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10201006" model="account.account">
+            <field name="name">HERRAMIENTAS</field>
+            <field name="code">10201006</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10201007" model="account.account">
+            <field name="name">MOBILIARIOS Y EQUIPOS</field>
+            <field name="code">10201007</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10201008" model="account.account">
+            <field name="name">PROGRAMAS </field>
+            <field name="code">10201008</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10202" model="account.account">
+            <field name="name">DEPRECIACIÓN ACUM.</field>
+            <field name="code">10202</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10202001" model="account.account">
+            <field name="name">DEPRECIACIÓN ACUM. PROPIEDAD PLANTA Y EQUIPOS</field>
+            <field name="code">10202001</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10202003" model="account.account">
+            <field name="name">DEPRECIACIÓN ACUM. EDIFICIOS</field>
+            <field name="code">10202003</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10202004" model="account.account">
+            <field name="name">DEPRECIACIÓN ACUM. MAQUINARIA Y EQUIPO</field>
+            <field name="code">10202004</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10202005" model="account.account">
+            <field name="name">DEPRECIACIÓN ACUM. VEHICULOS</field>
+            <field name="code">10202005</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10202006" model="account.account">
+            <field name="name">DEPRECIACIÓN ACUM. HERRAMIENTAS</field>
+            <field name="code">10202006</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10202007" model="account.account">
+            <field name="name">DEPRECIACIÓN ACUM. MOBILIARIOS Y EQUIPOS</field>
+            <field name="code">10202007</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10202008" model="account.account">
+            <field name="name">AMORTIZACION ACUM. PROGRAMAS</field>
+            <field name="code">10202008</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10203" model="account.account">
+            <field name="name">INVERSIONES PERMANENTES</field>
+            <field name="code">10203</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10203001" model="account.account">
+            <field name="name">ACCIONES EN LA EMPRESA XX</field>
+            <field name="code">10203001</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10204" model="account.account">
+            <field name="name">CUENTAS POR COBRAR ACCIONISTAS</field>
+            <field name="code">10204</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_10204001" model="account.account">
+            <field name="name">CUENTASPORCOBRAR XXX</field>
+            <field name="code">10204001</field>
+            <field name="account_type">asset_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_2" model="account.account">
+            <field name="name">PASIVO</field>
+            <field name="code">2</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_201" model="account.account">
+            <field name="name">PASIVOS CORRIENTES</field>
+            <field name="code">201</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20101" model="account.account">
+            <field name="name">CUENTAS Y EFECTOS POR PAGAR</field>
+            <field name="code">20101</field>
+            <field name="account_type">liability_payable</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20101001" model="account.account">
+            <field name="name">CUENTAS POR PAGAR BANCARIOS</field>
+            <field name="code">20101001</field>
+            <field name="account_type">liability_payable</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20101004" model="account.account">
+            <field name="name">CUENTAS POR PAGAR PROVEEDORES VARIOS</field>
+            <field name="code">20101004</field>
+            <field name="account_type">liability_payable</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20101005" model="account.account">
+            <field name="name">CUENTAS POR PAGAR OTRAS</field>
+            <field name="code">20101005</field>
+            <field name="account_type">liability_payable</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20101006" model="account.account">
+            <field name="name">CUENTAS POR PAGAR ACCIONISTA XXX</field>
+            <field name="code">20101006</field>
+            <field name="account_type">liability_payable</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20102" model="account.account">
+            <field name="name">IMPUESTOS POR PAGAR</field>
+            <field name="code">20102</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20102001" model="account.account">
+            <field name="name">ISLR POR PAGAR</field>
+            <field name="code">20102001</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20102002" model="account.account">
+            <field name="name">IMPUESTOS MUNICIPALES POR PAGAR</field>
+            <field name="code">20102002</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20102003" model="account.account">
+            <field name="name">DEBITO FISCAL</field>
+            <field name="code">20102003</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20103" model="account.account">
+            <field name="name">RETENCIONES. IMPUESTOS POR PAGAR</field>
+            <field name="code">20103</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20103001" model="account.account">
+            <field name="name">RETENCION IVA POR PAGAR</field>
+            <field name="code">20103001</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20103002" model="account.account">
+            <field name="name">RETENCION DE ISLR</field>
+            <field name="code">20103002</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20103003" model="account.account">
+            <field name="name">I.V.A.</field>
+            <field name="code">20103003</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20104" model="account.account">
+            <field name="name">OBLIGACIONES LABORALES POR PAGAR</field>
+            <field name="code">20104</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20104001" model="account.account">
+            <field name="name">UTILIDADES A TRABAJADORES POR PAGAR</field>
+            <field name="code">20104001</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20104002" model="account.account">
+            <field name="name">VACACIONES TRABAJADORES POR PAGAR</field>
+            <field name="code">20104002</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20104003" model="account.account">
+            <field name="name">PRESTACIONES SOCIALES POR PAGAR</field>
+            <field name="code">20104003</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20104004" model="account.account">
+            <field name="name">SUELDO Y SALARIOS POR PAGAR</field>
+            <field name="code">20104004</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20105" model="account.account">
+            <field name="name">RETENCIONES Y APORTES PATRONALES POR PAGAR</field>
+            <field name="code">20105</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20105001" model="account.account">
+            <field name="name">RETENCION IVSS POR PAGAR</field>
+            <field name="code">20105001</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20105002" model="account.account">
+            <field name="name">RETENCION DE SPF POR PAGAR</field>
+            <field name="code">20105002</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20105003" model="account.account">
+            <field name="name">RETENCION F.A.O.V. POR PAGAR</field>
+            <field name="code">20105003</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20105004" model="account.account">
+            <field name="name">RETENCION INCES POR PAGAR</field>
+            <field name="code">20105004</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20105005" model="account.account">
+            <field name="name">APORTE IVSS POR PAGAR</field>
+            <field name="code">20105005</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20105006" model="account.account">
+            <field name="name">APORTE SPF POR PAGAR</field>
+            <field name="code">20105006</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20105007" model="account.account">
+            <field name="name">APORTE F.A.O.V.  PORPAGAR</field>
+            <field name="code">20105007</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20105008" model="account.account">
+            <field name="name">APORTE INCES POR PAGAR</field>
+            <field name="code">20105008</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20105009" model="account.account">
+            <field name="name">APORTE LOCTI POR PAGAR</field>
+            <field name="code">20105009</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_202" model="account.account">
+            <field name="name">PASIVOS NO CORRIENTES</field>
+            <field name="code">202</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20201" model="account.account">
+            <field name="name">PRESTAMOS BANCARIOS POR PAGAR</field>
+            <field name="code">20201</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20201001" model="account.account">
+            <field name="name">PRESTAMOS BANCO XXXX</field>
+            <field name="code">20201001</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20202" model="account.account">
+            <field name="name">PRESTAMO A ACCIONISTAS POR PAGAR</field>
+            <field name="code">20202</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_20202001" model="account.account">
+            <field name="name">PRESTAMO POR PAGAR</field>
+            <field name="code">20202001</field>
+            <field name="account_type">liability_current</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_3" model="account.account">
+            <field name="name">PATRIMONIO</field>
+            <field name="code">3</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_301" model="account.account">
+            <field name="name">CAPITAL</field>
+            <field name="code">301</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30101" model="account.account">
+            <field name="name">CAPITAL SOCIAL SUSCRITO Y PAGADO</field>
+            <field name="code">30101</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30101001" model="account.account">
+            <field name="name">CAPITAL SOCIAL</field>
+            <field name="code">30101001</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_302" model="account.account">
+            <field name="name">RESULTADO</field>
+            <field name="code">302</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30201" model="account.account">
+            <field name="name">UTILIDADES</field>
+            <field name="code">30201</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30201001" model="account.account">
+            <field name="name">UTILIDADES ACUMULADAS</field>
+            <field name="code">30201001</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30201003" model="account.account">
+            <field name="name">UTILIDAD ACUMULADA AJUSTADA POR INFLACION</field>
+            <field name="code">30201003</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30201004" model="account.account">
+            <field name="name">UTILIDAD DEL EJERCICIO AJUSTADO POR INFLACION</field>
+            <field name="code">30201004</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30202" model="account.account">
+            <field name="name">PERDIDAS</field>
+            <field name="code">30202</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30202001" model="account.account">
+            <field name="name">PERDIDA ACUMULADA</field>
+            <field name="code">30202001</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30202002" model="account.account">
+            <field name="name">PERDIDA DEL EJERCICIO</field>
+            <field name="code">30202002</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30202003" model="account.account">
+            <field name="name">PERDIDA ACUMULADA AJUSTADA POR INFLACION</field>
+            <field name="code">30202003</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30202004" model="account.account">
+            <field name="name">PERDIDA DEL EJERCICIO AJUSTADO POR INFLACION</field>
+            <field name="code">30202004</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_303" model="account.account">
+            <field name="name">RESERVAS</field>
+            <field name="code">303</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30301" model="account.account">
+            <field name="name">RESERVAS ESTATUTARIAS</field>
+            <field name="code">30301</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_30301001" model="account.account">
+            <field name="name">RESERVA LEGAL</field>
+            <field name="code">30301001</field>
+            <field name="account_type">equity</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_4" model="account.account">
+            <field name="name">INGRESOS</field>
+            <field name="code">4</field>
+            <field name="account_type">income</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_401" model="account.account">
+            <field name="name">INGRESOS OPERACIONALES</field>
+            <field name="code">401</field>
+            <field name="account_type">income</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_40101" model="account.account">
+            <field name="name">VENTA </field>
+            <field name="code">40101</field>
+            <field name="account_type">income</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_40101001" model="account.account">
+            <field name="name">VENTA DE MERCANCIA</field>
+            <field name="code">40101001</field>
+            <field name="account_type">income</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_402" model="account.account">
+            <field name="name">INGRESOS POR SERVICIO</field>
+            <field name="code">402</field>
+            <field name="account_type">income</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_40201001" model="account.account">
+            <field name="name">VENTA DE SERVICIOS</field>
+            <field name="code">40201001</field>
+            <field name="account_type">income</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_403" model="account.account">
+            <field name="name">INGRESOS NO OPERACIONALES</field>
+            <field name="code">403</field>
+            <field name="account_type">income</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_40301001" model="account.account">
+            <field name="name">OTROS INGRESOS (INTERES BANCARIO GANADO POR EJEMPLO)</field>
+            <field name="code">40301001</field>
+            <field name="account_type">income</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_5" model="account.account">
+            <field name="name">COSTOS</field>
+            <field name="code">5</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_501" model="account.account">
+            <field name="name">COSTO DE VENTAS</field>
+            <field name="code">501</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50101" model="account.account">
+            <field name="name">COSTO DE SOFTWARE (EJEMPLO)</field>
+            <field name="code">50101</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50101001" model="account.account">
+            <field name="name">COSTO DE (NOMBRE SOFTWARE)</field>
+            <field name="code">50101001</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50102" model="account.account">
+            <field name="name">COSTOS DE SERVICIO</field>
+            <field name="code">50102</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50102001" model="account.account">
+            <field name="name">SUELDO PERSONAL DE SOPORTE</field>
+            <field name="code">50102001</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50102002" model="account.account">
+            <field name="name">COMISIONES PERSONAL DE SOPORTE</field>
+            <field name="code">50102002</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50102004" model="account.account">
+            <field name="name">VACACIONES PERSONAL DE SOPORTE</field>
+            <field name="code">50102004</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50102005" model="account.account">
+            <field name="name">BONO VACAIONAL PERSONAL DE SOPORTE</field>
+            <field name="code">50102005</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50102006" model="account.account">
+            <field name="name">PRESTACIONES SOCIALES PERSONAL DE SOPORTE</field>
+            <field name="code">50102006</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50102007" model="account.account">
+            <field name="name">INTERESES S/PRESTACIONES SOCIALES PERSONAL DE SOPORTE</field>
+            <field name="code">50102007</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50103" model="account.account">
+            <field name="name">OTROS SERVICIOS</field>
+            <field name="code">50103</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50103001" model="account.account">
+            <field name="name">COSTOS DE CURSO (COSTO DE ASESORIAS ETC)</field>
+            <field name="code">50103001</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50103002" model="account.account">
+            <field name="name">COSTO MOVILIZACION Y TRASLADO</field>
+            <field name="code">50103002</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50104" model="account.account">
+            <field name="name">COSTO DE CONSUMIBLES</field>
+            <field name="code">50104</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50104001" model="account.account">
+            <field name="name">PAPELERIA Y ARTICULOS DE OFICINA</field>
+            <field name="code">50104001</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50104001" model="account.account">
+            <field name="name">EQUIPOS Y ACCESORIOS DE COMPUTACION (EJEMPLO)</field>
+            <field name="code">50104001</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_502" model="account.account">
+            <field name="name">CONTRIBUCIONES</field>
+            <field name="code">502</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50201" model="account.account">
+            <field name="name">CONTRIBUCIONES PARAFISCALES</field>
+            <field name="code">50201</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50201001" model="account.account">
+            <field name="name">APORTE IVSS Y SPF</field>
+            <field name="code">50201001</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50201002" model="account.account">
+            <field name="name">APORTE F.A.O.V.</field>
+            <field name="code">50201002</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50201003" model="account.account">
+            <field name="name">APORTE INCES</field>
+            <field name="code">50201003</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_503" model="account.account">
+            <field name="name">COSTOS OPERATIVOS</field>
+            <field name="code">503</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301001" model="account.account">
+            <field name="name">COSTOS OPERATIVOS</field>
+            <field name="code">50301001</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301002" model="account.account">
+            <field name="name">SERVICIO TELEFONO, FAX, CELULAR</field>
+            <field name="code">50301002</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301003" model="account.account">
+            <field name="name">HIDROLARA</field>
+            <field name="code">50301003</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301004" model="account.account">
+            <field name="name">CORPOELEC</field>
+            <field name="code">50301004</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301005" model="account.account">
+            <field name="name">ASEO URBANO</field>
+            <field name="code">50301005</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301006" model="account.account">
+            <field name="name">SERVICIOS PUBLICOS</field>
+            <field name="code">50301006</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301007" model="account.account">
+            <field name="name">DEPRECIACION DE ACTIVOS</field>
+            <field name="code">50301007</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301008" model="account.account">
+            <field name="name">AMORTIZACION DE ACTIVOS</field>
+            <field name="code">50301008</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301009" model="account.account">
+            <field name="name">MATERIALES Y ARTICULOS DE OFICINA</field>
+            <field name="code">50301009</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301010" model="account.account">
+            <field name="name">HONORARIOS PROFESIONALES</field>
+            <field name="code">50301010</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301011" model="account.account">
+            <field name="name">COSTOS DE ALQUILER</field>
+            <field name="code">50301011</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301012" model="account.account">
+            <field name="name">ALIMENTOS Y BEBIDAS</field>
+            <field name="code">50301012</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301013" model="account.account">
+            <field name="name">SERVICIOS CONTRATADOS</field>
+            <field name="code">50301013</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301014" model="account.account">
+            <field name="name">COSTOS DE FLETES Y ENCOMIENDAS</field>
+            <field name="code">50301014</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301015" model="account.account">
+            <field name="name">REPAR. Y MTTO. MOB Y EQUIPOS.</field>
+            <field name="code">50301015</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301016" model="account.account">
+            <field name="name">REPARACION Y MANTENIMIENTO DE VEHICULO</field>
+            <field name="code">50301016</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301017" model="account.account">
+            <field name="name">MEJORAS Y MANTENIMIENTO A PROPIEDAD ARRENDADA</field>
+            <field name="code">50301017</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301018" model="account.account">
+            <field name="name">EQUIPOS ARTICULOS Y MATERIALES DE OFICINA</field>
+            <field name="code">50301018</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301019" model="account.account">
+            <field name="name">COSTOS  DE LIMPIEZA, ARTICULOS Y MATERIALES</field>
+            <field name="code">50301019</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301020" model="account.account">
+            <field name="name">COSTOS DE EMBALAJE</field>
+            <field name="code">50301020</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301021" model="account.account">
+            <field name="name">COSTOS DIPOSITIVOS DE COMPUTACION</field>
+            <field name="code">50301021</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301022" model="account.account">
+            <field name="name">COSTOS CRUZ ROJA</field>
+            <field name="code">50301022</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301023" model="account.account">
+            <field name="name">GASTO DE TRANSPORTE</field>
+            <field name="code">50301023</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301024" model="account.account">
+            <field name="name">GASTO DE VIGILANCIA PRIVADA</field>
+            <field name="code">50301024</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301025" model="account.account">
+            <field name="name">ENVIOS Y ENCOMIENDAS</field>
+            <field name="code">50301025</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301026" model="account.account">
+            <field name="name">REPARACION Y MANTENIMIENTO DE EQUIPOS</field>
+            <field name="code">50301026</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301027" model="account.account">
+            <field name="name">INTERESES MORA</field>
+            <field name="code">50301027</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301028" model="account.account">
+            <field name="name">GASTO DE TASAS Y ARANCELES</field>
+            <field name="code">50301028</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_50301029" model="account.account">
+            <field name="name">COSTOS  POR HIGIENE Y SEGURIDAD INDUSTRIAL</field>
+            <field name="code">50301029</field>
+            <field name="account_type">expense_direct_cost</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_6" model="account.account">
+            <field name="name">EGRESOS</field>
+            <field name="code">6</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_601" model="account.account">
+            <field name="name">GASTOS</field>
+            <field name="code">601</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101" model="account.account">
+            <field name="name">GASTOS PERSONAL ADMINISTRATIVO</field>
+            <field name="code">60101</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101001" model="account.account">
+            <field name="name">SUELDOS Y SALARIOS PERSONAL DIRECTIVOS</field>
+            <field name="code">60101001</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101002" model="account.account">
+            <field name="name">SUELDOS Y SALARIOS PERSONAL ADM</field>
+            <field name="code">60101002</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101003" model="account.account">
+            <field name="name">PRESTACIONES SOCIALES E INTERESES SOBRE PRESTACIONES</field>
+            <field name="code">60101003</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101004" model="account.account">
+            <field name="name">VACACIONES PERSONAL DIRECTIVO</field>
+            <field name="code">60101004</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101005" model="account.account">
+            <field name="name">BONO VACACIONAL PERSONAL DIRECTIVO</field>
+            <field name="code">60101005</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101006" model="account.account">
+            <field name="name">VACACIONES PERSONAL ADM</field>
+            <field name="code">60101006</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101007" model="account.account">
+            <field name="name">BONO VACIONAL PERSONAL ADM</field>
+            <field name="code">60101007</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101008" model="account.account">
+            <field name="name">UTILIDADES FIN DE AÑO PERSONAL DIRECTIVO</field>
+            <field name="code">60101008</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101009" model="account.account">
+            <field name="name">UTILIDADES FIN DE AÑO PERSONAL ADM/OP</field>
+            <field name="code">60101009</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101010" model="account.account">
+            <field name="name">VIATICOS DIRECTIVOS</field>
+            <field name="code">60101010</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101011" model="account.account">
+            <field name="name">VIATICOS ADM</field>
+            <field name="code">60101011</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101012" model="account.account">
+            <field name="name">HORAS EXTRAS ADM</field>
+            <field name="code">60101012</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101013" model="account.account">
+            <field name="name">DIAS FERIADOS Y DOMINGOS ADM</field>
+            <field name="code">60101013</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101014" model="account.account">
+            <field name="name">BONO DE ALIMENTACION ADM</field>
+            <field name="code">60101014</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101015" model="account.account">
+            <field name="name">GASTOS MEDICOS TRABAJADORES</field>
+            <field name="code">60101015</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101016" model="account.account">
+            <field name="name">GASTOS DE UNIFORMES </field>
+            <field name="code">60101016</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101017" model="account.account">
+            <field name="name">CURSOS Y TALLERES ADM</field>
+            <field name="code">60101017</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60101018" model="account.account">
+            <field name="name">SEGURO HCM PERSONAL</field>
+            <field name="code">60101018</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_602" model="account.account">
+            <field name="name">CONTRIBUCIONES</field>
+            <field name="code">602</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60201" model="account.account">
+            <field name="name">CONTRIBUCIONES PARAFISCALES</field>
+            <field name="code">60201</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60201001" model="account.account">
+            <field name="name">APORTE IVSS Y SPF ADM</field>
+            <field name="code">60201001</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60201003" model="account.account">
+            <field name="name">APORTE F.A.O.V. ADM</field>
+            <field name="code">60201003</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60201004" model="account.account">
+            <field name="name">APORTE INCES ADM</field>
+            <field name="code">60201004</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_603" model="account.account">
+            <field name="name">GASTOS ADMINISTRATIVOS</field>
+            <field name="code">603</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301" model="account.account">
+            <field name="name">GASTOS ADMINISTRATIVOS</field>
+            <field name="code">60301</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301001" model="account.account">
+            <field name="name">SERVICIO TELEFONO, FAX, CELULAR</field>
+            <field name="code">60301001</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301002" model="account.account">
+            <field name="name">DEPRECIACION DE ACTIVOS</field>
+            <field name="code">60301002</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301003" model="account.account">
+            <field name="name">AMORTIZACION DE ACTIVOS</field>
+            <field name="code">60301003</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301004" model="account.account">
+            <field name="name">MATERIALES Y ARTICULOS DE OFICINA</field>
+            <field name="code">60301004</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301005" model="account.account">
+            <field name="name">HONORARIOS PROFESIONALES</field>
+            <field name="code">60301005</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301006" model="account.account">
+            <field name="name">GASTOS DE ALQUILER</field>
+            <field name="code">60301006</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301007" model="account.account">
+            <field name="name">GASTOS DE ADIESTRAMIENTO</field>
+            <field name="code">60301007</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301008" model="account.account">
+            <field name="name">ALIMENTOS Y BEBIDAS</field>
+            <field name="code">60301008</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301009" model="account.account">
+            <field name="name">SERVICIOS CONTRATADOS</field>
+            <field name="code">60301009</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301010" model="account.account">
+            <field name="name">GASTOS DE PUBLICIDAD</field>
+            <field name="code">60301010</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301011" model="account.account">
+            <field name="name">IMPUESTO MUNICIPAL</field>
+            <field name="code">60301011</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301012" model="account.account">
+            <field name="name">GASTOS DE FLETES Y ENCOMIENDAS</field>
+            <field name="code">60301012</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301013" model="account.account">
+            <field name="name">REPAR. Y MTTO. MOB Y EQUIPOS.</field>
+            <field name="code">60301013</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301014" model="account.account">
+            <field name="name">REPARACION, MANTENIMIENTO Y REPTOS DE VEHICULO</field>
+            <field name="code">60301014</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301015" model="account.account">
+            <field name="name">REPARACION Y MANTENIMIENTO DE INSTALACIONES</field>
+            <field name="code">60301015</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301016" model="account.account">
+            <field name="name">REPARACION Y MANTENIMIENTO DE LOCAL</field>
+            <field name="code">60301016</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301017" model="account.account">
+            <field name="name">GASTOS DE LIMPIEZA</field>
+            <field name="code">60301017</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301018" model="account.account">
+            <field name="name">GASTOS DE CONDOMINIO</field>
+            <field name="code">60301018</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301019" model="account.account">
+            <field name="name">GASTOS CRUZ ROJA</field>
+            <field name="code">60301019</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301020" model="account.account">
+            <field name="name">GASTOS SOPORTE TECNICO DE SOFTWARE</field>
+            <field name="code">60301020</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301021" model="account.account">
+            <field name="name">PORCION CREDITO FISCAL NO DECUCIBLE</field>
+            <field name="code">60301021</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301022" model="account.account">
+            <field name="name">GASTO DE TRANSPORTE</field>
+            <field name="code">60301022</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301023" model="account.account">
+            <field name="name">GASTOS DE VIGILANCIA</field>
+            <field name="code">60301023</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301024" model="account.account">
+            <field name="name">ENVIOS Y ENCOMIENDAS</field>
+            <field name="code">60301024</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301025" model="account.account">
+            <field name="name">REPARACION Y MANTENIMIENTO DE EQUIPOS</field>
+            <field name="code">60301025</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301026" model="account.account">
+            <field name="name">AVISOS EN PRENSA</field>
+            <field name="code">60301026</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301027" model="account.account">
+            <field name="name">SUMINISTROS VARIOS</field>
+            <field name="code">60301027</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301028" model="account.account">
+            <field name="name">COLABORACION Y DONACIONES</field>
+            <field name="code">60301028</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301029" model="account.account">
+            <field name="name">OTROS SERVICIOS CONTRATADOS</field>
+            <field name="code">60301029</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_60301030" model="account.account">
+            <field name="name">GASTOS VARIOS</field>
+            <field name="code">60301030</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_7" model="account.account">
+            <field name="name">OTRAS OPERACIONES COMERCIALES</field>
+            <field name="code">7</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_701" model="account.account">
+            <field name="name">INGRESOS</field>
+            <field name="code">701</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70101" model="account.account">
+            <field name="name">FINANCIEROS</field>
+            <field name="code">70101</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70101001" model="account.account">
+            <field name="name">OTRAS COLOCACIONES</field>
+            <field name="code">70101001</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70101002" model="account.account">
+            <field name="name">RECUPERACION DE GASTOS</field>
+            <field name="code">70101002</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70101003" model="account.account">
+            <field name="name">OTROS INGRESOS</field>
+            <field name="code">70101003</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70101004" model="account.account">
+            <field name="name">COMISION CHEQUE DEVUELTO</field>
+            <field name="code">70101004</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_702" model="account.account">
+            <field name="name">OTROS EGRESOS</field>
+            <field name="code">702</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70201" model="account.account">
+            <field name="name">EGRESOS VARIOS</field>
+            <field name="code">70201</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70201001" model="account.account">
+            <field name="name">GASTOS DE INTERESES POR PRESTAMO BANCARIO</field>
+            <field name="code">70201001</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70201002" model="account.account">
+            <field name="name">GASTOS BANCARIOS</field>
+            <field name="code">70201002</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70201003" model="account.account">
+            <field name="name">COMISIONES BANCARIAS</field>
+            <field name="code">70201003</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70201004" model="account.account">
+            <field name="name">GASTO DE TASAS Y ARANCELES</field>
+            <field name="code">70201004</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70201005" model="account.account">
+            <field name="name">OTROS EGRESOS</field>
+            <field name="code">70201005</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        
+        <record id="account_account_70201006" model="account.account">
+            <field name="name">GASTOS NO DEDUCIBLES</field>
+            <field name="code">70201006</field>
+            <field name="account_type">expense</field>
+            <field name="create_asset">no</field>
+            <field name="company_id" ref="base.main_company" /> 
+        </record>
+        </data>
+</odoo>

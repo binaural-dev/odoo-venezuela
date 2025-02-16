@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data noupdate="1">
+
+        <record forcecreate="True" id="alternative_discounts" model="decimal.precision">
+            <field name="name">Descuentos alternos</field>
+            <field name="digits">2</field>
+        </record>
+
+         <record forcecreate="True" id="alternative_rate" model="decimal.precision">
+            <field name="name">Tasa</field>
+            <field name="digits">2</field>
+        </record>
+
+         <record forcecreate="True" id="alternative_price_product" model="decimal.precision">
+            <field name="name">Foreign Product Price</field>
+            <field name="digits">2</field>
+        </record>
+        
+    </data>
+    
+
+</odoo>

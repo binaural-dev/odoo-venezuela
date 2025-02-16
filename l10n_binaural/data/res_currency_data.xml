@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="base.VEF" model="res.currency">
+        <field name="name">VEF</field>
+        <field name="symbol">Bs</field>
+        <field name="decimal_places">2</field>
+    </record>
+  </data>
+</odoo>

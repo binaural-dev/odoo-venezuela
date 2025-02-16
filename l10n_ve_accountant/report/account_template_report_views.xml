@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+
+  <data>
+
+    <record id="action_account_related_report" model="ir.actions.report">
+      <field name="name">Asientos Contables Relacionados</field>
+      <field name="model">account.move</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="report_name">l10n_ve_accountant.account_related_report_call</field>
+      <field name="report_file">l10n_ve_accountant.account_related_report_call</field>
+      <field name="print_report_name">'Asientos contables Relacionados %s' % (object.name)</field>
+      <field name="binding_model_id" ref="account.model_account_move"/>
+      <field name="binding_type">report</field>
+      <field name="paperformat_id" ref="l10n_ve_accountant.paperformat_account_related"/> 
+    </record>
+
+    <record id="action_account_report" model="ir.actions.report">
+      <field name="name">Asiento Contable</field>
+      <field name="model">account.move</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="report_name">l10n_ve_accountant.account_report_call</field>
+      <field name="report_file">l10n_ve_accountant.account_report_call</field>
+      <field name="print_report_name">'Asiento contable %s' % (object.name)</field>
+      <field name="binding_model_id" ref="account.model_account_move"/>
+      <field name="binding_type">report</field>
+      <field name="paperformat_id" ref="l10n_ve_accountant.paperformat_account"/> 
+    </record>
+
+  </data>
+    
+</odoo>

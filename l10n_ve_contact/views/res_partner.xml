@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_partner_l10n_ve_form_contacts" model="ir.ui.view">
+        <field name="name">res_partner_l10n_ve_form_contacts</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vat']" position="replace">
+            </xpath>
+            <xpath expr="//h1" position="before">
+                <group class="col-4">
+                    <field name="prefix_vat"/>
+                    <field name="vat" required="1"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

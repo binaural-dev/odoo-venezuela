@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <report
+        id="l10n_ve_accountant.action_report_all_payments"
+        model="payment.report"
+        string="Informe de pagos"
+        menu="False"
+        report_type="qweb-pdf"
+        name="l10n_ve_accountant.financial_all_payments"
+        file="l10n_ve_accountant.financial_all_payments"
+    />
+
+
+    <template id="l10n_ve_accountant.financial_all_payments">
+            <t t-call="web.html_container">
+		        <xpath expr="//t[@t-call='web.report_layout']" position="replace">
+			    
+                    <div class="article" style="">
+		               
+                            <div>
+                                <div class="row">
+                                    <div class="col-6 mb4">
+                                        <img t-if="res_company.logo" t-att-src="image_data_uri(res_company.logo)"
+                                            style="max-height:100px;width:200px;float:left"
+                                            alt="Logo"/>
+                                    </div>
+                                    <div class="col-6 text-right" style="margin-top:22px;">
+                                        <t t-if="date">
+                                            <strong>Emisión :</strong>
+                                            <span t-esc="date" t-options='{"widget": "date"}'/>
+                                        </t>
+                                    </div>
+                                    
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <t t-if="res_company.name">
+                                            <span t-esc="res_company.name"/>
+                                            <br/>
+                                        </t>
+                                        <t t-if="res_company.vat">Rif:&amp;nbsp;
+                                            <span t-esc="res_company.vat"/>
+                                            <br/>
+                                        </t>
+                                    </div>
+                                </div>
+                                <h4 style="text-align:center">Resumen de pagos</h4>    
+		                        <br/>
+		                        <table class="table-condensed table-bordered border-light" style="width:100%;height:100%;font-size:14px">
+		                            <tr>
+			                            <td>
+				                            <span><b><span t-esc="payment_type"/></b></span>
+			                            </td>
+		                               <td>
+				                            <span>Diario: <b><span t-esc="journal" /></b></span>
+			                            </td>
+                                        <td>
+				                            <span>Desde: <b><span t-esc="data.get('start_date')" t-options='{"widget": "date"}'/></b></span>
+			                            </td>
+                                        <td>
+				                            <span>Hasta: <b><span t-esc="data.get('end_date')" t-options='{"widget": "date"}'/></b></span>
+			                            </td>
+		                            </tr>
+		                        </table>
+                                <br/>
+		                    </div>
+                            		                      
+
+		                    <div class="page">
+                            <!-- white-space: nowrap;overflow: hidden;text-overflow: ellipsis;-->
+		                        <style>
+		                            th,td{text-align: center;}
+		                            thead { display: table-header-group }
+		                            tfoot { display: table-row-group }
+		                            tr { page-break-inside: avoid }
+		                            .clth{
+		                                    border-top: 2px solid black;
+		                                    border-bottom: 2px solid black;
+		                            }
+		                            .cltt{
+		                                    border-top: 2px solid black;
+		                                    font-weight: 600;
+		                            }
+		                        </style>     
+                                	<t t-set="qty" t-value="0"/>
+		                            <t t-set="total" t-value="0.00"/> 
+		                            <table class="table-condensed table-bordered border-light" style="width:100%;font-size:10px;table-layout: fixed">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">Documento</th>
+                                                <t t-if="data.get('payment_type') == 'outbound'">
+                                                    <th colspan="2"  class="text-center">Proveedor</th>
+                                                </t>
+                                                <t t-if="data.get('payment_type') == 'inbound'">
+                                                    <th colspan="2"  class="text-center">Cliente</th>
+                                                </t>
+                                                
+                                                <th class="text-center">Fecha</th>
+                                                <th class="text-right">Monto</th>
+                                                <th class="text-center">Usuario</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+		                                    <tr t-foreach="docs" t-as="o">
+                                                <td style="text-align: center">
+			                                        <span t-esc="o.name"/>
+		                                        </td>
+                                                <td colspan="2" style="text-align: center">
+                                                    <span t-esc="o.partner_id.prefix_vat"/>-<span t-esc="o.partner_id.vat"/>
+			                                        <span t-esc="o.partner_id.name"/><!--Razon social-->
+		                                        </td>
+                                                <td style="text-align: center">
+			                                        <span t-esc="o.date" t-options='{"widget": "date"}'/>
+		                                        </td>
+		                                        <td style="text-align: right">
+			                                        <t t-esc="'{0:,.2f}'.format(float(o.amount)).replace (',',' ').replace ('.',',').replace (' ','.')"/>
+		                                        </td>
+                                                <td style="text-align: center">
+			                                        <span t-esc="o.write_uid.name"/><!--create_uid-->
+		                                        </td>
+
+                                                <t t-set="qty" t-value="qty + 1"/>
+                                                <t t-set="total" t-value="total + o.amount"/>
+		                                    </tr>
+                                        
+                                        </tbody>
+		                                   
+		                            </table>
+                                    <table class="table-condensed" style="width:100%;font-size:10px;table-layout: fixed;margin-top: 20px;">
+		                                <tr class="cltt">
+		                                    <td style="text-align: left" class="" rowspan="1" colspan="">Cantidad de operaciones: <t t-esc="qty"/></td>
+                                            
+                                            
+		                                    
+		                                    
+		                                    <td style="text-align: right" class="" rowspan="1" colspan="">Total: <t t-esc="'{0:,.2f}'.format(float(total)).replace (',',' ').replace ('.',',').replace (' ','.')"/></td>
+		                                    
+		                                </tr>
+		                            </table>
+
+                                    <br/>
+                                    <p>Autorizado por:<br/><br/></p>
+                                    <div style="text-align: center;float:left; margin: 5px 0px ;border-top: 1px solid #000;width:35%; padding-top:10px;"></div><div style="text-align: center; float:left;margin: 5px 20px;border-top: 1px solid #000;width:35%; padding-top:10px;"></div>
+                                    <br/>
+                                    <br/>
+                                    <br/>
+                                    <p>Elaborado por:  <span t-esc="name_user"/> <br/><br/></p>
+                                    <br/>
+                                    <!--   create_uid write_uid Ultima modificacion por: <span t-field="o.write_uid.name"/>-->
+                                    <div style="text-align: center;float:left; margin: 5px 0px ;border-top: 1px solid #000;width:45%; padding-top:10px;"></div>
+		                        	                     
+		                    </div>
+		            </div>
+		        </xpath>
+	        </t>
+    </template>
+
+</odoo>

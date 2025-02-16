@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_account_invoices_details_report" model="ir.actions.report">
+        <field name="name">Sale Details</field>
+        <field name="model">account.invoices.details</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">l10n_ve_accountant.report_account_invoices_details</field>
+    </record>
+
+    <template id="report_account_invoices_details">
+        <t t-set="company" t-value="env.company"/>
+        <t t-call="web.html_container">
+        <t t-call="web.basic_layout">
+
+            <style type="text/css">
+                .border-bottoms{
+                    padding-bottom: 10px !important;
+                    padding-top: 10px !important;
+                    border-bottom: 1px dashed #212121;
+                }
+                .spaces {
+                    padding-bottom: 20px !important;
+                    padding-top: 20px !important;
+                    border-bottom: 1px dashed #212121;
+
+                }
+            </style>
+            <div class="text-center">
+                <h2 t-out="company.name"/>
+                <p t-out="company.vat" />
+                <p>Sales Report</p>
+                <t t-if="date_from == date_to">
+                    <span><t t-out="str(date_from)"/></span>
+                </t>
+                <t t-else="">
+                    <span>From <t t-out="str(date_from)"/> to <t t-out="str(date_to)"/></span>
+                </t>
+            </div>
+            <br/>
+            <br/>
+            <div name="date_now" class="border-bottoms">
+                <p>Date of issue: <t t-out="str(date_now.strftime('%d/%m/%Y, %H:%M:%S'))"/></p>
+            </div>
+            <t t-foreach="journal_ids" t-as="journal">
+                <t t-set="journal_id" t-value="str(journal['id'])"/>
+                <div name="journal" class="border-bottoms spaces">
+                    <b t-out="journal['name']"/>
+                </div>
+                <t t-foreach="invoice_move_type" t-as="move_type">
+                    <t t-set="move_type_id" t-value="move_type['type']"/>
+                    <t t-if="invoices[journal_id].get(move_type_id,False)">
+                        <div class="border-bottoms spaces">
+                            <b t-out="move_type['name']"/>
+                        </div>
+                        <div name="header_invoices" class="row border-bottoms spaces">
+                            <div class="col-2">
+                                <p t-if="show_documents">
+                                Nº Documento
+                                </p>
+                            </div>
+                            <div class="col-2 text-center">
+                                <p>
+                                B.I
+                                </p>
+                            </div>
+                            <div class="col-2 text-center">
+                                <p>
+                                Discount
+                                </p>
+                            </div>
+                            <div class="col-2 text-center">
+                                <p>
+                                B.I/Discount
+                                </p>
+                            </div>
+                            <div class="col-2 text-center">
+                                <p>
+                                Taxes 
+                                </p>
+                            </div>
+                            <div class="col-2 text-center">
+                                <p>
+                                Net Amount
+                                </p>
+                            </div>
+                        </div>
+                        <t t-foreach="payment_term_ids" t-as="term_id">
+                            <t t-set="term" t-value="str(term_id['id'])"/>
+                            <t t-if="invoices[journal_id][move_type_id][term]">
+                                <div t-if="show_documents" class="payment_deadline border-bottoms">
+                                    <strong t-out="term_id['name']"/>
+                                </div>
+
+                                <t t-if="show_documents" t-foreach="invoices[journal_id][move_type_id][term]" t-as="invoice">
+                                    <div class="row border-bottoms" name="item_invoice">
+                                        <div class="col-2">
+                                            <p t-out="invoice.name"></p>
+                                        </div>
+                                        <div class="col-2 text-center">
+                                            <p t-out="invoice.detailed_amounts['formatted_gross_amount']"/>
+                                        </div>
+                                        <div class="col-2 text-center">
+                                            <p t-out="invoice.detailed_amounts['formatted_discount_amount']"/>
+                                        </div>
+                                        <div class="col-2 text-center">
+                                            <p t-out="invoice.detailed_amounts['formatted_gross_discount_amount']"/>
+                                        </div>
+                                        <div class="col-2 text-center">
+                                            <p t-out="invoice.detailed_amounts['formatted_taxes_amount']"/>
+                                        </div>
+                                        <div class="col-2 text-center">
+                                            <p t-out="invoice.tax_totals['formatted_amount_total']"></p>
+                                        </div>
+                                    </div>
+                                </t>
+                                <div class="row border-bottoms" name="total_term_invoices">
+                                    <t t-set="totals_term" t-value="invoices[journal_id][move_type_id]['totals_'+term]"/>
+                                    <div class="col-2">
+                                        <strong>
+                                                Total <t t-out="term_id['name']"/> 
+                                        </strong>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <strong t-out="totals_term['formatted_gross_amount']"></strong>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <strong t-out="totals_term['formatted_discount_amount']"></strong>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <strong t-out="totals_term['formatted_gross_discount_amount']"></strong>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <strong t-out="totals_term['formatted_taxes_amount']"></strong>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <strong t-out="totals_term['formatted_total_amount']"></strong>
+                                    </div>
+                                </div>
+
+                            </t>
+                        </t>
+                        <div class="row border-bottoms" name="total_journal_invoices">
+                            <t t-set="totals_move_type" t-value="invoices[journal_id]['totals_' + move_type_id]"/>
+                            <div class="col-2">
+                                <strong>Total <t t-out="move_type['name']"/>: <t t-out="totals_move_type['total_items']"/></strong>
+                            </div>
+                            <div class="col-2 text-center">
+                                <strong t-out="totals_move_type['formatted_gross_amount']"></strong>
+                            </div>
+                            <div class="col-2 text-center">
+                                <strong t-out="totals_move_type['formatted_discount_amount']"></strong>
+                            </div>
+                            <div class="col-2 text-center">
+                                <strong t-out="totals_move_type['formatted_gross_discount_amount']"></strong>
+                            </div>
+                            <div class="col-2 text-center">
+                                <strong t-out="totals_move_type['formatted_taxes_amount']"></strong>
+                            </div>
+                            <div class="col-2 text-center">
+                                <strong t-out="totals_move_type['formatted_total_amount']"></strong>
+                            </div>
+                        </div>
+                    </t>
+                </t>
+            </t>
+            <div t-if="invoices.get('totals',False)" class="row border-bottoms spaces">
+                <div class="col-2">
+                    <strong>Total Sales</strong>
+                </div>
+                <div class="col-2 text-center">
+                    <strong t-out="invoices['totals']['formatted_gross_amount']"></strong>
+                </div>
+                <div class="col-2 text-center">
+                    <strong t-out="invoices['totals']['formatted_discount_amount']"></strong>
+                </div>
+                <div class="col-2 text-center">
+                    <strong t-out="invoices['totals']['formatted_gross_discount_amount']"></strong>
+                </div>
+                <div class="col-2 text-center">
+                    <strong t-out="invoices['totals']['formatted_taxes_amount']"></strong>
+                </div>
+                <div class="col-2 text-center">
+                    <strong t-out="invoices['totals']['formatted_total_amount']"></strong>
+                </div>
+            </div>
+            <div class="border-bottoms spaces">
+                <strong>Payments</strong>
+            </div>
+            <div name="header_payments" class="row border-bottoms spaces">
+                <div class="col-2">
+                    <p t-if="show_documents">
+                    Nº Documento
+                    </p>
+                </div>
+                <div class="col-3 text-center">
+                    <p t-if="show_documents">
+                        Client 
+                    </p>
+                </div>
+                <div class="col-3 text-center">
+                    <p t-if="show_documents">
+                        Payment 
+                    </p>
+                </div>
+                <div class="col-2 text-center">
+                    <p t-if="show_documents">
+                        Date
+                    </p>
+                </div>
+                <div class="col-2 text-center">
+                    <p>
+                        Amount in Currency
+                    </p>
+                </div>
+            </div>
+            <t t-foreach="p_journals_ids" t-as="journal_id">
+                <t t-set="journal" t-value="str(journal_id['id'])"/>
+                <t t-if="payments.get(journal,False)">
+                    <div t-if="show_documents" class="payment_journal border-bottoms">
+                        <p t-out="journal_id['name']"/>
+                    </div>
+                    <t t-set="total_amont_payment" t-value="0"/>
+                    <t t-if="show_documents" t-foreach="payments[journal]" t-as="p">
+                        <t t-set="multiply" t-value="1 if p.payment_type == 'inbound' else -1"/>
+                        <div class="row" name="item_payment">
+                            <div class="col-2">
+                                <t t-if="not p.reconciled_invoice_ids">
+                                    <p>N/C</p>
+                                </t>
+                                <t t-else="">
+                                    <p><t t-out="', '.join([x.name for x in p.reconciled_invoice_ids])"/></p>
+                                </t>
+                            </div>
+                            <div class="col-3 text-center">
+                                <p><t t-out="p.partner_id.name"/></p>
+                            </div>
+                            <div class="col-3 text-center">
+                                <p><t t-out="p.name"/></p>
+                            </div>
+                            <div class="col-2 text-center">
+                                <p><t t-out="p.date.strftime('%d/%m/%Y')"/></p>
+                            </div>
+                            <div class="col-2 text-center">
+                                <p t-field="p.amount_signed"/>
+                            </div>
+                        </div>
+                    </t>
+                    <div class="row border-bottoms" name="total_term_payments">
+                        <div class="col-5">
+                            <strong>Total <t t-out="journal_id['name']"/> </strong>
+                        </div>
+                        <div class="col-3 text-center">
+                            <p></p>
+                        </div>
+                        <div class="col-2 text-center">
+                            <p></p>
+                        </div>
+                        <div class="col-2 text-center">
+                            <strong>
+                                <t t-out="payments['totals_'+journal]['formatted_amount']"/>
+                            </strong>
+                        </div>
+                    </div>
+                </t>
+            </t>
+            <!-- <div t-if="payments.get('totals',False)" class="row border-bottoms" name="total_global_payments">
+                <div class="col-2">
+                    <strong>Total charged</strong>
+                </div>
+                <div class="col-3 text-center">
+                    <p></p>
+                </div>
+                <div class="col-3 text-center">
+                    <p></p>
+                </div>
+                <div class="col-2 text-center">
+                    <p></p>
+                </div>
+                <div class="col-2 text-center">
+                    <strong t-out="payments['totals']['formatted_amount']" />
+                </div>
+            </div> -->
+        </t>
+        </t>
+    </template>
+</odoo>

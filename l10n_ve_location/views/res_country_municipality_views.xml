@@ -1,0 +1,46 @@
+<odoo>
+    <data>
+        <!-- TREE -->
+        <record id="view_res_country_municipality_tree" model="ir.ui.view">
+            <field name="name">Municipality</field>
+            <field name="model">res.country.municipality</field>
+            <field name="arch" type="xml">
+                <tree editable="bottom" string="Municipalities">
+                    <field name="active" invisible="1"/>
+		    <field name="code"/>
+                    <field name="country_id" />
+                    <field name="state_id" widget="many2many_tags" domain="[('country_id.code','ilike','ve')]" />
+                    <field name="name" />
+                </tree>
+            </field>
+        </record>
+
+        <!-- FORM -->
+        <record id="view_res_country_municipality_form" model="ir.ui.view">
+            <field name="name">Municipality</field>
+            <field name="model">res.country.municipality</field>
+            <field name="arch" type="xml">
+                <form string="Municipality">
+                    <sheet string="Municipality">
+                        <group>
+                            <field name="active" invisible="1"/>
+			    <field name="code"/>
+                            <field name="country_id" />
+                            <field name="state_id" widget="many2many_tags" domain="[('country_id.code','ilike','ve')]" />
+                            <field name="name" />
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ACTION -->
+        <record id="action_res_country_municipality" model="ir.actions.act_window">
+            <field name="name">Municipalities</field>
+            <field name="res_model">res.country.municipality</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_view_types">form</field>
+            <field name="view_mode">tree,form</field>
+        </record>   
+    </data>
+</odoo>

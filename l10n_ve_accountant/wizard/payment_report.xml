@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="form_wizard_all_payments" model="ir.ui.view">
+        <field name="name">Payment report</field>
+        <field name="model">payment.report</field>
+        <field name="arch" type="xml">
+            <form string="Payment Report">
+                    <group>
+                        <group>
+                            <field name="payment_type" />
+                            <field name="journal_id" />
+                            <field name="start_date" />
+                            <field name="end_date" />
+                            
+                        </group>
+                    </group>
+                                      
+                <footer>
+                    <button name="generate_report_payment" string="Generar" type="object" class="oe_highlight" />
+                    <button string="Cancelar" class="btn-default" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+	    <record id="action_report_all_payments_view" model="ir.actions.act_window" >
+	        <field name="name">Payment Report</field>
+	        <field name="res_model">payment.report</field>
+	        <field name="type">ir.actions.act_window</field>
+	        <field name="binding_view_types">form</field>
+	        <field name="view_mode">form</field>
+	        <field name="target">new</field>
+	    </record>
+
+        <menuitem
+            name="Informe de pagos"
+            id="bin_payment_all_report"
+            parent="account.menu_finance_reports"
+            action="action_report_all_payments_view"
+        />
+
+</odoo>

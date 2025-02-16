@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_account_move_form_l10n_ve_tax" model="ir.ui.view">
+        <field name="name">view.account.move.form.binaural.tax</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='tax_ids']" position="before">
+                <field name="config_deductible_tax" invisible="1"/>
+                <field name="move_type" invisible="1"/>
+                <field name="not_deductible_tax" optional="hide" 
+                attrs="{'invisible': ['|',('move_type', 'not in', ['in_invoice','in_refund']),('config_deductible_tax', '!=', True)]}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

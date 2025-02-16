@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_config_settings_l10n_ve_invoice" model="ir.ui.view">
+            <field name="name">res.config.settings.binaural.rate</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
+                    <h2>Invoice Configuration</h2>
+                    <div class="row mt16 o_settings_container" name="invoice_settings">
+                        <div class="col-12 col-lg-6 o_setting_box" id="multiple_prices_setting">
+                            <div class="o_setting_left_pane">
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <group colspan="2" col="4">
+                                    <field name="max_product_invoice"/>
+                                </group>
+                                <div class="text-muted">
+                                   Limit the number of products on an invoice 
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="show_usd_on_free_form">
+                            <div class="o_setting_left_pane">
+                                <field name="show_total_on_usd_invoice"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <group colspan="2" col="4">
+                                    <label for="show_total_on_usd_invoice"/>
+                                </group>
+                                <div class="text-muted">
+                                   Show Total USD on Free Form Invoice
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" id="show_tag_usd_on_free_form">
+                            <div class="o_setting_left_pane">
+                                <field name="show_tag_on_usd_invoice"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <group colspan="2" col="4">
+                                    <label for="show_tag_on_usd_invoice"/>
+                                </group>
+                                <div class="text-muted">
+                                   Show Tag USD on Free Form Invoice
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-4 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="group_sales_invoicing_series" class="oe_inline" required="1"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="group_sales_invoicing_series" />
+                                <div class="text-muted">It allow enable the invoicing sequences by series in sale's journals.</div>
+                            </div>
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

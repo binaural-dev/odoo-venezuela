@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<data>
+
+    <template id="account_report_document">
+
+        <style>
+
+            @font-face {
+                font-family: 'Courier';
+                src: url('/l10n_ve_accountant/static/fonts/CourierPrime-Regular.ttf') format('truetype');
+            }
+
+            * {
+                font-family: Courier;
+                font-size: 19px !important;
+                word-spacing: -5px !important;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            h2 {
+                font-size: 16px;
+            }
+
+            .page {
+                font-size: 13px;
+                padding: 25px;
+            }
+
+            .table {
+                width: 100%;
+                margin-top: 30px;
+            }
+
+            tr, th, td {
+                border 0px;
+                font-size: 13px;
+            }
+
+            .table tr, .table td, .table th {
+                padding: 5px 15px;
+            }
+
+            .table thead th {
+                
+                font-size: 12px;
+                text-transform: uppercase;
+            }
+
+            .table thead tr {
+                border: 1px solid black !important;
+                border-right:0px !important;
+                border-left:0px !important;
+            }
+
+            .table tfoot .total_debit, .table tfoot .total_credit {
+                font-weight: bold;
+                font-size: 13px;
+            }
+            
+
+            .ml-6 {
+                margin-left: 20px;
+            }
+
+            .text-center {
+                text-align: center;
+            }
+
+            .header {
+                background: blue !important;
+            }
+
+            .main_table tbody tr td {
+                padding-top:5px;
+                padding-bottom:5px;
+                vertical-align: middle;
+            }
+
+            .main_table tbody tr td{
+                border-top: 1px solid black !important;
+                border-bottom: 0px solid white;
+                border-right: 1px solid white;
+                border-left: 1px solid white;
+            }
+
+            .main_table tbody tr:nth-child(1) td {
+                padding-top: 6px !important;
+            }
+
+            .total_table {
+                margin-top: 10px;
+            }
+
+            .total_table td {
+                margin: 0;
+                padding: 0;
+            }
+
+            .row {
+                padding: 0px;
+                margin: 0px;
+            }
+
+            .font-weight-bold {
+                font-weight: bold;
+            }
+
+        </style>
+        <div class="page" style="position: relative; padding:0px; margin:0px;border-top:white 1px solid;">
+            <t t-set="idx" t-value="0"/>
+            <t t-set="current_page" t-value="1"/>
+            <t 
+                t-set="current_month_name" 
+                t-value="time.strftime('%%m')
+                .replace('01','Enero')
+                .replace('02','Febrero')
+                .replace('03','Marzo')
+                .replace('04','Abril')
+                .replace('05','Mayo')
+                .replace('06','Junio')
+                .replace('07','Julio')
+                .replace('08','Agosto')
+                .replace('09','Septiembre')
+                .replace('10','Octubre')
+                .replace('11','Noviembre')
+                .replace('12','Diciembre')"
+            />
+            <t t-set="total_debit" t-value="0"/>
+            <t t-set="total_credit" t-value="0"/>
+            
+            <t t-set="items_by_page" t-value="100"/>
+
+            <t t-if="show_related_account_move">
+                <t 
+                    t-set="docs_paginated" 
+                    t-value="[docs[i:i+items_by_page] for i in range(0, len(docs), items_by_page)]"
+                />
+            </t>
+            <t t-else="">
+                <t 
+                    t-set="docs_paginated" 
+                    t-value="[main_move_line_ids[i:i+items_by_page] for i in range(0, len(main_move_line_ids), items_by_page)]"
+                />
+                <t t-set="doc_title" t-value="main_move.name"/>
+            </t>
+
+            <t t-set="paginate_count" t-value="len(docs_paginated)"/>
+
+            <t t-foreach="docs_paginated" t-as="docs_by_page">
+
+                <div class="row header" style="padding:0px; margin:0px;">
+
+                    <style>
+                        .table_header {
+                            border: 0px white solid;
+                        }
+
+                        .table_header td {
+                            font-size: 10px !important;
+                        }
+
+                        .table_header tr:nth-child(n+2) {
+                            border: 2px solid black;
+                            border-radius: 5px;
+                        }
+
+                        .table_header tr:nth-child(n+2) td {
+                            text-transform: uppercase;
+                        }
+
+                        .table_main_header thead tr th{ 
+                            font-weigth: bold;
+                            border-top: 1px solid black;
+                            border-bottom: 1px solid white !important;
+                            <!-- border-bottom: 1px solid black; -->
+                            border-right: 1px solid white;
+                            border-left: 1px solid white;
+                        }
+
+                    </style>
+
+                    <div class="row" style="padding:0px; margin:0px;">
+                        <div class="col-12 doc-header">
+                            <table class="table table_header">
+                                <tr>
+                                    <td style="border-top:white 1px solid;">
+                                        <h1 class="text-center" style="font-size: 14px;"><strong><span t-out="res_company.name" /></strong></h1>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <h2 class="text-center" style="font-size: 14px;" t-if="doc_title == ''"><span t-out="current_month_name + time.strftime(' del %%Y')" /></h2>
+                                        <h2 class="text-center" style="font-size: 14px;" t-if="not doc_title == ''">
+                                            COMPROBANTE CONTABLE No. <strong><span class="font-weight-bold" t-out="doc_title" /></strong>
+                                        <span style="margin-left:45px;">FECHA: <strong><span class="font-weight-bold" t-out="doc_date if show_related_account_move else main_move.date" t-options='{"widget": "date","format": "dd/MM/yyyy"}' /></strong></span></h2> 
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="height: 53px;max-height: 53px;font-size: 14px !important;">
+                                        <strong>Concepto:</strong> <span t-if="main_move_concept"><t t-out="(main_move_concept[:185] + '...') if len(main_move_concept) > 185 else main_move_concept"/></span>
+                                    </td>
+                                </tr>
+                                <tr t-if="show_related_account_move">
+                                    <td style="height: 53px;max-height: 53px;font-size: 14px !important;">
+                                        <strong>Concepto pago:</strong> <span t-if="main_move_payment_concept"><t t-out="(main_move_payment_concept[:185] + '...') if len(main_move_payment_concept) > 185 else main_move_payment_concept"/></span>
+                                    </td>
+                                </tr>
+                            </table>                            
+                            <div style="max-width: 100%">
+                                <table class="table table_main_header" name="table" t-att-style="'margin-top: 50px' if current_page > 1 else ''">
+                                    <thead>
+                                        <tr>
+                                            <th name="th_date" class="text-start font-weight-bold" style="padding: 10px 2px; min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px;text-transform:uppercase;">fecha</th>
+                                            <th name="th_account" class="text-center font-weight-bold" style="padding: 10px 2px;min-width: 7px !important;max-width: 7px !important;width: 7px !important;font-size: 10px;text-transform:uppercase;">cuenta</th>
+                                            <th name="th_ref" class="text-center font-weight-bold" style="padding: 10px 2px; min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px;text-transform:uppercase;">ref</th>
+                                            <th name="th_analytic_account" class="text-center font-weight-bold" style="padding: 10px 2px;min-width: 7px !important;max-width: 7px !important;width: 7px !important;font-size: 10px;text-transform:uppercase;" t-if="group_analytic_accounting">dpto</th>
+
+                                            <th name="th_account_name" class="text-start font-weight-bold" style="padding: 10px 2px; min-width: 10px !important;max-width: 10px !important;width: 10px !important;font-size: 10px;text-transform:uppercase;">nombre</th>
+                                            <th name="th_vat" class="text-start font-weight-bold" style="padding: 10px 2px;min-width: 9px !important;max-width: 9px !important;width: 9px !important;font-size: 10px;text-transform:uppercase;">ci/rif</th>
+
+                                            <th name="th_move_name" class="text-start font-weight-bold" style="padding: 10px 2px; min-width: 9px !important;max-width: 9px !important;width: 9px !important;font-size: 10px;text-transform:uppercase;">documento</th>
+                                            <th name="th_debit" class="text-end font-weight-bold" style="padding: 10px 2px; min-width: 10px !important;max-width: 10px !important;width: 10px !important;font-size: 10px;text-transform:uppercase;">débitos</th>
+                                            <th name="th_credit" class="text-end font-weight-bold" style="padding: 10px 2px; min-width: 10px !important;max-width: 10px !important;width: 10px !important;font-size: 10px;text-transform:uppercase;">créditos</th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="row" style="padding: 0px;margin: 0px;">
+
+                    <table class="table main_table" name="table" style="position:relative;left:0px;padding: 0px;margin: 0px; max-width: 90%;">
+                        <tbody class="tbody">
+
+                            <t t-foreach="docs_by_page" t-as="line">
+                                <t t-if="line.display_type not in ['line_note', 'line_section']">
+
+                                    <t t-set="line" t-value="line.with_context(lang=lang)" />
+
+                                    <tr>
+                                        <td class="text-start" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.date.strftime('%d/%m/%Y')"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.account_id.code"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.move_id.ref[:26] + '...') if len(line.move_id.ref) > 25 else ''" t-if="line.move_id.ref != main_move_concept and line.move_id.ref"/></td>
+                                        <td class="text-center" style="padding: 3px;min-width: 7px !important;max-width: 7px !important;width: 7px !important; font-size: 10px !important;border-top: 0px solid black;" t-if="group_analytic_accounting">
+                                            <t t-out="account_analytic_by_line_id.get(line.id, '')"/>
+                                        </td>
+
+                                        <td class="text-start" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="(line.account_id.name[:26] + '...') if len(line.account_id.name) > 25 else line.account_id.name"/></td>
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="line.move_id.vat if line.move_id.vat != 'FALSE' else line.partner_id.prefix_vat + line.partner_id.vat"/></td>
+                                        
+                                        <td class="text-start" style="padding: 3px;min-width: 9px !important;max-width: 9px !important;width: 9px !important; font-size: 10px !important;border-top: 0px solid black;">
+                                            <t 
+                                                t-set="concat_move_name" 
+                                                t-value="line.move_id.id in payment_related_move_ids and line.move_id.id not in retention_payment_move_ids" 
+                                            />
+                                            <t 
+                                                t-set="concat_move_name" 
+                                                t-value="line.move_id.name != main_move.name"
+                                                t-if="concat_move_name" 
+                                            />
+                                            <t t-out="line.move_id.name + '-' + main_move.name if concat_move_name else line.move_id.name"/>
+                                        </td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')"/></td>
+                                        <td class="text-end" style="padding: 3px;min-width: 10px !important;max-width: 10px !important;width: 10px !important; font-size: 10px !important;border-top: 0px solid black;"><t t-out="'{0:,.2f}'.format(float(line.credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></td>
+                                    </tr>
+
+                                    <t t-set="total_debit" t-value="total_debit + line.debit"/>
+                                    <t t-set="total_credit" t-value="total_credit + line.credit"/>
+
+                                </t>
+                            </t>
+
+                        </tbody>
+                    </table>
+                </div>
+
+                
+                <t t-if="current_page &lt; paginate_count">
+                    <p style="page-break-before: always;" ></p>
+                </t>
+                <t t-set="current_page" t-value="current_page + 1"/>
+            </t>
+
+            <div class="row" style="padding:0px; margin:0px;">
+                <table class="table total_table table-borderless" name="table">
+                    <tfoot>
+                        <tr>
+                            <td style="min-width: 560px;" t-if="show_related_account_move and not group_analytic_accounting"></td>
+                            <td style="min-width: 588px;" t-if="show_related_account_move and group_analytic_accounting"></td>
+                            <td style="min-width: 558px;" t-if="not show_related_account_move and not group_analytic_accounting"></td>
+                            <td style="min-width: 588px;" t-if="not show_related_account_move and group_analytic_accounting"></td>
+                            <td class="text-end"><strong style="font-size: 10px !important;">Total</strong></td>
+                            <td class="text-end total_debit"><strong style="font-size: 10px !important;"><t t-out="'{0:,.2f}'.format(float(total_debit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
+                            <td class="text-end total_credit" style="margin:0;"><strong style="font-size: 10px !important;"><t t-out="'{0:,.2f}'.format(float(total_credit)).replace(',', ' ').replace('.', ',').replace(' ', '.')" /></strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="footer">
+                <style>
+                    .table-footer {
+                        border: solid 1px black;
+                    }
+
+                    .table-footer tr td {
+                        border-right: solid 1px black !important;
+                    }
+
+                    .table-footer td {
+                        width: 25%;
+                        font-size: 13px;
+                        text-align: center;
+                        vertical-align: top;
+                    }
+
+                    .table-footer tr:nth-child(1) td {
+                        padding-top: 8px;
+                        padding-bottom: 0px;
+                        border-bottom: 0px solid white !important;
+                    }
+
+                    .table-footer tr:nth-child(2) td {
+                        height: 35px;
+                        padding-bottom: 8px;
+                        vertical-align: middle;
+                    }
+
+                    .table-footer tr td:nth-child(4) {
+                        border-right: none !important;
+                    }
+                </style>
+                <div class="row">
+                    <table class="table table-footer " style="position: relative;left:0px;width: 100%;">
+                        <tbody>
+                            <tr>
+                                <td><strong>Contabilizado por</strong></td>
+                                <td><strong>Revisado por</strong></td>
+                                <td><strong>Emitido por</strong></td>
+                                <td><strong>Emitido el</strong></td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td><span t-out="user.name"/> <br/> (<span t-out="user.prefix_vat" /><span t-out="user.vat" />)</td>
+                                <td><span t-out="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %I:%M:%S%P')"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <ul class="list-inline" style="position: absolute; top: 110px;right: -21px;">
+                        <li style="display: inline-block; font-size: 13px;">Pag:</li>
+                        <li style="display: inline-block; font-size: 13px;"><span class="page"/></li>
+                        <li style="display: inline-block; font-size: 13px;">/</li>
+                        <li style="display: inline-block; font-size: 13px;"><span class="topage"/></li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+    </template>
+
+    <template id="account_related_report_call">
+        <t t-call="web.basic_layout">
+
+            <t t-if="docs">
+                <t t-set="show_related_account_move" t-value="True"/>
+                <t t-set="doc_title" t-value="data['doc_title']"/>
+                <t t-set="doc_date" t-value="data['doc_date']"/>
+                <t t-set="main_move" t-value="data['main_move']"/>
+                <t t-set="main_move_line_ids" t-value="main_move.line_ids"/>
+                <t t-set="main_move_concept" t-value="data['main_move_concept']"/>
+                <t t-set="main_move_payment_concept" t-value="data['main_move_payment_concept']"/>
+                <t t-set="payment_related_move_ids" t-value="data['payment_related_move_ids']"/>
+                <t t-set="retention_payment_move_ids" t-value="data['retention_payment_move_ids']"/>
+                <t t-set="account_analytic_by_line_id" t-value="data['account_analytic_by_line_id']"/>
+                <t t-set="group_analytic_accounting" t-value="data['group_analytic_accounting']"/>
+                <t t-set="lang" t-value="docs[0].partner_id.lang"/>
+                <t t-call="l10n_ve_accountant.account_report_document" t-lang="lang"/>
+            </t>
+
+        </t>
+    </template>
+
+    <template id="account_report_call">
+        <t t-call="web.basic_layout">
+
+            <t t-if="docs">
+                <t t-set="show_related_account_move" t-value="False"/>
+                <t t-set="doc_title" t-value="data['doc_title']"/>
+                <t t-set="doc_date" t-value="data['doc_date']"/>
+                <t t-set="main_move" t-value="data['main_move']"/>
+                <t t-set="main_move_line_ids" t-value="main_move.line_ids"/>
+                <t t-set="main_move_concept" t-value="data['main_move_concept']"/>
+                <t t-set="main_move_payment_concept" t-value="data['main_move_payment_concept']"/>
+                <t t-set="payment_related_move_ids" t-value="data['payment_related_move_ids']"/>
+                <t t-set="retention_payment_move_ids" t-value="data['retention_payment_move_ids']"/>
+                <t t-set="account_analytic_by_line_id" t-value="data['account_analytic_by_line_id']"/>
+                <t t-set="group_analytic_accounting" t-value="data['group_analytic_accounting']"/>
+                <t t-set="lang" t-value="docs[0].partner_id.lang"/>
+                <t t-call="l10n_ve_accountant.account_report_document" t-lang="lang"/>
+            </t>
+
+        </t>
+    </template>
+
+</data>
+
+</odoo>

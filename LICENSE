@@ -1,0 +1,67 @@
+Esta licencia aplica para la localización de Venezuela, desarrollada y proporcionada por Binaural C.A. bajo los términos de la Licencia Pública General Reducida (LGPL) versión 3.0. A continuación se detallan los términos de esta licencia:
+
+---
+
+### LICENCIA PÚBLICA GENERAL REDUCIDA GNU
+### Versión 3, 29 de junio de 2007
+
+Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org>
+Todos están autorizados para copiar y distribuir copias verbatim de este documento de licencia, pero no se permite cambiarlo.
+
+---
+
+Esta versión de la Licencia Pública General Reducida de GNU incorpora los términos y condiciones de la versión 3 de la Licencia Pública General de GNU, complementados con los permisos adicionales que se enumeran a continuación.
+
+#### 0. Definiciones Adicionales
+Tal como se utiliza en este documento, "esta Licencia" se refiere a la versión 3 de la Licencia Pública General Reducida de GNU, y la "GPL de GNU" se refiere a la versión 3 de la Licencia Pública General de GNU.
+
+"La Biblioteca" se refiere a un trabajo cubierto por esta Licencia, distinto de una Aplicación o un Trabajo Combinado, como se define a continuación.
+
+Una "Aplicación" es cualquier trabajo que haga uso de una interfaz proporcionada por la Biblioteca, pero que no esté basado en la Biblioteca. Definir una subclase de una clase definida por la Biblioteca se considera un modo de usar una interfaz proporcionada por la Biblioteca.
+
+Un "Trabajo Combinado" es un trabajo producido combinando o enlazando una Aplicación con la Biblioteca. La versión particular de la Biblioteca con la que se creó el Trabajo Combinado también se denomina "Versión Enlazada".
+
+El "Código Fuente Mínimo Correspondiente" para un Trabajo Combinado significa el Código Fuente Correspondiente para el Trabajo Combinado, excluyendo cualquier código fuente de las porciones del Trabajo Combinado que, consideradas de forma aislada, están basadas en la Aplicación, y no en la Versión Enlazada.
+
+El "Código de Aplicación Correspondiente" para un Trabajo Combinado significa el código objeto y/o código fuente de la Aplicación, incluyendo cualquier dato y programas de utilidad necesarios para reproducir el Trabajo Combinado a partir de la Aplicación, pero excluyendo las Bibliotecas del Sistema del Trabajo Combinado.
+
+#### 1. Excepción a la Sección 3 de la GPL de GNU
+Puedes distribuir un trabajo cubierto bajo las secciones 3 y 4 de esta Licencia sin estar obligado por la sección 3 de la GPL de GNU.
+
+#### 2. Distribución de Versiones Modificadas
+Si modificas una copia de la Biblioteca, y en tus modificaciones, una instalación se refiere a una función o dato que será proporcionado por una Aplicación que use la instalación (distinta de un argumento pasado cuando la instalación es invocada), entonces puedes distribuir una copia de la versión modificada:
+
+- **a)** Bajo esta Licencia, siempre que hagas un esfuerzo de buena fe para garantizar que, en caso de que una Aplicación no proporcione la función o dato, la instalación aún funcione y realice cualquier parte de su propósito que siga siendo significativa, o
+- **b)** Bajo la GPL de GNU, sin ninguno de los permisos adicionales de esta Licencia aplicables a esa copia.
+
+#### 3. Código Objeto que Incorpora Material de Archivos de Cabecera de la Biblioteca
+El código objeto de una Aplicación puede incorporar material de un archivo de cabecera que sea parte de la Biblioteca. Puedes distribuir dicho código objeto bajo los términos de tu elección, siempre que también cumplas con los términos y condiciones de esta Licencia para la Biblioteca y el Trabajo Combinado.
+
+#### 4. Trabajos Combinados
+Puedes distribuir un Trabajo Combinado bajo los términos de tu elección que, tomados en conjunto, no restrinjan la modificación de las porciones de la Biblioteca contenidas en el Trabajo Combinado y la ingeniería inversa para depurar dichas modificaciones, si también haces cada uno de los siguientes:
+
+- **a)** Dar un aviso destacado con cada copia del Trabajo Combinado de que se utiliza la Biblioteca en él y de que la Biblioteca y su uso están cubiertos por esta Licencia.
+- **b)** Acompañar el Trabajo Combinado con una copia de la GPL de GNU y este documento de licencia.
+- **c)** Para un Trabajo Combinado que muestre avisos de copyright durante su ejecución, incluir el aviso de copyright de la Biblioteca entre estos avisos, así como una referencia que dirija al usuario a las copias de la GPL de GNU y este documento de licencia.
+- **d)** Hacer una de las siguientes:
+  - **0)** Distribuir el Código Fuente Mínimo Correspondiente bajo los términos de esta Licencia, y el Código de Aplicación Correspondiente en una forma adecuada para, y bajo términos que permitan, al usuario volver a combinar o volver a enlazar la Aplicación con una versión modificada de la Versión Enlazada para producir un Trabajo Combinado modificado, de la manera especificada por la sección 6 de la GPL de GNU para distribuir Código Fuente Correspondiente.
+  - **1)** Usar un mecanismo de biblioteca compartida adecuado para enlazar con la Biblioteca. Un mecanismo adecuado es aquel que (a) utiliza en tiempo de ejecución una copia de la Biblioteca ya presente en el sistema informático del usuario, y (b) funcionará correctamente con una versión modificada de la Biblioteca que sea compatible con la interfaz de la Versión Enlazada.
+
+#### 5. Bibliotecas Combinadas
+Puedes colocar instalaciones de biblioteca que sean un trabajo basado en la Biblioteca junto con otras instalaciones de biblioteca que no sean Aplicaciones y no estén cubiertas por esta Licencia, y distribuir dicha biblioteca combinada bajo los términos de tu elección, si haces ambas de las siguientes:
+
+- **a)** Acompañar la biblioteca combinada con una copia del mismo trabajo basado en la Biblioteca, no combinado con ninguna otra instalación de biblioteca, distribuido bajo los términos de esta Licencia.
+- **b)** Dar un aviso destacado con la biblioteca combinada de que parte de ella es un trabajo basado en la Biblioteca, y explicar dónde encontrar la forma no combinada del mismo trabajo.
+
+#### 6. Versiones Revisadas de la Licencia Pública General Reducida de GNU
+La Free Software Foundation puede publicar versiones revisadas y/o nuevas de la Licencia Pública General Reducida de GNU de vez en cuando. Dichas nuevas versiones serán similares en espíritu a la versión actual, pero pueden diferir en detalle para abordar nuevos problemas o preocupaciones.
+
+Cada versión tiene un número de versión distintivo. Si la Biblioteca tal como la recibiste especifica que una determinada versión numerada de la Licencia Pública General Reducida de GNU "o cualquier versión posterior" se aplica a ella, tienes la opción de seguir los términos y condiciones de esa versión publicada o de cualquier versión posterior publicada por la Free Software Foundation. Si la Biblioteca tal como la recibiste no especifica un número de versión de la Licencia Pública General Reducida de GNU, puedes elegir cualquier versión publicada por la Free Software Foundation.
+
+---
+
+### Descargo de Responsabilidad Adicional
+Esta localización se proporciona "tal cual", sin ninguna garantía, expresa o implícita, incluyendo pero no limitándose a las garantías implícitas de comerciabilidad o idoneidad para un propósito particular. Binaural C.A. y sus colaboradores no serán responsables por daños o problemas legales que surjan del uso de este software, especialmente en el contexto de las leyes venezolanas.
+
+---
+
