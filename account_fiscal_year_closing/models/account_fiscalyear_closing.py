@@ -321,7 +321,7 @@ class AccountFiscalyearClosing(models.Model):
             "name": _("Fiscal closing moves"),
             "type": "ir.actions.act_window",
             "view_type": "form",
-            "view_mode": "tree,form",
+            "view_mode": "list,form",
             "res_model": "account.move",
             "domain": [("fyc_id", "in", self.ids)],
         }
@@ -331,7 +331,7 @@ class AccountFiscalyearClosing(models.Model):
             "name": _("Fiscal closing move lines"),
             "type": "ir.actions.act_window",
             "view_type": "form",
-            "view_mode": "tree,form",
+            "view_mode": "list,form",
             "res_model": "account.move.line",
             "domain": [("move_id.fyc_id", "in", self.ids)],
         }

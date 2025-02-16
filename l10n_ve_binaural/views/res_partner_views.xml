@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_partner_form" model="ir.ui.view">
+            <field name="name">res.partner.taxpayer</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='vat']" position="attributes">
+                    <attribute name="invisible">country_code == 'VE'</attribute>
+                </xpath>
+                <xpath expr="//field[@name='vat']" position="after">
+                    <field name="full_vat" invisible="country_code != 'VE'"/>
+                </xpath>
+                <xpath expr="//field[@name='vat']" position="after">
+                    <field name="taxpayer_type" required="1" invisible="country_code != 'VE'"/>
+                </xpath>
+                <xpath expr="//h1/field[1]" position="before">
+                    <group>
+                        <field 
+                            name="prefix_vat" 
+                            nolabel="1"  
+                            invisible="country_code != 'VE'"/>
+                        <field 
+                            name="vat" 
+                            required="1" 
+                            nolabel="1" 
+                            placeholder="CI/RIF: 12345678"  invisible="country_code != 'VE'"/>
+                    </group>
+                </xpath>
+				<xpath expr="//sheet/group/group/div/field[@name='street2']" position="after">
+					<field name="municipality_id" 
+					class="o_address_state" placeholder="Municipality"
+					domain="[('state_id', '=', state_id)]"
+                    invisible="country_code != 'VE'"
+                    />
+					<field name="parish_id" 
+					class="o_address_state" placeholder="Parish"
+					domain="[('municipality_id', '=', municipality_id)]"
+                    invisible="country_code != 'VE'"
+                    />
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

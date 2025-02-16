@@ -32,7 +32,7 @@
 					<notebook colspan="4">
 						<page name="retention_lines" string="Retention Lines">
 							<field colspan="4" name="retention_line_ids" nolabel="1" invisible="not partner_id" readonly="state in ['emitted', 'cancel']">
-								<tree editable="bottom">
+								<list editable="bottom">
 									<field name="name" readonly="1" force_save="1"/>
 									<field name="move_id" domain="['&amp;',('id', 'in', parent.allowed_lines_move_ids), ('islr_voucher_number', '=',False)]" />
 									<field name="code" column_invisible="not parent.code_visible"/>
@@ -50,7 +50,7 @@
 									<field name="foreign_currency_rate" force_save="1" readonly="1" optional="hide" />
 									<field name="retention_amount" force_save="1" widget="monetary" options="{'currency_field': 'company_currency_id'}" column_invisible="not parent.base_currency_is_vef" readonly="parent.type == 'in_invoice'"/>
 									<field name="foreign_retention_amount" force_save="1" widget="monetary" options="{'currency_field': 'foreign_currency_id'}" column_invisible="parent.base_currency_is_vef" readonly="parent.type == 'in_invoice'"/>
-								</tree>
+								</list>
 							</field>
 							<group col="2" colspan="2" invisible="not base_currency_is_vef">
 								<field name="total_invoice_amount" widget="monetary" options="{'currency_field': 'company_currency_id'}" />
@@ -63,12 +63,12 @@
 						</page>
 						<page name="Payments" string="payments">
 							<field name="payment_ids" nolabel="1" invisible="not partner_id" readonly="state in ['emitted', 'cancel']">
-								<tree string="Payments" editable="bottom">
+								<list string="Payments" editable="bottom">
 									<field name="date"/>
 									<field name="name"/>
 									<field name="currency_id" column_invisible="True"/>
 									<field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
-								</tree>
+								</list>
 							</field>
 						</page>
 					</notebook>
@@ -80,7 +80,7 @@
 			<field name="name">ISLR Retention client</field>
 			<field name="res_model">account.retention</field>
 			<field name="binding_view_types">list</field>
-			<field name="view_mode">tree,form</field>
+			<field name="view_mode">list,form</field>
 			<!--field name="search_view_id" ref="view_search_retention_iva"/-->
 			<field name="context">{"default_type":'out_invoice', "default_type_retention":'islr'}</field>
 			<field name="domain">[('type_retention', '=', 'islr'), ('type', '=', 'out_invoice')]</field>
@@ -91,7 +91,7 @@
 			<field name="name">ISLR Retention supplier</field>
 			<field name="res_model">account.retention</field>
 			<field name="binding_view_types">list</field>
-			<field name="view_mode">tree,form</field>
+			<field name="view_mode">list,form</field>
 			<!--field name="search_view_id" ref="view_search_retention_iva"/-->
 			<field name="context">{"default_type":'in_invoice', "default_type_retention":'islr'}</field>
 			<field name="domain">[('type_retention', '=', 'islr'), ('type', '=', 'in_invoice')]</field>

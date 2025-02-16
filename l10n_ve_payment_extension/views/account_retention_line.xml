@@ -8,7 +8,7 @@
             <field name="model">account.retention.line</field>
             <field name="type">tree</field>
             <field name="arch" type="xml">
-                <tree string="Retention Lines">
+                <list string="Retention Lines">
                     <field name="name"/>
                     <field name="payment_id" />
                     <!-- <field name="invoice_id"/> -->
@@ -17,7 +17,7 @@
                     <!-- <field name="tax_line" /> -->
                     <!-- <field name="imp_ret" /> -->
                     <!-- <field name="amount_tax_ret" /> -->
-                </tree>
+                </list>
             </field>
         </record>
 

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.account</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='account']/block" position="after">
+                <block title="Venezuelan Localization" id="venezuela_localization" invisible="country_code != 'VE'">
+                    <setting id="l10n_ve_sale_taxes" string="Sale Taxes" company_dependent="1" help="These taxes are used to identify them in the sales ledgers.">
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="exempt_aliquot_sale" class="col-lg-6 o_light_label" string="Exempt"/>   
+                                <field name="exempt_aliquot_sale" />
+                            </div>
+                            <div class="row">
+                                <label for="general_aliquot_sale" class="col-lg-6 o_light_label" string="General aliquot" />
+                                <field name="general_aliquot_sale" />
+                            </div>
+                            <div class="row">
+                                <label for="reduced_aliquot_sale" class="col-lg-6 o_light_label" string="Reduced aliquot"/>
+                                <field name="reduced_aliquot_sale" />
+                            </div>
+                            <div class="row">
+                                <label for="extend_aliquot_sale" class="col-lg-6 o_light_label" string="Extended aliquot"/>
+                                <field name="extend_aliquot_sale" />
+                            </div>
+                        </div>
+                    </setting>
+                    <setting id="l10n_ve_purchase_taxes" string="Purchase Taxes" company_dependent="1" help="These taxes are used to identify them in the purchase ledgers.">
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="exempt_aliquot_sale" class="col-lg-6 o_light_label" string="Exempt"/>   
+                                <field name="exempt_aliquot_sale" />
+                            </div>
+                            <div class="row">
+                                <label for="general_aliquot_sale" class="col-lg-6 o_light_label" string="General aliquot" />
+                                <field name="general_aliquot_sale" />
+                            </div>
+                            <div class="row">
+                                <label for="reduced_aliquot_sale" class="col-lg-6 o_light_label" string="Reduced aliquot"/>
+                                <field name="reduced_aliquot_sale" />
+                            </div>
+                            <div class="row">
+                                <label for="extend_aliquot_sale" class="col-lg-6 o_light_label" string="Extended aliquot"/>
+                                <field name="extend_aliquot_sale" />
+                            </div>
+                        </div>
+                    </setting>
+                    <setting id="l10n_ve_group_sales_invoicing" string="Group sales invoicing" company_dependent="1" help="It allow enable the invoicing sequences by series in sale's journals.">
+                        <field name="group_sales_invoicing_series"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

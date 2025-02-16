@@ -204,9 +204,9 @@ class AccountMoveLine(models.Model):
                 continue
 
             if (
-                line.move_id.payment_id
+                line.payment_id
                 and "retention_foreign_amount" in self.env["account.payment"]._fields
-                and line.move_id.payment_id.is_retention
+                and line.payment_id.is_retention
             ):
                 # 5 Case: Retention
                 # In this case, we need to set the foreign debit and credit of the retention

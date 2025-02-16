@@ -41,7 +41,7 @@
 					<notebook invisible="not is_retention">
 						<page name="retention_lines" string="Retention lines">
 							<field name="retention_line_ids" nolabel="1">
-								<tree editable="bottom">
+								<list editable="bottom">
 									<!-- Invisible fields -->
 									<field name="invoice_type" column_invisible="True"/>
 									<field name="company_currency_id" column_invisible="True"/>
@@ -61,7 +61,7 @@
 									<field name="foreign_iva_amount" widget="monetary" column_invisible="parent.base_currency_is_vef"/>
 									<field name="foreign_invoice_total" widget="monetary" column_invisible="parent.base_currency_is_vef"/>
 									<field name="foreign_retention_amount" widget="monetary" column_invisible="parent.base_currency_is_vef"/>
-								</tree>
+								</list>
 							</field>
 						</page>
 					</notebook>

@@ -1,5 +1,5 @@
 "id","name","description","invoice_label","amount","amount_type","type_tax_use","tax_group_id","repartition_line_ids/repartition_type","repartition_line_ids/document_type","repartition_line_ids/account_id","description@es","invoice_label@es"
-"tax0sale","0% EXEMPT","Exempt (sales)","Exempt (sales)","0.0","percent","sale","tax_group_iva_0","base","invoice","","Exento (ventas)","Exento (ventas)"
+"tax0sale","Exempt","Exempt (sales)","Exempt (sales)","0.0","percent","sale","tax_group_iva_0","base","invoice","","Exento (ventas)","Exento (ventas)"
 "","","","","","","","","tax","invoice","","",""
 "","","","","","","","","base","refund","","",""
 "","","","","","","","","tax","refund","","",""

@@ -4,7 +4,8 @@ from collections import defaultdict
 from lxml import etree
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import drop_index, float_compare, index_exists
+from odoo.tools import float_compare
+from odoo.tools.sql import drop_index, index_exists
 from odoo.tools.float_utils import float_round
 from odoo.tools.misc import formatLang
 
@@ -107,11 +108,6 @@ class AccountMove(models.Model):
     foreign_balance = fields.Monetary(
         compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
     )
-    
-    @api.model
-    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
-        context = self.with_context(active_test=False)
-        return super(AccountMove, context).search_read(domain, fields, offset, limit, order)
 
     is_reset_to_draft_for_price_change = fields.Boolean(copy=False)
 
@@ -349,10 +345,11 @@ class AccountMove(models.Model):
     @api.constrains("currency_id")
     def _check_currency_id(self):
         for move in self.filtered(lambda m: m.is_invoice(include_receipts=True)):
-            if move.currency_id.id != self.env.company.currency_id.id:
-                raise ValidationError(
-                    _("You cannot place a currency other than the base of the system.")
-                )
+            continue
+            # if move.currency_id.id != self.env.company.currency_id.id:
+            #     raise ValidationError(
+            #         _("You cannot place a currency other than the base of the system.")
+            #     )
 
     def legacy_compute_line_ids_foreign_debit_and_credit(self):
         """
@@ -662,7 +659,7 @@ class AccountMove(models.Model):
                 and move.tax_totals
             ):
                 continue
-            move.foreign_total_billed = move.tax_totals["foreign_amount_total"]
+            move.foreign_total_billed = move.tax_totals.get("foreign_amount_total",0)
 
     @api.depends(
         "invoice_line_ids.currency_rate",
@@ -676,7 +673,29 @@ class AccountMove(models.Model):
         "foreign_rate",
     )
     def _compute_tax_totals(self):
-        return super()._compute_tax_totals()
+        """ Computed field used for custom widget's rendering.
+            Only set on invoices.
+        """
+        for move in self:
+            if move.is_invoice(include_receipts=True):
+                base_lines, _tax_lines = move._get_rounded_base_and_tax_lines()
+                _logger.info(base_lines)
+                move.tax_totals = self.env['account.tax']._get_tax_totals_summary(
+                    base_lines=base_lines,
+                    currency=move.currency_id,
+                    company=move.company_id,
+                    cash_rounding=move.invoice_cash_rounding_id,
+                )
+                _logger.info(move.tax_totals)
+                move.tax_totals['display_in_company_currency'] = (
+                    move.company_id.display_invoice_tax_company_currency
+                    and move.company_currency_id != move.currency_id
+                    and move.tax_totals['has_tax_groups']
+                    and move.is_sale_document(include_receipts=True)
+                )
+            else:
+                # Non-invoice moves don't support that field (because of multicurrency: all lines of the invoice share the same currency)
+                move.tax_totals = None
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -861,7 +880,6 @@ class AccountMove(models.Model):
         return super().action_post()
 
     @api.depends(
-        "invoice_line_ids.compute_all_tax",
         "invoice_line_ids.price_subtotal",
         "foreign_inverse_rate",
         "foreign_currency_id",

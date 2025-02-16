@@ -7,9 +7,9 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "17.0.1.0.1",
+    "version": "18.0.1.0.1",
     # any module necessary for this one to work correctly
-    "depends": ["base", "base_setup", "l10n_ve_base","currency_rate_live"],
+    "depends": ["base", "base_setup", "l10n_ve_base"],
     # always loaded
     "data": [
         "views/res_config_settings.xml",

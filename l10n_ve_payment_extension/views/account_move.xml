@@ -19,7 +19,7 @@
 				<xpath expr="//notebook" position="inside">
 					<page name="iva_retention" string="IVA Retentions">
 						<field name="retention_iva_line_ids" nolabel="1" readonly="1">
-							<tree editable='bottom'>
+							<list editable='bottom'>
 								<!-- Invisible Fields -->
 								<field name="invoice_type" column_invisible="True"/>
 								<field name="company_currency_id" column_invisible="True"/>
@@ -40,12 +40,12 @@
 								<field name="foreign_retention_amount" widget="monetary" options="{'currency_field': 'foreign_currency_id'}" column_invisible="parent.base_currency_is_vef" />
 								<field name="foreign_currency_rate" optional="hide"/>
 								<field name="state"/>
-							</tree>
+							</list>
 						</field>
 					</page>
 					<page name="islr_retention" string="ISLR Retentions">
 						<field name="retention_islr_line_ids" nolabel="1" readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'">
-							<tree editable='bottom'>
+							<list editable='bottom'>
 								<!-- Invisible Fields -->
 								<field name="invoice_type" column_invisible="True"/>
 								<field name="company_currency_id" column_invisible="True"/>
@@ -64,12 +64,12 @@
 								<field name="retention_amount" force_save="1" widget="monetary" options="{'currency_field': 'company_currency_id'}" readonly="1" column_invisible="not parent.base_currency_is_vef"/>
 								<field name="foreign_retention_amount" widget="monetary" force_save="1" options="{'currency_field': 'foreign_currency_id'}" column_invisible="parent.base_currency_is_vef"/>
 								<field name="state"/>
-							</tree>
+							</list>
 						</field>
 					</page>
 					<page name="municipal_retention" string="Municipal Retentions">
 						<field name="retention_municipal_line_ids" nolabel="1" readonly="move_type not in ('in_invoice', 'in_refund') or state != 'draft'">
-							<tree editable='bottom'>
+							<list editable='bottom'>
 								<field name="name" force_save="1" readonly="1"/>
 								<field name="economic_activity_id" force_save="1"/>
 								<field name="aliquot" readonly="1" force_save="1"/>
@@ -81,7 +81,7 @@
 								<field name="foreign_retention_amount" widget="monetary" force_save="1" options="{'currency_field': 'foreign_currency_id'}" column_invisible="parent.base_currency_is_vef"/>
 								<field name="foreign_currency_rate" force_save="1" readonly="1" optional="hide" />
 								<field name="state" force_save="1"/>
-							</tree>
+							</list>
 						</field>
 					</page>
 				</xpath>

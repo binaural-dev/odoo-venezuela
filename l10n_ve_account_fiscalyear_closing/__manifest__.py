@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.1.0.0",
+    "version": "18.0.1.0.0",
     # any module necessary for this one to work correctly
     "depends": [
         "account_fiscal_year_closing",

@@ -5,14 +5,14 @@
             <field name="name">view.economic.activity.tree.binaural.payment.extension</field>
             <field name="model">economic.activity</field>
             <field name="arch" type="xml">
-                <tree>
+                <list>
                     <field name="name" />
                     <field name="branch_id" />
                     <field name="municipality_id" />
                     <field name="aliquot" />
                     <field name="minimum_monthly" />
                     <field name="minimum_annual" />
-                </tree>
+                </list>
             </field>
         </record>
 
@@ -41,7 +41,7 @@
             <field name="res_model">economic.activity</field>
             <field name="type">ir.actions.act_window</field>
             <field name="binding_view_types">form</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
         </record>
     </data>
 </odoo>

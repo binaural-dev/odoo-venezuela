@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+l10n_ve_binaural.access_res_country_parish,access_res_country_parish,l10n_ve_binaural.model_res_country_parish,base.group_user,1,0,0,0
+l10n_ve_binaural.access_res_country_municipality,access_res_country_municipality,l10n_ve_binaural.model_res_country_municipality,base.group_user,1,0,0,0

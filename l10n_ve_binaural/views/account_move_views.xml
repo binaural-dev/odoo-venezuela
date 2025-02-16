@@ -1,0 +1,63 @@
+
+<odoo>
+    <record id="view_account_move_form_binaural_invoice" model="ir.ui.view">
+        <field name="name">view.account.move.form.binaural.invoice</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_has_outstanding']" position="after">
+                <field name="is_contingency" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='invoice_user_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]/h1" position="attributes">
+                <attribute name="invisible">move_type not in ('in_invoice', 'in_refund', 'in_receipt') and not posted_before and not is_contingency</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="readonly">(move_type in ('out_invoice', 'out_refund') or not is_contingency) and state == 'posted'</attribute>
+                <attribute name="required">move_type in ('in_invoice', 'in_refund', 'in_receipt') or is_contingency</attribute>
+                <attribute name="placeholder">JRNL/2016/00001</attribute>
+            </xpath>
+
+            <xpath expr="//group[@id='header_left_group']/label" position="before">
+                <field name="correlative"
+                    invisible="move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']"
+                    readonly="(move_type in ['out_invoice', 'out_refund'] and not is_contingency) or state == 'posted'"
+                    required="move_type in ['in_invoice', 'in_refund']"/>
+            </xpath>
+
+            <xpath expr="//field[@name='invoice_date']" position="after">
+                <field name="invoice_reception_date"
+                    options="{'datepicker': {'warn_future': true}}"
+                    invisible="move_type not in ('out_invoice', 'out_refund', 'out_receipt', 'in_invoice', 'in_refund', 'in_receipt')"
+                    readonly="state == 'draft'"/>
+            </xpath>
+            <xpath expr="//group[@id='header_right_group']/div[3]" position="after">
+                <field name="invoice_origin" string="Nro de Pedido"/>
+                <field name="invoice_user_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="binaural_invoice_view_invoice_tree" model="ir.ui.view">
+        <field name="name">account.move.tree.binaural.invoice</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="correlative" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="ir_invoice_correlative" model="ir.actions.act_window">
+        <field name="name">Control number</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">ir.sequence</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('code', '=','invoice.correlative')]</field>
+    </record>
+
+</odoo>

@@ -7,11 +7,11 @@
             <field name="name">view.tax.unit.tree.binaural.payment.extension</field>
             <field name="model">tax.unit</field>
             <field name="arch" type="xml">
-                <tree>
+                <list>
                     <field name="name" />
                     <field name="value" />
                     <field name="status" />
-                </tree>
+                </list>
             </field>
         </record>
 
@@ -51,7 +51,7 @@
             <field name="res_model">tax.unit</field>
             <field name="type">ir.actions.act_window</field>
             <field name="binding_view_types">form</field>
-            <field name="view_mode">tree,kanban,form</field>
+            <field name="view_mode">list,kanban,form</field>
             <field name="context">{"search_default_status":True}</field>
         </record>
         

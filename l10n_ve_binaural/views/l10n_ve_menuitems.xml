@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+        
+    <menuitem id="l10n_ve_menu_no_one" parent="base.menu_custom" name="Venezuelan Localization">
+        <menuitem name="Municipalities" id="menu_res_municipality" action="action_res_country_municipality" sequence="2" />
+        <menuitem name="Parish" id="menu_res_country_parish" action="action_res_country_parish" sequence="3" />
+        <menuitem name="Control Number" id="control_number_menu" action="ir_invoice_correlative"
+        />
+    </menuitem>
+</odoo>

@@ -11,7 +11,7 @@
                 <field name="foreign_inverse_rate" groups="base.group_no_one" />
             </field>
 
-            <field name="ref" position="after">
+            <field name="memo" position="after">
                 <field name="concept" />
             </field>
         </field>

@@ -1,0 +1,17 @@
+<odoo>
+
+    <record id="view_account_journal_form" model="ir.ui.view">
+        <field name="name">view.account.journal.form.binaural.invoice</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='currency_id']" position="after">
+               <field name="is_contingency" invisible="type != 'sale'"/>
+                <field name="series_correlative_sequence_id" 
+                       invisible="type != 'sale'"
+                       groups="l10n_ve_binaural.group_sales_invoicing_series"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

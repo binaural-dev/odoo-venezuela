@@ -7,11 +7,11 @@
             <field name="name">view.signature.config.tree.binaural.payment.extension</field>
             <field name="model">signature.config</field>
             <field name="arch" type="xml">
-                <tree>
+                <list>
                     <field name="email" />
                     <field name="active" />
                     <field name="company_id"/>
-                </tree>
+                </list>
             </field>
         </record>
 
@@ -50,7 +50,7 @@
             <field name="res_model">signature.config</field>
             <field name="type">ir.actions.act_window</field>
             <field name="binding_view_types">form</field>
-            <field name="view_mode">tree,kanban,form</field>
+            <field name="view_mode">list,kanban,form</field>
             <field name="context">{"search_default_active":True}</field>
         </record>
     
