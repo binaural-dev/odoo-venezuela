@@ -1,0 +1,86 @@
+
+<odoo>
+	<data>
+
+		<menuitem id="retention_configuration" name="Retention" parent="account.menu_finance_configuration" />
+
+		<menuitem id="master_configuration" name="Masters" parent="account.menu_finance_configuration" />
+
+		<menuitem name="City" id="menu_master_configuration_city" 
+                parent="master_configuration" action="l10n_ve_location.action_res_country_city" />
+
+		<menuitem name="Parish" id="menu_master_configuration_parish" 
+                parent="master_configuration" action="l10n_ve_location.action_res_country_parish" />
+
+		<menuitem name="Municipality" id="menu_master_configuration_municipality" 
+                parent="master_configuration" action="l10n_ve_location.action_res_country_municipality" />
+
+		<menuitem name="Economic activity" id="menu_economic_activity" 
+                parent="l10n_ve_payment_extension.master_configuration" action="action_economic_activity" sequence="3" />
+
+		<menuitem name="Economic branch" id="menu_economic_branch" parent="l10n_ve_payment_extension.master_configuration" 
+                action="action_economic_branch" sequence="3" />
+
+		<menuitem name="Fees" id="menu_retention_fees_retention" 
+                parent="l10n_ve_payment_extension.retention_configuration" action="action_fees" />
+
+		<menuitem name="Payment concept menu" id="menu_payment_concept" 
+                parent="l10n_ve_payment_extension.retention_configuration" action="action_payment_concept_binaural_payment_extension" />
+
+		<menuitem id="menu_retention_signature_config" name="signature" 
+                parent="l10n_ve_payment_extension.retention_configuration" action="action_configurate_signature" />
+
+		<menuitem name="Tax unit" id="menu_retention_tax_unit" parent="l10n_ve_payment_extension.retention_configuration" 
+                action="action_tax_unit_binaural_payment_extension" />
+
+		<menuitem name="IVA Retention percentage" id="menu_retention_type_withholdings" 
+                parent="l10n_ve_payment_extension.retention_configuration" action="action_type_withholding" />
+
+
+		<!-- Retentions -->
+		<menuitem name="IVA Retention" id="menu_retention_iva_client" sequence="100" 
+                parent="account.menu_finance_receivables" action="action_retention_iva_client" />
+
+		<menuitem name="IVA Retention" id="menu_retention_iva_supplier" sequence="100" 
+                parent="account.menu_finance_payables" action="action_retention_iva_supplier" />
+
+		<menuitem name="ISLR Retention" id="menu_retention_islr_client" sequence="100" parent="account.menu_finance_receivables" action="action_retention_islr_client" />
+
+		<menuitem name="ISLR Retention" id="menu_retention_islr_supplier" sequence="100" 
+                parent="account.menu_finance_payables" action="action_retention_islr_supplier" />
+
+		<menuitem name="Municipal Retention" id="menu_retention_municipal_client" sequence="100" 
+                parent="account.menu_finance_receivables" action="action_retention_municipal_client" />
+
+		<menuitem name="Municipal Retention" id="menu_retention_municipal_supplier" sequence="100" 
+                parent="account.menu_finance_payables" action="action_retention_municipal_supplier" />
+
+		<menuitem id="menu_retention_islr_sequence" name="Sequence ISLR" groups="base.group_no_one" 
+                sequence="100" parent="account.menu_finance_payables" action="ir_sequence_form_islr" />
+
+		<menuitem id="menu_retention_iva_sequence" name="Sequence IVA" groups="base.group_no_one" 
+                sequence="100" parent="account.menu_finance_payables" action="ir_sequence_form_iva" />
+
+		<menuitem id="menu_retention_municipal_sequence" name="Sequence Municipal" groups="base.group_no_one" 
+                sequence="100" parent="account.menu_finance_payables" action="ir_sequence_form_municipal" />
+
+		<menuitem id="seniat_reports" name="Seniat Reports" parent="account.menu_finance_reports" sequence="7" />
+
+		<menuitem id="menu_retention_line_report" action="action_retention_line_report" parent="account.account_reports_management_menu" />
+
+		<menuitem action="action_generate_txt" id="txt_report" parent="l10n_ve_payment_extension.seniat_reports" groups="account.group_account_manager" />
+
+		<menuitem id="xml_retention_islr" name="XML ISLR Retention" parent="l10n_ve_payment_extension.seniat_reports" action="action_retention_islr" />
+
+		<menuitem id="menu_arcv_report" action="action_arcv_report" parent="l10n_ve_payment_extension.seniat_reports" 
+                groups="account.group_account_manager" name="ARCV Report" />
+
+		<menuitem id="wizard_report_municipal_retention_report_patent_menu" action="wizard_report_municipal_retention_report_patent_action" 
+                parent="l10n_ve_payment_extension.seniat_reports" sequence="2" name="Municipal Patent Report" />
+
+		<menuitem id="municipal_supplier_retention_report_menu" action="municipal_supplier_retention_report_action" 
+                parent="l10n_ve_payment_extension.seniat_reports" sequence="1" name="Municipal supplier retention report" />
+
+	
+    </data>
+</odoo>

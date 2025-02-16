@@ -1,0 +1,59 @@
+
+<odoo>
+
+    <data>
+
+        <record id="view_signature_config_tree_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.signature.config.tree.binaural.payment.extension</field>
+            <field name="model">signature.config</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="email" />
+                    <field name="active" />
+                    <field name="company_id"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_signature_config_form_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.signature.config.form.binaural.payment.extension</field>
+            <field name="model">signature.config</field>
+            <field name="arch" type="xml">
+                <form string="Signature">
+                    <sheet string="Signature">
+                        <group>
+                            <field name="email" />
+                            <field name="signature" widget="image" />
+                            <field name="active" />
+                            <field name="company_id"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_signature_config_search_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.signature.config.search.binaural.payment.extension</field>
+            <field name="model">signature.config</field>
+            <field name="arch" type="xml">
+                <search string="Signature">
+                    <filter name="active" domain="[('active','=',True)]" string="Active" />
+                    <group expand="0" string="Group By">
+                        <filter string="Company" name="company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_configurate_signature" model="ir.actions.act_window">
+            <field name="name">Signature config</field>
+            <field name="res_model">signature.config</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_view_types">form</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="context">{"search_default_active":True}</field>
+        </record>
+    
+    </data>
+    
+</odoo>

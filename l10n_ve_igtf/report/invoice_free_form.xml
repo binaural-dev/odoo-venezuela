@@ -1,0 +1,11 @@
+
+<odoo>
+    <template id="report_freeform_document" inherit_id="l10n_ve_invoice.report_freeform_document">
+        <xpath expr="//div[@name='comment']" position="before">
+            <div name="igtf_info">
+                <span>Todo pago està sujeto a la aplicaciòn de la &#160;<strong>LIGTF GO 6687 y la PA SNAT/2022/000013</strong></span>
+                <span>Se designa a sujetos pasivos especiales como Agente de Percepciòn del <strong>IGTF 3%</strong></span>
+            </div>
+        </xpath>
+    </template>
+</odoo>

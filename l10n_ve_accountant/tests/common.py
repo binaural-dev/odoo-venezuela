@@ -12,7 +12,7 @@ _logger = logging.getLogger(__name__)
 class BinauralAccountTestInvoicingCommon(AccountTestInvoicingCommon):
     @classmethod
     def setUpClass(cls, chart_template_ref=None):
-        super().setUpClass(chart_template_ref="l10n_ve.ve_chart_template_amd")
+        super().setUpClass(chart_template_ref="ve")
         tax_group_obj = cls.env["account.tax.group"]
         tax_obj = cls.env["account.tax"]
 

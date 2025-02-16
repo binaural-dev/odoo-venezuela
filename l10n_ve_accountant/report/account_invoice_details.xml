@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
 
     <record id="action_account_invoices_details_report" model="ir.actions.report">

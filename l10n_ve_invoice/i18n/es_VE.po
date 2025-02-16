@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20241115\n"
+"Project-Id-Version: Odoo Server 17.0+e-20241210\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-18 20:49+0000\n"
-"PO-Revision-Date: 2024-11-18 20:49+0000\n"
+"POT-Creation-Date: 2024-12-12 14:52+0000\n"
+"PO-Revision-Date: 2024-12-12 14:52+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -73,6 +73,11 @@ msgstr ""
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "<span>Descripción</span>"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
+msgid "<span>Devolución Nª</span>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -142,7 +147,6 @@ msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_l10n_ve_invoce_report_invoice_document
 msgid "<strong>Nro de Pedido:</strong>"
 msgstr ""
 
@@ -204,7 +208,7 @@ msgstr "Informes contables"
 #. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_ir_actions_act_window
 msgid "Action Window"
-msgstr "Acción de ventana"
+msgstr "Ventana de acción"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields.selection,name:l10n_ve_invoice.selection__wizard_accounting_reports__report__purchase
@@ -221,13 +225,13 @@ msgstr ""
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #, python-format
-msgid "Check the move %s does not have an invoice date"
-msgstr "Verifique el asiento %s no tiene una fecha de factura"
+msgid "Check the move %s does not have an invoice date and its id is %s"
+msgstr "Verifique el asiento %s no tiene una fecha de factura y su id es %s"
 
 #. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__company_id
@@ -242,7 +246,7 @@ msgstr "Logo de Compañía"
 #. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_invoice
 #. odoo-python
@@ -368,7 +372,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__group_sales_invoicing_series
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__group_sales_invoicing_series
 msgid "Group Sales Invoicing Series"
-msgstr "Grupo para Series de Ventas"
+msgstr "Grupo para series de ventas"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__id
@@ -445,15 +449,10 @@ msgid "Last Updated on"
 msgstr "Última actualización en"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
-msgid "Limit the number of products on an invoice"
-msgstr "Limitar la cantidad de productos en una factura forma libre"
-
-#. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__max_product_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__max_product_invoice
 msgid "Max Product Invoice"
-msgstr "Cantidad máxima de productos en Facturas Forma Libre"
+msgstr "Cantidad máxima de productos en Facturas forma libre"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
@@ -552,7 +551,7 @@ msgstr "Secuencia para el número de control"
 #. module: l10n_ve_invoice
 #: model:res.groups,name:l10n_ve_invoice.group_sales_invoicing_series
 msgid "Series Invoicing Group"
-msgstr "Grupo para Series de Facturación"
+msgstr "Grupo para series de facturación"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_journal__series_correlative_sequence_id
@@ -562,24 +561,24 @@ msgstr "Número de control para series"
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_tag_on_usd_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__show_tag_on_usd_invoice
-msgid "Show Tag On Usd Invoice"
-msgstr "Mostrar Coletilla en Factura"
+msgid "Show tag on Usd invoice"
+msgstr "Mostrar coletilla en factura"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
-msgid "Show Tag USD on Free Form Invoice"
-msgstr "Mostrar Coletilla de Tasa BCV en Forma Libre"
+msgid "Show tag USD on free form invoice"
+msgstr "Mostrar coletilla de Tasa BCV en forma libre"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_total_on_usd_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__show_total_on_usd_invoice
-msgid "Show Total On Usd Invoice"
-msgstr "Mostrar Total en USD en Factura"
+msgid "Show total on Usd invoice"
+msgstr "Mostrar total en USD en factura"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
 msgid "Show Total USD on Free Form Invoice"
-msgstr "Mostrar Total en USD en Forma Libre"
+msgstr "Mostrar total en USD en forma libre"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
@@ -651,3 +650,8 @@ msgstr "No puede agregar más de %s productos a la factura."
 #: model:ir.actions.act_window,name:l10n_ve_invoice.ir_invoice_correlative
 msgid "control number"
 msgstr "Número de control"
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
+msgid "limit the number of lines that can be printed on a free form invoice"
+msgstr "Limitar la cantidad de lineas  que se pueden imprimir en una factura  forma libre"

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
 
     <record id="form_wizard_all_payments" model="ir.ui.view">

@@ -1,0 +1,94 @@
+
+<odoo>
+
+    <data noupdate="1">
+        <record id="fees_retention_data_substrat_binaural_payment_extension" model="fees.retention">
+            <field name="name">3% -(Bs. 1,00)</field>
+            <field name="apply_subtracting">True</field>
+            <field name="percentage">3</field>
+            <field name="status">True</field>
+            <field name="accumulated_rate">False</field>
+            <field name="tax_unit_ids">1</field>
+        </record>
+
+        <record id="fees_retention_data_percentage_one_binaural_payment_extension" model="fees.retention">
+            <field name="name">5%</field>
+            <field name="apply_subtracting">False</field>
+            <field name="percentage">5</field>
+            <field name="status">True</field>
+            <field name="accumulated_rate">False</field>
+            <field name="tax_unit_ids">1</field>
+        </record>
+
+        <record id="fees_retention_data_percentage_two_binaural_payment_extension" model="fees.retention">
+            <field name="name">34%</field>
+            <field name="apply_subtracting">False</field>
+            <field name="percentage">34</field>
+            <field name="status">True</field>
+            <field name="accumulated_rate">False</field>
+            <field name="tax_unit_ids">1</field>
+        </record>
+
+        <record id="fees_retention_data_substrat_second_binaural_payment_extension" model="fees.retention">
+            <field name="name">1% - (Bs. 0,33 )</field>
+            <field name="apply_subtracting">True</field>
+            <field name="percentage">1</field>
+            <field name="status">True</field>
+            <field name="accumulated_rate">False</field>
+            <field name="tax_unit_ids">1</field>
+        </record>
+
+        <record id="fees_retention_data_binaural_percentage_three_payment_extension" model="fees.retention">
+            <field name="name">2%</field>
+            <field name="apply_subtracting">False</field>
+            <field name="percentage">2</field>
+            <field name="status">True</field>
+            <field name="accumulated_rate">False</field>
+            <field name="tax_unit_ids">1</field>
+        </record>
+
+        <record id="fees_retention_data_percentage_four_binaural_payment_extension" model="fees.retention">
+            <field name="name">3%</field>
+            <field name="apply_subtracting">False</field>
+            <field name="percentage">3</field>
+            <field name="status">True</field>
+            <field name="accumulated_rate">False</field>
+            <field name="tax_unit_ids">1</field>
+        </record>
+
+        <record id="fees_retention_data_percentage_five_binaural_payment_extension" model="fees.retention">
+            <field name="name">T - 2(Acumulativo)</field>
+            <field name="apply_subtracting">False</field>
+            <field name="percentage">0</field>
+            <field name="status">True</field>
+            <field name="accumulated_rate">True</field>
+            <field name="tax_unit_ids">1</field>
+            <field name="accumulated_rate_ids" eval="[
+                (0,0,{
+                    'name': 0.15,
+                    'start': 0.00,
+                    'stop': 2000.00,
+                    'percentage': 15.00,
+                    'subtract_ut': 0.00,
+                }),
+                (0,0,
+                {
+                    'name': 0.22,
+                    'start': 2001.00,
+                    'stop': 3000.00,
+                    'percentage': 22.00,
+                    'subtract_ut': 140.00,
+                }),
+                (0,0,
+                {
+                    'name': 0.34,
+                    'start': 3001.00,
+                    'stop': 0.00,
+                    'percentage': 34.00,
+                    'subtract_ut': 500.00,
+                }
+
+            )]" />
+        </record>
+    </data>
+</odoo>

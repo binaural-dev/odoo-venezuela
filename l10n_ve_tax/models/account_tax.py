@@ -12,7 +12,9 @@ class AccountTax(models.Model):
     _inherit = "account.tax"
 
     @api.model
-    def _prepare_tax_totals(self, base_lines, currency, tax_lines=None):
+    def _prepare_tax_totals(
+        self, base_lines, currency, tax_lines=None, is_company_currency_requested=False
+    ):
         """
         This function adds the alternate currency tax amounts to tax_totals.
         In it, the parent function is executed 2 times, once for the original
@@ -46,7 +48,12 @@ class AccountTax(models.Model):
             raise ValidationError(_("No foreign currency configured in the company"))
 
         # Base Currency
-        res = super()._prepare_tax_totals(base_lines, currency, tax_lines)
+        res = super()._prepare_tax_totals(
+            base_lines,
+            currency,
+            tax_lines,
+            is_company_currency_requested=is_company_currency_requested,
+        )
         res_without_discount = res.copy()
         has_discount = not currency.is_zero(sum([line["discount"] for line in base_lines]))
 
@@ -56,7 +63,10 @@ class AccountTax(models.Model):
                 base_line["discount"] = 0
 
             res_without_discount = super()._prepare_tax_totals(
-                base_without_discount, currency, tax_lines
+                base_without_discount,
+                currency,
+                tax_lines,
+                is_company_currency_requested=is_company_currency_requested,
             )
 
         foreign_base_lines, foreign_tax_lines = self.get_foreign_base_tax_lines(
@@ -65,7 +75,10 @@ class AccountTax(models.Model):
 
         # Foreign Currency
         foreign_taxes = super()._prepare_tax_totals(
-            foreign_base_lines, foreign_currency, foreign_tax_lines
+            foreign_base_lines,
+            foreign_currency,
+            foreign_tax_lines,
+            is_company_currency_requested=is_company_currency_requested,
         )
 
         foreign_taxes_without_discount = foreign_taxes.copy()
@@ -75,7 +88,10 @@ class AccountTax(models.Model):
                 foreign_base_line["discount"] = 0
 
             foreign_taxes_without_discount = super()._prepare_tax_totals(
-                foreign_without_discount, foreign_currency, foreign_tax_lines
+                foreign_without_discount,
+                foreign_currency,
+                foreign_tax_lines,
+                is_company_currency_requested=is_company_currency_requested,
             )
 
         res["groups_by_foreign_subtotal"] = foreign_taxes["groups_by_subtotal"]

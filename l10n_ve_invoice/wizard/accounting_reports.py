@@ -54,7 +54,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def _fields_sale_book_line(self, move, taxes):
         if not move.invoice_date:
-            raise UserError(_("Check the move %s does not have an invoice date", move.name))
+            raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         multiplier = -1 if move.move_type == "out_refund" else 1
         return {
             "_id": move.id,
@@ -79,7 +79,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def _fields_purchase_book_line(self, move, taxes):
         if not move.invoice_date:
-            raise UserError(_("Check the move %s does not have an invoice date", move.name))
+            raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         multiplier = -1 if move.move_type == "in_refund" else 1
         fields_purchase_book_line = {
             "_id": move.id,
@@ -538,7 +538,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def resume_book_headers(self):
         credit_or_debit_based_on_report_type = {"purchase": "Crédito", "sale": "Débito"}
-        HEADERS = ("Base Imponible", f"{credit_or_debit_based_on_report_type[self.report]} ")
+        HEADERS = ("Base Imponible", f"{credit_or_debit_based_on_report_type[self.report]} Fiscal")
 
         return [
             {
@@ -546,7 +546,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "field": "resume",
                 "headers": [
                     "",
-                    f"{credit_or_debit_based_on_report_type[self.report]}s ",
+                    f"{credit_or_debit_based_on_report_type[self.report]}s Fiscales",
                 ],
             },
             {"name": "Facturas/Notas de Débito", "field": "inv_debit_notes", "headers": HEADERS},
@@ -573,7 +573,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain += [("date", ">=", self.date_from)]
         search_domain += [("date", "<=", self.date_to)]
         search_domain += [
-            ("state", "in", ("posted", "cancel")),            
+            ("state", "in", ("posted", "cancel")),
             ("move_type", "in", move_type),
             ("correlative", "not in", ['/',False])
         ]

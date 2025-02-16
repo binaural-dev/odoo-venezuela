@@ -1,0 +1,2692 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* binaural_payment_extension
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20240724\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-08-20 18:38+0000\n"
+"PO-Revision-Date: 2024-08-20 18:38+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid ""
+"\"Decreto con Rango, Valor y Fuerza de Ley de Reforma de la Ley del Impuesto al Valor agregado\n"
+"                        Nro 1.436 del 17 de Noviembre del 2014\"\n"
+"                        Articulo 11: La Administracion Tributaria podra Designar como Responsable del Pago del\n"
+"                        Impuesto, en calidad de Agentes de Retencion a quienes por sus\n"
+"                        Funciones Publicas o por Razon de sus Actividades Privadas intervengan en operaciones\n"
+"                        Gravadas con el Impuesto Establecido en este Decreto con Rango,\n"
+"                        Valor y Fuerza de Ley."
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "% o <br/>tarifa"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__related_percentage_fees
+msgid "% tariffs"
+msgstr "% tarifa"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__related_percentage_tax_base
+msgid "% tax base"
+msgstr "% Base Imponible"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.report,print_report_name:l10n_ve_payment_extension.action_report_arcv
+msgid "'Comprobante_ARCV'"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.actions.report,print_report_name:l10n_ve_payment_extension.retention_voucher_action
+msgid "(object.number)"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "/ Mes:"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid ""
+"<br/>\n"
+"\t\t\t\t\t    <span class=\"tal\">Dirección:</span><br/>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid ""
+"<br/>\n"
+"\t\t\t\t\t    <span class=\"tal\">RIF: </span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid ""
+"<br/>\n"
+"\t\t\t\t\t    <span class=\"tal\">Teléfono: </span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid ""
+"<br/>\n"
+"                                            <span style=\"text-align:center\">(Decreto 1.808 de 1997, Art. 24: \"... el agente de retención estara obligado a entregar a los beneficiarios,<br/> una relación del total de las cantidades pagadas ó abonadas en cuenta y de lo impuestos retenidos en el <br/> ejercicio ...\"</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span class=\"tal\">Nombre o Razón Social:</span><br/>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span style=\"visibility:hidden\">--</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid ""
+"<span text-align=\"center\" style=\"font-weight: bold;\">Agente de "
+"Retencion</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span text-align=\"center\" style=\"font-weight: bold;\">Beneficiario</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span text-align=\"center\">Firma y sello</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>% Alic</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>% Ret</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "<span>%</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span>---</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span>--</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span>0</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "<span>Agente de Retención:</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid ""
+"<span>Art. 24 del Drecreto 1808 Según G.O Nro 36.203 de fecha de mayo de "
+"1997</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Base Imponible</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Compras sin derecho a Crédito IVA</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "<span>Contribuyente:</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span>DATOS DEL AGENTE DE RETENCIÓN AR-CV</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span>DATOS DEL BENEFICIARIO</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Direccion Fiscal del Agente de Retención</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Direccion Fiscal del Sujeto Retenido</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "<span>Dirección:</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "<span>FA</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Factura afectada</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Fecha Factura</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Fecha de emision:</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "<span>Fecha:</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>IVA Retenido</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Impuesto IVA</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "<span>NC</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "<span>ND</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "<span>No. R.I.F.:</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Nombre o Razon Social del Agente de Retención</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Nombre o Razon Social del Sujeto Retenido</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Nota de Crédito</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Nota de Débito</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Nro Comprobante:</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Nro de Control Factura</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "<span>Nro. R.I.F.:</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Número de Factura</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span>PERSONA JURIDICA DOMICILIADA</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span>PERSONA JURIDICA</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Periodo Fiscal:</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Registro de Informacion Fiscal del Agente de Retención:</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid ""
+"<span>Registro de Información Fiscal del Sujeto Retenido (R.I.F)</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "<span>Total Compras Incluyendo el IVA</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "<span>Totales</span>"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_report_binaural_payment_extension_report_template_arcv
+msgid "AR-CV Report"
+msgstr "Reporte AR-CV"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "ARCV"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.actions.report,name:l10n_ve_payment_extension.action_report_arcv
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_arcv_report
+msgid "ARCV Report"
+msgstr "Comprobante ARCV"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.arcv_report_form_view
+msgid "ARCV Voucher"
+msgstr "Comprobante ARCV"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__date_accounting
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__date_accounting
+msgid "Accounting Date"
+msgstr "Fecha Contable"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_accumulated_fees
+msgid "Accumulated Fees"
+msgstr "Tarifa Acumulada"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__accumulated_rate_ids
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_fees_retention_form_binaural_payment_extension
+msgid "Accumulated fees"
+msgstr "Tarifa Acumulada"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__state
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__active
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__economic_branch__status__active
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_economic_branch_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_search_tax_unit_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_signature_config_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_type_withholding_search_binaural_payment_extension
+msgid "Active"
+msgstr "Activo"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__status
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__status
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__state
+msgid "Active?"
+msgstr "Activo"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "Agente de Retención"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__aliquot
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__aliquot
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__aliquot
+msgid "Aliquot"
+msgstr "Alícuota"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__allowed_lines_move_ids
+msgid "Allowed Lines Move"
+msgstr "Apuntes permitidas"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__related_amount_subtract_fees
+msgid "Amount subtract tariffs"
+msgstr "Sustraendo"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__minimum_annual
+msgid "Annual Taxable Minimum"
+msgstr "Mínimo tributable Anual"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__apply_islr_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__apply_islr_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__apply_islr_retention
+msgid "Apply ISLR Retention?"
+msgstr "Aplica retención de Impuesto sobre la renta"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_binaural_payment_extension
+msgid "Approve"
+msgstr "Aprobar"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "April"
+msgstr "Abril"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_binaural_payment_extension
+msgid ""
+"Are you sure you want to cancel this voucher? The associated accounting "
+"entries will be reversed"
+msgstr ""
+"¿Esta seguro que quiere anular este comprabante? Se revertiran los asientos "
+"contables asociados"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__payment_concept_id
+msgid "Associated Payment Concept"
+msgstr "Concepto de pago asociado"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "August"
+msgstr "Agosto"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "Año :"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__base_currency_is_vef
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__base_currency_is_vef
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__base_currency_is_vef
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__base_currency_is_vef
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__base_currency_is_vef
+msgid "Base Currency Is Vef"
+msgstr "La moneda base es Bs"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Base de Retención"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_binaural_payment_extension
+msgid "Business Name"
+msgstr "Razón Social"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move_line__ciu_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_category__ciu_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_product__ciu_ids
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_product_template__ciu_ids
+msgid "CIU"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "COMPROBANTE DE RETENCIÓN DE ISLR"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "COMPROBANTE DE RETENCIÓN DEL IMPUESTO AL VALOR AGREGADO"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.arcv_report_form_view
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.library_rent_wizard_form
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_binaural_payment_extension
+msgid "Cancel"
+msgstr "Anular"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__state__cancel
+msgid "Cancelled"
+msgstr "Anulado"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "Cancelled Municipal Ret"
+msgstr "Ret Municipal Cancelada"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "Cantidad objeto de <br/>retención"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_payment__is_retention
+msgid "Check this box if this payment is a retention"
+msgstr "Valida si el pago es una retención"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_master_configuration_city
+msgid "City"
+msgstr "Ciudad"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__code
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__name
+msgid "Code"
+msgstr "Código"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__code
+msgid "Code of the withholding voucher"
+msgstr "Referencia del Comprobante"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__company_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__company_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__company_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__company_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.wizard_retention_islr_view
+msgid "Company"
+msgstr "Compañía"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__company_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__company_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__company_currency_id
+msgid "Company Currency"
+msgstr "Moneda de la Compañía"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "Comprobante de retención de Impuesto Sobre La Renta (ISLR)"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__code
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__code
+msgid "Concept code"
+msgstr "Código de concepto"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Concepto"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_res_partner
+msgid "Contact"
+msgstr "Contacto"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_binaural_payment_extension
+msgid "Convert to draft"
+msgstr "Convertir a borrador"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__correlative
+msgid "Correlative"
+msgstr "Correlativo"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_xlsx_report__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_xlsx_report__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__create_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__create_date
+msgid "Created on"
+msgstr "Creado en"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_search
+msgid "Customer Retention"
+msgstr "Retenciones de Cliente"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Código"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__payment_date
+msgid "Date"
+msgstr "Fecha"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report__date_end
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report__date_end
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__date_end
+msgid "Date End"
+msgstr "Fecha de Término"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report__date_start
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report__date_start
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__date_start
+msgid "Date Start"
+msgstr "Fecha de inicio"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__date_end
+msgid "Date end"
+msgstr "Fecha de fin"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__date_accounting
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention_line__date_accounting
+msgid ""
+"Date of arrival of the document and date to be used to make the accounting "
+"record. Keep blank to use current date."
+msgstr ""
+"Fecha contable del documento. Dejar en blanco para usar la fecha actual. "
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_payment_register__voucher_date
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__date
+msgid "Date of issuance of the withholding voucher by the external party."
+msgstr "Fecha de emisión del comprobante de retención por grupo externo. "
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__date_start
+msgid "Date start"
+msgstr "Fecha de inicio"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "December"
+msgstr "Diciembre"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_journal__default_account_id
+msgid "Default Account"
+msgstr "Cuenta predeterminada"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__economic_activity_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__economic_activity_id
+msgid "Default Economic Activity"
+msgstr "Actividad económica predeterminada"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__description
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__name
+msgid "Description"
+msgstr "Descripción"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__name
+msgid "Description of the withholding voucher"
+msgstr "Descripción del Comprobante"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_xlsx_report__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__display_name
+msgid "Display Name"
+msgstr "Nombre"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.wizard_report_municipal_retention_report_patent_view
+msgid "Download Municipal Patent XLSX Report"
+msgstr "Descargar Reporte de Patente Municipal XLSX"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.wizard_report_municipality_retentions_report_view
+msgid "Download fiscal tax XLSX"
+msgstr "Descargar excel de impuesto fiscal"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__state__draft
+msgid "Draft"
+msgstr "Borrador"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "Draft Municipal Ret %s"
+msgstr "Ret Municipal en Borrador %s"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.product_normal_form_view
+msgid "Economic Activities"
+msgstr "Actividades Económicas (CIU)"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_economic_activity
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__economic_activity_id
+msgid "Economic Activity"
+msgstr "Actividad Económica"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__economic_activity_number
+msgid "Economic Activity Number"
+msgstr "Número de Actividad Ecónomica"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_economic_branch
+msgid "Economic Branch"
+msgstr "Rama Económica"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_economic_activity
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_economic_activity
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_economic_activity_from_binaural_payment_extension
+msgid "Economic activity"
+msgstr "Actividad Económica"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__branch_id
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_economic_branch
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_economic_branch_from_binaural_payment_extension
+msgid "Economic branch"
+msgstr "Rama Económica"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__edit_retention_fields
+msgid "Edit Retention Fields"
+msgstr "Editar campos de retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__email
+msgid "Email"
+msgstr "Correo Electrónico"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__state__emitted
+msgid "Emitted"
+msgstr "Emitido"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/account_payment_register.py:0
+#: code:addons/binaural_payment_extension/wizard/account_payment_register.py:0
+#, python-format
+msgid "Error"
+msgstr ""
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/payment_concept_line.py:0
+#, python-format
+msgid "Error in taxable base percentage field"
+msgstr "Error en el campo de porcentaje de base imponible"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/fees_retention.py:0
+#, python-format
+msgid "Error in the fees percentage field"
+msgstr "Error en el campo de porcentaje de tarifas"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Fact Nro"
+msgstr ""
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "February"
+msgstr "Febrero"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Fecha"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__voucher_date
+msgid "Fecha Comprobante"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_binaural_payment_extension
+msgid "Fecha Contable"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_xlsx_report__date_start
+msgid "Fecha Inicio"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "Fecha de entrega:"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "Fecha de pago o abono en cuenta <br/> Año/mes"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_xlsx_report__date_end
+msgid "Fecha fin"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "Fecha:"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_fees
+#: model:ir.model,name:l10n_ve_payment_extension.model_fees_retention
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_fees_retention
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_fees_retention_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_fees_retention_search_binaural_payment_extension
+msgid "Fees"
+msgstr "Tarifas"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__percentage
+msgid "Fees percentage"
+msgstr "Porcentaje de Tarifas"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__file
+msgid "File"
+msgstr "Archivo"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_wizard_retention_iva
+msgid "File IVA taxes with the SENIAT"
+msgstr "Declarar IVA ante el SENIAT"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__filename
+msgid "Filename"
+msgstr "Nombre del Archivo"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Firma del Agente Retenido"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Firma del Agente de Retención"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__foreign_currency_id
+msgid "Foreign Currency"
+msgstr "Moneda alterna"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__foreign_iva_amount
+msgid "Foreign IVA"
+msgstr "IVA Alterno"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__foreign_retention_amount
+msgid "Foreign Retention Amount"
+msgstr "Monto Retenido Alterno"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_total_retention_amount
+msgid "Foreign Total Retention Amount"
+msgstr "Total retención alterno"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__foreign_invoice_amount
+msgid "Foreign taxable income"
+msgstr "Base imponible alterna"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__foreign_invoice_total
+msgid "Foreign total invoiced"
+msgstr "Total facturado alterno"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_arcv_report
+msgid "Generate ARCV Report"
+msgstr "Generar Comprobante ARCV"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_arcv_report
+msgid "Generate ARCV Voucher"
+msgstr "Generar Comprobante ARCV"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__generate_iva_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__generate_iva_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__generate_iva_retention
+msgid "Generate IVA Retention?"
+msgstr "¿Genera retención de IVA?"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_generate_txt
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.txt_report
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.library_rent_wizard_form
+msgid "Generate TXT"
+msgstr "Generar TXT"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_binaural_payment_extension
+msgid "Group By"
+msgstr "Agrupar por"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_economic_branch_search_binaural_payment_extension
+msgid "Group by"
+msgstr "Agrupar por"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_xlsx_report__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__id
+msgid "ID"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_payment__payment_type_retention__islr
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type_retention__islr
+msgid "ISLR"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__islr_account
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__islr_account
+msgid "ISLR Account"
+msgstr "Cuenta de Retención de ISLR"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_islr_client
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_islr_supplier
+#, python-format
+msgid "ISLR Retention"
+msgstr "Retención de ISLR"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__retention_islr_line_ids
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__retention_islr_line_ids
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_islr_line_ids
+msgid "ISLR Retention Lines"
+msgstr "Lineas de Retención de ISLR"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.wizard_retention_islr_view
+msgid "ISLR Retention Wizard"
+msgstr "Wizard de Retención de ISLR"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_islr_client
+msgid "ISLR Retention client"
+msgstr "Retención de ISLR para Cliente"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_islr_supplier
+msgid "ISLR Retention supplier"
+msgstr "Retención de ISLR para Proveedor"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_binaural_payment_extension
+msgid "ISLR Retentions"
+msgstr "Retenciones de ISLR"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__iva_amount
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_payment__payment_type_retention__iva
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type_retention__iva
+msgid "IVA"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__iva_account
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__iva_account
+msgid "IVA Account"
+msgstr "Cuenta de Retención IVA"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_iva_client
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_iva_supplier
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_type_withholding_search_binaural_payment_extension
+#, python-format
+msgid "IVA Retention"
+msgstr "Retención de IVA"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_iva_client
+msgid "IVA Retention Clients"
+msgstr "Retenciones de IVA para Cliente"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__retention_iva_line_ids
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__retention_iva_line_ids
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_iva_line_ids
+msgid "IVA Retention Lines"
+msgstr "Lineas de Retención de IVA"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_iva_supplier
+msgid "IVA Retention Suppliers"
+msgstr "Retenciones de IVA para Proveedor"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__is_retention
+msgid "IVA Retention payment"
+msgstr "Pago de retención de IVA"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_type_withholdings
+msgid "IVA Retention percentage"
+msgstr "Porcentaje de retención de IVA"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_binaural_payment_extension
+msgid "IVA Retentions"
+msgstr "Retenciones de IVA"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_type_withholding
+msgid "IVA retention percentage"
+msgstr "Porcentaje de retención de IVA"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Imp Retenido"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.arcv_report_form_view
+msgid "Imprimir"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "Impuesto <br/>retenido"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "Impuesto retenido<br/>acumulado"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type__in_contingence
+msgid "In contingence"
+msgstr "En contingencia"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type__in_debit
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention_line__invoice_type__in_debit
+msgid "In debit"
+msgstr "Nota de crédito de Proveedor"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type__in_invoice
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention_line__invoice_type__in_invoice
+msgid "In invoice"
+msgstr "Factura de Proveedor"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type__in_refund
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention_line__invoice_type__in_refund
+msgid "In refund"
+msgstr "Nota de Débito de Proveedor"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__economic_branch__status__inactive
+msgid "Inactive"
+msgstr "Inactivo"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "Información del impuesto retenido y enterado"
+msgstr ""
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "Insert a number for the retention"
+msgstr "Inserte el número de la retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__invoice_amount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_binaural_payment_extension
+msgid "Invoice Amount"
+msgstr "Base Imponible"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__invoice_correlative
+msgid "Invoice Correlative"
+msgstr "Correlarivo de la Factura"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__invoice_line_ids
+msgid "Invoice Lines"
+msgstr "Lineas de Factura"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__display_invoice_number
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__invoice_number
+msgid "Invoice Number"
+msgstr "Número de Factura"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_binaural_payment_extension
+msgid "Invoice Total"
+msgstr "Total de Factura"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__invoice_type
+msgid "Invoice Type"
+msgstr "Tipo de Factura"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__is_out_invoice
+msgid "Is Out Invoice"
+msgstr "Es Factura de Cliente"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__is_retention_client
+msgid "Is Retention Client"
+msgstr "Es Retención de Cliente"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__status
+msgid "Is active?"
+msgstr "¿Activo?"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__is_retention
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_payment_view_form_binaural_payment_extension
+msgid "Is retention"
+msgstr "Es Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__wizard_retention_islr__report__islr
+msgid "Islr Retention"
+msgstr "Retención de ISLR"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__islr_voucher_number
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__islr_voucher_number
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__islr_voucher_number
+msgid "Islr Voucher Number"
+msgstr "Comprobante de Retención de ISLR"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__iva_amount
+msgid "Iva Amount"
+msgstr "IVA"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "Iva Retention"
+msgstr "Retención de IVA"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__iva_voucher_number
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__iva_voucher_number
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__iva_voucher_number
+msgid "Iva Voucher Number"
+msgstr "Comprobante de Retención de IVA"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "January"
+msgstr "Enero"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_account_journal
+msgid "Journal"
+msgstr "Diario"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__islr_customer_retention_journal_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__islr_customer_retention_journal_id
+msgid "Journal for Customer I.S.L.R Retentions"
+msgstr "Diario para Retenciones de I.S.L.R de Clientes"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__iva_customer_retention_journal_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__iva_customer_retention_journal_id
+msgid "Journal for Customer I.V.A Retentions"
+msgstr "Diario para Retenciones de I.V.A de Clientes"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__municipal_customer_retention_journal_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__municipal_customer_retention_journal_id
+msgid "Journal for Customer Municipal Retentions"
+msgstr "Diario para Retenciones Municipales de Clientes"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__islr_supplier_retention_journal_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__islr_supplier_retention_journal_id
+msgid "Journal for Supplier I.S.L.R Retentions"
+msgstr "Diario para Retenciones de I.S.L.R de Proveedores"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__iva_supplier_retention_journal_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__iva_supplier_retention_journal_id
+msgid "Journal for Supplier I.V.A Retentions"
+msgstr "Diario para Retenciones de I.V.A de Proveedores"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__municipal_supplier_retention_journal_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__municipal_supplier_retention_journal_id
+msgid "Journal for Supplier Municipal Retentions"
+msgstr "Diario para Retenciones Municipales de Proveedores"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "July"
+msgstr "Julio"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "June"
+msgstr "Junio"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_xlsx_report____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr____last_update
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva____last_update
+msgid "Last Modified on"
+msgstr "Ultima modificación"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_xlsx_report__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__write_uid
+msgid "Last Updated by"
+msgstr "Ultima actualización"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_patent_report__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_municipal_retention_xlsx_report__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__write_date
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__write_date
+msgid "Last Updated on"
+msgstr "Ultima actualización"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_accumulated_fees__stop
+msgid "Leave blank to compare only with the value \"start\""
+msgstr "Dejar en blanco para comparar solo con el valor \"inicio\""
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "March"
+msgstr "Marzo"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.master_configuration
+msgid "Masters"
+msgstr "Maestros"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "May"
+msgstr "Mayo"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__month
+msgid "Month"
+msgstr "Mes"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__minimum_monthly
+msgid "Monthly Taxable Minimum"
+msgstr "Mínimo Tributable Mensual"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_payment__payment_type_retention__municipal
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type_retention__municipal
+msgid "Municipal"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.wizard_report_municipal_retention_report_patent_action
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.wizard_report_municipal_retention_report_patent_menu
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.wizard_report_municipal_retention_report_patent_view
+msgid "Municipal Patent Report"
+msgstr "Reporte de Patente Municipal"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "Municipal Patent Report from {date_start} to {date_end}"
+msgstr "Reporte de Patente Municipal desde {date_start} hasta {date_end}"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "Municipal Ret {retention_name} {retention_date}"
+msgstr "Ret Municipal {retention_name} {retention_date}"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_municipal_client
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_municipal_supplier
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_binaural_payment_extension
+#, python-format
+msgid "Municipal Retention"
+msgstr "Retención Municipal"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_municipal_client
+msgid "Municipal Retention Clients"
+msgstr "Retenciones Municipales de Clientes"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__retention_municipal_line_ids
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__retention_municipal_line_ids
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_municipal_line_ids
+msgid "Municipal Retention Lines"
+msgstr "Líneas de Retención Municipal"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_municipal_retention_patent_report
+msgid "Municipal Retention Patent Report"
+msgstr "Reporte de Patente Municipal"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "Municipal Retention Report from {date_from} to {date_to}"
+msgstr "Reporte de retenciones municipales desde {date_from} hasta {date_to}"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_municipal_supplier
+msgid "Municipal Retention Suppliers"
+msgstr "Retenciones Municipales de Proveedores"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_binaural_payment_extension
+msgid "Municipal Retentions"
+msgstr "Retenciones Municipales"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.wizard_report_municipality_retentions_report_view
+msgid "Municipal Retentions Report"
+msgstr "Reporte de Retenciones Municipales"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.municipal_supplier_retention_report_action
+msgid "Municipal Supplier Retention Report"
+msgstr "Reporte de Retenciones Municipales de Proveedor"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__municipal_voucher_number
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__municipal_voucher_number
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__municipal_voucher_number
+msgid "Municipal Voucher Number"
+msgstr "Comprobante de Retención Municipal"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/report/retention_voucher_report.py:0
+#, python-format
+msgid "Municipal retentions do not have PDF voucher. Please print the xslx"
+msgstr ""
+"Las retenciones municipales no tienen recibo PDF. Por favor imprima el excel"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.municipal_supplier_retention_report_menu
+msgid "Municipal supplier retention report"
+msgstr "Reporte de retenciones municipales de proveedor"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__municipality_id
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_master_configuration_municipality
+msgid "Municipality"
+msgstr "Municipio"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "NO HAY DATOS"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__name
+msgid "Name"
+msgstr "Nombre"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/wizard_retention_islr.py:0
+#, python-format
+msgid "No data to export"
+msgstr "No hay datos para exportar"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/wizard_retention_iva.py:0
+#, python-format
+msgid "No retentions found for the selected period"
+msgstr "No se encontraron retenciones para el periodo seleccionado"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/wizard_retention_islr.py:0
+#, python-format
+msgid "No withholdings have been found in the selected period"
+msgstr "No se han encontrado retenciones en el periodo seleccionado"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "November"
+msgstr "Noviembre"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Nro de Control"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_binaural_payment_extension
+msgid "Number"
+msgstr "Número"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__number_count
+msgid "Number Count"
+msgstr "Nro"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "October"
+msgstr "Octubre"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__original_lines_per_invoice_counter
+msgid "Original Lines Per Invoice Counter"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_binaural_payment_extension
+msgid "Other withholding settings"
+msgstr "Otras configuraciones de Retenciones"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type__out_contingence
+msgid "Out contingence"
+msgstr "Sin contingencia"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type__out_debit
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention_line__invoice_type__out_debit
+msgid "Out debit"
+msgstr "Nota de Débito de Cliente"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type__out_invoice
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention_line__invoice_type__out_invoice
+msgid "Out invoice"
+msgstr "Factura de Cliente"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__type__out_refund
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention_line__invoice_type__out_refund
+msgid "Out refund"
+msgstr "Nota de Crédito Cliente"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_master_configuration_parish
+msgid "Parish"
+msgstr "Parroquia"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_arcv_report__partner_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__partner
+msgid "Partner"
+msgstr "Proveedor"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__payment_ids
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__payment_id
+msgid "Payment"
+msgstr "Pagos"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_payment_concept
+msgid "Payment Concept"
+msgstr "Concepto de Pago"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_payment_concept_line
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__line_payment_concept_ids
+msgid "Payment Concept Line"
+msgstr "Linea de Concepto de Pago"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__payment_type_retention
+msgid "Payment Type Retention"
+msgstr "Tipo de Pago de Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_payment_concept_binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__payment_concept_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_search_binaural_payment_extension
+msgid "Payment concept"
+msgstr "Concepto de Pago"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_form_binaural_payment_extension
+msgid "Payment concept line"
+msgstr "Linea de Concepto de Pago"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_payment_concept
+msgid "Payment concept menu"
+msgstr "Menú de Concepto de Pago"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__payment_journal_id
+msgid "Payment journal"
+msgstr "Diario del Pago"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_payment_view_form_binaural_payment_extension
+msgid "Payment type retention"
+msgstr "Tipo de pago de Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_account_payment
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__payment_ids
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_binaural_payment_extension
+msgid "Payments"
+msgstr "Pagos"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__pay_from
+msgid "Payments greater than:"
+msgstr "Pagos mayores a:"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__related_pay_from
+msgid "Pays from"
+msgstr "Pagos desde"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__percentage_tax_base
+msgid "Percentage Taxable Base"
+msgstr "Porcentaje Base Imponible"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "Periodo:"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__percentage
+msgid "Porcentaje de tarifa"
+msgstr "Porcentaje de Tarifa"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.wizard_retention_islr_view
+msgid "Print Excel"
+msgstr "Imprimir Excel"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_binaural_payment_extension
+msgid "Print municipal retention XLSX"
+msgstr "Imprimir excel de retención municipal"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_product_template
+msgid "Product"
+msgstr "Producto"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_product_category
+msgid "Product Category"
+msgstr "Categoría de producto"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__subtract_money
+msgid "Quantity to subtract to fees"
+msgstr "Monto a restar en Tarifas"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__foreign_currency_rate
+msgid "Rate"
+msgstr "Tasa"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__accumulated_rate
+msgid "Rate accumulated?"
+msgstr "¿Tarifa Acumulada?"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__raw_aliquot
+msgid "Raw Aliquot"
+msgstr "Alícuota Bruta"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__raw_retention_percentage
+msgid "Raw Retention Percentage"
+msgstr "Porcentaje de Retención Bruto"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_iva_customer
+msgid "Recibido por:"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_account_payment_register
+msgid "Register Payment"
+msgstr "Registrar pago"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_withholding_type.py:0
+#, python-format
+msgid "Remember to use comma (,) as decimal separator."
+msgstr "Recordar usar (,) como separador decimal"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__report
+msgid "Report type"
+msgstr "Tipo de reporte"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__foreign_total_retention_amount
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__total_retention_amount
+msgid "Retained Amount Total"
+msgstr "Total Retenido Alterno"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__base_ret
+msgid "Retained base"
+msgstr "Base Retenida"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__amount_tax_ret
+msgid "Retained tax"
+msgstr "Tarifa Retenida"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
+#: model:ir.model,name:l10n_ve_payment_extension.model_account_retention
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__retention_id
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.retention_configuration
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_tree_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_tree_binaural_payment_extension
+#, python-format
+msgid "Retention"
+msgstr "Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__retention_amount
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__retention_amount
+msgid "Retention Amount"
+msgstr "Monto Retenido"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_retention_line_report
+msgid "Retention Analysis Report"
+msgstr "Reporte de Análisis de Retenciones"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__retention_date
+msgid "Retention Date"
+msgstr "Fecha de retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__retention_date_accounting
+msgid "Retention Date Accounting"
+msgstr "Fecha Contable"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_foreign_amount
+msgid "Retention Foreign Amount"
+msgstr "Monto de Retención Alterno"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_binaural_payment_extension
+msgid "Retention Journals"
+msgstr "Diarios de Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_account_retention_line
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__retention_line_ids
+msgid "Retention Line"
+msgstr "Linea de Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_line_report
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_line_report
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_search
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_tree
+msgid "Retention Line Report"
+msgstr "Reporte de Retenciones"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_line_ids
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_account_retention_line_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_account_retention_line_tree_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_binaural_payment_extension
+msgid "Retention Lines"
+msgstr "Lineas de Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__retention_percentage
+msgid "Retention Percentage"
+msgstr "% de retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__retention_rate
+msgid "Retention Rate"
+msgstr "Tasa"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.report,name:l10n_ve_payment_extension.retention_voucher_action
+msgid "Retention Voucher"
+msgstr "Comprobante de Retención"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_payment_register_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_payment_view_form_binaural_payment_extension
+msgid "Retention lines"
+msgstr "Lineas de retención"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_payment_view_form_binaural_payment_extension
+msgid "Retention ref"
+msgstr "Nro de Comprobante"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_ref
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment_register__retention_ref
+msgid "Retention reference"
+msgstr "Nro de Comprobante"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__retention_line_ids
+msgid "Retentions"
+msgstr "Retenciones"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__code_visible
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__code_visible
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__code_visible
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__code_visible
+msgid "See payment concept code"
+msgstr "Ver código concepto de pago"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "Select a payment concept"
+msgstr "Seleccione un concepto de pago"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "Select a type person"
+msgstr "Seleccione un tipo de persona"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.seniat_reports
+msgid "Seniat Reports"
+msgstr "Reportes del Seniat"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/utils/utils_retention.py:0
+#, python-format
+msgid "September"
+msgstr "Septiembre"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_islr_sequence
+msgid "Sequence ISLR"
+msgstr "Secuencia de ISLR"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_iva_sequence
+msgid "Sequence IVA"
+msgstr "Secuencia de IVA"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_municipal_sequence
+msgid "Sequence Municipal"
+msgstr "Secuencia de Municipal"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.ir_sequence_form_islr
+msgid "Sequences_islr"
+msgstr "Secuencia de ISLR"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.ir_sequence_form_iva
+msgid "Sequences_iva"
+msgstr "Secuencia de IVA"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.ir_sequence_form_municipal
+msgid "Sequences_municipal"
+msgstr "Secuencias Municipales"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__signature
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_signature_config_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_signature_config_search_binaural_payment_extension
+msgid "Signature"
+msgstr "Firma Electrónica"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_signature_config
+msgid "Signature and e-mail configuration "
+msgstr "Configuración de Firma y Correo Electrónico"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_configurate_signature
+msgid "Signature config"
+msgstr "Configuración de Firma Electronica"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__partner_id
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__partner_id
+msgid "Social reason"
+msgstr "Razón Social"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__start
+msgid "Start"
+msgstr "Inicio"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__state
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__state
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__state
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__state_show
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_binaural_payment_extension
+msgid "State"
+msgstr "Estado"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_branch__status
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_economic_branch_search_binaural_payment_extension
+msgid "Status"
+msgstr "Estado"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__state
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention_line__state
+msgid "Status of the withholding voucher"
+msgstr "Estatus del Comprobante"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__stop
+msgid "Stop"
+msgstr "Fin"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__subtract_ut
+msgid "Subsctrat TU"
+msgstr "Restar UT"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__apply_subtracting
+msgid "Subtract apply?"
+msgstr "Aplica Sustraendo"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__amount_subtract
+msgid "Subtract mount"
+msgstr "Monto Sustraendo"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_search
+msgid "Supplier Retention"
+msgstr "Retenciones de Proveedor"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Sustraendo"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "TD"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Tarifa Ret"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_accumulated_fees__fees_id
+msgid "Tarifa acumulada"
+msgstr "Tarifa Acumulada"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__tariff_id
+msgid "Tariff"
+msgstr "Tarifa"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_company_form
+msgid "Tax Authorities Data"
+msgstr "Datos de Hacienda"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__tax_authorities_logo
+msgid "Tax Authorities Logo"
+msgstr "Logo de Hacienda"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__tax_authorities_name
+msgid "Tax Authorities Name"
+msgstr "Nombre de Hacienda"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_tax_unit
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__tax_unit_ids
+msgid "Tax Unit"
+msgstr "Unidad Tributaria"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_tax_unit__name
+msgid "Tax Unit Description"
+msgstr "Descripción de Unidad Tributaria"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_tax_unit_binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_tax_unit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_search_tax_unit_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_tax_unit_form_binaural_payment_extension
+msgid "Tax unit"
+msgstr "Unidad Tributaria"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_tax_unit__value
+msgid "Tax unit value"
+msgstr "Valor de Unidad Tributaria"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_total_invoice_amount
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__total_invoice_amount
+msgid "Taxable Income"
+msgstr "Base Imponible"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__foreign_total_invoice_amount
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__total_invoice_amount
+msgid "Taxable Income Total"
+msgstr "Total Base Imponible"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__invoice_amount
+msgid "Taxable income"
+msgstr "Base Imponible"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__allowed_lines_move_ids
+msgid ""
+"Technical field to store the allowed move types for the ISLR retention "
+"lines. This is used to filter the moves that can be selected in the ISLR "
+"retention lines."
+msgstr ""
+"Campo técnico para almacenar los tipos de movimiento permitidos para las "
+"líneas de retención de ISLR. Esto se utiliza para filtrar los movimientos "
+"que se pueden seleccionar en las líneas de retención de ISLR."
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__original_lines_per_invoice_counter
+msgid ""
+"Technical field to store the quantity of retention lines per invoice before "
+"the user changes them. This is used to know if the user has deleted the "
+"retention lines when the invoice is changed, in order to delete all the "
+"other lines of the same invoice that the one that just has been deleted."
+msgstr ""
+"Campo técnico para almacenar la cantidad de líneas de retención por factura "
+"antes de que el usuario las cambie. Esto se utiliza para saber si el usuario"
+" ha eliminado las líneas de retención cuando se cambia la factura, con el "
+"fin de eliminar todas las otras líneas de la misma factura que se acaba de "
+"eliminar."
+
+#. module: binaural_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_economic_activity_aliquot_mayor_cero
+msgid "The aliquot must be greater than zero"
+msgstr "La alícuota debe ser mayor a cero "
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_move.py:0
+#, python-format
+msgid ""
+"The amount of the retention is greater than the total amount of the invoice."
+msgstr ""
+"La base imponible de la retención es mayor que la base imponible de la "
+"factura."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_move.py:0
+#, python-format
+msgid "The amount of the retention must be greater than zero."
+msgstr "La base imponible de la retención debe ser mayor que cero"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/municipal_retention_xlsx_report.py:0
+#, python-format
+msgid "The company has no tax authorities name"
+msgstr "La compañía no tiene nombre de hacienda"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "The company must have a customer ISLR retention journal configured."
+msgstr "La compañía debe tener un diario para retenciones de ISLR de cliente."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "The company must have a customer IVA retention journal configured."
+msgstr "La compañía debe tener un diario para retenciones de IVA de cliente."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid ""
+"The company must have a customer municipal retention journal configured."
+msgstr ""
+"La compañía debe tener un diario para retenciones municipales de cliente."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_move.py:0
+#, python-format
+msgid "The company must have a journal for ISLR supplier retention."
+msgstr ""
+"La compañía debe tener un diario para retenciones de ISLR de proveedor."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_move.py:0
+#, python-format
+msgid "The company must have a journal for IVA supplier retention."
+msgstr ""
+"La compañía debe tener un diario para retenciones de IVA de proveedor."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_move.py:0
+#, python-format
+msgid "The company must have a journal for municipal supplier retention."
+msgstr ""
+"La compañía debe tener un diario para retenciones municipales de proveedor."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "The company must have a supplier ISLR retention journal configured."
+msgstr ""
+"La compañía debe tener un diario para retenciones de ISLR de proveedor."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "The company must have a supplier IVA retention journal configured."
+msgstr ""
+"La compañía debe tener un diario para retenciones de IVA de proveedor."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid ""
+"The company must have a supplier municipal retention journal configured."
+msgstr ""
+"La compañía debe tener un diario para retenciones municipales de proveedor."
+
+#. module: binaural_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_payment_concept_line_unique_code
+msgid "The concept code already exists"
+msgstr "El Código del concepto de pago ya existe."
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__condition_withholding_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__condition_withholding_id
+msgid "The condition of this taxpayer requires the withholding of"
+msgstr "La condición de este contribuyente requiere la retención del "
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/economic_branch.py:0
+#, python-format
+msgid "The economic branch is already registered"
+msgstr "La Rama Económica ya existe."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "The invoice %s has no tax."
+msgstr "La factura %s no tiene impuesto"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_move.py:0
+#, python-format
+msgid "The invoice has no tax."
+msgstr "La factura no tiene impuesto"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_move.py:0
+#, python-format
+msgid "The partner has no withholding type."
+msgstr "El contacto no tiene tipo de retención"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_move.py:0
+#, python-format
+msgid "The partner must have a type of person"
+msgstr "El partner debe tener tipo de persona"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/fees_retention.py:0
+#, python-format
+msgid "The percentage of fees cannot be greater than 100%.\n"
+msgstr "El porcentaje de las tarifas no puede ser mayor que 100%"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/fees_retention.py:0
+#, python-format
+msgid "The rate percentage cannot be negative.\n"
+msgstr "El porcentaje de retención no puede ser negativo."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
+#, python-format
+msgid ""
+"The total amount of the retention is greater than the residual amount of the"
+" invoice."
+msgstr ""
+"El monto total de la retención es mayor que el monto residual de la factura."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/payment_concept.py:0
+#, python-format
+msgid "The type of person cannot be repeated."
+msgstr "El tipo de persona no puede repetirse."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "There are no invoices with taxes to be retained for the customer."
+msgstr "No hay facturas con impuestos para ser retenidos para el cliente."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid "There are no invoices with taxes to be retained for the supplier."
+msgstr "No hay facturas con impuestos para ser retenidos para el proveedor."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/municipal_retention_xlsx_report.py:0
+#, python-format
+msgid "There are no supplier municipal retentions for the given date range."
+msgstr ""
+"No hay retenciones municipales de proveedor para el rango de fecha "
+"seleccionado."
+
+#. module: binaural_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_economic_activity_code_uniq
+msgid ""
+"There cannot be two records with the same code for the selected "
+"municipality."
+msgstr "No puede haber dos registros con el mismo código para el municipio."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#: code:addons/binaural_payment_extension/wizard/municipal_retention_patent_report.py:0
+#, python-format
+msgid "There is no data to show"
+msgstr "No hay datos que mostrar"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/controllers/municipal_report.py:0
+#, python-format
+msgid "There is no data to show."
+msgstr "No hay datos que mostrar."
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__type
+msgid "Tipo del Comprobante"
+msgstr "TIpo del Comprobante"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "Total Factura"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_total_iva_amount
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__total_iva_amount
+msgid "Total IVA"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_tree
+msgid "Total IVA Amount"
+msgstr "Monto Total IVA"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_tree
+msgid "Total Invoice Amount"
+msgstr "Total Factura"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__total_retention_amount
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_line_report_tree
+msgid "Total Retention Amount"
+msgstr "Total Retenido"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_template_arcv
+msgid "Total cantidad pagada o abonada en <br/>cuenta"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__invoice_total
+msgid "Total invoiced"
+msgstr "Total Facturado"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__type
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__type_show
+msgid "Type"
+msgstr "Tipo"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_type_person
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__type_person_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__type_person_id
+msgid "Type Person"
+msgstr "Tipo de Persona"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__type_retention
+msgid "Type Retention"
+msgstr "Tipo de Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_account_withholding_type
+msgid "Type Withholding"
+msgstr "Tipo de Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__type_person_id
+msgid "Type person"
+msgstr "Tipo de Persona"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__type
+msgid "Type retention"
+msgstr "Tipo de retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__value
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__value
+msgid "Value"
+msgstr "Valor"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__vat
+msgid "Vat"
+msgstr "RIF"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_binaural_payment_extension
+msgid "Vocher date"
+msgstr "Fecha de Comprobante"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__date
+msgid "Voucher Date"
+msgstr "Fecha de Comprobante"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__number
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__voucher
+msgid "Voucher Number"
+msgstr "Nro de Comprobante"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_withholding_type.py:0
+#, python-format
+msgid "Warning"
+msgstr "Advertencia"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__withholding_type_id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__withholding_type_id
+msgid "Withholding Type"
+msgstr "Tipo de Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_wizard_retention_islr
+msgid "Wizard Retention ISLR Report"
+msgstr "Wizard de reportes de Retención de ISLR"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_wizard_accounting_reports
+msgid "Wizard para generar reportes de libro de compra y ventas"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_municipal_retention_xlsx_report
+msgid "XLSX Report for municipal retentions"
+msgstr "Reporte excel de retenciones municipales"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.xml_retention_islr
+msgid "XML ISLR Retention"
+msgstr "XML de Retención de ISLR"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_retention_islr
+msgid "XML Retenciones de ISLR"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__year
+msgid "Year"
+msgstr "Año"
+
+#. module: binaural_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_account_withholding_type_unique_value
+msgid "You can not add withholdings with the same Value"
+msgstr "No puedes añadir retenciones con el mismo valor."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention_line.py:0
+#, python-format
+msgid "You can not create a retention with 0 amount."
+msgstr "No se puede crear una retención con montos en 0."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/account_payment_register.py:0
+#, python-format
+msgid ""
+"You can't create a retention payment for the invoices selected because one "
+"or more of them already have an emitted retention."
+msgstr ""
+"No puedes crear un pago de retención para las facturas seleccionadas porque "
+"una o más de ellas ya tienen una retención emitida."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/account_payment_register.py:0
+#, python-format
+msgid ""
+"You can't create a retention payment for the invoices selected because one "
+"or more of them don't have any tax line."
+msgstr ""
+"No puedes crear un pago de retención para las facturas seleccionadas porque "
+"una o más de ellas no tienen líneas con impuestos."
+
+#. module: binaural_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_account_withholding_type_unique_name
+msgid "You cannot add withholdings with the same name"
+msgstr "No puedes añadir retenciones con el mismo nombre."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/account_retention.py:0
+#, python-format
+msgid ""
+"You cannot delete a hold linked to a posted entry. It is necessary to cancel"
+" the retention before being deleted"
+msgstr ""
+"No puede eliminar una retención vinculada a un asiento publicado. Es "
+"necesario anular la retención antes de ser eliminada."
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/product.py:0
+#, python-format
+msgid "You cannot select more than one CIU when you have just one subsidiary"
+msgstr ""
+"No se puede seleccionar más de un CIU cuando solo hay una sucursal activa"
+
+#. module: binaural_payment_extension
+#: model:ir.model.constraint,message:l10n_ve_payment_extension.constraint_economic_branch_name_uniq
+msgid "You may not register an economic sector with the same name."
+msgstr "No puedes registrar una Rama Económica con el mismo nombre "
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/wizard/wizard_retention_iva.py:0
+#, python-format
+msgid "You must enter a start and end date"
+msgstr "Debes ingresar una fecha de inicio y fin"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/fees_retention.py:0
+#, python-format
+msgid "You must enter the accumulated fees.\n"
+msgstr "Debes ingresar la tarifa acumulada"
+
+#. module: binaural_payment_extension
+#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_economic_branch
+msgid "economic branch"
+msgstr "Rama Económica"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.report_islr_customer
+msgid "información impuesto retenido"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__move_id
+msgid "move"
+msgstr "Nro de Documento"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_municipal_retention_xlsx
+msgid "municipal.retention.xlsx"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_binaural_payment_extension
+msgid "payments"
+msgstr "Pagos"
+
+#. module: binaural_payment_extension
+#: model:ir.model,name:l10n_ve_payment_extension.model_report_binaural_payment_extension_retention_voucher_template
+msgid "report.l10n_ve_payment_extension.retention_voucher_template"
+msgstr ""
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__retention_line_ids
+msgid "retention line"
+msgstr "Linea de Retención"
+
+#. module: binaural_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_signature_config
+msgid "signature"
+msgstr "Firma Electrónica"
+
+#. module: binaural_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_fees_retention_search_binaural_payment_extension
+msgid "status"
+msgstr "Estado"
+
+#. module: binaural_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__imp_ret
+msgid "tax incurred"
+msgstr "Impuesto retenido"
+
+#. module: binaural_payment_extension
+#. odoo-python
+#: code:addons/binaural_payment_extension/models/payment_concept_line.py:0
+#, python-format
+msgid "the percentage may not exceed 100% on the payment concept line"
+msgstr "El porcentaje no puede exceder el 100% en la linea de pago."

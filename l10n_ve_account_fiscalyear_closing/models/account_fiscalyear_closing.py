@@ -142,10 +142,10 @@ class AccountFiscalyearClosingConfig(models.Model):
 
 
 class AccountFiscalyearClosing(models.Model):
-    _inherit = "account.fiscalyear.closing"    
+    _inherit = "account.fiscalyear.closing"
 
     def draft_moves_check(self):
-        for closing in self:            
+        for closing in self:
             draft_moves = self.env["account.move"].search(
                 [
                     ("company_id", "=", closing.company_id.id),
@@ -207,7 +207,7 @@ class AccountFiscalyearClosing(models.Model):
                 ("code", "in", config.mapping_ids.mapped("src_accounts")),
             ],
             order="code ASC",
-        )        
+        )
 
         domain = [
             ("company_id", "=", self.company_id.id),
@@ -215,7 +215,7 @@ class AccountFiscalyearClosing(models.Model):
             ("date", ">=", self.date_start),
             ("date", "<=", self.date_end),
             ("move_id.state", "!=", "cancel"),
-        ]        
+        ]
 
         balances = self.env["account.move.line"].read_group(
             domain=domain,
@@ -230,11 +230,8 @@ class AccountFiscalyearClosing(models.Model):
         for balance_dict in balances:
             balance = balance_dict.get("balance", 0)
             foreign_balance = balance_dict.get("foreign_balance", 0)
-            if (
-                currencies["bsd_id"] == currencies["foreign_currency"] and balance == 0
-            ) or (
-                currencies["bsd_id"] != currencies["foreign_currency"]
-                and foreign_balance == 0
+            if (currencies["bsd_id"] == currencies["foreign_currency"] and balance == 0) or (
+                currencies["bsd_id"] != currencies["foreign_currency"] and foreign_balance == 0
             ):
                 continue
 
@@ -254,9 +251,7 @@ class AccountFiscalyearClosing(models.Model):
                     "manually_set_rate": True,
                     "foreign_rate": rate,
                     "foreign_inverse_rate": (
-                        rate
-                        if currencies["bsd_id"] == currencies["foreign_currency"]
-                        else 1 / rate
+                        rate if currencies["bsd_id"] == currencies["foreign_currency"] else 1 / rate
                     ),
                     "line_ids": [
                         (
@@ -339,9 +334,7 @@ class AccountFiscalyearClosingMapping(models.Model):
                     "date": date,
                     "partner_id": partner_id,
                     "foreign_rate": rate,
-                    "foreign_inverse_rate": (
-                        rate if bsd_id == foreign_currency.id else 1 / rate
-                    ),
+                    "foreign_inverse_rate": (rate if bsd_id == foreign_currency.id else 1 / rate),
                 }
             else:
                 balance = 0
@@ -359,7 +352,6 @@ class AccountFiscalyearClosingMapping(models.Model):
             ("date", "<=", end),
             ("move_id.state", "!=", "cancel"),
         ]
-        
         return self.env["account.move.line"].read_group(
             domain=domain,
             fields=[

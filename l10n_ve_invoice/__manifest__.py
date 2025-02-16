@@ -2,22 +2,21 @@
     "name": "Binaural Facturación",
     "summary": """
        Modulo para contabilidad Venezolana """,
-    "version": "16.0.3.2.8",
+    "version": "17.0.1.0.3",
     "license": "LGPL-3",
     "author": "Binauraldev",
-    "website": "https://binauraldev.com/",
+    "website": "https://l10n_vedev.com/",
     "category": "Accounting/Localizations/Account Chart",
     # any module necessary for this one to work correctly
     "depends": [
+        "l10n_ve_base",
         "l10n_ve_accountant",
-        "l10n_ve_contact",        
+        "l10n_ve_contact",
         "l10n_ve_tax",
-        "l10n_ve_filter_partner",
-        "od_journal_sequence",
     ],
     # always loaded
     "data": [
-        "security/binaural_invoice_groups.xml",
+        "security/l10n_ve_invoice_groups.xml",
         "security/ir.model.access.csv",
         "security/ir_rule.xml",
         "data/account_data.xml",
@@ -34,5 +33,4 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "binaural": True,
 }

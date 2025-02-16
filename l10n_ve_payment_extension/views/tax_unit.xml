@@ -1,0 +1,60 @@
+
+<odoo>
+
+    <data>
+
+        <record id="view_tax_unit_tree_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.tax.unit.tree.binaural.payment.extension</field>
+            <field name="model">tax.unit</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name" />
+                    <field name="value" />
+                    <field name="status" />
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_tax_unit_form_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.tax.unit.form.binaural.payment.extension</field>
+            <field name="model">tax.unit</field>
+            <field name="arch" type="xml">
+                <form string="Tax unit">
+                    <sheet string="Tax unit">
+                        <group>
+                            <group>
+                                <field name="name" />
+                                <field name="status" />
+                            </group>
+                            <group>
+                                <field name="value" />
+                            </group>
+                        </group>
+
+                    </sheet>
+                </form>
+            </field>
+        </record> 
+
+        <record id="view_search_tax_unit_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">Tax unit</field>
+            <field name="model">tax.unit</field>
+            <field name="arch" type="xml">
+                <search string="Tax unit">
+                    <filter name="state" domain="[('status','=',True)]" string="Active" />
+                </search>
+            </field>
+        </record>
+
+        <record id="action_tax_unit_binaural_payment_extension" model="ir.actions.act_window">
+            <field name="name">Tax unit</field>
+            <field name="res_model">tax.unit</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_view_types">form</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="context">{"search_default_status":True}</field>
+        </record>
+        
+    </data>
+    
+</odoo>

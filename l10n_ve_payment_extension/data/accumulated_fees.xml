@@ -1,0 +1,33 @@
+
+<odoo>
+
+    <data>
+
+        <record id="accumulated_fees_binaural_payment_extension" model="accumulated.fees">
+            <field name="name">0.15</field>
+            <field name="start">0.00</field>
+            <field name="stop">2000.00</field>
+            <field name="percentage">15.00</field>
+            <field name="subtract_ut">0.00</field>
+        </record>
+    
+        <record id="accumulated_fees_two_binaural_payment_extension" model="accumulated.fees">
+            <field name="name">0.22</field>
+            <field name="start">2001.00</field>
+            <field name="stop">3000.00</field>
+            <field name="percentage">22.00</field>
+            <field name="subtract_ut">140.00</field>
+        </record>
+
+        <record id="accumulated_fees_three_binaural_payment_extension" model="accumulated.fees">
+            <field name="name">0.34</field>
+            <field name="start">3001.00</field>
+            <field name="stop">0.00</field>
+            <field name="percentage">34.00</field>
+            <field name="subtract_ut">500.00</field>
+        </record>        
+    
+    </data>
+    
+
+</odoo>

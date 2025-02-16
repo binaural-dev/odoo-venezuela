@@ -1,0 +1,41 @@
+
+<odoo>
+	<data>
+
+		<record id="res_config_settings_binaural_payment_extension" model="ir.ui.view">
+			<field name="name">res.config.settings.binaural.payment.extension</field>
+			<field name="model">res.config.settings</field>
+			<field name="priority" eval="100"/>
+			<field name="inherit_id" ref="l10n_ve_base.res_config_settings_view_form_binaural_base"/>
+			<field name="arch" type="xml">
+				
+                <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+					<h2>Retention Journals</h2>
+					<div class="row mt16 o_settings_container" name="binaural_retention_journals_settings">\
+						<div class="o_setting_right_pane">
+							<group colspan="4" col="4">
+								<field name="iva_supplier_retention_journal_id"/>
+								<field name="iva_customer_retention_journal_id"/>
+								<field name="islr_supplier_retention_journal_id"/>
+								<field name="islr_customer_retention_journal_id"/>
+								<field name="municipal_supplier_retention_journal_id"/>
+								<field name="municipal_customer_retention_journal_id"/>
+								<field name="code_visible"/>
+							</group>
+						</div>
+					</div>
+					<h2>Other withholding settings</h2>
+					<div class="row mt16 o_settings_container" name="binaural_withholding_settings">
+						<div class="o_setting_right_pane">
+							<group colspan="4" col="4">
+								<field name="condition_withholding_id"/>
+							</group>
+						</div>
+					</div>
+				</xpath>
+
+			</field>
+		</record>
+
+	</data>
+</odoo>

@@ -1,0 +1,47 @@
+
+<odoo>
+    <data>
+        <record id="view_economic_activity_tree_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.activity.tree.binaural.payment.extension</field>
+            <field name="model">economic.activity</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name" />
+                    <field name="branch_id" />
+                    <field name="municipality_id" />
+                    <field name="aliquot" />
+                    <field name="minimum_monthly" />
+                    <field name="minimum_annual" />
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_economic_activity_from_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.activity.from.binaural.payment.extension</field>
+            <field name="model">economic.activity</field>
+            <field name="arch" type="xml">
+                <form string="Economic activity">
+                    <sheet string="Economic activity">
+                        <group>
+                            <field name="name" />
+                            <field name="branch_id" />
+                            <field name="municipality_id" />
+                            <field name="aliquot" />
+                            <field name="minimum_monthly" />
+                            <field name="minimum_annual" />
+                            <field name="description" />
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_economic_activity" model="ir.actions.act_window">
+            <field name="name">Economic activity</field>
+            <field name="res_model">economic.activity</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_view_types">form</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+    </data>
+</odoo>

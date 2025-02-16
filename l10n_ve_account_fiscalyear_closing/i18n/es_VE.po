@@ -1,11 +1,11 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
 # 	* account_fiscal_year_closing
-# 	* binaural_account_fiscalyear_closing
+# 	* l10n_ve_account_fiscalyear_closing
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20231127\n"
+"Project-Id-Version: Odoo Server 17.0+e-20231127\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-11-27 20:19+0000\n"
 "PO-Revision-Date: 2023-11-27 20:19+0000\n"
@@ -57,8 +57,8 @@ msgstr "Tipos de cierre de cuentas"
 msgid "Accounts mapping"
 msgstr "Asignación de cuentas"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields.selection,name:binaural_account_fiscalyear_closing.selection__account_fiscalyear_closing__journal_type__all
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields.selection,name:l10n_ve_account_fiscalyear_closing.selection__account_fiscalyear_closing__journal_type__all
 msgid "All Dairy"
 msgstr "Todos los Diarios"
 
@@ -360,11 +360,6 @@ msgstr "Gastos"
 msgid "First date of the opening period"
 msgstr "Primera fecha del periodo de apertura"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields.selection,name:binaural_account_fiscalyear_closing.selection__account_fiscalyear_closing__journal_type__fiscal
-msgid "Fiscal Dairy"
-msgstr "Diario Fiscal"
-
 #. module: account_fiscal_year_closing
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing_config__fyc_id
 #: model:ir.ui.menu,name:account_fiscal_year_closing.menu_account_fiscalyear_closing_configuration
@@ -395,8 +390,8 @@ msgstr "Cierre fiscal lineas movimiento"
 msgid "Fiscal closing moves"
 msgstr "Cierre fiscal movimientos"
 
-#. modules: account_fiscal_year_closing, binaural_account_fiscalyear_closing
-#: model:ir.model,name:binaural_account_fiscalyear_closing.model_account_fiscalyear_closing
+#. modules: account_fiscal_year_closing, l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_bank_statement_line__fyc_id
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_move__fyc_id
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_payment__fyc_id
@@ -418,18 +413,18 @@ msgstr "Configuración cierre ejercicio"
 msgid "Fiscal year closing config template"
 msgstr "Plantilla configuración cierre ejercicio"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model,name:binaural_account_fiscalyear_closing.model_account_fiscalyear_closing_config
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_config
 msgid "Fiscal year closing configuration"
 msgstr "Configuración de cierre del año fiscal"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model,name:binaural_account_fiscalyear_closing.model_account_fiscalyear_closing_config_template
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_config_template
 msgid "Fiscal year closing configuration template"
 msgstr "Plantilla de configuración de cierre del año fiscal"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model,name:binaural_account_fiscalyear_closing.model_account_fiscalyear_closing_mapping
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_mapping
 msgid "Fiscal year closing mapping"
 msgstr "Mapeo de cierre del año fiscal"
 
@@ -466,13 +461,13 @@ msgstr "Cierres de ejercicio"
 msgid "Fixed Assets"
 msgstr "Activos fijos"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields,field_description:binaural_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__foreign_credit
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__foreign_credit
 msgid "Foreign Credit"
 msgstr "Crédito foraneo"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields,field_description:binaural_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__foreign_debit
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__foreign_debit
 msgid "Foreign Debit"
 msgstr "Débito foraneo"
 
@@ -547,8 +542,8 @@ msgstr "Diario"
 msgid "Journal Entry"
 msgstr "Asiento contable"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields,field_description:binaural_account_fiscalyear_closing.field_account_fiscalyear_closing__journal_type
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__journal_type
 msgid "Journal Type"
 msgstr "Tipo de diario"
 
@@ -599,15 +594,15 @@ msgstr "Última actualización en"
 msgid "Last date of the ending period"
 msgstr "Última fecha del período final"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields,field_description:binaural_account_fiscalyear_closing.field_account_fiscalyear_closing_config__l_map
-#: model_terms:ir.ui.view,arch_db:binaural_account_fiscalyear_closing.account_fiscal_year_closing_inherit_binaural
-#: model_terms:ir.ui.view,arch_db:binaural_account_fiscalyear_closing.account_fiscal_year_closing_template_inherit_binaural
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config__l_map
+#: model_terms:ir.ui.view,arch_db:l10n_ve_account_fiscalyear_closing.account_fiscal_year_closing_inherit_binaural
+#: model_terms:ir.ui.view,arch_db:l10n_ve_account_fiscalyear_closing.account_fiscal_year_closing_template_inherit_binaural
 msgid "Load Accounts"
 msgstr "Cargar Cuentas"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields,field_description:binaural_account_fiscalyear_closing.field_account_fiscalyear_closing_config_template__l_map
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config_template__l_map
 msgid "Load accounts"
 msgstr "Cargar Cuentas"
 
@@ -653,11 +648,6 @@ msgstr "Configuración de movimientos"
 #: model:ir.model.fields,field_description:account_fiscal_year_closing.field_account_fiscalyear_closing_unbalanced_move_line__name
 msgid "Name"
 msgstr "Nombre"
-
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields.selection,name:binaural_account_fiscalyear_closing.selection__account_fiscalyear_closing__journal_type__nofiscal
-msgid "No Fiscal Dairy"
-msgstr "Diario no Fiscal"
 
 #. module: account_fiscal_year_closing
 #. odoo-python
@@ -757,8 +747,8 @@ msgstr "Pre-pagos"
 msgid "Processed"
 msgstr "Procesado"
 
-#. module: binaural_account_fiscalyear_closing
-#: model:ir.model.fields,field_description:binaural_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move__foreign_currency_rate
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move__foreign_currency_rate
 msgid "Rate"
 msgstr "Tasa"
 
@@ -786,9 +776,9 @@ msgstr "Referencia"
 msgid "Result"
 msgstr "Resultado"
 
-#. module: binaural_account_fiscalyear_closing
+#. module: l10n_ve_account_fiscalyear_closing
 #. odoo-python
-#: code:addons/binaural_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
 #, python-format
 msgid "Se encontraron uno o más movimientos sin asentar: \n"
 msgstr ""

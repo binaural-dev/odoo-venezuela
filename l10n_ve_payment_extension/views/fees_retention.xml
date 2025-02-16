@@ -1,0 +1,80 @@
+
+<odoo>
+
+    <data>
+
+        <record id="view_fees_retention_tree_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.fees.retention.tree</field>
+            <field name="model">fees.retention</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name" />   
+                    <field name="percentage" />
+                    <field name="apply_subtracting" />                
+                    <field name="accumulated_rate" />                
+                    <field name="tax_unit_ids" />                
+                    <field name="status" />                              
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_fees_retention_form_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.fees.retention.from</field>
+            <field name="model">fees.retention</field>
+            <field name="arch" type="xml">
+                <form string="Fees">
+                    <sheet string="Fees">
+                        <group>
+                            <field name="name" />
+                        </group>
+                        <group>
+                            <group>
+                                <field name="percentage" />
+                                <field name="subtract_money"/>
+                                <field name="tax_unit_ids" />
+                            </group>
+                            <group>
+                                <field name="apply_subtracting"/>
+                                <field name="accumulated_rate" />
+                                <field name="amount_subtract" />
+                                <field name="status"/>
+                            </group>
+                        </group>
+                        <group>
+                            <field name="accumulated_rate_ids" invisible="not accumulated_rate">
+                                <tree editable="bottom" string="Accumulated fees">
+                                    <field name="name"/>
+                                    <field name="start"/>
+                                    <field name="stop" />
+                                    <field name="percentage" />
+                                    <field name="subtract_ut" />
+                                </tree>
+                            </field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_fees_retention_search_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.fees.retention.search</field>
+            <field name="model">fees.retention</field>
+            <field name="arch" type="xml">
+                <search string="Fees">
+                    <filter name="status" string="status" domain="[('status', '=', True)]" /> 
+                </search>
+            </field>
+        </record>
+
+        <record id="action_fees" model="ir.actions.act_window">
+            <field name="name">Fees</field>
+            <field name="res_model">fees.retention</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_view_types">form</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="context">{"search_default_status":True}</field>
+        </record>
+    
+    </data>
+    
+</odoo>

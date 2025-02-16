@@ -1,0 +1,228 @@
+
+<odoo>
+    <data noupdate="1">
+        <record id="payment_concept_one_binaural_payment_extension" model="payment.concept">
+            <field name="name">Honorarios Profesionales Pagados a</field>
+            <field name="status">True</field>
+            <field name="line_payment_concept_ids" eval="[
+            (0,0,{
+                'code': 2,
+                'pay_from': 0.13,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_substrat_binaural_payment_extension'),
+                'type_person_id': ref('type_person_binaural_payment_extension') 
+            }),
+            (0,0,{
+                'code': 4,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_one_binaural_payment_extension'),
+                'type_person_id': ref('type_person_three_binaural_payment_extension') 
+            }),
+            (0,0,{
+                'code': 3,
+                'pay_from': 0.00,
+                'percentage_tax_base': 90,
+                'tariff_id': ref('fees_retention_data_percentage_two_binaural_payment_extension'),
+                'type_person_id': ref('type_person_two_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 5,
+                'pay_from': 0.00,
+                'percentage_tax_base': 90,
+                'tariff_id': ref('fees_retention_data_percentage_five_binaural_payment_extension'),
+                'type_person_id': ref('type_person_four_binaural_payment_extension')
+            })]"/>
+        </record>
+
+        <record id="payment_concept_two_binaural_payment_extension" model="payment.concept">
+            <field name="name">Gastos de Transporte (Fletes) Pagados a</field>
+            <field name="status">True</field>
+            <field name="line_payment_concept_ids" eval="[
+            (0,0,{
+                'code': 71,
+                'pay_from': 0.13,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_substrat_second_binaural_payment_extension'),
+                'type_person_id': ref('type_person_binaural_payment_extension') 
+            }),
+            (0,0,{
+                'code': 72,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_four_binaural_payment_extension'),
+                'type_person_id': ref('type_person_three_binaural_payment_extension')
+            })]"/>
+        </record>
+
+        <record id="payment_concept_three_binaural_payment_extension" model="payment.concept">
+            <field name="name">(Contratista) Ejecución de obras y prestación de servicios en Venezuela pagadas a:</field>
+            <field name="status">True</field>
+            <field name="line_payment_concept_ids" eval="[
+            (0,0,{
+                'code': 53,
+                'pay_from': 0.13,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_substrat_second_binaural_payment_extension'),
+                'type_person_id': ref('type_person_binaural_payment_extension') 
+            }),
+            (0,0,{
+                'code': 55,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_binaural_percentage_three_payment_extension'),
+                'type_person_id': ref('type_person_three_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 54,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_two_binaural_payment_extension'),
+                'type_person_id': ref('type_person_two_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 56,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_five_binaural_payment_extension'),
+                'type_person_id': ref('type_person_four_binaural_payment_extension')
+                })]"/>
+        </record>
+
+        <record id="payment_concept_four_binaural_payment_extension" model="payment.concept">
+            <field name="name">Arrendamiento de bienes muebles pagado a:</field>
+            <field name="status">True</field>
+            <field name="line_payment_concept_ids" eval="[
+            (0,0,{
+                'code': 61,
+                'pay_from': 0.13,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_substrat_binaural_payment_extension'),
+                'type_person_id': ref('type_person_binaural_payment_extension') 
+            }),
+            (0,0,{
+                'code': 63,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_one_binaural_payment_extension'),
+                'type_person_id': ref('type_person_three_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 62,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_two_binaural_payment_extension'),
+                'type_person_id': ref('type_person_two_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 64,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_one_binaural_payment_extension'),
+                'type_person_id': ref('type_person_four_binaural_payment_extension')
+            })]"/>
+        </record>
+
+        <record id="payment_concept_five_binaural_payment_extension" model="payment.concept">
+            <field name="name">Arrendamiento o cesión de uso de bienes inmuebles, pagados al arrendador por personas jurídicas, comunidades o los administradores:</field>
+            <field name="status">True</field>
+            <field name="line_payment_concept_ids" eval="[
+            (0,0,{
+                'code': 57,
+                'pay_from': 0.13,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_substrat_binaural_payment_extension'),
+                'type_person_id': ref('type_person_binaural_payment_extension') 
+            }),
+            (0,0,{
+                'code': 59,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_one_binaural_payment_extension'),
+                'type_person_id': ref('type_person_three_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 58,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_two_binaural_payment_extension'),
+                'type_person_id': ref('type_person_two_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 60,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_five_binaural_payment_extension'),
+                'type_person_id': ref('type_person_four_binaural_payment_extension')
+            })]"/>
+        </record>
+
+        <record id="payment_concept_six_binaural_payment_extension" model="payment.concept">
+            <field name="name">Publicidad, propaganda y venta de espacios pagadas a</field>
+            <field name="status">True</field>
+            <field name="line_payment_concept_ids" eval="[
+            (0,0,{
+                'code': 83,
+                'pay_from': 0.13,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_substrat_binaural_payment_extension'),
+                'type_person_id': ref('type_person_binaural_payment_extension') 
+            }),
+            (0,0,{
+                'code': 84,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_one_binaural_payment_extension'),
+                'type_person_id': ref('type_person_three_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 85,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_one_binaural_payment_extension'),
+                'type_person_id': ref('type_person_four_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 86,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_four_binaural_payment_extension'),
+                'type_person_id': ref('type_person_seven_binaural_payment_extension')
+            })]"/>
+        </record>
+
+        <record id="payment_concept_seven_binaural_payment_extension" model="payment.concept">
+            <field name="name">Comisiones pagadas a</field>
+            <field name="status">True</field>
+            <field name="line_payment_concept_ids" eval="[
+            (0,0,{
+                'code': 14,
+                'pay_from': 0.13,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_substrat_binaural_payment_extension'),
+                'type_person_id': ref('type_person_binaural_payment_extension') 
+            }),
+            (0,0,{
+                'code': 16,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_one_binaural_payment_extension'),
+                'type_person_id': ref('type_person_three_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 15,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_two_binaural_payment_extension'),
+                'type_person_id': ref('type_person_two_binaural_payment_extension')
+            }),
+            (0,0,{
+                'code': 17,
+                'pay_from': 0.00,
+                'percentage_tax_base': 100,
+                'tariff_id': ref('fees_retention_data_percentage_one_binaural_payment_extension'),
+                'type_person_id': ref('type_person_four_binaural_payment_extension')
+            })]"/>
+        </record>
+    </data>
+</odoo>

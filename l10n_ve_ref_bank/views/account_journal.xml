@@ -2,14 +2,14 @@
 <odoo>
 
     <data>
-        <record id="view_account_journal_form_l10n_ve_ref_bank" model="ir.ui.view">
+        <record id="view_account_journal_form_binaural_ref_bank" model="ir.ui.view">
             <field name="name">view.account.journal.form.binaural.ref.bank</field>
             <field name="model">account.journal</field>
             <field name="inherit_id" ref="account.view_account_journal_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='type']" position="after">
                     <field name="ref_required" invisible="1"/>
-                    <field name="ref_length_required" attrs="{'invisible': ['|',('ref_required','!=',True),('type','!=','bank')]}"/>
+                    <field name="ref_length_required" invisible="not ref_required or type != 'bank'"/>
                 </xpath>
             </field>
         </record>

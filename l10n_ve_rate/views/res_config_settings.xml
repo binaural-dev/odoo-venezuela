@@ -1,22 +1,28 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <record id="res_config_settings_l10n_ve_rate" model="ir.ui.view">
+        <record id="res_config_settings_binaural_rate" model="ir.ui.view">
             <field name="name">res.config.settings.binaural.rate</field>
             <field name="model">res.config.settings</field>
-            <field name="priority" eval="100"/>
-            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="priority" eval="10" />
+            <field name="inherit_id" ref="l10n_ve_base.res_config_settings_view_form_binaural_base" />
             <field name="arch" type="xml">
-                <xpath expr="//div[hasclass('settings')]" position="inside">
-                    <div class="app_settings_block mt-6" data-string="Binaural" string="Binaural" data-key="l10n_ve_rate">
+                <xpath expr="//app[@name='l10n_ve_base']" position="inside">
+                    <div class="app_settings_block mt-6" data-string="Binaural" string="Binaural">
                         <h2>Rates Configuration</h2>
-                        <div class="row mt16 o_settings_container" name="l10n_ve_rate_settings">
+                        <div class="row mt16 o_settings_container" name="binaural_rate_settings">
+                            
                             <div class="o_setting_right_pane">
                                 <group colspan="2" col="4">
                                     <field name="currency_foreign_id" />
                                     <span>Select alternate currency</span>
                                 </group>
-                            </div>    
+                                <div class="text-muted">
+                                Select the alternate currency that the system will use to make an
+                                accounting copy in the selected currency
+
+
+                            </div>
+                            </div>
                         </div>
                     </div>
                 </xpath>

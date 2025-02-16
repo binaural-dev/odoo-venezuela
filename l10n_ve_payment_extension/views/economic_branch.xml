@@ -1,0 +1,57 @@
+
+<odoo>
+
+    <data>
+
+        <record id="view_economic_branch_tree_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.branch.tree.binaural.payment.extension</field>
+            <field name="model">economic.branch</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name" />
+                    <field name="status" />
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_economic_branch_from_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.branch.from.binaural.payment.extension</field>
+            <field name="model">economic.branch</field>
+            <field name="arch" type="xml">
+                <form string="Economic branch">
+                    <sheet string="Economic branch">
+                        <group>
+                            <field name="name" />
+                            <field name="status" />
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_economic_branch_search_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">view.economic.branch.search.binaural.payment.extension</field>
+            <field name="model">economic.branch</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="name" />
+                    <field name="status" />
+                    <filter string="Active" name="status" domain="[('status', '=', 'active')]" />
+                    <group expand="1" string="Group by">
+                        <filter string="Status" name='status' context="{'group_by':'status'}" />
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_economic_branch" model="ir.actions.act_window">
+            <field name="name">economic branch</field>
+            <field name="res_model">economic.branch</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="binding_view_types">form</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+    
+    </data>
+
+</odoo>

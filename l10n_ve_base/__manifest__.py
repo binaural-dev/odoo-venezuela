@@ -7,11 +7,11 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "16.0.0.0.4",
+    "version": "17.0.1.0.0",
     # any module necessary for this one to work correctly
-    "depends": ["base"],
+    "depends": ["base", "base_setup"],
     # always loaded
     "auto_install": True,
-    "data": ["data/ir_config_parameter.xml"],
-    "binaural":True,
+    "data": ["views/res_config_settings_views.xml"],
+    "binaural": True,
 }

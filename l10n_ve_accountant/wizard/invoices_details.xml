@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <record id="account_invoices_details_views" model="ir.ui.view">
         <field name="name">account.invoices.details.view</field>
@@ -15,10 +14,10 @@
                         </group>
                     </group>
                 </sheet>
+                <footer>
+                    <button name="%(l10n_ve_accountant.action_account_invoices_details_report)d" type="action" string="Print"/>
+                </footer>
             </form>
-            <footer>
-                <button name="%(l10n_ve_accountant.action_account_invoices_details_report)d" type="action" string="Print"/>
-            </footer>
         </field>
     </record>
 

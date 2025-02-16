@@ -1,0 +1,31 @@
+<odoo>
+
+	<record id="library_rent_wizard_form" model="ir.ui.view">
+		<field name="name">Generar Comprobante</field>
+		<field name="model">wizard.retention.iva</field>
+		<field name="arch" type="xml">
+			<form string="Generate TXT">
+				<sheet>
+					<group>
+						<field name="date_start"/>
+					</group>
+					<group>
+						<field name="date_end"/>
+					</group>
+				</sheet>
+				<footer>
+					<button string="Generate TXT" type="object" name="generate_txt" class="btn-primary"/>
+					<button string="Cancel" class="btn-default" special="cancel"/>
+				</footer>
+			</form>
+		</field>
+	</record>
+
+	<record id="action_generate_txt" model="ir.actions.act_window">
+		<field name="name">Generate TXT</field>
+		<field name="res_model">wizard.retention.iva</field>
+		<field name="view_mode">form</field>
+		<field name="target">new</field>
+	</record>
+    
+</odoo>

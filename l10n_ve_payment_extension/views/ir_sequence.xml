@@ -1,0 +1,31 @@
+
+<odoo>
+    <data>
+        <record id="ir_sequence_form_iva" model="ir.actions.act_window">
+            <field name="name">Sequences_iva</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">ir.sequence</field>
+            <field name="view_mode">tree,form</field>
+            <field name="res_id" eval="False"/>
+            <field name="domain">[('code', '=','retention.iva.control.number')]</field>
+        </record>
+
+        <record id="ir_sequence_form_islr" model="ir.actions.act_window">
+            <field name="name">Sequences_islr</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">ir.sequence</field>
+            <field name="view_mode">tree,form</field>
+            <field name="res_id" eval="False"/>
+            <field name="domain">[('code', '=','retention.islr.control.number')]</field>
+        </record>
+
+        <record id="ir_sequence_form_municipal" model="ir.actions.act_window">
+            <field name="name">Sequences_municipal</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">ir.sequence</field>
+            <field name="view_mode">tree,form</field>
+            <field name="res_id" eval="False"/>
+            <field name="domain">[('code', '=','retention.municipal.control.number')]</field>
+        </record>
+    </data>
+</odoo>

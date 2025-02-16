@@ -6,12 +6,12 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "1.6.0.0.5",
+    "version": "17.0.1.0.0",
     # any module necessary for this one to work correctly
     "depends": [
         "account_fiscal_year_closing",
         "l10n_ve_contact",
-        "l10n_ve_rate",        
+        "l10n_ve_rate",
     ],
     # always loaded
     "data": [
@@ -20,5 +20,5 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "binaural":True,
+    "binaural": True,
 }

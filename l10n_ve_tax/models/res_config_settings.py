@@ -4,7 +4,7 @@ from odoo import api, fields, models
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
-    module_l10n_ve_igtf = fields.Boolean(related="company_id.module_l10n_ve_igtf", readonly=False)
+    module_l10n_ve_igtf = fields.Boolean(readonly=False)
 
     unique_tax = fields.Boolean(related="company_id.unique_tax", readonly=False)
 

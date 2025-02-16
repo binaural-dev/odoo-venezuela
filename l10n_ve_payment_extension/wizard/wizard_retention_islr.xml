@@ -1,0 +1,36 @@
+
+<odoo>
+	<data>
+
+		<record id="wizard_retention_islr_view" model="ir.ui.view">
+			<field name="name">wizard.retention.islr.view</field>
+			<field name="model">wizard.retention.islr</field>
+			<field name="arch" type="xml">
+				<form string="ISLR Retention Wizard">
+					<sheet>
+						<group>
+							<group>
+								<field name="report" invisible="1"/>
+								<field name="company_id" string="Company" invisible="1"/>
+								<field name="date_start"/>
+								<field name="date_end"/>
+							</group>
+						</group>
+					</sheet>
+					<footer>
+						<button name="print_report" string="Print Excel" type="object" class="oe_highlight"/>
+					</footer>
+				</form>
+			</field>
+		</record>
+
+		<record id="action_retention_islr" model="ir.actions.act_window">
+			<field name="name">XML Retenciones de ISLR</field>
+			<field name="res_model">wizard.retention.islr</field>
+			<field name="view_mode">form</field>
+			<field name="target">new</field>
+			<field name="context">{'default_report': 'islr'}</field>
+		</record>
+        
+	</data>
+</odoo>
