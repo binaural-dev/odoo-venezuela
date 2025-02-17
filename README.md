@@ -75,6 +75,8 @@ Estamos trabajando para mejorar continuamente esta localización. Entre nuestros
 ## Descargo de Responsabilidad
 Esta localización se proporciona "tal cual", sin garantías de ningún tipo, expresas o implícitas. El uso de esta localización es bajo tu propia responsabilidad. Binaural C.A. no se hace responsable por el uso indebido del software o por incumplimientos legales derivados de su implementación.
 
+---
+
 Queremos dar un especial agradecimiento a las personas que han colaborado con este proyecto a lo largo de todos estos años, algunos ya no 
 forman parte directa de nuestro equipo pero han aportado a este proyecto y queremos hacer una valiosa mencion:
 - Daniela Gomez : [@DanielaGomezR93](https://github.com/DanielaGomezR93)
