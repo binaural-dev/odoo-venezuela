@@ -82,5 +82,25 @@ Esta localización se proporciona "tal cual", sin garantías de ningún tipo, ex
 
 ---
 
+Queremos dar un especial agradecimiento a las personas que han colaborado con este proyecto a lo largo de todos estos años, algunos ya no 
+forman parte directa de nuestro equipo pero han aportado a este proyecto y queremos hacer una valiosa mencion:
+- Daniela Gomez : [@DanielaGomezR93](https://github.com/DanielaGomezR93)
+- Anderson Armeya : [@andyengit](https://github.com/andyengit)
+- Miguel Gozaine : [@miguel-binaural](https://github.com/miguel-binaural)
+- Carlos Linares : [@Carlos-Lin-Binaural](https://github.com/Carlos-Lin-Binaural)
+- Yeison Asuaje : [@yeisonasuaje](https://github.com/yeisonasuaje)
+- Ana Paulina Calles : [@binapaulina](https://github.com/binapaulina)
+- Bryan Garcia : [@AlebgDev](https://github.com/AlebgDev)
+- Ysabel Godoy : [@ysabelgodoydelgado](https://github.com/ysabelgodoydelgado)
+- Mariuska Parra
+- Valmore Canelon
+- Raiver Figueroa : [@raiver28](https://github.com/raiver28)
+- Manuel Guerrero : [@manuelgc1201](https://github.com/manuelgc1201)
+
+
+Y todas aquellas personas de nuestro equipo interno quienes de alguna y otra forma han colaborado con nuestro equipo.
+
+---
+
 ¡Gracias por ser parte de este proyecto y por contribuir al crecimiento tecnológico de Venezuela! Si tienes preguntas o necesitas ayuda, no dudes en contactarnos.
 
