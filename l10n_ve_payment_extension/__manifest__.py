@@ -6,8 +6,9 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "17.0.1.0.4",
+    "version": "17.0.1.0.5",
     # any module necessary for this one to work correctly
+    "external_dependencies": {"python": ["pandas"]},
     "depends": [
         "base",
         "account",
