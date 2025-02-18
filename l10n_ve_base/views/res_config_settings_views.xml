@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <app data-string="Binaural Settings" string="Binaural Settings" name="l10n_ve_base">
-                    <block id="l10n_ve_block_base">
+                    <block id="l10n_ve_block_base" invisible="1">
                         <setting id="l10n_ve_setting_base"/>
                     </block>
                 </app>
