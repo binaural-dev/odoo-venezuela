@@ -30,5 +30,6 @@ class AccountChartTemplate(models.AbstractModel):
                 "expense_currency_exchange_account_id": "account_activa_account_9113006",
                 "account_sale_tax_id": "tax1sale",
                 "account_purchase_tax_id": "tax1purchase",
+                "tax_calculation_rounding_method": "round_globally",
             },
         }
