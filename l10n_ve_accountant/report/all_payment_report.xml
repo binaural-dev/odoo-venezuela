@@ -1,18 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
 
-    <report
-        id="l10n_ve_accountant.action_report_all_payments"
-        model="payment.report"
-        string="Informe de pagos"
-        menu="False"
-        report_type="qweb-pdf"
-        name="l10n_ve_accountant.financial_all_payments"
-        file="l10n_ve_accountant.financial_all_payments"
-    />
+    <record id="action_report_all_payments" model="ir.actions.report">
+        <field name="name">Informe de pagos</field>
+        <field name="model">payment.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">l10n_ve_accountant.financial_all_payments</field>
+        <field name="report_file">l10n_ve_accountant.financial_all_payments</field>
+    </record>
 
 
-    <template id="l10n_ve_accountant.financial_all_payments">
+    <template id="financial_all_payments">
             <t t-call="web.html_container">
 		        <xpath expr="//t[@t-call='web.report_layout']" position="replace">
 			    

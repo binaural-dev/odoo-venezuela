@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
 
     <data>
 
-        <record id="view_account_invoice_report_pivot_l10n_ve_invoice" model="ir.ui.view">
+        <record id="view_account_invoice_report_pivot_binaural_invoice" model="ir.ui.view">
             <field name="name">view.account.invoice.report.pivot.binaural.invoice</field>
             <field name="model">account.invoice.report</field>
             <field name="inherit_id" ref="account.view_account_invoice_report_pivot"/>
@@ -16,7 +16,7 @@
             </field>
         </record>
 
-        <record id="view_account_invoice_report_graph_l10n_ve_invoice" model="ir.ui.view">
+        <record id="view_account_invoice_report_graph_binaural_invoice" model="ir.ui.view">
             <field name="name">view.account.invoice.report.pivot.binaural.invoice</field>
             <field name="model">account.invoice.report</field>
             <field name="inherit_id" ref="account.view_account_invoice_report_graph"/>
@@ -29,25 +29,6 @@
             </field>
         </record>
 
-        <record id="view_account_invoice_report_search_l10n_ve_invoice" model="ir.ui.view">
-            <field name="name">view.account.invoice.report.pivot.binaural.invoice</field>
-            <field name="model">account.invoice.report</field>
-            <field name="inherit_id" ref="account.view_account_invoice_report_search"/>
-            <field name="arch" type="xml">
-                <search position="inside">
-                    <field name="foreign_subtotal" />
-                    <field name="foreign_rate" />
-                    <field name="foreign_price_total" />
-                </search>
-                <group position="inside">
-                    <filter name="foreign_subtotal" string="Foreign Total Billed" domain="[]" context="{'group_by':'foreign_subtotal'}"/>
-                    <filter name="foreign_rate" string="Foreign Rate" domain="[]" context="{'group_by':'foreign_rate'}"/>
-                    <field name="foreign_price_total" string="Foreign price total" />
-                </group>
-
-            </field>
-
-        </record>
     </data>
     
 

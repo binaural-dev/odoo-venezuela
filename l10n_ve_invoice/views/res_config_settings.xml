@@ -1,24 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
     <data>
-        <record id="res_config_settings_l10n_ve_invoice" model="ir.ui.view">
+        <record id="res_config_settings_binaural_invoice" model="ir.ui.view">
             <field name="name">res.config.settings.binaural.rate</field>
             <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate"/>
+            <field name="inherit_id" ref="l10n_ve_base.res_config_settings_view_form_binaural_base"/>
             <field name="arch" type="xml">
-                <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
+                <xpath expr="//app[@name='l10n_ve_base']" position="inside">
                     <h2>Invoice Configuration</h2>
                     <div class="row mt16 o_settings_container" name="invoice_settings">
                         <div class="col-12 col-lg-6 o_setting_box" id="multiple_prices_setting">
                             <div class="o_setting_left_pane">
                             </div>
                             <div class="o_setting_right_pane">
-                                <group colspan="2" col="4">
-                                    <field name="max_product_invoice"/>
-                                </group>
-                                <div class="text-muted">
-                                   Limit the number of products on an invoice 
+                                <div>
+                                    limit the number of lines that can be printed on a free form invoice
+
                                 </div>
+                                <field name="max_product_invoice"/>
                             </div>
                         </div>
 

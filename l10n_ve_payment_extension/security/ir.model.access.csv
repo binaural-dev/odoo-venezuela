@@ -1,0 +1,29 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_binaural_account_retention,binaural_account_retention,model_account_retention,account.group_account_invoice,1,1,1,1
+access_binaural_account_retention_line,binaural_account_retention_line,model_account_retention_line,account.group_account_invoice,1,1,1,1
+
+access_binaural_account_retention_1,binaural_account_retention,model_account_retention,account.group_account_readonly,1,0,0,0
+access_binaural_account_retention_line_1,binaural_account_retention_line,model_account_retention_line,account.group_account_readonly,1,0,0,0
+
+access_binaural_account_retention_2,binaural_account_retention,model_account_retention,account.group_account_manager,1,1,1,1
+access_binaural_account_retention_line_2,binaural_account_retention_line,model_account_retention_line,account.group_account_manager,1,1,1,1
+
+access_binaural_account_retention_3,binaural_account_retention,model_account_retention,account.group_account_user,1,1,1,1
+access_binaural_account_retention_line_3,binaural_account_retention_line,model_account_retention_line,account.group_account_user,1,1,1,1
+
+access_type_withholdind,id_type_withholdind,model_account_withholding_type,base.group_user,1,1,1,1
+access_type_person,id_type_person,model_type_person,base.group_user,1,1,1,1
+access_tax_unit,Unidad Tributaria,model_tax_unit,base.group_user,1,1,1,1
+access_fees,Tarifas,model_fees_retention,base.group_user,1,1,1,1
+access_fees_acumulative,Tarifas Acumulada,model_accumulated_fees,base.group_user,1,1,1,1
+access_payment_concept,Concepto de Pago,model_payment_concept,base.group_user,1,1,1,1
+access_payment_concept_line,Linea de Concepto de Pago,model_payment_concept_line,base.group_user,1,1,1,1
+access_configurate_signature,Configuraciones de firma,model_signature_config,base.group_user,1,1,1,1
+access_economic_branch,Maestro de Ramo economico,model_economic_branch,base.group_user,1,1,1,1
+access_economic_activity,Maestro de Actividad economica,model_economic_activity,base.group_user,1,1,1,1
+access_wizard_accounting_reports_islr,binaural_wizard_accounting_reports_islr,model_wizard_retention_islr,base.group_user,1,1,1,1
+access_wizard_accounting_reports_iva,binaural_wizard_accounting_reports_iva,model_wizard_retention_iva,base.group_user,1,1,1,1
+access_municipal_retention_xlsx_report,municipal_retention_xlsx_report,model_municipal_retention_xlsx_report,base.group_user,1,1,1,1
+access_municipal_retention_patent_report,municipal_retention_patent_report,model_municipal_retention_patent_report,base.group_user,1,1,1,1
+access_retention_line_report,retention_line_report,model_retention_line_report,base.group_user,1,0,0,0
+access_arcv_report,arcv_report,model_arcv_report,base.group_user,1,1,1,0

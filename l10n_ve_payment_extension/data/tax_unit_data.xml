@@ -1,0 +1,10 @@
+
+<odoo>
+    <data noupdate="1">
+        <record id="tax_unit_data_binaural_payment_extension" model="tax.unit">
+            <field name="name">0,40</field>
+            <field name="value">0.4</field>
+            <field name="status">True</field>
+        </record>
+    </data>
+</odoo>

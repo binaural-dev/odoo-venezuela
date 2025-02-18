@@ -56,7 +56,10 @@ Esta localización incluye los siguientes módulos, diseñados para cumplir con 
 5. **l10n_ve_location**
    - Incorporación de estados, municipios y parroquias de Venezuela en el módulo de contactos.
 
-Adicionalmente encontraras otros modulos que se describen por si mismos.
+6. **l10n_ve_fiscal**
+   - Configuración de libros fiscales y reportes contables para organismos reguladores.
+
+(Nota: Agregar una lista detallada basada en los módulos específicos incluidos en tu localización).
 
 ## TODO: Planteamientos Futuros
 Estamos trabajando para mejorar continuamente esta localización. Entre nuestros próximos pasos están:
@@ -102,3 +105,6 @@ Y todas aquellas personas de nuestro equipo interno quienes de alguna y otra for
 ¡Gracias por ser parte de este proyecto y por contribuir al crecimiento tecnológico de Venezuela! Si tienes preguntas o necesitas ayuda, no dudes en contactarnos.
 
 hola2
+
+HOLA
+

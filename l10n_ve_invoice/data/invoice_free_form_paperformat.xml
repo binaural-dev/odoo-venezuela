@@ -1,8 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
 
     <data noupdate="1">
-        <record id="invoice_free_form_paperformat_l10n_ve_invoice" model="report.paperformat">
+        <record id="invoice_free_form_paperformat_binaural_invoice" model="report.paperformat">
             <field name="name">Free Form Paperformat</field>
             <field name="default" eval="True"/>
             <field name="format">A4</field>

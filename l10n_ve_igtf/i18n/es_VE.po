@@ -1,0 +1,360 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_igtf
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20241210\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-12-17 16:08+0000\n"
+"PO-Revision-Date: 2024-12-17 16:08+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_igtf
+#. odoo-javascript
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#, python-format
+msgid "(Suggested)"
+msgstr "(Sugerido)"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.report_freeform_document
+msgid ""
+"<span>Todo pago està sujeto a la aplicaciòn de la  <strong>LIGTF GO 6687 y la PA SNAT/2022/000013</strong></span>\n"
+"                <span>Se designa a sujetos pasivos especiales como Agente de Percepciòn del <strong>IGTF 3%</strong></span>"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#. odoo-javascript
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__bi_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__bi_igtf
+#, python-format
+msgid "BI IGTF"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_res_company
+msgid "Companies"
+msgstr "Empresas"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__customer_account_igtf_id
+msgid "Customer Account Igtf"
+msgstr "Cuenta de cliente de IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__customer_account_igtf_id
+msgid "Customer IGTF Account"
+msgstr "Cuenta de cliente de IGTF"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_binaural_rate
+msgid "Facturación con IGTF"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields.selection,name:l10n_ve_igtf.selection__res_company__taxpayer_type__formal
+msgid "Formal"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#. odoo-javascript
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#, python-format
+msgid "IGTF"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__igtf_account_expense
+msgid "IGTF Account Expense"
+msgstr "Cuenta de Proveedor Gasto de IGTF del 2%"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__amount_to_pay_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__amount_to_pay_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_to_pay_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__amount_to_pay_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__amount_to_pay_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__amount_to_pay_igtf
+msgid "IGTF Paid"
+msgstr "IGTF Pagado"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__igtf_percentage
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__igtf_percentage
+msgid "IGTF Percentage"
+msgstr "Porcentaje de IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__amount_residual_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__amount_residual_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_residual_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__amount_residual_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__amount_residual_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__amount_residual_igtf
+msgid "IGTF Residual"
+msgstr "IGTF Restante"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__igtf_two_percentage_account
+msgid "IGTF Two Percentage Account"
+msgstr "Cuenta de Proveedor del IGTF 2%"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__is_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__is_igtf
+msgid "IGTF active"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__igtf_account_expense
+msgid "Igtf Account Expense"
+msgstr "Cuenta de Proveedor Gasto de IGTF del 2%"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__igtf_two_percentage_account
+msgid "Igtf Two Percentage Account"
+msgstr "Cuenta de Proveedor del IGTF 2%"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__is_two_percentage
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__is_two_percentage
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__is_two_percentage
+msgid "Is two percentage"
+msgstr "Es un porcentaje de dos porciento"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__journal_igtf_expense
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__journal_igtf_expense
+msgid "Journal IGTF Expense"
+msgstr "Diario para IGTF del 2%"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields.selection,name:l10n_ve_igtf.selection__res_company__taxpayer_type__ordinary
+msgid "Ordinary"
+msgstr "Ordinario"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__amount_paid
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__amount_paid
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_paid
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__amount_paid
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__amount_paid
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__amount_paid
+msgid "Paid"
+msgstr "Importe pagado"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__show_igtf_suggested_account_move
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__show_igtf_suggested_account_move
+msgid "Show Igtf Suggested Account Move"
+msgstr "Mostrar sugerencia de IGTF en asientos contables"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__show_igtf_suggested_sale_order
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__show_igtf_suggested_sale_order
+msgid "Show Igtf Suggested Sale Order"
+msgstr "Mostrar sugerencia de IGTF en pedidos de venta"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_binaural_rate
+msgid ""
+"Show suggestion of the igtf amount based on the total amount\n"
+"                                        of the Invoice"
+msgstr ""
+"Permite mostrar la sugerencia del IGTF en base al total\n"
+"                                        de la factura"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_binaural_rate
+msgid ""
+"Show suggestion of the igtf amount based on the total amount\n"
+"                                        of the Order"
+msgstr ""
+"Permite mostrar la sugerencia del IGTF en base al total\n"
+"                                        de la factura"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_binaural_rate
+msgid ""
+"Show suggestion of the igtf amount based on the total amount\n"
+"                                    of the Order"
+msgstr ""
+"Permite mostrar la sugerencia del IGTF en base al total\n"
+"                                        de la factura"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields.selection,name:l10n_ve_igtf.selection__res_company__taxpayer_type__special
+msgid "Special"
+msgstr "Especial"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__supplier_account_igtf_id
+msgid "Supplier Account Igtf"
+msgstr "Cuenta de proveedor de IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__supplier_account_igtf_id
+msgid "Supplier IGTF Account"
+msgstr "Cuenta de proveedor de IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_account_tax
+msgid "Tax"
+msgstr "Impuesto"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__taxpayer_type
+msgid "Taxpayer Type"
+msgstr "Tipo de contribuyente"
+
+#. module: l10n_ve_igtf
+#. odoo-javascript
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#: code:addons/l10n_ve_igtf/static/src/components/tax_totals/tax_totals.xml:0
+#, python-format
+msgid "Total with IGTF"
+msgstr "Total con IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__bi_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__bi_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__bi_igtf
+msgid "subtotal with igtf"
+msgstr "Subtotal con IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_with_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_with_igtf
+msgid "Amount with IGTF"
+msgstr "Monto con IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__amount_without_difference
+msgid "Amount without Difference"
+msgstr "Monto sin IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__default_is_igtf_config
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_journal__default_is_igtf_config
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__default_is_igtf_config
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__default_is_igtf_config
+msgid "Default Is Igtf Config"
+msgstr "Configuración de IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.actions.server,name:l10n_ve_igtf.action_fix_bi_igtf_invoices
+msgid "Fix Binaural BI IGTF Invoices"
+msgstr "Recalcular BI de IGTF en Facturas"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__is_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__is_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__is_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment_register__is_igtf
+msgid "IGTF"
+msgstr ""
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__igtf_amount
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_amount
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__igtf_amount
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment_register__igtf_amount
+msgid "IGTF Amount"
+msgstr "Monto de IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__igtf_percentage
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__igtf_percentage
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__igtf_percentage
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment_register__igtf_percentage
+msgid "IGTF Percentage"
+msgstr "Porcentaje de IGTF"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_payment.py:0
+#: code:addons/l10n_ve_igtf/models/account_payment.py:0
+#, python-format
+msgid "IGTF already exists in the move line values"
+msgstr "El IGTF ya existe en los valores de las lineas de pago"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__is_igtf_on_foreign_exchange
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment_register__is_igtf_on_foreign_exchange
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__is_igtf_on_foreign_exchange
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment_register__is_igtf_on_foreign_exchange
+msgid "IGTF on Foreign Exchange?"
+msgstr "¿Aplica IGTF?"
+
+#. module: l10n_ve_igtf
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.account_payment_igtf_view_form
+#: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_account_payment_register_form_igtf
+msgid "IGTF("
+msgstr "IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_journal__is_igtf
+msgid "Is a IGTF journal?"
+msgstr "¿Es un diario de IGTF?"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_account_journal
+msgid "Journal"
+msgstr "Diario"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__payment_igtf_id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__payment_igtf_id
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__payment_igtf_id
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_bank_statement_line__payment_igtf_id
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move__payment_igtf_id
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__payment_igtf_id
+msgid "Payment IGTF"
+msgstr "Pago de IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_account_payment
+msgid "Payments"
+msgstr "Pagos"
+
+#. module: l10n_ve_igtf
+#: model:ir.model,name:l10n_ve_igtf.model_account_payment_register
+msgid "Register Payment"
+msgstr "Registrar pago"

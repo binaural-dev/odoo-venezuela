@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
-    <record id="view_account_move_form_l10n_ve_invoice" model="ir.ui.view">
+    <record id="view_account_move_form_binaural_invoice" model="ir.ui.view">
         <field name="name">view.account.move.form.binaural.invoice</field>
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
@@ -12,62 +12,39 @@
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//div[hasclass('oe_title')]/h1" position="attributes">
-                <attribute name="attrs">{'invisible': [('move_type', 'not in', ('in_invoice', 'in_refund', 'in_receipt')), ('posted_before', '=', False), ('is_contingency', '=', False)]}</attribute>
+                <attribute name="invisible">move_type not in ('in_invoice', 'in_refund', 'in_receipt') and not posted_before and not is_contingency</attribute>
             </xpath>
 
             <field name="name" position="attributes">
-		<attribute name="attrs">
-		    {
-			'readonly': ['&amp;', '|', ('move_type', 'in', ('out_invoice', 'out_refund')), ('is_contingency', '=', False), ('state', '=', 'posted')],
-			'required': ['|', ('move_type', 'in', ('in_invoice', 'in_refund', 'in_receipt')), ('is_contingency', '=', True)]
-		    }
-		</attribute>
-                <attribute name="placeholder">JRNL/2016/00001</attribute>
+		<attribute name="readonly">(move_type in ('out_invoice', 'out_refund') or not is_contingency) and state == 'posted'</attribute>
+		<attribute name="required">move_type in ('in_invoice', 'in_refund', 'in_receipt') or is_contingency</attribute>
+		<attribute name="placeholder">JRNL/2016/00001</attribute>
             </field>
 
-            <xpath expr="//div[hasclass('oe_title')]/h1" position="after">
-                <div class="inline-block"></div>
-                <label for="correlative"
-                    style="font-weight: bold;"
-                    attrs="{'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],}"/>
-                <!-- attrs of "correlative" is overwritten in l10n_ve_commissions/account_move_views.xml -->
+            <xpath expr="//group[@id='header_left_group']/label" position="before">
+                <!-- attrs of "correlative" is overwritten in binaural_commissions/account_move_views.xml -->
                 <field name="correlative"
-                    attrs="{
-                        'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],
-                        'readonly':  ['|', '&amp;', ('move_type', 'in', ['out_invoice', 'out_refund']), ('is_contingency', '=', False), ('state', '=', 'posted')],
-                        'required':  [('move_type', 'in', ['in_invoice', 'in_refund'])]
-                    }"/>
+                    invisible="move_type not in ['out_invoice', 'out_refund', 'in_invoice', 'in_refund']"
+                    readonly="(move_type in ['out_invoice', 'out_refund'] and not is_contingency) or state == 'posted'"
+                    required="move_type in ['in_invoice', 'in_refund']"/>
             </xpath>
 
-            <xpath expr="//label[@for='partner_id'][1]" position="before">
-                <field name="partner_id_domain" invisible="1"/>
-                <field name="filter_partner" attrs="{'invisible': [('move_type', '=', 'entry')]}"/>
-            </xpath>
+            <!-- <xpath expr="//label[@for='partner_id'][1]" position="before"> -->
+            <!--     <field name="partner_id_domain" invisible="1"/> -->
+            <!--     <field name="filter_partner" invisible="move_type == 'entry'"/> -->
+            <!-- </xpath> -->
 
-            <xpath expr="//field[@name='partner_id']" position="attributes">
-               <attribute name="domain">partner_id_domain</attribute> 
-            </xpath>
+            <!-- <xpath expr="//field[@name='partner_id']" position="attributes"> -->
+            <!--    <attribute name="domain">partner_id_domain</attribute> --> 
+            <!-- </xpath> -->
 
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="invoice_reception_date"
                     options="{'datepicker': {'warn_future': true}}"
-                    attrs="{
-                        'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'out_receipt','in_invoice', 'in_refund', 'in_receipt'))],
-                        'readonly':  [('state', '=', 'draft')]
-                    }"/>
+                    invisible="move_type not in ('out_invoice', 'out_refund', 'out_receipt', 'in_invoice', 'in_refund', 'in_receipt')"
+                    readonly="state == 'draft'"/>
             </xpath>
         </field>
-    </record>
-
-    <record id="view_account_move_od_journal_sequence" model="ir.ui.view">
-        <field name="name">view.account.move.od.journal.sequence</field>
-        <field name="model">account.move</field>
-        <field name="inherit_id" ref="od_journal_sequence.view_move_form"/>
-        <field name="arch" type="xml">
-	    <xpath expr="//field[@name='name']" position="attributes">
-                <attribute name="readonly">False</attribute>
-            </xpath>
-	</field>
     </record>
 
         <!-- ACTION OUT_INVOICE -->
@@ -149,7 +126,7 @@
 
 
         <!-- ORDER FIELD -->
-        <record id="account_move_form_l10n_ve_account_move" model="ir.ui.view">
+        <record id="account_move_form_binaural_account_move" model="ir.ui.view">
             <field name="name">account.move.form.binaural.account.move</field>
             <field name="model">account.move</field>
             <field name="inherit_id" ref="account.view_move_form"/>
@@ -161,7 +138,7 @@
             </field>
         </record>
 
-        <record id="l10n_ve_invoice_view_invoice_tree" model="ir.ui.view">
+        <record id="binaural_invoice_view_invoice_tree" model="ir.ui.view">
             <field name="name">account.move.tree.binaural.invoice</field>
             <field name="model">account.move</field>
             <field name="inherit_id" ref="account.view_invoice_tree"/>

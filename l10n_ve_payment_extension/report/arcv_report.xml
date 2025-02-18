@@ -1,0 +1,242 @@
+<odoo>
+    <data>
+	<record id="action_report_arcv" model="ir.actions.report">
+	   <field name="name">ARCV Report</field>
+	   <field name="model">arcv.report</field>
+	   <field name="report_type">qweb-pdf</field>
+	   <field name="report_name">l10n_ve_payment_extension.report_template_arcv</field>
+	   <field name="report_file">l10n_ve_payment_extension.report_template_arcv</field>
+	   <field name="print_report_name">'Comprobante_ARCV'</field>
+	   <field name="paperformat_id" ref="paperformat_arcv"/>
+	</record>
+
+        <template id="report_template_arcv">
+            <t t-call="web.html_container">
+                <t>
+                    <t t-call="web.basic_layout">
+                        <div style="margin-top: 0px" class="page">
+	                        <style>
+	                            th,td{ white-space: nowrap;overflow: hidden;text-overflow: ellipsis;text-align: center;}
+	                            thead { display: table-header-group }
+	                            tfoot { display: table-row-group }
+	                            tr { page-break-inside: avoid }
+	                            .clth{
+	                                    border-top: 6px double black;
+	                                    border-bottom: 6px double black;
+	                            }
+	                            .cltt{
+	                                    border-top: 2px solid black;
+	                                    font-weight: 600;
+	                            }
+		                        .fw{
+		                                font-weight: 600;
+		                        }
+		                        .tal{
+		                                text-align: left;
+		                        }
+								.borderlessr {
+									border-right: 1px solid white !important;
+								}
+								.borderlessb {
+									border-bottom: 1px solid white !important;
+								}
+	                        </style>
+                            	<table style="width:100%;">
+                                    <tr>
+				    	<td colspan="4">
+					    <img
+						t-if="res_company.logo"
+					    	t-att-src="image_data_uri(res_company.logo)"
+					    	style="width:180px; display: block; margin-left: auto; margin-right: auto;"
+					    />
+				    	</td>
+                                    	<td colspan="8">
+                                            <h1 style="font-weight: bold;text-align:center">Comprobante de retención de Impuesto Sobre La Renta (ISLR)</h1>
+					    <h1 style="font-weight: bold;text-align:center">ARCV</h1><br/>
+                                            <span style="text-align:center">(Decreto 1.808 de 1997, Art. 24: "... el agente de retención estara obligado a entregar a los beneficiarios,<br/> una relación del total de las cantidades pagadas ó abonadas en cuenta y de lo impuestos retenidos en el <br/> ejercicio ..."</span>
+                                    	</td>
+                                    </tr>
+                            	</table>
+                            	<br/>
+	                        <table class="table-condensed" style="width:100%">
+	                            <tr>
+					<td style="border: 1px solid black;" colspan="6">
+					    <label class="fw">Periodo: </label>
+					    <span t-out="data['period']['start']"/> -
+					    <span t-out="data['period']['end']"/>
+				        </td>
+					<td style="border: 1px solid black;" colspan="6">
+					    <label class="fw">Fecha: </label>
+					    <span t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+					</td>
+				    </tr>
+	                        </table>
+	                        <br/>
+	                        <table class="table-condensed" style="width:100%">
+	                            <tr>
+					<td colspan="6">
+					    <span>DATOS DEL AGENTE DE RETENCIÓN AR-CV</span>
+					</td>
+					<td colspan="6">
+					    <span>DATOS DEL BENEFICIARIO</span>
+					</td>
+				    </tr>
+		                    <tr>
+					<td style="border: 1px solid black;" colspan="6">
+					    <span>PERSONA JURIDICA</span>
+					</td>
+					<td style="border: 1px solid black;" colspan="6">
+					    <span>PERSONA JURIDICA DOMICILIADA</span>
+					</td>
+				    </tr>
+		                    <tr>
+					<td style="text-align: left;border: 1px solid black;padding-left: 10px;" colspan="6">
+					    <span class="tal">Nombre o Razón Social:</span><br/>
+					    <span class="fw tal" t-out="res_company.name"/><br/>
+					    <span class="tal">Dirección:</span><br/>
+					    <span class="fw tal" t-out="res_company.partner_id.street"/><span t-esc="res_company.partner_id.street2"/><br/>
+					    <span class="tal">Teléfono: </span>
+					    <span class="fw tal" t-out="res_company.partner_id.phone"/><br/>
+					    <span class="tal">RIF: </span>
+					    <span t-out="res_company.partner_id.vat"/>
+					</td>
+					<td style="text-align: left;border: 1px solid black;padding-left: 10px;" colspan="6">
+					    <span class="tal">Nombre o Razón Social:</span><br/>
+					    <span class="fw tal" t-out="data['partner']['name']"/><br/>
+					    <span class="tal">Dirección:</span><br/>
+					    <span class="fw tal" t-out="data['partner']['street']"/><span t-esc="data['partner']['street2']"/><br/>
+					    <span class="tal">Teléfono: </span>
+					    <span class="fw tal" t-out="data['partner']['phone']"/><br/>
+					    <span class="tal">RIF: </span>
+					    <span class="fw tal" t-out="data['partner']['vat']"/>
+					</td>
+				    </tr>
+	                        </table>
+                            <br/>
+	                    <table class="table-condensed" style="width:100%">
+	                        <tr>
+				    <td colspan="12">
+					<h1 text-align="center">Información del impuesto retenido y enterado</h1>
+				    </td>
+				</tr>
+		                <table style="width:100%;">
+                                    <tr style="border: 1px solid black">
+                                        <th class="text-center">Fecha de pago o abono en cuenta <br/> Año/mes</th>
+                                        <th class="text-center">Total cantidad pagada o abonada en <br/>cuenta</th>
+                                        <th class="text-center">Cantidad objeto de <br/>retención</th>
+                                        <th class="text-center">% o <br/>tarifa</th>
+                                        <th class="text-center">Impuesto <br/>retenido</th>
+                                        <th class="text-center">Impuesto retenido<br/>acumulado</th>
+                                    </tr>
+									<t t-set="invoice_paid_amount_not_related_with_retentions" t-value="0"/>
+									<t t-set="total_invoice_amount" t-value="0"/>
+									<t t-set="total_retention_amount" t-value="0"/>
+									<t t-set="total_retention_amount_accumulated" t-value="0"/>
+                                    <t t-if="len(data['retentions']) != 0">
+										<t t-foreach="data['retentions']" t-as="line">
+											<tr>
+												<td class="text-center"><span t-out="line['period']"/></td>
+												<td style="text-align: center"><span t-out="line['invoice_paid_amount_not_related_with_retentions']" t-options='{"widget": "monetary", "display_currency": currency}'>--</span></td>
+												<t t-set="invoice_paid_amount_not_related_with_retentions"
+													t-value="invoice_paid_amount_not_related_with_retentions + line['invoice_paid_amount_not_related_with_retentions']"/>
+												<t t-if="currency.id != line['currency']">
+														
+													<td style="text-align: center"><span t-out="line['total_foreign_invoice_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+													<t t-set="total_invoice_amount"
+														t-value="total_invoice_amount + line['total_foreign_invoice_amount']"/>
+													
+													<td style="text-align: right"><span t-out="line['percentage_fees']"/> %</td>
+		
+													<td style="text-align: right"><span t-out="line['total_foreign_retention_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+													<t t-set="total_retention_amount"
+														t-value="total_retention_amount + line['total_foreign_retention_amount']"/>
+		
+													<td style="text-align: right">
+														<t t-set="total_retention_amount_accumulated"
+															t-value="total_retention_amount_accumulated + line['total_foreign_retention_amount']"/>
+														<span t-out="total_retention_amount_accumulated" t-options='{"widget": "monetary", "display_currency": currency}'/>
+													</td>
+		
+												</t>
+												<t t-else="">
+		
+													<td style="text-align: center"><span t-out="line['total_invoice_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/><t t-out="line['']"/></td>
+													<t t-set="total_invoice_amount"
+														t-value="total_invoice_amount + line['total_invoice_amount']"/>
+													
+													<td style="text-align: right"><span t-out="line['percentage_fees']"/> %</td>
+		
+													<td style="text-align: right"><span t-out="line['total_retention_amount']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+													<t t-set="total_retention_amount"
+														t-value="total_retention_amount + line['total_retention_amount']"/>
+													
+													<td style="text-align: right">
+														<t t-set="total_retention_amount_accumulated"
+															t-value="total_retention_amount_accumulated + line['total_retention_amount']"/>
+														<span t-out="total_retention_amount_accumulated" t-options='{"widget": "monetary", "display_currency": currency}'/>
+													</td>
+												</t>
+											</tr>
+										</t>
+										
+									</t>
+                                    <t t-else="">
+                                        <tr>
+                                            <td class="text-center">NO HAY DATOS </td>
+                                            <td style="text-align: right"><span>0</span></td>
+                                            <td style="text-align: right"><span>0</span></td>
+                                            <td class="text-center"><span>--</span></td>
+                                            <td style="text-align: right"><span>0</span></td>
+                                            <td style="text-align: right"><span>0</span></td>
+                                        </tr>
+                                    </t>
+
+				    <tr style="font-weight: bold;">
+                                        <td class="text-center"><span>Totales</span></td>
+                                        <td style="text-align: center"><span t-out="invoice_paid_amount_not_related_with_retentions" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                                        <td style="text-align: center"><span t-out="total_invoice_amount" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                                        <td class="text-center"><span>---</span></td>
+										<td style="text-align: right"><span t-out="total_retention_amount" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+										<td style="text-align: right"></td>
+                                    </tr>
+                                </table>
+	                    </table>
+
+                            <br/><br/><br/><br/><br/><br/><br/><br/>
+
+							<table class="table-condensed" style="width:100%;">
+								<tr style="border-top: 1px solid white !important;">
+									<td class="borderlessr" colspan="4" style="width:35%;border-left: 1px solid white !important;">
+										<span text-align="center" style="font-weight: bold;">Agente de Retencion</span>	
+									</td>
+									<td  colspan="4" class="borderlessr borderlessb" style="width:30%;"></td>
+									<td colspan="4" class="borderlessr" style="width:35%;">
+										<span text-align="center" style="font-weight: bold;">Beneficiario</span>
+									</td>
+								</tr>
+								<tr>
+									<td colspan="4" style="border-top: 1px solid black;width:35%;">
+										<span text-align="center">Firma y sello</span>
+									</td>
+									<td colspan="4" class="borderlessb" style="width:30%;"></td>
+									<td colspan="4" style="border-top: 1px solid black; width:35%;">
+										<span text-align="center">Firma y sello</span>
+									</td>
+								</tr>
+								<tr>
+									<td colspan="4" style="border-top: 1px solid black;width:35%;"></td>
+									<td colspan="4" class="borderlessb" style="width:30%;"></td>
+									<td colspan="4" style="border-top: 1px solid black;width:35%;">
+										<br/><br/>
+										<br/><br/>
+										<br/><br/>
+									</td>
+								</tr>
+							</table>
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>

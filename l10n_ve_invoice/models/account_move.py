@@ -11,7 +11,7 @@ _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _name = "account.move"
-    _inherit = ["account.move", "filter.partner.mixin"]
+    _inherit = ["account.move"]
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     invoice_reception_date = fields.Date(
@@ -25,7 +25,7 @@ class AccountMove(models.Model):
 
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
-    @api.constrains("correlative", "is_contingency")
+    @api.constrains("correlative", "journal_id.is_contingency")
     def _check_correlative(self):
         AccountMove = self.env["account.move"]
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
@@ -150,11 +150,10 @@ class AccountMove(models.Model):
         Returns:
             True or False whether the invoice already has a sequence number or not.
         """
-        
         journal_type = self.journal_id.type == "sale"
         is_contingency = self.journal_id.is_contingency
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
-        is_valid = (            
+        is_valid = (
             not self.correlative
             and journal_type
             and (not is_contingency or is_series_invoicing_enabled)

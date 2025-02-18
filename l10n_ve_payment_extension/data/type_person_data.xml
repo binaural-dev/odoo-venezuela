@@ -1,0 +1,44 @@
+
+<odoo>
+
+    <data>
+
+        <record id="type_person_binaural_payment_extension" model="type.person">
+            <field name="name">PN Residente</field>
+            <field name="state">True</field>
+        </record>
+
+        <record id="type_person_two_binaural_payment_extension" model="type.person">
+            <field name="name">PN No Residente</field>
+            <field name="state">True</field>
+        </record>    
+
+        <record id="type_person_three_binaural_payment_extension" model="type.person">
+            <field name="name">PJ Domiciliada</field>
+            <field name="state">True</field>
+        </record>    
+
+        <record id="type_person_four_binaural_payment_extension" model="type.person">
+            <field name="name">PJ No Domiciliada</field>
+            <field name="state">True</field>
+        </record>    
+        
+        <record id="type_person_five_binaural_payment_extension" model="type.person">
+            <field name="name">Instituciones Financieras No Domiciliadas</field>
+            <field name="state">True</field>
+        </record>    
+
+        <record id="type_person_six_binaural_payment_extension" model="type.person">
+            <field name="name">Otras PJ No Domiciliada</field>
+            <field name="state">True</field>
+        </record>
+
+        <record id="type_person_seven_binaural_payment_extension" model="type.person">
+            <field name="name">PJ Empresa Emisora De Radio Domiciliada</field>
+            <field name="state">True</field>
+        </record>    
+    
+    </data>
+    
+
+</odoo>

@@ -1,0 +1,33 @@
+{
+    "name": "Binaural IGTF",
+    "summary": "Modulo para campos del impuesto IGTF (Impuesto a las grandes transacciones financieras)",
+    "license": "LGPL-3",
+    "description": "Modulo para campos del impuesto IGTF (Impuesto a las grandes transacciones financieras)",
+    "author": "Binauraldev",
+    "website": "https://binauraldev.com/",
+    "category": "Accounting/Accounting",
+    "version": "17.0.1.0.3",
+    "depends": [
+        "base",
+        "l10n_ve_rate",
+        "l10n_ve_tax",
+        "l10n_ve_invoice",
+        "l10n_ve_tax_payer",
+        "l10n_ve_base",
+    ],
+    "data": [
+        "views/account_journal.xml",
+        "views/account_payment.xml",
+        "views/res_config_settings.xml",
+        "views/res_company.xml",
+        "report/invoice_free_form.xml",
+        "wizard/account_payment_register.xml",
+    ],
+    "images": ["static/description/icon.png"],
+    "assets": {
+        "web.assets_backend": ["l10n_ve_igtf/static/src/components/**/*"],
+    },
+    "pre_init_hook": "pre_init_hook",
+    "application": True,
+    "binaural": True,
+}

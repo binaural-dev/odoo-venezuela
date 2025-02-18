@@ -1,0 +1,16 @@
+<odoo>
+    
+	<record id="product_normal_form_view" model="ir.ui.view">
+		<field name="name">product.binaural.extend.ciu</field>
+		<field name="model">product.template</field>
+		<field name="inherit_id" ref="product.product_template_form_view"/>
+		<field name="arch" type="xml">
+			<notebook position="inside">
+				<page name="ciu_ids" string="Economic Activities">
+					<field name="ciu_ids" options="{'no_create': True}"/>
+				</page>
+			</notebook>
+		</field>
+	</record>
+
+</odoo>

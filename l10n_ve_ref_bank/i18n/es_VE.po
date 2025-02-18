@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240822\n"
+"Project-Id-Version: Odoo Server 17.0+e-20240822\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-08-26 14:02+0000\n"
 "PO-Revision-Date: 2024-08-26 14:02+0000\n"
@@ -23,7 +23,7 @@ msgid "A payment already exists with the same reference (memo)"
 msgstr "Ya existe un pago con la misma referencia (memo)"
 
 #. module: l10n_ve_ref_bank
-#: model_terms:ir.ui.view,arch_db:l10n_ve_ref_bank.res_config_settings_l10n_ve_ref_bank
+#: model_terms:ir.ui.view,arch_db:l10n_ve_ref_bank.res_config_settings_binaural_ref_bank
 msgid "Activate the validation of Bank references"
 msgstr "Activar la validación de referencias bancarias"
 

@@ -4,7 +4,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20241115\n"
+"Project-Id-Version: Odoo Server 17.0+e-20241115\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-11-19 11:37+0000\n"
 "PO-Revision-Date: 2024-11-19 11:37+0000\n"
@@ -1018,3 +1018,45 @@ msgstr "Informe de Detalles de Facturas de Cuentas"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "to"
 msgstr "Hasta"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "The quantity entered cannot be negative"
+msgstr "La cantidad ingresada no puede ser negativa."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "All added lines must indicate the product."
+msgstr "Todas las líneas agregadas deben indicar el producto."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "The rate entered cannot be negative"
+msgstr "La tasa ingresada no puede ser negativa."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid ""
+"The operation cannot be completed: Another entry with the same name already "
+"exists."
+msgstr ""
+"La operación no se puede completar: Ya existe otro asiento con el mismo "
+"nombre."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "The price entered cannot be negative"
+msgstr "El precio ingresado no puede ser negativo."

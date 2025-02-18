@@ -9,37 +9,26 @@
 					<field name="city_id" placeholder="Ciudad" />
 					<field name="city" invisible="1" />
 				</field>
+
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='city']" position="replace">
 					<field name="city_id" placeholder="Ciudad" />
 					<field name="city" invisible="1" />
 				</xpath>
 				<xpath expr="//sheet/group/group/div/field[@name='street2']" position="after">
-					<field 
-						name="municipality" 
-						class="o_address_state" 
-						placeholder="Municipality"
-						domain="[('state_id', '=', state_id)]"
-					/>
-					<field 
-						name="parish_id" 
-						class="o_address_state"
-						placeholder="Parroquia"
-					/>
+					<field name="municipality" 
+					class="o_address_state" placeholder="Municipio"
+					domain="[('state_id', '=', state_id)]"
+				/>
 				</xpath>
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='street2']" position="after">
-					<field 
-						name="municipality" 
-						class="o_address_state" 
-						placeholder="Municipality"
-						domain="[('state_id', '=', state_id)]"
-					/>
-					<field 
-						name="parish_id" 
-						class="o_address_state"
-						placeholder="Parish"
-					/>
+					<field name="municipality" 
+					class="o_address_state" placeholder="Municipio"
+					domain="[('state_id', '=', state_id)]"
+				/>
 				</xpath>
+
 			</field>
+			
 		</record>
 	</data>
 </odoo>

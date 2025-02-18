@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
 
     <record id="wizard_accounting_reports_restricted_multi_company" model="ir.rule">

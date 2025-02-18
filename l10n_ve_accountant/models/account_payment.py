@@ -4,6 +4,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
@@ -19,7 +20,9 @@ class AccountPayment(models.Model):
         """
         return self.env.company.currency_foreign_id.id or False
 
-    foreign_currency_id = fields.Many2one("res.currency", default=default_alternate_currency)
+    foreign_currency_id = fields.Many2one(
+        "res.currency", default=default_alternate_currency
+    )
 
     foreign_rate = fields.Float(
         compute="_compute_rate",
@@ -59,7 +62,9 @@ class AccountPayment(models.Model):
         Override the _syncrhonize_to_moves method to set the rate of the payment to its move.
         """
         res = super()._synchronize_to_moves(changed_fields)
-        if not ("foreign_rate" in changed_fields or "foreign_inverse_rate" in changed_fields):
+        if not (
+            "foreign_rate" in changed_fields or "foreign_inverse_rate" in changed_fields
+        ):
             return
         for payment in self.with_context(skip_account_move_synchronization=True):
             payment.move_id.write(
@@ -91,4 +96,12 @@ class AccountPayment(models.Model):
         for payment in self:
             if not bool(payment.foreign_rate):
                 return
-            payment.foreign_inverse_rate = Rate.compute_inverse_rate(payment.foreign_rate)
+            payment.foreign_inverse_rate = Rate.compute_inverse_rate(
+                payment.foreign_rate
+            )
+
+    # @api.model
+    # def _get_trigger_fields_to_synchronize(self):
+    #     original_fields = super()._get_trigger_fields_to_synchronize()
+    #     additional_fields = ("foreign_rate", "foreign_inverse_rate")
+    #     return original_fields + additional_fields

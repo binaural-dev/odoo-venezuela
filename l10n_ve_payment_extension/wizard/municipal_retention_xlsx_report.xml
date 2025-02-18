@@ -1,0 +1,29 @@
+
+<odoo>
+    <record id="wizard_report_municipality_retentions_report_view" model="ir.ui.view">
+        <field name="name">municipal.retention.xlsx.report.view</field>
+        <field name="model">municipal.retention.xlsx.report</field>
+        <field name="arch" type="xml">
+            <form string="Municipal Retentions Report">
+                <sheet>
+                    <group>
+                        <field name="date_start" />
+                        <field name="date_end" />
+                    </group>
+                </sheet>
+                <footer>
+                    <div style="display: flex; justify-content: center">
+                        <button name="print_xlsx" type="object" string="Download fiscal tax XLSX" class="btn btn-primary" />
+                    </div>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="municipal_supplier_retention_report_action" model="ir.actions.act_window">
+        <field name="name">Municipal Supplier Retention Report</field>
+        <field name="res_model">municipal.retention.xlsx.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -1,7 +1,6 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
-
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
@@ -24,7 +23,7 @@ class ResConfigSettings(models.TransientModel):
     def _check_currency_foreign_id(self):
         self = self.with_company(self.company_id)
         for rec in self:
-            if rec.currency_id == rec.currency_foreign_id:
+            if "currency_id" in rec._fields and rec.currency_id == rec.currency_foreign_id:
                 raise UserError(
                     _("The currency foreign must be different from the currency of the company")
                 )
@@ -33,7 +32,7 @@ class ResConfigSettings(models.TransientModel):
     def currency_foreign_id_onchange_(self):
         self = self.with_company(self.company_id)
         for rec in self:
-            if rec.currency_id == rec.currency_foreign_id:
+            if "currency_id" in rec._fields and rec.currency_id == rec.currency_foreign_id:
                 raise UserError(
                     _("The currency foreign must be different from the currency of the company")
                 )

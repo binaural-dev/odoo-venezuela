@@ -1,7 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
+
 <odoo>
     <data>
-        <record id="res_partner_l10n_ve_taxpayer" model="ir.ui.view">
+        <record id="res_partner_binaural_taxpayer" model="ir.ui.view">
             <field name="name">res.partner.binaural.taxpayer</field>
             <field name="model">res.partner</field>
             <field name="inherit_id" ref="base.view_partner_form"/>

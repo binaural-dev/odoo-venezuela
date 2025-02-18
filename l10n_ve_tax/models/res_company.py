@@ -4,7 +4,6 @@ from odoo import api, fields, models
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    module_l10n_ve_igtf = fields.Boolean("IGTF")
     unique_tax = fields.Boolean()
     show_discount_on_moves = fields.Boolean()
 

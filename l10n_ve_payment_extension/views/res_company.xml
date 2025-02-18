@@ -1,0 +1,26 @@
+<odoo>
+
+	<record id="view_company_form" model="ir.ui.view">
+		<field name="name">binaural.payment.extensionres.company.form</field>
+		<field name="model">res.company</field>
+		<field name="inherit_id" ref="base.view_company_form" />
+		<field name="arch" type="xml">
+
+			<notebook position="inside">
+				<page string="Tax Authorities Data" name="tax_authorities_data">
+					<group>
+						<group>
+							<field name="tax_authorities_name"/>
+							<field name="economic_activity_number"/>
+						</group>
+						<group>
+							<field name="tax_authorities_logo" widget="image" class="oe_avatar"/>
+						</group>
+					</group>
+				</page>
+			</notebook>
+
+		</field>
+	</record>
+    
+</odoo>

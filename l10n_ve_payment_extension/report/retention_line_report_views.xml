@@ -1,0 +1,54 @@
+<odoo>
+
+	<record id="view_retention_line_report_search" model="ir.ui.view">
+		<field name="name">retention.line.report.search</field>
+		<field name="model">retention.line.report</field>
+		<field name="arch" type="xml">
+			<search string="Retention Line Report">
+				<filter name="retention_date_accounting" domain="[]" context="{'group_by' : 'retention_date_accounting'}"/>
+				<field name="type"/>
+				<separator/>
+				<filter string="Customer Retention" name="filter_type_customer" domain="[('type','=','out_invoice')]"/>
+				<filter string="Supplier Retention" name="filter_type_supplier" domain="[('type','=','in_invoice')]"/>
+			</search>
+		</field>
+	</record>
+	
+	<record id="view_retention_line_report_tree" model="ir.ui.view">
+		<field name="name">retention.line.report.tree</field>
+		<field name="model">retention.line.report</field>
+		<field name="arch" type="xml">
+			<tree string="Retention Line Report">
+				<field name="number_count"/>
+				<field name="year"/>
+				<field name="month"/>
+				<field name="voucher"/>
+				<field name="vat"/>
+				<field name="partner"/>
+				<field name="invoice_number"/>
+				<field name="invoice_correlative"/>
+				<field name="retention_date"/>
+				<field name="retention_date_accounting"/>
+				<field name="aliquot"/>
+				<field name="retention_percentage"/>
+				<field name="iva_amount" sum="Total IVA Amount"/>
+				<field name="invoice_amount" sum="Total Invoice Amount"/>
+				<field name="retention_percentage"/>
+				<field name="retention_amount" sum="Total Retention Amount"/>
+				<field name="state_show"/>
+				<field name="type_show" optional="hide"/>
+				<!-- Invisible fields -->
+				<field name="type" column_invisible="True"/>
+				<field name="state" column_invisible="True"/>
+			</tree>
+		</field>
+	</record>
+	
+	<record id="action_retention_line_report" model="ir.actions.act_window">
+		<field name="name">Retention Line Report</field>
+		<field name="res_model">retention.line.report</field>
+		<field name="view_mode">tree</field>
+		<field name="context">{"search_default_filter_type_supplier": 1}</field>
+	</record>
+
+</odoo>

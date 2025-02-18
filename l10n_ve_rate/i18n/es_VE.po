@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230925\n"
+"Project-Id-Version: Odoo Server 17.0+e-20241210\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-09-25 21:21+0000\n"
-"PO-Revision-Date: 2023-09-25 21:21+0000\n"
+"POT-Creation-Date: 2024-12-12 15:53+0000\n"
+"PO-Revision-Date: 2024-12-12 15:53+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,19 +16,19 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_rate
-#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_l10n_ve_rate
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_binaural_rate
 msgid "<span>Select alternate currency</span>"
 msgstr "Seleccionar moneda alterna"
 
 #. module: l10n_ve_rate
-#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_l10n_ve_rate
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_binaural_rate
 msgid "Binaural"
 msgstr ""
 
 #. module: l10n_ve_rate
 #: model:ir.model,name:l10n_ve_rate.model_res_company
 msgid "Companies"
-msgstr "Compañías"
+msgstr "Empresas"
 
 #. module: l10n_ve_rate
 #: model:ir.model.fields,field_description:l10n_ve_rate.field_res_config_settings__company_id
@@ -38,12 +38,12 @@ msgstr "Compañía"
 #. module: l10n_ve_rate
 #: model:ir.model,name:l10n_ve_rate.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_rate
 #: model:ir.model,name:l10n_ve_rate.model_res_currency
 msgid "Currency"
-msgstr "Moneda"
+msgstr "Divisa"
 
 #. module: l10n_ve_rate
 #: model:ir.model.fields,field_description:l10n_ve_rate.field_res_company__currency_foreign_id
@@ -60,27 +60,21 @@ msgstr "Moneda alterna de la compañía"
 #. module: l10n_ve_rate
 #: model:ir.model,name:l10n_ve_rate.model_res_currency_rate
 msgid "Currency Rate"
-msgstr "Tasa monetaria"
+msgstr "Tasa de cambio"
 
 #. module: l10n_ve_rate
-#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_l10n_ve_rate
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_binaural_rate
 msgid "Rates Configuration"
 msgstr "Configuración de tasas"
 
 #. module: l10n_ve_rate
-#: model:ir.model.fields,field_description:l10n_ve_rate.field_res_company__currency_provider
-msgid "Service Provider"
-msgstr "Proveedor de servicio"
-
-#. module: l10n_ve_rate
-#. odoo-python
-#: code:addons/l10n_ve_rate/models/res_currency.py:0
-#, python-format
+#: model_terms:ir.ui.view,arch_db:l10n_ve_rate.res_config_settings_binaural_rate
 msgid ""
-"The currency already has accounting movements, you cannot deactivate this "
-"currency"
+"Select the alternate currency that the system will use to make an\n"
+"                                accounting copy in the selected currency"
 msgstr ""
-"La moneda ya tiene movimientos contables, no puedes desactivar esta moneda."
+"Seleccione la moneda alterna que usara el sistema para realizar una\n"
+"                                copia contable en la moneda seleccionada"
 
 #. module: l10n_ve_rate
 #. odoo-python
@@ -101,8 +95,3 @@ msgstr ""
 msgid ""
 "The currency foreign must be different from the currency of the company"
 msgstr "La moneda alterna debería ser diferente a la moneda base"
-
-#. module: l10n_ve_rate
-#: model:ir.model.fields.selection,name:l10n_ve_rate.selection__res_company__currency_provider__bcv
-msgid "Venezuelan Central Bank"
-msgstr "Banco Central de Venezuela"

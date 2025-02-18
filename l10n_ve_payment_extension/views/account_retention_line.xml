@@ -1,0 +1,47 @@
+
+<odoo>
+
+    <data>
+
+        <record id="view_account_retention_line_tree_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">views.account.retention.line.tree.binaural.payment.extension</field>
+            <field name="model">account.retention.line</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Retention Lines">
+                    <field name="name"/>
+                    <field name="payment_id" />
+                    <!-- <field name="invoice_id"/> -->
+                    <!-- <field name="retetion_rate" /> -->
+                    <!-- <field name="base_ret" /> -->
+                    <!-- <field name="tax_line" /> -->
+                    <!-- <field name="imp_ret" /> -->
+                    <!-- <field name="amount_tax_ret" /> -->
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_account_retention_line_form_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">views.account.retention.line.form.binaural.payment.extension</field>
+            <field name="model">account.retention.line</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Retention Lines">
+                    <group>
+                        <field name="name"/>
+                        <!-- <field name="invoice_id" domain="[('state', '=', 'open'), ('partner_id','=', parent.partner_id)]"/> -->
+                        <!-- <field name="retention_rate"/> -->
+                        <field name="base_ret"/>
+                        <field name="imp_ret"/>
+                        <!-- <field name="tax_line"/> -->
+                        <field name="amount_tax_ret"/>
+                        <field name="invoice_amount" />
+                        <field name="iva_amount" />
+                        <field name="retention_amount" />
+                        <field name="is_retention_client" invisible="1"/>
+                    </group>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

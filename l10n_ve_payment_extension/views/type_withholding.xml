@@ -1,0 +1,41 @@
+
+<odoo>
+
+    <data>
+
+        <record id="view_type_withholding_tree_binaural_payment_extension" model="ir.ui.view">
+            <field name="name">IVA Retention</field>
+            <field name="model">account.withholding.type</field>
+            <field name="arch" type="xml">
+                    <tree>
+                        <field name="name" required="1" />
+                        <field name="value" required="1" />
+                        <field name="state" />
+                    </tree>
+                </field>
+        </record>
+
+        <record id="view_type_withholding_search_binaural_payment_extension" model="ir.ui.view">
+                <field name="name">IVA retention percentage</field>
+                <field name="model">account.withholding.type</field>
+                <field name="arch" type="xml">
+                    <search string="IVA Retention">
+                        <field name="name" />
+                        <filter name="state" domain="[('state','=',True)]" string="Active" />
+                    </search>
+                </field>
+        </record>
+
+        <record id="action_type_withholding" model="ir.actions.act_window">
+                <field name="name">IVA retention percentage</field>
+                <field name="res_model">account.withholding.type</field>
+                <field name="type">ir.actions.act_window</field>
+                <field name="binding_view_types">form</field>
+                <field name="view_mode">tree,form</field>
+                <field name="view_id" ref="view_type_withholding_tree_binaural_payment_extension" />
+                <field name="context">{"search_default_state":True}</field>
+        </record>
+    
+    </data>
+
+</odoo>
