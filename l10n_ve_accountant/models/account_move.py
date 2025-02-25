@@ -696,8 +696,11 @@ class AccountMove(models.Model):
         """
         Onchange the foreign rate and compute the foreign inverse rate
         """
-        if self.foreign_inverse_rate <= 0:
-            raise ValidationError(_("The rate entered cannot be negative"))
+        if self.foreign_inverse_rate < 0:
+            raise ValidationError(_("The rate entered cannot be negative."))
+        elif self.foreign_inverse_rate == 0:
+            raise ValidationError(_("The rate entered cannot be zero."))
+
 
     def _get_payments(self, line_ids):
         self.ensure_one()
