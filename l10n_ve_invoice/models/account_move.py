@@ -11,7 +11,7 @@ _logger = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _name = "account.move"
-    _inherit = ["account.move", "filter.partner.mixin"]
+    _inherit = "account.move"
 
     correlative = fields.Char("Control Number", copy=False, help="Sequence control number")
     invoice_reception_date = fields.Date(
@@ -109,15 +109,6 @@ class AccountMove(models.Model):
                 raise ValidationError(
                     _("You can not add more than %s products to the invoice." % max_product_invoice)
                 )
-
-    @api.depends("filter_partner")
-    def _compute_partner_id_domain(self):
-        for move in self:
-            company_id = move.company_id.id
-            extend_domain = [("type", "!=", "private"), ("company_id", "in", (False, company_id))]
-            domain = move.get_partner_domain(extend=extend_domain)
-
-            move.update({"partner_id_domain": json.dumps(domain)})
 
     @api.depends("payment_term_details")
     def _compute_next_installment_date(self):
