@@ -2,7 +2,7 @@
     "name": "Binaural Facturación",
     "summary": """
        Modulo para contabilidad Venezolana """,
-    "version": "16.0.3.2.8",
+    "version": "16.0.3.2.9",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
@@ -10,9 +10,8 @@
     # any module necessary for this one to work correctly
     "depends": [
         "l10n_ve_accountant",
-        "l10n_ve_contact",        
+        "l10n_ve_contact",
         "l10n_ve_tax",
-        "l10n_ve_filter_partner",
         "od_journal_sequence",
     ],
     # always loaded
