@@ -1,14 +1,13 @@
 {
-    "name": "Binaural Localización",
+    "name": "Venezuela - localization",
     "summary": """
-        Maestros de ciudades, municipios
-parroquias. 
+        Masters of cities, municipalities, and parishes.
     """,
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.1.0.1",
+    "version": "17.0.1.0.2",
     "depends": ["base", "contacts"],
     "data": [
         "security/ir.model.access.csv",
