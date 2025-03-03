@@ -100,4 +100,3 @@ Y todas aquellas personas de nuestro equipo interno quienes de alguna y otra for
 ---
 
 ¡Gracias por ser parte de este proyecto y por contribuir al crecimiento tecnológico de Venezuela! Si tienes preguntas o necesitas ayuda, no dudes en contactarnos.
-
