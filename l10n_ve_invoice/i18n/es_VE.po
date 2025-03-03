@@ -266,7 +266,7 @@ msgstr "Número de Control"
 #. module: l10n_ve_invoice
 #: model:res.groups,name:l10n_ve_invoice.create_out_refund
 msgid "Create Out Refund Moves"
-msgstr "Mostar botón para crear Facturas Rectificativas"
+msgstr "Mostrar botón para crear Notas de Crédito"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__create_uid

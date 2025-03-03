@@ -13,3 +13,7 @@ class ResPartner(models.Model):
         string="Partner Order Limit",
         groups="account.group_account_invoice,account.group_account_readonly",
     )
+
+    vat = fields.Char(
+        string="RIF/CI/PAS.",
+    )
