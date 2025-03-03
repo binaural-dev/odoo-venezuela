@@ -142,12 +142,10 @@ class AccountMove(models.Model):
             True or False whether the invoice already has a sequence number or not.
         """
         
-        journal_type = self.journal_id.type == "sale"
         is_contingency = self.journal_id.is_contingency
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
         is_valid = (            
             not self.correlative
-            and journal_type
             and (not is_contingency or is_series_invoicing_enabled)
         )
 
