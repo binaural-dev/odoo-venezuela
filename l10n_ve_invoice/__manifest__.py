@@ -13,6 +13,7 @@
         "l10n_ve_contact",
         "l10n_ve_tax",
         "od_journal_sequence",
+        "l10n_ve_filter_partner",
     ],
     # always loaded
     "data": [
