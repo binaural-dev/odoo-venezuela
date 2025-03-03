@@ -36,7 +36,10 @@
                             <span t-if="o.partner_id.phone"><strong>Teléfono:</strong> <t t-out="o.partner_id.phone"/></span>
                         </div>
                         <div class="col-auto col-1 mw-100 mb-1">
-                            
+                            <t t-if="o.company_id.taxpayer_type == 'ordinary'">
+                                <span><strong>CONTRIBUYENTE FORMAL</strong></span>
+                                <br/>
+                            </t>
                             <t t-if="o.move_type in ['out_refund', 'in_refund']">
                                 <span><strong>Nro de Nota de Crédito:</strong><t t-if="o.name != '/'" t-out="o.name"/></span>
                                 <br/>
@@ -327,31 +330,7 @@
             </t>
         </template>
 
-        <record id="account.account_invoices" model="ir.actions.report">
-            <field name="name">Invoices</field>
-            <field name="model">account.move</field>
-            <field name="report_type">qweb-pdf</field>
-            <field name="report_name">account.report_invoice_with_payments</field>
-            <field name="report_file">account.report_invoice_with_payments</field>
-            <field name="print_report_name">(object._get_report_base_filename())</field>
-            <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_')+'.pdf')</field>
-            <field name="binding_model_id" ref="account.model_account_move"/>
-            <field name="binding_type">report</field>
-            <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
-        </record>
-
-        <record id="account.account_invoices_without_payment" model="ir.actions.report">
-            <field name="name">Invoices without Payment</field>
-            <field name="model">account.move</field>
-            <field name="report_type">qweb-pdf</field>
-            <field name="report_name">account.report_invoice</field>
-            <field name="report_file">account.report_invoice</field>
-            <field name="print_report_name">(object._get_report_base_filename())</field>
-            <field name="attachment">(object.state == 'posted') and ((object.name or 'INV').replace('/','_')+'.pdf')</field>
-            <field name="binding_model_id" ref="account.model_account_move"/>
-            <field name="binding_type">report</field>
-            <field name="groups_id" eval="[(4, ref('base.group_system'))]"/>
-        </record>
+       
     </data>
 
 </odoo>
