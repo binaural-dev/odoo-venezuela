@@ -2,7 +2,7 @@
     "name": "Binaural Facturación",
     "summary": """
        Modulo para contabilidad Venezolana """,
-    "version": "16.0.3.2.9",
+    "version": "16.0.3.2.10",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
@@ -22,8 +22,8 @@
         "data/account_data.xml",
         "data/invoice_free_form_paperformat.xml",
         "data/invoice_sale_note_paperformat.xml",
+        "report/report_ir_actions_report.xml",
         "report/report_invoice_free_form.xml",
-        "report/report_invoice_sale_note.xml",
         "report/report_invoice.xml",
         "views/account_move.xml",
         "views/account_journal_views.xml",
