@@ -26,7 +26,7 @@ msgid "'Asientos contables Relacionados %s' % (object.name)"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
 msgid ""
 "<b>Warning: This invoice has been reset to draft.</b>\n"
 "                    Please note that you\n"
@@ -450,12 +450,12 @@ msgid "Foreign Total of the line"
 msgstr "Total alterno de la linea."
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
 msgid "Foreign currency"
 msgstr "Moneda alterna"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
 msgid "Foreign inverse rate"
 msgstr "Tasa alterna inversa"
 
@@ -845,13 +845,13 @@ msgid "Total"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_move_line_tree
 msgid "Total Foreign Credit"
 msgstr "Total Crédito Alterno"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_move_line_tree
 msgid "Total Foreign Debit"
 msgstr "Total Débito Alterno"
@@ -876,7 +876,7 @@ msgid "Total:"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
 msgid "Update account lines"
 msgstr "Actualizar Apuntes"
 
@@ -900,7 +900,7 @@ msgid "VAT of the partner"
 msgstr "Identificación"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
 msgid "Warning: This account move has a foreign balance of"
 msgstr "Alerta: Este asiento contable tiene un saldo alterno de"
 
