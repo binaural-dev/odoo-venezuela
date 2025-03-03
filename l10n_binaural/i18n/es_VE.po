@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20230202\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-02 13:36+0000\n"
-"PO-Revision-Date: 2023-02-02 13:36+0000\n"
+"POT-Creation-Date: 2025-03-03 14:13+0000\n"
+"PO-Revision-Date: 2025-03-03 14:13+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -21,24 +21,29 @@ msgid "Consumable Product"
 msgstr "Producto Consumible"
 
 #. module: l10n_binaural
-#: model:account.tax.group,name:l10n_binaural.EXEMPT_PURCHASE_GROUP
-msgid "Exempt Purchases"
-msgstr "Exento Compras"
+#: model:account.tax.group,name:l10n_binaural.tax_group_iva_0
+msgid "Exento"
+msgstr ""
 
 #. module: l10n_binaural
-#: model:account.tax.group,name:l10n_binaural.EXEMPT_SALE_GROUP
-msgid "Exempt Sales"
-msgstr "Exento Ventas"
+#: model:account.tax.group,name:l10n_binaural.tax_group_iva_16
+msgid "IVA 16%"
+msgstr ""
 
 #. module: l10n_binaural
-#: model:account.tax.group,name:l10n_binaural.IVA_PURCHASE_GROUP
-msgid "IVA Purchases"
-msgstr "IVA Compras"
+#: model:account.tax.group,name:l10n_binaural.tax_group_iva_31
+msgid "IVA 31%"
+msgstr ""
 
 #. module: l10n_binaural
-#: model:account.tax.group,name:l10n_binaural.IVA_SALE_GROUP
-msgid "IVA Sales"
-msgstr "IVA Ventas"
+#: model:account.tax.group,name:l10n_binaural.tax_group_iva_8
+msgid "IVA 8%"
+msgstr ""
+
+#. module: l10n_binaural
+#: model:ir.model,name:l10n_binaural.model_account_journal
+msgid "Journal"
+msgstr "Diario"
 
 #. module: l10n_binaural
 #: model:product.template,name:l10n_binaural.binaural_service_product_a
@@ -49,3 +54,8 @@ msgstr "Servicio A"
 #: model:product.template,name:l10n_binaural.binaural_service_product_b
 msgid "Service B"
 msgstr "Servicio B"
+
+#. module: l10n_binaural
+#: model:ir.model.fields,field_description:l10n_binaural.field_account_journal__template_id
+msgid "Template"
+msgstr "Plantilla"
