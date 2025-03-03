@@ -8,7 +8,7 @@ parroquias. 
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "16.0.1.0.2",
+    "version": "16.0.1.0.3",
     "depends": ["base", "contacts"],
     "data": [
         "security/ir.model.access.csv",
@@ -22,5 +22,4 @@ parroquias. 
         "views/menus.xml",
     ],
     "application": True,
-    "binaural": True,
 }

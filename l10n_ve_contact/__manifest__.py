@@ -8,7 +8,7 @@
     'author': "Binauraldev",
     'website': "https://binauraldev.com/",
     'category': 'Contacts/Contacts',
-    'version': '16.0.1.0.2',
+    'version': '16.0.1.0.3',
 
     # any module necessary for this one to work correctly
     'depends': ['base','contacts','l10n_ve_rate'],
@@ -20,5 +20,4 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    "binaural": True,
 }
