@@ -39,11 +39,6 @@
                     }"/>
             </xpath>
 
-            <xpath expr="//label[@for='partner_id'][1]" position="before">
-                <field name="filter_partner" attrs="{'invisible': [('move_type', '=', 'entry')]}"/>
-            </xpath>
-
-
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="invoice_reception_date"
                     options="{'datepicker': {'warn_future': true}}"
