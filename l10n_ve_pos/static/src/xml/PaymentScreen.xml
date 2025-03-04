@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="PaymentScreen" t-inherit="point_of_sale.PaymentScreen" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[@class='button back']" position="after">
+            <div class="button"
+                t-on-click="() => this.showPaymentsOrigin()"
+                t-if="currentOrder.getHasRefundLines()"> 
+                <span class="back_text">View Payments Origin</span>
+            </div>
+        </xpath>
+        <xpath expr="//div[@class='button js_cashdrawer']" position="replace">
+        </xpath>
+        <xpath expr="//div[hasclass('left-content')]" position="replace">
+            <div class="left-content">
+                <t t-if="env.isMobile">
+                    <section class="paymentlines-container">
+                        <PaymentScreenStatus order="currentOrder" />
+                    </section>
+                </t>
+                <div class="paymentmethods-container">
+                    <PaymentScreenPaymentLines paymentLines="paymentLines" />
+                    <div class="paymentmethods">
+                        <p class="title-category">Payment method</p>
+                        <t t-foreach="payment_methods_from_config" t-as="paymentMethod"
+                           t-key="paymentMethod.id">
+                            <div class="button paymentmethod"
+                                t-on-click="() => this.trigger('new-payment-line', paymentMethod)">
+                                <div class="payment-name">
+                                    <t t-esc="paymentMethod.name" />
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+		<div
+                    t-if="!env.isMobile"
+                    class="button next validation"
+                    t-att-class="{ highlight: currentOrder.is_paid() and currentOrder._isValidEmptyOrder() and isChangeZero}"
+		    t-on-click="() => this.trigger('validate-order')"
+		>
+                    <div class="pay-circle">
+                        <i class="fa fa-chevron-right" role="img" aria-label="Pay" title="Pay" />
+                    </div>
+                    <span class="next_text">Validate</span>
+                </div>
+            </div>
+        </xpath>
+
+        <xpath expr="//t[@t-esc='partner.name']" position="after">
+            <span t-if="partner.vat">
+            (<t t-esc="partner.prefix_vat" /><t t-esc="partner.vat" />)
+            </span>
+        </xpath>
+    </t>
+</templates>
