@@ -29,6 +29,10 @@ odoo.define("l10n_ve_pos.OrderState", function(require) {
           return this.orderlines;
         }
 
+        if (this.orderlines.length < 1) {
+          return this.orderlines
+        }
+
         let line = this.orderlines[0]
 
         if (!line.refunded_orderline_id) {
