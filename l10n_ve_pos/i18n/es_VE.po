@@ -668,7 +668,7 @@ msgstr "Linea de Orden"
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__pos_search_cne
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__pos_search_cne
 msgid "Pos Search Cne"
-msgstr "Busqueda de clientes en CNE"
+msgstr "Búsqueda de clientes en CNE"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__pos_show_free_qty
