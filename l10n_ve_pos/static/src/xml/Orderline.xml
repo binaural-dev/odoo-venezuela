@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="Orderline" t-inherit="point_of_sale.Orderline" t-inherit-mode="extension" owl="1">
+
+        <xpath expr="//span[hasclass('product-name')]/span" position="inside">
+            <t t-if="props.line.isExempt()"> (E)</t>
+            <t t-else=""> (G)</t>
+        </xpath>
+        <xpath expr="//span[hasclass('price')]" position="after">
+            <span class="price">
+                <t t-esc="env.pos.format_foreign_currency(props.line.get_display_foreign_price())"/>
+            </span>
+        </xpath>
+    </t>
+</templates>
