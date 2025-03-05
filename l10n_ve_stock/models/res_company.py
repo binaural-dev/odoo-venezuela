@@ -14,3 +14,9 @@ class ResCompany(models.Model):
     change_weight = fields.Boolean()
     use_physical_location = fields.Boolean()
     use_free_qty_odoo = fields.Boolean()
+
+    # not_allow_sell_products = fields.Boolean(
+
+    validate_without_product_quantity = fields.Boolean(
+        "Allow Validate Without Product Quantity", default=False
+    )
