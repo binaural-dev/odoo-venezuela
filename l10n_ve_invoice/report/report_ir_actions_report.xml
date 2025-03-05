@@ -1,0 +1,8 @@
+<odoo>
+    <record id="account.account_invoices" model="ir.actions.report">
+        <field name="binding_model_id" eval="False"/>
+    </record>
+    <record id="account.account_invoices_without_payment" model="ir.actions.report">
+        <field name="binding_model_id" eval="False" />
+    </record>
+</odoo>
