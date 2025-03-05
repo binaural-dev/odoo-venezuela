@@ -48,6 +48,9 @@
                 <field name="invoice_origin" string="Nro de Pedido"/>
                 <field name="invoice_user_id"/>
             </xpath>
+            <xpath expr="//field[@name='journal_id']" position="after">
+                <field name="is_debit_journal" readonly="True"/>
+            </xpath>
             <button name="button_draft" position="attributes">
                 <attribute name="attrs">
                     {
@@ -57,7 +60,7 @@
                             ('state', 'in', ('posted', 'cancel')),
                             ('move_type', 'in', ('out_invoice', 'out_refund')),
                             '&amp;',
-                            ('journal_id.is_debit', '=', True),
+                            ('is_debit_journal', '=', True),
                             ('show_reset_to_draft_button', '=', False)
                         ]
                     }
