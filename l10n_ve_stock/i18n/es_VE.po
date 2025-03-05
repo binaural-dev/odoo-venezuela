@@ -1,0 +1,796 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_stock
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20250120\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-29 18:50+0000\n"
+"PO-Revision-Date: 2025-01-29 18:50+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_stock
+#: model:ir.actions.report,print_report_name:l10n_ve_stock.action_packaging_picking
+msgid "'Packaging tags - %s' % (object.name)"
+msgstr "'Etiqueta de Cajas- %s' % (object.name)"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/product_product.py:0
+#, python-format
+msgid "- Barcode \"%s\" already assigned to product(s): %s"
+msgstr "- Còdigo de barras \"%s\" ya ha sido asignado al producto(s): %s"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_form_view_procurement_button
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_form_view_procurement_button
+msgid "<span class=\"o_stat_text\">Available Quantity To Sale</span>"
+msgstr "<span class=\"o_stat_text\">Cantidad Disponible para Vender</span>"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_binaural_stock
+msgid ""
+"<strong>When marked:</strong> On the product sheet Take into account all the the locations to calculate Available Quantities<br/>\n"
+"                                <strong>When unchecked:</strong> The quantity of products will be filtered ('Available quantity') by parent and child locations that are only of Type 'Stock'"
+msgstr ""
+"<strong>Al estar marcado:</strong> En la ficha del producto Toma en cuenta todas las ubicaciones para calcular las Cantidades Disponibles<br/>\n"
+"                                <strong>Al estar desmarcado:</strong> Se filtrara la cantidad de productos ('Cantidad disponible') por ubicaciones padres e hijas que solo sean de Tipo 'Stock'"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/product_product.py:0
+#, python-format
+msgid "A packaging already uses the barcode"
+msgstr "Un empaque ya usa el código de barras"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_needaction
+msgid "Action Needed"
+msgstr "Acción Necesaria"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_ids
+msgid "Activities"
+msgstr "Actividades"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "Decoración de Excepción de Actividad"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_state
+msgid "Activity State"
+msgstr "Estado de la Actividad"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "Tipo de Actividad Icono"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "All"
+msgstr "Todos"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_quantity_history_inherit_binaural_stock
+msgid "All Warehouse"
+msgstr "Todos los Almacenes"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_binaural_stock
+msgid "Allow changing weight during picking"
+msgstr "Permitir cambiar de peso durante la Picking"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_binaural_stock
+msgid ""
+"Allows to show the available quantity (Total minus reserved) in both product"
+" template and variant of it."
+msgstr ""
+"Permite mostrar la cantidad disponible (Total menos reservado) tanto en el "
+"en la plantilla del producto como en su variante."
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__alternate_code
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__alternate_code
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_product_template_search_alternate_code
+msgid "Alternate Code"
+msgstr "Còdigo Alterno"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_product_product__alternate_code
+#: model:ir.model.fields,help:l10n_ve_stock.field_product_template__alternate_code
+msgid "Alternate code for the product"
+msgstr "Còdigo alterno para el producto"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "Artículo"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_attachment_count
+msgid "Attachment Count"
+msgstr "Nº de archivos adjuntos"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/product_product.py:0
+#, python-format
+msgid ""
+"Barcode(s) already assigned:\n"
+"\n"
+"%s"
+msgstr ""
+"Código de barra(s) ya ha sido asignado:\n"
+"\n"
+"%s"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_block_liters_per_unit
+msgid "Block Liters Per Unit"
+msgstr "Bloquear campo de Litros por unidad"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_block_type_inventory_transfers_expeditions
+msgid "Block Type Inventory Transfers Expeditions"
+msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_binaural_stock
+msgid ""
+"By turning on this option, when carrying out an inventory movement where you"
+" check the availability of the product for sale, it will be reserved from a "
+"single negative location in case they are found in other locations.."
+msgstr ""
+"Activando esta opción, al realizar un movimiento de inventario en el que se"
+"compruebe la disponibilidad del producto para su venta, se reservará desde una "
+" única ubicación negativa en caso de que se encuentren en otras ubicaciones."
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__change_weight
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__change_weight
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__change_weight
+msgid "Change Weight"
+msgstr "Cambiar de peso"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.packaging_picking_item
+msgid "Ciudad:"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_category__company_id
+msgid "Company"
+msgstr "Compañía"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_res_config_settings
+msgid "Config Settings"
+msgstr "Opciones de configuración"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "Costo"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "Costo Total"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.packaging_picking_item
+msgid "Date:"
+msgstr "Fecha:"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_binaural_stock
+msgid "Define a main sell's warehouse."
+msgstr "Define un almacén de ventas principal."
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "Descripción"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__done_total_uom_group_ids
+msgid "Done Total Uom Group"
+msgstr "Totales realizados UdM"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_quantity_history_inherit_binaural_stock
+msgid "Download"
+msgstr "Descargar"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__except_products_at_zero
+msgid "Except Products At Zero"
+msgstr "Exceptuar Productos en 0"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "Fecha:"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_follower_ids
+msgid "Followers"
+msgstr "Seguidores"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "Seguidores (Contactos)"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr "Icono Font awesome, por ejemplo fa-tasks"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__free_qty
+msgid "Free To Use Quantity"
+msgstr "Cantidad de uso libre"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__group_product_available_quantity_on_sale
+msgid "Group Product Available Quantity On Sale"
+msgstr "Grupo de Cantidad Disponible para Vender"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_product_available_quantity_on_sale
+msgid "Group Product Available Quantity on Sale"
+msgstr "Grupo de Cantidad Disponible para Vender"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__has_message
+msgid "Has Message"
+msgstr "Tiene Mensaje"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_hide_cancel_button_from_inventory_transfers
+msgid "Hide Cancel Button from Inventory Transfers"
+msgstr "Ocultar Botón Cancelar de las Transferencias de Inventario"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_hide_discard_inventory_transfers_button
+msgid "Hide Discard Button from Inventory Transfers"
+msgstr "Ocultar el botón Descartar de las transferencias de inventario"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__hide_done_total_uom_group_ids
+msgid "Hide Done Total Uom Group"
+msgstr "Ocultar Total UdM"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_hide_override_button_for_inventory_transfers
+msgid "Hide Override Button for Inventory Transfers"
+msgstr "Ocultar Botón Anular de las Transferencias de Inventario"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_hide_print_button_for_inventory_transfers
+msgid "Hide Print Button for Inventory Transfers"
+msgstr "Ocultar Botón Imprimir de las Transferencias de Inventario"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_hide_return_inventory_transfers_button
+msgid "Hide Return Button from Inventory Transfers"
+msgstr "Ocultar el botón Retornar de las transferencias de inventario"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_hide_unlock_lock_button_for_inventory_transfers
+msgid "Hide Unlock/Lock Button for Inventory Transfers"
+msgstr ""
+"Ocultar Botón Bloquear/Desbloquear de las Transferencias de Inventario"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_hide_validate_inventory_transfers_button
+msgid "Hide Validate Inventory Transfers Button"
+msgstr "Ocultar Botón Validar de las Transferencias de Inventario"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking__type_delivery_step__in
+#: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking_type__type_steps__in
+msgid "IN"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking__type_delivery_step__int
+#: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking_type__type_steps__int
+msgid "INT"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_exception_icon
+msgid "Icon"
+msgstr "Icono"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__activity_exception_icon
+msgid "Icon to indicate an exception activity."
+msgstr "Icono para indicar una actividad de excepción."
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr "Si está marcado hay nuevos mensajes que requieren su atención."
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_has_error
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_has_sms_error
+msgid "If checked, some messages have a delivery error."
+msgstr "Si se encuentra marcado, algunos mensajes tienen error de envío."
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_location
+msgid "Inventory Locations"
+msgstr "Ubicaciones de inventario"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "Inventory:"
+msgstr "Inventario:"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_is_follower
+msgid "Is Follower"
+msgstr "Es Seguidor"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quant__is_physical_location
+msgid "Is Physical Location"
+msgstr "Es Ubicación Física"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__liters_per_unit
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__liters_per_unit
+msgid "Liters Per Unit"
+msgstr "Litros por unidad"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_main_attachment_id
+msgid "Main Attachment"
+msgstr "Adjunto Principal"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__main_warehouse_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__main_warehouse_id
+msgid "Main Warehouse"
+msgstr "Almacén Principal"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_has_error
+msgid "Message Delivery error"
+msgstr "Error de Envío de Mensaje"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_ids
+msgid "Messages"
+msgstr "Mensajes"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr "Mi fecha límite de actividad"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr "Fecha límite para la próxima actividad"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_summary
+msgid "Next Activity Summary"
+msgstr "Resumen de la siguiente actividad"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_type_id
+msgid "Next Activity Type"
+msgstr "Siguiente tipo de actividad"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.packaging_picking_item
+msgid "Note:"
+msgstr "Nota"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_needaction_counter
+msgid "Number of Actions"
+msgstr "Número de acciones"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_has_error_counter
+msgid "Number of errors"
+msgstr "Número de errores"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr "Número de mensajes que requieren una acción"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr "Número de mensajes con error de envío"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking__type_delivery_step__out
+#: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking_type__type_steps__out
+msgid "OUT"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_picking_form
+msgid "OUTS"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__outs_count
+msgid "Outs Count"
+msgstr "Cantidad de Outs"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking__type_delivery_step__pack
+#: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking_type__type_steps__pack
+msgid "PACK"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_picking_form
+msgid "PACKS"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking__type_delivery_step__pick
+#: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking_type__type_steps__pick
+msgid "PICK"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_picking_form
+msgid "PICKS"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.packaging_picking_item
+msgid "Package"
+msgstr "Cajas"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__package_qty
+msgid "Package Qty"
+msgstr "Número de Cajas"
+
+#. module: l10n_ve_stock
+#: model:ir.actions.report,name:l10n_ve_stock.action_packaging_picking
+msgid "Packaging tags"
+msgstr "Etiquetas de Cajas"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__packs_count
+msgid "Packs Count"
+msgstr "Cantidad de Packs"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__physical_location_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__physical_location_id
+msgid "Physical Location"
+msgstr "Ubicacion Física"
+
+#. module: l10n_ve_stock
+#: model:ir.actions.act_window,name:l10n_ve_stock.action_stock_quant
+#: model:ir.ui.menu,name:l10n_ve_stock.menu_stock_quant
+msgid "Physical Locations"
+msgstr "Ubicaciones Físicas"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_total_uom_group__picking_id
+msgid "Picking"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_picking_type
+msgid "Picking Type"
+msgstr "Tipo de albarán"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__picks_count
+msgid "Picks Count"
+msgstr "Cantidad de Picks"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_kanban_view
+msgid "Price + IVA:"
+msgstr "Precio + IVA"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__price_with_tax
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__price_with_tax
+msgid "Price With Tax"
+msgstr "Precio con Impuestos"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__price_without_tax
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__price_without_tax
+msgid "Price Without Tax"
+msgstr "Precio sin impuestos"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__priority_location
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__priority_location
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__priority
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move__priority_location
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move_line__priority_location
+msgid "Priority"
+msgstr "Prioridad"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_product_template
+msgid "Product"
+msgstr "Producto"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quant__product_alter_location_ids
+msgid "Product Alter Location"
+msgstr "Otras Ubicaciones del Producto"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_product_category
+msgid "Product Category"
+msgstr "Categoría de producto"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_move_line
+msgid "Product Moves (Stock Move Line)"
+msgstr "Movimientos de producto (línea de movimiento de stock)"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move_line__product_tag_ids
+msgid "Product Tags"
+msgstr "Etiquetas de Producto"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_product_product
+msgid "Product Variant"
+msgstr "Variantes de producto"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__quantity
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__quantity
+msgid "Quantity"
+msgstr "Cantidad"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_quant
+msgid "Quants"
+msgstr "Cuantos"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "Rango:"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__reception_date
+msgid "Reception Date"
+msgstr "Fecha de Recepción"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_user_id
+msgid "Responsible User"
+msgstr "Usuario Responsable"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_has_sms_error
+msgid "SMS Delivery error"
+msgstr "Error de entrega de SMS"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_tree_view
+msgid "Sales Price"
+msgstr "Precio de Venta + Impuesto"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__group_product_available_quantity_on_sale
+msgid "Show Available Quantity From All Warehouses"
+msgstr "Mostrar la Cantidad Disponible en Todos los Almacenes."
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.stock_physical_quant_form_view
+msgid "Show Location Available"
+msgstr "Otras Ubicaciones del Producto"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_show_standard_price
+msgid "Show standard price on the product form view"
+msgstr "Mostrar costo en la vista del producto"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+"Estado basado en actividades\n"
+"Atrasado: La fecha de vencimiento ya ha pasado\n"
+"Hoy: La fecha de la actividad es hoy\n"
+"Planificadas: Actividades futuras."
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "Stock"
+msgstr "Inventario"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_move
+msgid "Stock Move"
+msgstr "Movimiento stock"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_quantity_history
+msgid "Stock Quantity History"
+msgstr "Historial de cantidad de stock"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_binaural_stock
+msgid "Stock Settings"
+msgstr "Configuraciones de Inventario"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_product_product__quantity
+#: model:ir.model.fields,help:l10n_ve_stock.field_product_template__quantity
+msgid "The Availability of the product to sell."
+msgstr "La Disponibilidad del Producto para la Venta."
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_location.py:0
+#, python-format
+msgid "The priority must be greater than 0."
+msgstr "La prioridad debe ser mayor que 0."
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/product_template.py:0
+#, python-format
+msgid "This product must have only one tax."
+msgstr "Este producto debe tener solo un impuesto."
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "Total:"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_picking
+msgid "Transfer"
+msgstr "Traslado"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__type_delivery_step
+msgid "Type Delivery Step"
+msgstr "Operación"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_type__type_steps
+msgid "Type Steps"
+msgstr "Operación"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr "Tipo de actividad excepcional registrada"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "Ultimo Costo"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__use_free_qty_odoo
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__use_free_qty_odoo
+msgid "Use Free Qty Odoo"
+msgstr "Usar Cantidad Disponible de Odoo"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__use_main_warehouse
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__use_main_warehouse
+msgid "Use Main Warehouse"
+msgstr "Usar un Almacén Principal"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__use_physical_location
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__use_physical_location
+msgid "Use Physical Location"
+msgstr "Usar ubicaciones Físicas"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.stock_move_line_tree_view
+msgid "User"
+msgstr "Usuario"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
+msgid "VALOR DEL INVENTARIO A PARTIR DE UNA FECHA"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__warehouse_search_id
+msgid "Warehouse Search"
+msgstr "Buscar en Almacen"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__website_message_ids
+msgid "Website Messages"
+msgstr "Mensajes del sitio web"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__website_message_ids
+msgid "Website communication history"
+msgstr "Historial de comunicación de la web"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/product_product.py:0
+#, python-format
+msgid "You can't create products"
+msgstr "No puedes crear productos"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_move.py:0
+#, python-format
+msgid "You cannot make transfers larger than the demand."
+msgstr "No se pueden realizar transferencias mayores a la demanda"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_move.py:0
+#: code:addons/l10n_ve_stock/models/stock_move_line.py:0
+#, python-format
+msgid "You do not have permission to add lines to this transfer."
+msgstr "No tienes permiso para agregar líneas a esta transferencia"
+
+#. module: l10n_ve_stock
+#: model:ir.actions.server,name:l10n_ve_stock.correction_quantity_product_template
+msgid "correction quantity product template"
+msgstr "plantilla de producto de cantidad de corrección"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking.py:0
+#, python-format
+msgid "does not have results from other pickings"
+msgstr "No tiene resultados de otros pickings"
+
+#. module: l10n_ve_stock
+#: model:ir.actions.report,name:l10n_ve_stock.inventory_valuation_report
+msgid "inventory Valuation"
+msgstr "Valoración de inventario"
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_total_uom_group
+msgid "total.uom.group"
+msgstr "Grupo de Total de Unidades de Medida"

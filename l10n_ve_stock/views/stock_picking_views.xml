@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_stock_move_line_detailed_operation_tree" model="ir.ui.view">
+        <field name="name">stock.move.line.detailed.operation.tree</field>
+        <field name="model">stock.move.line</field>
+        <field name="inherit_id" ref="stock.view_stock_move_line_detailed_operation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="inside">
+                <field name="priority_location" optional="hide"/>
+            </xpath>
+            <xpath expr="//tree" position="attributes">
+                <attribute name="default_order">priority_location asc</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_picking_form" model="ir.ui.view">
+        <field name="name">stock.picking.relations</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@class='oe_button_box']" position="inside">
+                <field name="type_delivery_step" invisible="1"/>
+                <field name="picks_count" invisible="1"/>
+                <field name="packs_count" invisible="1"/>
+                <field name="outs_count" invisible="1"/>
+                <button type="object" name="action_get_picks" class="oe_stat_button" icon="fa-cubes" groups="stock.group_stock_user" attrs="{'invisible': [('picks_count', '&lt;', 1)]}">
+                    <field name="picks_count" widget="statinfo" string="PICKS"/>
+                </button>
+                <button type="object" name="action_get_packs" class="oe_stat_button" icon="fa-cube" groups="stock.group_stock_user" attrs="{'invisible': [('packs_count', '&lt;', 1)]}">
+                    <field name="packs_count" widget="statinfo" string="PACKS"/>
+                </button>
+                <button type="object" name="action_get_outs" class="oe_stat_button" icon="fa-truck" groups="stock.group_stock_user" attrs="{'invisible': [('outs_count', '&lt;', 1)]}">
+                    <field name="outs_count" widget="statinfo" string="OUTS"/>
+                </button>
+            </xpath>
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="type_delivery_step" invisible="1"/>
+                <field name="package_qty" attrs="{'invisible': [('type_delivery_step','!=','out')]}"/>
+            </xpath>
+
+            <xpath expr="//form/header/button[@name='%(stock.action_report_delivery)d']" position="attributes">
+                <attribute name="groups">!l10n_ve_stock.group_hide_print_button_for_inventory_transfers</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='do_unreserve']" position="attributes">
+                <attribute name="groups">!l10n_ve_stock.group_hide_override_button_for_inventory_transfers</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='button_validate'][2]" position="attributes">
+                <attribute name="groups">!l10n_ve_stock.group_hide_validate_inventory_transfers_button</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='button_validate'][1]" position="attributes">
+                <attribute name="groups">!l10n_ve_stock.group_hide_validate_inventory_transfers_button</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='action_cancel'][1]" position="attributes">
+                <attribute name="groups">!l10n_ve_stock.group_hide_cancel_button_from_inventory_transfers</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='action_toggle_is_locked'][2]" position="attributes">
+                <attribute name="groups">!l10n_ve_stock.group_hide_unlock_lock_button_for_inventory_transfers</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='action_toggle_is_locked'][1]" position="attributes">
+                <attribute name="groups">!l10n_ve_stock.group_hide_unlock_lock_button_for_inventory_transfers</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d'][1]" position="attributes">
+                <attribute name="groups">!l10n_ve_stock.group_hide_return_inventory_transfers_button</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='button_scrap'][1]" position="attributes">
+                <attribute name="groups">!l10n_ve_stock.group_hide_discard_inventory_transfers_button</attribute>
+            </xpath>
+
+            <field name="date_deadline" position="after">
+                <field name="reception_date" attrs="{'invisible': [('picking_type_code', '!=', 'outgoing')],}"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="vpicktree" model="ir.ui.view">
+        <field name="name">stock.picking.tree</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="package_qty"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="delivery_inherit_binaural_stock" model="ir.ui.view">
+        <field name="name">stock.picking.view.form.inherit</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="delivery.view_picking_withcarrier_out_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='weight'][1]" position="replace">
+                <field name="change_weight" invisible="1"/>
+                <field name="weight" class="oe_inline" attrs="{'invisible': [('change_weight', '!=', True)], 'readonly': [('state', 'in', ['done','cancel'])]}"/>
+                <field name="weight" class="oe_inline" attrs="{'invisible': [('change_weight', '!=', False)]}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
