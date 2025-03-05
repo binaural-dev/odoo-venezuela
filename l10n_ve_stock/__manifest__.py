@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "Binaural Inventario",
+    "name": "Venezuela - Stock",
     "summary": """
-        Modulo de localización relacionado
-        al inventario.
+        Stock for Venezuela Localization
     """,
     "license": "LGPL-3",
     "author": "Binauraldev",

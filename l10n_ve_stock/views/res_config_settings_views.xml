@@ -58,6 +58,21 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="col-12 col-lg-6 o_setting_box"
+                        name="validate_without_product_quantity_l10n_ve">
+                        <div class="o_setting_left_pane">
+                            <field name="validate_without_product_quantity" />
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="validate_without_product_quantity" />
+                            <div class="text-muted">
+                                If you have more than the quantity on stock dont allow
+                                transfer/sell.
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
                 
             </xpath>

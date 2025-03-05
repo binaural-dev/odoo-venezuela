@@ -27,3 +27,8 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.use_free_qty_odoo",
         readonly=False,
     )
+
+    validate_without_product_quantity = fields.Boolean(
+        related="company_id.validate_without_product_quantity", readonly=False
+    )
+
