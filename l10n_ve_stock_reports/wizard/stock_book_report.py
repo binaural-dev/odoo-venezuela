@@ -11,9 +11,9 @@ _logger = logging.getLogger(__name__)
 INIT_LINES = 8
 
 
-class WizardStockReportsBinaural(models.TransientModel):
-    _name = "wizard.stock.report"
-    _description = "Wizard para generar reportes de libro de compra y ventas"
+class WizardStockBookReport(models.TransientModel):
+    _name = "wizard.stock.book.report"
+    _description = "Wizard para generar reportes de libro de inventario"
 
     def _default_check_currency_system(self):
         is_system_currency_bs = self.env.company.currency_id.name == "VEF"
@@ -46,17 +46,7 @@ class WizardStockReportsBinaural(models.TransientModel):
     currency_system = fields.Boolean(string="Report in currency system", default=False)
     
     def generate_report(self):
-        _logger.info("GENERAR ACCOUNT MOVE")
         
-        valuation_model = self.env["stock.valuation.layer"]
-
-        # Buscar todos los valuation layers (sin filtros)
-        valuation_layers = valuation_model.search([])
-        for valuation in valuation_layers:
-            if valuation.account_move_id.id:
-                _logger.info(f"VALUATION LAYER: {valuation.read([])}")
-
-                _logger.info(f"ACCOUNT MOVE: {valuation.account_move_id.read(['name','state','move_type'])}")
         return self.download_stock_book()
 
     def download_stock_book(self):
@@ -74,7 +64,7 @@ class WizardStockReportsBinaural(models.TransientModel):
             return
         
         for move in moves:
-            _logger.info(f"HOLA SOY UNO DE LOS ACCOUNT MOVE DEVUELTOS POR EL SEARCH MOVES:{move.name}, Valuation al que pertenezco:{move.stock_valuation_layer_ids}")
+            _logger.info(f"HOLA SOY UNO DE LOS ACCOUNT MOVE DEVUELTOS POR EL SEARCH MOVES:{move.name}, Valuation al que pertenezco:{move.stock_valuation_layer_ids}, FECHA:{move.date}, INVOICE DATE: {move.invoice_date}, VAT:{move.vat},Tipo:{move.move_type},REVERSED ENTRY: {move.reversed_entry_id.name}")
             taxes = self._determinate_amount_taxeds(move)
             stock_book_line = self._fields_stock_book_line(move, taxes)
             stock_book_lines.append(stock_book_line)
@@ -86,7 +76,6 @@ class WizardStockReportsBinaural(models.TransientModel):
         valuation_model = env["stock.valuation.layer"]
         domain = self._get_domain_valuation_layer()
         valuation_layers = valuation_model.search(domain, order=order)
-        _logger.info(f"SOY LOS VALUATION LAYERS DE LA BUSQUEDA CON EL DOMAIN:{valuation_layers.read()}")
 
         if not valuation_layers:
             return []
@@ -117,7 +106,7 @@ class WizardStockReportsBinaural(models.TransientModel):
         multiplier = -1 if move.move_type == "out_refund" else 1
         return {
             "_id": move.id,
-            "document_date": self._format_date(move.invoice_date),
+            "document_date": self._format_date(move.invoice_date) if move.invoice_date else self._format_date(move.date),
             "accounting_date": self._format_date(move.date),
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
@@ -125,7 +114,7 @@ class WizardStockReportsBinaural(models.TransientModel):
             "move_type": self._determinate_type(move.move_type),
             "transaction_type": self._determinate_transaction_type(move),
             "number_invoice_affected": move.reversed_entry_id.name or "--",
-            "correlative": move.correlative,
+            "correlative": move.correlative if move.correlative else False,
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
             "total_sales_iva": taxes.get("amount_taxed", 0),
@@ -140,7 +129,8 @@ class WizardStockReportsBinaural(models.TransientModel):
         is_posted = move.state == "posted"
         vef_base = self.company_id.currency_id.id == self.env.ref("base.VEF").id
 
-        if not is_posted:
+        if not (is_posted and move.tax_totals):
+            _logger.info("EL MOVIMIENTO NO POSEE TAX TOTALS O NO ESTA POSTEADO")
             return {
                 "amount_untaxed": 0.0,
                 "amount_taxed": 0.0,
@@ -276,6 +266,7 @@ class WizardStockReportsBinaural(models.TransientModel):
             "in_invoice": "FAC",
             "out_refund": "NC",
             "in_refund": "NC",
+            "entry":"SI",
         }
 
         return types[move_type]
@@ -289,6 +280,9 @@ class WizardStockReportsBinaural(models.TransientModel):
 
         if move.move_type in ["out_refund", "in_refund"] and move.state == "posted":
             return "03-REG"
+        
+        if move.move_type in ["entry"] and move.state == "posted":
+            return "04-REG"
 
         if move.move_type in [
             "out_refund",

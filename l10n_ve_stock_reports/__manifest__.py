@@ -8,10 +8,10 @@
     "website": "https://www.binauraldev.com",
     "category": "Stock / Inventory",
     "version": "16.0.0.0.1",
-    "depends": ["stock", "account","sale_stock"],
+    "depends": ["stock", "account","sale_stock","l10n_ve_invoice"],
     "data": [
         "security/ir.model.access.csv",
-        "wizard/stock_report.xml",
+        "wizard/stock_book_report.xml",
         "views/stock_picking_views.xml",
     ],
     "images": ["static/description/icon.png"],

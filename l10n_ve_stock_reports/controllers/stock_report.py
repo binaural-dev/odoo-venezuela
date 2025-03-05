@@ -4,8 +4,8 @@ from odoo import http
 
 class StockReportsController(http.Controller):
     @http.route("/web/download_stock_book", type="http", auth="user")
-    def download_sales_book(self, **kw):
-        stock_book_model = http.request.env["wizard.stock.report"]
+    def download_stock_book(self, **kw):
+        stock_book_model = http.request.env["wizard.stock.book.report"]
         company_id = int(kw.get("company_id", 1))
         stock_book = stock_book_model.search([], order="id desc", limit=1)
 
