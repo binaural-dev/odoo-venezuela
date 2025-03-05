@@ -20,6 +20,9 @@ class ResConfigSettings(models.TransientModel):
     show_tag_on_usd_invoice = fields.Boolean(
         related="company_id.show_tag_on_usd_invoice", readonly=False
     )
+    show_column_default_code_free_form = fields.Boolean(
+        related="company_id.show_column_default_code_free_form", readonly=False
+    )
 
     @api.onchange("group_sales_invoicing_series")
     def onchange_group_sales_invoicing_series(self):

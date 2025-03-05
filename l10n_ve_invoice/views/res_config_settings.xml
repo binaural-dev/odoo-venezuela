@@ -59,6 +59,20 @@
                                 <div class="text-muted">It allow enable the invoicing sequences by series in sale's journals.</div>
                             </div>
                         </div>
+
+                         <div class="col-12 col-lg-6 o_setting_box" id="show_column_default_code_free_form_setting">
+                            <div class="o_setting_left_pane">
+                                <field name="show_column_default_code_free_form"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <group colspan="2" col="4">
+                                    <label for="show_column_default_code_free_form"/>
+                                </group>
+                                <div class="text-muted">
+                                   Show Default Code on Free Form Invoice
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </xpath>
             </field>
