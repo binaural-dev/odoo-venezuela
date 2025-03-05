@@ -10,6 +10,34 @@ _logger = logging.getLogger(__name__)
 class ResPartner(models.Model):
     _inherit = "res.partner"
 
+    name = fields.Char(tracking=True)
+
+    mobile = fields.Char(tracking=True)
+
+    property_supplier_payment_term_id = fields.Many2one(tracking=True)
+
+    property_payment_term_id = fields.Many2one(tracking=True)
+
+    property_product_pricelist = fields.Many2one(tracking=True)
+
+    property_account_position_id = fields.Many2one(tracking=True)
+
+    street = fields.Char(tracking=True)
+    
+    street2 = fields.Char(tracking=True)
+
+    country_id = fields.Many2one(tracking=True)
+
+    state_id = fields.Many2one(tracking=True)
+
+    city_id = fields.Many2one(tracking=True)
+
+    municipality = fields.Many2one(tracking=True)
+
+    parish_id = fields.Many2one(tracking=True)
+
+    zip = fields.Char(tracking=True)
+
     def _default_company_id(self):
         company_id = self.env.company.id
         return company_id
@@ -26,6 +54,7 @@ class ResPartner(models.Model):
         string="Prefix VAT",
         default="V",
         help="Prefix of the VAT number",
+        tracking=True,
     )
 
     # @api.constrains("company_id", "prefix_vat", "vat")
