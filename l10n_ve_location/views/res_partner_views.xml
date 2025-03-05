@@ -1,28 +1,28 @@
 <odoo>
 	<data>
 		<record id="view_form_res_partner_inherited" model="ir.ui.view">
-			<field name="name">Extension de cliente</field>
+			<field name="name">Client Extension</field>
 			<field name="model">res.partner</field>
 			<field name="inherit_id" ref="base.view_partner_form" />
 			<field name="arch" type="xml">
 				<field name="city" position="replace">
-					<field name="city_id" placeholder="Ciudad" />
+					<field name="city_id" placeholder="City" />
 					<field name="city" invisible="1" />
 				</field>
 
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='city']" position="replace">
-					<field name="city_id" placeholder="Ciudad" />
+					<field name="city_id" placeholder="City" />
 					<field name="city" invisible="1" />
 				</xpath>
 				<xpath expr="//sheet/group/group/div/field[@name='street2']" position="after">
 					<field name="municipality" 
-					class="o_address_state" placeholder="Municipio"
+					class="o_address_state" placeholder="Municipality"
 					domain="[('state_id', '=', state_id)]"
 				/>
 				</xpath>
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='street2']" position="after">
 					<field name="municipality" 
-					class="o_address_state" placeholder="Municipio"
+					class="o_address_state" placeholder="Municipality"
 					domain="[('state_id', '=', state_id)]"
 				/>
 				</xpath>
