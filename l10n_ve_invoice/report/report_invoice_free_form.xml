@@ -16,6 +16,23 @@
         </record>
 
         <template id="report_freeform_document">
+            <div class="row">
+                <div class="col-12">
+                    <div class="text-center">
+                        <span>
+                            <t t-if="o.move_type in ['out_refund', 'in_refund']">
+                                NOTA DE CRÉDITO
+                            </t>
+                            <t t-elif="o.journal_id.is_debit">
+                                NOTA DE DÉBITO
+                            </t>
+                            <t t-else="">
+                                FACTURA
+                            </t>
+                        </span>
+                    </div>
+                </div>
+            </div>
             <div class="mt-5">
                 <div class="page">
                     <div id="informations" class="row mt-4 mb-4">
@@ -36,24 +53,31 @@
                             <span t-if="o.partner_id.phone"><strong>Teléfono:</strong> <t t-out="o.partner_id.phone"/></span>
                         </div>
                         <div class="col-auto col-1 mw-100 mb-1">
+                            <t t-set="currency_base" t-value="o.currency_id.id == %(base.VEF)s"/>
                             <t t-if="o.company_id.taxpayer_type == 'ordinary'">
                                 <span><strong>CONTRIBUYENTE FORMAL</strong></span>
                                 <br/>
                             </t>
                             <t t-if="o.move_type in ['out_refund', 'in_refund']">
-                                <span><strong>Nro de Nota de Crédito:</strong><t t-if="o.name != '/'" t-out="o.name"/></span>
+                                <span><strong>Nro de nota de crédito:</strong><t t-if="o.name != '/'" t-out="o.name"/></span>
                                 <br/>
                                 <span><strong>Factura afectada:</strong><t t-out="o.reversed_entry_id.name"/></span>
                                 <br/>
-                                <span><strong>Numero de Control:</strong><t t-out="o.reversed_entry_id.correlative"/></span>
+                                <span><strong>Nro de control:</strong><t t-out="o.reversed_entry_id.correlative"/></span>
                                 <br/>
-                                <span><strong>Fecha de la Factura:</strong><t t-if="o.reversed_entry_id.invoice_date" t-out="o.reversed_entry_id.invoice_date.strftime('%d/%m/%Y')"/></span>
+                                <span><strong>Fecha de la factura:</strong><t t-if="o.reversed_entry_id.invoice_date" t-out="o.reversed_entry_id.invoice_date.strftime('%d/%m/%Y')"/></span>
                                 <br/>
-                                <span><strong>Total Facturado:</strong><t t-out="o.reversed_entry_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/></span>
+                                <span>
+                                    <strong>Total facturado:</strong>
+                                        <t 
+                                            t-out="o.reversed_entry_id.amount_total if currency_base else o.reversed_entry_id.foregn_total_billed" 
+                                            t-options='{"widget": "monetary", "display_currency": o.currency_id if currency_base else o.foreign_currency_id}'
+                                        />
+                                </span>
                                 <br/>
                             </t>
                             <t t-elif="o.journal_id.is_debit">
-                                <span><strong>Nota de Débito:</strong><t t-if="o.name != '/'" t-out="o.name"/></span>
+                                <span><strong>Nota de débito:</strong><t t-if="o.name != '/'" t-out="o.name"/></span>
                                 <br/>
                                 <span>
                                     <strong>Factura afectada:</strong>
@@ -61,26 +85,31 @@
                                 </span>
                                 <span t-if="o.debit_origin_id.correlative">
                                     <br/>
-                                    <strong>Número de Control:</strong>
+                                    <strong>Número de control:</strong>
                                     <t t-out="o.debit_origin_id.correlative"/>
                                 </span>
                                 <br/>
                                 <span>
-                                    <strong>Fecha de la Factura:</strong>
+                                    <strong>Fecha de la factura:</strong>
                                     <t t-out="o.debit_origin_id.invoice_date"/>
                                 </span>
                                 <br/>
                                 <span>
-                                    <strong>Total Facturado:</strong>
-                                    <t t-out="o.debit_origin_id.foreign_total_billed" t-options='{"widget": "monetary", "display_currency": o.foreign_currency_id}'/>
+                                    <strong>Total facturado:</strong>
+                                    <t 
+                                        t-out="o.debit_origin_id.amoun_total if currency_base else o.debit_origin_id.foreign_total_billed" 
+                                        t-options='{"widget": "monetary", "display_currency": o.currency_id if currency_base else o.foreign_currency_id}'
+                                    />
                                 </span>
                                 <br/>
                             </t>
                             <t t-else="">
-                                <span><strong>Nro de Factura:</strong><t t-if="o.name != '/'" t-out="o.name"/></span>
+                                <span><strong>Nro de factura:</strong><t t-if="o.name != '/'" t-out="o.name"/></span>
+                                <br/>
                             </t>
-                            <p t-if="o.invoice_origin"><strong>Nro de Pedido:</strong><t t-out="o.invoice_origin"/></p>
-                            <p><strong>Fecha de emisión:</strong> <t t-if="o.invoice_date" t-out="o.invoice_date.strftime('%d/%m/%Y')"/></p>
+                            <strong>Pedido: </strong><t t-out="o.invoice_origin or 'N/A'"/>
+                            <br/>
+                            <strong>Fecha de emisión:</strong> <t t-if="o.invoice_date" t-out="o.invoice_date.strftime('%d/%m/%Y')"/>
                         </div>
                     </div>
 
@@ -89,10 +118,10 @@
                     <table class="table table-sm o_main_table table-borderless" name="invoice_line_table">
                         <thead>
                             <tr class="border-bottom border-dark">
-                                <th name="th_code" class="text-start"><span>Código</span></th>
+                                <th name="th_code" class="text-start" t-if="o.company_id.show_column_default_code_free_form"><span>Código</span></th>
                                 <th name="th_description" class="text-start"><span>Descripción</span></th>
                                 <th name="th_quantity" class="text-end"><span>Cantidad</span></th>
-                                <th name="th_priceunit" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>Precio Unit</span></th>
+                                <th name="th_priceunit" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>Precio Unit.</span></th>
                                 <th name="th_discount" t-if="display_discount" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
                                     <span>Disc.%</span>
                                 </th>
@@ -120,7 +149,7 @@
 
                                 <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
                                     <t t-if="line.display_type == 'product'" name="account_invoice_line_accountable">
-                                        <td>
+                                        <td t-if="o.company_id.show_column_default_code_free_form">
                                             <span t-field="line.product_id.default_code"/>
                                         </td>
 					                              <td name="account_invoice_line_name">
@@ -143,7 +172,7 @@
                                             <span class="text-nowrap" t-field="line.discount"/>
                                         </td>
                                         <td t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
-                                            <span t-esc="', '.join(map(lambda x: ( str(x.amount) + '%' if x.amount > 0 else ''), line.tax_ids))" id="line_tax_ids"/>
+                                            <span t-esc="', '.join(map(lambda x: ( str(x.amount) + '%' if x.amount > 0 else '0%'), line.tax_ids))" id="line_tax_ids"/>
                                         </td>
                                         <td class="text-end o_price_total">
                                             <t t-if="base_vef">
@@ -191,7 +220,7 @@
                                 <table class="table  table-borderless" style="page-break-inside: avoid;">
                                     <!--Tax totals-->
                                     <t t-set="tax_totals" t-value="o.tax_totals"/>
-                                    <t t-call="l10n_ve_invoice.document_tax_totals"/>
+                                    <t t-call="l10n_ve_invoice.document_tax_totals" t-lang="lang"/>
                                 </table>
                             </div>
                         </div>
@@ -229,14 +258,14 @@
             <t t-set="base_vef" t-value="o.currency_id.id == %(base.VEF)s"/>
             <t t-set="str_tax" t-value="'groups_by_subtotal' if base_vef else 'groups_by_foreign_subtotal'"/>
             <t t-foreach="tax_totals[str_tax][subtotal_to_show]" t-as="amount_by_group">
-		<tr>
-		    <td>
-			<span t-esc="'Total G ' + amount_by_group['tax_group_name']"/>
-		    </td>
-		    <td class="text-end o_price_total">
-			<span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
-		    </td>
-		</tr>
+                <tr>
+                    <td>
+                        <span t-esc="'Total G ' + amount_by_group['tax_group_name']"/>
+                    </td>
+                    <td class="text-end o_price_total">
+                        <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
+                    </td>
+                </tr>
                 <tr>
                     <t t-if="tax_totals['display_tax_base']">
                         <td>
@@ -247,7 +276,9 @@
                         </td>
                     </t>
                     <t t-else="">
-                        <td><span class="text-nowrap" t-esc="amount_by_group['tax_group_name']"/></td>
+                        <td>
+                            <span class="text-nowrap" t-esc="amount_by_group['tax_group_name']"/>
+                        </td>
                         <td class="text-end o_price_total">
                             <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_amount']" />
                         </td>
@@ -268,7 +299,9 @@
             <t t-set="str_tax" t-value="'subtotals' if base_vef else 'foreign_subtotals'"/>
             <t t-foreach="tax_totals[str_tax]" t-as="subtotal">
                 <tr class="border-black o_subtotal">
-                    <td><strong t-esc="subtotal['name']"/></td>
+                    <td>
+                        <strong t-esc="'Monto sin impuestos'"/>
+                    </td>
 
                     <td class="text-end">
                         <span
@@ -279,7 +312,7 @@
                 </tr>
 
                 <t t-set="subtotal_to_show" t-value="subtotal['name']"/>
-                <t t-call="l10n_ve_invoice.tax_groups_totals"/>
+                <t t-call="l10n_ve_invoice.tax_groups_totals" t-lang="lang"/>
             </t>
 
             <t t-set="has_rounding" t-value="'formatted_amount_total_rounded' in tax_totals"/>
@@ -309,7 +342,7 @@
                 </td>
             </tr>
             <tr t-if="has_rounding">
-                <td><strong>Total Rounded</strong></td>
+                <td><strong>Total redondeado</strong></td>
                 <td class="text-end">
                     <span t-esc="tax_totals['formatted_amount_total_rounded']"/>
                 </td>
