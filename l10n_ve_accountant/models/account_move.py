@@ -259,7 +259,7 @@ class AccountMove(models.Model):
             foreign_currency_symbol = foreign_currency_record.symbol or ""
             if view_type == "form":
                 view_id = self.env.ref(
-                    "l10n_ve_accountant.view_account_move_form_l10n_ve_invoice"
+                    "l10n_ve_accountant.view_account_move_form_l10n_ve_accountant"
                 ).id
                 doc = etree.XML(res["arch"])
                 page = doc.xpath("//page[@name='foreign_currency']")
