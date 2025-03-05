@@ -39,6 +39,14 @@ class StockMove(models.Model):
     @api.onchange('quantity_done')
     def _onchange_quantity_done(self):
         for record in self:
-            if self.env.company.not_allow_sell_products and record.quantity_done > record.forecast_availability:
+            self._validate_transfer_quantity(record)
+
+            
+
+    def _validate_transfer_quantity(self, record):
+            if self.env.company.validate_without_product_quantity:
+                return
+
+            if record.quantity_done > record.forecast_availability:
                 record.quantity_done = 0
                 raise UserError(_("You cannot make transfers larger than the demand."))

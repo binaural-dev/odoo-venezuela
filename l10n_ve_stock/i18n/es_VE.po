@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250120\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250222\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-29 18:50+0000\n"
-"PO-Revision-Date: 2025-01-29 18:50+0000\n"
+"POT-Creation-Date: 2025-03-05 16:14+0000\n"
+"PO-Revision-Date: 2025-03-05 16:14+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -85,6 +85,12 @@ msgid "All Warehouse"
 msgstr "Todos los Almacenes"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__validate_without_product_quantity
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__validate_without_product_quantity
+msgid "Allow Validate Without Product Quantity"
+msgstr "Permitir Validar Sin Cantidad de Producto"
+
+#. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_binaural_stock
 msgid "Allow changing weight during picking"
 msgstr "Permitir cambiar de peso durante la Picking"
@@ -141,19 +147,10 @@ msgstr "Bloquear campo de Litros por unidad"
 
 #. module: l10n_ve_stock
 #: model:res.groups,name:l10n_ve_stock.group_block_type_inventory_transfers_expeditions
-msgid "Block Type Inventory Transfers Expeditions"
-msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
-
-#. module: l10n_ve_stock
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_binaural_stock
 msgid ""
-"By turning on this option, when carrying out an inventory movement where you"
-" check the availability of the product for sale, it will be reserved from a "
-"single negative location in case they are found in other locations.."
-msgstr ""
-"Activando esta opción, al realizar un movimiento de inventario en el que se"
-"compruebe la disponibilidad del producto para su venta, se reservará desde una "
-" única ubicación negativa en caso de que se encuentren en otras ubicaciones."
+"Block Type Inventory Transfers Expeditions (Do not add a new product to the "
+"Dispatch)"
+msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__change_weight
@@ -206,11 +203,6 @@ msgstr "Define un almacén de ventas principal."
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "Descripción"
 msgstr ""
-
-#. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__done_total_uom_group_ids
-msgid "Done Total Uom Group"
-msgstr "Totales realizados UdM"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_quantity_history_inherit_binaural_stock
@@ -273,11 +265,6 @@ msgid "Hide Discard Button from Inventory Transfers"
 msgstr "Ocultar el botón Descartar de las transferencias de inventario"
 
 #. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__hide_done_total_uom_group_ids
-msgid "Hide Done Total Uom Group"
-msgstr "Ocultar Total UdM"
-
-#. module: l10n_ve_stock
 #: model:res.groups,name:l10n_ve_stock.group_hide_override_button_for_inventory_transfers
 msgid "Hide Override Button for Inventory Transfers"
 msgstr "Ocultar Botón Anular de las Transferencias de Inventario"
@@ -301,7 +288,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:res.groups,name:l10n_ve_stock.group_hide_validate_inventory_transfers_button
 msgid "Hide Validate Inventory Transfers Button"
-msgstr "Ocultar Botón Validar de las Transferencias de Inventario"
+msgstr "Ocultar Botón Validar de las Transferencias de Inventario"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking__type_delivery_step__in
@@ -335,6 +322,11 @@ msgstr "Si está marcado hay nuevos mensajes que requieren su atención."
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_has_sms_error
 msgid "If checked, some messages have a delivery error."
 msgstr "Si se encuentra marcado, algunos mensajes tienen error de envío."
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_binaural_stock
+msgid "If you have more than the quantity on stock dont allow transfer/sell."
+msgstr "Si hay más cantidad en la demanda que en el inventario, no se permite la transferencia/venta."
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_location
@@ -387,11 +379,6 @@ msgstr "Mensajes"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__my_activity_date_deadline
 msgid "My Activity Deadline"
 msgstr "Mi fecha límite de actividad"
-
-#. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_calendar_event_id
-msgid "Next Activity Calendar Event"
-msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_date_deadline
@@ -502,11 +489,6 @@ msgstr "Ubicacion Física"
 #: model:ir.ui.menu,name:l10n_ve_stock.menu_stock_quant
 msgid "Physical Locations"
 msgstr "Ubicaciones Físicas"
-
-#. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_total_uom_group__picking_id
-msgid "Picking"
-msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking_type
@@ -686,7 +668,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking
 msgid "Transfer"
-msgstr "Traslado"
+msgstr "Transferir"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__type_delivery_step
@@ -789,8 +771,3 @@ msgstr "No tiene resultados de otros pickings"
 #: model:ir.actions.report,name:l10n_ve_stock.inventory_valuation_report
 msgid "inventory Valuation"
 msgstr "Valoración de inventario"
-
-#. module: l10n_ve_stock
-#: model:ir.model,name:l10n_ve_stock.model_total_uom_group
-msgid "total.uom.group"
-msgstr "Grupo de Total de Unidades de Medida"
