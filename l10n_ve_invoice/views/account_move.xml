@@ -51,8 +51,13 @@
             <button name="button_draft" position="attributes">
                 <attribute name="attrs">
                     {
-                        'invisible': ['|', 
-                            ('state', 'in', ('posted')), 
+                        'invisible': [
+                            '|',
+                            '&amp;',
+                            ('state', 'in', ('posted', 'cancel')),
+                            ('move_type', 'in', ('out_invoice', 'out_refund')),
+                            '&amp;',
+                            ('journal_id.is_debit', '=', True),
                             ('show_reset_to_draft_button', '=', False)
                         ]
                     }
