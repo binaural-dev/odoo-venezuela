@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="wizard_binaural_stock_reports_view" model="ir.ui.view">
+        <field name="name">wizard.stock.report.view</field>
+        <field name="model">wizard.stock.report</field>
+        <field name="arch" type="xml">
+            <form string="Accounting Reports">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date_from"/>
+                        </group>
+                        <group>
+                            <field name="date_to"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="generate_report" type="object" string="Generar Informe" />
+                </footer> 
+            </form>
+        </field>
+    </record>
+
+    <record id="action_stock_report_binaural" model="ir.actions.act_window">
+        <field name="name">Stock Book</field>
+        <field name="res_model">wizard.stock.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="wizard_binaural_stock_reports_view"/>
+    </record>
+
+    <menuitem name="Stock Book" action="action_stock_report_binaural" id="stock_report_sale_binaural_menu" parent="account.menu_finance_reports" />
+    
+</odoo>

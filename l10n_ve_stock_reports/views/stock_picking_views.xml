@@ -1,0 +1,31 @@
+<odoo>
+    <record id="payment_term_view_picking_form" model="ir.ui.view">
+        <field name="name">payment.term.stock.picking.form</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Localiza el <header> dentro del formulario -->
+            <xpath expr="//form//header" position="inside">
+
+                <button name="accion_personalizada" 
+                        string="Guía de Despacho/Orden de Entrega" 
+                        type="object" 
+                        class="o_btn_validate" 
+                        data-hotkey="m" attrs="{'invisible': [('show_button', '=', False)]}" nolabel="1"/>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="show_button" invisible="1"/>
+                <!-- <field name="show_payment_term" invisible="1"/> -->
+
+                <div class="o_td_label">
+                    <label for="payment_term" string="Payment Term" style="font-weight:bold;" attrs="{'invisible': [('picking_type_code', '!=', 'outgoing')]}"/>
+                </div>
+                <field name="payment_term" attrs="{'invisible': [('picking_type_code', '!=', 'outgoing')]}" nolabel="1"/>
+            </xpath>
+            <xpath expr="//field[@name='origin']" position="after">
+               
+            </xpath>
+        </field>
+    </record>
+</odoo>
