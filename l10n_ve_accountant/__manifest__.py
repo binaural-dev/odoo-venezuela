@@ -29,6 +29,7 @@
         "views/account_payment.xml",
         "views/res_partner.xml",
         "views/ir_property.xml",
+        "views/res_company_views.xml",
         "report/account_invoice_details.xml",
         "report/all_payment_report.xml",
         "report/account_report_templates.xml",
