@@ -25,6 +25,11 @@ class AccountMove(models.Model):
 
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
+    is_debit_journal = fields.Boolean(
+        compute="_compute_is_debit_journal",
+        store=True
+    )
+
     @api.constrains("correlative", "is_contingency")
     def _check_correlative(self):
         AccountMove = self.env["account.move"]
@@ -53,6 +58,10 @@ class AccountMove(models.Model):
                 raise UserError(
                     _("The correlative must be unique per journal when using a contingency journal")
                 )
+    @api.depends('journal_id')
+    def _compute_is_debit_journal(self):
+        for move in self:
+            move.is_debit_journal = move.journal_id.is_debit if move.journal_id else False
 
     @api.depends("amount_residual")
     def _compute_payment_dates(self):
