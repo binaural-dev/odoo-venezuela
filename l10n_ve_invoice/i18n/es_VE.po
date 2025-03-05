@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20241115\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-18 20:49+0000\n"
-"PO-Revision-Date: 2024-11-18 20:49+0000\n"
+"POT-Creation-Date: 2025-03-05 16:13+0000\n"
+"PO-Revision-Date: 2025-03-05 16:13+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -17,40 +17,16 @@ msgstr ""
 
 #. module: l10n_ve_invoice
 #: model:ir.actions.report,print_report_name:l10n_ve_invoice.action_invoice_free_form_l10n_ve_invoice
-#: model:ir.actions.report,print_report_name:l10n_ve_invoice.action_invoice_sale_note_l10n_ve_invoice
 msgid ""
 "(object.state == 'posted') and ((object.name or 'INV').replace('/','_') + "
 "'.pdf')"
 msgstr ""
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid ""
-"-\n"
-"\n"
-"                                                Ciudad:"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid ""
-"-\n"
-"\n"
-"                                                Estado:"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid ""
 "<br/>\n"
-"                                                                        Motivo:"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid ""
-"<br/>\n"
-"                                                                        Total Facturado:"
+"                                    <strong>Número de Control:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -58,6 +34,13 @@ msgstr ""
 msgid ""
 "<span groups=\"account.group_show_line_subtotals_tax_excluded\">Monto</span>\n"
 "                                    <span groups=\"account.group_show_line_subtotals_tax_included\">Total</span>"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid ""
+"<span><strong>CONTRIBUYENTE FORMAL</strong></span>\n"
+"                                <br/>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -86,13 +69,8 @@ msgid "<span>IVA</span>"
 msgstr ""
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "<span>Observacion:&amp;nbsp;</span>"
-msgstr ""
-
-#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
-msgid "<span>Precio Unit</span>"
+msgid "<span>Precio Unit.</span>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -141,7 +119,6 @@ msgid "<strong>Nro de Nota de Crédito:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_l10n_ve_invoce_report_invoice_document
 msgid "<strong>Nro de Pedido:</strong>"
 msgstr ""
@@ -149,6 +126,11 @@ msgstr ""
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "<strong>Numero de Control:</strong>"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "<strong>Pedido:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -212,11 +194,6 @@ msgid "Book Purchase"
 msgstr "Libro de Compras"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Cant"
-msgstr ""
-
-#. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
@@ -235,14 +212,9 @@ msgid "Company"
 msgstr "Compañía"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Company Logo"
-msgstr "Logo de Compañía"
-
-#. module: l10n_ve_invoice
 #: model:ir.model,name:l10n_ve_invoice.model_res_config_settings
 msgid "Config Settings"
-msgstr "Opciones de configuración"
+msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_invoice
 #. odoo-python
@@ -266,7 +238,7 @@ msgstr "Número de Control"
 #. module: l10n_ve_invoice
 #: model:res.groups,name:l10n_ve_invoice.create_out_refund
 msgid "Create Out Refund Moves"
-msgstr "Mostar botón para crear Facturas Rectificativas"
+msgstr "Mostrar botón para crear Notas de Crédito"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__create_uid
@@ -279,11 +251,6 @@ msgid "Created on"
 msgstr "Creado en"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Código"
-msgstr ""
-
-#. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__date_to
 msgid "Date End"
 msgstr "Fecha de Fin"
@@ -294,58 +261,14 @@ msgid "Date Start"
 msgstr "Fecha de Inicio"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Desc%"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Descripción"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Devolución Nº"
-msgstr ""
-
-#. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__display_name
 msgid "Display Name"
 msgstr "Nombre"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Doc afectado: Nro Factura:"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "FACTURA"
 msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Domicilio Fiscal:"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Emisión:"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Fecha de Factura:"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__filter_partner
-msgid "Filter Partner"
-msgstr "Filtro de Contacto"
-
-#. module: l10n_ve_invoice
-#: model:ir.model.fields,help:l10n_ve_invoice.field_account_move__filter_partner
-msgid ""
-"Filter partner by both customer or supplier rank (Depending on what is "
-"needed)"
-msgstr ""
-"Filtro de contacto tanto para clientes como para proveedores (Dependiendo "
-"del tipo de factura)"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__first_payment_date
@@ -456,8 +379,13 @@ msgid "Max Product Invoice"
 msgstr "Cantidad máxima de productos en Facturas Forma Libre"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Motivo:"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "NOTA DE CRÉDITO"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "NOTA DE DÉBITO"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -468,33 +396,8 @@ msgid "Next Installment Date"
 msgstr "Fecha del próximo plazo"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Nota de Venta:"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Nro de Factura:"
-msgstr ""
-
-#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.account_move_form_l10n_ve_account_move
 msgid "Nro de Pedido"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Nro de control:"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__partner_id_domain
-msgid "Partner Id Domain"
-msgstr "Dominio de ID de socio"
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Precio"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -502,16 +405,6 @@ msgstr ""
 #: model:ir.ui.menu,name:l10n_ve_invoice.account_report_purchase_menu
 msgid "Purchase Book"
 msgstr "Libro de Compras"
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "RIF/Cédula:"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Razón social:"
-msgstr ""
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_reception_date
@@ -538,11 +431,6 @@ msgid "Sale Book"
 msgstr "Libro de Ventas"
 
 #. module: l10n_ve_invoice
-#: model:ir.actions.report,name:l10n_ve_invoice.action_invoice_sale_note_l10n_ve_invoice
-msgid "Sale Note"
-msgstr "Nota de Venta"
-
-#. module: l10n_ve_invoice
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_bank_statement_line__correlative
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_move__correlative
 #: model:ir.model.fields,help:l10n_ve_invoice.field_account_payment__correlative
@@ -558,6 +446,17 @@ msgstr "Grupo para Series de Facturación"
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_journal__series_correlative_sequence_id
 msgid "Series control number"
 msgstr "Número de control para series"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_column_default_code_free_form
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__show_column_default_code_free_form
+msgid "Show Column Default Code Free Form"
+msgstr "Mostar columna de código del producto en forma libre"
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
+msgid "Show Default Code on Free Form Invoice"
+msgstr "Mostrar Código del Producto en Forma Libre"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_tag_on_usd_invoice
@@ -582,11 +481,6 @@ msgid "Show Total USD on Free Form Invoice"
 msgstr "Mostrar Total en USD en Forma Libre"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Telf:"
-msgstr ""
-
-#. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 #, python-format
@@ -606,33 +500,12 @@ msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
 msgid "Total"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Total Facturado:"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Total a pagar"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
 msgid "Total en USD"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Unidad"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.template_invoice_sale_note_l10n_ve_invoice
-msgid "Vencimiento:"
 msgstr ""
 
 #. module: l10n_ve_invoice

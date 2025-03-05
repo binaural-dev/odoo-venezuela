@@ -142,7 +142,7 @@ class AccountFiscalyearClosingConfig(models.Model):
 
 
 class AccountFiscalyearClosing(models.Model):
-    _inherit = "account.fiscalyear.closing"    
+    _inherit = "account.fiscalyear.closing"
 
     def draft_moves_check(self):
         for closing in self:            

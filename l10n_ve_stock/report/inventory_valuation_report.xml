@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <data>
+
+        <record id="inventory_valuation_report" model="ir.actions.report">
+            <field name="name">inventory Valuation</field>
+            <field name="model">product.product</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">l10n_ve_stock.report_inventory_valuation_template</field>
+        </record>
+        
+        <template id="report_inventory_valuation_template">
+            <t t-set="company" t-value="env.company"/>
+            <t t-call="web.html_container">
+                <t t-call="web.basic_layout">
+                    <style>
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            border: 1px solid #CBCBCB;
+                        }
+
+                        .tr-back {background-color: #f2f2f2;}
+
+                        #table-report th {
+                            padding-top: 12px;
+                            padding-bottom: 12px;
+                            background-color: #CBCBCB;
+                            }
+                        
+                        .tr-inside {
+                            padding-top: 20px;
+                            padding-bottom: 20px;
+                            border-top: 1px solid #CBCBCB;
+                        }
+                                
+                        #total-tr{
+                            border: 1px solid #ADADAD;
+                        }
+
+                    </style>
+                    <div class="page">
+                        <div style="position: relative;">
+                            <label style="position: absolute; left: 0;"><t t-out="company.name"/></label>
+                            <label style="position: absolute;  right: 0;">Fecha: <t t-out="today"/></label>
+                        </div>
+                        <div style="text-align:center; padding-top: 20px;">
+                            <h5>VALOR DEL INVENTARIO A PARTIR DE UNA FECHA</h5>
+                        </div>
+                        <div style="text-align:center;">
+                            <label>Rango: <t t-out="to_date"/></label>
+                        </div>
+                        <hr width="100%" />
+                        <div>
+                            <label>Inventory: 
+                                <t t-if="warehouse_id">
+                                    <t t-out="warehouse_id"/>
+                                </t>
+                                <t t-else="">
+                                    All
+                                </t>
+                            </label>
+                        </div>
+                        <hr width="100%" />
+                        <section id="segmento_3">
+                            <table  class="table" id="table-report">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid black">
+                                        <th style="width:140px;text-align:center;">Artículo</th>
+                                        <th style="width:140px;text-align:center;">Descripción</th>
+                                        <th style="width:140px;text-align:center;">Stock</th>
+                                        <th style="width:140px;text-align:center;">Costo</th>
+                                        <th style="width:140px;text-align:center;" t-if="last_cost">Ultimo Costo</th>
+                                        <th style="width:140px;text-align:center;">Costo Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="font-size:10px !important;">
+                                    <t t-set="total_qty" t-value="0"/>
+                                    <t t-set="total_cost" t-value="0"/>
+                                    <t t-set="total_last_cost" t-if="last_cost" t-value="0"/>
+                                    <t t-if="product_ids">
+                                        <t t-foreach="product_ids" t-as="product">
+                                            <tr class="tr-inside">
+                                                <td style="text-align:center"><label t-out="product['default_code']"/></td>
+                                                <td style="text-align:center" class="tr-back"><label t-out="product['name']"/></td>
+                                                <td style="text-align:center" class="tr-back"><label t-out="product['qty_available']"/></td>
+                                                <td style="text-align:center">
+                                                    <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'before'" style="padding-right:3px;"/>
+                                                    <label t-out="'%.2f'% product['standard_price']"/>
+                                                    <t t-set="total_last_cost_product" t-value="product.get('standard_price', 0.0)"/>
+                                                    <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'after'"/>
+                                                </td>
+                                                <td style="text-align:center"  t-if="last_cost" class="tr-back">
+                                                    <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'before'" style="padding-right:3px;"/>
+                                                    <t t-if="product['latest_standard_price'] > 0">
+                                                        <label t-out="'%.2f'% product['latest_standard_price']"/>
+                                                        <t t-set="total_last_cost_product" t-value="product.get('latest_standard_price', 0.0)"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <label t-out="'%.2f'% product['standard_price']"/>
+                                                        <t t-set="total_last_cost_product" t-value="product['standard_price']"/>
+                                                    </t>
+                                                    <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'after'"/>
+                                                </td>
+                                                <td style="text-align:center" t-att-class="{'tr-back': True if not last_cost else False}">
+                                                    <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'before'" style="padding-right:3px;"/>
+                                                    <t t-set="total_cost_product" t-value="product['qty_available'] * total_last_cost_product"/>
+                                                    <label t-out="'%.2f'% total_cost_product"/>
+                                                    <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'after'"/>
+                                                </td>
+                                                <t t-set="total_qty" t-value="total_qty + product['qty_available']"/>
+                                                <t t-set="total_cost" t-value="total_cost + total_cost_product"/>
+                                                <t t-set="total_last_cost" t-if="last_cost" t-value="total_last_cost + total_last_cost_product"/>
+                                            </tr>
+                                        </t>
+                                        <tr id="total-tr">
+                                            <td/>
+                                            <td/>
+                                            <td style="text-align:center"><label style="font-weight: bolder;">Total:</label></td>
+                                            <td style="text-align:center"><label style="font-weight: bolder;" t-out="total_qty"/></td>
+                                            <td/>
+                                            <td t-if="last_cost" style="text-align:center">
+                                                <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'before'" style="padding-right:3px;"/>
+                                                <label style="font-weight: bolder; padding-right:3px;" t-out="'%.2f'% total_last_cost"/>
+                                                <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'after'"/>
+                                            </td>
+                                            <td style="text-align:center">
+                                                <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'before'" style="padding-right:3px;"/>
+                                                <label style="font-weight: bolder; padding-right:3px;" t-out="'%.2f'% total_cost"/>
+                                                <label t-out="company.currency_id.symbol" t-if="company.currency_id.position == 'after'"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </section>
+                    </div>
+                </t>
+            </t>
+        </template>
+    </data>
+
+</odoo>

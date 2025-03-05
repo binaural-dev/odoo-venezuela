@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="ActionpadWidget" t-inherit="point_of_sale.ActionpadWidget" t-inherit-mode="extension" owl="1">
+        <xpath expr="//t[@t-esc='props.partner.name']" position="after">
+            <span t-if="props.partner.vat">
+            (<t t-esc="props.partner.prefix_vat" /><t t-esc="props.partner.vat" />)
+            </span>
+        </xpath>
+    </t>
+</templates>
