@@ -55,7 +55,6 @@ class AccountPaymentIgtf(models.Model):
         for payment in self:
             if (
                 payment.journal_id.is_igtf
-                and payment.journal_id.fiscal
                 and payment.is_igtf
             ):
                 payment.is_igtf_on_foreign_exchange = True
@@ -68,7 +67,6 @@ class AccountPaymentIgtf(models.Model):
                 if (
                     payment.is_igtf
                     and payment.journal_id.is_igtf
-                    and payment.journal_id.fiscal
                 ):
                     payment.igtf_amount = payment.amount * (
                         payment.igtf_percentage / 100
