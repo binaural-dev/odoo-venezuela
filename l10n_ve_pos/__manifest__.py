@@ -29,7 +29,6 @@
         "views/report_saledetails.xml",
         "security/res_group.xml",
         "wizard/payment_report.xml",
-        "report/payment_report.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
@@ -38,9 +37,6 @@
             "l10n_ve_pos/static/src/js/*.js",
             "l10n_ve_pos/static/src/xml/*.xml",
             "l10n_ve_pos/static/src/css/*.css",
-        ],
-        "point_of_sale.qunit_suite_tests": [
-            "l10n_ve_pos/static/tests/unit/**/*",
         ],
     },
     "binaural": True,
