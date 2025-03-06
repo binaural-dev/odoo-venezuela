@@ -4,7 +4,7 @@
         <record id="res_config_settings_l10n_ve_igtf" model="ir.ui.view">
             <field name="name">res.config.settings.l10n_ve_igtf</field>
             <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="l10n_ve_invoice.res_config_settings_l10n_ve_taxes"/>
+            <field name="inherit_id" ref="l10n_ve_tax.res_config_settings_l10n_ve_taxes"/>
             <field name="arch" type="xml">
                 <xpath expr="//div[@id='base_igtf_setting']" position="inside">
                     <br/>
@@ -72,27 +72,6 @@
                         </div>
                     </div>
 
-                    <div class="o_setting_left_pane">
-                    </div>
-                    <div class="o_setting_right_pane">
-                        <div class="content-group">
-                            <div class="row">
-                                <label for="journal_igtf_expense" class="col-lg-6 o_light_label"/>
-                                <field name="journal_igtf_expense" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="o_setting_left_pane">
-                    </div>
-                    <div class="o_setting_right_pane">
-                        <div class="content-group">
-                            <div class="row">
-                                <label for="igtf_account_expense" class="col-lg-6 o_light_label"/>
-                                <field name="igtf_account_expense" />
-                            </div>
-                        </div>
-                    </div>
                 </xpath>
             </field>
         </record>
