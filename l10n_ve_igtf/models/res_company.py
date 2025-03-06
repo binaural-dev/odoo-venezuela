@@ -11,9 +11,7 @@ class ResCompany(models.Model):
     supplier_account_igtf_id = fields.Many2one(
         "account.account", domain=[("account_type", "=", "expense")]
     )
-    igtf_account_expense = fields.Many2one(
-        "account.account", domain=[("account_type", "=", "expense")]
-    )
+    igtf_two_percentage_account = fields.Many2one("account.account")
     igtf_percentage = fields.Float(string="IGTF Percentage", default=3.00)
     taxpayer_type = fields.Selection(
         [
@@ -24,7 +22,6 @@ class ResCompany(models.Model):
         default="ordinary",
         store=True,
     )
-    journal_igtf_expense = fields.Many2one("account.journal", string="Journal IGTF Expense")
 
     show_igtf_suggested_account_move = fields.Boolean(default=False)
     show_igtf_suggested_sale_order = fields.Boolean(default=False)

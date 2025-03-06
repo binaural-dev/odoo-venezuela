@@ -86,11 +86,6 @@ msgid "IGTF"
 msgstr ""
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__igtf_account_expense
-msgid "IGTF Account Expense"
-msgstr "Cuenta de Proveedor Gasto de IGTF del 2%"
-
-#. module: l10n_ve_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__amount_to_pay_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__amount_to_pay_igtf
 #: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__amount_to_pay_igtf
@@ -123,20 +118,9 @@ msgid "IGTF active"
 msgstr ""
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__igtf_account_expense
-msgid "Igtf Account Expense"
-msgstr "Cuenta de Proveedor Gasto de IGTF del 2%"
-
-#. module: l10n_ve_igtf
 #: model:ir.model,name:l10n_ve_igtf.model_account_move
 msgid "Journal Entry"
 msgstr "Asiento contable"
-
-#. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_company__journal_igtf_expense
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_res_config_settings__journal_igtf_expense
-msgid "Journal IGTF Expense"
-msgstr "Diario para IGTF del 2%"
 
 #. module: l10n_ve_igtf
 #: model:ir.model.fields.selection,name:l10n_ve_igtf.selection__res_company__taxpayer_type__ordinary
