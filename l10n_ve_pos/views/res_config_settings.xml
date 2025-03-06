@@ -9,17 +9,6 @@
                 <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
                     <h2>POS Configuration</h2>
                     <div class="row mt16 o_settings_container" name="binaural_igtf_settings" >
-                        <div class="col-12 col-lg-6 o_setting_box" id="igtf_setting">
-                            <div class="o_setting_left_pane">
-                                <field name="module_binaural_pos_igtf"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="module_binaural_pos_igtf"/>
-                                <div class="text-muted">
-                                    Calculate IGTF with payments made in USD
-                                </div>
-                            </div>
-                        </div>
                         <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_left_pane">
                                 <field name="pos_unreconcile_moves"/>
@@ -49,28 +38,6 @@
                             </div>
                             <div class="o_setting_right_pane">
                                 <label for="pos_tax_inside"/>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
-                            <div class="o_setting_left_pane">
-                                <field name="module_binaural_pos_mf"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="module_binaural_pos_mf"/>
-                                <div class="text-muted">
-                                    Print invoices on Fiscal Machine, and get reports 
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6 o_setting_box" id="advance_payment_setting">
-                            <div class="o_setting_left_pane">
-                                <field name="module_binaural_pos_advance_payment"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="module_binaural_pos_advance_payment"/>
-                                <div class="text-muted">
-                                    Manage advance payments
-                                </div>
                             </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box" id="mf_setting">
