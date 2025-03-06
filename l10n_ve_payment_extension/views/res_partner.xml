@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_partner_l10n_ve_payment_extension" model="ir.ui.view">
+            <field name="name">res.partner.l10n.ve.payment.extension</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='category_id']" position="after">
+                    <field name="customer_rank" invisible="1"/>
+                    <field name="supplier_rank" invisible="1"/>
+                    <field name="withholding_type_id" attrs="{'required':[('supplier_rank','&gt;', 0)]}" />
+                    <field name="type_person_id" domain="[('state','=',True)]" attrs="{'required':['|',('supplier_rank','&gt;', 0),('customer_rank','&gt;',0)]}" /> 
+                    <field name="economic_activity_id"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
