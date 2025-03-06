@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-03 14:50+0000\n"
-"PO-Revision-Date: 2025-03-03 14:50+0000\n"
+"POT-Creation-Date: 2025-03-06 14:42+0000\n"
+"PO-Revision-Date: 2025-03-06 14:42+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -183,6 +183,11 @@ msgid "Cliente"
 msgstr ""
 
 #. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__company_id
 msgid "Company"
 msgstr "Compañia"
@@ -208,6 +213,11 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__create_date
 msgid "Created on"
 msgstr "Creado en"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_payment_search_inherit_l10n_ve_accountant
+msgid "Customer collections"
+msgstr "Cobranza de clientes"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
@@ -472,6 +482,11 @@ msgid "Form content is missing, this report cannot be printed."
 msgstr "Falta el contenido del formulario, este informe no se puede imprimir"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__taxpayer_type__formal
+msgid "Formal"
+msgstr ""
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "From"
 msgstr "Desde"
@@ -628,6 +643,11 @@ msgid "Nº Documento"
 msgstr ""
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__taxpayer_type__ordinary
+msgid "Ordinary"
+msgstr "Ordinario"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__payment_report__payment_type__outbound
 msgid "Outbound"
 msgstr "Enviado"
@@ -682,6 +702,12 @@ msgstr "Imprimir"
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
 msgid "Proveedor"
+msgstr "Proveedor"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
+msgid "RIF/CI/PAS."
 msgstr ""
 
 #. module: l10n_ve_accountant
@@ -767,6 +793,11 @@ msgid "Show Documents"
 msgstr "Mostrar Documentos"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields.selection,name:l10n_ve_accountant.selection__res_company__taxpayer_type__special
+msgid "Special"
+msgstr "Especial"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__start_date
 msgid "Start Date"
 msgstr "Fecha de Inicio"
@@ -775,6 +806,23 @@ msgstr "Fecha de Inicio"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Taxes"
 msgstr "Impuestos"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__taxpayer_type
+msgid "Taxpayer Type"
+msgstr "Tipo de contribuyente"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_partner__vat
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_users__vat
+msgid ""
+"The Tax Identification Number. Values here will be validated based on the "
+"country format. You can use '/' to indicate that the partner is not subject "
+"to tax."
+msgstr ""
+"El número de identificación fiscal. Los valores establecidos aquí se "
+"validarán según el formato del país. Puede utilizar \"/\" para indicar que "
+"el contacto no está sujeto a impuestos."
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_move_line__amount_currency
@@ -1019,9 +1067,3 @@ msgstr "Cobranzas"
 #, python-format
 msgid "Credit Note"
 msgstr "Notas de Crédito"
-
-#. module: l10n_ve_accountant
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_users__vat
-msgid "RIF/CI/PAS."
-msgstr "RIF/CI/PAS."
