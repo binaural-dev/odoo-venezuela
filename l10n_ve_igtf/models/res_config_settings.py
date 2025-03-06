@@ -26,20 +26,6 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
     )
 
-    igtf_account_expense = fields.Many2one(
-        "account.account",
-        string="IGTF Account Expense",
-        related="company_id.igtf_account_expense",
-        readonly=False,
-    )
-
-    journal_igtf_expense = fields.Many2one(
-        "account.journal",
-        string="Journal IGTF Expense",
-        related="company_id.journal_igtf_expense",
-        readonly=False,
-    )
-
     show_igtf_suggested_account_move = fields.Boolean(
         related="company_id.show_igtf_suggested_account_move", readonly=False
     )
