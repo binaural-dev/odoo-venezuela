@@ -152,9 +152,11 @@ class AccountMove(models.Model):
         """
         
         is_contingency = self.journal_id.is_contingency
+        journal_type = self.journal_id.type == "sale"
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
         is_valid = (            
             not self.correlative
+            and journal_type
             and (not is_contingency or is_series_invoicing_enabled)
         )
 
