@@ -50,11 +50,16 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     company_id = fields.Many2one("res.company", default=_default_company_id)
 
-    currency_system = fields.Boolean(string="Report in currency system", default=False)
+    def _default_currency_system(self):
+        return True if self.env.company.currency_id.id == self.env.ref("base.VEF").id else False
+    
+    show_field_currency_system = fields.Boolean(string="Report in currency system", default=_default_check_currency_system)
+
+    currency_system = fields.Boolean(string="Report in currency system", default=_default_currency_system)
 
     def _fields_sale_book_line(self, move, taxes):
         if not move.invoice_date:
-            raise UserError(_("Check the move %s does not have an invoice date", move.name))
+            raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         multiplier = -1 if move.move_type == "out_refund" else 1
         return {
             "_id": move.id,
@@ -63,7 +68,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
             "document_number": move.name,
-            "move_type": self._determinate_type(move.move_type),
+            "move_type": self._determinate_type(move),
             "transaction_type": self._determinate_transaction_type(move),
             "number_invoice_affected": move.reversed_entry_id.name or "--",
             "correlative": move.correlative,
@@ -79,7 +84,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def _fields_purchase_book_line(self, move, taxes):
         if not move.invoice_date:
-            raise UserError(_("Check the move %s does not have an invoice date", move.name))
+            raise UserError(_("Check the move %s does not have an invoice date and its id is %s", move.name, move.id))
         multiplier = -1 if move.move_type == "in_refund" else 1
         fields_purchase_book_line = {
             "_id": move.id,
@@ -88,9 +93,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "vat": move.vat,
             "partner_name": move.invoice_partner_display_name,
             "document_number": move.name,
-            "move_type": self._determinate_type(move.move_type),
+            "move_type": self._determinate_type(move),
             "transaction_type": self._determinate_transaction_type(move),
-            "number_invoice_affected": move.reversed_entry_id.name or "--",
+            "number_invoice_affected": move.debit_origin_id.name if move.journal_id.is_debit else move.reversed_entry_id.name or "--",
             "correlative": move.correlative,
             "reduced_aliquot": 0.08,
             "extend_aliquot": 0.31,
@@ -538,7 +543,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def resume_book_headers(self):
         credit_or_debit_based_on_report_type = {"purchase": "Crédito", "sale": "Débito"}
-        HEADERS = ("Base Imponible", f"{credit_or_debit_based_on_report_type[self.report]} ")
+        HEADERS = ("Base Imponible", f"{credit_or_debit_based_on_report_type[self.report]} Fiscal")
 
         return [
             {
@@ -546,7 +551,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 "field": "resume",
                 "headers": [
                     "",
-                    f"{credit_or_debit_based_on_report_type[self.report]}s ",
+                    f"{credit_or_debit_based_on_report_type[self.report]}s Fiscales",
                 ],
             },
             {"name": "Facturas/Notas de Débito", "field": "inv_debit_notes", "headers": HEADERS},
@@ -573,7 +578,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain += [("date", ">=", self.date_from)]
         search_domain += [("date", "<=", self.date_to)]
         search_domain += [
-            ("state", "in", ("posted", "cancel")),            
+            ("state", "in", ("posted", "cancel")),
             ("move_type", "in", move_type),
             ("correlative", "not in", ['/',False])
         ]
@@ -602,7 +607,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         _fn = datetime.strptime(str(date), "%Y-%m-%d")
         return _fn.strftime("%d/%m/%Y")
 
-    def _determinate_type(self, move_type):
+    def _determinate_type(self, move):
+        move_type = move.move_type
+        if move.journal_id.is_debit:
+            move_type = "in_debit"
+
         types = {
             "out_debit": "ND",
             "in_debit": "ND",
@@ -616,7 +625,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def _determinate_transaction_type(self, move):
         if move.move_type in ["out_invoice", "in_invoice"] and move.state == "posted":
-            return "01-REG"
+            if move.journal_id.is_debit:
+                return "02-REG"
+            else:
+                return "01-REG"
 
         if move.move_type in ["out_debit", "in_debit"] and move.state == "posted":
             return "02-REG"
