@@ -11,6 +11,7 @@
     "depends": [
         "base",
         "point_of_sale",
+        "pos_sale",
         "l10n_ve_location",
         "l10n_ve_rate",
         "l10n_ve_contact",
