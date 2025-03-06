@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <record id="res_config_settings_binaural_pos" model="ir.ui.view">
-            <field name="name">res.config.settings.binaural.rate</field>
+        <record id="res_config_settings_l10n_ve_pos" model="ir.ui.view">
+            <field name="name">res.config.settings.l10n.ve.pos</field>
             <field name="model">res.config.settings</field>
             <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate"/>
             <field name="arch" type="xml">
