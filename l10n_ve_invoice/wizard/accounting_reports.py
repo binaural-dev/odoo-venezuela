@@ -393,17 +393,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 for name, field, format_type in fields_info
             ])
 
-        # if not self.company_id.not_show_extend_aliquot_sale:
-            # fields_info = [
-            #     ("Base imponible (31%)", "tax_base_extend_aliquot", "number"),
-            #     ("Alicuota (31%)", "extend_aliquot", "percent"),
-            #     ("IVA 31%", "amount_extend_aliquot", "number")
-            # ]
+        if not self.company_id.not_show_extend_aliquot_sale:
+            fields_info = [
+                ("Base imponible (31%)", "tax_base_extend_aliquot", "number"),
+                ("Alicuota (31%)", "extend_aliquot", "percent"),
+                ("IVA 31%", "amount_extend_aliquot", "number")
+            ]
 
-            # sale_fields.extend([
-            #     {"name": name, "field": field, "format": format_type, "size": 15}
-            #     for name, field, format_type in fields_info
-            # ])
+            sale_fields.extend([
+                {"name": name, "field": field, "format": format_type, "size": 15}
+                for name, field, format_type in fields_info
+            ])
 
         return sale_fields
     
@@ -986,7 +986,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         total_idx = 0
 
         for index, field in enumerate(name_columns):
-            worksheet.set_column(index, index, len(field.get("name")) + 2)
+            worksheet.set_column(index, index, len(field.get("name")) + 10)
             worksheet.merge_range(6, index, 7, index, field.get("name"), merge_format)
 
             for index_line, line in enumerate(sale_book_lines):
@@ -1109,7 +1109,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         total_idx = 0
 
         for index, field in enumerate(name_columns):
-            worksheet.set_column(index, index, len(field.get("name")) + 2)
+            worksheet.set_column(index, index, len(field.get("name")) + 10)
             worksheet.merge_range(6, index, 7, index, field.get("name"), merge_format)
 
             for index_line, line in enumerate(purchase_book_lines):
