@@ -1,0 +1,24 @@
+
+<odoo>
+
+    <data>
+        <record id="account_payment_igtf_view_form" model="ir.ui.view">
+            <field name="name">account.payment.igtf.view.form</field>
+            <field name="model">account.payment</field>
+            <field name="inherit_id" ref="account.view_account_payment_form"/>
+            <field name="arch" type="xml">
+            <xpath expr="//group[@name='group1']" position="after">
+                <group name="igtf_group">
+                    <field name="is_igtf_on_foreign_exchange"/>
+                        <div invisible="not is_igtf_on_foreign_exchange">
+                            <field name="igtf_percentage_text" readonly="1"/>
+                            <field name="igtf_amount" widget="monetary"/>
+                        </div>
+                </group>
+            </xpath>
+            </field>
+        </record>
+    </data>
+    
+
+</odoo>
