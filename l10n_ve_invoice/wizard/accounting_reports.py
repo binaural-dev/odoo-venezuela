@@ -49,6 +49,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     )
 
     company_id = fields.Many2one("res.company", default=_default_company_id)
+    
+    def _default_currency_system(self):
+        return True if self.env.company.currency_id.id == self.env.ref("base.VEF").id else False
+    
+    show_field_currency_system = fields.Boolean(string="Report in currency system", default=_default_check_currency_system)
 
     def _default_currency_system(self):
         return True if self.env.company.currency_id.id == self.env.ref("base.VEF").id else False
