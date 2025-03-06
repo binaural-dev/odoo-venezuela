@@ -321,7 +321,7 @@ msgstr "Es Contingencia"
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_journal__is_debit
 msgid "Is Debit"
-msgstr "Debito"
+msgstr "Débito"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
