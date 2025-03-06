@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('total')]" position="replace">
+            <div class="total total-binuaral">
+                <t t-if="!currentOrder.to_receipt and this.env.pos.config.apply_igtf">
+                    <div class="payment-status-currency">
+                        <p class="amount-totals">
+                            <span>
+                                <t t-esc="totalDueText" /> 
+                            </span>
+                            <span class="igtf">(TOTAL)</span>
+                        </p>
+                        <p class="amount-totals">
+                            +
+                        </p>
+                        <p class="amount-totals">
+                            <span>
+                                <t t-esc="foreignAmountIGTF" />
+                            </span>
+                            <span class="igtf">(IGTF)</span> = 
+                        </p>
+                        <p class="total-amount">
+                            <t t-esc="totalDueTextWithIGTF" />
+                        </p>
+                    </div>
+                </t>
+                <t t-else="">
+                    <t t-esc="totalDueText" />
+                </t>
+                <div class="payment-status-l10n_ve">
+                    <p class="total-amount">
+                        <t t-esc="foreignTotalDueText" />
+                    </p>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//div[hasclass('payment-status-total-due')]" position="inside">
+            <t t-if="isIgtf">
+                <span>BI IGTF:</span>
+                <span t-esc="biAmount"/>
+                <br/>
+                <span>IGTF:</span>
+                <span t-esc="igtfAmount"/>
+                <br/>
+                <span>Foreign IGTF:</span>
+                <span t-esc="igtfForeignAmount"/>
+            </t>
+        </xpath>
+    </t>
+</templates>
