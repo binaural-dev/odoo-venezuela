@@ -23,7 +23,7 @@ odoo.define("l10n_ve_pos.PaymentScreenStatus", function (require) {
         );
       }
       get rate_bcv() {
-        let rate = this.env.pos.get_order().current_rate
+        let rate = this.env.pos.get_order().display_current_rate
         let amount = this.env.pos.format_currency_no_symbol(
           rate,
           "Product Price",
