@@ -15,6 +15,7 @@
         "l10n_ve_rate",
         "l10n_ve_contact",
         "l10n_ve_invoice",
+        "l10n_ve_filter_partner",
     ],
     # always loaded
     "data": [
