@@ -29,10 +29,3 @@ def pre_init_hook(cr):
             UPDATE account_payment
             SET amount_with_igtf = 0.0
         """)
-    if not column_exists(cr, "account_journal", "default_is_igtf_config"):
-        create_column(cr, "account_journal", "default_is_igtf_config", "boolean")
-        cr.execute("""
-            UPDATE account_journal
-            SET default_is_igtf_config = false
-        """)
-
