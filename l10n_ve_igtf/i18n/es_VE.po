@@ -228,14 +228,6 @@ msgid "Amount without Difference"
 msgstr "Monto sin IGTF"
 
 #. module: l10n_ve_igtf
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_bank_statement_line__default_is_igtf_config
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_journal__default_is_igtf_config
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move__default_is_igtf_config
-#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__default_is_igtf_config
-msgid "Default Is Igtf Config"
-msgstr "Configuración de IGTF"
-
-#. module: l10n_ve_igtf
 #: model:ir.actions.server,name:l10n_ve_igtf.action_fix_bi_igtf_invoices
 msgid "Fix Binaural BI IGTF Invoices"
 msgstr "Recalcular BI de IGTF en Facturas"
