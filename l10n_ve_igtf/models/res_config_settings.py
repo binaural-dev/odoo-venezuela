@@ -4,8 +4,6 @@ from odoo import fields, models
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
-    is_igtf = fields.Boolean(related="company_id.is_igtf", readonly=False)
-
     customer_account_igtf_id = fields.Many2one(
         "account.account",
         string="Customer IGTF Account",
@@ -32,4 +30,3 @@ class ResConfigSettings(models.TransientModel):
     show_igtf_suggested_sale_order = fields.Boolean(
         related="company_id.show_igtf_suggested_sale_order", readonly=False
     )
-

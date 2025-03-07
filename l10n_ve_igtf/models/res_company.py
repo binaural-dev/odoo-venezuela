@@ -4,7 +4,6 @@ from odoo import fields, models
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    is_igtf = fields.Boolean("IGTF active")
     customer_account_igtf_id = fields.Many2one(
         "account.account", domain=[("account_type", "=", "liability_current")]
     )

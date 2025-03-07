@@ -53,7 +53,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                         and line.move_id.move_type == "in_invoice"
                     ):
                         payment.is_igtf = False
-                    
                     payment.is_igtf = True
             
 
@@ -92,8 +91,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in self:
             payment.igtf_amount = 0.0
             if (
-                payment.is_igtf
-                and payment.journal_id.is_igtf
+                payment.journal_id.is_igtf
                 and payment.currency_id.id == self.env.ref("base.USD").id
                 and payment.is_igtf_on_foreign_exchange
             ):
@@ -131,7 +129,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         for payment in res:
             if (
                 payment.journal_id.is_igtf == True
-                and payment.is_igtf
                 and payment.currency_id.id == self.env.ref("base.USD").id
                 and payment.is_igtf_on_foreign_exchange
             ):
