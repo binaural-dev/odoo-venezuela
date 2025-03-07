@@ -5,7 +5,6 @@ class PosConfig(models.Model):
     _inherit = "pos.config"
 
     foreign_currency_id = fields.Many2one("res.currency", related="company_id.currency_foreign_id")
-    pos_tax_inside = fields.Boolean(related="company_id.pos_tax_inside")
 
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for moves.",
