@@ -34,12 +34,12 @@ class AccountPaymentIgtf(models.Model):
         string="Amount with IGTF", compute="_compute_amount_with_igtf", store=True
     )
 
-    @api.depends("is_igtf", "partner_id")
+    @api.depends("partner_id")
     def _compute_igtf_percentage(self):
         for payment in self:
             payment.igtf_percentage = payment.env.company.igtf_percentage
 
-    @api.depends("amount", "is_igtf", "igtf_amount")
+    @api.depends("amount","igtf_amount")
     def _compute_amount_with_igtf(self):
         for payment in self:
             if not payment.amount_with_igtf:
@@ -51,7 +51,7 @@ class AccountPaymentIgtf(models.Model):
             if payment.journal_id.is_igtf:
                 payment.is_igtf_on_foreign_exchange = True
 
-    @api.depends("amount", "is_igtf")
+    @api.depends("amount")
     def _compute_igtf_amount(self):
         for payment in self:
             if not payment.igtf_amount:
