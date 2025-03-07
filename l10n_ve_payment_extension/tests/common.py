@@ -55,7 +55,6 @@ class AccountRetentionTestCommon(AccountTestInvoicingCommon):
                 "refund_sequence": True,
                 "type": "purchase",
                 "company_id": cls.company_data["company"].id,
-                "fiscal": True,
             }
         )
         cls.journal_retentions = cls.env["account.journal"].create(
@@ -65,7 +64,6 @@ class AccountRetentionTestCommon(AccountTestInvoicingCommon):
                 "refund_sequence": True,
                 "type": "bank",
                 "company_id": cls.company_data["company"].id,
-                "fiscal": True,
             }
         )
 
@@ -76,7 +74,6 @@ class AccountRetentionTestCommon(AccountTestInvoicingCommon):
                 "refund_sequence": True,
                 "type": "purchase",
                 "company_id": cls.company_data["company"].id,
-                "fiscal": False,
             }
         )
 
