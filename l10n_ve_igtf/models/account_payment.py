@@ -102,7 +102,7 @@ class AccountPaymentIgtf(models.Model):
 
         for payment in self:
             if (
-                nd payment.igtf_amount
+                payment.igtf_amount
                 and payment.is_igtf_on_foreign_exchange
             ):
                 if payment.payment_type == "inbound":
