@@ -8,11 +8,6 @@ _logger = logging.getLogger(__name__)
 class AccountPaymentIgtf(models.Model):
     _inherit = "account.payment"
 
-    def default_is_igtf(self):
-        return self.env.company.is_igtf or False
-
-    is_igtf = fields.Boolean(string="IGTF", default=default_is_igtf, help="IGTF")
-
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
         help="IGTF on Foreign Exchange?",
@@ -50,13 +45,10 @@ class AccountPaymentIgtf(models.Model):
             if not payment.amount_with_igtf:
                 payment.amount_with_igtf = payment.amount + payment.igtf_amount
 
-    @api.depends("journal_id", "is_igtf")
+    @api.depends("journal_id")
     def _compute_is_igtf(self):
         for payment in self:
-            if (
-                payment.journal_id.is_igtf
-                and payment.is_igtf
-            ):
+            if payment.journal_id.is_igtf:
                 payment.is_igtf_on_foreign_exchange = True
 
     @api.depends("amount", "is_igtf")
@@ -64,10 +56,7 @@ class AccountPaymentIgtf(models.Model):
         for payment in self:
             if not payment.igtf_amount:
                 payment.igtf_amount = 0.0
-                if (
-                    payment.is_igtf
-                    and payment.journal_id.is_igtf
-                ):
+                if payment.journal_id.is_igtf:
                     payment.igtf_amount = payment.amount * (
                         payment.igtf_percentage / 100
                     )
@@ -113,12 +102,12 @@ class AccountPaymentIgtf(models.Model):
 
         for payment in self:
             if (
-                payment.is_igtf
-                and payment.igtf_amount
+                nd payment.igtf_amount
                 and payment.is_igtf_on_foreign_exchange
             ):
                 if payment.payment_type == "inbound":
-                    vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
+                    vals_igtf = [
+                        x for x in vals if x["account_id"] == igtf_account]
 
                     if not vals_igtf:
                         payment._prepare_inbound_move_line_igtf_vals(vals)
@@ -128,7 +117,8 @@ class AccountPaymentIgtf(models.Model):
                         )
 
                 if payment.payment_type == "outbound":
-                    vals_igtf = [x for x in vals if x["account_id"] == igtf_account]
+                    vals_igtf = [
+                        x for x in vals if x["account_id"] == igtf_account]
                     if not vals_igtf:
                         payment._prepare_outbound_move_line_igtf_vals(vals)
                     else:
@@ -212,7 +202,8 @@ class AccountPaymentIgtf(models.Model):
             credit_amount = -credit_line
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                 credit_amount = -credit_line * self.foreign_rate
-            vals[1].update({"amount_currency": credit_line, "credit": credit_amount})
+            vals[1].update(
+                {"amount_currency": credit_line, "credit": credit_amount})
 
             self._create_inbound_move_line_igtf_vals(vals)
 
@@ -231,7 +222,8 @@ class AccountPaymentIgtf(models.Model):
             debit_amount = debit_line
             if self.env.company.currency_id.id == self.env.ref("base.VEF").id:
                 debit_amount = debit_line * self.foreign_rate
-            vals[1].update({"amount_currency": debit_line, "debit": debit_amount})
+            vals[1].update(
+                {"amount_currency": debit_line, "debit": debit_amount})
 
             self._create_outbound_move_line_igtf_vals(vals)
 
@@ -240,7 +232,8 @@ class AccountPaymentIgtf(models.Model):
         def get_payment_amount_invoice(self, invoice):
             self.ensure_one()
             if invoice.bi_igtf < self.amount:
-                payments = invoice.invoice_payments_widget.get("content", False)
+                payments = invoice.invoice_payments_widget.get(
+                    "content", False)
                 for payment in payments:
                     payment_id = payment.get("account_payment_id", False)
                     if not payment_id:
@@ -291,4 +284,3 @@ class AccountPaymentIgtf(models.Model):
             amount_without_difference = amount_without_difference * self.foreign_rate
 
         return amount_without_difference
-
