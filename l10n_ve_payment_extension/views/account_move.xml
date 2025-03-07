@@ -11,7 +11,7 @@
                 <xpath expr="//field[@name='vat']" position="after">
 			<field
 			    name="generate_iva_retention"
-			    attrs="{'invisible':['|', ('move_type','not in',('in_invoice', 'in_receipt', 'in_refund')), ('fiscal', '=', False)]}"
+			    attrs="{'invisible':['|', ('move_type','not in',('in_invoice', 'in_receipt', 'in_refund'))]}"
 			/>
                         <field name="iva_voucher_number" readonly="1" />
                         <field name="islr_voucher_number" readonly="1" />     
@@ -26,13 +26,11 @@
 		    <page 
 			name="iva_retention"
 			string="IVA Retentions"
-			attrs="{'invisible': [('fiscal', '=', False)]}"
 		    >
 			<field
 			    name="retention_iva_line_ids"
 			    nolabel="1"
 			    readonly="1"
-			    attrs="{'invisible': [('fiscal', '=', False)]}"
 		    	>
                             <tree editable='bottom'>
 				<!-- Invisible Fields -->
@@ -104,7 +102,6 @@
 		    <page
 			name="islr_retention"
 			string="ISLR Retentions"
-			attrs="{'invisible': [('fiscal', '=', False)]}"
 		    >
 			<field
 			    name="retention_islr_line_ids"
