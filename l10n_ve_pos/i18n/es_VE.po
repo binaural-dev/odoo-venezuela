@@ -441,12 +441,6 @@ msgid "Journal Item"
 msgstr "Apunte contable"
 
 #. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__keep_journal
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__pos_keep_journal
-msgid "Keep Journal"
-msgstr "Mantener Diario"
-
-#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_binaural_pos
 msgid "Keep the last journal used in POS"
 msgstr ""
