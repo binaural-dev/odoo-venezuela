@@ -5,12 +5,6 @@ from odoo.tools import column_exists, create_column
 
 
 def pre_init_hook(cr):
-    if not column_exists(cr, "account_payment", "is_igtf"):
-        create_column(cr, "account_payment", "is_igtf", "boolean")
-        cr.execute("""
-            UPDATE account_payment
-            SET is_igtf = false
-        """)
     if not column_exists(cr, "account_payment", "is_igtf_on_foreign_exchange"):
         create_column(cr, "account_payment", "is_igtf_on_foreign_exchange", "boolean")
         cr.execute("""
