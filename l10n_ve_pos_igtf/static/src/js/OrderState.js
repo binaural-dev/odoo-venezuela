@@ -67,12 +67,7 @@ odoo.define("l10n_ve_pos_igtf.OrderState", function(require) {
         }
 
         paymentlines.forEach((payment) => {
-          let is_change = false
-          if (!is_return) {
-            is_change = payment.amount < 0
-          } else {
-            is_change = payment.amount > 0
-          }
+          let is_change = is_return ? payment.amount > 0 : payment.amount < 0;
 
           if (payment.payment_method.apply_igtf && last_igtf_amount == payment.amount) {
             return
