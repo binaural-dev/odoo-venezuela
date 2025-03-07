@@ -1,8 +1,7 @@
 odoo.define("l10n_ve_pos.PartnerDetailsEdit", function(require) {
-
-  const PartnerDetailsEdit = require("point_of_sale.PartnerDetailsEdit")
-  const Registries = require("point_of_sale.Registries")
-  const { _t } = require('web.core');
+  const PartnerDetailsEdit = require("point_of_sale.PartnerDetailsEdit");
+  const Registries = require("point_of_sale.Registries");
+  const { _t } = require("web.core");
   const { useRef } = owl;
 
   const BinauralPartnerDetailsEdit = (PaymentScreenStatus) =>
@@ -69,18 +68,44 @@ odoo.define("l10n_ve_pos.PartnerDetailsEdit", function(require) {
           }
         }
 
-        if ((!this.props.partner.vat && !processedChanges.vat) ||
-          processedChanges.vat === '') {
-          return this.showPopup('ErrorPopup', {
-            title: _t('A Customer VAT Is Required'),
+        if (
+          (!this.props.partner.vat && !processedChanges.vat) ||
+          processedChanges.vat === ""
+        ) {
+          return this.showPopup("ErrorPopup", {
+            title: _t("A Customer VAT Is Required"),
           });
+        }
+        if (
+          !processedChanges.phone &&
+          this.env.pos.config.validate_phone_in_pos
+        ) {
+          return this.showPopup("ErrorPopup", {
+            title: _t("A phone number is required"),
+          });
+        }
+        if (
+          !isValidPhone(processedChanges.phone)
+          && this.env.pos.config.validate_phone_in_pos
+        ) {
+          return this.showPopup("ErrorPopup", {
+            title: _t("A valid phone number is required"),
+          });
+        }
+        if (!processedChanges.street) {
+          return this.showPopup("ErrorPopup", {
+            title: _t("A street is required"),
+          });
+        }
+        function isValidPhone(phone) {
+          const phoneRegex = /^0[24]\d{9}$/;
+          return phoneRegex.test(phone);
         }
 
         super.saveChanges();
-
       }
-    }
+    };
 
-  Registries.Component.extend(PartnerDetailsEdit, BinauralPartnerDetailsEdit)
-  return BinauralPartnerDetailsEdit
-})
+  Registries.Component.extend(PartnerDetailsEdit, BinauralPartnerDetailsEdit);
+  return BinauralPartnerDetailsEdit;
+});
