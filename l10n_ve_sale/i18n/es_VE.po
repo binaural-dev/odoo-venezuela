@@ -1,0 +1,522 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_sale
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20240906\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-09-14 22:22+0000\n"
+"PO-Revision-Date: 2024-09-14 22:22+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "All products must contain only one tax."
+msgstr "Todos los productos deben contener solo un impuesto."
+
+#. module: l10n_ve_sale
+#: model:res.groups,name:l10n_ve_sale.edit_product_line_pricing_sale_order_group
+msgid "Block Edit product line pricing (sale)"
+msgstr "Ocultar precios de la línea de productos (venta)"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
+msgid ""
+"Block order confirmation action with invoices in payment status Not Paid / "
+"In payment process."
+msgstr ""
+"Bloquear confirmacion de pedidos de clientes con facturas en estado de pago "
+"No Pagado o En proceso de pago."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
+msgid ""
+"Block order confirmation action with invoices overdue with a total amount "
+"greater than specified."
+msgstr ""
+"Bloquear pedidos de clientes con facturas con un monto total mayor al "
+"especificado."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
+msgid "Block order confirmationn"
+msgstr "Bloquear confirmación de pedidos"
+
+#. module: l10n_ve_sale
+#: model:ir.actions.server,name:l10n_ve_sale.ir_cron_cancel_orders_after_date_ir_actions_server
+#: model:ir.cron,cron_name:l10n_ve_sale.ir_cron_cancel_orders_after_date
+msgid "Cancel Orders After Day"
+msgstr "Cancelar Presupuestos Luego de 24h de Creado"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
+msgid "Check this if you want limit the number of lines by sale order."
+msgstr "Marque esta opción si desea limitar el número de líneas por orden de venta."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
+msgid ""
+"Check this if you want the rate of the invoice to be taken from its\n"
+"                                sale order. Else it will take the rate of the date when it is created."
+msgstr ""
+"Marque esta opción si quiere que la factura utilice la tasa de su\n"
+"\t\t\t\torden de venta. De lo contrario utilizará la tasa del día en el que sea creada."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_company__use_invoice_rate_from_sale_order
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_config_settings__use_invoice_rate_from_sale_order
+msgid ""
+"Check this if you want the rate of the invoice to be taken from its sale "
+"order. Else it will take the rate of the date when it is created."
+msgstr ""
+"Marque esta opción si quiere que la factura utilice la tasa de su orden de "
+"venta. De lo contrario utilizará la tasa del día en el que sea creada."
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
+msgid "Create Invoice"
+msgstr "Crear factura"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "Does not have enough units available for the product "
+msgstr "No tiene suficientes unidades disponibles para el producto "
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__not_allow_sell_products
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__not_allow_sell_products
+msgid "Dont allow sell products without quantity"
+msgstr "No permitir vender inventario en cero"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__filter_partner
+msgid "Filter Partner"
+msgstr "Filtro de Contacto"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__filter_partner
+msgid ""
+"Filter partner by both customer or supplier rank (Depending on what is "
+"needed)"
+msgstr ""
+"Filtro de contacto ya sea por cliente o proveedor (dependiendo de lo que se "
+"necesite)"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_quotation_tree
+msgid "Foreign Amount total"
+msgstr "Monto total alterno"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__foreign_currency_id
+msgid "Foreign Currency"
+msgstr "Moneda alterna"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "Foreign Currency "
+msgstr "Moneda Alterna"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_inverse_rate
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__foreign_inverse_rate
+msgid "Foreign Inverse Rate"
+msgstr "Tasa alterna"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__foreign_price
+msgid "Foreign Price"
+msgstr "Precio alterno"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order_line__foreign_price
+msgid "Foreign Price of the line"
+msgstr "Precio alterno de la linea"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_rate
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__foreign_rate
+msgid "Foreign Rate"
+msgstr "Tasa alterna"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__foreign_subtotal
+msgid "Foreign Subtotal"
+msgstr "Subtotal alterno"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order_line__foreign_subtotal
+msgid "Foreign Subtotal of the line"
+msgstr "Subtotal alterno de la linea"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_taxable_income
+msgid "Foreign Taxable Income"
+msgstr "Base imponible alterna"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__foreign_taxable_income
+msgid "Foreign Taxable Income of the invoice"
+msgstr "Base imponible alterna de la factura"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_total_billed
+msgid "Foreign Total Billed"
+msgstr "Total alterno facturado"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__foreign_total_billed
+msgid "Foreign Total Billed of the invoice"
+msgstr "Total alterno facturado de la factura"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
+msgid "Foreign currency"
+msgstr "Moneda alterna"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
+msgid "Foreign inverse rate"
+msgstr "Tasa inversa alterna"
+
+#. module: l10n_ve_sale
+#: model:res.groups,name:l10n_ve_sale.contact_filter_sale_order_group
+msgid "Hide Contact filter (sale)"
+msgstr "Ocultar el filtro de contacto (venta)"
+
+#. module: l10n_ve_sale
+#: model:res.groups,name:l10n_ve_sale.create_invoice_sale_order_group
+msgid "Hide Create Invoice (sale)"
+msgstr "Ocultar Crear Factura (venta)"
+
+#. module: l10n_ve_sale
+#: model:res.groups,name:l10n_ve_sale.payment_terms_sale_order_group
+msgid "Hide Payment terms (sale)"
+msgstr "Ocultar Plazos de pago (venta)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__hide_total_uom_group_ids
+msgid "Hide Total Uom Group"
+msgstr "Ocultar UdM"
+
+#. module: l10n_ve_sale
+#: model:res.groups,name:l10n_ve_sale.pricelist_sale_order_group
+msgid "Hide pricelist (sale)"
+msgstr "Ocultar Tarifas (venta)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__pricelist_id
+msgid "If you change the pricelist, only newly added lines will be affected."
+msgstr ""
+"Si modifica la lista de precios, solo afectará a las nuevas líneas que "
+"agregó."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
+msgid "If you have more than the quantity on stock dont allow sell."
+msgstr ""
+"Si la demanda es mayor al a mano se edita la linea de pedido con solo la "
+"cantidad a mano disponible."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "In Payment Process"
+msgstr "En proceso de pago"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__res_company__block_order_invoice_payment_state__in_payment
+msgid "In payment process"
+msgstr "En proceso de pago"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__last_foreign_rate
+msgid "Last Foreign Rate"
+msgstr "Ultima tasa"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__are_sale_lines_limited
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__are_sale_lines_limited
+msgid "Limit the number of lines in the budget/sales order"
+msgstr "Limitar el número de líneas en el presupuesto/pedido de venta"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__manually_set_rate
+msgid "Manually Set Rate"
+msgstr "Tasa Actualizada manualmente"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__maximum_sales_line_limit
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__maximum_sales_line_limit
+msgid "Maximum Sales Line Limit"
+msgstr "Límite máximo de línea de venta"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__mobile
+msgid "Mobile"
+msgstr "Teléfono"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid ""
+"No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta "
+"por cobrar del cliente es de %s más %s en presupuesto da un total de %s "
+"superando el límite de ventas de %s. Por favor cancele el presupuesto o "
+"comuníquese con el administrador para aumentar el límite de crédito del "
+"cliente."
+msgstr ""
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "Not Paid"
+msgstr "No pagado"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__res_company__block_order_invoice_payment_state__not_paid
+msgid "Not paid"
+msgstr "No pagado"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__partner_id_domain
+msgid "Partner Id Domain"
+msgstr "Dominio ID de socio"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__block_order_invoice_payment_state
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__block_order_invoice_payment_state
+msgid "Payment State"
+msgstr "Estado de pago"
+
+#. module: l10n_ve_sale
+#: model:ir.actions.act_window,name:l10n_ve_sale.product_pricelist_item_tree_only_action
+#: model:ir.ui.menu,name:l10n_ve_sale.pricelist_item_menu
+msgid "Price List Items"
+msgstr "Normas de Precio"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_product_pricelist_item__price_with_tax
+msgid "Price With Tax"
+msgstr "Precio + IVA"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_product_pricelist_item__price_without_tax
+msgid "Price Without Tax"
+msgstr "Precio sin Impuesto"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__pricelist_id
+msgid "Pricelist"
+msgstr "Tarifa"
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_product_pricelist_item
+msgid "Pricelist Rule"
+msgstr "Regla de la lista de precios"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "Product prices have been recomputed according to pricelist %s."
+msgstr ""
+"Se han vuelto a calcular los precios de los productos según la lista de "
+"precios %s."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__foreign_inverse_rate
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order_line__foreign_inverse_rate
+msgid ""
+"Rate that will be used as factor to multiply of the foreign currency for "
+"this move."
+msgstr ""
+"Tasa que se usará como factor para multiplicar la moneda alterna para esta "
+"orden."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
+msgid "Recompute all prices based on this pricelist"
+msgstr "Recomputar todos los precios basados en esta Tarifa"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
+msgid "Sales Configuration"
+msgstr "Configuración de Ventas"
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Línea pedido de venta"
+
+#. module: l10n_ve_sale
+#: model:res.groups,name:l10n_ve_sale.group_view_pricelist_items
+msgid "See Pricelist Items"
+msgstr "Ver Normas de Precio"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__address
+msgid "Street"
+msgstr "Dirección"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid ""
+"The budget cannot be confirmed. Has an overdue amount of (%.2f) that cannot "
+"be greater than %.2f %s."
+msgstr ""
+"No se puede confirmar el presupuesto. Tiene un monto vencido de (%.2f) que "
+"no puede ser mayor a %.2f %s."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "The budget cannot be confirmed. You have %s Invoices (%s)."
+msgstr "No se puede confirmar el presupuesto. Tiene %s Facturas (%s)."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "The order line limit must not exceed %s."
+msgstr "El límite de la línea de pedido no debe exceder de %s."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "The rate has been updated from %(last_rate)s to %(rate)s "
+msgstr ""
+"La tasa ha sido actualizada de: %(last_rate)s a una tasa personalizada: "
+"%(rate)s"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__foreign_rate
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order_line__foreign_rate
+msgid "The rate that is gonna be always shown to the user."
+msgstr "La tasa que se va a mostrar siempre al usuario."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
+msgid "This will update all unit prices based on the currently set pricelist."
+msgstr ""
+"Esto actualizará todos los precios unitarios en función de la Tarifa "
+"actualmente establecida."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__total_taxed
+msgid "Total Taxed"
+msgstr "Total gravado"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__total_taxed
+msgid "Total Taxed of the invoice"
+msgstr "Total gravado de la factura"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__total_uom_group_ids
+msgid "Total Uom Group"
+msgstr "Totales UdM"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__block_order_invoice_total_amount_overdue
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__block_order_invoice_total_amount_overdue
+msgid "Total amount overdue"
+msgstr "Monto total vencido"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
+msgid "Update Prices"
+msgstr "Actualizar Precios"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__update_sale_order_rate_using_date_order
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__update_sale_order_rate_using_date_order
+msgid "Update Sale Order Rate Using Date Order"
+msgstr "Actualizar la tasa de la orden de venta usando la fecha"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__use_invoice_rate_from_sale_order
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__use_invoice_rate_from_sale_order
+msgid "Use Invoice Rate From Sale Order"
+msgstr "Usar la tasa de la orden de venta en la factura"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__vat
+msgid "VAT"
+msgstr "Identificación"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__vat
+msgid "VAT of the partner"
+msgstr "Identificación"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
+msgid ""
+"When checked, the rate of the sale order will be updated using the\n"
+"                                date order whenever it changes. Else, when the rate is already set,\n"
+"                                it will not be updated."
+msgstr ""
+"Al marcar esta opción, la tasa de la orden de venta se actualizará usando la\n"
+" fecha de la orden cada vez que cambie. De lo contrario, cuando la tasa ya\n"
+"esté establecida, no se actualizará."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_company__update_sale_order_rate_using_date_order
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_config_settings__update_sale_order_rate_using_date_order
+msgid ""
+"When checked, the rate of the sale order will be updated using the date "
+"order whenever it changes. Else, when the rate is already set, it will not "
+"be updated."
+msgstr ""
+"Al marcar esta opción, la tasa de la orden de venta se actualizará usando la"
+" fecha de la orden cada vez que cambie. De lo contrario, cuando la tasa ya "
+"esté establecida, no se actualizará."
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_total_uom_group
+msgid "total.uom.group"
+msgstr "Grupo del Total de Unidad de Medida"
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+#, python-format
+msgid "{}. Only has {} units of the {} demanded."
+msgstr "{}. Solo tiene {} unidades de {} exigidas."
