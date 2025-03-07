@@ -1,0 +1,8 @@
+<odoo>
+    <menuitem 
+        name="Tax unit" 
+        id="menu_retention_tax_unit" 
+        parent="account.menu_finance_configuration" 
+	    action="action_tax_unit_l10n_ve_payment_extension"
+    />
+</odoo>
