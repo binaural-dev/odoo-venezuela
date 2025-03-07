@@ -39,6 +39,5 @@
             "l10n_ve_pos/static/src/css/*.css",
         ],
     },
-    "binaural": True,
     "l10n_ve": True,
 }
