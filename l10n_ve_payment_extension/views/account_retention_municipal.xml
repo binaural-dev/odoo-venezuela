@@ -42,7 +42,7 @@
                                     <field name="name"/>
 				    <field
 					name="move_id"
-                        domain="['&amp;',('id', 'in', parent.allowed_lines_move_ids), ('municipal_voucher_number', '=',False),('journal_id.fiscal','=',True)]"
+                        domain="['&amp;',('id', 'in', parent.allowed_lines_move_ids), ('municipal_voucher_number', '=',False)]"
 				    />
 					<field name="company_id" optional="hide" groups="base.group_multi_company"/>
 				    <field name="economic_activity_id"/>

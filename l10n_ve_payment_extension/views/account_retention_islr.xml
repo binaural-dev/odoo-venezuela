@@ -39,7 +39,7 @@
                                 <field name="name" readonly="1" force_save="1"/>
 				<field
 				    name="move_id"
-				    domain="['&amp;',('id', 'in', parent.allowed_lines_move_ids), ('islr_voucher_number', '=',False),('journal_id.fiscal','=',True)]"
+				    domain="['&amp;',('id', 'in', parent.allowed_lines_move_ids), ('islr_voucher_number', '=',False)]"
 				/> 
                                 <field name="code" attrs="{'column_invisible': [('parent.code_visible' , '=' , False)] }"/>
                                 <field name="company_id" optional="hide" groups="base.group_multi_company"/>
