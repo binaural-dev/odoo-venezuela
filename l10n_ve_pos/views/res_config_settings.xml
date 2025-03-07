@@ -118,19 +118,6 @@
                             </div>
                         </div>
 
-                        <div class="col-12 col-lg-6 o_setting_box" id="keep_journal">
-                            <div class="o_setting_left_pane">
-                                <field name="pos_keep_journal"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <div>
-                                    <label for="pos_keep_journal"/>
-                                    <div class="text-muted">
-                                        Keep the last journal used in POS
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                         <div class="col-12 col-lg-6 o_setting_box" id="activate_barcode_strict_mode_container">
                             <div class="o_setting_left_pane">
