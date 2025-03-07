@@ -21,16 +21,7 @@ class AccountMove(models.Model):
                 UPDATE account_move
                 SET amount_residual_igtf = 0.0
             """)
-        if not column_exists(self.env.cr, "account_move", "default_is_igtf_config"):
-            create_column(self.env.cr, "account_move", "default_is_igtf_config", "boolean")
-            self.env.cr.execute("""
-                UPDATE account_move
-                SET default_is_igtf_config = false
-            """)
         return super()._auto_init()
-
-
-    default_is_igtf_config = fields.Boolean(default=lambda self: self.env.company.is_igtf or False)
 
     bi_igtf = fields.Monetary(string="BI IGTF", help="subtotal with igtf", copy=False)
     amount_paid = fields.Monetary(string="Paid", default=0.00, help="Paid", copy=False)
