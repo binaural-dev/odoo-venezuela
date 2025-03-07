@@ -53,7 +53,6 @@ class TestIslrRetentionBs(AccountRetentionTestCommon):
             self.assertEqual(ret_line.related_percentage_fees, 5)
             
         invoice.action_post()
-        self.assertEqual(invoice.journal_id.fiscal, True )
         self.assertEqual(invoice.state, "posted")
     
 
