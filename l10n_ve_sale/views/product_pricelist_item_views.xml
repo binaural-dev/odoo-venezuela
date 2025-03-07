@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_pricelist_item_tree_view_from_product" model="ir.ui.view">
+        <field name="name">product.pricelist.item.tree</field>
+        <field name="model">product.pricelist.item</field>
+        <field name="inherit_id" ref="product.product_pricelist_item_tree_view_from_product" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='fixed_price']" position="after">
+                <field name="price_with_tax" />
+            </xpath>
+
+        </field>
+    </record>
+
+
+    <record id="product_pricelist_item_form_view" model="ir.ui.view">
+        <field name="name">product.pricelist.item.form</field>
+        <field name="model">product.pricelist.item</field>
+        <field name="inherit_id" ref="product.product_pricelist_item_form_view" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='fixed_price']" position="after">
+                <field name="price_with_tax" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_pricelist_item_tree_view" model="ir.ui.view">
+        <field name="name">product.pricelist.item.tree</field>
+        <field name="model">product.pricelist.item</field>
+        <field name="mode">primary</field>
+        <field name="inherit_id" ref="product.product_pricelist_item_tree_view_from_product" />
+        <field name="arch" type="xml">
+            <field name="name" position="replace">
+            </field>
+            <field name="product_tmpl_id" position="attributes">
+                <attribute name="invisible">false</attribute>
+            </field>
+            <field name="price_with_tax" position="replace" />
+            <field name="min_quantity" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </field>
+            <field name="date_start" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </field>
+            <field name="date_end" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </field>
+        </field>
+    </record>
+
+
+    <record id="product_pricelist_item_tree_only_action" model="ir.actions.act_window">
+        <field name="name">Price List Items</field>
+        <field name="res_model">product.pricelist.item</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="product_pricelist_item_tree_view" />
+    </record>
+</odoo>

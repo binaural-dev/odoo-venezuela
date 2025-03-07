@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="group_view_pricelist_items" model="res.groups">
+        <field name="name">See Pricelist Items</field>
+        <field name="category_id" ref="base.module_category_sales" />
+    </record>
+
+    <record id="contact_filter_sale_order_group" model="res.groups">
+        <field name="name">Hide Contact filter (sale)</field>
+        <field name="category_id" ref="base.module_category_hidden" />
+    </record>
+
+    <record id="pricelist_sale_order_group" model="res.groups">
+        <field name="name">Hide pricelist (sale)</field>
+        <field name="category_id" ref="base.module_category_hidden" />
+    </record>
+
+    <record id="payment_terms_sale_order_group" model="res.groups">
+        <field name="name">Hide Payment terms (sale)</field>
+        <field name="category_id" ref="base.module_category_hidden" />
+    </record>
+
+    <record id="edit_product_line_pricing_sale_order_group" model="res.groups">
+        <field name="name">Block Edit product line pricing (sale)</field>
+        <field name="category_id" ref="base.module_category_hidden" />
+    </record>
+
+    <record id="create_invoice_sale_order_group" model="res.groups">
+        <field name="name">Hide Create Invoice (sale)</field>
+        <field name="category_id" ref="base.module_category_hidden" />
+    </record>
+
+</odoo>
