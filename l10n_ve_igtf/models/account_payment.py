@@ -8,10 +8,6 @@ _logger = logging.getLogger(__name__)
 class AccountPaymentIgtf(models.Model):
     _inherit = "account.payment"
 
-    is_igtf = fields.Boolean(
-        string="IGTF", compute="_compute_is_igtf", store=True, help="IGTF"
-    )
-
     is_igtf_on_foreign_exchange = fields.Boolean(
         string="IGTF on Foreign Exchange?",
         help="IGTF on Foreign Exchange?",
@@ -105,7 +101,10 @@ class AccountPaymentIgtf(models.Model):
             return
 
         for payment in self:
-            if payment.igtf_amount and payment.is_igtf_on_foreign_exchange:
+            if (
+                nd payment.igtf_amount
+                and payment.is_igtf_on_foreign_exchange
+            ):
                 if payment.payment_type == "inbound":
                     vals_igtf = [
                         x for x in vals if x["account_id"] == igtf_account]
