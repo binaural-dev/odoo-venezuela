@@ -13,7 +13,6 @@ class PosConfig(models.Model):
         default=0.0,
         readonly=False,
     )
-    keep_journal = fields.Boolean(default=False)
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
@@ -30,6 +29,7 @@ class PosConfig(models.Model):
     activate_barcode_strict_mode = fields.Boolean(
         help="Activate product entry with barcode in strict mode"
     )
+    validate_phone_in_pos = fields.Boolean(default=False)
 
     @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")
     def _compute_rate(self):

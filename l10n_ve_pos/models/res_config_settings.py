@@ -16,7 +16,7 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.pos_show_just_products_with_available_qty", readonly=False
     )
     pos_search_cne = fields.Boolean(related="company_id.pos_search_cne", readonly=False)
-    pos_keep_journal = fields.Boolean(related="pos_config_id.keep_journal", readonly=False)
+
     pos_unreconcile_moves = fields.Boolean(
         related="company_id.pos_unreconcile_moves", readonly=False
     )

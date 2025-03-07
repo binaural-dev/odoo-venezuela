@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.0.1.0.9",
+    "version": "16.0.1.0.10",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
