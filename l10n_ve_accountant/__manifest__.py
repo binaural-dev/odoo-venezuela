@@ -12,6 +12,7 @@
         "base",
         "web",
         "account",
+        "account_reports",
         "account_sequence",
         "l10n_ve_tax",
         "l10n_ve_contact",
@@ -20,9 +21,12 @@
     # always loaded
     "data": [
         "security/ir.model.access.csv",
+        "security/res_groups.xml",
+        "security/ir_rule.xml",
         "data/account_data.xml",
         "data/ir_actions_server.xml",
         "data/paperformats.xml",
+        "data/tax_unit_data.xml",
         "views/account_invoice_report.xml",
         "views/account_move.xml",
         "views/account_move_line.xml",
@@ -30,6 +34,7 @@
         "views/res_partner.xml",
         "views/ir_property.xml",
         "views/res_company_views.xml",
+        "report/tax_unit.xml",
         "report/account_invoice_details.xml",
         "report/all_payment_report.xml",
         "report/account_report_templates.xml",
