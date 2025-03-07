@@ -71,12 +71,6 @@
             action="action_configurate_signature"
         />
 
-        <menuitem 
-            name="Tax unit" 
-            id="menu_retention_tax_unit" 
-            parent="l10n_ve_payment_extension.retention_configuration" 
-	    action="action_tax_unit_l10n_ve_payment_extension"
-	/>
 
         <menuitem 
             name="IVA Retention percentage" 
