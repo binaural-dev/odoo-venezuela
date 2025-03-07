@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.0.1.0.8",
+    "version": "16.0.1.0.9",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -40,5 +40,5 @@
         ],
     },
     "binaural": True,
-    "l10n_ve": True
+    "l10n_ve": True,
 }

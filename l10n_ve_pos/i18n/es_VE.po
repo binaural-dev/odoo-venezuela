@@ -667,13 +667,6 @@ msgid "Pos Show Just Products With Available Qty"
 msgstr "Mostrar solamente los productos disponibles"
 
 #. module: l10n_ve_pos
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_pos_config__pos_tax_inside
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__pos_tax_inside
-#: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__pos_tax_inside
-msgid "Pos Tax Inside"
-msgstr "Impuestos incluidos"
-
-#. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_res_company__pos_unreconcile_moves
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_res_config_settings__pos_unreconcile_moves
 msgid "Pos Unreconcile Moves"
