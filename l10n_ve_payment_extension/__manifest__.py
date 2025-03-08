@@ -1,13 +1,12 @@
 {
-    "name": "Binaural Retenciones",
+    "name": "Venezuela - Withholdings",
     "summary": """
-       Modulo de extensiones de pago """,
+    """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
     "version": "16.0.19.1.15",
-    # any module necessary for this one to work correctly
     "depends": [
         "base",
         "account",
@@ -15,12 +14,10 @@
         "l10n_ve_accountant",
         "l10n_ve_invoice",
         "l10n_ve_location",
-        # "l10n_ve_fiscal",
         "l10n_ve_contact",
         "l10n_ve_tax_payer",
         "product",
     ],
-    # always loaded
     "data": [
         "security/ir.model.access.csv",
         "security/ir_rule.xml",
