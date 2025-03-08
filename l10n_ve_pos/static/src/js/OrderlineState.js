@@ -21,6 +21,10 @@ odoo.define("l10n_ve_pos.OrderlineState", function(require) {
 
       get_orderline_rate_from_orderline() {
         if(this.quantity < 0) return this.order.current_rate
+        return this?.sale_order_line_id?.foreign_rate || this.pos.config.foreign_inverse_rate;
+      }
+      get_display_foreign_rate() {
+        if(this.quantity < 0) return this.order.current_rate
         return this?.sale_order_line_id?.foreign_rate || this.pos.config.foreign_rate;
       }
 
