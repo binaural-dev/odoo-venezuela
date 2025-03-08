@@ -1,0 +1,7 @@
+<odoo>
+    <record id="group_support_user" model="res.groups">
+        <field name="name">Usuario de Soporte (Diarios)</field>
+        <!-- <field name="category_id" ref="base.module_category_accounting_and_finance"/> -->
+        <!-- <field name="users" eval="[(4, ref('base.user_admin'))]"/>  Asigna el grupo al usuario admin (opcional) -->
+    </record>
+</odoo>
