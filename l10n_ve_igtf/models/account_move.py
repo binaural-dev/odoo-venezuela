@@ -111,8 +111,7 @@ class AccountMove(models.Model):
 
         for move in move_credit:
             if (
-                payment_credit.is_igtf
-                and payment_credit.is_igtf_on_foreign_exchange
+                payment_credit.is_igtf_on_foreign_exchange
                 and move
                 and move.bi_igtf > 0
             ):
@@ -128,8 +127,7 @@ class AccountMove(models.Model):
 
         for move in move_debit:
             if (
-                payment_debit.is_igtf
-                and payment_debit.is_igtf_on_foreign_exchange
+                payment_debit.is_igtf_on_foreign_exchange
                 and move
                 and move.bi_igtf > 0
             ):
