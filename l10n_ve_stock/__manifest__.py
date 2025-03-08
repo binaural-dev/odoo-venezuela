@@ -8,8 +8,14 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "16.0.16.1.8",
-    "depends": ["stock", "l10n_ve_tax", "product", "l10n_ve_rate", "delivery"],
+    "version": "16.0.16.1.9",
+    "depends": [
+        "stock",
+        "l10n_ve_tax",
+        "product",
+        "l10n_ve_rate",
+        "delivery",
+    ],
     "data": [
         "security/security_binaural_stock.xml",
         "security/binaural_stock_groups.xml",

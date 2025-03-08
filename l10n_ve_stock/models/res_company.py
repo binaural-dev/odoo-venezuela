@@ -20,3 +20,4 @@ class ResCompany(models.Model):
     validate_without_product_quantity = fields.Boolean(
         "Allow Validate Without Product Quantity", default=False
     )
+
