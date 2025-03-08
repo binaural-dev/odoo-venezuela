@@ -22,7 +22,7 @@ class AccountJournal(models.Model):
 
         if not is_support_user:
 
-            if not (vals['type'] in ['bank','general']):
+            if not (vals['type'] in ['bank','general','cash']):
                 raise UserError(_(f"No tienes permisos para crear/actualizar un diario de tipo {vals['type']}."))
             return
 
