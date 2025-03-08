@@ -38,7 +38,6 @@
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="type_delivery_step" invisible="1"/>
                 <field name="package_qty" attrs="{'invisible': [('type_delivery_step','!=','out')]}"/>
-                <field name="guide_number"/>
             </xpath>
 
             <xpath expr="//form/header/button[@name='%(stock.action_report_delivery)d']" position="attributes">
