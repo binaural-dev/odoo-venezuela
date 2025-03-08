@@ -1,0 +1,148 @@
+<odoo>
+    <data>
+        <record id="action_account_report_cs_usd" model="ir.actions.client">
+            <field name="name">Cash Flow Statement USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('account_reports.cash_flow_report'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_bs_usd" model="ir.actions.client">
+            <field name="name">Balance Sheet USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('account_reports.balance_sheet'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_exec_summary_usd" model="ir.actions.client">
+            <field name="name">Executive Summary USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('account_reports.executive_summary'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_pl_usd" model="ir.actions.client">
+            <field name="name">Profit and Loss USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('account_reports.profit_and_loss'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_rs" model="ir.actions.client">
+            <field name="name">Result Statement</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('l10n_ve_account_reports.result_statement')}"
+            />
+        </record>
+
+        <record id="action_account_report_rs_usd" model="ir.actions.client">
+            <field name="name">Result Statement USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('l10n_ve_account_reports.result_statement'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_fs" model="ir.actions.client">
+            <field name="name">Financial situation statement</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('l10n_ve_account_reports.financial_situation_statement')}"
+            />
+        </record>
+
+        <record id="action_account_report_fs_usd" model="ir.actions.client">
+            <field name="name">Financial situation statement USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('l10n_ve_account_reports.financial_situation_statement'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_general_ledger_usd" model="ir.actions.client">
+            <field name="name">General Ledger USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('account_reports.general_ledger_report'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_ja_usd" model="ir.actions.client">
+            <field name="name">Journal Report USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('account_reports.journal_report'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_ar_usd" model="ir.actions.client">
+            <field name="name">Aged Receivable USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('account_reports.aged_receivable_report'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_ap_usd" model="ir.actions.client">
+            <field name="name">Aged Payable USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('account_reports.aged_payable_report'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_partner_ledger_usd" model="ir.actions.client">
+            <field name="name">Partner Ledger USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('account_reports.partner_ledger_report'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_daily_ledger" model="ir.actions.client">
+            <field name="name">Daily Ledger</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('l10n_ve_account_reports.daily_ledger_report')}"
+            />
+        </record>
+
+        <record id="action_account_report_daily_ledger_usd" model="ir.actions.client">
+            <field name="name">Daily Ledger USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('l10n_ve_account_reports.daily_ledger_report'), 'usd_report': True}"
+            />
+        </record>
+
+        <record id="action_account_report_coa_usd" model="ir.actions.client">
+            <field name="name">Trial Balance USD</field>
+            <field name="tag">account_report</field>
+            <field
+                name="context"
+                eval="{'report_id': ref('account_reports.trial_balance_report'), 'usd_report': True}"
+            />
+        </record>
+
+    </data>
+</odoo>
