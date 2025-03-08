@@ -8,4 +8,41 @@
             </div>
         </xpath>
     </template>
+
+    <template id="tax_groups_totals" inherit_id="l10n_ve_invoice.tax_groups_totals">
+        <xpath expr="//t[3]" position="after">
+            <t t-if="tax_totals['igtf']['apply_igtf']">
+            <tr>
+                <td>
+                    BI IGTF
+                </td>
+                <td class="text-end o_price_total">
+                    <span t-out="tax_totals['igtf']['formatted_igtf_base_amount']"/>
+                </td>
+            </tr>
+                <tr>
+                    <td>
+                        IGTF 3.0% 
+                    </td>
+                    <td class="text-end o_price_total">
+                        <span t-out="tax_totals['igtf']['formatted_igtf_amount']"/>
+                    </td>
+                </tr>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="document_tax_totals" inherit_id="l10n_ve_invoice.document_tax_totals">
+        <xpath expr="//tr[@class='border-black o_total'][2]" position="after">
+            <t t-if="tax_totals['igtf']['apply_igtf']">
+            <tr class="border-black o_total">
+                <t t-if="has_rounding"><td>Total con IGTF</td></t>
+                <t t-else=""><td><strong>Total con IGTF</strong></td></t>
+                <td class="text-end o_price_total">
+                    <span t-out="tax_totals['formatted_amount_total_igtf']"/>
+                </td>
+            </tr>
+            </t>
+        </xpath>
+    </template>
 </odoo>
