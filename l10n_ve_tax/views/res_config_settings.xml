@@ -26,6 +26,9 @@
                             </div>
                             <div class="o_setting_right_pane">
                                 <label for="unique_tax"/>
+                                <div class="text-muted">
+                                    Tax is mandatory on order and invoice lines, additionally only one tax is allowed.
+                                </div>
                             </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box" id="show_discount_on_moves_setting">
@@ -34,12 +37,19 @@
                             </div>
                             <div class="o_setting_right_pane">
                                 <label for="show_discount_on_moves"/>
+                                <div class="text-muted">
+                                    Allow showing the discount column on invoice lines
+                                </div>
                             </div>
                         </div>
 
                     </div>
                     <h2>Sales Book Configuration</h2>
                     <div class="row mt16 o_settings_container" name="l10n_ve_tax_sale">
+                        <div class="text-muted">
+                            Allows you to select the tax columns that should be reflected in the
+                            client's book
+                        </div>
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_sale_setting">
 
                             <!-- <div class="col-12 o_setting_box"> -->

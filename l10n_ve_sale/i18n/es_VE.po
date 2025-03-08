@@ -33,8 +33,8 @@ msgid ""
 "Block order confirmation action with invoices in payment status Not Paid / "
 "In payment process."
 msgstr ""
-"Bloquear confirmacion de pedidos de clientes con facturas en estado de pago "
-"No Pagado o En proceso de pago."
+"Bloquear confirmación de pedidos de clientes con facturas en estado de pago "
+"'No pagado' o 'En proceso de pago'."
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale

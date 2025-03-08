@@ -49,7 +49,7 @@ msgstr "Descuento"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__exent_aliquot_purchase
 msgid "Exent Aliquot Purchase"
-msgstr "Exento Compras"
+msgstr "Exento compras"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_sale
@@ -61,25 +61,25 @@ msgstr "Exento ventas"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__extend_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__extend_aliquot_purchase
 msgid "Extend Aliquot Purchase"
-msgstr "Alicuota extendida Compras"
+msgstr "Alícuota extendida compras"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__extend_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__extend_aliquot_sale
 msgid "Extend Aliquot Sale"
-msgstr "Alicuota extendida Ventas"
+msgstr "Alícuota extendida ventas"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__general_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_purchase
 msgid "General Aliquot Purchase"
-msgstr "Alicuota general Compras"
+msgstr "Alícuota general compras"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__general_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_sale
 msgid "General Aliquot Sale"
-msgstr "Alicuota general Ventas"
+msgstr "Alícuota general ventas"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__module_l10n_ve_igtf
@@ -120,7 +120,7 @@ msgstr "La moneda alterna no esta configurada para esta compañia"
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
 msgid "Non-deductible in Purchases"
-msgstr "No deducibles en Compras"
+msgstr "No deducibles en compras"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_account_move_line__not_deductible_tax
@@ -131,53 +131,53 @@ msgstr "No Deducible"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_extend_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_extend_aliquot_purchase
 msgid "Not Show Extend Aliquot Purchase"
-msgstr "No mostrar alicuota extendida (Compras)"
+msgstr "No mostrar alícuota extendida (Compras)"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_extend_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_extend_aliquot_sale
 msgid "Not Show Extend Aliquot Sale"
-msgstr "No mostrar alicuota extendida (Ventas)"
+msgstr "No mostrar alícuota extendida (Ventas)"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_reduced_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_reduced_aliquot_purchase
 msgid "Not Show Reduced Aliquot Purchase"
-msgstr "No mostrar alicuota reducida (Compras)"
+msgstr "No mostrar alícuota reducida (Compras)"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__not_show_reduced_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__not_show_reduced_aliquot_sale
 msgid "Not Show Reduced Aliquot Sale"
-msgstr "No mostrar alicuota reducida (Ventas)"
+msgstr "No mostrar alícuota reducida (Ventas)"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
 msgid "Purchases Book Configuration"
-msgstr "Configuración de Libro de Compras"
+msgstr "Configuración de Libro de compras"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__reduced_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__reduced_aliquot_purchase
 msgid "Reduced Aliquot Purchase"
-msgstr "Alicuota reducida compras"
+msgstr "Alícuota reducida compras"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__reduced_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__reduced_aliquot_sale
 msgid "Reduced Aliquot Sale"
-msgstr "Alicuota reducida Ventas"
+msgstr "Alícuota reducida ventas"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
 msgid "Sales Book Configuration"
-msgstr "Configuración de Libro de Ventas"
+msgstr "Configuración de Libro de ventas"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__show_discount_on_moves
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__show_discount_on_moves
 msgid "Show Discount On Moves"
-msgstr "Mostrar Descuento en Facturas"
+msgstr "Mostrar descuento en facturas"
 
 #. module: l10n_ve_tax
 #. odoo-javascript

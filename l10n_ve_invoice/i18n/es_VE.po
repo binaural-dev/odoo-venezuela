@@ -280,7 +280,7 @@ msgstr "Fecha de Primer Pago"
 #. module: l10n_ve_invoice
 #: model:ir.actions.report,name:l10n_ve_invoice.action_invoice_free_form_l10n_ve_invoice
 msgid "Free Form"
-msgstr "Forma Libre"
+msgstr "Forma libre"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.wizard_l10n_ve_facturacion_reportes_view
@@ -291,7 +291,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__group_sales_invoicing_series
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__group_sales_invoicing_series
 msgid "Group Sales Invoicing Series"
-msgstr "Grupo para Series de Ventas"
+msgstr "Grupo para series de ventas"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__id
@@ -376,7 +376,7 @@ msgstr "Limitar la cantidad de productos en una factura forma libre"
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__max_product_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__max_product_invoice
 msgid "Max Product Invoice"
-msgstr "Cantidad máxima de productos en Facturas Forma Libre"
+msgstr "Cantidad máxima de productos en Facturas forma libre"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
@@ -456,29 +456,29 @@ msgstr "Mostar columna de código del producto en forma libre"
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
 msgid "Show Default Code on Free Form Invoice"
-msgstr "Mostrar Código del Producto en Forma Libre"
+msgstr "Mostrar Código del Producto en forma libre"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_tag_on_usd_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__show_tag_on_usd_invoice
 msgid "Show Tag On Usd Invoice"
-msgstr "Mostrar Coletilla en Factura"
+msgstr "Mostrar coletilla en factura"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
 msgid "Show Tag USD on Free Form Invoice"
-msgstr "Mostrar Coletilla de Tasa BCV en Forma Libre"
+msgstr "Mostrar coletilla de Tasa BCV en forma libre"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_total_on_usd_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__show_total_on_usd_invoice
-msgid "Show Total On Usd Invoice"
-msgstr "Mostrar Total en USD en Factura"
+msgid "Show total On Usd Invoice"
+msgstr "Mostrar total en USD en factura"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
-msgid "Show Total USD on Free Form Invoice"
-msgstr "Mostrar Total en USD en Forma Libre"
+msgid "Show total USD on Free Form Invoice"
+msgstr "Mostrar total en USD en forma libre"
 
 #. module: l10n_ve_invoice
 #. odoo-python
