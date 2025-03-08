@@ -5,7 +5,6 @@ class PosConfig(models.Model):
     _inherit = "pos.config"
 
     foreign_currency_id = fields.Many2one("res.currency", related="company_id.currency_foreign_id")
-    pos_tax_inside = fields.Boolean(related="company_id.pos_tax_inside")
 
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for moves.",
@@ -14,7 +13,6 @@ class PosConfig(models.Model):
         default=0.0,
         readonly=False,
     )
-    keep_journal = fields.Boolean(default=False)
     foreign_rate = fields.Float(
         compute="_compute_rate",
         digits="Tasa",
@@ -31,6 +29,7 @@ class PosConfig(models.Model):
     activate_barcode_strict_mode = fields.Boolean(
         help="Activate product entry with barcode in strict mode"
     )
+    validate_phone_in_pos = fields.Boolean(default=False)
 
     @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")
     def _compute_rate(self):

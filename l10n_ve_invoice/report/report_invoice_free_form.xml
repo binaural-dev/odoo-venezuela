@@ -127,7 +127,7 @@
                                 </th>
                                 <th name="th_taxes" t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}"><span>IVA</span></th>
                                 <th name="th_subtotal" class="text-end">
-                                    <span groups="account.group_show_line_subtotals_tax_excluded">Monto</span>
+                                    <span groups="account.group_show_line_subtotals_tax_excluded">Subtotal</span>
                                     <span groups="account.group_show_line_subtotals_tax_included">Total</span>
                                 </th>
                             </tr>
@@ -300,7 +300,7 @@
             <t t-foreach="tax_totals[str_tax]" t-as="subtotal">
                 <tr class="border-black o_subtotal">
                     <td>
-                        <strong t-esc="'Monto sin impuestos'"/>
+                        <strong>Subtotal</strong>
                     </td>
 
                     <td class="text-end">

@@ -1,0 +1,32 @@
+from odoo import fields, models
+
+
+class ResConfigSettings(models.TransientModel):
+    _inherit = "res.config.settings"
+
+    customer_account_igtf_id = fields.Many2one(
+        "account.account",
+        string="Customer IGTF Account",
+        related="company_id.customer_account_igtf_id",
+        readonly=False,
+    )
+
+    supplier_account_igtf_id = fields.Many2one(
+        "account.account",
+        string="Supplier IGTF Account",
+        related="company_id.supplier_account_igtf_id",
+        readonly=False,
+    )
+
+    igtf_percentage = fields.Float(
+        string="IGTF Percentage",
+        related="company_id.igtf_percentage",
+        readonly=False,
+    )
+
+    show_igtf_suggested_account_move = fields.Boolean(
+        related="company_id.show_igtf_suggested_account_move", readonly=False
+    )
+    show_igtf_suggested_sale_order = fields.Boolean(
+        related="company_id.show_igtf_suggested_sale_order", readonly=False
+    )

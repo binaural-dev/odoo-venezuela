@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.1.0.2",
+    "version": "16.0.1.0.3",
     # any module necessary for this one to work correctly
     "depends": ["l10n_ve_invoice"],
     # always loaded

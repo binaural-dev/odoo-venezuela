@@ -49,7 +49,7 @@
                 <field name="invoice_user_id"/>
             </xpath>
             <xpath expr="//field[@name='journal_id']" position="after">
-                <field name="is_debit_journal" readonly="True"/>
+                <field name="is_debit_journal" readonly="True" invisible="1"/>
             </xpath>
             <button name="button_draft" position="attributes">
                 <attribute name="attrs">
