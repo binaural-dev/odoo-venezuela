@@ -11,6 +11,11 @@ from odoo.exceptions import UserError
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
+    
+    guide_number = fields.Char(
+        tracking=True, 
+        copy=False,
+    )
 
     state_guide_dispatch = fields.Selection(
         [
@@ -72,5 +77,30 @@ class StockPicking(models.Model):
                 picking.create_customer_credit()
             elif picking.show_create_vendor_credit:
                 picking.create_vendor_credit()
-        
+
+    def button_validate(self,):
+        res = super().button_validate()
+        # Picking_type 
+        self.guide_number = self.get_sequence_guide_num()
+        return res
     
+    @api.model
+    def get_sequence_guide_num(self):
+        self.ensure_one()
+        sequence = self.env["ir.sequence"].sudo()
+        guide_number = None
+
+        guide_number = sequence.search(
+            [("code", "=", "guide.number"), ("company_id", "=", self.company_id.id)]
+        )
+        if not guide_number:
+            guide_number = sequence.create(
+                {
+                    "name": "Guide Number",
+                    "code": "guide.number",
+                    "company_id": self.company_id.id,
+                    "prefix": "GUIDE",
+                    "padding": 5,
+                }
+            )
+        return guide_number.next_by_id(guide_number.id)

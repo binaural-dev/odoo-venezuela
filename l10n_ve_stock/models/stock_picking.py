@@ -15,7 +15,6 @@ class StockPicking(models.Model):
     package_qty = fields.Integer(default=0)
     reception_date = fields.Date(tracking=True)
 
-    guide_number = fields.Char(tracking=True)
     def _get_action_picking_delivery_type(self, picking_type):
         # action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
         pickings = self.env["stock.picking"]

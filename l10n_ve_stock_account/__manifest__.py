@@ -16,7 +16,10 @@
     ],
     "data": [
         
+        "data/ir_sequence.xml",
+
         "views/stock_picking_guide_dispatch_views.xml",
+        "views/stock_picking_views.xml",
         "views/menuitem_views.xml",
         
     ],
