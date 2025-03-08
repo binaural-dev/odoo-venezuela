@@ -58,38 +58,40 @@ class WizardStockBookReport(models.TransientModel):
     
     def parse_stock_book_data(self):
         stock_book_lines = []
-        stock_moves = self.search_stock_moves()
+        valuation_layers = self.search_valuation_layers()
 
-        if not stock_moves:
-            _logger.info(f"NO SE IDENTIFICARON STOCK MOVES MEDIANTE EL DOMAIN")
+        if not valuation_layers:
+            _logger.info(f"NO SE IDENTIFICARON STOCK VALUATION LAYERS MEDIANTE EL DOMAIN")
 
             return
         
         product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0})
 
-        for stock_move in stock_moves:
-                _logger.info(f"HOLA SOY UNO DE LOS STOCK MOVES DEL DOMAIN:{stock_move.read(['reference','product_id','picking_code','state','is_inventory'])}")
+        for stock_move in valuation_layers:
+                _logger.info(f"HOLA SOY UNO DE LOS STOCK MOVES DEL DOMAIN:{stock_move.stock_move_id.read(['reference','product_id','picking_code','state','is_inventory'])}")
                 product_id = stock_move.product_id.id
-                quantity_done = stock_move.quantity_done
-                stock_move_id = stock_move.id
+                quantity_done = stock_move.quantity
+                stock_move_id = stock_move.stock_move_id.id
 
-                if stock_move.picking_code == "incoming" and stock_move.state == "done":
+                if (stock_move.stock_move_id.picking_code == "incoming" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity>0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "incoming" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done"):
                     # Sumar la cantidad al producto correspondiente en el diccionario
+                    _logger.info("LA MRDA ESTA ES UNA COMPRA, DEVOLUCION DE CLIENTE O UN AJUSTE DE INVENTARIO POSITIVO")
                     product_movements[product_id]["stock_move_id"] = stock_move_id
 
                     product_movements[product_id]["incoming"] += quantity_done
                 
-                if stock_move.picking_code == "outgoing" and stock_move.state == "done":
-                    # Sumar la cantidad al producto correspondiente en el diccionario
-                    product_movements[product_id]["stock_move_id"] = stock_move_id
+                # if (stock_move.stock_move_id.picking_code == "outgoing" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity<0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "outgoing" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done"):
+                #     # Sumar la cantidad al producto correspondiente en el diccionario
+                #     _logger.info("LA MRDA ESTA ES UNA VENTA, DEVOLUCION AL PROVEEDOR O UN AJUSTE DE INVENTARIO NEGATIVO")
+                #     product_movements[product_id]["stock_move_id"] = stock_move_id
 
-                    product_movements[product_id]["outgoing"] += quantity_done
+                #     product_movements[product_id]["outgoing"] += quantity_done * (-1)
                 
-                if stock_move.is_inventory or stock_move.scrap_ids:
-                    _logger.info(f"Este stock.move fue causado por un ajuste de inventario.")
-                    product_movements[product_id]["stock_move_id"] = stock_move_id
+        #         if stock_move.is_inventory or stock_move.scrap_ids:
+        #             _logger.info(f"Este stock.move fue causado por un ajuste de inventario.")
+        #             product_movements[product_id]["stock_move_id"] = stock_move_id
 
-                    product_movements[product_id]["withdraw"] += quantity_done
+        #             product_movements[product_id]["withdraw"] += quantity_done
 
                 continue
 
@@ -101,17 +103,17 @@ class WizardStockBookReport(models.TransientModel):
         
         return stock_book_lines
     
-    def search_stock_moves(self):
+    def search_valuation_layers(self):
         order = "id asc"
         env = self.env
-        stock_move_model = env["stock.move"]
+        valuation_layer_model = env["stock.valuation.layer"]
         domain = self._get_domain_stock_move()
-        stock_moves = stock_move_model.search(domain, order=order)
+        valuation_layers = valuation_layer_model.search(domain, order=order)
 
-        if not stock_moves:
+        if not valuation_layers:
             return []
 
-        return stock_moves
+        return valuation_layers
 
     def _get_domain_stock_move(self):
         stock_move_search_domain = []
