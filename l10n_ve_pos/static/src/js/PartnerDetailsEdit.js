@@ -97,6 +97,11 @@ odoo.define("l10n_ve_pos.PartnerDetailsEdit", function(require) {
             title: _t("A street is required"),
           });
         }
+        if (!processedChanges.country_id) {
+          return this.showPopup("ErrorPopup", {
+            title: _t("A valid country is required"),
+          });
+        }
         function isValidPhone(phone) {
           const phoneRegex = /^0[24]\d{9}$/;
           return phoneRegex.test(phone);

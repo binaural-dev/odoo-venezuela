@@ -5,7 +5,6 @@ from odoo.exceptions import ValidationError
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
-    pos_tax_inside = fields.Boolean(related="company_id.pos_tax_inside", readonly=False)
     pos_move_to_draft = fields.Boolean(related="company_id.pos_move_to_draft", readonly=False)
     pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty", readonly=False)
     pos_show_free_qty_on_warehouse = fields.Boolean(
