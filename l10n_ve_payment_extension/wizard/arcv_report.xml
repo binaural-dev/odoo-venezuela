@@ -1,0 +1,32 @@
+<odoo>
+    <record id="arcv_report_form_view" model="ir.ui.view">
+        <field name="name">Genrate ARCV Voucher</field>
+        <field name="model">arcv.report</field>
+        <field name="arch" type="xml">
+            <form string="ARCV Voucher">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button string="Imprimir" type="object" name="print_arcv" />
+                    <button string="Cancel" class="btn-default" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_arcv_report" model="ir.actions.act_window">
+        <field name="name">Generate ARCV Voucher</field>
+        <field name="res_model">arcv.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

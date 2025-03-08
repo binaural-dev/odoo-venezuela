@@ -6,11 +6,12 @@
     "author": "Binauraldev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.0.1.0.8",
+    "version": "16.0.1.0.10",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
         "point_of_sale",
+        "pos_sale",
         "l10n_ve_location",
         "l10n_ve_rate",
         "l10n_ve_contact",
@@ -28,7 +29,6 @@
         "views/report_saledetails.xml",
         "security/res_group.xml",
         "wizard/payment_report.xml",
-        "report/payment_report.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
@@ -38,10 +38,6 @@
             "l10n_ve_pos/static/src/xml/*.xml",
             "l10n_ve_pos/static/src/css/*.css",
         ],
-        "point_of_sale.qunit_suite_tests": [
-            "l10n_ve_pos/static/tests/unit/**/*",
-        ],
     },
-    "binaural": True,
-    "l10n_ve": True
+    "l10n_ve": True,
 }

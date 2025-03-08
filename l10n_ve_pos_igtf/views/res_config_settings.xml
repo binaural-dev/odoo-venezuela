@@ -1,0 +1,24 @@
+<odoo>
+    <data>
+        <record id="res_config_settings_l10n_ve_pos_igtf" model="ir.ui.view">
+            <field name="name">res.config.settings.l10n.ve.pos.igtf</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="l10n_ve_pos.res_config_settings_l10n_ve_pos"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@class='row mt16 o_settings_container'][1]" position="after">
+                    <div class="col-12 col-lg-6 o_setting_box" id="igtf_setting">
+                        <div class="o_setting_left_pane">
+                            <field name="apply_igtf"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="apply_igtf"/>
+                            <div class="text-muted">
+                                Calculate IGTF with payments made in USD on current box
+                            </div>
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
