@@ -16,50 +16,6 @@ class StockPicking(models.Model):
     reception_date = fields.Date(tracking=True)
 
     guide_number = fields.Char(tracking=True)
-    
-    state_guide_dispatch = fields.Selection(
-        [
-            ("to_invoice", "To Invoice"), 
-            ("invoiced", "Invoiced"), 
-        ], 
-        default="to_invoice",
-    )
-
-    show_create_invoice = fields.Boolean(compute='_compute_button_visibility')
-    show_create_bill = fields.Boolean(compute='_compute_button_visibility')
-    show_create_customer_credit = fields.Boolean(compute='_compute_button_visibility')
-    show_create_vendor_credit = fields.Boolean(compute='_compute_button_visibility')
-
-    def _compute_button_visibility(self):
-        for record in self:
-            record.show_create_invoice = all([
-                record.invoice_count == 0,
-                record.state == 'done',
-                record.operation_code != 'incoming',
-                not record.is_return
-            ])
-            
-            record.show_create_bill = all([
-                record.invoice_count == 0,
-                record.state == 'done',
-                record.operation_code != 'outgoing',
-                not record.is_return
-            ])
-            
-            record.show_create_customer_credit = all([
-                record.invoice_count == 0,
-                record.state == 'done',
-                record.operation_code != 'outgoing',
-                record.is_return
-            ])
-            
-            record.show_create_vendor_credit = all([
-                record.invoice_count == 0,
-                record.state == 'done',
-                record.operation_code != 'incoming',
-                record.is_return
-            ])
-
     def _get_action_picking_delivery_type(self, picking_type):
         # action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
         pickings = self.env["stock.picking"]
@@ -233,23 +189,4 @@ class StockPicking(models.Model):
     #     if self.type_delivery_step != "pick":
     #         self = self.with_context(skip_physical_location=True)
     #     return super().action_assign()
-    
-    def create_invoice_lots(self):
-        valid_picking = self.filtered(
-            lambda picking: picking.state_guide_dispatch == "invoiced"
-        )
-        
-        if valid_picking:
-            raise UserError(_("You cannot create an invoice from this picking for this state."))
-            
-        for picking in self:
-            if picking.show_create_invoice:
-                picking.create_invoice()
-            elif picking.show_create_bill:
-                picking.create_bill()
-            elif picking.show_create_customer_credit:
-                picking.create_customer_credit()
-            elif picking.show_create_vendor_credit:
-                picking.create_vendor_credit()
-        
     

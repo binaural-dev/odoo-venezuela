@@ -107,4 +107,18 @@
         </field>
     </record>
 
+    <record id="stock.action_picking_tree_all" model="ir.actions.act_window">
+            <field name="view_mode">tree,kanban,form,calendar</field>
+            <field 
+                name="view_ids" 
+                eval="[
+                    (5, 0, 0), 
+                    (0, 0, {'view_mode': 'tree', 'view_id': ref('stock.vpicktree')}),
+                    (0, 0, {'view_mode': 'form', 'view_id': ref('stock.view_picking_form')}),
+                    (0, 0, {'view_mode': 'kanban', 'view_id': ref('stock.stock_picking_kanban')}),
+                    (0, 0, {'view_mode': 'calendar', 'view_id': ref('stock.stock_picking_calendar')}),
+                ]"
+            />
+        </record>
+
 </odoo>
