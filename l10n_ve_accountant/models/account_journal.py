@@ -7,13 +7,13 @@ class AccountJournal(models.Model):
     @api.model
     def create(self, vals):
         for record in self:
-            record._validate_type_journal_group(vals)
+            record._validate_user_group(vals)
         return super().create(vals)
     
     def write(self, vals):
         for record in self:
             if "type" in vals:
-                record._validate_type_journal_group(vals)
+                record._validate_user_group(vals)
         return super().write(vals)
     
     def _validate_user_group(self,vals):
@@ -23,7 +23,7 @@ class AccountJournal(models.Model):
         if not is_support_user:
 
             if not (vals['type'] in ['bank','general','cash']):
-                raise UserError(_(f"No tienes permisos para crear/actualizar un diario de tipo {vals['type']}."))
+                raise UserError(_(f"You do not have permissions to create/update a journal with this type."))
             return
 
         return
