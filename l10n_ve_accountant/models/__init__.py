@@ -7,3 +7,4 @@ from . import account_invoice_report
 from . import res_partner
 from . import account_bank_statement_line
 from . import account_payment_term
+from . import account_journal

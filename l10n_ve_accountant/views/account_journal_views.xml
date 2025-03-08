@@ -1,0 +1,17 @@
+<odoo>
+    <record id="view_account_journal_form_inherit" model="ir.ui.view">
+        <field name="name">account.journal.form.inherit</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <!-- Modificar el campo 'type' con dominio dinámico -->
+            <xpath expr="//field[@name='name']" position="after">
+
+            </xpath>
+            <xpath expr="//field[@name='type']" position="attributes">
+                        
+                <!-- <attribute name="domain">[('type', 'in', allowed_journal_types.split(','))]</attribute> -->
+            </xpath>
+        </field>
+    </record>
+</odoo>
