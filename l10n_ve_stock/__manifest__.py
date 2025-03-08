@@ -5,7 +5,7 @@
         Stock for Venezuela Localization
     """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
     "version": "16.0.16.1.9",
@@ -33,5 +33,4 @@
         "wizard/stock_quantity_history.xml",
     ],
     "application": True,
-    "binaural": True,
 }
