@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e-20250120\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-08 19:54+0000\n"
-"PO-Revision-Date: 2025-03-08 19:54+0000\n"
+"POT-Creation-Date: 2025-03-08 19:55+0000\n"
+"PO-Revision-Date: 2025-03-08 19:55+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -43,19 +43,19 @@ msgstr "Crear crédito de proveedor"
 #. module: l10n_ve_stock_account
 #: model:ir.ui.menu,name:l10n_ve_stock_account.menuitem_stock_dispatch_guides
 msgid "Dispatch Guides"
-msgstr "Guías de envío"
+msgstr "Guías de Despacho"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Guide Date"
-msgstr "Fecha de guía"
+msgstr "​Fecha de Guía"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__guide_number
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Guide Number"
-msgstr "Número de guía"
+msgstr "​Nro de Guía de Despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__invoiced
@@ -102,12 +102,12 @@ msgstr "Show Crear crédito de proveedor"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__state_guide_dispatch
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "State Guide Dispatch"
-msgstr "Estado de guía de despacho"
+msgstr "Estatus"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 msgid "State guide dispatch"
-msgstr "Estado de guía de despacho"
+msgstr "Estatus"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
