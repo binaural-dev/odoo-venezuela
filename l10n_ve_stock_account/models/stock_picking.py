@@ -29,7 +29,28 @@ class StockPicking(models.Model):
     show_create_bill = fields.Boolean(compute='_compute_button_visibility')
     show_create_customer_credit = fields.Boolean(compute='_compute_button_visibility')
     show_create_vendor_credit = fields.Boolean(compute='_compute_button_visibility')
+    
+    @api.model
+    def get_sequence_guide_num(self):
+        self.ensure_one()
+        sequence = self.env["ir.sequence"].sudo()
+        guide_number = None
 
+        guide_number = sequence.search(
+            [("code", "=", "guide.number"), ("company_id", "=", self.company_id.id)]
+        )
+        if not guide_number:
+            guide_number = sequence.create(
+                {
+                    "name": "Guide Number",
+                    "code": "guide.number",
+                    "company_id": self.company_id.id,
+                    "prefix": "GUIDE",
+                    "padding": 5,
+                }
+            )
+        return guide_number.next_by_id(guide_number.id)
+    
     def _compute_button_visibility(self):
         for record in self:
             record.show_create_invoice = all([
@@ -84,23 +105,33 @@ class StockPicking(models.Model):
         self.guide_number = self.get_sequence_guide_num()
         return res
     
-    @api.model
-    def get_sequence_guide_num(self):
-        self.ensure_one()
-        sequence = self.env["ir.sequence"].sudo()
-        guide_number = None
-
-        guide_number = sequence.search(
-            [("code", "=", "guide.number"), ("company_id", "=", self.company_id.id)]
-        )
-        if not guide_number:
-            guide_number = sequence.create(
-                {
-                    "name": "Guide Number",
-                    "code": "guide.number",
-                    "company_id": self.company_id.id,
-                    "prefix": "GUIDE",
-                    "padding": 5,
-                }
-            )
-        return guide_number.next_by_id(guide_number.id)
+    def create_invoice(self):
+        self._validate_one_invoice_posted()
+        return super().create_invoice()
+    
+    def create_bill(self):
+        self._validate_one_invoice_posted()
+        return super().create_bill()
+    
+    def create_customer_credit(self):
+        self._validate_one_invoice_posted()
+        return super().create_customer_credit()
+    
+    def create_vendor_credit(self):
+        self._validate_one_invoice_posted()
+        return super().create_vendor_credit()
+    
+    def _validate_one_invoice_posted(self,):
+        for picking in self:
+            invoice_ids = self.env['account.move'].search(
+                [
+                    ('picking_id', '=', picking.id),
+                    ("state", "=", "posted")
+                ]
+            )            
+            if invoice_ids:
+                raise UserError(
+                    _(
+                        "This guide has at least one posted invoice, please check your invoice."
+                    )
+                )
