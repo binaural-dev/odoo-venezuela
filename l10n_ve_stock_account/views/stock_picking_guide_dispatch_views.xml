@@ -1,6 +1,6 @@
 <odoo>
     <record id="stock_picking_guide_dispatch_views" model="ir.ui.view">
-        <field name="name">stock.picking.guide.dispatch.views</field>
+        <field name="name">stock.picking.guide.dispatch.account.views</field>
         <field name="model">stock.picking</field>
         <field name="arch" type="xml">
             <tree string="Picking list" multi_edit="1" sample="1">
@@ -14,6 +14,14 @@
                 <field name="show_create_bill" invisible="1"/>
                 <field name="show_create_customer_credit" invisible="1"/>
                 <field name="show_create_vendor_credit" invisible="1"/>
+                <field 
+                    name="state" optional="show" widget="badge" 
+                    decoration-danger="state=='cancel'"
+                    decoration-info="state== 'assigned'"
+                    decoration-muted="state == 'draft'"
+                    decoration-success="state == 'done'"
+                    decoration-warning="state not in ('draft','cancel','done','assigned')"
+                />
                 <field 
                     name="state_guide_dispatch" 
                     string="State Guide Dispatch" 
@@ -64,9 +72,9 @@
         <field 
             name="view_ids" 
             eval="[
-            (5, 0, 0), 
-            (0, 0, {'view_mode': 'tree', 'view_id': ref('l10n_ve_stock.stock_picking_guide_dispatch_views')}),
-            (0, 0, {'view_mode': 'form', 'view_id': ref('stock.view_picking_form')}),
+                (5, 0, 0), 
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('l10n_ve_stock_account.stock_picking_guide_dispatch_views')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('stock.view_picking_form')}),
             ]"
         />
     </record>
