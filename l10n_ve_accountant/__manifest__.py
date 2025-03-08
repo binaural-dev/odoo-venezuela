@@ -1,9 +1,10 @@
 {
-    "name": "Binaural Contabilidad",
+    "name": "Venezuela - Accounting",
     "summary": """
-       Modulo para contabilidad Venezolana """,
+       Module for Venezuelan accounting
+    """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
     "version": "16.0.5.0.13",
@@ -42,5 +43,4 @@
     ],
     "images": ["static/description/icon.png"],
     "application": True,
-    
 }
