@@ -1,0 +1,9 @@
+<odoo>
+    <menuitem 
+        name="Dispatch Guides" 
+        id="menuitem_stock_dispatch_guides" 
+        sequence="100" 
+        parent="account.menu_finance_receivables"
+        action="l10n_ve_stock.action_picking_guide_dispatch"
+	/>
+</odoo>

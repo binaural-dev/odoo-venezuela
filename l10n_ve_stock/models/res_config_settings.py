@@ -32,3 +32,10 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.validate_without_product_quantity", readonly=False
     )
 
+    # customer_journal_id = fields.Many2one(
+    #     related="company_id.customer_journal_id", readonly=False
+    # )
+
+    # vendor_journal_id = fields.Many2one(
+    #     related="company_id.vendor_journal_id", readonly=False
+    # )
