@@ -87,11 +87,11 @@ msgstr "Ya existe un usuario con el mismo número de identificación fiscal (VAT
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_config_settings__validate_user_creation_by_company
 #: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
 msgid "Validate user creation by company"
-msgstr "Validar creacion de usario por compañía"
+msgstr "Validar la creación de contactos por compañías"
 
 #. module: l10n_ve_contact
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_company__validate_user_creation_general
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_config_settings__validate_user_creation_general
 #: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
 msgid "Validate user creation general"
-msgstr "Validar creacion de usuraio general"
+msgstr "Validar la creación de contactos en toda la bases de datos"
