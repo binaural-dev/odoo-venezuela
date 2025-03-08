@@ -21,13 +21,3 @@ class ResCompany(models.Model):
         "Allow Validate Without Product Quantity", default=False
     )
 
-    # customer_journal_id = fields.Many2one(
-    #     "account.journal",
-    #     string="Customer Journal",
-    #     help="To add customer journal",
-    # )
-    # vendor_journal_id = fields.Many2one(
-    #     "account.journal",
-    #     string="Vendor Journal",
-    #     help="To add vendor journal",
-    # )
