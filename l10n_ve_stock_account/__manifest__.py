@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 {
     "name": "Venezuela - Stock Account",
     "summary": """
         Stock Accoun for Venezuela Localization
     """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
     "version": "16.0.1.0.0",
@@ -25,5 +24,4 @@
     ],
     "application": True,
     'auto_install': True,
-    "binaural": True,
 }
