@@ -28,4 +28,4 @@ class StockPicking(models.Model):
                         break
 
     def accion_personalizada(self):
-        _logger.info(f"TIPO DE OPERACION:{self.picking_type_id.code}")
+        _logger.info(f"MOVE LINES DEL PICKING:{self.move_ids.read([])}")

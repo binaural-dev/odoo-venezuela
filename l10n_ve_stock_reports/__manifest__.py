@@ -7,7 +7,7 @@
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock / Inventory",
-    "version": "16.0.0.0.1",
+    "version": "16.0.0.0.2",
     "depends": ["stock", "account","sale_stock","l10n_ve_invoice"],
     "data": [
         "security/ir.model.access.csv",

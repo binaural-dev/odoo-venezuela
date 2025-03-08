@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -44,9 +45,10 @@ class WizardStockBookReport(models.TransientModel):
     company_id = fields.Many2one("res.company", default=_default_company_id)
 
     currency_system = fields.Boolean(string="Report in currency system", default=False)
+
+    incoming_qty = fields.Float(default=0.0)
     
     def generate_report(self):
-        
         return self.download_stock_book()
 
     def download_stock_book(self):
@@ -56,202 +58,109 @@ class WizardStockBookReport(models.TransientModel):
     
     def parse_stock_book_data(self):
         stock_book_lines = []
-        moves = self.search_moves()
+        stock_moves = self.search_stock_moves()
 
-        if not moves:
-            _logger.info(f"NO SE IDENTIFICARON MOVES MEDIANTE EL DOMAIN")
+        if not stock_moves:
+            _logger.info(f"NO SE IDENTIFICARON STOCK MOVES MEDIANTE EL DOMAIN")
 
             return
         
-        for move in moves:
-            _logger.info(f"HOLA SOY UNO DE LOS ACCOUNT MOVE DEVUELTOS POR EL SEARCH MOVES:{move.name}, Valuation al que pertenezco:{move.stock_valuation_layer_ids}, FECHA:{move.date}, INVOICE DATE: {move.invoice_date}, VAT:{move.vat},Tipo:{move.move_type},REVERSED ENTRY: {move.reversed_entry_id.name}")
-            taxes = self._determinate_amount_taxeds(move)
-            stock_book_line = self._fields_stock_book_line(move, taxes)
+        product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0})
+
+        for stock_move in stock_moves:
+                _logger.info(f"HOLA SOY UNO DE LOS STOCK MOVES DEL DOMAIN:{stock_move.read(['reference','product_id','picking_code','state','is_inventory'])}")
+                product_id = stock_move.product_id.id
+                quantity_done = stock_move.quantity_done
+                stock_move_id = stock_move.id
+
+                if stock_move.picking_code == "incoming" and stock_move.state == "done":
+                    # Sumar la cantidad al producto correspondiente en el diccionario
+                    product_movements[product_id]["stock_move_id"] = stock_move_id
+
+                    product_movements[product_id]["incoming"] += quantity_done
+                
+                if stock_move.picking_code == "outgoing" and stock_move.state == "done":
+                    # Sumar la cantidad al producto correspondiente en el diccionario
+                    product_movements[product_id]["stock_move_id"] = stock_move_id
+
+                    product_movements[product_id]["outgoing"] += quantity_done
+                
+                if stock_move.is_inventory or stock_move.scrap_ids:
+                    _logger.info(f"Este stock.move fue causado por un ajuste de inventario.")
+                    product_movements[product_id]["stock_move_id"] = stock_move_id
+
+                    product_movements[product_id]["withdraw"] += quantity_done
+
+                continue
+
+        for product_id, movements in product_movements.items():
+            # _logger.info(f"TOTAL DE ENTRADAS POR PRODUCTO: {product_id}, TOTAL INCOMING :{movements["incoming"]}, TOTAL OUTGOING: {movements["outgoing"]}")
+            stock_book_line = self._fields_stock_book_line(product_id,movements)
             stock_book_lines.append(stock_book_line)
+
+        
         return stock_book_lines
     
-    def search_moves(self):
+    def search_stock_moves(self):
         order = "id asc"
         env = self.env
-        valuation_model = env["stock.valuation.layer"]
-        domain = self._get_domain_valuation_layer()
-        valuation_layers = valuation_model.search(domain, order=order)
+        stock_move_model = env["stock.move"]
+        domain = self._get_domain_stock_move()
+        stock_moves = stock_move_model.search(domain, order=order)
 
-        if not valuation_layers:
+        if not stock_moves:
             return []
-        
-        _logger.info(f"SOY LOS VALUATION LAYERS DE LA BUSQUEDA CON EL DOMAIN:{valuation_layers.read()}")
 
-        account_moves = []
+        return stock_moves
 
-        for valuation_layer in valuation_layers:
-            account_moves.append(valuation_layer.account_move_id)
+    def _get_domain_stock_move(self):
+        stock_move_search_domain = []
 
-        return account_moves
+        stock_move_search_domain += [("company_id", "=", self.company_id.id)]
 
-    def _get_domain_valuation_layer(self):
-        valuation_search_domain = []
+        stock_move_search_domain += [("create_date", ">=", self.date_from)]
+        stock_move_search_domain += [("create_date", "<=", self.date_to)]
 
-        valuation_search_domain += [("company_id", "=", self.company_id.id)]
-
-        valuation_search_domain += [("create_date", ">=", self.date_from)]
-        valuation_search_domain += [("create_date", "<=", self.date_to)]
-        valuation_search_domain += [
-            ("account_move_id.state", "in", ("posted", "cancel")),
-        ]
-
-        return valuation_search_domain
+        return stock_move_search_domain
     
-    def _fields_stock_book_line(self, move, taxes):
-        multiplier = -1 if move.move_type == "out_refund" else 1
+    def _fields_stock_book_line(self,product_id,movements):
+        
         return {
-            "_id": move.id,
-            "document_date": self._format_date(move.invoice_date) if move.invoice_date else self._format_date(move.date),
-            "accounting_date": self._format_date(move.date),
-            "vat": move.vat,
-            "partner_name": move.invoice_partner_display_name,
-            "document_number": move.name,
-            "move_type": self._determinate_type(move.move_type),
-            "transaction_type": self._determinate_transaction_type(move),
-            "number_invoice_affected": move.reversed_entry_id.name or "--",
-            "correlative": move.correlative if move.correlative else False,
-            "reduced_aliquot": 0.08,
-            "general_aliquot": 0.16,
-            "total_sales_iva": taxes.get("amount_taxed", 0),
-            "total_sales_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
-            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
-            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
-            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
-            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
+            "_id": movements["stock_move_id"],
+            "document_date": self.env["product.product"].browse(product_id).name,
+            # "accounting_date": self._format_date(move.date),
+            # "vat": move.vat,
+            "partner_name": movements["incoming"],
+            "document_number": movements["withdraw"],
+             "move_type": movements["outgoing"],
+            # "transaction_type": self._determinate_transaction_type(move),
+            # "number_invoice_affected": move.reversed_entry_id.name or "--",
+            # "correlative": move.correlative if move.correlative else False,
+            # "reduced_aliquot": 0.08,
+            # "general_aliquot": 0.16,
+            # "total_sales_iva": taxes.get("amount_taxed", 0),
+            # "total_sales_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
+            # "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
+            # "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
+            # "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
+            # "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
         }
     
-    def _determinate_amount_taxeds(self, move):
-        is_posted = move.state == "posted"
-        vef_base = self.company_id.currency_id.id == self.env.ref("base.VEF").id
+    # def _determinate_stock_moves_qty(self, move):
+    #     is_done = move.state == "done"
 
-        if not (is_posted and move.tax_totals):
-            _logger.info("EL MOVIMIENTO NO POSEE TAX TOTALS O NO ESTA POSTEADO")
-            return {
-                "amount_untaxed": 0.0,
-                "amount_taxed": 0.0,
-                "tax_base_exempt_aliquot": 0.0,
-                "amount_exempt_aliquot": 0.0,
-                "tax_base_reduced_aliquot": 0.0,
-                "tax_base_general_aliquot": 0.0,
-                "tax_base_extend_aliquot": 0.0,
-                "amount_reduced_aliquot": 0.0,
-                "amount_general_aliquot": 0.0,
-                "amount_extend_aliquot": 0.0,
-            }
+    #     tax_result = {}
 
-        is_credit_note = move.move_type in ["out_refund", "in_refund"]
+    #     if move.picking_code == "incoming":
+            
+            
+    #     if not (is_done):
+    #         _logger.info("EL MOVIMIENTO NO ESTA COMPLETADO")
+    #         return {
+                
+    #         }
 
-        tax_totals = move.tax_totals
-
-        tax_result = {}
-
-        is_check_currency_system = self.currency_system
-
-        if is_check_currency_system:
-            fields_taxed = ("amount_untaxed", "amount_total", "groups_by_subtotal")
-        else:
-            fields_taxed = (
-                "foreign_amount_untaxed",
-                "foreign_amount_total",
-                "groups_by_foreign_subtotal",
-            )
-
-        amount_untaxed = (
-            tax_totals.get(fields_taxed[0]) * -1
-            if is_credit_note and tax_totals.get(fields_taxed[0])
-            else tax_totals.get(fields_taxed[0])
-        )
-
-        amount_taxed = (
-            tax_totals.get(fields_taxed[1]) * -1
-            if is_credit_note and tax_totals.get(fields_taxed[1])
-            else tax_totals.get(fields_taxed[1])
-        )
-
-        tax_result.update(
-            {
-                "amount_untaxed": amount_untaxed,
-                "amount_taxed": amount_taxed,
-                "tax_base_exempt_aliquot": 0,
-                "amount_exempt_aliquot": 0,
-                "tax_base_reduced_aliquot": 0,
-                "amount_reduced_aliquot": 0,
-                "tax_base_general_aliquot": 0,
-                "amount_general_aliquot": 0,
-                "tax_base_extend_aliquot": 0,
-                "amount_extend_aliquot": 0,
-            }
-        )
-
-        is_currency_system = (
-            "groups_by_subtotal"
-            if vef_base or self.currency_system
-            else "groups_by_foreign_subtotal"
-        )
-        tax_base = tax_totals.get(is_currency_system)
-
-        for base in tax_base.items():
-            taxes = base[1]
-
-            exent_aliquot = False
-            general_aliquot = False
-            reduced_aliquot = False
-            extend_aliquot = False
-
-            exent_aliquot = self.company_id.exent_aliquot_sale.tax_group_id.id
-            reduced_aliquot = self.company_id.reduced_aliquot_sale.tax_group_id.id
-            general_aliquot = self.company_id.general_aliquot_sale.tax_group_id.id
-            extend_aliquot = self.company_id.extend_aliquot_sale.tax_group_id.id
-
-            for tax in taxes:
-                tax_group_id = tax.get("tax_group_id")
-
-                is_exempt = tax_group_id == exent_aliquot
-                if is_exempt:
-                    tax_result.update(
-                        {
-                            "tax_base_exempt_aliquot": tax.get("tax_group_base_amount"),
-                            "amount_exempt_aliquot": tax.get("tax_group_amount"),
-                        }
-                    )
-
-                is_reduced_aliquot = tax_group_id == reduced_aliquot
-                if is_reduced_aliquot:
-                    tax_result.update(
-                        {
-                            "tax_base_reduced_aliquot": tax.get("tax_group_base_amount"),
-                            "amount_reduced_aliquot": tax.get("tax_group_amount"),
-                        }
-                    )
-
-                    continue
-
-                is_general_aliquot = tax_group_id == general_aliquot
-                if is_general_aliquot:
-                    tax_result.update(
-                        {
-                            "tax_base_general_aliquot": tax.get("tax_group_base_amount"),
-                            "amount_general_aliquot": tax.get("tax_group_amount"),
-                        }
-                    )
-
-                    continue
-
-                is_extend_aliquot = tax_group_id == extend_aliquot
-                if is_extend_aliquot:
-                    tax_result.update(
-                        {
-                            "tax_base_extend_aliquot": tax.get("tax_group_base_amount"),
-                            "amount_extend_aliquot": tax.get("tax_group_amount"),
-                        }
-                    )
-
-        return tax_result
+    #     return tax_result
     
     def _format_date(self, date):
         _fn = datetime.strptime(str(date), "%Y-%m-%d")
@@ -297,24 +206,24 @@ class WizardStockBookReport(models.TransientModel):
     def stock_book_fields(self):
         return [
             {
-                "name": "N°",
+                "name": "#",
                 "field": "index",
             },
             {
-                "name": "CODIGO",
+                "name": "ITEM DE INVENTARIO",
                 "field": "index",
             },
             {
-                "name": "MERCANCIA\n(ARTICULOS O PRODUCTOS)",
+                "name": "DESCRIPCIÓN",
                 "field": "document_date",
                 "size": 18,
             },
-            {
-                "name": "EXISTENCIA\nINICIAL", 
-                "field": "vat", 
-                "size": 10
-            },
-            {
+            # {
+            #     "name": "EXISTENCIA ANTERIOR", 
+            #     "field": "vat", 
+            #     "size": 10
+            # },
+             {
                 "name": "ENTRADAS",
                 "field": "partner_name",
                 "size": 10,
@@ -325,66 +234,61 @@ class WizardStockBookReport(models.TransientModel):
                 "size": 10,
             },
             {
-                "name": "RETIRO",
+                "name": "RETIROS",
                 "field": "document_number",
                 "size": 10,
             },
-            {
-                "name": "AUTO\nCONSUMO",
-                "field": "correlative",
-                "size": 10,
-            },
-            {
-                "name": "EXISTENCIA\nFINAL", 
-                "field": "transaction_type",
-                "size": 10,
-            },
-            {
-                "name": "COSTO\nUNITARIO",
-                "field": "number_invoice_affected",
-                "size": 15,
-            },
-            {
-                "name": "EXISTENCIA\nINICIAL",
-                "field": "total_sales_iva",
-                "format": "number",
-                "size": 15,
-            },
-            {
-                "name": "ENTRADAS",
-                "field": "total_sales_not_iva",
-                "format": "number",
-                "size": 15,
-            },
-            {
-                "name": "SALIDAS",
-                "field": "tax_base_general_aliquot",
-                "format": "number",
-                "size": 15,
-            },
-            {
-                "name": "RETIRO",
-                "field": "general_aliquot",
-                "format": "percent",
-                "size": 15,
-            },
-            {
-                "name": "AUTO\nCONSUMO",
-                "field": "amount_general_aliquot",
-                "format": "number",
-                "size": 15,
-            },
-            {
-                "name": "EXISTENCIA\nFINAL",
-                "field": "tax_base_reduced_aliquot",
-                "format": "number",
-                "size": 15,
-            },
+            # {
+            #     "name": "AUTO-CONSUMOS",
+            #     "field": "correlative",
+            #     "size": 10,
+            # },
+            # {
+            #     "name": "EXISTENCIA", 
+            #     "field": "transaction_type",
+            #     "size": 10,
+            # },
+            # {
+            #     "name": "VALOR ANTERIOR EN BS",
+            #     "field": "number_invoice_affected",
+            #     "size": 15,
+            # },
+            # {
+            #     "name": "ENTRADAS",
+            #     "field": "total_sales_iva",
+            #     "format": "number",
+            #     "size": 20,
+            # },
+            # {
+            #     "name": "SALIDAS",
+            #     "field": "total_sales_not_iva",
+            #     "format": "number",
+            #     "size": 15,
+            # },
+            # {
+            #     "name": "RETIROS",
+            #     "field": "tax_base_general_aliquot",
+            #     "format": "number",
+            #     "size": 15,
+            # },
+            # {
+            #     "name": "AUTO-CONSUMOS",
+            #     "field": "general_aliquot",
+            #     "format": "percent",
+            #     "size": 15,
+            # },
+            # {
+            #     "name": "EXISTENCIA",
+            #     "field": "amount_general_aliquot",
+            #     "format": "number",
+            #     "size": 15,
+            # },
         ]
     
     def generate_stocks_book(self, company_id):
         self.company_id = company_id
         stock_book_lines = self.parse_stock_book_data()
+        
         if not stock_book_lines:
             stock_book_lines = []
         file = BytesIO()
@@ -397,7 +301,7 @@ class WizardStockBookReport(models.TransientModel):
             {"bold": True, "text_wrap": True, "bottom": True}
         )
         merge_format = workbook.add_format(
-            {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray"}
+            {"bold": 1, "font_name":"Arial", "font_size":7 ,"border": 1, "align": "center", "valign": "vcenter",}
         )
         cell_formats = {
             "number": workbook.add_format({"num_format": "#,##0.00"}),
@@ -405,53 +309,54 @@ class WizardStockBookReport(models.TransientModel):
         }
 
         worksheet.merge_range(
-            "C1:H1",
-            f"LIBRO DE INVENTARIO DE MERCANCIAS (CONFORME AL ART. 177 REGLAMENTO LEY ISLR)",
-            workbook.add_format({"bold": True, "border":2, "center_across": True, "font_size": 12}),
+            "D2:N2",
+            f"REGISTRO DETALLADO DE ENTRADAS Y SALIDAS DE INVENTARIO DE MERCANCÍAS (PRODUCTOS TERMINADOS)",
+            workbook.add_format({"border":0,"bold":True ,"center_across": True, "font_size": 12, "font_name":"Arial"}),
         )
         worksheet.merge_range(
-            "D3:J3", 
-            f"EMPRESA: {self.company_id.name}", 
-            cell_bold
-        )
-        worksheet.merge_range(
-            "D4:F4", 
-            f"RIF: {self.company_id.vat}", 
-            cell_bold
-        )
-        worksheet.merge_range(
-            "D5:H5",
+            "A4:B4",
             (
-                f"PERIODO: DESDE {self.date_from}"
-                f" HASTA {self.date_to}"
+                f"Razón Social:{self.company_id.name}"
             ),
-            cell_bold,
+            workbook.add_format({"border":0,"bold":True, "font_size": 10, "font_name":"Arial"}),
         )
         worksheet.merge_range(
-            "D6:I6",
+            "A5:B5",
             (
-                "UNIDADES DE INVENTARIO"
+                f"RIF:{self.company_id.vat}"
             ),
-            workbook.add_format(
-                {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "silver"}
-            ),
+            workbook.add_format({"border":0,"bold":True,"font_size": 10, "font_name":"Arial"}),
         )
+
+        worksheet.merge_range("K4:L4", "Fecha Inicio", workbook.add_format({"border":0,"bold":True ,"center_across":True , "font_size": 10, "font_name":"Arial"}),)
+
+        worksheet.merge_range("K5:L5", f"{self.date_from}", workbook.add_format({"border":0,"center_across":True , "font_size": 10, "font_name":"Arial"}),)
+
+        worksheet.write("M4", "Fecha Fin", workbook.add_format({"border":0,"bold":True ,"center_across":True , "font_size": 10, "font_name":"Arial"}),)
+
+        worksheet.write("M5", f"{self.date_to}", workbook.add_format({"border":0,"center_across":True , "font_size": 10, "font_name":"Arial"}),)
+
+
         worksheet.merge_range(
-            "J6:P6",
-            (
-                "UNIDAD MONETARIA (VALORES EXPRESADOS EN BOLIVARES)"
-            ),
-            workbook.add_format(
-                {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "silver"}
-            ),
+            "D7:I7",
+            f"UNIDADES DEL MES",
+            workbook.add_format({"border":1, "center_across": True, "font_size": 8, "font_name":"Arial"}),
         )
+
+        worksheet.merge_range(
+            "J7:O7",
+            f"BOLÍVAR DEL MES",
+            workbook.add_format({"border":1, "center_across": True, "font_size": 8, "font_name":"Arial"}),
+        )
+        
 
         name_columns = self.stock_book_fields()
         total_idx = 0
 
         for index, field in enumerate(name_columns):
             worksheet.set_column(index, index, len(field.get("name")) + 2)
-            worksheet.merge_range(6, index, 7, index, field.get("name"), merge_format)
+            
+            worksheet.write(7, index, field.get("name"), merge_format)
 
             for index_line, line in enumerate(stock_book_lines):
                 total_idx = (8 + index_line) + 1
@@ -463,14 +368,13 @@ class WizardStockBookReport(models.TransientModel):
                     worksheet.write(
                         INIT_LINES + index_line, index, line.get(field["field"]), cell_format
                     )
-            
-            #Sumatoria Final
-            if field.get("format") == "number":
 
+            # Sumatoria Final
+            if field.get("format") == "number":
                 col = utility.xl_col_to_name(index)
                 worksheet.write_formula(
                     total_idx, index, f"=SUM({col}9:{col}{total_idx})", workbook.add_format(
-                        {"bold": 1, "border": 1, "valign": "vcenter", "fg_color": "silver"}
+                        {"bold": 1, "font_size":7 ,"border": 1, "valign": "vcenter", "fg_color": "silver"}
                     )
                 )
 
