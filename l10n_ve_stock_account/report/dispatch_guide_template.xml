@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="dispatch_guide_template" name="dispatch_guide_template_name">
+        <t t-name="l10n_ve_stock_account.dispatch_guide_template_report">
+            <t t-call="web.html_container">
+                <t t-set="o" t-value="docs[0]" />
+                <!-- Inicializar variables acumuladoras UNA SOLA VEZ -->
+
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="l10n_ve_stock_account.dispatch_guide_custom_layout" />
+                </t>
+
+                <t t-call="web.basic_layout">
+                    <div style="page-break-after:always;">
+                        <t t-call="l10n_ve_stock_account.dispatch_layout_body" />
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="dispatch_guide_custom_layout" name="dispatch_guide_custom_layout1">
+        <t t-call="l10n_ve_stock_account.dispatch_layout_header" />
+        <t t-call="l10n_ve_stock_account.dispatch_layout_footer" />
+    </template>
+
+   <template id="dispatch_layout_header">
+        <div class="container-fluid header">
+            <div class="row mb-4">
+                <div class="col-12 text-center">
+                    <img t-if="o.company_id.logo"
+                        t-att-src="image_data_uri(o.company_id.logo)"
+                        style="max-height:95pt;max-width: 150px;"
+                        alt="Company Logo" />
+                    <h4 class="mt-2">
+                        <span t-field="o.company_id.name" />
+                    </h4>
+                    <p>
+                        <span t-field="o.company_id.street" />
+                        <br />
+                        <span t-field="o.company_id.vat" />
+                    </p>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12 text-center">
+                    <h3>Guía de Despacho</h3>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-6">
+                    <strong>Número de documento:</strong>
+                    <span t-out="o.name" />
+                </div>
+                <div class="col-6 text-end">
+                    <strong>Fecha de emisión:</strong>
+                    <span
+                        t-out="context_timestamp(o.date_done).strftime('%d/%m/%Y %H:%M') if o.date_done else ''" />
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-6">
+                    <strong>N° de pedido:</strong>
+                    <span t-out="o.origin" />
+                </div>
+                <div class="col-6 text-end">
+                    <strong>Tasa:</strong>
+                    <t t-out="o.sale_id.foreign_rate if o.sale_id.foreign_rate else ''" />
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <t t-if="o.partner_id" class="col-12">
+                    <strong>Cliente:</strong>
+                    <span t-out="o.partner_id._get_main_partner().name" />
+                    <br />
+                    <strong>RIF:</strong>
+                    <span t-out="o.partner_id._get_main_partner().vat" />
+                    <br />
+                    <strong>Teléfono:</strong>
+                    <span
+                        t-out="o.partner_id._get_main_partner().phone or o.partner_id._get_main_partner().mobile" />
+                    <br />
+                    <strong>Dirección fiscal:</strong>
+                    <span t-out="o.partner_id._get_main_partner().contact_address" />
+                    <br />
+                    <strong>Estado:</strong>
+                    <span t-out="o.partner_id._get_main_partner().state_id.name" />
+                    <br />
+                    <strong>Ciudad:</strong>
+                    <span t-out="o.partner_id._get_main_partner().city_id.name" />
+                </t>
+                <t t-else="">
+                    <p>El cliente no existe</p>
+                </t>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <strong>Razón de traslado/transferencia:</strong>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-6">
+                    <strong>Dirección de entrega:</strong>
+                    <span t-out="o.partner_id.contact_address" />
+                </div>
+                <div class="col-6 text-end">
+                    <strong>Fecha programada de entrega:</strong>
+                    <span
+                        t-out="context_timestamp(o.scheduled_date).strftime('%d/%m/%Y %H:%M') if o.scheduled_date else ''" />
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="dispatch_layout_body">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th class="text-center">Item</th>
+                                <th class="text-center">Descripción</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-center">Unidad</th>
+                                <th class="text-center">Peso</th>
+                                <th class="text-center">Precio</th>
+                                <th class="text-center">Dscto</th>
+                                <th class="text-center">Subtotal</th>
+                                <th class="text-center">Impuesto</th>
+                                <th class="text-center">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Iterar sobre las líneas y acumular totales -->
+                            <t t-foreach="o.move_ids_without_package" t-as="line">
+                                <t t-set="line_values" t-value="line._get_line_values(use_foreign_currency=o.get_foreign_currency_is_vef())" />
+
+                                <tr>
+                                    <td class="text-center">
+                                        <t t-out="line.product_id.default_code" />
+                                    </td>
+                                    <td class="text-start">
+                                        <t t-out="line.product_id.name[0:35]" />
+                                    </td>
+                                    <!-- quantity -->
+                                    <td class="text-center">
+                                        <t t-out="line_values['quantity']"
+                                            t-options='{"widget": "float", "precision": 2}' />
+                                    </td>
+                                    <td class="text-center">
+                                        <t t-out="line.product_uom.name" />
+                                    </td>
+                                    <td class="text-center">
+                                        <t t-out="(line.product_id.weight or 0) * (line.quantity_done or 0)" />
+                                    </td>
+                                    <td class="text-center">
+                                        <t t-if="o.get_foreign_currency_is_vef()">
+                                            <t t-out="line.sale_line_id.foreign_price or 0"
+                                                t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                        </t>
+                                        <t t-else="">
+                                            <t t-out="line.sale_line_id.price_unit or 0"
+                                                t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                        </t>
+                                    </td>
+                                    <!-- discount percentage -->
+                                    <td class="text-center">
+                                        <t t-out="line_values['discount_percentage'] or 0" />
+                                    </td>
+                                    <!-- subtotal_after_discount -->
+                                    <td class="text-center">
+                                        <t t-out="line_values['subtotal_after_discount']"
+                                            t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                    </td>
+                                    <!-- tax percentage  -->
+                                    <td class="text-center">
+                                        <t t-out="line_values['tax_percentage'] or 0" />%
+                                    </td>
+                                    <!-- total -->
+                                    <td class="text-center">
+                                        <t t-out="line_values['total']"
+                                            t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="dispatch_layout_footer">
+        <div class="footer container-fluid">
+            <t t-set="totals" t-value="o.get_totals(o.get_foreign_currency_is_vef())" />
+
+            <div class="row mt-4">
+                <div class="col-6">
+                    <strong>Subtotal:</strong>
+                    <t t-out="totals['subtotal']"
+                        t-options='{"widget": "float", "precision": o.get_digits()}' />
+                </div>
+                <div class="col-6 text-end">
+                    <strong>Impuesto:</strong>
+                    <t t-out="totals['tax']"
+                        t-options='{"widget": "float", "precision": o.get_digits()}' />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-6">
+                    <strong>Total:</strong>
+                    <t t-out="totals['total']"
+                        t-options='{"widget": "float", "precision": o.get_digits()}' />
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <p>(SIN DERECHO A CRÉDITO FISCAL)</p>
+                    <p>CONTRIBUYENTE FORMAL</p>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-3">
+                    <strong>Transporte (conductor):</strong>
+                    <br /> Nombre: <br /> C.I: <br /> Marca
+                    vehículo: <br /> Placa batea: <br /> Placa chasis: <br /> Firma:
+                    _________________________ </div>
+                <div class="col-3">
+                    <strong>Autorizado por:</strong>
+                    <br /> Nombre: <br /> C.I: <br /> Fecha: <br />
+                    Firma: _________________________ </div>
+                <div class="col-3">
+                    <strong>Despachado por:</strong>
+                    <br /> Nombre: <br /> C.I: <br /> Fecha: <br />
+                    Firma: _________________________ </div>
+                <div class="col-3">
+                    <strong>Recibido por:</strong>
+                    <br /> Nombre: <br /> C.I: <br /> Fecha: <br />
+                    Firma y sello del: _________________________ </div>
+            </div>
+
+        </div>
+    </template>
+</odoo>
