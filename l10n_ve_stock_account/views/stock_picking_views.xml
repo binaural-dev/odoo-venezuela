@@ -19,10 +19,16 @@
                 nolabel="1" /> -->
             </xpath>
 
+            <!-- <field name="partner_id" position="after"/> -->
+            <!-- <field /> -->
 
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="guide_number" />
+                <field name="allowed_reason_ids" invisible="1" />
+                <field name="transfer_reason_id" />
             </xpath>
+
+            
         </field>
     </record>
 </odoo>
