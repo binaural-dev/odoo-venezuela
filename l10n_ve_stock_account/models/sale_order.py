@@ -38,9 +38,9 @@ class SaleOrder(models.Model):
         else:
             self.document = "invoice"
 
-    # @api.constrains('is_donation', 'state')
-    # def _check_is_donation(self):
-    #     for order in self:
-    #         if (order.state in ['sale', 'done']) and order._origin:
-    #             if order.is_donation != order._origin.is_donation:
-    #                 raise ValidationError(_("The field 'Is Donation' cannot be modified on a confirmed or completed order."))
+    @api.constrains('is_donation', 'state')
+    def _check_is_donation(self):
+        for order in self:
+            if (order.state in ['sale', 'done']) and order._origin:
+                if order.is_donation != order._origin.is_donation:
+                    raise ValidationError(_("The field 'Is Donation' cannot be modified on a confirmed or completed order."))
