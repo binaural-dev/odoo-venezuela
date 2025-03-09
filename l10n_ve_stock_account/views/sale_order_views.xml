@@ -10,8 +10,7 @@
             </field>
 
             <field name="manually_set_rate" position="after">
-                <field name="is_donation" />
-                <!-- <field name="is_donation" attrs="{'readonly': [('state', 'in', ['sale', 'done'])]}" /> -->
+                <field name="is_donation" attrs="{'readonly': [('state', 'in', ['sale', 'done'])]}" />
             </field>
         </field>
     </record>

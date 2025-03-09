@@ -48,14 +48,20 @@ class StockPicking(models.Model):
         compute="_compute_allowed_reason_ids",
     )
 
-    @api.depends('sale_id', 'sale_id.is_donation')
+    is_donation = fields.Boolean(related="sale_id.is_donation")
+
+    @api.depends('is_donation')
     def _compute_allowed_reason_ids(self):
         for picking in self:
             domain = []
 
+            donation_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_donation', raise_if_not_found=False)
+
+            if picking.is_donation:
+                picking.transfer_reason_id = donation_reason.id
+
 
             if picking.sale_id and picking.sale_id.is_donation:
-                donation_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_donation', raise_if_not_found=False)
                 if donation_reason:
                     domain.append(('id', '=', donation_reason.id))
                 picking.allowed_reason_ids = self.env['transfer.reason'].search(domain) 
@@ -63,6 +69,8 @@ class StockPicking(models.Model):
                 picking.allowed_reason_ids = False
 
             _logger.info("domain: %s", domain)
+
+
 
     @api.model
     def get_sequence_guide_num(self):
