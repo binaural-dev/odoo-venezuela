@@ -12,7 +12,6 @@
     "data": [
         "security/ir.model.access.csv",
         "wizard/stock_book_report.xml",
-        "views/stock_picking_views.xml",
     ],
     "images": ["static/description/icon.png"],
     "installable": True,
