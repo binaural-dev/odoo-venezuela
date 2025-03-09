@@ -1,12 +1,13 @@
 {
-    "name": "Binaural Contabilidad",
+    "name": "Venezuela - Accounting",
     "summary": """
-       Modulo para contabilidad Venezolana """,
+       Module for Venezuelan accounting
+    """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.5.0.8",
+    "version": "16.0.5.0.13",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -20,6 +21,7 @@
     # always loaded
     "data": [
         "security/ir.model.access.csv",
+        "security/res_groups.xml",
         "data/account_data.xml",
         "data/ir_actions_server.xml",
         "data/paperformats.xml",
