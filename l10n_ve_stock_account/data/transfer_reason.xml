@@ -1,0 +1,7 @@
+<odoo>
+    <record id="transfer_reason_donation" model="transfer.reason">
+        <field name="name">Donation</field>
+        <field name="code">donation</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

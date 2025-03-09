@@ -1,4 +1,5 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 
 import logging
 
@@ -15,9 +16,11 @@ class SaleOrder(models.Model):
         ],
         string="Document",
         default=lambda self: self._default_document(),
-        tracking=True,  # Esto habilita la trazabilidad del campo
+        tracking=True,
         help="Document type for the sale order.",
     )
+
+    is_donation = fields.Boolean(string="Is Donation", default=False, tracking=True)
 
     @api.model
     def _default_document(self):
@@ -34,3 +37,10 @@ class SaleOrder(models.Model):
             self.document = self.partner_id.default_document
         else:
             self.document = "invoice"
+
+    # @api.constrains('is_donation', 'state')
+    # def _check_is_donation(self):
+    #     for order in self:
+    #         if (order.state in ['sale', 'done']) and order._origin:
+    #             if order.is_donation != order._origin.is_donation:
+    #                 raise ValidationError(_("The field 'Is Donation' cannot be modified on a confirmed or completed order."))

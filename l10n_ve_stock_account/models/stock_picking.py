@@ -36,6 +36,34 @@ class StockPicking(models.Model):
         help="Technical field to check if the related sale order has a document.",
     )
 
+    transfer_reason_id = fields.Many2one(
+        'transfer.reason', 
+        string="Reason for Transfer",
+        domain="[('id', 'in', allowed_reason_ids)]",
+    )
+    allowed_reason_ids = fields.Many2many(
+        'transfer.reason',
+        string="Allowed Reasons",
+        store=True,
+        compute="_compute_allowed_reason_ids",
+    )
+
+    @api.depends('sale_id', 'sale_id.is_donation')
+    def _compute_allowed_reason_ids(self):
+        for picking in self:
+            domain = []
+
+
+            if picking.sale_id and picking.sale_id.is_donation:
+                donation_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_donation', raise_if_not_found=False)
+                if donation_reason:
+                    domain.append(('id', '=', donation_reason.id))
+                picking.allowed_reason_ids = self.env['transfer.reason'].search(domain) 
+            else:
+                picking.allowed_reason_ids = False
+
+            _logger.info("domain: %s", domain)
+
     @api.model
     def get_sequence_guide_num(self):
         self.ensure_one()
