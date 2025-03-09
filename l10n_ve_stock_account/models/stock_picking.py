@@ -71,6 +71,9 @@ class StockPicking(models.Model):
             _logger.info("domain: %s", domain)
 
 
+    def _set_guide_number(self):
+        for picking in self:
+            picking.guide_number = picking.get_sequence_guide_num()
 
     @api.model
     def get_sequence_guide_num(self):
@@ -141,10 +144,10 @@ class StockPicking(models.Model):
             elif picking.show_create_vendor_credit:
                 picking.create_vendor_credit()
 
-    def button_validate(self,):
-        res = super().button_validate()
-        # Picking_type 
-        self.guide_number = self.get_sequence_guide_num()
+    def _action_done(self):
+        res = super()._action_done()
+        self._set_guide_number()
+        # TODO Add picking type logic either here or in the set_guide_number method
         return res
     
 
