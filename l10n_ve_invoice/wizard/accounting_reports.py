@@ -1168,12 +1168,20 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 if resume.get("total"):
                     total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
                     total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
+                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
+                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
 
                     worksheet.write_formula(
                         row_resume, 2, total_c_formula, cell_formats.get("number")
                     )
                     worksheet.write_formula(
                         row_resume, 3, total_d_formula, cell_formats.get("number")
+                    )
+                    worksheet.write_formula(
+                        row_resume, 4, total_e_formula,cell_formats.get("number")
+                    )
+                    worksheet.write_formula(
+                        row_resume, 5, total_f_formula,cell_formats.get("number")
                     )
 
             else:
@@ -1186,6 +1194,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     )
                     worksheet.write_formula(
                         row_resume, 3, total_d_formula, cell_formats.get("number")
+                    )
+                    worksheet.write_formula(
+                        row_resume, 4, total_e_formula,cell_formats.get("number")
+                    )
+                    worksheet.write_formula(
+                        row_resume, 5, total_f_formula,cell_formats.get("number")
                     )
 
             column_bi_range = (
