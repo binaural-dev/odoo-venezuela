@@ -6,7 +6,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "16.0.1.0.5",
+    "version": "16.0.1.0.7",
     "depends": [
         "base",
         "account",
@@ -20,7 +20,6 @@
         "views/account_journal.xml",
         "views/account_payment.xml",
         "views/res_config_settings.xml",
-        "views/res_company.xml",
         "report/invoice_free_form.xml",
         "wizard/account_payment_register.xml",
         "data/ir_actions_server.xml",
