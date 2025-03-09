@@ -1,18 +1,28 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-    <record id="view_picking_form" model="ir.ui.view">
-        <field name="name">stock.picking.relations</field>
+    <record id="view_picking_form_l10n_ve_stock_account" model="ir.ui.view">
+        <field name="name">stock.picking.form.l10n.ve.stock.account</field>
         <field name="model">stock.picking</field>
-        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="inherit_id" ref="stock.view_picking_form" />
         <field name="arch" type="xml">
 
-            <xpath expr="//field[@name='origin']" position="after">
-                <field name="guide_number"/>
+            <xpath expr="//form//header" position="inside">
+                <field name="has_document" invisible="1" />
+                <field name="sale_id" invisible="1" />
+
+                <button name="print_dispatch_guide"
+                    string="Shipping guide/Delivery order"
+                    type="object"
+                    class="o_btn_validate"
+                    attrs="{'invisible': ['|', '|', ('state', '!=', 'done'), ('sale_id', '=', False), ('has_document', '=', False)]}"
+                />
+                <!-- data-hotkey="m" attrs="{'invisible': [('show_button', '=', False)]}"
+                nolabel="1" /> -->
             </xpath>
 
+
+            <xpath expr="//field[@name='origin']" position="after">
+                <field name="guide_number" />
+            </xpath>
         </field>
     </record>
-
-
 </odoo>
