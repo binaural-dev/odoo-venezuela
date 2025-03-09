@@ -21,7 +21,7 @@
 
 
             <xpath expr="//field[@name='origin']" position="after">
-                <field name="guide_number" />
+                <field name="guide_number" readonly="1"/>
             </xpath>
         </field>
     </record>
