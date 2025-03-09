@@ -19,10 +19,14 @@
                 nolabel="1" /> -->
             </xpath>
 
-
             <xpath expr="//field[@name='origin']" position="after">
-                <field name="guide_number" readonly="1"/>
+                <field name="allowed_reason_ids" invisible="1" />
+                <field name="is_donation" invisible="1" />
+                <field name="transfer_reason_id" attrs="{'readonly': [('is_donation', '=', True)]}" />
+                <field name="guide_number" readonly="1" />
             </xpath>
+
+
         </field>
     </record>
 </odoo>

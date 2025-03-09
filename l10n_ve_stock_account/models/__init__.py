@@ -3,4 +3,5 @@ from . import (
     res_partner,
     stock_move,
     sale_order,
+    transfer_reason,
 )
