@@ -1,9 +1,8 @@
 {
-    "name": "Binaural Technical Tax Payer",
-    "summary": "Modulo para campo de identificación del contribuyente",
-    "license": "AGPL-3",
-    "description": "Modulo para campo de identificación del contribuyente",
-    "author": "Binauraldev",
+    "name": "Venezuela - Technical Tax Payer",
+    "summary": "Taxpayer identification field.",
+    "license": "LGPL-3",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
     "version": "16.0.0.0.1",

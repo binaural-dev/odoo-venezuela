@@ -1,5 +1,5 @@
 {
-    "name": "Binaural contactos",
+    "name": "Venezuela - Contacts",
     "summary": """
        Modulo para información de contacto """,
     "license": "LGPL-3",

@@ -1,7 +1,7 @@
 {
     "name": "Venezuela - Sales",
     "summary": """
-       Módulo para ventas """,
+    """,
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
@@ -17,7 +17,6 @@
         "l10n_ve_invoice",
         "l10n_ve_filter_partner",
     ],
-    # always loaded
     "data": [
         "security/res_groups.xml",
         "data/ir_cron.xml",
