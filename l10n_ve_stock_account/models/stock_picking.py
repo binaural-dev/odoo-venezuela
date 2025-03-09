@@ -36,11 +36,15 @@ class StockPicking(models.Model):
         help="Technical field to check if the related sale order has a document.",
     )
 
+    document = fields.Selection(related="sale_id.document")
+
     transfer_reason_id = fields.Many2one(
         'transfer.reason', 
         string="Reason for Transfer",
         domain="[('id', 'in', allowed_reason_ids)]",
+        tracking=True,
     )
+
     allowed_reason_ids = fields.Many2many(
         'transfer.reason',
         string="Allowed Reasons",
@@ -49,6 +53,9 @@ class StockPicking(models.Model):
     )
 
     is_donation = fields.Boolean(related="sale_id.is_donation")
+
+
+    picking_type_code = fields.Selection(related="picking_type_id.code")
 
     @api.depends('is_donation')
     def _compute_allowed_reason_ids(self):

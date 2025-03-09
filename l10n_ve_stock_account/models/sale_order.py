@@ -16,6 +16,7 @@ class SaleOrder(models.Model):
         ],
         string="Document",
         default=lambda self: self._default_document(),
+        required=True,
         tracking=True,
         help="Document type for the sale order.",
     )
