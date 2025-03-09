@@ -30,6 +30,12 @@ class StockPicking(models.Model):
     show_create_customer_credit = fields.Boolean(compute='_compute_button_visibility')
     show_create_vendor_credit = fields.Boolean(compute='_compute_button_visibility')
 
+    has_document = fields.Boolean(
+        string="Has Document",
+        compute="_compute_has_document",
+        help="Technical field to check if the related sale order has a document.",
+    )
+
     def _compute_button_visibility(self):
         for record in self:
             record.show_create_invoice = all([
@@ -104,3 +110,38 @@ class StockPicking(models.Model):
                 }
             )
         return guide_number.next_by_id(guide_number.id)
+
+
+    def print_dispatch_guide(self):
+        return self.env.ref("l10n_ve_stock_account.action_dispatch_guide").read()[0]
+
+
+    def get_foreign_currency_is_vef(self):
+        return self.company_id.currency_foreign_id == self.env.ref("base.VEF")
+
+    def get_digits(self):
+        return self.env.ref("base.VEF").decimal_places
+
+
+    @api.depends('sale_id.document')
+    def _compute_has_document(self):
+        for picking in self:
+            picking.has_document = bool(picking.sale_id.document)
+
+    def get_totals(self, use_foreign_currency=False):
+        """
+        """
+        self.ensure_one()
+        totals = {
+            'subtotal': 0.0,
+            'tax': 0.0,
+            'total': 0.0,
+        }
+
+        for line in self.move_ids_without_package:
+            line_values = line._get_line_values(use_foreign_currency=use_foreign_currency)
+            totals['subtotal'] += line_values['subtotal_after_discount']
+            totals['tax'] += line_values['tax_amount']
+            totals['total'] += line_values['total']
+
+        return totals
