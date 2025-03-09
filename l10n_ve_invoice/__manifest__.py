@@ -2,7 +2,7 @@
     "name": "Venezuela - Invoicing",
     "summary": """
     """,
-    "version": "16.0.3.2.21",
+    "version": "16.0.3.2.22",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
