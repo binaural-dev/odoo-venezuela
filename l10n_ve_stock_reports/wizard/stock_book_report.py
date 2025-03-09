@@ -61,21 +61,16 @@ class WizardStockBookReport(models.TransientModel):
         valuation_layers = self.search_valuation_layers()
 
         if not valuation_layers:
-            _logger.info(f"NO SE IDENTIFICARON STOCK VALUATION LAYERS MEDIANTE EL DOMAIN")
-
             return
         
         product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0,'incoming_total':0.0,'outgoing_total':0.0})
 
         for stock_move in valuation_layers:
-                _logger.info(f"HOLA SOY UNO DE LOS STOCK MOVES DEL DOMAIN:{stock_move.stock_move_id.read(['reference','product_id','picking_code','state','is_inventory'])}")
                 product_id = stock_move.product_id.id
                 quantity_done = stock_move.quantity
                 stock_move_id = stock_move.stock_move_id.id
 
                 if (stock_move.stock_move_id.picking_code == "incoming" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity>0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "incoming" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done"):
-                    # Sumar la cantidad al producto correspondiente en el diccionario
-                    _logger.info("LA MRDA ESTA ES UNA COMPRA, DEVOLUCION DE CLIENTE O UN AJUSTE DE INVENTARIO POSITIVO")
                     product_movements[product_id]["stock_move_id"] = stock_move_id
 
                     product_movements[product_id]["incoming"] += quantity_done
@@ -84,8 +79,6 @@ class WizardStockBookReport(models.TransientModel):
 
                 
                 if (stock_move.stock_move_id.picking_code == "outgoing" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity<0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "outgoing" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done"):
-                    # Sumar la cantidad al producto correspondiente en el diccionario
-                    _logger.info("LA MRDA ESTA ES UNA VENTA, DEVOLUCION AL PROVEEDOR O UN AJUSTE DE INVENTARIO NEGATIVO")
                     product_movements[product_id]["stock_move_id"] = stock_move_id
 
                     product_movements[product_id]["outgoing"] += quantity_done
@@ -100,7 +93,6 @@ class WizardStockBookReport(models.TransientModel):
                 continue
 
         for product_id, movements in product_movements.items():
-            # _logger.info(f"TOTAL DE ENTRADAS POR PRODUCTO: {product_id}, TOTAL INCOMING :{movements["incoming"]}, TOTAL OUTGOING: {movements["outgoing"]}")
             stock_book_line = self._fields_stock_book_line(product_id,movements)
             stock_book_lines.append(stock_book_line)
 
@@ -151,22 +143,6 @@ class WizardStockBookReport(models.TransientModel):
             # "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
             # "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
         }
-    
-    # def _determinate_stock_moves_qty(self, move):
-    #     is_done = move.state == "done"
-
-    #     tax_result = {}
-
-    #     if move.picking_code == "incoming":
-            
-            
-    #     if not (is_done):
-    #         _logger.info("EL MOVIMIENTO NO ESTA COMPLETADO")
-    #         return {
-                
-    #         }
-
-    #     return tax_result
     
     def _format_date(self, date):
         _fn = datetime.strptime(str(date), "%Y-%m-%d")
@@ -384,17 +360,14 @@ class WizardStockBookReport(models.TransientModel):
             # Sumatoria Final
             if field.get("format") == "number":
                 col = utility.xl_col_to_name(index)
-                # Crear un formato que combine el estilo de la suma con el formato numérico
                 sum_format = workbook.add_format({
                     "bold": 1,
                     "font_size": 7,
                     "border": 1,
                     "valign": "vcenter",
                     "fg_color": "silver",
-                    "num_format": "#,##0.00",  # Aplicar el formato numérico
+                    "num_format": "#,##0.00", 
                 })
-                _logger.info(F"TOTAL IDX:{total_idx}, INDEX:{index}, COL:{col}")
-                # Escribir la fórmula junto con el valor precalculado
                 worksheet.write_formula(
                     total_idx, index, f"=SUM({col}9:{col}{total_idx})", sum_format
                 )
