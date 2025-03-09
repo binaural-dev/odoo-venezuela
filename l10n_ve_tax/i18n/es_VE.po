@@ -74,25 +74,25 @@ msgstr "Exento ventas"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__extend_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__extend_aliquot_purchase
 msgid "Extend Aliquot Purchase"
-msgstr "Alicuota extendida Compras"
+msgstr "Alicuota extendida compras"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__extend_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__extend_aliquot_sale
 msgid "Extend Aliquot Sale"
-msgstr "Alicuota extendida Ventas"
+msgstr "Alicuota extendida ventas"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__general_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_purchase
 msgid "General Aliquot Purchase"
-msgstr "Alicuota general Compras"
+msgstr "Alicuota general compras"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__general_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__general_aliquot_sale
 msgid "General Aliquot Sale"
-msgstr "Alicuota general Ventas"
+msgstr "Alicuota general ventas"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__module_l10n_ve_igtf
@@ -133,7 +133,7 @@ msgstr "La moneda alterna no esta configurada para esta compañia"
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
 msgid "Non-deductible in Purchases"
-msgstr "No deducibles en Compras"
+msgstr "No deducibles en compras"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_account_move_line__not_deductible_tax
@@ -179,7 +179,7 @@ msgstr "Alicuota reducida compras"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__reduced_aliquot_sale
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__reduced_aliquot_sale
 msgid "Reduced Aliquot Sale"
-msgstr "Alicuota reducida Ventas"
+msgstr "Alicuota reducida ventas"
 
 #. module: l10n_ve_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_tax.res_config_settings_l10n_ve_taxes
