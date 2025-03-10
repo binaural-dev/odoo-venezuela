@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-09 19:40+0000\n"
-"PO-Revision-Date: 2025-03-09 19:40+0000\n"
+"POT-Creation-Date: 2025-03-10 17:04+0000\n"
+"PO-Revision-Date: 2025-03-10 17:04+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -191,11 +191,6 @@ msgid "Accounting Reports"
 msgstr "Informes contables"
 
 #. module: l10n_ve_invoice
-#: model:ir.model,name:l10n_ve_invoice.model_ir_actions_act_window
-msgid "Action Window"
-msgstr "Acción de ventana"
-
-#. module: l10n_ve_invoice
 #: model:ir.model.fields.selection,name:l10n_ve_invoice.selection__wizard_accounting_reports__report__purchase
 msgid "Book Purchase"
 msgstr "Libro de Compras"
@@ -293,7 +288,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__group_sales_invoicing_series
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__group_sales_invoicing_series
 msgid "Group Sales Invoicing Series"
-msgstr "Grupo para Series de Ventas"
+msgstr "Grupo para series de ventas"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__id
@@ -383,7 +378,7 @@ msgstr "Última actualización en"
 msgid ""
 "Limit the number of lines that can be printed on a free form\n"
 "                                    invoice"
-msgstr "" 
+msgstr ""
 "Limitar la cantidad de productos en una factura\n"
 "forma libre"
 
@@ -392,6 +387,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__max_product_invoice
 msgid "Max Product Invoice"
 msgstr "Cantidad máxima de productos en Facturas Forma Libre"
+
+#. module: l10n_ve_invoice
+#: model:res.groups,name:l10n_ve_invoice.create_out_refund
+msgid "Mostrar botón para crear Facturas Rectificativas"
+msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
@@ -478,12 +478,12 @@ msgstr "Mostrar Código del Producto en Forma Libre"
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_tag_on_usd_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__show_tag_on_usd_invoice
 msgid "Show Tag On Usd Invoice"
-msgstr "Mostrar Coletilla en Factura"
+msgstr "Mostrar coletilla en factura"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
 msgid "Show Tag USD on Free Form Invoice"
-msgstr "Mostrar Coletilla de Tasa BCV en Forma Libre"
+msgstr "Mostrar coletilla de tasa BCV en forma libre"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_total_on_usd_invoice
