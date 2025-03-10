@@ -1,5 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_account_invoices_details,access_account_invoices_details,model_account_invoices_details,,1,1,1,1
 access_payment_report,access_payment_report,model_payment_report,,1,1,1,1
-access_tax_unit,Unidad Tributaria,model_tax_unit,,0,0,0,0
 access_ut_fiscal_user,access_ut_fiscal_user,model_tax_unit,group_fiscal_config_user,1,0,1,0
+access_ut_fiscal_user_support,access_ut_fiscal_user_support,model_tax_unit,group_fiscal_config_support,1,1,1,0
