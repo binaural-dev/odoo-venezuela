@@ -229,6 +229,75 @@ class StockPicking(models.Model):
             elif picking.show_create_vendor_credit:
                 picking.create_vendor_credit()
 
+    def create_invoice(self):
+        """
+        Creates customer invoice from the picking
+        """
+        self._validate_one_invoice_posted()
+        for picking_id in self:
+            current_user = self.env.uid
+            if picking_id.picking_type_id.code == 'outgoing':
+                customer_journal_id = \
+                    picking_id.env['ir.config_parameter'].sudo(). \
+                        get_param('stock_move_invoice.customer_journal_id') or \
+                    False
+                if not customer_journal_id:
+                    raise UserError(
+                        _("Please configure the journal from settings"))
+
+                invoice_line_list = picking_id._get_invoice_lines_for_invoice()
+                self.env['account.move'].create({
+                    'move_type': 'out_invoice',
+                    'invoice_origin': picking_id.name,
+                    'invoice_user_id': current_user,
+                    'narration': picking_id.name,
+                    'partner_id': picking_id.partner_id.id,
+                    'currency_id': picking_id.env.user.company_id.currency_id.id,
+                    'journal_id': int(customer_journal_id),
+                    'payment_reference': picking_id.name,
+                    'picking_id': picking_id.id,
+                    'invoice_line_ids': invoice_line_list,
+                    'transfer_ids': self
+                })
+        return True 
+
+    def _get_invoice_lines_for_invoice(self):
+        self.ensure_one()
+        invoice_line_list = []
+        for move_id in self.move_ids_without_package:
+            price_unit = move_id.product_id.list_price
+            tax_ids = [
+                (
+                    6,
+                    0,
+                    [self.company_id.account_sale_tax_id.id]
+                )
+            ]
+            if move_id.sale_line_id:
+                price_unit = move_id.sale_line_id.price_unit
+                tax_ids = [
+                    (
+                        6,
+                        0,
+                        move_id.sale_line_id.tax_id.ids
+                    )
+                ]
+
+            vals = (0, 0, {
+                'name': move_id.description_picking,
+                'product_id': move_id.product_id.id,
+                'price_unit': price_unit,
+                'account_id': (
+                    move_id.product_id.property_account_income_id.id
+                    if move_id.product_id.property_account_income_id
+                    else move_id.product_id.categ_id.property_account_income_categ_id.id
+                ),
+                'tax_ids': tax_ids,
+                'quantity': move_id.quantity_done,
+            })
+            invoice_line_list.append(vals)
+        return invoice_line_list
+
     def _action_done(self):
         res = super()._action_done()
         self._set_guide_number()
@@ -267,10 +336,6 @@ class StockPicking(models.Model):
             totals["total"] += line_values["total"]
 
         return totals
-
-    def create_invoice(self):
-        self._validate_one_invoice_posted()
-        return super().create_invoice()
 
     def create_bill(self):
         self._validate_one_invoice_posted()
