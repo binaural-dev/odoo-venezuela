@@ -21,11 +21,19 @@
             </xpath>
 
             <xpath expr="//field[@name='origin']" position="after">
-                <field name="is_dispatch_guide" attrs="{'readonly': [('state', '=', 'done')],'invisible': [('operation_code', '!=', 'internal')]}" />
-                <field name="transfer_reason_id"
-                    attrs="{'readonly': [('state', '=', 'done')], 
-                              'invisible': [('is_dispatch_guide', '!=', True)]}" />
 
+                <field name="is_consignment" invisible="1" />
+                <field name="is_dispatch_guide" attrs="{
+                    'readonly': ['|', ('state', '=', 'done'), ('is_consignment', '=', True)],
+                    'invisible': [('operation_code', '!=', 'internal')]
+                }" />
+
+                <field name="transfer_reason_id"
+                    attrs="{
+                        'readonly': [('state', '=', 'done')],
+                        'invisible': [('operation_code', '!=', 'internal')],
+                        'required': [('operation_code', '=', 'internal')]
+                    }"/>
 
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="sale_id"/>
