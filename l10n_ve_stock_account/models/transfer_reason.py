@@ -7,7 +7,7 @@ class TransferReason(models.Model):
     Reasons for Stock Transfer
 
     This model stores the possible reasons for stock transfers (e.g., Sale, Donation, Return).
-    The records in this model are created via data files (XML/CSV) and should not be modified by users.
+    The records in this model are created via data files (XML) and should not be modified by users.
     The reasons are used to categorize stock movements and are dynamically filtered based on the context of the transfer.
     """
 
