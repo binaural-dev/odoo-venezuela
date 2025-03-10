@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "16.0.1.0.10",
+    "version": "16.0.1.0.11",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_accountant",
@@ -32,6 +32,8 @@
         "report/dispatch_guide.xml",
         "report/dispatch_guide_template.xml",
         "report/report_invoice_free_form.xml",
+
+        "wizard/stock_picking_self_consumption_alert_views.xml",
         
     ],
     "application": True,
