@@ -7,14 +7,14 @@
 
             <xpath expr="//form//header" position="inside">
 
-                <field name="show_print_dispatch_guide_button" invisible="1" />
+                <field name="dispatch_guide_controls" invisible="1" />
 
                 <button name="print_dispatch_guide"
                     string="Shipping guide/Delivery order"
                     type="object"
                     class="o_btn_validate"
                     attrs="{'invisible': [
-                        ('show_print_dispatch_guide_button', '!=', True),
+                        ('dispatch_guide_controls', '!=', True),
                         ]
                     }"
                 />
@@ -46,7 +46,7 @@
                               'invisible': [('operation_code', '!=', 'outgoing')]}" />
                 <field name="guide_number" readonly="1"
                     attrs="{'invisible': [
-                        ('show_print_dispatch_guide_button', '!=', True),
+                        ('dispatch_guide_controls', '!=', True),
                         ]
                     }"
                 />
