@@ -63,11 +63,8 @@ class WizardStockBookReport(models.TransientModel):
         if not valuation_layers:
             return stock_book_lines
         
-        old_product_movements = defaultdict(lambda:{"old_stock_sum":0.0,"stock_move_id":0})
-        date_from_end_of_day = datetime.combine(self.date_from, datetime.max.time())
-
         product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0,'incoming_total':0.0,'outgoing_total':0.0,"withdraw_total":0.0,"old_stock":0.0})
-        total_busquedas_estupidas = 0
+
         for stock_move in valuation_layers:
                 product_id = stock_move.product_id.id
                 quantity_done = stock_move.quantity
