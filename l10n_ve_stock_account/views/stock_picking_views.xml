@@ -14,18 +14,25 @@
                     string="Shipping guide/Delivery order"
                     type="object"
                     class="o_btn_validate"
-                    attrs="{'invisible': ['|', '|', ('state', '!=', 'done'), ('sale_id', '=', False), ('document', '!=', 'dispatch_guide')]}"
-                />
+                    attrs="{'invisible': ['|', '|', '|', ('state', '!=', 'done'), ('sale_id', '=', False), ('document', '!=', 'dispatch_guide'), ('is_dispatch_guide', '!=', True)]}"
+                    />
                 <!-- data-hotkey="m" attrs="{'invisible': [('show_button', '=', False)]}"
                 nolabel="1" /> -->
             </xpath>
 
             <xpath expr="//field[@name='origin']" position="after">
+                <field name="is_dispatch_guide" attrs="{'readonly': [('state', '=', 'done')],'invisible': [('operation_code', '!=', 'internal')]}" />
+                <field name="transfer_reason_id"
+                    attrs="{'readonly': [('state', '=', 'done')], 
+                              'invisible': [('is_dispatch_guide', '!=', True)]}" />
+
+
                 <field name="allowed_reason_ids" invisible="1" />
+                <field name="sale_id"/>
                 <field name="is_donation" invisible="1" />
                 <field name="transfer_reason_id"
                     attrs="{'readonly': ['|', ('is_donation', '=', True), ('state', '=', 'done')], 
-                              'invisible': [('picking_type_code', '!=', 'outgoing')]}" />
+                              'invisible': [('operation_code', '!=', 'outgoing')]}" />
                 <field name="guide_number" readonly="1" />
             </xpath>
 
