@@ -135,7 +135,7 @@
     </record>
     <!-- ACTION IN_REFUND -->
     <record id="account.action_move_in_refund_type" model="ir.actions.act_window">
-        <field name="name">Refunds</field>
+        <field name="name">Credit Notes</field>
         <field name="res_model">account.move</field>
         <field name="view_mode">tree,kanban,form</field>
         <field name="view_id" ref="account.view_in_invoice_tree" />

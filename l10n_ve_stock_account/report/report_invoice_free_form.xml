@@ -1,0 +1,11 @@
+<odoo>
+    <template id="template_free_form_l10_ve_stock_account" name="free_form_l10_ve_stock_account" inherit_id="l10n_ve_invoice.report_freeform_document">
+        <xpath expr="//div/div/div/div[2]/t[6]" position="after">
+            <br/>
+            <strong t-if="o.picking_id">
+                Numero de Guia: 
+            </strong>
+            <t t-out="o.guide_number or 'N/A'"/>
+        </xpath>
+    </template>
+</odoo>
