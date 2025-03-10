@@ -61,14 +61,15 @@ class WizardStockBookReport(models.TransientModel):
         valuation_layers = self.search_valuation_layers()
 
         if not valuation_layers:
-            return
+            return stock_book_lines
         
-        product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0,'incoming_total':0.0,'outgoing_total':0.0})
-
+        product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0,'incoming_total':0.0,'outgoing_total':0.0,"withdraw_total":0.0})        
         for stock_move in valuation_layers:
                 product_id = stock_move.product_id.id
                 quantity_done = stock_move.quantity
                 stock_move_id = stock_move.stock_move_id.id
+
+                                   
 
                 if (stock_move.stock_move_id.picking_code == "incoming" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity>0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "incoming" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done"):
                     product_movements[product_id]["stock_move_id"] = stock_move_id
@@ -84,11 +85,12 @@ class WizardStockBookReport(models.TransientModel):
                     product_movements[product_id]["outgoing"] += quantity_done
                     product_movements[product_id]["outgoing_total"] += stock_move.value
 
-        #         if stock_move.is_inventory or stock_move.scrap_ids:
-        #             _logger.info(f"Este stock.move fue causado por un ajuste de inventario.")
-        #             product_movements[product_id]["stock_move_id"] = stock_move_id
+                if (stock_move.stock_move_id.picking_id and stock_move.stock_move_id.picking_id.transfer_reason_id.code == 'donation') or stock_move.stock_move_id.scrap_ids:
+                    product_movements[product_id]["stock_move_id"] = stock_move_id
 
-        #             product_movements[product_id]["withdraw"] += quantity_done
+                    product_movements[product_id]["withdraw"] += quantity_done
+                    product_movements[product_id]["withdraw_total"] += stock_move.value
+
 
                 continue
 
@@ -96,7 +98,6 @@ class WizardStockBookReport(models.TransientModel):
             stock_book_line = self._fields_stock_book_line(product_id,movements)
             stock_book_lines.append(stock_book_line)
 
-        
         return stock_book_lines
     
     def search_valuation_layers(self):
@@ -129,7 +130,7 @@ class WizardStockBookReport(models.TransientModel):
             "accounting_date": '',
             "vat": '',
             "partner_name": movements["incoming"],
-            "document_number": movements["withdraw"],
+            "document_number": movements["withdraw"] if movements["withdraw"]>0 else movements["withdraw"]*(-1),
              "move_type": movements["outgoing"] if movements["outgoing"]>0 else movements['outgoing']*(-1),
             # "transaction_type": self._determinate_transaction_type(move),
             # "number_invoice_affected": move.reversed_entry_id.name or "--",
@@ -141,7 +142,7 @@ class WizardStockBookReport(models.TransientModel):
             # "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
             # "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
             # "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
-            # "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
+            "tax_base_general_aliquot": movements['withdraw_total'] if movements["withdraw_total"]>0 else movements['withdraw_total']*(-1),
         }
     
     def _format_date(self, date):
@@ -253,12 +254,12 @@ class WizardStockBookReport(models.TransientModel):
                 "size": 15,
                 "format":"number",
             },
-            # {
-            #     "name": "RETIROS",
-            #     "field": "tax_base_general_aliquot",
-            #     "format": "number",
-            #     "size": 15,
-            # },
+            {
+                "name": "RETIROS",
+                "field": "tax_base_general_aliquot",
+                "format": "number",
+                "size": 15,
+            },
             # {
             #     "name": "AUTO-CONSUMOS",
             #     "field": "general_aliquot",
