@@ -62,7 +62,7 @@ msgstr "Descuento"
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_purchase
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_config_settings__exent_aliquot_purchase
 msgid "Exent Aliquot Purchase"
-msgstr "Exento Compras"
+msgstr "Exento compras"
 
 #. module: l10n_ve_tax
 #: model:ir.model.fields,field_description:l10n_ve_tax.field_res_company__exent_aliquot_sale
