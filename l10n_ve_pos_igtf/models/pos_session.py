@@ -13,11 +13,7 @@ class PosSession(models.Model):
         return res
 
     def action_pos_session_open(self):
-        if not self.company_id.customer_account_igtf_id and self.config_id.apply_igtf:
-            raise ValidationError(
-                _(
-                    "You have the IGTF configuration turned on, first configure the account and the percentage"
-                )
-            )
+        if not self.company_id.customer_account_igtf_id:
+            raise ValidationError(_("First configure the account and the percentage"))
 
         return super().action_pos_session_open()

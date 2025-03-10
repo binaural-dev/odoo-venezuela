@@ -3,7 +3,6 @@
     <t t-name="PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension" owl="1">
         <xpath expr="//div[hasclass('total')]" position="replace">
             <div class="total total-binuaral">
-                <t t-if="!currentOrder.to_receipt and this.env.pos.config.apply_igtf">
                     <div class="payment-status-currency">
                         <p class="amount-totals">
                             <span>
@@ -24,10 +23,6 @@
                             <t t-esc="totalDueTextWithIGTF" />
                         </p>
                     </div>
-                </t>
-                <t t-else="">
-                    <t t-esc="totalDueText" />
-                </t>
                 <div class="payment-status-l10n_ve">
                     <p class="total-amount">
                         <t t-esc="foreignTotalDueText" />
