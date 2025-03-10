@@ -63,7 +63,7 @@ class WizardStockBookReport(models.TransientModel):
         if not valuation_layers:
             return stock_book_lines
         
-        product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0,'incoming_total':0.0,'outgoing_total':0.0,"withdraw_total":0.0,"old_stock":0.0})
+        product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0,'incoming_total':0.0,'outgoing_total':0.0,"withdraw_total":0.0,"old_stock":0.0,"self_consumption":0.0})
 
         for stock_move in valuation_layers:
                 product_id = stock_move.product_id.id
@@ -94,6 +94,11 @@ class WizardStockBookReport(models.TransientModel):
 
                     product_movements[product_id]["withdraw"] += quantity_done
                     product_movements[product_id]["withdraw_total"] += stock_move.value
+
+                if (stock_move.stock_move_id.picking_id and stock_move.stock_move_id.picking_id.transfer_reason_id.code == 'self_consumption'):
+                    product_movements[product_id]["stock_move_id"] = stock_move_id
+
+                    product_movements[product_id]["self_consumption"] += quantity_done
 
                 continue
 
@@ -156,7 +161,7 @@ class WizardStockBookReport(models.TransientModel):
              "move_type": movements["outgoing"] if movements["outgoing"]>0 else movements['outgoing']*(-1),
             # "transaction_type": self._determinate_transaction_type(move),
             # "number_invoice_affected": move.reversed_entry_id.name or "--",
-            # "correlative": move.correlative if move.correlative else False,
+            "correlative": movements["self_consumption"] if movements["self_consumption"]>0 else movements['self_consumption']*(-1),
             # "reduced_aliquot": 0.08,
             # "general_aliquot": 0.16,
             "total_sales_iva": movements['incoming_total'],
@@ -251,6 +256,7 @@ class WizardStockBookReport(models.TransientModel):
                 "name": "AUTO-CONSUMOS",
                 "field": "correlative",
                 "size": 10,
+                "format":"number",
             },
             {
                 "name": "EXISTENCIA", 
