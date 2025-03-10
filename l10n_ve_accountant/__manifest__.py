@@ -20,8 +20,8 @@
     ],
     # always loaded
     "data": [
-        "security/ir.model.access.csv",
         "security/res_groups.xml",
+        "security/ir.model.access.csv",
         "security/ir_rule.xml",
         "data/account_data.xml",
         "data/ir_actions_server.xml",
