@@ -30,9 +30,7 @@ msgid "(TOTAL)"
 msgstr ""
 
 #. module: l10n_ve_pos_igtf
-#: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_config__apply_igtf
 #: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_pos_payment_method__apply_igtf
-#: model:ir.model.fields,field_description:l10n_ve_pos_igtf.field_res_config_settings__apply_igtf
 msgid "Apply Igtf"
 msgstr "Aplica IGTF"
 
@@ -114,11 +112,9 @@ msgstr "Error de Validacion"
 #: code:addons/l10n_ve_pos_igtf/models/pos_session.py:0
 #, python-format
 msgid ""
-"You have the IGTF configuration turned on, first configure the account and "
-"the percentage"
+"First configure the account and the percentage"
 msgstr ""
-"Tienes la configuracion de IGTF encendida, configura primero la cuenta "
-"contable y el porcentaje"
+"Configura primero la cuenta contable y el porcentaje"
 
 #. module: l10n_ve_pos_igtf
 #. odoo-javascript
