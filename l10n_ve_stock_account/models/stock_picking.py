@@ -54,28 +54,42 @@ class StockPicking(models.Model):
 
     is_donation = fields.Boolean(related="sale_id.is_donation")
 
+    is_dispatch_guide = fields.Boolean(string="Is Dispatch Guide", default=False, tracking=True)
 
-    picking_type_code = fields.Selection(related="picking_type_id.code")
-
-    @api.depends('is_donation')
+    @api.depends('is_donation', 'is_dispatch_guide')
     def _compute_allowed_reason_ids(self):
         for picking in self:
             domain = []
 
+            # Obtener las razones de transferencia
             donation_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_donation', raise_if_not_found=False)
+            consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment', raise_if_not_found=False)
+            internal_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_internal_transfer', raise_if_not_found=False)
 
-            if picking.is_donation:
+            # Lista de IDs permitidos
+            allowed_reason_ids = []
+
+            # Donations
+            if picking.is_donation and donation_reason:
+                allowed_reason_ids.append(donation_reason.id)
                 picking.transfer_reason_id = donation_reason.id
 
+            # Dispatch Guide
+            elif picking.is_dispatch_guide:
+                if consignment_reason:
+                    allowed_reason_ids.append(consignment_reason.id)
+                if internal_reason:
+                    allowed_reason_ids.append(internal_reason.id)
+                picking.transfer_reason_id = internal_reason.id if internal_reason else False
 
-            if picking.sale_id and picking.sale_id.is_donation:
-                if donation_reason:
-                    domain.append(('id', '=', donation_reason.id))
-                picking.allowed_reason_ids = self.env['transfer.reason'].search(domain) 
+            # Clear the transfer reason if there are no allowed reasons
             else:
-                picking.allowed_reason_ids = False
+                picking.transfer_reason_id = False
 
-            _logger.info("domain: %s", domain)
+            if allowed_reason_ids:
+                domain = [('id', 'in', allowed_reason_ids)]
+
+            picking.allowed_reason_ids = self.env['transfer.reason'].search(domain)
 
 
     def _set_guide_number(self):
