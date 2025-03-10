@@ -1076,3 +1076,7 @@ msgstr "Hasta"
 msgid "Credit Note"
 msgstr "Notas de Crédito"
 
+#. module: account
+#: model:ir.ui.menu,name:account.menu_action_account_payments_receivable
+msgid "Collections"
+msgstr "Cobranzas"
