@@ -22,6 +22,7 @@
         "data/dispatch_guide_paperformat.xml",
         'data/transfer_reason.xml',
 
+        "views/res_config_setting_views.xml",
         "views/account_move_views.xml",
         "views/stock_picking_guide_dispatch_views.xml",
         "views/stock_picking_views.xml",
