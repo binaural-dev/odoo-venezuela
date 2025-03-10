@@ -95,44 +95,41 @@ class StockPicking(models.Model):
                 }
             )
         return guide_number.next_by_id(guide_number.id)
-
+    
+    @api.depends('invoice_count', 'state', 'state_guide_dispatch', 'operation_code', 'is_return')
     def _compute_button_visibility(self):
         for record in self:
-            record.show_create_invoice = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.operation_code != "incoming",
-                    not record.is_return,
-                ]
-            )
-
-            record.show_create_bill = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.operation_code != "outgoing",
-                    not record.is_return,
-                ]
-            )
-
-            record.show_create_customer_credit = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.operation_code != "outgoing",
-                    record.is_return,
-                ]
-            )
-
-            record.show_create_vendor_credit = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.operation_code != "incoming",
-                    record.is_return,
-                ]
-            )
+            record.show_create_invoice = all([
+                record.invoice_count == 0,
+                record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
+                record.operation_code != 'incoming',
+                not record.is_return
+            ])
+            
+            record.show_create_bill = all([
+                record.invoice_count == 0,
+                record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
+                record.operation_code != 'outgoing',
+                not record.is_return
+            ])
+            
+            record.show_create_customer_credit = all([
+                record.invoice_count == 0,
+                record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
+                record.operation_code != 'outgoing',
+                record.is_return
+            ])
+            
+            record.show_create_vendor_credit = all([
+                record.invoice_count == 0,
+                record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
+                record.operation_code != 'incoming',
+                record.is_return
+            ])
 
     def create_invoice_lots(self):
         valid_picking = self.filtered(
@@ -172,22 +169,22 @@ class StockPicking(models.Model):
                     raise UserError(_("Please configure the journal from settings"))
 
                 invoice_line_list = picking_id._get_invoice_lines_for_invoice()
-                self.env["account.move"].create(
-                    {
-                        "move_type": "out_invoice",
-                        "invoice_origin": picking_id.name,
-                        "invoice_user_id": current_user,
-                        "narration": picking_id.name,
-                        "partner_id": picking_id.partner_id.id,
-                        "currency_id": picking_id.env.user.company_id.currency_id.id,
-                        "journal_id": int(customer_journal_id),
-                        "payment_reference": picking_id.name,
-                        "picking_id": picking_id.id,
-                        "invoice_line_ids": invoice_line_list,
-                        "transfer_ids": self,
-                    }
-                )
-        return True
+                origin_name = self._get_origin_name(picking_id)
+                self.env['account.move'].create({
+                    'move_type': 'out_invoice',
+                    'invoice_origin': origin_name,
+                    'invoice_user_id': current_user,
+                    'narration': picking_id.name,
+                    'partner_id': picking_id.partner_id.id,
+                    'currency_id': picking_id.env.user.company_id.currency_id.id,
+                    'journal_id': int(customer_journal_id),
+                    'payment_reference': picking_id.name,
+                    'picking_id': picking_id.id,
+                    'invoice_line_ids': invoice_line_list,
+                    'transfer_ids': self
+                })
+            picking_id.state_guide_dispatch = 'invoiced'
+        return True 
 
     def _get_invoice_lines_for_invoice(self):
         self.ensure_one()
@@ -254,19 +251,27 @@ class StockPicking(models.Model):
 
     def create_bill(self):
         self._validate_one_invoice_posted()
-        return super().create_bill()
+        res = super().create_bill()
+        for picking in self:
+            picking.state_guide_dispatch = 'invoiced'
+        return res
 
+    
     def create_customer_credit(self):
         self._validate_one_invoice_posted()
-        return super().create_customer_credit()
-
+        res = super().create_customer_credit()
+        for picking in self:
+            picking.state_guide_dispatch = 'invoiced'
+        return res
+    
     def create_vendor_credit(self):
         self._validate_one_invoice_posted()
-        return super().create_vendor_credit()
-
-    def _validate_one_invoice_posted(
-        self,
-    ):
+        res = super().create_vendor_credit()
+        for picking in self:
+            picking.state_guide_dispatch = 'invoiced'
+        return res
+    
+    def _validate_one_invoice_posted(self,):
         for picking in self:
             invoice_ids = self.env["account.move"].search(
                 [("picking_id", "=", picking.id), ("state", "=", "posted")]
@@ -277,7 +282,12 @@ class StockPicking(models.Model):
                         "This guide has at least one posted invoice, please check your invoice."
                     )
                 )
-
+            
+    def _get_origin_name(self, picking):
+        if picking.operation_code == 'outgoing':
+            if picking.sale_id:
+                return picking.sale_id.name
+        return picking.name
 
     def _pre_action_done_hook(self):
         res = super()._pre_action_done_hook()
@@ -419,3 +429,4 @@ class StockPicking(models.Model):
                         "The 'Transfer Reason' field is mandatory when 'Operation Code' is 'internal'."
                     )
                 )
+            

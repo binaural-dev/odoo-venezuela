@@ -13,7 +13,6 @@
         "l10n_ve_accountant",
         "stock_move_invoice",
         "l10n_ve_sale",
-        "stock_move_invoice"
     ],
     "data": [
 
@@ -32,8 +31,9 @@
 
         "report/dispatch_guide.xml",
         "report/dispatch_guide_template.xml",
+        "report/report_invoice_free_form.xml",
 
-        "wizard/stock_picking_self_consumption_alert_views.xml"
+        "wizard/stock_picking_self_consumption_alert_views.xml",
         
     ],
     "application": True,

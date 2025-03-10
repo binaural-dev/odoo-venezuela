@@ -27,7 +27,7 @@
     <field name="inherit_id" ref="point_of_sale.pos_config_view_form" />
     <field name="arch" type="xml">
       <xpath expr="//sheet/div/div[@id='other_devices']" position="after">
-        <div class="col-12 col-lg-6 o_setting_box" id="apply_igtf">
+        <div class="col-12 col-lg-6 o_setting_box" id="validate_phone_section">
           <div class="o_setting_left_pane">
             <field name="validate_phone_in_pos" />
           </div>

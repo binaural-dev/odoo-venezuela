@@ -1,0 +1,234 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* stock_move_invoice
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-10 16:55+0000\n"
+"PO-Revision-Date: 2025-03-10 16:55+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.res_config_settings_invoice_modification
+msgid ""
+"<span class=\"o_form_label\">Journals</span>\n"
+"                            <span class=\"fa fa-lg fa-building-o\" title=\"Values set here are company-specific.\" aria-label=\"Values set here are company-specific.\" role=\"img\"/>"
+msgstr ""
+"<span class=\"o_form_label\">Diarios</span>\n"
+"                            <span class=\"fa fa-lg fa-building-o\" title=\"Los valores establecidos aquí son específicos de la empresa.\" aria-label=\"Los valores establecidos aquí son específicos de la empresa.\" role=\"img\"/>"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.picking_invoice_wizard_view_form
+msgid "<span>Invoice will generate for selected picking</span>"
+msgstr "<span>Se generará una factura para el traslado seleccionado</span>"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.picking_invoice_wizard_view_form
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: stock_move_invoice
+#: model:ir.model,name:stock_move_invoice.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.stock_picking_form_view_inherited
+msgid "Create Bill"
+msgstr "Crear factura"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.stock_picking_form_view_inherited
+msgid "Create Credit Note"
+msgstr "Crear nota de crédito"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.picking_invoice_wizard_view_form
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.stock_picking_form_view_inherited
+msgid "Create Invoice"
+msgstr "Crear factura"
+
+#. module: stock_move_invoice
+#: model:ir.actions.server,name:stock_move_invoice.action_create_invoice_for_multi_transfer
+msgid "Create Invoice/Bill"
+msgstr "Crear factura/recibo"
+
+#. module: stock_move_invoice
+#: model:ir.actions.act_window,name:stock_move_invoice.action_picking_multi_invoice
+msgid "Create Invoices"
+msgstr "Crear facturas"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.stock_picking_form_view_inherited
+msgid "Create Vendor Credit"
+msgstr "Crear crédito de proveedor"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_picking_invoice_wizard__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_picking_invoice_wizard__create_date
+msgid "Created on"
+msgstr "Creado en"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_res_config_settings__customer_journal_id
+msgid "Customer Journal"
+msgstr "Diario de clientes"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_picking_invoice_wizard__display_name
+msgid "Display Name"
+msgstr "Nombre para mostrar"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.picking_invoice_wizard_view_form
+msgid "Generate Invoice For Multiple Picking"
+msgstr "Generar factura para múltiples selecciones"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_picking_invoice_wizard__id
+msgid "ID"
+msgstr "ID"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.res_config_settings_invoice_modification
+msgid "Invoice From Stock Picking"
+msgstr "Factura desde traslado de inventario"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_stock_picking__invoice_count
+msgid "Invoices"
+msgstr "Facturas"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_stock_picking__is_return
+msgid "Is Return"
+msgstr "Es devolución"
+
+#. module: stock_move_invoice
+#: model:ir.model,name:stock_move_invoice.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.res_config_settings_invoice_modification
+msgid ""
+"Journals which should apply for the invoice\n"
+"                                creation from stock picking"
+msgstr ""
+"Diarios que deben aplicarse para la creación de facturas\n"
+"                                desde el traslado de inventario"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_picking_invoice_wizard____last_update
+msgid "Last Modified on"
+msgstr "Última modificación en"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_picking_invoice_wizard__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_picking_invoice_wizard__write_date
+msgid "Last Updated on"
+msgstr "Última actualización en"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_account_bank_statement_line__picking_id
+#: model:ir.model.fields,field_description:stock_move_invoice.field_account_move__picking_id
+#: model:ir.model.fields,field_description:stock_move_invoice.field_account_payment__picking_id
+msgid "Picking"
+msgstr "Traslado"
+
+#. module: stock_move_invoice
+#: model:ir.model,name:stock_move_invoice.model_picking_invoice_wizard
+msgid "Picking Invoice Wizard"
+msgstr "Asistente de facturación de traslado"
+
+#. module: stock_move_invoice
+#. odoo-python
+#: code:addons/stock_move_invoice/models/stock_picking.py:0
+#: code:addons/stock_move_invoice/models/stock_picking.py:0
+#: code:addons/stock_move_invoice/models/stock_picking.py:0
+#, python-format
+msgid "Please configure the journal from settings"
+msgstr "Por favor configure el diario desde los ajustes"
+
+#. module: stock_move_invoice
+#. odoo-python
+#: code:addons/stock_move_invoice/models/stock_picking.py:0
+#: code:addons/stock_move_invoice/models/stock_picking.py:0
+#: code:addons/stock_move_invoice/models/stock_picking.py:0
+#, python-format
+msgid "Please configure the journal from the settings."
+msgstr "Por favor configure el diario desde los ajustes."
+
+#. module: stock_move_invoice
+#. odoo-python
+#: code:addons/stock_move_invoice/models/stock_picking.py:0
+#, python-format
+msgid "Please select single type transfer"
+msgstr "Por favor seleccione un único tipo de transferencia"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.res_config_settings_invoice_modification
+msgid "Purchase Journal"
+msgstr "Diario de compras"
+
+#. module: stock_move_invoice
+#: model:ir.model,name:stock_move_invoice.model_stock_return_picking
+msgid "Return Picking"
+msgstr "Albarán de devolución"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.res_config_settings_invoice_modification
+msgid "Sales Journal"
+msgstr "Diario de ventas"
+
+#. module: stock_move_invoice
+#: model_terms:ir.ui.view,arch_db:stock_move_invoice.res_config_settings_invoice_modification
+msgid "These taxes are set in any new product created."
+msgstr "Estos impuestos se establecen en cualquier nuevo producto creado."
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,help:stock_move_invoice.field_res_config_settings__customer_journal_id
+msgid "To add customer journal"
+msgstr "Para agregar diario de clientes"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,help:stock_move_invoice.field_res_config_settings__vendor_journal_id
+msgid "To add vendor journal"
+msgstr "Para agregar diario de proveedores"
+
+#. module: stock_move_invoice
+#: model:ir.model,name:stock_move_invoice.model_stock_picking
+msgid "Transfer"
+msgstr "Traslado"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_account_bank_statement_line__transfer_ids
+#: model:ir.model.fields,field_description:stock_move_invoice.field_account_move__transfer_ids
+#: model:ir.model.fields,field_description:stock_move_invoice.field_account_payment__transfer_ids
+msgid "Transfers"
+msgstr "Traslados"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_stock_picking__operation_code
+msgid "Type of Operation"
+msgstr "Tipo de operación"
+
+#. module: stock_move_invoice
+#: model:ir.model.fields,field_description:stock_move_invoice.field_res_config_settings__vendor_journal_id
+msgid "Vendor Journal"
+msgstr "Diario de proveedores"
