@@ -74,7 +74,7 @@ msgid ""
 "                                accounting copy in the selected currency"
 msgstr "" 
 "Seleccione la moneda alterna que el sistema utilizara para hacer realizar\n"
-"un copiado contable en la moneda seleccionada"
+"una copia contable en la moneda seleccionada"
 
 #. module: l10n_ve_rate
 #. odoo-python
