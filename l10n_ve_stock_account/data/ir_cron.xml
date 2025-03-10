@@ -1,0 +1,15 @@
+<odoo>
+    <record id="ir_cron_create_invoices_by_" model="ir.cron">
+        <field name="name">Cancel Orders After Day</field>
+        <field eval="False" name="active" />
+        <field name="user_id" ref="base.user_root" />
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="doall" eval="False" />
+        <field name="model_id" ref="sale.model_sale_order" />
+        <field name="state">code</field>
+        <field name="code">model.cancel_order_after_date()</field>
+        <field name="priority">10</field>
+    </record>
+</odoo>

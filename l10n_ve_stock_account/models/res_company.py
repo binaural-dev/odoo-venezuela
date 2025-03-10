@@ -18,3 +18,11 @@ class ResCompany(models.Model):
     #     string="Vendor Journal",
     #     help="To add vendor journal",
     # )
+
+    date_type_of_month = fields.Selection(
+        selection=[
+            ("business_day", "Business day of the month"), 
+            ("of_month", "Of the month")
+        ],
+        default="business_day",
+    )
