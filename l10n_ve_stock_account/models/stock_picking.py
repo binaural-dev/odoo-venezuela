@@ -117,11 +117,13 @@ class StockPicking(models.Model):
             )
         return guide_number.next_by_id(guide_number.id)
     
+    @api.depends('invoice_count', 'state', 'state_guide_dispatch', 'operation_code', 'is_return')
     def _compute_button_visibility(self):
         for record in self:
             record.show_create_invoice = all([
                 record.invoice_count == 0,
                 record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
                 record.operation_code != 'incoming',
                 not record.is_return
             ])
@@ -129,6 +131,7 @@ class StockPicking(models.Model):
             record.show_create_bill = all([
                 record.invoice_count == 0,
                 record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
                 record.operation_code != 'outgoing',
                 not record.is_return
             ])
@@ -136,6 +139,7 @@ class StockPicking(models.Model):
             record.show_create_customer_credit = all([
                 record.invoice_count == 0,
                 record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
                 record.operation_code != 'outgoing',
                 record.is_return
             ])
@@ -143,6 +147,7 @@ class StockPicking(models.Model):
             record.show_create_vendor_credit = all([
                 record.invoice_count == 0,
                 record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
                 record.operation_code != 'incoming',
                 record.is_return
             ])
@@ -182,9 +187,10 @@ class StockPicking(models.Model):
                         _("Please configure the journal from settings"))
 
                 invoice_line_list = picking_id._get_invoice_lines_for_invoice()
+                origin_name = self._get_origin_name(picking_id)
                 self.env['account.move'].create({
                     'move_type': 'out_invoice',
-                    'invoice_origin': picking_id.name,
+                    'invoice_origin': origin_name,
                     'invoice_user_id': current_user,
                     'narration': picking_id.name,
                     'partner_id': picking_id.partner_id.id,
@@ -195,6 +201,7 @@ class StockPicking(models.Model):
                     'invoice_line_ids': invoice_line_list,
                     'transfer_ids': self
                 })
+            picking_id.state_guide_dispatch = 'invoiced'
         return True 
 
     def _get_invoice_lines_for_invoice(self):
@@ -278,15 +285,25 @@ class StockPicking(models.Model):
     
     def create_bill(self):
         self._validate_one_invoice_posted()
-        return super().create_bill()
+        res = super().create_bill()
+        for picking in self:
+            picking.state_guide_dispatch = 'invoiced'
+        return res
+
     
     def create_customer_credit(self):
         self._validate_one_invoice_posted()
-        return super().create_customer_credit()
+        res = super().create_customer_credit()
+        for picking in self:
+            picking.state_guide_dispatch = 'invoiced'
+        return res
     
     def create_vendor_credit(self):
         self._validate_one_invoice_posted()
-        return super().create_vendor_credit()
+        res = super().create_vendor_credit()
+        for picking in self:
+            picking.state_guide_dispatch = 'invoiced'
+        return res
     
     def _validate_one_invoice_posted(self,):
         for picking in self:
@@ -302,3 +319,9 @@ class StockPicking(models.Model):
                         "This guide has at least one posted invoice, please check your invoice."
                     )
                 )
+
+    def _get_origin_name(self, picking):
+        if picking.picking_type_id.code == 'outgoing':
+            if picking.sale_id:
+                return picking.sale_id.name
+        return picking.name
