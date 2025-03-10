@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20241115\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-05 16:13+0000\n"
-"PO-Revision-Date: 2025-03-05 16:13+0000\n"
+"POT-Creation-Date: 2025-03-09 19:40+0000\n"
+"PO-Revision-Date: 2025-03-09 19:40+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,13 +26,20 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid ""
 "<br/>\n"
-"                                    <strong>Número de Control:</strong>"
+"                                    <strong>Número de control:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid ""
-"<span groups=\"account.group_show_line_subtotals_tax_excluded\">Monto</span>\n"
+"<br/>\n"
+"                            <strong>Fecha de emisión:</strong>"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid ""
+"<span groups=\"account.group_show_line_subtotals_tax_excluded\">Subtotal</span>\n"
 "                                    <span groups=\"account.group_show_line_subtotals_tax_included\">Total</span>"
 msgstr ""
 
@@ -90,12 +97,7 @@ msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
-msgid "<strong>Fecha de emisión:</strong>"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
-msgid "<strong>Fecha de la Factura:</strong>"
+msgid "<strong>Fecha de la factura:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -105,17 +107,7 @@ msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
-msgid "<strong>Nota de Débito:</strong>"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
-msgid "<strong>Nro de Factura:</strong>"
-msgstr ""
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
-msgid "<strong>Nro de Nota de Crédito:</strong>"
+msgid "<strong>Nota de débito:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -125,12 +117,22 @@ msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
-msgid "<strong>Numero de Control:</strong>"
+msgid "<strong>Nro de control:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
-msgid "<strong>Pedido:</strong>"
+msgid "<strong>Nro de factura:</strong>"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "<strong>Nro de nota de crédito:</strong>"
+msgstr ""
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
+msgid "<strong>Pedido: </strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -144,23 +146,28 @@ msgid "<strong>Razón Social:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
+msgid "<strong>Subtotal</strong>"
+msgstr ""
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "<strong>Teléfono:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
+msgid "<strong>Total en USD</strong>"
+msgstr ""
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
-msgid "<strong>Total Facturado:</strong>"
+msgid "<strong>Total facturado:</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
-msgid "<strong>Total Rounded</strong>"
-msgstr "<strong>Total Redondeado:</strong>"
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.document_tax_totals
-msgid "<strong>Total en USD</strong>"
+msgid "<strong>Total redondeado</strong>"
 msgstr ""
 
 #. module: l10n_ve_invoice
@@ -198,7 +205,7 @@ msgstr "Libro de Compras"
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #: code:addons/l10n_ve_invoice/wizard/accounting_reports.py:0
 #, python-format
-msgid "Check the move %s does not have an invoice date"
+msgid "Check the move %s does not have an invoice date and its id is %s"
 msgstr "Verifique el asiento %s no tiene una fecha de factura"
 
 #. module: l10n_ve_invoice
@@ -319,8 +326,17 @@ msgid "Is Debit"
 msgstr "Débito"
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__is_debit_journal
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__is_debit_journal
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_payment__is_debit_journal
+msgid "Is Debit Journal"
+msgstr "Es un diario de débito"
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
-msgid "It allow enable the invoicing sequences by series in sale's journals."
+msgid ""
+"It allow enable the invoicing sequences by\n"
+"                                    series in sale's journals."
 msgstr ""
 "Permite habilitar las secuencias de la facturación por series en los diarios"
 " de ventas."
@@ -364,8 +380,12 @@ msgstr "Última actualización en"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
-msgid "Limit the number of products on an invoice"
-msgstr "Limitar la cantidad de productos en una factura forma libre"
+msgid ""
+"Limit the number of lines that can be printed on a free form\n"
+"                                    invoice"
+msgstr "" 
+"Limitar la cantidad de productos en una factura\n"
+"forma libre"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__max_product_invoice
@@ -391,7 +411,7 @@ msgid "Next Installment Date"
 msgstr "Fecha del próximo plazo"
 
 #. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.account_move_form_l10n_ve_account_move
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
 msgid "Nro de Pedido"
 msgstr ""
 
@@ -415,6 +435,7 @@ msgstr "Reporte"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__currency_system
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__show_field_currency_system
 msgid "Report in currency system"
 msgstr "Reporte en moneda del sistema"
 
@@ -468,12 +489,12 @@ msgstr "Mostrar Coletilla de Tasa BCV en Forma Libre"
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_total_on_usd_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__show_total_on_usd_invoice
 msgid "Show Total On Usd Invoice"
-msgstr "Mostrar Total en USD en Factura"
+msgstr "Mostrar total en USD en factura"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
 msgid "Show Total USD on Free Form Invoice"
-msgstr "Mostrar Total en USD en Forma Libre"
+msgstr "Mostrar total en USD en forma libre"
 
 #. module: l10n_ve_invoice
 #. odoo-python
@@ -482,7 +503,7 @@ msgstr "Mostrar Total en USD en Forma Libre"
 msgid ""
 "The correlative must be unique per journal when using a contingency journal"
 msgstr ""
-"El nro de control debe ser único por diario en caso de diarios de "
+"El Nro de control debe ser único por diario en caso de diarios de "
 "contingencia"
 
 #. module: l10n_ve_invoice
