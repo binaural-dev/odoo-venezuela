@@ -293,7 +293,7 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__group_sales_invoicing_series
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__group_sales_invoicing_series
 msgid "Group Sales Invoicing Series"
-msgstr "Grupo para Series de Ventas"
+msgstr "Grupo para series de ventas"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_wizard_accounting_reports__id
@@ -478,12 +478,12 @@ msgstr "Mostrar Código del Producto en Forma Libre"
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_tag_on_usd_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__show_tag_on_usd_invoice
 msgid "Show Tag On Usd Invoice"
-msgstr "Mostrar Coletilla en Factura"
+msgstr "Mostrar coletilla en factura"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.res_config_settings_l10n_ve_invoice
 msgid "Show Tag USD on Free Form Invoice"
-msgstr "Mostrar Coletilla de Tasa BCV en Forma Libre"
+msgstr "Mostrar coletilla de tasa BCV en forma libre"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__show_total_on_usd_invoice
