@@ -279,6 +279,31 @@ class StockPicking(models.Model):
                 )
 
 
+    def _pre_action_done_hook(self):
+        res = super()._pre_action_done_hook()
+        
+        if self.env.context.get("skip_self_consumption_check"):
+            return res  # Evita bucles infinitos
+
+        self_consumption_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_self_consumption",
+            raise_if_not_found=False
+        )
+
+        for picking in self:
+            if picking.transfer_reason_id.id == self_consumption_reason.id:
+                return {
+                    'name': 'Self-Consumption Warning',
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'stock.picking.self.consumption.wizard',
+                    'view_mode': 'form',
+                    'view_id': False,
+                    'target': 'new',
+                    'context': {'default_picking_id': picking.id},
+                }
+        return res
+
+
     #=== COMPUTE METHODS ===#
 
     @api.depends("sale_id.document")
@@ -340,7 +365,7 @@ class StockPicking(models.Model):
                 picking.transfer_reason_id
                 and picking.transfer_reason_id.id == consignment_reason.id
             ):
-                picking.is_dispatch_guide = True  # Si es consignment, forzar a True
+                picking.is_dispatch_guide = True
             else:
                 # This is necessary always should be return a value
                 picking.is_dispatch_guide = picking.is_dispatch_guide
@@ -348,61 +373,46 @@ class StockPicking(models.Model):
     @api.depends("is_donation", "is_dispatch_guide", "operation_code")
     def _compute_allowed_reason_ids(self):
         for picking in self:
-            domain = []
-
-            # Obtener las razones de transferencia
-            donation_reason = self.env.ref(
-                "l10n_ve_stock_account.transfer_reason_donation",
-                raise_if_not_found=False,
-            )
-            consignment_reason = self.env.ref(
-                "l10n_ve_stock_account.transfer_reason_consignment",
-                raise_if_not_found=False,
-            )
-            internal_reason = self.env.ref(
-                "l10n_ve_stock_account.transfer_reason_internal_transfer",
-                raise_if_not_found=False,
-            )
-            self_consumption_reason = self.env.ref(
-                "l10n_ve_stock_account.transfer_reason_self_consumption",
-                raise_if_not_found=False,
-            )
-
-            # Lista de IDs permitidos
             allowed_reason_ids = []
 
+            reason_refs = {
+                "donation": "l10n_ve_stock_account.transfer_reason_donation",
+                "consignment": "l10n_ve_stock_account.transfer_reason_consignment",
+                "internal": "l10n_ve_stock_account.transfer_reason_internal_transfer",
+                "self_consumption": "l10n_ve_stock_account.transfer_reason_self_consumption",
+            }
+
+            reasons = {key: self.env.ref(ref, raise_if_not_found=False) for key, ref in reason_refs.items()}
+
             # Donations
-            if picking.is_donation and donation_reason:
-                allowed_reason_ids.append(donation_reason.id)
-                picking.transfer_reason_id = donation_reason.id
+            if picking.is_donation and reasons["donation"]:
+                allowed_reason_ids.append(reasons["donation"].id)
+                picking.transfer_reason_id = reasons["donation"].id
 
             # Consignments and internal transfers
-            if picking.operation_code == "internal":
-                if consignment_reason:
-                    allowed_reason_ids.append(consignment_reason.id)
-                if internal_reason:
-                    allowed_reason_ids.append(internal_reason.id)
+            elif picking.operation_code == "internal":
+                if reasons["consignment"]:
+                    allowed_reason_ids.append(reasons["consignment"].id)
+                if reasons["internal"]:
+                    allowed_reason_ids.append(reasons["internal"].id)
 
             # Self Consumption
-            if picking.operation_code == "outgoing":
-                if self_consumption_reason:
-                    allowed_reason_ids.append(self_consumption_reason.id)
+            elif picking.operation_code == "outgoing" and reasons["self_consumption"]:
+                allowed_reason_ids.append(reasons["self_consumption"].id)
 
-            # Clear the transfer reason if there are no allowed reasons
-            else:
-                picking.transfer_reason_id = False
+            picking.transfer_reason_id = allowed_reason_ids[0] if allowed_reason_ids else False
 
-            if allowed_reason_ids:
-                domain = [("id", "in", allowed_reason_ids)]
-
-            picking.allowed_reason_ids = self.env["transfer.reason"].search(domain)
+            picking.allowed_reason_ids = (
+                self.env["transfer.reason"].search([("id", "in", allowed_reason_ids)])
+                if allowed_reason_ids
+                else self.env["transfer.reason"]
+            )
 
     #=== CONSTRAINT METHODS ===#
 
     @api.constrains("transfer_reason_id", "write_uid")
     def _check_transfer_reason_required(self):
         for record in self:
-            _logger.info("workign constrains")
             if record.operation_code == "internal" and not record.transfer_reason_id:
                 raise ValidationError(
                     _(
