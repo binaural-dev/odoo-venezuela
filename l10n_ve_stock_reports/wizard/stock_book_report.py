@@ -74,14 +74,9 @@ class WizardStockBookReport(models.TransientModel):
                 stock_move_id = stock_move.stock_move_id.id
 
                 if not product_id in product_movements:
-                    _logger.info(f"El product_id {product_id} no existe en product_movements. Creando nuevo registro en el movements y buscando sus movimientos viejos.")
                     old_total_stock_qty_product = self.get_old_stock_by_product(stock_move.product_id.id)
                     product_movements[product_id]["stock_move_id"] = stock_move_id
-                    product_movements[product_id]["old_stock"] = old_total_stock_qty_product 
-                else:
-                    _logger.info(f"El product_id {product_id} ya existe en el dic, no buscamos un coño sus registros viejos.")
-                    total_busquedas_estupidas +=1
-
+                    product_movements[product_id]["old_stock"] = old_total_stock_qty_product
 
                 if (stock_move.stock_move_id.picking_code == "incoming" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity>0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "incoming" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done"):
                     product_movements[product_id]["stock_move_id"] = stock_move_id
@@ -104,7 +99,6 @@ class WizardStockBookReport(models.TransientModel):
                     product_movements[product_id]["withdraw_total"] += stock_move.value
 
                 continue
-        _logger.info(f"TOTAL BUSQUEDAS ESTUPIDAS:{total_busquedas_estupidas}")
 
         for product_id, movements in product_movements.items():
             stock_book_line = self._fields_stock_book_line(product_id,movements)
@@ -113,7 +107,6 @@ class WizardStockBookReport(models.TransientModel):
         return stock_book_lines
     
     def get_old_stock_by_product(self,product_id):
-        _logger.info(f"HOLAMIAMOR tumama {product_id}")
         old_stock = self.env['stock.valuation.layer'].search([
             ("product_id","=",product_id),
             ("create_date", "<", self.date_from),
@@ -124,11 +117,8 @@ class WizardStockBookReport(models.TransientModel):
         outgoing_stock = 0
         if old_stock:
             for old_stock_move in old_stock:
-                _logger.info(f"SOY UNO DE LOS MOVIMIENTOS A PARTIR DE UN MES ANTES DEL DATE_FROM:{old_stock_move.id}. PARA EL PRODUCTO: {product_id}")
                 outgoing_stock += old_stock_move.quantity if old_stock_move.quantity < 0 else 0
                 incoming_stock += old_stock_move.quantity if old_stock_move.quantity > 0 else 0
-        else:
-            _logger.info(f"PARA EL PRODUCTO: {product_id} NO HAY MOVIMIENTOS ANTERIORES")
 
         total_stock_qty = (incoming_stock - outgoing_stock)
         
