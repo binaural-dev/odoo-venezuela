@@ -292,27 +292,36 @@ class StockPicking(models.Model):
     def _pre_action_done_hook(self):
         res = super()._pre_action_done_hook()
         
-        if self.env.context.get("skip_self_consumption_check"):
-            return res  # Evita bucles infinitos
-
-        self_consumption_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_self_consumption",
-            raise_if_not_found=False
-        )
-
-        for picking in self:
-            if picking.transfer_reason_id.id == self_consumption_reason.id:
-                return {
-                    'name': 'Self-Consumption Warning',
-                    'type': 'ir.actions.act_window',
-                    'res_model': 'stock.picking.self.consumption.wizard',
-                    'view_mode': 'form',
-                    'view_id': False,
-                    'target': 'new',
-                    'context': {'default_picking_id': picking.id},
-                }
+        # TODO: agregar alerta cuando sea de self_consumption_reason
+        # 
+        # contexto del problema y TODO:
+        #
+        # El código comentado funciona para crear la alerta pero dejan de aparecer
+        # en la interfaz las alertas nativas de Odoo para entrega parcial y demás.
+        #
+        # Objetivo: hacer funcionar todas las alertas y que la existencia de la declarada acá
+        # no minimize la alerta de Odoo nativo.
+        #
+        # if self.env.context.get("skip_self_consumption_check"):
+        #     return res  # Evita bucles infinitos
+        #
+        # self_consumption_reason = self.env.ref(
+        #     "l10n_ve_stock_account.transfer_reason_self_consumption",
+        #     raise_if_not_found=False
+        # )
+        #
+        # for picking in self:
+        #     if picking.transfer_reason_id.id == self_consumption_reason.id:
+        #         return {
+        #             'name': 'Self-Consumption Warning',
+        #             'type': 'ir.actions.act_window',
+        #             'res_model': 'stock.picking.self.consumption.wizard',
+        #             'view_mode': 'form',
+        #             'view_id': False,
+        #             'target': 'new',
+        #             'context': {'default_picking_id': picking.id},
+        #         }
         return res
-
 
     #=== COMPUTE METHODS ===#
 
