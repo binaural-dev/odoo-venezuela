@@ -363,6 +363,10 @@ class StockPicking(models.Model):
                 "l10n_ve_stock_account.transfer_reason_internal_transfer",
                 raise_if_not_found=False,
             )
+            self_consumption_reason = self.env.ref(
+                "l10n_ve_stock_account.transfer_reason_self_consumption",
+                raise_if_not_found=False,
+            )
 
             # Lista de IDs permitidos
             allowed_reason_ids = []
@@ -378,6 +382,11 @@ class StockPicking(models.Model):
                     allowed_reason_ids.append(consignment_reason.id)
                 if internal_reason:
                     allowed_reason_ids.append(internal_reason.id)
+
+            # Self Consumption
+            if picking.operation_code == "outgoing":
+                if self_consumption_reason:
+                    allowed_reason_ids.append(self_consumption_reason.id)
 
             # Clear the transfer reason if there are no allowed reasons
             else:
