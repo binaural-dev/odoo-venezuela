@@ -62,10 +62,6 @@ odoo.define("l10n_ve_pos_igtf.OrderState", function(require) {
           payment.set_include_igtf(false)
         })
 
-        if (this.to_receipt) {
-          return
-        }
-
         paymentlines.forEach((payment) => {
           let is_change = is_return ? payment.amount > 0 : payment.amount < 0;
 
@@ -176,8 +172,7 @@ odoo.define("l10n_ve_pos_igtf.OrderState", function(require) {
           is_change = this.get_due() > 0
         }
 
-        if (!this.to_receipt
-          && !payment_method.apply_igtf
+        if (!payment_method.apply_igtf
           || this.get_due() <= this.get_igtf_amount()
           || is_change) {
           let res = super.add_paymentline(...arguments);
