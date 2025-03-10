@@ -13,7 +13,6 @@
         "l10n_ve_accountant",
         "stock_move_invoice",
         "l10n_ve_sale",
-        "stock_move_invoice"
     ],
     "data": [
 
@@ -32,6 +31,7 @@
 
         "report/dispatch_guide.xml",
         "report/dispatch_guide_template.xml",
+        "report/report_invoice_free_form.xml",
         
     ],
     "application": True,
