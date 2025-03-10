@@ -63,13 +63,17 @@ class WizardStockBookReport(models.TransientModel):
         if not valuation_layers:
             return stock_book_lines
         
-        product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0,'incoming_total':0.0,'outgoing_total':0.0,"withdraw_total":0.0})        
+        product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0,'incoming_total':0.0,'outgoing_total':0.0,"withdraw_total":0.0,"old_stock":0.0})
+
         for stock_move in valuation_layers:
                 product_id = stock_move.product_id.id
                 quantity_done = stock_move.quantity
                 stock_move_id = stock_move.stock_move_id.id
 
-                                   
+                if not product_id in product_movements:
+                    old_total_stock_qty_product = self.get_old_stock_by_product(stock_move.product_id.id)
+                    product_movements[product_id]["stock_move_id"] = stock_move_id
+                    product_movements[product_id]["old_stock"] = old_total_stock_qty_product
 
                 if (stock_move.stock_move_id.picking_code == "incoming" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity>0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "incoming" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done"):
                     product_movements[product_id]["stock_move_id"] = stock_move_id
@@ -91,7 +95,6 @@ class WizardStockBookReport(models.TransientModel):
                     product_movements[product_id]["withdraw"] += quantity_done
                     product_movements[product_id]["withdraw_total"] += stock_move.value
 
-
                 continue
 
         for product_id, movements in product_movements.items():
@@ -99,6 +102,25 @@ class WizardStockBookReport(models.TransientModel):
             stock_book_lines.append(stock_book_line)
 
         return stock_book_lines
+    
+    def get_old_stock_by_product(self,product_id):
+        old_stock = self.env['stock.valuation.layer'].search([
+            ("product_id","=",product_id),
+            ("create_date", "<", self.date_from),
+            ("create_date", ">=", self.date_from - relativedelta(months=1))
+        ])
+
+        incoming_stock = 0
+        outgoing_stock = 0
+        if old_stock:
+            for old_stock_move in old_stock:
+                outgoing_stock += old_stock_move.quantity if old_stock_move.quantity < 0 else 0
+                incoming_stock += old_stock_move.quantity if old_stock_move.quantity > 0 else 0
+
+        total_stock_qty = (incoming_stock - outgoing_stock)
+        
+        return total_stock_qty
+
     
     def search_valuation_layers(self):
         order = "id asc"
@@ -128,7 +150,7 @@ class WizardStockBookReport(models.TransientModel):
             "_id": movements["stock_move_id"],
             "document_date": self.env["product.product"].browse(product_id).name,
             "accounting_date": '',
-            "vat": '',
+            "vat": movements["old_stock"],
             "partner_name": movements["incoming"],
             "document_number": movements["withdraw"] if movements["withdraw"]>0 else movements["withdraw"]*(-1),
              "move_type": movements["outgoing"] if movements["outgoing"]>0 else movements['outgoing']*(-1),
