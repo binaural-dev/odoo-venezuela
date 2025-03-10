@@ -6,16 +6,19 @@
         <field name="arch" type="xml">
 
             <xpath expr="//form//header" position="inside">
-                <field name="has_document" invisible="1" />
-                <field name="sale_id" invisible="1" />
-                <field name="document" invisible="1" />
+
+                <field name="show_print_dispatch_guide_button" invisible="1" />
 
                 <button name="print_dispatch_guide"
                     string="Shipping guide/Delivery order"
                     type="object"
                     class="o_btn_validate"
-                    attrs="{'invisible': ['|', '|', '|', ('state', '!=', 'done'), ('sale_id', '=', False), ('document', '!=', 'dispatch_guide'), ('is_dispatch_guide', '!=', True)]}"
-                    />
+                    attrs="{'invisible': [
+                        ('show_print_dispatch_guide_button', '!=', True),
+                        ]
+                    }"
+                />
+
                 <!-- data-hotkey="m" attrs="{'invisible': [('show_button', '=', False)]}"
                 nolabel="1" /> -->
             </xpath>
@@ -23,7 +26,8 @@
             <xpath expr="//field[@name='origin']" position="after">
 
                 <field name="is_consignment" invisible="1" />
-                <field name="is_dispatch_guide" attrs="{
+                <field name="is_dispatch_guide"
+                    attrs="{
                     'readonly': ['|', ('state', '=', 'done'), ('is_consignment', '=', True)],
                     'invisible': [('operation_code', '!=', 'internal')]
                 }" />
@@ -33,10 +37,10 @@
                         'readonly': [('state', '=', 'done')],
                         'invisible': [('operation_code', '!=', 'internal')],
                         'required': [('operation_code', '=', 'internal')]
-                    }"/>
+                    }" />
 
                 <field name="allowed_reason_ids" invisible="1" />
-                <field name="sale_id"/>
+                <field name="sale_id" />
                 <field name="is_donation" invisible="1" />
                 <field name="transfer_reason_id"
                     attrs="{'readonly': ['|', ('is_donation', '=', True), ('state', '=', 'done')], 
