@@ -45,17 +45,6 @@ class StockPicking(models.Model):
         tracking=True,
     )
 
-    @api.constrains("transfer_reason_id", "write_uid")
-    def _check_transfer_reason_required(self):
-        for record in self:
-            _logger.info("workign constrains")
-            if record.operation_code == "internal" and not record.transfer_reason_id:
-                raise ValidationError(
-                    _(
-                        "The 'Transfer Reason' field is mandatory when 'Operation Code' is 'internal'."
-                    )
-                )
-
     allowed_reason_ids = fields.Many2many(
         "transfer.reason",
         string="Allowed Reasons",
@@ -75,80 +64,16 @@ class StockPicking(models.Model):
 
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
 
-    @api.depends("transfer_reason_id")
-    def _compute_is_consignment(self):
-        consignment_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_consignment",
-            raise_if_not_found=False,
-        )
-        for picking in self:
-            picking.is_consignment = (
-                picking.transfer_reason_id.id == consignment_reason.id
-            )
-
-    @api.depends("transfer_reason_id")
-    def _compute_is_dispatch_guide(self):
-        consignment_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_consignment",
-            raise_if_not_found=False,
-        )
-
-        for picking in self:
-            if (
-                picking.transfer_reason_id
-                and picking.transfer_reason_id.id == consignment_reason.id
-            ):
-                picking.is_dispatch_guide = True  # Si es consignment, forzar a True
-            else:
-                # This is necessary always should be return a value
-                picking.is_dispatch_guide = picking.is_dispatch_guide
-
-    @api.depends("is_donation", "is_dispatch_guide", "operation_code")
-    def _compute_allowed_reason_ids(self):
-        for picking in self:
-            domain = []
-
-            # Obtener las razones de transferencia
-            donation_reason = self.env.ref(
-                "l10n_ve_stock_account.transfer_reason_donation",
-                raise_if_not_found=False,
-            )
-            consignment_reason = self.env.ref(
-                "l10n_ve_stock_account.transfer_reason_consignment",
-                raise_if_not_found=False,
-            )
-            internal_reason = self.env.ref(
-                "l10n_ve_stock_account.transfer_reason_internal_transfer",
-                raise_if_not_found=False,
-            )
-
-            # Lista de IDs permitidos
-            allowed_reason_ids = []
-
-            # Donations
-            if picking.is_donation and donation_reason:
-                allowed_reason_ids.append(donation_reason.id)
-                picking.transfer_reason_id = donation_reason.id
-
-            # Consignments and internal transfers
-            if picking.operation_code == "internal":
-                if consignment_reason:
-                    allowed_reason_ids.append(consignment_reason.id)
-                if internal_reason:
-                    allowed_reason_ids.append(internal_reason.id)
-
-            # Clear the transfer reason if there are no allowed reasons
-            else:
-                picking.transfer_reason_id = False
-
-            if allowed_reason_ids:
-                domain = [("id", "in", allowed_reason_ids)]
-
-            picking.allowed_reason_ids = self.env["transfer.reason"].search(domain)
+    # This field controls the visibility of the button, determines when to generate 
+    # the dispatch guide sequence, and controls the visibility of the 'guide_number' field.
+    dispatch_guide_controls = fields.Boolean(
+        compute="_compute_dispatch_guide_controls", store=True
+    )
 
     def _set_guide_number(self):
         for picking in self:
-            picking.guide_number = picking.get_sequence_guide_num()
+            if picking.dispatch_guide_controls:
+                picking.guide_number = picking.get_sequence_guide_num()
 
     @api.model
     def get_sequence_guide_num(self):
@@ -170,44 +95,41 @@ class StockPicking(models.Model):
                 }
             )
         return guide_number.next_by_id(guide_number.id)
-
+    
+    @api.depends('invoice_count', 'state', 'state_guide_dispatch', 'operation_code', 'is_return')
     def _compute_button_visibility(self):
         for record in self:
-            record.show_create_invoice = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.operation_code != "incoming",
-                    not record.is_return,
-                ]
-            )
-
-            record.show_create_bill = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.operation_code != "outgoing",
-                    not record.is_return,
-                ]
-            )
-
-            record.show_create_customer_credit = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.operation_code != "outgoing",
-                    record.is_return,
-                ]
-            )
-
-            record.show_create_vendor_credit = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.operation_code != "incoming",
-                    record.is_return,
-                ]
-            )
+            record.show_create_invoice = all([
+                record.invoice_count == 0,
+                record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
+                record.operation_code != 'incoming',
+                not record.is_return
+            ])
+            
+            record.show_create_bill = all([
+                record.invoice_count == 0,
+                record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
+                record.operation_code != 'outgoing',
+                not record.is_return
+            ])
+            
+            record.show_create_customer_credit = all([
+                record.invoice_count == 0,
+                record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
+                record.operation_code != 'outgoing',
+                record.is_return
+            ])
+            
+            record.show_create_vendor_credit = all([
+                record.invoice_count == 0,
+                record.state == 'done',
+                record.state_guide_dispatch == 'to_invoice',
+                record.operation_code != 'incoming',
+                record.is_return
+            ])
 
     def create_invoice_lots(self):
         valid_picking = self.filtered(
@@ -236,19 +158,21 @@ class StockPicking(models.Model):
         self._validate_one_invoice_posted()
         for picking_id in self:
             current_user = self.env.uid
-            if picking_id.picking_type_id.code == 'outgoing':
-                customer_journal_id = \
-                    picking_id.env['ir.config_parameter'].sudo(). \
-                        get_param('stock_move_invoice.customer_journal_id') or \
-                    False
+            if picking_id.picking_type_id.code == "outgoing":
+                customer_journal_id = (
+                    picking_id.env["ir.config_parameter"]
+                    .sudo()
+                    .get_param("stock_move_invoice.customer_journal_id")
+                    or False
+                )
                 if not customer_journal_id:
-                    raise UserError(
-                        _("Please configure the journal from settings"))
+                    raise UserError(_("Please configure the journal from settings"))
 
                 invoice_line_list = picking_id._get_invoice_lines_for_invoice()
+                origin_name = self._get_origin_name(picking_id)
                 self.env['account.move'].create({
                     'move_type': 'out_invoice',
-                    'invoice_origin': picking_id.name,
+                    'invoice_origin': origin_name,
                     'invoice_user_id': current_user,
                     'narration': picking_id.name,
                     'partner_id': picking_id.partner_id.id,
@@ -259,6 +183,7 @@ class StockPicking(models.Model):
                     'invoice_line_ids': invoice_line_list,
                     'transfer_ids': self
                 })
+            picking_id.state_guide_dispatch = 'invoiced'
         return True 
 
     def _get_invoice_lines_for_invoice(self):
@@ -266,35 +191,27 @@ class StockPicking(models.Model):
         invoice_line_list = []
         for move_id in self.move_ids_without_package:
             price_unit = move_id.product_id.list_price
-            tax_ids = [
-                (
-                    6,
-                    0,
-                    [self.company_id.account_sale_tax_id.id]
-                )
-            ]
+            tax_ids = [(6, 0, [self.company_id.account_sale_tax_id.id])]
             if move_id.sale_line_id:
                 price_unit = move_id.sale_line_id.price_unit
-                tax_ids = [
-                    (
-                        6,
-                        0,
-                        move_id.sale_line_id.tax_id.ids
-                    )
-                ]
+                tax_ids = [(6, 0, move_id.sale_line_id.tax_id.ids)]
 
-            vals = (0, 0, {
-                'name': move_id.description_picking,
-                'product_id': move_id.product_id.id,
-                'price_unit': price_unit,
-                'account_id': (
-                    move_id.product_id.property_account_income_id.id
-                    if move_id.product_id.property_account_income_id
-                    else move_id.product_id.categ_id.property_account_income_categ_id.id
-                ),
-                'tax_ids': tax_ids,
-                'quantity': move_id.quantity_done,
-            })
+            vals = (
+                0,
+                0,
+                {
+                    "name": move_id.description_picking,
+                    "product_id": move_id.product_id.id,
+                    "price_unit": price_unit,
+                    "account_id": (
+                        move_id.product_id.property_account_income_id.id
+                        if move_id.product_id.property_account_income_id
+                        else move_id.product_id.categ_id.property_account_income_categ_id.id
+                    ),
+                    "tax_ids": tax_ids,
+                    "quantity": move_id.quantity_done,
+                },
+            )
             invoice_line_list.append(vals)
         return invoice_line_list
 
@@ -312,11 +229,6 @@ class StockPicking(models.Model):
 
     def get_digits(self):
         return self.env.ref("base.VEF").decimal_places
-
-    @api.depends("sale_id.document")
-    def _compute_has_document(self):
-        for picking in self:
-            picking.has_document = bool(picking.sale_id.document)
 
     def get_totals(self, use_foreign_currency=False):
         """ """
@@ -339,19 +251,27 @@ class StockPicking(models.Model):
 
     def create_bill(self):
         self._validate_one_invoice_posted()
-        return super().create_bill()
+        res = super().create_bill()
+        for picking in self:
+            picking.state_guide_dispatch = 'invoiced'
+        return res
 
+    
     def create_customer_credit(self):
         self._validate_one_invoice_posted()
-        return super().create_customer_credit()
-
+        res = super().create_customer_credit()
+        for picking in self:
+            picking.state_guide_dispatch = 'invoiced'
+        return res
+    
     def create_vendor_credit(self):
         self._validate_one_invoice_posted()
-        return super().create_vendor_credit()
-
-    def _validate_one_invoice_posted(
-        self,
-    ):
+        res = super().create_vendor_credit()
+        for picking in self:
+            picking.state_guide_dispatch = 'invoiced'
+        return res
+    
+    def _validate_one_invoice_posted(self,):
         for picking in self:
             invoice_ids = self.env["account.move"].search(
                 [("picking_id", "=", picking.id), ("state", "=", "posted")]
@@ -362,3 +282,151 @@ class StockPicking(models.Model):
                         "This guide has at least one posted invoice, please check your invoice."
                     )
                 )
+            
+    def _get_origin_name(self, picking):
+        if picking.operation_code == 'outgoing':
+            if picking.sale_id:
+                return picking.sale_id.name
+        return picking.name
+
+    def _pre_action_done_hook(self):
+        res = super()._pre_action_done_hook()
+        
+        if self.env.context.get("skip_self_consumption_check"):
+            return res  # Evita bucles infinitos
+
+        self_consumption_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_self_consumption",
+            raise_if_not_found=False
+        )
+
+        for picking in self:
+            if picking.transfer_reason_id.id == self_consumption_reason.id:
+                return {
+                    'name': 'Self-Consumption Warning',
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'stock.picking.self.consumption.wizard',
+                    'view_mode': 'form',
+                    'view_id': False,
+                    'target': 'new',
+                    'context': {'default_picking_id': picking.id},
+                }
+        return res
+
+
+    #=== COMPUTE METHODS ===#
+
+    @api.depends("sale_id.document")
+    def _compute_has_document(self):
+        for picking in self:
+            picking.has_document = bool(picking.sale_id.document)
+
+
+    @api.depends("is_dispatch_guide", "state", "document", "sale_id", "write_uid")
+    def _compute_dispatch_guide_controls(self):
+        for picking in self:
+            picking.dispatch_guide_controls = False
+
+            if picking.state != "done":
+                continue
+
+            if not picking.sale_id:
+                continue
+
+            if picking.document == "invoice":
+                continue
+
+            if picking.document == "dispatch_guide":
+                picking.dispatch_guide_controls = True
+
+            if picking.is_dispatch_guide:
+                picking.dispatch_guide_controls = True
+
+    @api.depends("sale_id")
+    def _compute_show_print_button_when_is_dispatch_guide(self):
+        for picking in self:
+            picking.show_print_button_when_is_dispatch_guide = (
+                picking.state == "done"
+            ) and picking.is_dispatch_guide
+
+    @api.depends("transfer_reason_id")
+    def _compute_is_consignment(self):
+        consignment_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_consignment",
+            raise_if_not_found=False,
+        )
+        for picking in self:
+            if consignment_reason:
+                picking.is_consignment = (
+                    picking.transfer_reason_id.id == consignment_reason.id
+                )
+            else:
+                picking.is_consignment = False
+
+    @api.depends("transfer_reason_id")
+    def _compute_is_dispatch_guide(self):
+        consignment_reason = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_consignment",
+            raise_if_not_found=False,
+        )
+
+        for picking in self:
+            if (
+                picking.transfer_reason_id
+                and picking.transfer_reason_id.id == consignment_reason.id
+            ):
+                picking.is_dispatch_guide = True
+            else:
+                # This is necessary always should be return a value
+                picking.is_dispatch_guide = picking.is_dispatch_guide
+
+    @api.depends("is_donation", "is_dispatch_guide", "operation_code")
+    def _compute_allowed_reason_ids(self):
+        for picking in self:
+            allowed_reason_ids = []
+
+            reason_refs = {
+                "donation": "l10n_ve_stock_account.transfer_reason_donation",
+                "consignment": "l10n_ve_stock_account.transfer_reason_consignment",
+                "internal": "l10n_ve_stock_account.transfer_reason_internal_transfer",
+                "self_consumption": "l10n_ve_stock_account.transfer_reason_self_consumption",
+            }
+
+            reasons = {key: self.env.ref(ref, raise_if_not_found=False) for key, ref in reason_refs.items()}
+
+            # Donations
+            if picking.is_donation and reasons["donation"]:
+                allowed_reason_ids.append(reasons["donation"].id)
+                picking.transfer_reason_id = reasons["donation"].id
+
+            # Consignments and internal transfers
+            elif picking.operation_code == "internal":
+                if reasons["consignment"]:
+                    allowed_reason_ids.append(reasons["consignment"].id)
+                if reasons["internal"]:
+                    allowed_reason_ids.append(reasons["internal"].id)
+
+            # Self Consumption
+            elif picking.operation_code == "outgoing" and reasons["self_consumption"]:
+                allowed_reason_ids.append(reasons["self_consumption"].id)
+
+            picking.transfer_reason_id = allowed_reason_ids[0] if allowed_reason_ids else False
+
+            picking.allowed_reason_ids = (
+                self.env["transfer.reason"].search([("id", "in", allowed_reason_ids)])
+                if allowed_reason_ids
+                else self.env["transfer.reason"]
+            )
+
+    #=== CONSTRAINT METHODS ===#
+
+    @api.constrains("transfer_reason_id", "write_uid")
+    def _check_transfer_reason_required(self):
+        for record in self:
+            if record.operation_code == "internal" and not record.transfer_reason_id:
+                raise ValidationError(
+                    _(
+                        "The 'Transfer Reason' field is mandatory when 'Operation Code' is 'internal'."
+                    )
+                )
+            
