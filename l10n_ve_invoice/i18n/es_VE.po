@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-09 19:40+0000\n"
-"PO-Revision-Date: 2025-03-09 19:40+0000\n"
+"POT-Creation-Date: 2025-03-10 17:04+0000\n"
+"PO-Revision-Date: 2025-03-10 17:04+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -189,11 +189,6 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.wizard_l10n_ve_facturacion_reportes_view
 msgid "Accounting Reports"
 msgstr "Informes contables"
-
-#. module: l10n_ve_invoice
-#: model:ir.model,name:l10n_ve_invoice.model_ir_actions_act_window
-msgid "Action Window"
-msgstr "Acción de ventana"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields.selection,name:l10n_ve_invoice.selection__wizard_accounting_reports__report__purchase
@@ -383,7 +378,7 @@ msgstr "Última actualización en"
 msgid ""
 "Limit the number of lines that can be printed on a free form\n"
 "                                    invoice"
-msgstr "" 
+msgstr ""
 "Limitar la cantidad de productos en una factura\n"
 "forma libre"
 
@@ -392,6 +387,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__max_product_invoice
 msgid "Max Product Invoice"
 msgstr "Cantidad máxima de productos en Facturas Forma Libre"
+
+#. module: l10n_ve_invoice
+#: model:res.groups,name:l10n_ve_invoice.create_out_refund
+msgid "Mostrar botón para crear Facturas Rectificativas"
+msgstr ""
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
