@@ -70,7 +70,8 @@ class StockPicking(models.Model):
 
     def _set_guide_number(self):
         for picking in self:
-            picking.guide_number = picking.get_sequence_guide_num()
+            if picking.show_print_dispatch_guide_button:
+                picking.guide_number = picking.get_sequence_guide_num()
 
     @api.model
     def get_sequence_guide_num(self):
@@ -287,14 +288,22 @@ class StockPicking(models.Model):
     @api.depends("is_dispatch_guide", "state", "document", "sale_id", "write_uid")
     def _compute_show_print_dispatch_guide_button(self):
         for picking in self:
+            picking.show_print_dispatch_guide_button = False
 
-            if picking.state != "done" or picking.sale_id == False:
-                picking.show_print_dispatch_guide_button = False
-            else:
-                if picking.is_dispatch_guide:
-                    picking.show_print_dispatch_guide_button = True
-                elif picking.document == "dispatch_guide":
-                    picking.show_print_dispatch_guide_button = True
+            if picking.state != "done":
+                continue
+
+            if not picking.sale_id:
+                continue
+
+            if picking.document == "invoice":
+                continue
+
+            if picking.document == "dispatch_guide":
+                picking.show_print_dispatch_guide_button = True
+
+            if picking.is_dispatch_guide:
+                picking.show_print_dispatch_guide_button = True
 
     @api.depends("sale_id")
     def _compute_show_print_button_when_is_dispatch_guide(self):
