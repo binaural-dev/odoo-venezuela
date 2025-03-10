@@ -6,7 +6,8 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "16.0.0.0.5",
+    "version": "16.0.0.0.6",
+    # any module necessary for this one to work correctly
     "depends": ["base"],
     "data": [
         "views/res_config_settings.xml",

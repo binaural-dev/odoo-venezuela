@@ -6,7 +6,8 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "16.0.1.1.3",
+    "version": "16.0.1.1.4",
+    # any module necessary for this one to work correctly
     "depends": [
         "base",
         "l10n_ve_tax",
