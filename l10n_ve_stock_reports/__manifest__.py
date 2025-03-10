@@ -1,14 +1,14 @@
 {
-    "name": "Binaural Libro de Inventario",
+    "name": "Venezuela Libro de Inventario",
     "summary": """
-        Modulo de libro de Inventario
+        Modulo de libro de Inventario Venezuela
     """,
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://www.binauraldev.com",
     "category": "Stock / Inventory",
-    "version": "16.0.0.0.3",
-    "depends": ["stock", "account","sale_stock","l10n_ve_invoice"],
+    "version": "16.0.0.0.5",
+    "depends": ["stock", "account","sale_stock","l10n_ve_invoice","l10n_ve_stock_account"],
     "data": [
         "security/ir.model.access.csv",
         "wizard/stock_book_report.xml",
