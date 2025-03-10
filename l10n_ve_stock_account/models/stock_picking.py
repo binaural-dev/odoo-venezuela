@@ -64,13 +64,15 @@ class StockPicking(models.Model):
 
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
 
-    show_print_dispatch_guide_button = fields.Boolean(
-        compute="_compute_show_print_dispatch_guide_button", store=True
+    # This field controls the visibility of the button, determines when to generate 
+    # the dispatch guide sequence, and controls the visibility of the 'guide_number' field.
+    dispatch_guide_controls = fields.Boolean(
+        compute="_compute_dispatch_guide_controls", store=True
     )
 
     def _set_guide_number(self):
         for picking in self:
-            if picking.show_print_dispatch_guide_button:
+            if picking.dispatch_guide_controls:
                 picking.guide_number = picking.get_sequence_guide_num()
 
     @api.model
@@ -286,9 +288,9 @@ class StockPicking(models.Model):
 
 
     @api.depends("is_dispatch_guide", "state", "document", "sale_id", "write_uid")
-    def _compute_show_print_dispatch_guide_button(self):
+    def _compute_dispatch_guide_controls(self):
         for picking in self:
-            picking.show_print_dispatch_guide_button = False
+            picking.dispatch_guide_controls = False
 
             if picking.state != "done":
                 continue
@@ -300,10 +302,10 @@ class StockPicking(models.Model):
                 continue
 
             if picking.document == "dispatch_guide":
-                picking.show_print_dispatch_guide_button = True
+                picking.dispatch_guide_controls = True
 
             if picking.is_dispatch_guide:
-                picking.show_print_dispatch_guide_button = True
+                picking.dispatch_guide_controls = True
 
     @api.depends("sale_id")
     def _compute_show_print_button_when_is_dispatch_guide(self):
@@ -319,9 +321,12 @@ class StockPicking(models.Model):
             raise_if_not_found=False,
         )
         for picking in self:
-            picking.is_consignment = (
-                picking.transfer_reason_id.id == consignment_reason.id
-            )
+            if consignment_reason:
+                picking.is_consignment = (
+                    picking.transfer_reason_id.id == consignment_reason.id
+                )
+            else:
+                picking.is_consignment = False
 
     @api.depends("transfer_reason_id")
     def _compute_is_dispatch_guide(self):
