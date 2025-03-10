@@ -6,7 +6,8 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.0.0.12",
+    "version": "16.0.0.0.13",
+    # any module necessary for this one to work correctly
     "depends": ["base", "account", "l10n_ve_rate"],
     "data": [
         "views/res_config_settings.xml",
