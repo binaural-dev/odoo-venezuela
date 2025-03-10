@@ -75,7 +75,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "document_number": move.name,
             "move_type": self._determinate_type(move),
             "transaction_type": self._determinate_transaction_type(move),
-            "number_invoice_affected": move.reversed_entry_id.name or "--",
+            "number_invoice_affected": move.debit_origin_id.name if move.journal_id.is_debit else move.reversed_entry_id.name or "--",
             "correlative": move.correlative,
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
