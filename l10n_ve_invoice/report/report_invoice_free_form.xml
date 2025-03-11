@@ -97,7 +97,7 @@
                                 <span>
                                     <strong>Total facturado:</strong>
                                     <t 
-                                        t-out="o.debit_origin_id.amoun_total if currency_base else o.debit_origin_id.foreign_total_billed" 
+                                        t-out="o.debit_origin_id.amount_total if currency_base else o.debit_origin_id.foreign_total_billed" 
                                         t-options='{"widget": "monetary", "display_currency": o.currency_id if currency_base else o.foreign_currency_id}'
                                     />
                                 </span>
@@ -172,7 +172,7 @@
                                             <span class="text-nowrap" t-field="line.discount"/>
                                         </td>
                                         <td t-attf-class="text-start {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }}">
-                                            <span t-esc="', '.join(map(lambda x: ( str(x.amount) + '%' if x.amount > 0 else '0%'), line.tax_ids))" id="line_tax_ids"/>
+                                            <span t-out="', '.join(map(lambda x: ( str(x.amount) + '%' if x.amount > 0 else '0%'), line.tax_ids))" id="line_tax_ids"/>
                                         </td>
                                         <td class="text-end o_price_total">
                                             <t t-if="base_vef">
@@ -204,7 +204,7 @@
                                         <td colspan="99">
                                             <strong class="mr16">Subtotal</strong>
                                             <span
-                                                t-esc="current_subtotal"
+                                                t-out="current_subtotal"
                                                 t-options='{"widget": "monetary", "display_currency": %(base.VEF)s}'
                                             />
                                         </td>
@@ -260,27 +260,28 @@
             <t t-foreach="tax_totals[str_tax][subtotal_to_show]" t-as="amount_by_group">
                 <tr>
                     <td>
-                        <span t-esc="'Total G ' + amount_by_group['tax_group_name']"/>
+                        <span t-if="amount_by_group['tax_group_amount'] != 0.0" t-out="'Total G ' + amount_by_group['tax_group_name']"/>
+                        <span t-else="" t-out="amount_by_group['tax_group_name']"/>
                     </td>
                     <td class="text-end o_price_total">
-                        <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_base_amount']"/>
+                        <span class="text-nowrap" t-out="amount_by_group['formatted_tax_group_base_amount']"/>
                     </td>
                 </tr>
-                <tr>
+                <tr t-if="amount_by_group['tax_group_amount'] != 0.0">
                     <t t-if="tax_totals['display_tax_base']">
                         <td>
-                            <span t-esc="amount_by_group['tax_group_name']"/>
+                            <span t-out="amount_by_group['tax_group_name']"/>
                         </td>
                         <td class="text-end o_price_total">
-                            <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_amount']"/>
+                            <span class="text-nowrap" t-out="amount_by_group['formatted_tax_group_amount']"/>
                         </td>
                     </t>
                     <t t-else="">
                         <td>
-                            <span class="text-nowrap" t-esc="amount_by_group['tax_group_name']"/>
+                            <span class="text-nowrap" t-out="amount_by_group['tax_group_name']"/>
                         </td>
                         <td class="text-end o_price_total">
-                            <span class="text-nowrap" t-esc="amount_by_group['formatted_tax_group_amount']" />
+                            <span class="text-nowrap" t-out="amount_by_group['formatted_tax_group_amount']" />
                         </td>
                     </t>
                 </tr>
@@ -306,7 +307,7 @@
                     <td class="text-end">
                         <span
                             t-att-class="oe_subtotal_footer_separator"
-                            t-esc="subtotal['formatted_amount']"
+                            t-out="subtotal['formatted_amount']"
                         />
                     </td>
                 </tr>
@@ -322,10 +323,10 @@
                 <t t-else=""><td><strong>Total</strong></td></t>
                 <td class="text-end">
                     <t t-if="base_vef">
-                        <span t-esc="tax_totals['formatted_amount_total']"/>
+                        <span t-out="tax_totals['formatted_amount_total']"/>
                     </t>
                     <t t-else="">
-                        <span t-esc="tax_totals['foreign_formatted_amount_total']"/>
+                        <span t-out="tax_totals['foreign_formatted_amount_total']"/>
                     </t>
                 </td>
             </tr>
@@ -334,17 +335,17 @@
                 <t t-else=""><td><strong>Total en USD</strong></td></t>
                 <td class="text-end">
                     <t t-if="base_vef">
-                        <span t-esc="tax_totals['foreign_formatted_amount_total']"/>
+                        <span t-out="tax_totals['foreign_formatted_amount_total']"/>
                     </t>
                     <t t-else="">
-                        <span t-esc="tax_totals['formatted_amount_total']"/>
+                        <span t-out="tax_totals['formatted_amount_total']"/>
                     </t>
                 </td>
             </tr>
             <tr t-if="has_rounding">
                 <td><strong>Total redondeado</strong></td>
                 <td class="text-end">
-                    <span t-esc="tax_totals['formatted_amount_total_rounded']"/>
+                    <span t-out="tax_totals['formatted_amount_total_rounded']"/>
                 </td>
             </tr>
         </template>

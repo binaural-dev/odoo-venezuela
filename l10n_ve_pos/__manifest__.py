@@ -1,13 +1,12 @@
 {
     "name": "Venezuela - POS",
     "summary": """
-       Localización Venezolana en POS""",
+    """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "category": "Point of Sale",
     "website": "https://binauraldev.com/",
-    "version": "16.0.1.0.9",
-    # any module necessary for this one to work correctly
+    "version": "16.0.1.0.10",
     "depends": [
         "base",
         "point_of_sale",
@@ -17,7 +16,6 @@
         "l10n_ve_contact",
         "l10n_ve_stock",
     ],
-    # always loaded
     "data": [
         "security/ir.model.access.csv",
         "data/res_group.xml",

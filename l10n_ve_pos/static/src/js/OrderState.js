@@ -44,8 +44,17 @@ odoo.define("l10n_ve_pos.OrderState", function(require) {
       get is_refund(){
         return this.getHasRefundLines()
       }
+      get config_rate(){
+	//FIXME Buscar una manera de esto sea por id y no por name
+        if(this.pos.currency.name == "VEF"){
+        return this.pos.config.foreign_inverse_rate
+        }
+        if(this.pos.currency.name == "USD"){
+        return this.pos.config.foreign_rate
+        }
+      }
       get rate_from_lines(){
-        let rate = this.pos.config.foreign_rate
+        let rate = this.config_rate 
         if (!this.is_refund){
           return rate
         }
@@ -61,13 +70,17 @@ odoo.define("l10n_ve_pos.OrderState", function(require) {
         this.set_foreign_currency_rate(rate)
         return rate
       }
+      get display_current_rate () {
+        return this.pos.config.foreign_rate;
+      }
       set_foreign_currency_rate(rate) {
         this.foreign_currency_rate = rate;
       }
       init_from_JSON(json) {
         super.init_from_JSON(...arguments)
         this.to_invoice = true;
-        this.foreign_currency_rate = json.foreign_currency_rate || this.pos.config.foreign_rate
+        //TODO: Check how I can change this to make it change according to the currency of the company..
+        this.foreign_currency_rate =json.foreign_currency_rate || this.pos.config.foreign_inverse_rate 
       }
 
       set_orderline_options(orderline, options) {

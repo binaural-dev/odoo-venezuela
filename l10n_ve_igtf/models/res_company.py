@@ -12,15 +12,6 @@ class ResCompany(models.Model):
     )
     igtf_two_percentage_account = fields.Many2one("account.account")
     igtf_percentage = fields.Float(string="IGTF Percentage", default=3.00)
-    taxpayer_type = fields.Selection(
-        [
-            ("formal", "Formal"),
-            ("special", "Special"),
-            ("ordinary", "Ordinary"),
-        ],
-        default="ordinary",
-        store=True,
-    )
 
     show_igtf_suggested_account_move = fields.Boolean(default=False)
     show_igtf_suggested_sale_order = fields.Boolean(default=False)

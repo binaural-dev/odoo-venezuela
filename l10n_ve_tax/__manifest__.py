@@ -1,15 +1,14 @@
 {
-    "name": "Binaural Impuesto",
+    "name": "Venezuela - Taxes",
     "summary": """
-       Modulo para Impuestos Venezolanos""",
+    """,
     "license": "LGPL-3",
-    "author": "Binauraldev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.0.0.12",
+    "version": "16.0.0.0.13",
     # any module necessary for this one to work correctly
     "depends": ["base", "account", "l10n_ve_rate"],
-    # always loaded
     "data": [
         "views/res_config_settings.xml",
         "views/account_move.xml",

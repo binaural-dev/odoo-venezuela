@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20240906\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-14 22:22+0000\n"
-"PO-Revision-Date: 2024-09-14 22:22+0000\n"
+"POT-Creation-Date: 2025-03-09 20:01+0000\n"
+"PO-Revision-Date: 2025-03-09 20:01+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -30,20 +30,16 @@ msgstr "Ocultar precios de la línea de productos (venta)"
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
 msgid ""
-"Block order confirmation action with invoices in payment status Not Paid / "
-"In payment process."
+"Block order confirmation action with invoices in payment status\n"
+"                                    Not Paid / In payment process."
 msgstr ""
-"Bloquear confirmacion de pedidos de clientes con facturas en estado de pago "
-"No Pagado o En proceso de pago."
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
 msgid ""
-"Block order confirmation action with invoices overdue with a total amount "
-"greater than specified."
+"Block order confirmation action with invoices overdue with a\n"
+"                                    total amount greater than specified."
 msgstr ""
-"Bloquear pedidos de clientes con facturas con un monto total mayor al "
-"especificado."
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
@@ -59,16 +55,18 @@ msgstr "Cancelar Presupuestos Luego de 24h de Creado"
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
 msgid "Check this if you want limit the number of lines by sale order."
-msgstr "Marque esta opción si desea limitar el número de líneas por orden de venta."
+msgstr ""
+"Marque esta opción si desea limitar el número de líneas por orden de venta."
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
 msgid ""
 "Check this if you want the rate of the invoice to be taken from its\n"
-"                                sale order. Else it will take the rate of the date when it is created."
-msgstr ""
-"Marque esta opción si quiere que la factura utilice la tasa de su\n"
-"\t\t\t\torden de venta. De lo contrario utilizará la tasa del día en el que sea creada."
+"                                sale order. Else it will take the rate of the date when it is\n"
+"                                created."
+msgstr "Marque esta opcion si desea que la tasa de la factura se tome\n"
+"de su orden de venta. De lo contrario se tomará la tasa del dia\n"
+"en el que se cree."
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,help:l10n_ve_sale.field_res_company__use_invoice_rate_from_sale_order
@@ -218,11 +216,6 @@ msgid "Hide Payment terms (sale)"
 msgstr "Ocultar Plazos de pago (venta)"
 
 #. module: l10n_ve_sale
-#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__hide_total_uom_group_ids
-msgid "Hide Total Uom Group"
-msgstr "Ocultar UdM"
-
-#. module: l10n_ve_sale
 #: model:res.groups,name:l10n_ve_sale.pricelist_sale_order_group
 msgid "Hide pricelist (sale)"
 msgstr "Ocultar Tarifas (venta)"
@@ -252,6 +245,11 @@ msgstr "En proceso de pago"
 #: model:ir.model.fields.selection,name:l10n_ve_sale.selection__res_company__block_order_invoice_payment_state__in_payment
 msgid "In payment process"
 msgstr "En proceso de pago"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__invoiced
+msgid "Invoiced"
+msgstr ""
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__last_foreign_rate
@@ -378,7 +376,7 @@ msgstr "Pedido de venta"
 #. module: l10n_ve_sale
 #: model:ir.model,name:l10n_ve_sale.model_sale_order_line
 msgid "Sales Order Line"
-msgstr "Línea pedido de venta"
+msgstr "Línea de pedido de venta"
 
 #. module: l10n_ve_sale
 #: model:res.groups,name:l10n_ve_sale.group_view_pricelist_items
@@ -449,11 +447,6 @@ msgid "Total Taxed of the invoice"
 msgstr "Total gravado de la factura"
 
 #. module: l10n_ve_sale
-#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__total_uom_group_ids
-msgid "Total Uom Group"
-msgstr "Totales UdM"
-
-#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__block_order_invoice_total_amount_overdue
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__block_order_invoice_total_amount_overdue
 msgid "Total amount overdue"
@@ -508,11 +501,6 @@ msgstr ""
 "Al marcar esta opción, la tasa de la orden de venta se actualizará usando la"
 " fecha de la orden cada vez que cambie. De lo contrario, cuando la tasa ya "
 "esté establecida, no se actualizará."
-
-#. module: l10n_ve_sale
-#: model:ir.model,name:l10n_ve_sale.model_total_uom_group
-msgid "total.uom.group"
-msgstr "Grupo del Total de Unidad de Medida"
 
 #. module: l10n_ve_sale
 #. odoo-python

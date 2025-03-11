@@ -1,0 +1,57 @@
+<odoo>
+    <!-- Donation -->
+    <record id="transfer_reason_donation" model="transfer.reason">
+        <field name="name">Donation</field>
+        <field name="code">donation</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Sale -->
+    <record id="transfer_reason_sale" model="transfer.reason">
+        <field name="name">Sale</field>
+        <field name="code">sale</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Return -->
+    <record id="transfer_reason_return" model="transfer.reason">
+        <field name="name">Return</field>
+        <field name="code">return</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Export -->
+    <record id="transfer_reason_export" model="transfer.reason">
+        <field name="name">Export</field>
+        <field name="code">export</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Self Consumption -->
+    <record id="transfer_reason_self_consumption" model="transfer.reason">
+        <field name="name">Self Consumption</field>
+        <field name="code">self_consumption</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Consignment -->
+    <record id="transfer_reason_consignment" model="transfer.reason">
+        <field name="name">Consignment</field>
+        <field name="code">consignment</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Internal Transfer -->
+    <record id="transfer_reason_internal_transfer" model="transfer.reason">
+        <field name="name">Internal Transfer</field>
+        <field name="code">internal_transfer</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Detail -->
+    <record id="transfer_reason_detail" model="transfer.reason">
+        <field name="name">Detail</field>
+        <field name="code">detail</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

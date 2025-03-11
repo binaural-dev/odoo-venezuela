@@ -49,15 +49,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     )
 
     company_id = fields.Many2one("res.company", default=_default_company_id)
-    
+
     def _default_currency_system(self):
         return True if self.env.company.currency_id.id == self.env.ref("base.VEF").id else False
-    
+
     show_field_currency_system = fields.Boolean(string="Report in currency system", default=_default_check_currency_system)
 
     def _default_currency_system(self):
         return True if self.env.company.currency_id.id == self.env.ref("base.VEF").id else False
-    
+
     show_field_currency_system = fields.Boolean(string="Report in currency system", default=_default_check_currency_system)
 
     currency_system = fields.Boolean(string="Report in currency system", default=_default_currency_system)
@@ -75,16 +75,24 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "document_number": move.name,
             "move_type": self._determinate_type(move),
             "transaction_type": self._determinate_transaction_type(move),
-            "number_invoice_affected": move.reversed_entry_id.name or "--",
+            "number_invoice_affected": (
+                move.debit_origin_id.name
+                if move.journal_id.is_debit
+                else move.reversed_entry_id.name or "--"
+            ),
             "correlative": move.correlative,
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
             "total_sales_iva": taxes.get("amount_taxed", 0),
             "total_sales_not_iva": taxes.get("tax_base_exempt_aliquot", 0) * multiplier,
-            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
-            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
-            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
-            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0) * multiplier,
+            "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0)
+            * multiplier,
+            "amount_general_aliquot": taxes.get("amount_general_aliquot", 0)
+            * multiplier,
+            "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0)
+            * multiplier,
+            "tax_base_general_aliquot": taxes.get("tax_base_general_aliquot", 0)
+            * multiplier,
         }
 
     def _fields_purchase_book_line(self, move, taxes):
@@ -406,7 +414,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             ])
 
         return sale_fields
-    
+
     def purchase_book_fields(self):
         purchase_fields = [
             {
@@ -500,14 +508,14 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 {"name": name, "field": field, "format": format_type, "size": 15}
                 for name, field, format_type in fields_info
             ])
-        
+
         if self.company_id.config_deductible_tax:
             purchase_fields = self.not_deductible_purchase_book_fields(purchase_fields)
 
         return purchase_fields
-    
+
     def not_deductible_purchase_book_fields(self, purchase_fields):
-        
+
         if self.company_id.no_deductible_general_aliquot_purchase:
             fields_info = [
                 ("Base imponible", "tax_base_general_aliquot_no_deductible", "number"),
@@ -905,7 +913,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                             "amount_extend_aliquot": tax.get("tax_group_amount"),
                         }
                     )
-                
+
                 if self.company_id.config_deductible_tax and self.report == "purchase":
 
                     is_reduced_aliquot_no_deductible = tax_group_id == reduced_aliquot_no_deductible
@@ -1168,12 +1176,20 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 if resume.get("total"):
                     total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
                     total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
+                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
+                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
 
                     worksheet.write_formula(
                         row_resume, 2, total_c_formula, cell_formats.get("number")
                     )
                     worksheet.write_formula(
                         row_resume, 3, total_d_formula, cell_formats.get("number")
+                    )
+                    worksheet.write_formula(
+                        row_resume, 4, total_e_formula,cell_formats.get("number")
+                    )
+                    worksheet.write_formula(
+                        row_resume, 5, total_f_formula,cell_formats.get("number")
                     )
 
             else:
@@ -1186,6 +1202,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                     )
                     worksheet.write_formula(
                         row_resume, 3, total_d_formula, cell_formats.get("number")
+                    )
+                    worksheet.write_formula(
+                        row_resume, 4, total_e_formula,cell_formats.get("number")
+                    )
+                    worksheet.write_formula(
+                        row_resume, 5, total_f_formula,cell_formats.get("number")
                     )
 
             column_bi_range = (

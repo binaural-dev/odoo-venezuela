@@ -1,23 +1,16 @@
 {
-    "name": "Binaural contactos",
+    "name": "Venezuela - Contacts",
     "summary": """
        Modulo para información de contacto """,
-
-    'license': 'LGPL-3',
-    
-    'author': "Binauraldev",
-    'website': "https://binauraldev.com/",
-    'category': 'Contacts/Contacts',
-    'version': '16.0.1.0.4',
-
+    "license": "LGPL-3",
+    "author": "Binauraldev",
+    "website": "https://binauraldev.com/",
+    "category": "Contacts/Contacts",
+    "version": "16.0.1.0.5",
     # any module necessary for this one to work correctly
-    'depends': ['base','contacts','l10n_ve_rate'],
-
+    "depends": ["base", "contacts", "l10n_ve_rate"],
     # always loaded
-    'data': [
-        'views/res_partner.xml',
-        "views/res_config_settings.xml"
-    ],
+    "data": ["views/res_partner.xml", "views/res_config_settings.xml"],
     "images": ["static/description/icon.png"],
     "application": True,
 }
