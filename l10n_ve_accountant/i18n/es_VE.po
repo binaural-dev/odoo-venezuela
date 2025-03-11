@@ -822,7 +822,7 @@ msgstr "Informe de Ventas"
 #. module: l10n_ve_accountant
 #: model:ir.ui.menu,name:l10n_ve_accountant.l10n_ve_accountant_ir_sequence
 msgid "Sequence"
-msgstr ""
+msgstr "Secuencia"
 
 #. module: l10n_ve_accountant
 #: model:ir.actions.server,name:l10n_ve_accountant.abs_amount_line_ids_adjust
