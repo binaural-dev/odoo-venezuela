@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="res_config_settings_view_form_l10n_ve_stock" model="ir.ui.view">
-        <field name="name">res.config.settings.view.form.l10n.ve.stock</field>
+    <record id="res_config_settings_view_form_binaural_stock" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.binaural.stock</field>
         <field name="model">res.config.settings</field>
         <field name="priority" eval="100"/>
         <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate"/>
         <field name="arch" type="xml">
 	        <xpath expr="//div[@name='l10n_ve_rate_settings']" position="after">
                 <h2>Stock Settings</h2>
-                <div class="row mt16 o_settings_container" name="l10n_ve_stock_settings">
+                <div class="row mt16 o_settings_container" name="Binaural_warehouse_settings">
                     <div class="col-5 col-lg-6 o_setting_box">
                         <div class="o_setting_left_pane">
                             <field name="group_product_available_quantity_on_sale" class="oe_inline" required="1"/>
@@ -35,7 +35,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-6 o_setting_box" name="l10n_ve_settings_stock_quantity">
+                    <div class="col-12 col-lg-6 o_setting_box" name="binaural_stock_settings">
                         <div class="o_setting_left_pane">
                             <field name="use_free_qty_odoo" />
                         </div>
@@ -47,7 +47,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-6 o_setting_box" name="l10n_ve_settings_stock_weight">
+                    <div class="col-12 col-lg-6 o_setting_box" name="Binaural_mobile_app_settings">
                         <div class="o_setting_left_pane">
                             <field name="change_weight" />
                         </div>

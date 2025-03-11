@@ -12,4 +12,9 @@ class ResConfigSettings(models.TransientModel):
     #     related="company_id.vendor_journal_id", readonly=False
     # )
 
-    date_type_of_month = fields.Selection(related="company_id.date_type_of_month", readonly=False)
+    invoice_cron_type = fields.Selection(
+        related="company_id.invoice_cron_type", readonly=False
+    )
+    invoice_cron_time = fields.Float(
+        related="company_id.invoice_cron_time", readonly=False
+    )
