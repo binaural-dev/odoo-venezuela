@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
+"Project-Id-Version: Odoo Server 16.0+e\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-11 04:29+0000\n"
-"PO-Revision-Date: 2025-03-11 04:29+0000\n"
+"POT-Creation-Date: 2025-03-11 12:28+0000\n"
+"PO-Revision-Date: 2025-03-11 12:28+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -30,7 +30,7 @@ msgstr ""
 "    Razones para la Transferencia de Stock\n"
 "\n"
 "    Este modelo almacena las posibles razones para las transferencias de stock (por ejemplo, Venta, Donación, Devolución).\n"
-"    Los registros en este modelo se crean a través de archivos de datos (XML/CSV) y no deben ser modificados por los usuarios.\n"
+"    Los registros en este modelo se crean a través de archivos de datos (XML) y no deben ser modificados por los usuarios.\n"
 "    Las razones se utilizan para categorizar los movimientos de stock y se filtran dinámicamente según el contexto de la transferencia.\n"
 "    "
 
@@ -77,6 +77,14 @@ msgstr ""
 msgid ""
 "<br/>\n"
 "                    <strong>Teléfono:</strong>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.template_free_form_l10_ve_stock_account
+msgid ""
+"<strong>\n"
+"                Número de Guía: \n"
+"                </strong>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -143,13 +151,32 @@ msgid ""
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
-msgid "<strong>N° de pedido:</strong>"
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
+msgid ""
+"<strong>Nombre:</strong> <br/> C.I: <br/> Fecha: <br/>\n"
+"        <br/>\n"
+"        <strong>Firma\n"
+"                                    y sello:</strong> ________________________"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
+msgid ""
+"<strong>Nombre:</strong> <br/> C.I: <br/> Marca vehículo: <br/>\n"
+"                                    Placa batea: <br/> Placa chasis: <br/>\n"
+"        <br/>\n"
+"        <strong>Firma:</strong>\n"
+"                                    ________________________"
 msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<strong>Número de documento:</strong>"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
+msgid "<strong>Número de pedido:</strong>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -436,7 +463,7 @@ msgstr "Es Donación"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Item"
-msgstr "Referencia Interna"
+msgstr "Artículo"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_account_move
@@ -478,11 +505,6 @@ msgid "Last Updated on"
 msgstr "Última actualización en"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.template_free_form_l10_ve_stock_account
-msgid "Numero de Guia:"
-msgstr ""
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Peso"
 msgstr ""
@@ -490,7 +512,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Picking list"
-msgstr ""
+msgstr "Lista de traslados"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
@@ -540,19 +562,14 @@ msgid "Search"
 msgstr "Buscar"
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
-msgid "Select the type of invoice"
-msgstr "Seleccione el tipo de factura"
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_stock_picking_self_consumption_wizard
 msgid "Self-Consumption Validation"
-msgstr "Validación de Autoconsumo"
+msgstr "Autocomsumo Validación"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_picking_self_consumption_wizard
 msgid "Self-Consumption Validation Alert"
-msgstr "Alerta de Validación de Autoconsumo"
+msgstr "Autocomsumo Validación Alerta"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.view_picking_form_l10n_ve_stock_account
@@ -654,7 +671,12 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_picking
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__picking_id
 msgid "Transfer"
-msgstr "Traslado"
+msgstr "Transferir"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
+msgid "Transporte (Conductor)"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
@@ -671,9 +693,7 @@ msgstr ""
 msgid ""
 "Validating this operation with the reason <b>SELF CONSUMPTION</b> will "
 "reflect it in the inventory book under the self consumption column."
-msgstr ""
-"Validar esta operación con la razón <b>AUTOCONSUMO</b> la reflejará en el "
-"libro de inventario bajo la columna de autonsumo."
+msgstr "Al validar esta operación con el motivo <b> AUTOCONSUMO </b>, esta se refleja en el libro de inventario dentro de la columna destinada a autoconsumo."
 
 #. module: l10n_ve_stock_account
 #. odoo-python
