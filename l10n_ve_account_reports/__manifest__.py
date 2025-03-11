@@ -1,6 +1,6 @@
 {
-    "name": "Venezuela - Accounting Reports",
-    "summary": "Modifications to accounting reports, adapted to Venezuelan regulations.",
+    "name": "Venezuela - Reportes de Contabilidad",
+    "summary": "Modificaciones de los informes contables, adaptados a la normativa venezolana.",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",

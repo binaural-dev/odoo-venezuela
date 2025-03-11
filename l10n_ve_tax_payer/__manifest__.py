@@ -1,6 +1,6 @@
 {
-    "name": "Venezuela - Technical Tax Payer",
-    "summary": "Taxpayer identification field.",
+    "name": "Venezuela - Contribuyente (Técnico)",
+    "summary": "Módulo para configurar los contribuyentes de Venezuela.",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
