@@ -471,8 +471,8 @@ class StockPicking(models.Model):
     # === CRON METHODS ===#
 
     def _cron_generate_invoices_from_pickings(self):
-        config_type = self.env.company.invoice_cron_type
-        config_time = self.env.company.invoice_cron_time
+        config_type = self.company_id.invoice_cron_type or self.env.company.invoice_cron_type
+        config_time = self.company_id.invoice_cron_time or self.env.company.invoice_cron_time
 
         if self._is_execution_day(config_type) and self._is_execution_time(config_time):
             self._create_invoices_from_pickings()
