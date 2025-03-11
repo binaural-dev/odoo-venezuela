@@ -3,7 +3,7 @@
         <xpath expr="//div/div/div/div[2]/t[6]" position="after">
             <br/>
             <strong t-if="o.picking_id">
-                Numero de Guia: 
+                Número de Guía: 
             </strong>
             <t t-out="o.guide_number or 'N/A'"/>
         </xpath>
