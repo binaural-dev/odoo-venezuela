@@ -1,7 +1,7 @@
 {
-    "name": "Venezuela - Accounting",
+    "name": "Venezuela - Contabilidad",
     "summary": """
-       Module for Venezuelan accounting
+       Módulo de Contabilidad Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",
