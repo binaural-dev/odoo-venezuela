@@ -374,7 +374,7 @@ msgstr "Es Donación"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Item"
-msgstr "Artículo"
+msgstr "Referencia Interna"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_account_move

@@ -1,7 +1,7 @@
 {
-    "name": "Venezuela Libro de Inventario",
+    "name": "Venezuela - Libro de Inventario",
     "summary": """
-        Modulo de libro de Inventario Venezuela
+        Módulo de libro de Inventario Venezuela
     """,
     "license": "LGPL-3",
     "author": "Binauraldev",

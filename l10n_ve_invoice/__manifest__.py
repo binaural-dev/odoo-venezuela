@@ -1,6 +1,7 @@
 {
-    "name": "Venezuela - Invoicing",
+    "name": "Venezuela - Facturación",
     "summary": """
+        Módulo de Facturación Venezuela
     """,
     "version": "16.0.3.2.23",
     "license": "LGPL-3",

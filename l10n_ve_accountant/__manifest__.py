@@ -1,13 +1,13 @@
 {
-    "name": "Venezuela - Accounting",
+    "name": "Venezuela - Contabilidad",
     "summary": """
-       Module for Venezuelan accounting
+       Módulo de Contabilidad Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.5.0.13",
+    "version": "16.0.5.0.14",
     # any module necessary for this one to work correctly
     "depends": [
         "base",

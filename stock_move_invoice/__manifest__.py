@@ -21,12 +21,12 @@
 #############################################################################
 
 {
-    'name': "Invoice From Stock Picking",
+    'name': "Factura Desde Recogida de Stock",
     'version': '16.0.1.0.0',
-    'summary': """In this module creating customer invoice,vendor bill, customer
-    credit note and refund from stock picking""",
-    'description': """In this module creating customer invoice,vendor bill, customer
-    credit note and refund from stock picking""",
+    'summary': """En este módulo se crea factura de cliente, factura de proveedor, 
+    nota de crédito de cliente y reembolso desde la recogida de stock""",
+    'description': """En este módulo se crea factura de cliente, factura de proveedor, 
+    nota de crédito de cliente y reembolso desde la recogida de stock""",
     'category': 'Stock',
     'author': 'Cybrosys Techno Solutions',
     'company': 'Cybrosys Techno Solutions',

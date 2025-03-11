@@ -6,7 +6,7 @@
             <field name="format">A4</field>
             <field name="orientation">Portrait</field>
             <field name="margin_top">130</field>
-            <field name="margin_bottom">85</field>
+            <field name="margin_bottom">50</field>
             <field name="margin_left">7</field>
             <field name="margin_right">7</field>
             <field name="header_line" eval="False" />

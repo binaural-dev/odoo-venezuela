@@ -1,6 +1,6 @@
 {
-    "name": "Venezuela - Filter Partner",
-    "summary": "Technical module containing a mixin to filter customer and supplier contacts.",
+    "name": "Venezuela - Filtro Socio",
+    "summary": "Módulo técnico que contiene un mixin para filtrar los contactos de clientes y proveedores.",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
