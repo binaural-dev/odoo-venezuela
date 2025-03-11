@@ -16,7 +16,7 @@
                 <field name="partner_id" domain="partner_id_domain"
                     context="{'res_partner_search_mode': 'customer', 'show_address': 1}"
                     options="{&quot;always_reload&quot;: True}" />
-                <field name="manually_set_rate" />
+                <field name="manually_set_rate" invisible="1"/>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="vat" />

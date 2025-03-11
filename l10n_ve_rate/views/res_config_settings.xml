@@ -16,6 +16,12 @@
                                     <field name="currency_foreign_id" />
                                     <span>Select alternate currency</span>
                                 </group>
+                                <div class="text-muted">
+                                Select the alternate currency that the system will use to make an
+                                accounting copy in the selected currency
+
+
+                            </div>
                             </div>    
                         </div>
                     </div>

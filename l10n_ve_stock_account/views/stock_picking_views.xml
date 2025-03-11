@@ -1,0 +1,58 @@
+<odoo>
+    <record id="view_picking_form_l10n_ve_stock_account" model="ir.ui.view">
+        <field name="name">stock.picking.form.l10n.ve.stock.account</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form" />
+        <field name="arch" type="xml">
+
+            <xpath expr="//form//header" position="inside">
+
+                <field name="dispatch_guide_controls" invisible="1" />
+
+                <button name="print_dispatch_guide"
+                    string="Shipping guide/Delivery order"
+                    type="object"
+                    class="o_btn_validate"
+                    attrs="{'invisible': [
+                        ('dispatch_guide_controls', '!=', True),
+                        ]
+                    }"
+                />
+
+                <!-- data-hotkey="m" attrs="{'invisible': [('show_button', '=', False)]}"
+                nolabel="1" /> -->
+            </xpath>
+
+            <xpath expr="//field[@name='origin']" position="after">
+
+                <field name="is_consignment" invisible="1" />
+                <field name="is_dispatch_guide"
+                    attrs="{
+                    'readonly': ['|', ('state', '=', 'done'), ('is_consignment', '=', True)],
+                    'invisible': [('operation_code', '!=', 'internal')]
+                }" />
+
+                <field name="transfer_reason_id"
+                    attrs="{
+                        'readonly': [('state', '=', 'done')],
+                        'invisible': [('operation_code', '!=', 'internal')],
+                        'required': [('operation_code', '=', 'internal')]
+                    }" />
+
+                <field name="allowed_reason_ids" invisible="1" />
+                <field name="is_donation" invisible="1" />
+                <field name="transfer_reason_id"
+                    attrs="{'readonly': ['|', ('is_donation', '=', True), ('state', '=', 'done')], 
+                              'invisible': [('operation_code', '!=', 'outgoing')]}" />
+                <field name="guide_number" readonly="1"
+                    attrs="{'invisible': [
+                        ('dispatch_guide_controls', '!=', True),
+                        ]
+                    }"
+                />
+            </xpath>
+
+
+        </field>
+    </record>
+</odoo>

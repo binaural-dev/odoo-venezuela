@@ -188,3 +188,4 @@ class StockPicking(models.Model):
     #     if self.type_delivery_step != "pick":
     #         self = self.with_context(skip_physical_location=True)
     #     return super().action_assign()
+    

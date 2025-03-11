@@ -10,3 +10,7 @@
         <field name="users" eval="[(4, ref('base.user_root')),(4,ref('base.user_admin'))]" />
     </record>
 </odoo>
+    <record id="group_support_user" model="res.groups">
+        <field name="name">Support User (Journals)</field>
+    </record>
+</odoo>

@@ -1,12 +1,12 @@
 {
     "name": "Venezuela - Sales",
     "summary": """
-       Módulo para ventas """,
+    """,
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "16.0.1.1.3",
+    "version": "16.0.1.1.4",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -17,7 +17,6 @@
         "l10n_ve_invoice",
         "l10n_ve_filter_partner",
     ],
-    # always loaded
     "data": [
         "security/res_groups.xml",
         "data/ir_cron.xml",
