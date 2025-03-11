@@ -48,7 +48,8 @@ class StockMove(models.Model):
 
         tax_amount = subtotal_after_discount * (tax / 100) if tax else 0.0
 
-        total = subtotal_after_discount + tax_amount
+
+        total_with_tax = subtotal_after_discount + tax_amount
 
         return {
             "quantity": quantity,
@@ -58,5 +59,6 @@ class StockMove(models.Model):
             "tax_amount": tax_amount,
             "subtotal": subtotal,
             "subtotal_after_discount": subtotal_after_discount,
-            "total": total,
+            # "": total,
+            "total_with_tax": total_with_tax,
         }
