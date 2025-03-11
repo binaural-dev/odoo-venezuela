@@ -4,7 +4,7 @@
             <br/>
             <t t-if="o.picking_id">
                 <strong >
-                Numero de Guia: 
+                Número de Guía: 
                 </strong>
                 <t t-out="o.guide_number or 'N/A'"/>
             </t>
