@@ -8,6 +8,8 @@ _logger = logging.getLogger(__name__)
 class AccountJournal(models.Model):
     _inherit = "account.journal"
 
+    # ESTA HERENCIA NO SE IMPORTARÁ PORQUE ESTÁ GENERANDO ERROR, AL SOLUCIONAR, VOLVER A AGREGAR EN EN IMPORT
+
     @api.model_create_multi
     def create(self, vals_list):
 
