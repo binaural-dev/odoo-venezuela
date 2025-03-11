@@ -444,16 +444,25 @@ class StockPicking(models.Model):
                     allowed_reason_ids.append(reasons["internal"].id)
 
             # Self Consumption
-            elif picking.operation_code == "outgoing" and reasons["self_consumption"]:
+            elif picking.operation_code == "outgoing" and not picking.sale_id and reasons["self_consumption"]:
                 allowed_reason_ids.append(reasons["self_consumption"].id)
 
-            picking.transfer_reason_id = allowed_reason_ids[0] if allowed_reason_ids else False
 
+            # picking.transfer_reason_id = allowed_reason_ids[0] if allowed_reason_ids else False
+
+            # Retornar todo
             picking.allowed_reason_ids = (
-                self.env["transfer.reason"].search([("id", "in", allowed_reason_ids)])
-                if allowed_reason_ids
-                else self.env["transfer.reason"]
+                self.env["transfer.reason"].search([])
+                if not allowed_reason_ids
+                else self.env["transfer.reason"].search([("id", "in", allowed_reason_ids)])
             )
+
+            # No retornar nada
+            # picking.allowed_reason_ids = (
+            #     self.env["transfer.reason"].search([("id", "in", allowed_reason_ids)])
+            #     if allowed_reason_ids
+            #     else self.env["transfer.reason"]
+            # )
 
     #=== CONSTRAINT METHODS ===#
 
