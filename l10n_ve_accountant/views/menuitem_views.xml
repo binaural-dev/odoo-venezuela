@@ -8,7 +8,8 @@
 
     <menuitem name="Support views"
         id="l10n_ve_account_support_views"
-        groups="l10n_ve_accountant.group_fiscal_config_user" sequence="60">
+        groups="l10n_ve_accountant.group_fiscal_config_user" sequence="60"
+        web_icon="l10n_ve_accountant,static/description/icon.png">
         <menuitem name="Taxes" id="l10n_ve_accountant_account_tax" action="account.action_tax_form" />
         <menuitem name="Tax Unit" id="l10n_ve_accountant_tax_unit"
             action="action_tax_unit_l10n_ve_payment_extension" />

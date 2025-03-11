@@ -199,6 +199,8 @@
             name="Municipal Patent Report"
         />
 
+        <!--Support
+        views -->
         <menuitem
             id="municipal_supplier_retention_report_menu"
             action="municipal_supplier_retention_report_action"
