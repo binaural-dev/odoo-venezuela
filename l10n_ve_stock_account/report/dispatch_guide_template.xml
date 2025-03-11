@@ -53,7 +53,7 @@
                 </div>
             </div>
 
-            <div class="row mb-4">
+            <div class="row">
                 <div class="col-6">
                     <strong>Número de documento:</strong>
                     <span t-out="o.name" />
@@ -67,12 +67,18 @@
 
             <div class="row mb-4">
                 <div class="col-6">
-                    <strong>N° de pedido:</strong>
+                    <strong>Número de pedido:</strong>
                     <span t-out="o.origin" />
                 </div>
                 <div class="col-6 text-end">
                     <strong>Tasa:</strong>
                     <t t-out="o.sale_id.foreign_rate if o.sale_id.foreign_rate else ''" />
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12 d-flex">
+                    <div class="border-bottom border-2 ms-auto w-100"></div>
                 </div>
             </div>
 
@@ -103,6 +109,12 @@
             </div>
 
             <div class="row mb-4">
+                <div class="col-12 d-flex">
+                    <div class="border-bottom border-2 ms-auto w-100"></div>
+                </div>
+            </div>
+
+            <div class="row">
                 <div class="col-12">
                     <strong>Razón de traslado/transferencia:</strong>
                     <t t-if="o.transfer_reason_id">

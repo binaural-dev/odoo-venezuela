@@ -36,7 +36,7 @@
             <div class="mt-5">
                 <div class="page">
                     <div id="informations" class="row mt-4 mb-4">
-                        <div class="col-auto col-6 mw-100 mb-2">
+                        <div class="col-auto col-6 mw-100 mb-2" name="header_left">
                             <span><strong>Razón Social:</strong> <t t-out="o.partner_id.name"/></span>
                             <br/>
                             <span>
@@ -52,7 +52,7 @@
                             <br/>
                             <span t-if="o.partner_id.phone"><strong>Teléfono:</strong> <t t-out="o.partner_id.phone"/></span>
                         </div>
-                        <div class="col-auto col-1 mw-100 mb-1">
+                        <div class="col-auto col-1 mw-100 mb-1" name="header_right">
                             <t t-set="currency_base" t-value="o.currency_id.id == %(base.VEF)s"/>
                             <t t-if="o.company_id.taxpayer_type == 'ordinary'">
                                 <span><strong>CONTRIBUYENTE FORMAL</strong></span>
