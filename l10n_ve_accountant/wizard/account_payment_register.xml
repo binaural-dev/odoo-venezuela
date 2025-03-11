@@ -15,7 +15,7 @@
                 <field name="foreign_inverse_rate" invisible="1"/>
                 <label for="foreign_inverse_rate"/>
                 <div name="foreign_currency_div" class="o_row">
-                    <field name="foreign_inverse_rate" groups="base.group_no_one"/>
+                    <field name="foreign_inverse_rate" groups="base.group_no_one" readonly="1"/>
 		</div>
             </xpath>
         </field>

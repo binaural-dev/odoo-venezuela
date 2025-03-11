@@ -225,27 +225,55 @@ class StockPicking(models.Model):
         return self.env.ref("l10n_ve_stock_account.action_dispatch_guide").read()[0]
 
     def get_foreign_currency_is_vef(self):
-        return self.company_id.currency_foreign_id == self.env.ref("base.VEF")
+
+        res = self.company_id.currency_foreign_id == self.env.ref("base.VEF")
+
+        _logger.info("Is VEF: %s", res)
+
+        return res
 
     def get_digits(self):
         return self.env.ref("base.VEF").decimal_places
 
     def get_totals(self, use_foreign_currency=False):
-        """ """
+        """Calcula y agrupa los totales del picking, incluyendo impuestos por porcentaje."""
         self.ensure_one()
         totals = {
-            "subtotal": 0.0,
-            "tax": 0.0,
-            "total": 0.0,
+            "subtotal": 0.0,   # Suma de todos los subtotales
+            "exempt": 0.0,     # Suma de productos exentos (0% IVA)
+            "tax_base": 0.0,   # Base imponible (productos con IVA)
+            "tax": 0.0,        # Total de impuestos calculados
+            "total": 0.0,      # Monto final correcto
+            "tax_details": {}, # Agrupación de impuestos por porcentaje
         }
 
         for line in self.move_ids_without_package:
-            line_values = line._get_line_values(
-                use_foreign_currency=use_foreign_currency
-            )
+            line_values = line._get_line_values(use_foreign_currency=use_foreign_currency)
+            
             totals["subtotal"] += line_values["subtotal_after_discount"]
-            totals["tax"] += line_values["tax_amount"]
-            totals["total"] += line_values["total"]
+            
+            tax_rate = line_values["tax_percentage"]
+            tax_amount = line_values["tax_amount"]
+            subtotal_after_discount = line_values["subtotal_after_discount"]
+
+            # Si es exento (0%), solo lo sumamos a "exempt"
+            if tax_rate == 0.0:
+                totals["exempt"] += subtotal_after_discount
+            else:
+                totals["tax_base"] += subtotal_after_discount
+                totals["tax"] += tax_amount
+
+                # Agrupar impuestos por porcentaje
+                if tax_rate not in totals["tax_details"]:
+                    totals["tax_details"][tax_rate] = {
+                        "base": 0.0,
+                        "tax_amount": 0.0,
+                    }
+                
+                totals["tax_details"][tax_rate]["base"] += subtotal_after_discount
+                totals["tax_details"][tax_rate]["tax_amount"] += tax_amount
+
+        totals["total"] = totals["exempt"] + totals["tax_base"] + totals["tax"]
 
         return totals
 
@@ -292,27 +320,36 @@ class StockPicking(models.Model):
     def _pre_action_done_hook(self):
         res = super()._pre_action_done_hook()
         
-        if self.env.context.get("skip_self_consumption_check"):
-            return res  # Evita bucles infinitos
-
-        self_consumption_reason = self.env.ref(
-            "l10n_ve_stock_account.transfer_reason_self_consumption",
-            raise_if_not_found=False
-        )
-
-        for picking in self:
-            if picking.transfer_reason_id.id == self_consumption_reason.id:
-                return {
-                    'name': 'Self-Consumption Warning',
-                    'type': 'ir.actions.act_window',
-                    'res_model': 'stock.picking.self.consumption.wizard',
-                    'view_mode': 'form',
-                    'view_id': False,
-                    'target': 'new',
-                    'context': {'default_picking_id': picking.id},
-                }
+        # TODO: agregar alerta cuando sea de self_consumption_reason
+        # 
+        # contexto del problema y TODO:
+        #
+        # El código comentado funciona para crear la alerta pero dejan de aparecer
+        # en la interfaz las alertas nativas de Odoo para entrega parcial y demás.
+        #
+        # Objetivo: hacer funcionar todas las alertas y que la existencia de la declarada acá
+        # no minimize la alerta de Odoo nativo.
+        #
+        # if self.env.context.get("skip_self_consumption_check"):
+        #     return res  # Evita bucles infinitos
+        #
+        # self_consumption_reason = self.env.ref(
+        #     "l10n_ve_stock_account.transfer_reason_self_consumption",
+        #     raise_if_not_found=False
+        # )
+        #
+        # for picking in self:
+        #     if picking.transfer_reason_id.id == self_consumption_reason.id:
+        #         return {
+        #             'name': 'Self-Consumption Warning',
+        #             'type': 'ir.actions.act_window',
+        #             'res_model': 'stock.picking.self.consumption.wizard',
+        #             'view_mode': 'form',
+        #             'view_id': False,
+        #             'target': 'new',
+        #             'context': {'default_picking_id': picking.id},
+        #         }
         return res
-
 
     #=== COMPUTE METHODS ===#
 
