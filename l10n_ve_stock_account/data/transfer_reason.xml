@@ -1,5 +1,5 @@
 <odoo>
-    <!-- <data noupdate="1"> -->
+    <data noupdate="0">
         <!-- Donation -->
         <record id="transfer_reason_donation" model="transfer.reason">
             <field name="name">Donación</field>
@@ -16,15 +16,8 @@
             <field name="active">True</field>
         </record>
 
-        <!-- Return -->
-        <record id="transfer_reason_return" model="transfer.reason">
-            <field name="name">Devolución</field>
-            <!-- <field name="name">Return</field> -->
-            <field name="code">return</field>
-            <field name="active">True</field>
-        </record>
-
-        <record id="transfer_reason_transfer" model="transfer.reason">
+        <!-- Transfer between warehouses -->
+        <record id="transfer_reason_transfer_between_warehouses" model="transfer.reason">
             <field name="name">Traslado entre almacenes</field>
             <field name="code">transfer</field>
             <field name="active">True</field>
@@ -53,21 +46,5 @@
             <field name="code">consignment</field>
             <field name="active">True</field>
         </record>
-
-        <!-- Internal Transfer -->
-        <record id="transfer_reason_internal_transfer" model="transfer.reason">
-            <field name="name">Transferencia Interna</field>
-            <!-- <field name="name">Internal Transfer</field> -->
-            <field name="code">internal_transfer</field>
-            <field name="active">True</field>
-        </record>
-
-        <!-- Detail -->
-        <record id="transfer_reason_detail" model="transfer.reason">
-            <field name="name">Detalle</field>
-            <!-- <field name="name">Detail</field> -->
-            <field name="code">detail</field>
-            <field name="active">True</field>
-        </record>
-    <!-- </data> -->
+    </data>
 </odoo>
