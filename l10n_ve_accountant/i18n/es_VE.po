@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-11 01:17+0000\n"
-"PO-Revision-Date: 2025-03-11 01:17+0000\n"
+"POT-Creation-Date: 2025-03-11 12:50+0000\n"
+"PO-Revision-Date: 2025-03-11 12:50+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -116,6 +116,16 @@ msgid "<strong>Total Sales</strong>"
 msgstr "Total de Ventas"
 
 #. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_search_tax_unit_l10n_ve_payment_extension
+msgid "Active"
+msgstr "Activo"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__status
+msgid "Active?"
+msgstr "Activo"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__amount_currency
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Amount in Currency"
@@ -198,6 +208,16 @@ msgid "Concept"
 msgstr "Concepto"
 
 #. module: l10n_ve_accountant
+#: model:res.groups,name:l10n_ve_accountant.group_fiscal_config_support
+msgid "Configuraciones fiscales soporte"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:res.groups,name:l10n_ve_accountant.group_fiscal_config_user
+msgid "Configuraciones fiscales usuario"
+msgstr ""
+
+#. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
@@ -210,12 +230,14 @@ msgstr "País"
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__create_uid
 msgid "Created by"
 msgstr "Creado por"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__create_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__create_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__create_date
 msgid "Created on"
 msgstr "Creado en"
 
@@ -245,6 +267,11 @@ msgid "Date of issue:"
 msgstr "Fecha de emisión:"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__name
+msgid "Description"
+msgstr "Descripción"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
 msgid "Desde:"
 msgstr ""
@@ -269,6 +296,7 @@ msgstr "Descuento"
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__display_name
 msgid "Display Name"
 msgstr "Nombre"
 
@@ -509,6 +537,7 @@ msgstr ""
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__id
 msgid "ID"
 msgstr ""
 
@@ -555,7 +584,6 @@ msgid "Is Reset To Draft For Price Change"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#: model:ir.model,name:l10n_ve_accountant.model_account_journal
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__journal_id
 msgid "Journal"
 msgstr "Diario"
@@ -585,18 +613,21 @@ msgstr "Ultima tasa"
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details____last_update
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report____last_update
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit____last_update
 msgid "Last Modified on"
 msgstr "Última modificación en"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__write_uid
 msgid "Last Updated by"
 msgstr "Última actualización por"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__write_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__write_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__write_date
 msgid "Last Updated on"
 msgstr "Última actualización en"
 
@@ -789,6 +820,11 @@ msgid "Sales Report"
 msgstr "Informe de Ventas"
 
 #. module: l10n_ve_accountant
+#: model:ir.ui.menu,name:l10n_ve_accountant.l10n_ve_accountant_ir_sequence
+msgid "Sequence"
+msgstr "Secuencia"
+
+#. module: l10n_ve_accountant
 #: model:ir.actions.server,name:l10n_ve_accountant.abs_amount_line_ids_adjust
 msgid "Set Abs adjustment lines"
 msgstr "Establecer líneas de ajuste Abs"
@@ -824,6 +860,36 @@ msgid "Support User (Journals)"
 msgstr "Usuario de Soporte (Diarios)"
 
 #. module: l10n_ve_accountant
+#: model:ir.ui.menu,name:l10n_ve_accountant.l10n_ve_account_support_views
+msgid "Support views"
+msgstr "Soporte"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_tax_unit
+#: model:ir.ui.menu,name:l10n_ve_accountant.l10n_ve_accountant_tax_unit
+msgid "Tax Unit"
+msgstr "Unidad Tributaria"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_tax_unit__name
+msgid "Tax Unit Description"
+msgstr "Descripción de Unidad Tributaria"
+
+#. module: l10n_ve_accountant
+#: model:ir.actions.act_window,name:l10n_ve_accountant.action_tax_unit_l10n_ve_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_accountant.menu_retention_tax_unit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_search_tax_unit_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_tax_unit_form_l10n_ve_payment_extension
+msgid "Tax unit"
+msgstr "Unidades Tributarias"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_tax_unit__value
+msgid "Tax unit value"
+msgstr "Valor de Unidad Tributaria"
+
+#. module: l10n_ve_accountant
+#: model:ir.ui.menu,name:l10n_ve_accountant.l10n_ve_accountant_account_tax
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Taxes"
 msgstr "Impuestos"
@@ -853,7 +919,7 @@ msgid ""
 " entry."
 msgstr ""
 "La cantidad expresada en una moneda alternativa si se trata de un asiento "
-"multi-divisa."
+"multimoneda."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -951,6 +1017,11 @@ msgstr "Identificación"
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__vat
 msgid "VAT of the partner"
 msgstr "Identificación"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__value
+msgid "Value"
+msgstr "Valor"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant

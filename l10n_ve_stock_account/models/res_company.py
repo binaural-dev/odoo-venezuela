@@ -18,3 +18,11 @@ class ResCompany(models.Model):
     #     string="Vendor Journal",
     #     help="To add vendor journal",
     # )
+
+    invoice_cron_type = fields.Selection(
+        [("last_business_day", _("Last Business Day")), ("last_day", _("Last Day"))],
+        string="Date Cron Invoice",
+        default="last_business_day",
+        required=True,
+    )
+    invoice_cron_time = fields.Float(required=True, default=18.0)
