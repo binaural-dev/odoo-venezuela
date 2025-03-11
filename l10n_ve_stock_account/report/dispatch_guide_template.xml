@@ -24,22 +24,26 @@
         <t t-call="l10n_ve_stock_account.dispatch_layout_footer" />
     </template>
 
-   <template id="dispatch_layout_header">
+    <template id="dispatch_layout_header">
         <div class="container-fluid header">
             <div class="row mb-4">
-                <div class="col-12 text-center">
-                    <img t-if="o.company_id.logo"
-                        t-att-src="image_data_uri(o.company_id.logo)"
-                        style="max-height:95pt;max-width: 150px;"
-                        alt="Company Logo" />
-                    <h4 class="mt-2">
-                        <span t-field="o.company_id.name" />
-                    </h4>
-                    <p>
-                        <span t-field="o.company_id.street" />
-                        <br />
-                        <span t-field="o.company_id.vat" />
-                    </p>
+                <div class="col-12 d-flex align-items-center flex-wrap">
+                    <div class="me-3 flex-shrink-0">
+                        <img t-if="o.company_id.logo"
+                            t-att-src="image_data_uri(o.company_id.logo)"
+                            style="max-height:95pt; max-width:150px; min-width:100px;"
+                            alt="Company Logo" />
+                    </div>
+                    <div class="text-container">
+                        <h4 class="m-0">
+                            <span t-field="o.company_id.name" />
+                        </h4>
+                        <p class="m-0">
+                            <span t-field="o.company_id.street" />
+                            <br />
+                            <span t-field="o.company_id.vat" />
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -101,6 +105,9 @@
             <div class="row mb-4">
                 <div class="col-12">
                     <strong>Razón de traslado/transferencia:</strong>
+                    <t t-if="o.transfer_reason_id">
+                        <t t-out="o.transfer_reason_id.name" />
+                    </t>
                 </div>
             </div>
 
@@ -132,7 +139,7 @@
                                 <th class="text-center">Peso</th>
                                 <th class="text-center">Precio</th>
                                 <th class="text-center">Dscto</th>
-                                <th class="text-center">Subtotal</th>
+                                <!-- <th class="text-center">Subtotal</th> -->
                                 <th class="text-center">Impuesto</th>
                                 <th class="text-center">Total</th>
                             </tr>
@@ -140,7 +147,8 @@
                         <tbody>
                             <!-- Iterar sobre las líneas y acumular totales -->
                             <t t-foreach="o.move_ids_without_package" t-as="line">
-                                <t t-set="line_values" t-value="line._get_line_values(use_foreign_currency=o.get_foreign_currency_is_vef())" />
+                                <t t-set="line_values"
+                                    t-value="line._get_line_values(use_foreign_currency=o.get_foreign_currency_is_vef())" />
 
                                 <tr>
                                     <td class="text-center">
@@ -158,7 +166,8 @@
                                         <t t-out="line.product_uom.name" />
                                     </td>
                                     <td class="text-center">
-                                        <t t-out="(line.product_id.weight or 0) * (line.quantity_done or 0)" />
+                                        <t
+                                            t-out="(line.product_id.weight or 0) * (line.quantity_done or 0)" />
                                     </td>
                                     <td class="text-center">
                                         <t t-if="o.get_foreign_currency_is_vef()">
@@ -175,17 +184,17 @@
                                         <t t-out="line_values['discount_percentage'] or 0" />
                                     </td>
                                     <!-- subtotal_after_discount -->
-                                    <td class="text-center">
-                                        <t t-out="line_values['subtotal_after_discount']"
-                                            t-options='{"widget": "float", "precision": o.get_digits()}' />
-                                    </td>
+                                    <!-- <td class="text-center"> -->
+                                    <!--     <t t-out="line_values['subtotal_after_discount']" -->
+                                    <!--         t-options='{"widget": "float", "precision":
+                                    o.get_digits()}' /> -->
+                                    <!-- </td> -->
                                     <!-- tax percentage  -->
                                     <td class="text-center">
-                                        <t t-out="line_values['tax_percentage'] or 0" />%
-                                    </td>
+                                        <t t-out="line_values['tax_percentage'] or 0" />% </td>
                                     <!-- total -->
                                     <td class="text-center">
-                                        <t t-out="line_values['total']"
+                                        <t t-out="line_values['subtotal_after_discount']"
                                             t-options='{"widget": "float", "precision": o.get_digits()}' />
                                     </td>
                                 </tr>
@@ -194,61 +203,128 @@
                     </table>
                 </div>
             </div>
+
+
+            <t t-set="totals" t-value="o.get_totals(o.get_foreign_currency_is_vef())" />
+
+            <!-- Resumen de Totales -->
+            <div class="row mt-4">
+                <div class="col-6"></div>  <!-- Espacio en blanco -->
+                <div class="col-6">
+                    <table class="table table-sm border">
+                        <tbody>
+                            <tr>
+                                <td class="text-end">
+                                    <strong>Subtotal:</strong>
+                                </td>
+                                <td class="text-end">
+                                    <t t-out="totals['subtotal']"
+                                        t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-end">
+                                    <strong>Exento:</strong>
+                                </td>
+                                <td class="text-end">
+                                    <t t-out="totals['exempt']"
+                                        t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-end">
+                                    <strong>Base Imponible:</strong>
+                                </td>
+                                <td class="text-end">
+                                    <t t-out="totals['tax_base']"
+                                        t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                </td>
+                            </tr>
+
+                            <!-- Iterar sobre los impuestos en tax_details -->
+                            <t t-foreach="totals['tax_details'].items()" t-as="tax_item">
+                                <tr>
+                                    <td class="text-end">
+                                        <strong>Impuesto <t t-out="tax_item[0]" />%:</strong>
+                                    </td>
+                                    <td class="text-end">
+                                        <t t-out="tax_item[1]['tax_amount']"
+                                            t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                    </td>
+                                </tr>
+                            </t>
+
+                            <tr class="table-active">
+                                <td class="text-end">
+                                    <strong>Total:</strong>
+                                </td>
+                                <td class="text-end">
+                                    <t t-out="totals['total']"
+                                        t-options='{"widget": "float", "precision": o.get_digits()}' />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <p>(SIN DERECHO A CRÉDITO FISCAL)</p>
+                    <t t-if="o.company_id.taxpayer_type == 'ordinary'">
+                        <p>
+                            <strong>CONTRIBUYENTE FORMAL</strong>
+                        </p>
+                    </t>
+                </div>
+            </div>
         </div>
     </template>
 
     <template id="dispatch_layout_footer">
         <div class="footer container-fluid">
-            <t t-set="totals" t-value="o.get_totals(o.get_foreign_currency_is_vef())" />
 
-            <div class="row mt-4">
-                <div class="col-6">
-                    <strong>Subtotal:</strong>
-                    <t t-out="totals['subtotal']"
-                        t-options='{"widget": "float", "precision": o.get_digits()}' />
-                </div>
-                <div class="col-6 text-end">
-                    <strong>Impuesto:</strong>
-                    <t t-out="totals['tax']"
-                        t-options='{"widget": "float", "precision": o.get_digits()}' />
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-6">
-                    <strong>Total:</strong>
-                    <t t-out="totals['total']"
-                        t-options='{"widget": "float", "precision": o.get_digits()}' />
-                </div>
-            </div>
-
+            <!-- Tabla de Firmas -->
             <div class="row mt-4">
                 <div class="col-12">
-                    <p>(SIN DERECHO A CRÉDITO FISCAL)</p>
-                    <p>CONTRIBUYENTE FORMAL</p>
+                    <table class="table table-bordered text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Transporte (Conductor)</th>
+                                <th>Autorizado por</th>
+                                <th>Despachado por</th>
+                                <th>Recibido por</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-start">
+                                    <strong>Nombre:</strong> <br /> C.I: <br /> Marca vehículo: <br />
+                                    Placa batea: <br /> Placa chasis: <br />
+        <br />
+        <strong>Firma:</strong>
+                                    ________________________ </td>
+                                <td class="text-start">
+                                    <strong>Nombre:</strong> <br /> C.I: <br /> Fecha: <br />
+        <br />
+        <strong>
+                                    Firma:</strong> ________________________ </td>
+                                <td class="text-start">
+                                    <strong>Nombre:</strong> <br /> C.I: <br /> Fecha: <br />
+        <br />
+        <strong>
+                                    Firma:</strong> ________________________ </td>
+                                <td class="text-start">
+                                    <strong>Nombre:</strong> <br /> C.I: <br /> Fecha: <br />
+        <br />
+        <strong>Firma
+                                    y sello:</strong> ________________________ </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-3">
-                    <strong>Transporte (conductor):</strong>
-                    <br /> Nombre: <br /> C.I: <br /> Marca
-                    vehículo: <br /> Placa batea: <br /> Placa chasis: <br /> Firma:
-                    _________________________ </div>
-                <div class="col-3">
-                    <strong>Autorizado por:</strong>
-                    <br /> Nombre: <br /> C.I: <br /> Fecha: <br />
-                    Firma: _________________________ </div>
-                <div class="col-3">
-                    <strong>Despachado por:</strong>
-                    <br /> Nombre: <br /> C.I: <br /> Fecha: <br />
-                    Firma: _________________________ </div>
-                <div class="col-3">
-                    <strong>Recibido por:</strong>
-                    <br /> Nombre: <br /> C.I: <br /> Fecha: <br />
-                    Firma y sello del: _________________________ </div>
-            </div>
-
         </div>
     </template>
 </odoo>
