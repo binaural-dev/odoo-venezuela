@@ -2,19 +2,10 @@
     <template id="template_free_form_l10_ve_stock_account" name="free_form_l10_ve_stock_account" inherit_id="l10n_ve_invoice.report_freeform_document">
         <xpath expr="//div[@name='header_right']" position="inside">
             <br/>
-<<<<<<< HEAD
-            <t t-if="o.picking_id">
-                <strong >
-                Numero de Guia: 
-                </strong>
-                <t t-out="o.guide_number or 'N/A'"/>
-            </t>
-=======
             <strong t-if="o.picking_id">
                 Número de Guía: 
             </strong>
             <t t-out="o.guide_number or 'N/A'"/>
->>>>>>> 2b4301e3a6766ef2769ca10fc8def3a8b671216e
         </xpath>
     </template>
 </odoo>
