@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 {
-    "name": "Venezuela - Stock",
+    "name": "Venezuela - Inventario",
     "summary": """
-        Stock for Venezuela Localization
+        Inventario para la localización en Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",

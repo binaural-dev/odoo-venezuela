@@ -1,7 +1,7 @@
 {
-    "name": "Venezuela - Stock Account",
+    "name": "Venezuela - Inventario/Contabilidad",
     "summary": """
-        Stock Accoun for Venezuela Localization
+        Inventario/Contabilidad para la localización en Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",
