@@ -744,7 +744,7 @@ msgstr ""
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__vat
 msgid "RIF"
-msgstr "NIF"
+msgstr "RIF"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_partner__vat
