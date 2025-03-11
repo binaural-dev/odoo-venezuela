@@ -11,5 +11,6 @@ class ResPartner(models.Model):
             ("ordinary", "Ordinary"),
         ],
         default="ordinary",
+        tracking=True,
         store=True,
     )
