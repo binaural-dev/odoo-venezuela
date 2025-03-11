@@ -18,6 +18,7 @@
 
         "security/ir.model.access.csv",
 
+        "data/ir_cron.xml",
         "data/ir_sequence.xml",
         "data/dispatch_guide_paperformat.xml",
         'data/transfer_reason.xml',
@@ -27,6 +28,7 @@
         "views/stock_picking_views.xml",
         "views/sale_order_views.xml",
         "views/res_partner_view.xml",
+        "views/res_config_setting_views.xml",
         "views/menuitem_views.xml",
 
         "report/dispatch_guide.xml",
