@@ -118,7 +118,7 @@ msgstr "Total de Ventas"
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_search_tax_unit_l10n_ve_payment_extension
 msgid "Active"
-msgstr ""
+msgstr "Activo"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__status
