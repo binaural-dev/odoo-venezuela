@@ -57,52 +57,48 @@ class ResPartner(models.Model):
         tracking=True,
     )
 
-    # @api.constrains("company_id", "prefix_vat", "vat")
-    # def check_duplicate_vat(self):
-    #     domain =[]
-    #     error_message = ""
-    #     for partner in self:
-    #         if partner.prefix_vat and partner.vat:
-    #             if self.env.company.validate_user_creation_by_company:
-    #                 domain = [
-    #                     ('company_id', '=', partner.company_id.id),
-    #                     ("prefix_vat", "=", partner.prefix_vat),
-    #                     ("vat", "=", partner.vat),
-    #                     ("id", "!=", partner.id),
-    #                 ]
-    #                 error_message = _("There is already a partner with the same VAT number for this company.")
-    #             elif self.env.company.validate_user_creation_general:
-    #                 domain = [
-    #                     ("prefix_vat", "=", partner.prefix_vat),
-    #                     ("vat", "=", partner.vat),
-    #                     ("id", "!=", partner.id),
-    #                 ]
-    #                 error_message = _("A partner with the same VAT number already exists for this company.")
+    def check_duplicate_vat(self, prefix_vat, vat, company_id=None):
+        error_message = ""
+        domain = [
+            ("prefix_vat", "=", prefix_vat),
+            ("vat", "=", vat),
+            ("id", "!=", self.id if self else False),
+        ]
+        
+        if prefix_vat and vat:
+            if self.env.company.validate_user_creation_by_company:
+                domain.extend([
+                    ('company_id', '=', company_id or self.env.company.id),
+                ])
+                error_message = _("There is already a partner with the same VAT number for this company.")
+            elif self.env.company.validate_user_creation_general:
+                error_message = _("A partner with the same VAT number already exists for this company.")
 
-    #             existing_partner = self.env["res.partner"].search(domain)
-    #             if existing_partner:
-    #                 raise ValidationError(error_message)
+            existing_partner = self.env["res.partner"].search(domain)
+            if existing_partner:
+                raise ValidationError(error_message)
+                
 
-    @api.constrains("email")
-    def check_duplicate_email(self):
-        for partner in self:
-            if partner.email:
-                if self.env.company.validate_user_creation_by_company:
-                    existing_partner = self.env["res.partner"].search(
-                        [("email", "=", partner.email), ("id", "!=", partner.id)], limit=1
-                    )
-                    if existing_partner:
-                        raise ValidationError(
-                            _(
-                                "A partner with the same email address already exists for this company."
-                            )
-                        )
-                elif self.env.company.validate_user_creation_general:
-                    existing_partner = self.env["res.partner"].search(
-                        [("email", "=", partner.email), ("id", "!=", partner.id)], limit=1
-                    )
-                    if existing_partner:
-                        raise ValidationError(_("A partner with the same email already exists."))
+    def check_duplicate_email(self, email, company_id=None):
+        if email:
+            domain = [
+                ("email", "=", email),
+                ("id", "!=", self.id if self else False),
+            ]
+
+            if self.env.company.validate_user_creation_by_company:
+                domain.extend([
+                    ('company_id', '=', company_id or self.env.company.id),
+                ])
+                error_message = _("A partner with the same email address already exists for this company.")
+            elif self.env.company.validate_user_creation_general:
+                error_message = _("A partner with the same email already exists.")
+            else:
+                error_message = _("A partner with the same email address already exists for this company.")
+
+            existing_partner = self.env["res.partner"].search(domain, limit=1)
+            if existing_partner:
+                raise ValidationError(error_message)
 
     company_id = fields.Many2one(
         default=_default_company_id,
@@ -131,7 +127,21 @@ class ResPartner(models.Model):
                     if not flag:
                         continue
                     vals["name"] = name
+            if 'vat' and 'prefix_vat' in vals:
+                self.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
+            if 'email' in vals:
+                self.check_duplicate_email(vals.get("email"))
         return super(ResPartner, self).create(vals_list)
+    
+    def write(self, vals):
+        res = super().write(vals)
+        if 'prefix_vat' and 'vat' in vals:
+            for record in self:
+                record.check_duplicate_vat(vals.get('prefix_vat'), vals.get('vat'))
+        if 'email' in vals:
+            for record in self:
+                record.check_duplicate_email(vals.get("email"))
+        return res
 
     def _check_vat(self):
         pattern = "^[0-9]*$"
