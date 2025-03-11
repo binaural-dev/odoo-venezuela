@@ -1,6 +1,7 @@
 {
-    "name": "Venezuela - Withholdings",
+    "name": "Venezuela - Retenciones",
     "summary": """
+        Módulo de Retenciones Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",

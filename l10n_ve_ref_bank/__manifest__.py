@@ -1,7 +1,7 @@
 {
-    "name": "Venezuela - Bank References",
+    "name": "Venezuela - Referencias Bancarias",
     "summary": """
-       Validating bank references """,
+       Validando referencias bancarias""",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
