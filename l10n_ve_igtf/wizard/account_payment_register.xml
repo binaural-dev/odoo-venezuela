@@ -4,15 +4,23 @@
         <record id="view_account_payment_register_form_igtf" model="ir.ui.view">
             <field name="name">account.payment.register.form.igtf</field>
             <field name="model">account.payment.register</field>
-            <field name="inherit_id" ref="account.view_account_payment_register_form"/>
+            <field name="inherit_id" ref="account.view_account_payment_register_form" />
             <field name="arch" type="xml">
                 <xpath expr="//group[@name='group3']" position="after">
                     <group name="igtf_group">
                         <field name="is_igtf" invisible="1" />
-                        <field name="is_igtf_on_foreign_exchange" attrs="{'invisible': [('is_igtf', '=', False)]}" />
-                        <div attrs="{'invisible' : [('is_igtf_on_foreign_exchange', '=',False)]}">
-                            <span class="oe_title">IGTF(<field name="igtf_percentage" readonly="1"/>)%:</span>
-                            <field name="igtf_amount" widget="monetary"/>
+                        <field name="is_igtf_on_foreign_exchange"
+                            attrs="{'invisible': [('is_igtf', '=', False)]}" />
+                        <div attrs="{'invisible': [('is_igtf_on_foreign_exchange', '=', False)]}"
+                            style="display: flex; align-items: baseline; gap: 4px; white-space: nowrap;">
+                            <span style="vertical-align: middle;">IGTF (</span>
+                            <field name="igtf_percentage" readonly="1"
+                                style="border: none; background: transparent; width: 40px;vertical-align: middle;" />
+                            <span style="vertical-align: middle;">%):</span>
+                            <field name="igtf_amount"
+                                widget="monetary"
+                                options="{'currency_field': 'currency_id'}"
+                                style="vertical-align: middle;" />
                         </div>
                     </group>
                 </xpath>

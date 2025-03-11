@@ -13,10 +13,11 @@
                     <field name="foreign_rate" />
                 </div>
                 <field name="foreign_inverse_rate" invisible="1"/>
-                <label for="foreign_inverse_rate"/>
+                <label for="foreign_inverse_rate" attrs="{'invisible': [('base_currency_is_vef', '=', True)]}"/>
                 <div name="foreign_currency_div" class="o_row">
-                    <field name="foreign_inverse_rate" groups="base.group_no_one" readonly="1"/>
-		</div>
+                    <field name="base_currency_is_vef" invisible="1"/>
+                    <field name="foreign_inverse_rate" attrs="{'invisible': [('base_currency_is_vef', '=', True)]}" groups="base.group_no_one" readonly="1"/>
+		        </div>
             </xpath>
         </field>
     </record>
