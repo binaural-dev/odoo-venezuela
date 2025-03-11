@@ -1,6 +1,7 @@
 {
-    "name": "Venezuela - Sales",
+    "name": "Venezuela - Ventas",
     "summary": """
+        Módulo de Ventas Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",

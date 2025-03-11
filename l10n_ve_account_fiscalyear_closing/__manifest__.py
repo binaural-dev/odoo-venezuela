@@ -1,7 +1,7 @@
 {
     "name": "Venezuela - Cierre Fiscal",
     "summary": """
-        Fiscal year-end closing processes in Venezuela
+        Procesos de cierre de fin de año fiscal en Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",

@@ -1,8 +1,8 @@
 {
-    "name": "Venezuela - POS with IGTF",
-    "summary": "Module for calculating the IGTF (Tax on Large Financial Transactions) in POS.",
+    "name": "Venezuela - POS con IGTF",
+    "summary": "Módulo para calcular el IGTF (Impuesto sobre transacciones financieras grandes) en POS.",
     "license": "LGPL-3",
-    "description": "Module for calculating the IGTF (Tax on Large Financial Transactions) in POS.",
+    "description": "Módulo para calcular el IGTF (Impuesto sobre transacciones financieras grandes) en POS.",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
