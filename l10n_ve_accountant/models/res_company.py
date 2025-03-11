@@ -11,6 +11,18 @@ class ResCompany(models.Model):
             ("special", "Special"),
             ("ordinary", "Ordinary"),
         ],
-        default="ordinary",
-        store=True,
+        default="special",
+        tracking=True,
+    )
+
+    vat = fields.Char(
+        string="RIF",
+        tracking=True,
+    )
+
+    street = fields.Char(tracking=True)
+
+    country_id = fields.Many2one(
+        tracking=True,
+        default=lambda self: self.env["res.country"].search([("code", "=", "VE")], limit=1),
     )
