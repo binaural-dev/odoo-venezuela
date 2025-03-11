@@ -2,7 +2,7 @@
 <odoo>
 
     <record id="res_config_settings_l10n_ve_contact" model="ir.ui.view">
-        <field name="name">res.config.settings.binaural.contact</field>
+        <field name="name">res.config.settings.l10n.ve.contact</field>
         <field name="model">res.config.settings</field>
         <field name="priority" eval="100" />
         <field name="inherit_id" ref="l10n_ve_rate.res_config_settings_l10n_ve_rate" />

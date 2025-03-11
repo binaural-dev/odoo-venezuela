@@ -4,7 +4,7 @@
     <data>
 
         <record id="view_account_invoice_report_pivot_l10n_ve_invoice" model="ir.ui.view">
-            <field name="name">view.account.invoice.report.pivot.binaural.invoice</field>
+            <field name="name">view.account.invoice.report.pivot.l10n.ve.invoice</field>
             <field name="model">account.invoice.report</field>
             <field name="inherit_id" ref="account.view_account_invoice_report_pivot"/>
             <field name="arch" type="xml">
@@ -17,7 +17,7 @@
         </record>
 
         <record id="view_account_invoice_report_graph_l10n_ve_invoice" model="ir.ui.view">
-            <field name="name">view.account.invoice.report.pivot.binaural.invoice</field>
+            <field name="name">view.account.invoice.report.pivot.l10n.ve.invoice</field>
             <field name="model">account.invoice.report</field>
             <field name="inherit_id" ref="account.view_account_invoice_report_graph"/>
             <field name="arch" type="xml">
@@ -30,7 +30,7 @@
         </record>
 
         <record id="view_account_invoice_report_search_l10n_ve_invoice" model="ir.ui.view">
-            <field name="name">view.account.invoice.report.pivot.binaural.invoice</field>
+            <field name="name">view.account.invoice.report.pivot.l10n.ve.invoice</field>
             <field name="model">account.invoice.report</field>
             <field name="inherit_id" ref="account.view_account_invoice_report_search"/>
             <field name="arch" type="xml">

@@ -3,6 +3,7 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.osv import expression
+from datetime import datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -183,7 +184,7 @@ class StockPicking(models.Model):
                     'invoice_line_ids': invoice_line_list,
                     'transfer_ids': self
                 })
-            picking_id.state_guide_dispatch = 'invoiced'
+            picking_id.write({"state_guide_dispatch": "invoiced"})
         return True 
 
     def _get_invoice_lines_for_invoice(self):
@@ -281,7 +282,7 @@ class StockPicking(models.Model):
         self._validate_one_invoice_posted()
         res = super().create_bill()
         for picking in self:
-            picking.state_guide_dispatch = 'invoiced'
+            picking.write({"state_guide_dispatch": "invoiced"})
         return res
 
     
@@ -289,17 +290,17 @@ class StockPicking(models.Model):
         self._validate_one_invoice_posted()
         res = super().create_customer_credit()
         for picking in self:
-            picking.state_guide_dispatch = 'invoiced'
+            picking.write({"state_guide_dispatch": "invoiced"})
         return res
     
     def create_vendor_credit(self):
         self._validate_one_invoice_posted()
         res = super().create_vendor_credit()
         for picking in self:
-            picking.state_guide_dispatch = 'invoiced'
+            picking.write({"state_guide_dispatch": "invoiced"})
         return res
     
-    def _validate_one_invoice_posted(self,):
+    def _validate_one_invoice_posted(self):
         for picking in self:
             invoice_ids = self.env["account.move"].search(
                 [("picking_id", "=", picking.id), ("state", "=", "posted")]
@@ -475,4 +476,58 @@ class StockPicking(models.Model):
                         "The 'Transfer Reason' field is mandatory when 'Operation Code' is 'internal'."
                     )
                 )
-            
+
+    # === CRON METHODS ===#
+
+    def _cron_generate_invoices_from_pickings(self):
+        config_type = self.company_id.invoice_cron_type or self.env.company.invoice_cron_type
+        config_time = self.company_id.invoice_cron_time or self.env.company.invoice_cron_time
+
+        if self._is_execution_day(config_type) and self._is_execution_time(config_time):
+            self._create_invoices_from_pickings()
+
+    def _is_execution_day(self, config_type):
+        today = fields.Date.today()
+        last_day = (today.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+        if config_type == "last_day":
+            return today == last_day
+        else:
+
+            while last_day.weekday() >= 5:
+                last_day -= timedelta(days=1)
+            return today == last_day
+
+    def _is_execution_time(self, config_time):
+        current_time = datetime.now().hour + datetime.now().minute / 60
+        return abs(current_time - config_time) <= 0.5
+
+    def _create_invoices_from_pickings(self):
+        pickings = self.search(
+            [
+                ("company_id", "=", self.env.company.id),
+                ("state", "=", "done"),
+                ("state_guide_dispatch", "=", "to_invoice"),
+                ("invoice_count", "=", 0),
+            ]
+        )
+
+        for picking in pickings:
+            try:
+                if all([picking.operation_code != "incoming", not picking.is_return]):
+                    picking.create_invoice()
+
+                if all([picking.operation_code != "outgoing", not picking.is_return]):
+                    picking.create_bill()
+
+                if all([picking.operation_code != "outgoing", picking.is_return]):
+                    picking.create_customer_credit()
+
+                if all([picking.operation_code != "incoming", picking.is_return]):
+                    picking.create_vendor_credit()
+
+                picking.write({"state_guide_dispatch": "invoiced"})
+
+            except Exception as e:
+                _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
+                picking.message_post(body=f"Error en facturación automática: {str(e)}")
