@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "16.0.1.0.12",
+    "version": "16.0.1.0.14",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_accountant",
