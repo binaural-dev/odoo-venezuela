@@ -6,7 +6,7 @@
 			<field name="inherit_id" ref="base.view_partner_form" />
 			<field name="arch" type="xml">
 				<field name="city" position="replace">
-					<field name="city_id" placeholder="Ciudad" />
+					<field name="city_id" placeholder="Ciudad" required="1"/>
 					<field name="city" invisible="1" />
 				</field>
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='city']" position="replace">
@@ -19,11 +19,13 @@
 						class="o_address_state" 
 						placeholder="Municipality"
 						domain="[('state_id', '=', state_id)]"
+						required="1"
 					/>
 					<field 
 						name="parish_id" 
 						class="o_address_state"
 						placeholder="Parroquia"
+						required="1"
 					/>
 				</xpath>
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='street2']" position="after">
@@ -32,11 +34,13 @@
 						class="o_address_state" 
 						placeholder="Municipality"
 						domain="[('state_id', '=', state_id)]"
+						required="1"
 					/>
 					<field 
 						name="parish_id" 
 						class="o_address_state"
 						placeholder="Parish"
+						required="1"
 					/>
 				</xpath>
 			</field>
