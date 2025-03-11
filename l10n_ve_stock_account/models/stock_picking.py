@@ -171,7 +171,7 @@ class StockPicking(models.Model):
 
                 invoice_line_list = picking_id._get_invoice_lines_for_invoice()
                 origin_name = self._get_origin_name(picking_id)
-                self.env['account.move'].create({
+                invoice = self.env['account.move'].create({
                     'move_type': 'out_invoice',
                     'invoice_origin': origin_name,
                     'invoice_user_id': current_user,
@@ -184,8 +184,9 @@ class StockPicking(models.Model):
                     'invoice_line_ids': invoice_line_list,
                     'transfer_ids': self
                 })
+                invoice.action_post()
             picking_id.write({"state_guide_dispatch": "invoiced"})
-        return True 
+        return invoice 
 
     def _get_invoice_lines_for_invoice(self):
         self.ensure_one()
@@ -283,6 +284,9 @@ class StockPicking(models.Model):
         res = super().create_bill()
         for picking in self:
             picking.write({"state_guide_dispatch": "invoiced"})
+            
+        for invoice in res:
+            invoice.action_post() 
         return res
 
     
@@ -291,6 +295,9 @@ class StockPicking(models.Model):
         res = super().create_customer_credit()
         for picking in self:
             picking.write({"state_guide_dispatch": "invoiced"})
+        
+        for invoice in res:
+            invoice.action_post()
         return res
     
     def create_vendor_credit(self):
@@ -298,6 +305,9 @@ class StockPicking(models.Model):
         res = super().create_vendor_credit()
         for picking in self:
             picking.write({"state_guide_dispatch": "invoiced"})
+        
+        for invoice in res:
+            invoice.action_post()
         return res
     
     def _validate_one_invoice_posted(self):
