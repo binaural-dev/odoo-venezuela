@@ -1,4 +1,6 @@
 from . import (
+    res_company,
+    res_config_settings,
     stock_picking,
     account_move,
     res_partner,

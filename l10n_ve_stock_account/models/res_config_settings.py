@@ -11,3 +11,10 @@ class ResConfigSettings(models.TransientModel):
     # vendor_journal_id = fields.Many2one(
     #     related="company_id.vendor_journal_id", readonly=False
     # )
+
+    invoice_cron_type = fields.Selection(
+        related="company_id.invoice_cron_type", readonly=False
+    )
+    invoice_cron_time = fields.Float(
+        related="company_id.invoice_cron_time", readonly=False
+    )
