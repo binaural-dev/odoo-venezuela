@@ -1,6 +1,7 @@
 {
-    "name": "Venezuela - Taxes",
+    "name": "Venezuela - Impuestos",
     "summary": """
+        Impuestos para la localización en Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",
