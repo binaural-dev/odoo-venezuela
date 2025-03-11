@@ -19,10 +19,10 @@ class ResCompany(models.Model):
     #     help="To add vendor journal",
     # )
 
-    date_type_of_month = fields.Selection(
-        selection=[
-            ("business_day", "Business day of the month"), 
-            ("of_month", "Of the month")
-        ],
-        default="business_day",
+    invoice_cron_type = fields.Selection(
+        [("last_business_day", _("Last Business Day")), ("last_day", _("Last Day"))],
+        string="Date Cron Invoice",
+        default="last_business_day",
+        required=True,
     )
+    invoice_cron_time = fields.Float(required=True, default=18.0)
