@@ -31,7 +31,7 @@
                 expr="//notebook/page/field[@name='order_line']/tree/field[@name='price_subtotal']"
                 position="after">
                 <field name="foreign_subtotal" />
-                <field name="foreign_rate" optional="hide" />
+                <field name="foreign_rate" optional="hide" readonly="1"/>
                 <field
                     name="foreign_inverse_rate"
                     groups="base.group_no_one"
@@ -47,9 +47,10 @@
                         <field
                             name="foreign_inverse_rate"
                             invisible="1"
+                            readonly="1"
                             string="Foreign inverse rate" />
-                        <field name="foreign_inverse_rate" groups="base.group_no_one" />
-                        <field name="foreign_rate" />
+                        <field name="foreign_inverse_rate" groups="base.group_no_one" readonly="1"/>
+                        <field name="foreign_rate" readonly="1"/>
                     </group>
                     <group class="oe_subtotal_footer oe_right" colspan="2" name="sale_total">
                         <field

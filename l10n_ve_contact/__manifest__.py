@@ -1,7 +1,7 @@
 {
     "name": "Venezuela - Contacts",
     "summary": """
-       Modulo para información de contacto """,
+       Módulo para información de contactos de Venezuela""",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",

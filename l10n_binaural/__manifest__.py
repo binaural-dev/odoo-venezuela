@@ -1,5 +1,5 @@
 {
-    "name": "Binaural plan de cuentas",
+    "name": "Venezuela - Plan de cuentas",
     "version": "16.0.0.0.1",
     "category": "Accounting/Localizations/Account Charts",
     "license": "LGPL-3",

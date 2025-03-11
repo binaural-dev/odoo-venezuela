@@ -1,6 +1,6 @@
 {
-    "name": "Venezuela - Rate Synchronization",
-    "summary": "Automatically set the official exchange rate of Venezuela (BCV rate).",
+    "name": "Venezuela - Sincronización de Tasa de Cambio",
+    "summary": "Fijar automáticamente el tipo de cambio oficial de Venezuela (tipo BCV).",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
