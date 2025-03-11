@@ -1,6 +1,7 @@
 {
-    "name": "Venezuela - Exchange Rate",
+    "name": "Venezuela - Tipo de cambio",
     "summary": """
+        Módulo para configurar el tipo de cambio de Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",

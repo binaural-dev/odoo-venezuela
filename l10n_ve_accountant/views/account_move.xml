@@ -46,9 +46,10 @@
                                 name="foreign_inverse_rate"
                                 invisible="1"
                                 string="Foreign inverse rate"
+                                readonly="1"
                             />
-                            <field name="foreign_inverse_rate" groups="base.group_no_one"/>
-                            <field name="foreign_rate" attrs="{'readonly' : [('state' , '=' , 'posted')]}"/>
+                            <field name="foreign_inverse_rate" groups="base.group_no_one" readonly="1"/>
+                            <field name="foreign_rate" readonly="1"/>
                         </group>
                         <group class="oe_subtotal_footer oe_right"
                             attrs="{'invisible': ['|', ('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')), ('payment_state' ,'=', 'invoicing_legacy')]}">

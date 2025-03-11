@@ -1,6 +1,7 @@
 {
-    "name": "Venezuela - POS",
+    "name": "Venezuela - POS (Punto de Venta)",
     "summary": """
+        Módulo de POS (Punto de Venta) en Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",

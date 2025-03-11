@@ -1,6 +1,7 @@
 {
-    "name": "Veneuzuela - Base",
+    "name": "Venezuela - Base",
     "summary": """
+        Módulo Base de la localización de Venezuela
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",

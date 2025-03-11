@@ -1,6 +1,6 @@
 {
-    "name": "Venezuela - Localization",
-    "summary": "Master data for cities, municipalities, and parishes in Venezuela.",
+    "name": "Venezuela - Localización",
+    "summary": "Modelos de ciudades, municipios y parroquias de Venezuela.",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
