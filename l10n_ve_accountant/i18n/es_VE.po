@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250222\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-11 12:50+0000\n"
-"PO-Revision-Date: 2025-03-11 12:50+0000\n"
+"POT-Creation-Date: 2025-03-12 20:48+0000\n"
+"PO-Revision-Date: 2025-03-12 20:48+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -126,6 +126,18 @@ msgid "Active?"
 msgstr "Activo"
 
 #. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid "Accept"
+msgstr "Aceptar"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "All added lines must indicate the product."
+msgstr ""
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__amount_currency
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Amount in Currency"
@@ -173,6 +185,11 @@ msgid "COMPROBANTE CONTABLE No."
 msgstr ""
 
 #. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.form_wizard_all_payments
 msgid "Cancelar"
 msgstr ""
@@ -217,6 +234,17 @@ msgstr ""
 msgid "Configuraciones fiscales usuario"
 msgstr ""
 
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "Confirm Alert"
+msgstr "Confirmar Alerta"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid "Confirm Validation"
+msgstr "Confirmar Validación"
+
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_res_partner
 msgid "Contact"
@@ -229,6 +257,7 @@ msgstr "País"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__create_uid
 msgid "Created by"
@@ -236,6 +265,7 @@ msgstr "Creado por"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__create_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__create_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__create_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__create_date
 msgid "Created on"
@@ -295,6 +325,7 @@ msgstr "Descuento"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__display_name
 msgid "Display Name"
@@ -380,6 +411,7 @@ msgstr "Moneda alterna"
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 #, python-format
 msgid "Foreign Currency "
@@ -510,6 +542,7 @@ msgstr "Total alterno"
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/report/all_payment_report.py:0
+#: code:addons/l10n_ve_accountant/report/all_payment_report.py:0
 #, python-format
 msgid "Form content is missing, this report cannot be printed."
 msgstr "Falta el contenido del formulario, este informe no se puede imprimir"
@@ -536,6 +569,7 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__id
 msgid "ID"
@@ -555,12 +589,14 @@ msgstr ""
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
+#: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
 #, python-format
 msgid "Instant payment"
 msgstr "Contado"
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
 #: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
 #, python-format
 msgid "Invoices"
@@ -612,6 +648,7 @@ msgstr "Ultima tasa"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details____last_update
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard____last_update
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report____last_update
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit____last_update
 msgid "Last Modified on"
@@ -619,6 +656,7 @@ msgstr "Última modificación en"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__write_uid
 msgid "Last Updated by"
@@ -626,6 +664,7 @@ msgstr "Última actualización por"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__write_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__write_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__write_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__write_date
 msgid "Last Updated on"
@@ -649,6 +688,16 @@ msgid "Monto"
 msgstr ""
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__move_id
+msgid "Move"
+msgstr "Movimiento"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_move_action_post_alert_wizard
+msgid "Move Action Post Alert"
+msgstr "Alerta al Postear Movimiento"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "N/C"
 msgstr ""
@@ -660,6 +709,7 @@ msgstr "Monto neto"
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 #, python-format
 msgid ""
@@ -782,6 +832,7 @@ msgstr "Recalcular debito y credito alterno de apuntes contables"
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
 #: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
 #, python-format
 msgid "Refund"
@@ -923,6 +974,62 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_currency.py:0
+#, python-format
+msgid ""
+"The currency already has accounting movements, you cannot deactivate this "
+"currency"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid ""
+"The operation cannot be completed: Another entry with the same name already "
+"exists."
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "The price entered cannot be negative"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#, python-format
+msgid "The quantity entered cannot be negative"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "The rate entered cannot be negative"
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "The rate entered cannot be negative."
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "The rate entered cannot be zero."
+msgstr ""
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 #, python-format
@@ -939,12 +1046,14 @@ msgstr "La tasa del pago"
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
 #, python-format
 msgid "The rate should be greater than zero"
 msgstr "La tasa debe ser superior a cero."
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
 #: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
 #, python-format
 msgid ""
@@ -953,6 +1062,7 @@ msgstr "La zona horaria no está registrada, accede a tu perfil y configúrala."
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 #, python-format
 msgid "This product must have only one tax."
@@ -1000,6 +1110,13 @@ msgid "Update account lines"
 msgstr "Actualizar Apuntes"
 
 #. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid ""
+"Upon confirmation, the corresponding sequences will be generated, and you "
+"will no longer be able to edit the fiscal invoice."
+msgstr "Al confirmar, se generarán las secuencias correspondientes y luego no podrá editar la factura fiscal."
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
 msgid "Usuario"
 msgstr ""
@@ -1045,12 +1162,14 @@ msgstr ""
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
 #, python-format
 msgid "You can only register payments for one foreign rate at a time."
 msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 #, python-format
 msgid "You cannot place a currency other than the base of the system."
@@ -1085,6 +1204,7 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/report/account_report.py:0
 #: code:addons/l10n_ve_accountant/report/account_report.py:0
 #, python-format
 msgid "docids empty"
