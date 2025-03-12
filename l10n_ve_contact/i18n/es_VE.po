@@ -164,7 +164,7 @@ msgstr "Tarifa"
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__state_id
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__state_id
 msgid "State"
-msgstr "Provincia"
+msgstr "Estado"
 
 #. module: l10n_ve_contact
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__street
