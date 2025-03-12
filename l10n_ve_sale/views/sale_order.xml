@@ -40,6 +40,10 @@
                     readonly="1" />
             </xpath>
 
+            <xpath expr="//notebook/page/field[@name='order_line']/tree/field[@name='tax_id']" position="attributes">
+                <attribute name="readonly">1</attribute>
+            </xpath>
+
             <xpath expr="//notebook" position="inside">
                 <page string="Foreign currency" name="foreign_currency">
                     <group>
