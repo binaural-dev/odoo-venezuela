@@ -63,7 +63,7 @@ class WizardStockBookReport(models.TransientModel):
         if not valuation_layers:
             return stock_book_lines
         
-        product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0,'incoming_total':0.0,'outgoing_total':0.0,"withdraw_total":0.0,"old_stock":0.0,"self_consumption":0.0})
+        product_movements = defaultdict(lambda: {"incoming": 0.0, "outgoing": 0.0, "stock_move_id":0,"withdraw":0.0,'incoming_total':0.0,'outgoing_total':0.0,"withdraw_total":0.0,"old_stock":0.0,"self_consumption":0.0,"total_stock_qty_product":0.0,"self_consumption_total":0.0,"total_stock_qty_product_bs":0.0,"old_stock_total":0.0})
 
         for stock_move in valuation_layers:
                 product_id = stock_move.product_id.id
@@ -73,9 +73,10 @@ class WizardStockBookReport(models.TransientModel):
                 if not product_id in product_movements:
                     old_total_stock_qty_product = self.get_old_stock_by_product(stock_move.product_id.id)
                     product_movements[product_id]["stock_move_id"] = stock_move_id
-                    product_movements[product_id]["old_stock"] = old_total_stock_qty_product
+                    product_movements[product_id]["old_stock"] = old_total_stock_qty_product["total_stock_qty"]
+                    product_movements[product_id]["old_stock_total"] = old_total_stock_qty_product["old_stock_total"]
 
-                if (stock_move.stock_move_id.picking_code == "incoming" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity>0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "incoming" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done"):
+                if (stock_move.stock_move_id.picking_code == "incoming" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity>0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "incoming" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.production_id and stock_move.stock_move_id.state == "done"):
                     product_movements[product_id]["stock_move_id"] = stock_move_id
 
                     product_movements[product_id]["incoming"] += quantity_done
@@ -83,7 +84,7 @@ class WizardStockBookReport(models.TransientModel):
                     product_movements[product_id]["incoming_total"] += stock_move.value
 
                 
-                if (stock_move.stock_move_id.picking_code == "outgoing" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity<0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "outgoing" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done"):
+                if (stock_move.stock_move_id.picking_code == "outgoing" and stock_move.stock_move_id.origin_returned_move_id and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.is_inventory and stock_move.quantity<0 and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.picking_code == "outgoing" and not (stock_move.stock_move_id.origin_returned_move_id) and stock_move.stock_move_id.state == "done") or (stock_move.stock_move_id.raw_material_production_id and stock_move.stock_move_id.state =="done"):
                     product_movements[product_id]["stock_move_id"] = stock_move_id
 
                     product_movements[product_id]["outgoing"] += quantity_done
@@ -99,6 +100,10 @@ class WizardStockBookReport(models.TransientModel):
                     product_movements[product_id]["stock_move_id"] = stock_move_id
 
                     product_movements[product_id]["self_consumption"] += quantity_done
+                    product_movements[product_id]["self_consumption_total"] += stock_move.value
+
+                product_movements[product_id]["total_stock_qty_product"] += quantity_done
+                product_movements[product_id]["total_stock_qty_product_bs"] += stock_move.value
 
                 continue
 
@@ -112,19 +117,18 @@ class WizardStockBookReport(models.TransientModel):
         old_stock = self.env['stock.valuation.layer'].search([
             ("product_id","=",product_id),
             ("create_date", "<", self.date_from),
-            ("create_date", ">=", self.date_from - relativedelta(months=1))
+            ("create_date", ">=", self.date_from - relativedelta(months=1)),
+            ("stock_move_id.state", "=", "done")
         ])
 
-        incoming_stock = 0
-        outgoing_stock = 0
+        total_stock_qty = 0
+        old_stock_total = 0
         if old_stock:
             for old_stock_move in old_stock:
-                outgoing_stock += old_stock_move.quantity if old_stock_move.quantity < 0 else 0
-                incoming_stock += old_stock_move.quantity if old_stock_move.quantity > 0 else 0
-
-        total_stock_qty = (incoming_stock - outgoing_stock)
+                total_stock_qty += old_stock_move.quantity
+                old_stock_total += old_stock_move.value
         
-        return total_stock_qty
+        return {"total_stock_qty":total_stock_qty,"old_stock_total":old_stock_total}
 
     
     def search_valuation_layers(self):
@@ -147,71 +151,29 @@ class WizardStockBookReport(models.TransientModel):
         stock_move_search_domain += [("create_date", ">=", self.date_from)]
         stock_move_search_domain += [("create_date", "<=", self.date_to)]
 
+        stock_move_search_domain += [("stock_move_id.state", "=", "done")]
+
         return stock_move_search_domain
     
     def _fields_stock_book_line(self,product_id,movements):
         
         return {
             "_id": movements["stock_move_id"],
-            "document_date": self.env["product.product"].browse(product_id).name,
+            "description": self.env["product.product"].browse(product_id).name,
             "accounting_date": '',
-            "vat": movements["old_stock"],
-            "partner_name": movements["incoming"],
-            "document_number": movements["withdraw"] if movements["withdraw"]>0 else movements["withdraw"]*(-1),
-             "move_type": movements["outgoing"] if movements["outgoing"]>0 else movements['outgoing']*(-1),
-            # "transaction_type": self._determinate_transaction_type(move),
-            # "number_invoice_affected": move.reversed_entry_id.name or "--",
-            "correlative": movements["self_consumption"] if movements["self_consumption"]>0 else movements['self_consumption']*(-1),
-            # "reduced_aliquot": 0.08,
-            # "general_aliquot": 0.16,
-            "total_sales_iva": movements['incoming_total'],
-            "total_sales_not_iva": movements['outgoing_total'] if movements["outgoing_total"]>0 else movements['outgoing_total']*(-1),
-            # "amount_reduced_aliquot": taxes.get("amount_reduced_aliquot", 0) * multiplier,
-            # "amount_general_aliquot": taxes.get("amount_general_aliquot", 0) * multiplier,
-            # "tax_base_reduced_aliquot": taxes.get("tax_base_reduced_aliquot", 0) * multiplier,
-            "tax_base_general_aliquot": movements['withdraw_total'] if movements["withdraw_total"]>0 else movements['withdraw_total']*(-1),
+            "old_stock": movements["old_stock"],
+            "incoming_stock": movements["incoming"],
+            "withdraw": movements["withdraw"] if movements["withdraw"]>0 else movements["withdraw"]*(-1),
+            "outgoing_stock": movements["outgoing"] if movements["outgoing"]>0 else movements['outgoing']*(-1),
+            "stock": movements["total_stock_qty_product"],
+            "old_stock_bs": movements["old_stock_total"],
+            "self_con": movements["self_consumption"] if movements["self_consumption"]>0 else movements['self_consumption']*(-1),
+            "self_consumption_total": movements["self_consumption_total"] if movements["self_consumption_total"]>0 else movements['self_consumption_total']*(-1),
+            "incoming_total": movements['incoming_total'],
+            "outgoing_total": movements['outgoing_total'] if movements["outgoing_total"]>0 else movements['outgoing_total']*(-1),
+            "total_stock_qty_product_bs": movements["total_stock_qty_product_bs"],
+            "withdraw_total": movements['withdraw_total'] if movements["withdraw_total"]>0 else movements['withdraw_total']*(-1),
         }
-    
-    def _format_date(self, date):
-        _fn = datetime.strptime(str(date), "%Y-%m-%d")
-        return _fn.strftime("%d/%m/%Y")
-    
-    def _determinate_type(self, move_type):
-
-        types = {
-            "out_debit": "ND",
-            "in_debit": "ND",
-            "out_invoice": "FAC",
-            "in_invoice": "FAC",
-            "out_refund": "NC",
-            "in_refund": "NC",
-            "entry":"SI",
-        }
-
-        return types[move_type]
-    
-    def _determinate_transaction_type(self, move):
-        if move.move_type in ["out_invoice", "in_invoice"] and move.state == "posted":
-            return "01-REG"
-
-        if move.move_type in ["out_debit", "in_debit"] and move.state == "posted":
-            return "02-REG"
-
-        if move.move_type in ["out_refund", "in_refund"] and move.state == "posted":
-            return "03-REG"
-        
-        if move.move_type in ["entry"] and move.state == "posted":
-            return "04-REG"
-
-        if move.move_type in [
-            "out_refund",
-            "out_debit",
-            "out_invoice",
-            "in_refund",
-            "in_debit",
-            "in_invoice",
-        ] and move.state in ["cancel"]:
-            return "03-ANU"
     
     def stock_book_fields(self):
         return [
@@ -225,81 +187,83 @@ class WizardStockBookReport(models.TransientModel):
             },
             {
                 "name": "DESCRIPCIÓN",
-                "field": "document_date",
+                "field": "description",
                 "size": 18,
             },
             {
                 "name": "EXISTENCIA ANTERIOR", 
-                "field": "vat", 
+                "field": "old_stock", 
                 "size": 10,
                 "format":"number",
             },
              {
                 "name": "ENTRADAS",
-                "field": "partner_name",
+                "field": "incoming_stock",
                 "size": 10,
                 "format":"number",
             },
             {
                 "name": "SALIDAS",
-                "field": "move_type",
+                "field": "outgoing_stock",
                 "size": 10,
                 "format":"number",
             },
             {
                 "name": "RETIROS",
-                "field": "document_number",
+                "field": "withdraw",
                 "size": 10,
                 "format":"number",
             },
             {
                 "name": "AUTO-CONSUMOS",
-                "field": "correlative",
+                "field": "self_con",
                 "size": 10,
                 "format":"number",
             },
             {
                 "name": "EXISTENCIA", 
-                "field": "transaction_type",
+                "field": "stock",
                 "size": 10,
+                "format":"number",
             },
             {
                 "name": "VALOR ANTERIOR EN BS",
-                "field": "number_invoice_affected",
+                "field": "old_stock_bs",
                 "size": 15,
+                "format":"number"
             },
             {
                 "name": "ENTRADAS",
-                "field": "total_sales_iva",
+                "field": "incoming_total",
                 "format": "number",
                 "size": 20,
                 "format":"number",
             },
             {
                 "name": "SALIDAS",
-                "field": "total_sales_not_iva",
+                "field": "outgoing_total",
                 "format": "number",
                 "size": 15,
                 "format":"number",
             },
             {
                 "name": "RETIROS",
-                "field": "tax_base_general_aliquot",
+                "field": "withdraw_total",
                 "format": "number",
                 "size": 15,
             },
-            # {
-            #     "name": "AUTO-CONSUMOS",
-            #     "field": "general_aliquot",
-            #     "format": "percent",
-            #     "size": 15,
-            # },
-            # {
-            #     "name": "EXISTENCIA",
-            #     "field": "amount_general_aliquot",
-            #     "format": "number",
-            #     "size": 15,
-            # },
+            {
+                "name": "AUTO-CONSUMOS",
+                "field": "self_consumption_total",
+                "format": "number",
+                "size": 15,
+            },
+            {
+                "name": "EXISTENCIA",
+                "field": "total_stock_qty_product_bs",
+                "format": "number",
+                "size": 15,
+            },
         ]
     
     def generate_stocks_book(self, company_id):

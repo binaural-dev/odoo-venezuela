@@ -3,9 +3,7 @@
         <xpath expr="//div[@name='header_right']" position="inside">
             <br/>
             <t t-if="o.picking_id">
-                <strong >
-                Número de Guía: 
-                </strong>
+                <strong>Número de Guía: </strong>
                 <t t-out="o.guide_number or 'N/A'"/>
             </t>
         </xpath>

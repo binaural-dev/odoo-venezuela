@@ -151,6 +151,25 @@ msgid ""
 msgstr ""
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
+msgid ""
+"<strong>Nombre:</strong> <br/> C.I: <br/> Fecha: <br/>\n"
+"        <br/>\n"
+"        <strong>Firma\n"
+"                                    y sello:</strong> ________________________"
+msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
+msgid ""
+"<strong>Nombre:</strong> <br/> C.I: <br/> Marca vehículo: <br/>\n"
+"                                    Placa batea: <br/> Placa chasis: <br/>\n"
+"        <br/>\n"
+"        <strong>Firma:</strong>\n"
+"                                    ________________________"
+msgstr ""
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<strong>Número de documento:</strong>"
 msgstr ""
@@ -226,9 +245,19 @@ msgid "Code"
 msgstr "Código"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model,name:l10n_ve_stock_account.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "Company Logo"
 msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model,name:l10n_ve_stock_account.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_res_partner
@@ -271,6 +300,12 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__create_date
 msgid "Created on"
 msgstr "Creado en"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__invoice_cron_type
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__invoice_cron_type
+msgid "Date Cron Invoice"
+msgstr "Fecha del Cron de Facturación"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_partner__default_document
@@ -340,6 +375,17 @@ msgid "El cliente no existe"
 msgstr ""
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
+msgid "Exact time to generate the invoice"
+msgstr "Hora exacta para generar factura (ej: 18.5 = 18:30)"
+
+#. module: l10n_ve_stock_account
+#: model:ir.actions.server,name:l10n_ve_stock_account.ir_cron_auto_invoice_stock_ir_actions_server
+#: model:ir.cron,cron_name:l10n_ve_stock_account.ir_cron_auto_invoice_stock
+msgid "Generate Invoices from Pickings"
+msgstr "Generar facturas desde los albaranes"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_views
 msgid "Guide Date"
@@ -387,6 +433,12 @@ msgid "Invoice"
 msgstr "Factura"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__invoice_cron_time
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__invoice_cron_time
+msgid "Invoice Cron Time"
+msgstr "Hora de ejecución (24h)"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__state_guide_dispatch__invoiced
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_guide_dispatch_view_search
 msgid "Invoiced"
@@ -417,6 +469,22 @@ msgstr "Artículo"
 #: model:ir.model,name:l10n_ve_stock_account.model_account_move
 msgid "Journal Entry"
 msgstr "Asiento contable"
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/res_company.py:0
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_company__invoice_cron_type__last_business_day
+#, python-format
+msgid "Last Business Day"
+msgstr "Último día hábil del mes"
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/res_company.py:0
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_company__invoice_cron_type__last_day
+#, python-format
+msgid "Last Day"
+msgstr "Último día del mes"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard____last_update
@@ -457,6 +525,11 @@ msgstr "Por favor configure el diario desde la configuración"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Precio"
 msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.res_config_settings_view_form_invoice_cron
+msgid "Programmed Invoices"
+msgstr "Facturas Programadas"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__name
@@ -537,7 +610,7 @@ msgstr "Estatus"
 #. module: l10n_ve_stock_account
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_move
 msgid "Stock Move"
-msgstr "Movimiento stock"
+msgstr "Movimiento de stock"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__has_document
@@ -599,6 +672,11 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__picking_id
 msgid "Transfer"
 msgstr "Transferir"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
+msgid "Transporte (Conductor)"
+msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer

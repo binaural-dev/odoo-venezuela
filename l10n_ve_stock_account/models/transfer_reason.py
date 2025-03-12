@@ -14,15 +14,18 @@ class TransferReason(models.Model):
     name = fields.Char(
         string="Reason",
         required=True,
+        readonly=True,
         help="The name of the transfer reason (e.g., Sale, Donation, Return).",
     )
     code = fields.Char(
         string="Code",
         required=True,
+        readonly=True,
         help="A unique code to identify the transfer reason.",
     )
     active = fields.Boolean(
         string="Active",
         default=True,
+        readonly=True,
         help="Indicates whether the transfer reason is active or archived.",
     )
