@@ -14,7 +14,6 @@
         "l10n_ve_tax",
         "l10n_ve_invoice",
         "l10n_ve_tax_payer",
-        "l10n_ve_base",
     ],
     "data": [
         "views/account_journal.xml",
