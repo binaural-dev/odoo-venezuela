@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250222\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-09 19:28+0000\n"
-"PO-Revision-Date: 2025-03-09 19:28+0000\n"
+"POT-Creation-Date: 2025-03-12 17:27+0000\n"
+"PO-Revision-Date: 2025-03-12 17:27+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -24,10 +24,9 @@ msgid ""
 "                                            each company using the\n"
 "                                            document number field</span>"
 msgstr ""
-"\n"
-" Evitar la creación de contactos en cada\n"
+"Evitar la creación de contactos en cada\n"
 " companía utilizando el campo\n"
-" el número de documento</span>"
+" el número de documento"
 
 #. module: l10n_ve_contact
 #: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
@@ -37,25 +36,29 @@ msgid ""
 "                                            the database using the\n"
 "                                            document\n"
 "                                            number fieldesta</span>"
-msgstr "<span class=\"o_text-muted\"> Evitar la creación de contactos\n"
+msgstr ""
+"<span class=\"o_text-muted\"> Evitar la creación de contactos\n"
 " en toda la base de datos utilizando el campo\n"
 " número de documento</span>"
 
 #. module: l10n_ve_contact
 #: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
 msgid "<span> Validate contact creation in the entire database </span>"
-msgstr "<span> Validar la creación de contactos en toda la base de datos </span>"
+msgstr ""
+"<span> Validar la creación de contactos en toda la base de datos </span>"
 
 #. module: l10n_ve_contact
 #: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_config_settings_l10n_ve_contact
 msgid ""
 "<span> Validate the creation of contacts by company\n"
 "                                    </span>"
-msgstr "<span> Validar la creación de contactos por companía\n"
+msgstr ""
+"<span> Validar la creación de contactos por companía\n"
 " </span>"
 
 #. module: l10n_ve_contact
 #. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
 #, python-format
 msgid "A partner with the same email address already exists for this company."
@@ -64,6 +67,7 @@ msgstr ""
 
 #. module: l10n_ve_contact
 #. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
 #, python-format
 msgid "A partner with the same email already exists."
@@ -189,6 +193,7 @@ msgstr ""
 
 #. module: l10n_ve_contact
 #. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
 #, python-format
 msgid "The vat field only accepts numbers"
