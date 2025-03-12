@@ -379,7 +379,7 @@ msgid ""
 "Limit the number of lines that can be printed on a free form\n"
 "                                    invoice"
 msgstr ""
-"Limitar la cantidad de productos en una factura\n"
+"Limitar la cantidad de líneas que se pueden imprimir en una factura\n"
 "forma libre"
 
 #. module: l10n_ve_invoice

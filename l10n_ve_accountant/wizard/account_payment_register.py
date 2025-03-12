@@ -35,6 +35,9 @@ class AccountPaymentRegister(models.TransientModel):
         ),
         digits=(16, 15),
     )
+    base_currency_is_vef = fields.Boolean(
+        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
+    )
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -47,7 +50,9 @@ class AccountPaymentRegister(models.TransientModel):
                 return
 
             batch_result = payment._get_batches()[0]
-            payment.foreign_inverse_rate = Rate.compute_inverse_rate(payment.foreign_rate)
+            payment.foreign_inverse_rate = Rate.compute_inverse_rate(
+                payment.foreign_rate
+            )
             total_amount_residual_in_wizard_currency = (
                 payment._get_total_amount_in_wizard_currency_to_full_reconcile(
                     batch_result, early_payment_discount=False
@@ -64,7 +69,9 @@ class AccountPaymentRegister(models.TransientModel):
         for payment in self:
             if not bool(payment.payment_date):
                 return
-            rate_values = Rate.compute_rate(payment.foreign_currency_id.id, payment.payment_date)
+            rate_values = Rate.compute_rate(
+                payment.foreign_currency_id.id, payment.payment_date
+            )
             payment.update(rate_values)
 
     def _create_payment_vals_from_wizard(self, batch_result):
@@ -91,7 +98,9 @@ class AccountPaymentRegister(models.TransientModel):
                         batch_result, early_payment_discount=False
                     )[0]
                 )
-                wizard.payment_difference = total_amount_residual_in_wizard_currency - wizard.amount
+                wizard.payment_difference = (
+                    total_amount_residual_in_wizard_currency - wizard.amount
+                )
             else:
                 wizard.payment_difference = 0.0
 

@@ -6,7 +6,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "16.0.1.0.7",
+    "version": "16.0.1.0.8",
     "depends": [
         "base",
         "account",
@@ -14,7 +14,6 @@
         "l10n_ve_tax",
         "l10n_ve_invoice",
         "l10n_ve_tax_payer",
-        "l10n_ve_base",
     ],
     "data": [
         "views/account_journal.xml",

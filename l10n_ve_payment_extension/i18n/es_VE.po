@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-07 13:09+0000\n"
-"PO-Revision-Date: 2025-03-07 13:09+0000\n"
+"POT-Creation-Date: 2025-03-11 13:02+0000\n"
+"PO-Revision-Date: 2025-03-11 13:02+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -368,7 +368,6 @@ msgstr "Tarifa Acumulada"
 #: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__economic_branch__status__active
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_economic_branch_search_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_payment_concept_search_l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_search_tax_unit_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_signature_config_search_l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_type_withholding_search_l10n_ve_payment_extension
 msgid "Active"
@@ -376,7 +375,6 @@ msgstr "Activo"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__status
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__status
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__state
 msgid "Active?"
 msgstr "Activo"
@@ -567,6 +565,11 @@ msgid "Comprobante de retención de Impuesto Sobre La Renta (ISLR)"
 msgstr ""
 
 #. module: l10n_ve_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.l10n_ve_payment_extension_concept_payment
+msgid "Concept Payment"
+msgstr "Concepto de Pago"
+
+#. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__code
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__code
 msgid "Concept code"
@@ -613,7 +616,6 @@ msgstr "Correlativo"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__create_uid
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__create_uid
@@ -634,7 +636,6 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__create_date
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__create_date
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__create_date
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__create_date
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__create_date
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__create_date
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__create_date
@@ -720,7 +721,6 @@ msgstr "Actividad económica predeterminada"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_economic_activity__description
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__name
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__name
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__name
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__name
 msgid "Description"
 msgstr "Descripción"
@@ -745,7 +745,6 @@ msgstr "Descripción del Comprobante"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__display_name
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__display_name
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__display_name
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__display_name
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__display_name
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__display_name
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__display_name
@@ -807,6 +806,16 @@ msgstr "Actividad Económica"
 #: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_economic_branch
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_economic_branch_from_l10n_ve_payment_extension
 msgid "Economic branch"
+msgstr "Rama Económica"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.l10n_ve_payment_extension_economy_activity
+msgid "Economy Activity"
+msgstr "Actividad Económica"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.ui.menu,name:l10n_ve_payment_extension.l10n_ve_payment_extension_economy_branch
+msgid "Economy Branch"
 msgstr "Rama Económica"
 
 #. module: l10n_ve_payment_extension
@@ -1020,7 +1029,6 @@ msgstr "Agrupar por"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__id
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__id
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__id
@@ -1368,7 +1376,6 @@ msgstr "Junio"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line____last_update
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report____last_update
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config____last_update
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit____last_update
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person____last_update
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr____last_update
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva____last_update
@@ -1389,7 +1396,6 @@ msgstr "Ultima modificación"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__write_uid
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__write_uid
@@ -1410,7 +1416,6 @@ msgstr "Ultima actualización"
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept__write_date
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_payment_concept_line__write_date
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_signature_config__write_date
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__write_date
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_type_person__write_date
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_islr__write_date
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_wizard_retention_iva__write_date
@@ -2119,28 +2124,9 @@ msgid "Tax Authorities Name"
 msgstr "Nombre de Hacienda"
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model,name:l10n_ve_payment_extension.model_tax_unit
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_fees_retention__tax_unit_ids
 msgid "Tax Unit"
 msgstr "Unidad Tributaria"
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,help:l10n_ve_payment_extension.field_tax_unit__name
-msgid "Tax Unit Description"
-msgstr "Descripción de Unidad Tributaria"
-
-#. module: l10n_ve_payment_extension
-#: model:ir.actions.act_window,name:l10n_ve_payment_extension.action_tax_unit_l10n_ve_payment_extension
-#: model:ir.ui.menu,name:l10n_ve_payment_extension.menu_retention_tax_unit
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_search_tax_unit_l10n_ve_payment_extension
-#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_tax_unit_form_l10n_ve_payment_extension
-msgid "Tax unit"
-msgstr "Unidad Tributaria"
-
-#. module: l10n_ve_payment_extension
-#: model:ir.model.fields,help:l10n_ve_payment_extension.field_tax_unit__value
-msgid "Tax unit value"
-msgstr "Valor de Unidad Tributaria"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__foreign_total_invoice_amount
@@ -2484,7 +2470,6 @@ msgstr "Tipo de retención"
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_withholding_type__value
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_tax_unit__value
 msgid "Value"
 msgstr "Valor"
 
