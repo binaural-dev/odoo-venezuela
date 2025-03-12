@@ -7,8 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "16.0.5.0.18",
-    # any module necessary for this one to work correctly
+    "version": "16.0.5.0.19",
     "depends": [
         "base",
         "web",
@@ -19,7 +18,6 @@
         "l10n_ve_contact",
         "l10n_ve_rate",
     ],
-    # always loaded
     "data": [
         "security/res_groups.xml",
         "security/ir.model.access.csv",
@@ -46,6 +44,7 @@
         "wizard/account_payment_register.xml",
         "wizard/invoices_details.xml",
         "wizard/payment_report.xml",
+        "wizard/move_action_post_alert_views.xml",
     ],
     "images": ["static/description/icon.png"],
     "application": True,
