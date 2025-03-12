@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <record id="l10n_ve_accountant_res_currency" model="ir.ui.view">
+    <field name="name">res.currency.form.l10n.ve</field>
+    <field name="model">res.currency</field>
+    <field name="inherit_id" ref="base.view_currency_form" />
+    <field name="arch" type="xml">
+      <xpath expr="//form[1]/field[1]" position="after">
+        <field name="edit_rate" invisible="1" />
+      </xpath>
+      <xpath expr="//page[1]/field[1]" position="attributes">
+        <attribute name="attrs">{'readonly': [('edit_rate', '=', False)]}</attribute>
+      </xpath>
+    </field>
+  </record>
+</odoo>
