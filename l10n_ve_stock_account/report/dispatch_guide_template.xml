@@ -35,87 +35,76 @@
                             alt="Company Logo" />
                     </div>
                     <div class="text-container">
-                        <h4 class="m-0">
-                            <span t-field="o.company_id.name" />
-                        </h4>
-                        <p class="m-0">
-                            <span t-field="o.company_id.street" />
+                        <p class="m-0 w-50">
+                            <span class="fw-bold">Razón Social:</span>
+                            <span t-out="o.company_id.name" />
                             <br />
-                            <span t-field="o.company_id.vat" />
+                            <span class="fw-bold">Dirección Fiscal:</span>
+                            <span t-out="o.company_id.street" />
+                            <br />
+                            <span class="fw-bold">RIF:</span>
+                            <span t-out="o.company_id.vat" />
                         </p>
                     </div>
                 </div>
             </div>
 
+
             <div class="row mb-4">
                 <div class="col-12 text-center">
-                    <h3>Guía de Despacho</h3>
+                    <h4>Guía de Despacho</h4>
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-6">
-                    <strong>Número de secuencia:</strong>
-                    <span t-out="o.guide_number" />
-                </div>
-                <div class="col-6 text-end">
-                </div>
-            </div>
+            <table name="" id=""
+                class="table table-borderless w-100 pt-2 mx-0 px-0">
+                <tbody>
+                    <tr>
+                        <td class="w-50 pb-0 my-0 pt-1">
+                            <span class="fw-bold">Número de secuencia:</span>
+                            <span t-out="o.guide_number or ''" />
+                        </td>
+                        <td class="w-50 pb-0 my-0 pt-1">
+                            <span class="fw-bold">Razón de traslado:</span>
+                            <span t-out="o.transfer_reason_id.name or ''" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="w-50 pb-0 my-0 pt-1">
+                            <span class="fw-bold">Número de documento:</span>
+                            <span t-out="o.name or ''" />
+                        </td>
+                        <td class="w-50 pb-0 my-0 pt-1">
+                            <span class="fw-bold">Fecha de emisión:</span>
+                            <span
+                                t-out="context_timestamp(o.date_done).strftime('%d/%m/%Y %H:%M') if o.date_done else ''" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="w-50 pb-0 my-0 pt-1">
+                            <span class="fw-bold">Número de pedido:</span>
+                            <span t-out="o.origin or ''" />
 
-            <div class="row">
-                <div class="col-6">
-                    <strong>Número de documento:</strong>
-                    <span t-out="o.name" />
-                </div>
-                <div class="col-6 text-end">
-                    <strong>Fecha de emisión:</strong>
-                    <span
-                        t-out="context_timestamp(o.date_done).strftime('%d/%m/%Y %H:%M') if o.date_done else ''" />
-                </div>
-            </div>
+                        </td>
+                        <td class="w-50 pb-0 my-0 pt-1">
+                            <span class="fw-bold">Fecha programada de entrega:</span>
+                            <span
+                                t-out="context_timestamp(o.scheduled_date).strftime('%d/%m/%Y %H:%M') if o.scheduled_date else ''" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="w-50 pb-0 my-0 pt-1">
+                            <span class="fw-bold">Dirección de entrega:</span>
+                            <span t-out="o.partner_id.contact_address or ''" />
 
-            <div class="row mb-4">
-                <div class="col-6">
-                    <strong>Número de pedido:</strong>
-                    <span t-out="o.origin" />
-                </div>
-                <div class="col-6 text-end">
-                    <strong>Tasa:</strong>
-                    <t t-out="o.sale_id.foreign_rate if o.sale_id.foreign_rate else ''" />
-                </div>
-            </div>
-
-            <div class="row mb-4">
-                <div class="col-12 d-flex">
-                    <div class="border-bottom border-2 ms-auto w-100"></div>
-                </div>
-            </div>
-
-            <div class="row mb-4">
-                <t t-if="o.partner_id" class="col-12">
-                    <strong>Cliente:</strong>
-                    <span t-out="o.partner_id._get_main_partner().name" />
-                    <br />
-                    <strong>RIF:</strong>
-                    <span t-out="o.partner_id._get_main_partner().vat" />
-                    <br />
-                    <strong>Teléfono:</strong>
-                    <span
-                        t-out="o.partner_id._get_main_partner().phone or o.partner_id._get_main_partner().mobile" />
-                    <br />
-                    <strong>Dirección fiscal:</strong>
-                    <span t-out="o.partner_id._get_main_partner().contact_address" />
-                    <br />
-                    <strong>Estado:</strong>
-                    <span t-out="o.partner_id._get_main_partner().state_id.name" />
-                    <br />
-                    <strong>Ciudad:</strong>
-                    <span t-out="o.partner_id._get_main_partner().city_id.name" />
-                </t>
-                <t t-else="">
-                    <p>El cliente no existe</p>
-                </t>
-            </div>
+                        </td>
+                        <td class="w-50 pb-0 my-0 pt-1">
+                            <span class="fw-bold">Tasa:</span>
+                            <span t-out="o.sale_id.foreign_rate or ''" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
             <div class="row mb-4">
                 <div class="col-12 d-flex">
@@ -123,26 +112,49 @@
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-12">
-                    <strong>Razón de traslado/transferencia:</strong>
-                    <t t-if="o.transfer_reason_id">
-                        <t t-out="o.transfer_reason_id.name" />
+            <table name="" id=""
+                class="table table-borderless w-100 pt-2 mx-0 px-0">
+                <tbody>
+                    <t t-if="o.partner_id">
+                        <tr>
+                            <td class="w-50 pb-0 my-0 pt-1">
+                                <span class="fw-bold">Cliente:</span>
+                                <span t-out="o.partner_id._get_main_partner().name" />
+                            </td>
+                            <td class="w-50 pb-0 my-0 pt-1">
+                                <span class="fw-bold">Estado:</span>
+                                <span
+                                    t-out="o.partner_id._get_main_partner().state_id.name or o.partner_id._get_main_partner().city_id.state_id.name" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="w-50 pb-0 my-0 pt-1">
+                                <span class="fw-bold">RIF:</span>
+                                <span t-out="o.partner_id._get_main_partner().vat" />
+                            </td>
+                            <td class="w-50 pb-0 my-0 pt-1">
+                                <span class="fw-bold">Ciudad:</span>
+                                <span t-out="o.partner_id._get_main_partner().city_id.name" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="w-50 pb-0 my-0 pt-1">
+                                <span class="fw-bold">Teléfono:</span>
+                                <span
+                                    t-out="o.partner_id._get_main_partner().phone or o.partner_id._get_main_partner().mobile" />
+                            </td>
+                            <td class="w-50 pb-0 my-0 pt-1">
+                                <span class="fw-bold">Dirección fiscal:</span>
+                                <span
+                                    t-out="', '.join(filter(None, [o.partner_id._get_main_partner().street, o.partner_id._get_main_partner().street2, o.partner_id._get_main_partner().city, o.partner_id._get_main_partner().state_id.name, o.partner_id._get_main_partner().zip, o.partner_id._get_main_partner().country_id.name]))" />
+                            </td>
+                        </tr>
                     </t>
-                </div>
-            </div>
-
-            <div class="row mb-4">
-                <div class="col-6">
-                    <strong>Dirección de entrega:</strong>
-                    <span t-out="o.partner_id.contact_address" />
-                </div>
-                <div class="col-6 text-end">
-                    <strong>Fecha programada de entrega:</strong>
-                    <span
-                        t-out="context_timestamp(o.scheduled_date).strftime('%d/%m/%Y %H:%M') if o.scheduled_date else ''" />
-                </div>
-            </div>
+                    <t t-else="">
+                        <p>Los datos del cliente no existen</p>
+                    </t>
+                </tbody>
+            </table>
         </div>
     </template>
 
@@ -159,22 +171,22 @@
                                 <th class="text-center">Unidad</th>
                                 <th class="text-center">Peso</th>
                                 <th class="text-center">Precio</th>
-                                <th class="text-center">Dscto</th>
-                                <!-- <th class="text-center">Subtotal</th> -->
+                                <th class="text-center">Dscto.</th>
                                 <th class="text-center">Impuesto</th>
                                 <th class="text-center">Total</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Iterar sobre las líneas y acumular totales -->
                             <t t-foreach="o.move_ids_without_package" t-as="line">
                                 <t t-set="line_values"
                                     t-value="line._get_line_values(use_foreign_currency=o.get_foreign_currency_is_vef())" />
 
                                 <tr>
+                                    <!-- code -->
                                     <td class="text-center">
                                         <t t-out="line.product_id.default_code" />
                                     </td>
+                                    <!-- name -->
                                     <td class="text-start">
                                         <t t-out="line.product_id.name[0:35]" />
                                     </td>
@@ -183,13 +195,16 @@
                                         <t t-out="line_values['quantity']"
                                             t-options='{"widget": "float", "precision": 2}' />
                                     </td>
+                                    <!-- unit -->
                                     <td class="text-center">
                                         <t t-out="line.product_uom.name" />
                                     </td>
+                                    <!-- weight -->
                                     <td class="text-center">
                                         <t
                                             t-out="(line.product_id.weight or 0) * (line.quantity_done or 0)" />
                                     </td>
+                                    <!-- price -->
                                     <td class="text-center">
                                         <t t-if="o.get_foreign_currency_is_vef()">
                                             <t t-out="line.sale_line_id.foreign_price or 0"
@@ -202,14 +217,8 @@
                                     </td>
                                     <!-- discount percentage -->
                                     <td class="text-center">
-                                        <t t-out="line_values['discount_percentage'] or 0" />
+                                        <t t-out="line_values['discount_percentage'] or 0" />%
                                     </td>
-                                    <!-- subtotal_after_discount -->
-                                    <!-- <td class="text-center"> -->
-                                    <!--     <t t-out="line_values['subtotal_after_discount']" -->
-                                    <!--         t-options='{"widget": "float", "precision":
-                                    o.get_digits()}' /> -->
-                                    <!-- </td> -->
                                     <!-- tax percentage  -->
                                     <td class="text-center">
                                         <t t-out="line_values['tax_percentage'] or 0" />% </td>
@@ -232,7 +241,7 @@
             <div class="row mt-4">
                 <div class="col-6"></div>  <!-- Espacio en blanco -->
                 <div class="col-6">
-                    <table class="table table-sm border">
+                    <table class="table table-sm table-borderless">
                         <tbody>
                             <tr>
                                 <td class="text-end">
