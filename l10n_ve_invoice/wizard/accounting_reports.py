@@ -954,26 +954,27 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         sale_book_lines = self.parse_sale_book_data()
         file = BytesIO()
 
+        password_protection = "secure"
         workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
         worksheet = workbook.add_worksheet()
 
         # cell formats
         cell_bold = workbook.add_format(
-            {"bold": True, "center_across": True, "text_wrap": True, "bottom": True}
+            {"bold": True, "center_across": True, "text_wrap": True, "bottom": True, "locked": True}
         )
         merge_format = workbook.add_format(
-            {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray"}
+            {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray", "locked": True}
         )
         cell_formats = {
-            "number": workbook.add_format({"num_format": "#,##0.00"}),
-            "percent": workbook.add_format({"num_format": "0.00%"}),
+            "number": workbook.add_format({"num_format": "#,##0.00", "locked": True}),
+            "percent": workbook.add_format({"num_format": "0.00%", "locked": True}),
         }
 
         # header
         worksheet.merge_range(
             "C1:M1",
             f"{self.company_id.name} - {self.company_id.vat}",
-            workbook.add_format({"bold": True, "center_across": True, "font_size": 18}),
+            workbook.add_format({"bold": True, "center_across": True, "font_size": 18, "locked": True}),
         )
         worksheet.merge_range(
             "C2:M2",
@@ -1003,7 +1004,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 if field["field"] == "index":
                     worksheet.write(INIT_LINES + index_line, index, index_line + 1)
                 else:
-                    cell_format = cell_formats.get(field.get("format"), workbook.add_format())
+                    cell_format = cell_formats.get(field.get("format"), workbook.add_format({"locked": True}))
                     worksheet.write(
                         INIT_LINES + index_line, index, line.get(field["field"]), cell_format
                     )
@@ -1016,6 +1017,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         self.generate_book_resume(worksheet, total_idx, merge_format, cell_formats)
 
+        worksheet.protect(password=password_protection)
+
         workbook.close()
         return file.getvalue()
 
@@ -1024,26 +1027,27 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         purchase_book_lines = self.parse_purchase_book_data()
         file = BytesIO()
 
+        password_protection = "secure"
         workbook = xlsxwriter.Workbook(file, {"in_memory": True, "nan_inf_to_errors": True})
         worksheet = workbook.add_worksheet()
 
         # cell formats
         cell_bold = workbook.add_format(
-            {"bold": True, "center_across": True, "text_wrap": True, "bottom": True}
+            {"bold": True, "center_across": True, "text_wrap": True, "bottom": True, "locked": True}
         )
         merge_format = workbook.add_format(
-            {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray"}
+            {"bold": 1, "border": 1, "align": "center", "valign": "vcenter", "fg_color": "gray", "locked": True}
         )
         cell_formats = {
-            "number": workbook.add_format({"num_format": "#,##0.00"}),
-            "percent": workbook.add_format({"num_format": "0.00%"}),
+            "number": workbook.add_format({"num_format": "#,##0.00","locked": True}),
+            "percent": workbook.add_format({"num_format": "0.00%", "locked": True}),
         }
 
         # header
         worksheet.merge_range(
             "C1:M1",
             f"{self.company_id.name} - {self.company_id.vat}",
-            workbook.add_format({"bold": True, "center_across": True, "font_size": 18}),
+            workbook.add_format({"bold": True, "center_across": True, "font_size": 18, "locked": True}),
         ) 
         worksheet.merge_range(
             "C2:M2",
@@ -1125,7 +1129,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 if field["field"] == "index":
                     worksheet.write(INIT_LINES + index_line, index, index_line + 1)
                 else:
-                    cell_format = cell_formats.get(field.get("format"), workbook.add_format())
+                    cell_format = cell_formats.get(field.get("format"), workbook.add_format({"locked": True}))
                     worksheet.write(
                         INIT_LINES + index_line, index, line.get(field["field"]), cell_format
                     )
@@ -1137,6 +1141,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 )
 
         self.generate_book_resume(worksheet, total_idx, merge_format, cell_formats)
+        
+        worksheet.protect(password=password_protection)
 
         workbook.close()
         return file.getvalue()
@@ -1196,6 +1202,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 if resume.get("total"):
                     total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
                     total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
+                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
+                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
 
                     worksheet.write_formula(
                         row_resume, 2, total_c_formula, cell_formats.get("number")
