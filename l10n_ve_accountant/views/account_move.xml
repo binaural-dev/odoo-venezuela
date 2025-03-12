@@ -85,6 +85,9 @@
 		    readonly="1"
 		/>
             </xpath>
+            <xpath expr="//notebook/page/field[@name='invoice_line_ids']/tree/field[@name='tax_ids']" position="attributes">
+                <attribute name="readonly">1</attribute>
+            </xpath>
             <xpath expr="//page/field[@name='line_ids']/tree/field[@name='balance']" position="after">
                 <field name="foreign_currency_id" invisible='1'/>
                 <field
