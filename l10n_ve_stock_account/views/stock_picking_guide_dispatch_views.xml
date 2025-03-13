@@ -68,7 +68,7 @@
             
                 <filter name="state_guide_dispatch" string="State guide dispatch" context="{'group_by': 'state_guide_dispatch'}"/>
                 <filter name="date_done_group" string="Guide Date" context="{'group_by': 'date_done'}"/>
-                <filter name="state_guide_dispatch_to_invoice" string="To Invoice" domain="[('state_guide_dispatch', '=', 'to_invoice'),('type_delivery_step', '=', 'out'),('state','=','done')]"/>
+                <filter name="state_guide_dispatch_to_invoice" string="To Invoice" domain="[('state_guide_dispatch', '=', 'to_invoice')]"/>
                 <filter name="state_guide_dispatch_invoiced" string="Invoiced" domain="[('state_guide_dispatch', '=', 'invoiced')]"/>
                 <filter name="date_done_filter" string="Guide Date" date="date_done"/>
             </search>
@@ -88,5 +88,6 @@
             ]"
         />
         <field name="context">{"search_default_state_guide_dispatch_to_invoice":1}</field>
+        <field name="domain">[('type_delivery_step', '=', 'out'), ('state', '=', 'done')]</field>
     </record>
 </odoo>
