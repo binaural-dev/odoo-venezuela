@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
+"Project-Id-Version: Odoo Server 16.0+e\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-13 02:01+0000\n"
-"PO-Revision-Date: 2025-03-13 02:01+0000\n"
+"POT-Creation-Date: 2025-03-13 14:00+0000\n"
+"PO-Revision-Date: 2025-03-13 14:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -131,6 +131,13 @@ msgid "Active?"
 msgstr "Activo"
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "Alert"
+msgstr "Alerta"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__amount_currency
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
 msgid "Amount in Currency"
@@ -233,16 +240,9 @@ msgid "Configuraciones fiscales usuario"
 msgstr ""
 
 #. module: l10n_ve_accountant
-#. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_move.py:0
-#, python-format
-msgid "Confirm Alert"
-msgstr "Confirmar Alerta"
-
-#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
-msgid "Confirm Validation"
-msgstr "Confirmar Validación"
+msgid "Validation"
+msgstr "Validación"
 
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_res_partner
@@ -1055,8 +1055,10 @@ msgstr "Actualizar Apuntes"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
 msgid ""
 "Upon confirmation, the corresponding sequences will be generated, and you "
-"will no longer be able to edit the fiscal invoice."
-msgstr "Al confirmar, se generarán las secuencias correspondientes y luego no podrá editar la factura fiscal."
+"will no longer be able to edit the invoice."
+msgstr ""
+"Al confirmar, se generarán las secuencias correspondientes y luego no podrá "
+"editar la factura."
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
