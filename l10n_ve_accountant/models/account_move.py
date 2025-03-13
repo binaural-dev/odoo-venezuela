@@ -821,7 +821,7 @@ class AccountMove(models.Model):
         if not self.env.context.get("move_action_post_alert"):
             for move in self:
                 return {
-                    'name': _('Confirm Alert'),
+                    'name': _('Alert'),
                     'type': 'ir.actions.act_window',
                     'res_model': 'move.action.post.alert.wizard',
                     'view_mode': 'form',
