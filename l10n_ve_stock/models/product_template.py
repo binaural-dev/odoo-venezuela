@@ -50,6 +50,12 @@ class ProductTemplate(models.Model):
         # Maldito Raiver e.e
         return True
 
+    @api.constrains("list_price")
+    def _check_list_price(self):
+        for product in self:
+            if product.list_price < 0:
+                raise ValidationError(_("Price cannot be negative."))
+
     @api.constrains("taxes_id")
     def _check_taxes_id(self):
         for product in self:
