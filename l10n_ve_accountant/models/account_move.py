@@ -275,9 +275,10 @@ class AccountMove(models.Model):
         debit and foreign credit of the line_ids fields (journal entries) when the move is created.
         """
         moves = super().create(vals_list)
-        moves._compute_rate()
 
         for move in moves:
+            if move.move_type != "in_invoice":
+                move._compute_rate()
             if move.move_type in ["out_refund", "in_refund"] and move.reversed_entry_id:
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
@@ -585,7 +586,7 @@ class AccountMove(models.Model):
                 vat = str(move.partner_id.vat)
             move.vat = vat.upper()
 
-    @api.depends("date", "invoice_date")
+    @api.depends("invoice_date")
     def _compute_rate(self):
         """
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
