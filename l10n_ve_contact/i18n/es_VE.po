@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250222\n"
+"Project-Id-Version: Odoo Server 16.0+e-20250303\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-12 17:27+0000\n"
-"PO-Revision-Date: 2025-03-12 17:27+0000\n"
+"POT-Creation-Date: 2025-03-13 02:18+0000\n"
+"PO-Revision-Date: 2025-03-13 02:18+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -59,6 +59,13 @@ msgstr ""
 #. module: l10n_ve_contact
 #. odoo-python
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
+#, python-format
+msgid "A partner with the same VAT number already exists for this company."
+msgstr "Ya existe un cliente con el mismo RIF/CI/PAS para esta compañía."
+
+#. module: l10n_ve_contact
+#. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
 #, python-format
 msgid "A partner with the same email address already exists for this company."
@@ -67,7 +74,6 @@ msgstr ""
 
 #. module: l10n_ve_contact
 #. odoo-python
-#: code:addons/l10n_ve_contact/models/res_partner.py:0
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
 #, python-format
 msgid "A partner with the same email already exists."
@@ -180,24 +186,28 @@ msgstr "Calle"
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_partner__street2
 #: model:ir.model.fields,field_description:l10n_ve_contact.field_res_users__street2
 msgid "Street2"
-msgstr "Calle2"
+msgstr "Calle"
 
 #. module: l10n_ve_contact
 #: model:ir.model.fields,help:l10n_ve_contact.field_res_partner__property_account_position_id
 #: model:ir.model.fields,help:l10n_ve_contact.field_res_users__property_account_position_id
 msgid ""
 "The fiscal position determines the taxes/accounts used for this contact."
-msgstr ""
-"La posición fiscal determina los impuestos/cuentas utilizados para este "
-"contacto. "
+msgstr "La posición fiscal determina los impuestos/cuentas utilizados para este contacto."
 
 #. module: l10n_ve_contact
 #. odoo-python
 #: code:addons/l10n_ve_contact/models/res_partner.py:0
-#: code:addons/l10n_ve_contact/models/res_partner.py:0
 #, python-format
 msgid "The vat field only accepts numbers"
 msgstr "El campo Identificación fiscal solo admite números"
+
+#. module: l10n_ve_contact
+#. odoo-python
+#: code:addons/l10n_ve_contact/models/res_partner.py:0
+#, python-format
+msgid "There is already a partner with the same VAT number for this company."
+msgstr "Ya existe un cliente con el mismo número de RIF para esta compañía."
 
 #. module: l10n_ve_contact
 #: model:ir.model.fields,help:l10n_ve_contact.field_res_partner__property_supplier_payment_term_id
@@ -205,9 +215,7 @@ msgstr "El campo Identificación fiscal solo admite números"
 msgid ""
 "This payment term will be used instead of the default one for purchase "
 "orders and vendor bills"
-msgstr ""
-"Se utilizará este plazo de pago en lugar del predeterminado para los pedidos"
-" de compra y las facturas de proveedor."
+msgstr "Este término de pago se utilizará en lugar del predeterminado para órdenes de compra y facturas de proveedores"
 
 #. module: l10n_ve_contact
 #: model:ir.model.fields,help:l10n_ve_contact.field_res_partner__property_payment_term_id
@@ -215,9 +223,7 @@ msgstr ""
 msgid ""
 "This payment term will be used instead of the default one for sales orders "
 "and customer invoices"
-msgstr ""
-"Se utilizará este plazo de pago en lugar del plazo por defecto para pedidos "
-"de venta y facturas de clientes"
+msgstr "Este término de pago se utilizará en lugar del predeterminado para órdenes de venta y facturas de clientes"
 
 #. module: l10n_ve_contact
 #: model:ir.model.fields,help:l10n_ve_contact.field_res_partner__property_product_pricelist

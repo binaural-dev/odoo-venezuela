@@ -4,10 +4,11 @@
         <field name="name">move.action.post.alert.wizard.form</field>
         <field name="model">move.action.post.alert.wizard</field>
         <field name="arch" type="xml">
-            <form string="Confirm Validation">
+            <form string="Validation">
                 <group>
-                    <div class="o_form_label"></div>
-                    <p> Upon confirmation, the corresponding sequences will be generated, and you will no longer be able to edit the fiscal invoice. </p>
+                    <span class="o_form_label" style="font-size: 14px; white-space: nowrap;">
+                        Upon confirmation, the corresponding sequences will be generated, and you will no longer be able to edit the invoice. 
+                    </span>
                 </group>
                 <footer>
                     <button name="action_confirm" string="Accept" type="object" class="oe_highlight" />
@@ -17,4 +18,3 @@
         </field>
     </record>
 </odoo>
-
