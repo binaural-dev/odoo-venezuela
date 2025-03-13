@@ -818,6 +818,18 @@ class AccountMove(models.Model):
                         line.account_id = move.journal_id.default_account_id
 
     def action_post(self):
+        if not self.env.context.get("move_action_post_alert"):
+            for move in self:
+                return {
+                    'name': _('Confirm Alert'),
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'move.action.post.alert.wizard',
+                    'view_mode': 'form',
+                    'view_id': False,
+                    'target': 'new',
+                    'context': {'default_move_id': self.id},
+                }
+
         for invoice in self:
             if (
                 invoice.company_id.account_use_credit_limit
