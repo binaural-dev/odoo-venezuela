@@ -24,6 +24,19 @@
       </tree>
     </field>
   </record>
+
+  <record id="l10n_ve_auditlog_lines_search" model="ir.ui.view">
+    <field name="name">l10n_ve.mail.tracking.value.audits.search</field>
+    <field name="model">mail.message</field>
+    <field name="arch" type="xml">
+      <search string="Audit logs Search">
+        <filter name="model" domain="[]" context="{'group_by': 'model'}" />
+        <filter name="date" domain="[]" context="{'group_by': 'date:day'}" />
+        <filter name="author" domain="[]" context="{'group_by': 'author_id'}" />
+      </search>
+    </field>
+  </record>
+
   <record model="ir.actions.act_window" id="l10n_ve_mail_tracking_value_audits_action">
     <field name="name">Audit logs lines</field>
     <field name="res_model">mail.tracking.value</field>

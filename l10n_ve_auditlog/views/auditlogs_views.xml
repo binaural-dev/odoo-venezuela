@@ -19,6 +19,18 @@
     <field name="view_mode">tree,form</field>
     <field name="domain">[('model', 'in', ('account.move','account.payment','account.retention'))]</field>
   </record>
+  <record id="l10n_ve_auditlog_search" model="ir.ui.view">
+    <field name="name">l10n_ve.mail.tracking.value.audits.search</field>
+    <field name="model">mail.message</field>
+    <field name="arch" type="xml">
+      <search string="Audit logs Search">
+        <filter name="model" domain="[]" context="{'group_by': 'model'}" />
+        <filter name="date" domain="[]" context="{'group_by': 'date:day'}" />
+        <filter name="author" domain="[]" context="{'group_by': 'author_id'}" />
+      </search>
+    </field>
+  </record>
+
   <menuitem name="Audit logs" id="l10n_ve_auditlog_menu" action="l10n_ve_auditlog_action"
     sequence="61" web_icon="l10n_ve_auditlog,static/description/icon.png">
     <menuitem name="Audit logs lines" id="menu_l10n_ve_auditlogs_lines"
