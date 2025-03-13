@@ -9,20 +9,18 @@
     compatibilidad con Odoo.
     """,
     "sequence": "1",
-    "author": "Binaural C.A - Odoo Gold Partner",
-    "maintainer": "andyengh",
-    "support": "contacto@binaural.dev",
+    "author": "binaural-dev",
     "website": "https://binauraldev.com",
     "depends": ["iot", "account", "web", "l10n_ve_invoice", "l10n_ve_tax_payer"],
     "data": [
+        "security/ir.model.access.csv",
         "data/iot_port.xml",
         "views/account_tax.xml",
         "views/account_move.xml",
         "views/iot_device.xml",
         "views/iot_box.xml",
         "views/account_journal.xml",
-        "wizards/accounting_reports_views.xml",
-        "security/ir.model.access.csv",
+        "wizard/accounting_reports_views.xml"
     ],
     "assets": {
         "web.assets_backend": [
@@ -32,5 +30,4 @@
     "installable": True,
     "application": False,
     "auto_install": False,
-    "binaural": True,
 }
