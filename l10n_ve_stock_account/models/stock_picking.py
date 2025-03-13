@@ -3,7 +3,7 @@ import logging
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.osv import expression
-from datetime import datetime, timedelta
+from datetime import date,datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
@@ -857,3 +857,30 @@ class StockPicking(models.Model):
             except Exception as e:
                 _logger.error(f"Error invoicing picking {picking.name}: {str(e)}")
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
+
+    def alert_views(self):
+        pickings_combined = self.env['stock.picking'].sudo().search([
+            ('state', '=', 'done'),
+            ('type_delivery_step', '!=', 'int'),
+            ('transfer_reason_id.code', '!=', 'self_consumption'),
+            ('state_guide_dispatch', '=', 'to_invoice')])
+        
+        hoy = date.today()
+        taxpayer_type = self.env.company.taxpayer_type
+        result = hoy  # Valor por defecto
+        
+        if taxpayer_type == 'special':
+            if hoy.day < 15:
+                # Si es antes del 15: mostrar día 15
+                result = hoy.replace(day=15)
+            else:
+                # Si es 15 o después: último día del mes
+                result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
+                result = result - timedelta(days=1)
+
+        elif taxpayer_type in ("ordinary", "formal"):
+            # Siempre último día del mes para estos tipos
+           result = date(hoy.year, hoy.month, 28) + timedelta(days=4)
+           result = result - timedelta(days=1)
+ 
+        return f"Tienes {len(pickings_combined)} guías de despacho sin facturar al {result.strftime('%d-%m-%Y')}"
