@@ -8,7 +8,8 @@ class MoveActionPostAlertWizard(models.TransientModel):
     
     def action_confirm(self):
         self.move_id.with_context(move_action_post_alert=True).action_post()
-        return {'type': 'ir.actions.act_window_close'}
+        return {'type': 'ir.actions.client',
+                'tag': 'reload',}
 
     def action_cancel(self):
         return {'type': 'ir.actions.act_window_close'}

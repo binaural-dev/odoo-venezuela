@@ -125,12 +125,6 @@ class AccountMoveInh(models.Model):
         
         return _data
 
-    def action_post(self):
-        super().action_post()
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'reload',
-        }
 
     def check_print_out_invoice(self):
 
