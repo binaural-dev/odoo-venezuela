@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0+e\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-13 14:00+0000\n"
-"PO-Revision-Date: 2025-03-13 14:00+0000\n"
+"POT-Creation-Date: 2025-03-13 14:19+0000\n"
+"PO-Revision-Date: 2025-03-13 14:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -54,6 +54,17 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
 msgid "<br/> ("
 msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid ""
+"<span class=\"o_form_label\" style=\"font-size: 14px; white-space: nowrap;\">\n"
+"                        Upon confirmation, the corresponding sequences will be generated, and you will no longer be able to edit the invoice. \n"
+"                    </span>"
+msgstr ""
+"<span class=\"o_form_label\" style=\"font-size: 14px; white-space: nowrap;\">\n"
+"                        Al confirmar, se generarán las secuencias correspondientes y luego no podrá editar la factura. \n"
+"                    </span>"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
@@ -238,11 +249,6 @@ msgstr ""
 #: model:res.groups,name:l10n_ve_accountant.group_fiscal_config_user
 msgid "Configuraciones fiscales usuario"
 msgstr ""
-
-#. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
-msgid "Validation"
-msgstr "Validación"
 
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_res_partner
@@ -1052,15 +1058,6 @@ msgid "Update account lines"
 msgstr "Actualizar Apuntes"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
-msgid ""
-"Upon confirmation, the corresponding sequences will be generated, and you "
-"will no longer be able to edit the invoice."
-msgstr ""
-"Al confirmar, se generarán las secuencias correspondientes y luego no podrá "
-"editar la factura."
-
-#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
 msgid "Usuario"
 msgstr ""
@@ -1078,6 +1075,11 @@ msgstr "Identificación"
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__vat
 msgid "VAT of the partner"
 msgstr "Identificación"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid "Validation"
+msgstr "Validación"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__value
@@ -1228,3 +1230,4 @@ msgstr "Notas de Crédito"
 #: model:ir.ui.menu,name:account.menu_action_account_payments_receivable
 msgid "Collections"
 msgstr "Cobranzas"
+
