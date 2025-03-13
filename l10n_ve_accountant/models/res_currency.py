@@ -1,9 +1,14 @@
 from odoo import models, fields, api, _
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class ResCurrency(models.Model):
     _inherit = "res.currency"
 
+    # TDE FIXME: move to l10n_ve_currency_rate_live
     edit_rate = fields.Boolean(
         compute="_compute_edit_rate",
     )
