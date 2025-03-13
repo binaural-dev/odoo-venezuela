@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "16.0.1.1.6",
+    "version": "16.0.1.1.7",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
@@ -19,6 +19,7 @@
         "l10n_ve_filter_partner",
     ],
     "data": [
+        "security/ir.model.access.csv",
         "security/res_groups.xml",
         "data/ir_cron.xml",
         "views/res_config_settings.xml",
