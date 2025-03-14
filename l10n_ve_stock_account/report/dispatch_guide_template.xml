@@ -35,7 +35,7 @@
                             alt="Company Logo" />
                     </div>
                     <div class="text-container">
-                        <p class="m-0 w-50">
+                        <p style="min-width: 600px;" class="m-0 w-50" >
                             <span class="fw-bold">Razón Social:</span>
                             <span t-out="o.company_id.name" />
                             <br />
