@@ -17,7 +17,6 @@
             '&amp;',
                 ('type_delivery_step', '=', 'int'),
                 ('is_dispatch_guide', '=', True)])"/>
-      <t t-out="pickings_combined" />
       <div>
         <span id="oe_neutralize_banner"
           t-if="pickings_combined"
