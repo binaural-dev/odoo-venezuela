@@ -59,7 +59,7 @@ Esta localización incluye los siguientes módulos, diseñados para cumplir con 
 
 3. **l10n_ve_rate**
 
-   - Gestión de tasas de cambio oficiales y personalizadas.
+   - Gestión de tasas de cambio oficiales.
 
 4. **l10n_ve_invoice**
 

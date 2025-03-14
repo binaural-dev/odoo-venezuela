@@ -32,7 +32,7 @@
                 <field name="correlative"
                     attrs="{
                         'invisible': [('move_type', 'not in', ['out_invoice', 'out_refund', 'in_invoice', 'in_refund'])],
-                        'readonly':  ['|', '&amp;', ('move_type', 'in', ['out_invoice', 'out_refund']), ('is_contingency', '=', False), ('state', '=', 'posted')],
+                        'readonly':  ['|', ('move_type', 'in', ['out_invoice', 'out_refund']), ('state', '=', 'posted')],
                         'required':  [('move_type', 'in', ['in_invoice', 'in_refund'])]
                     }"/>
             </xpath>

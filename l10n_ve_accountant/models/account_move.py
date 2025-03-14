@@ -821,15 +821,16 @@ class AccountMove(models.Model):
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
             for move in self:
-                return {
-                    'name': _('Alert'),
-                    'type': 'ir.actions.act_window',
-                    'res_model': 'move.action.post.alert.wizard',
-                    'view_mode': 'form',
-                    'view_id': False,
-                    'target': 'new',
-                    'context': {'default_move_id': self.id},
-                }
+                if move.move_type in ("out_invoice", "out_refund"):
+                    return {
+                        'name': _('Alert'),
+                        'type': 'ir.actions.act_window',
+                        'res_model': 'move.action.post.alert.wizard',
+                        'view_mode': 'form',
+                        'view_id': False,
+                        'target': 'new',
+                        'context': {'default_move_id': self.id},
+                    }
 
         for invoice in self:
             if (
