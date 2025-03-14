@@ -7,8 +7,14 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "16.0.0.0.4",
-    "depends": ["base"],
+    "version": "16.0.0.0.5",
+    "depends": ["base", "web"],
     "auto_install": True,
-    "data": ["data/ir_config_parameter.xml"],
+    "data": ["security/ir.model.access.csv", "data/ir_config_parameter.xml"],
+    "assets": {
+        "web.assets_backend": [
+            "l10n_ve_base/static/src/core/debug/debug_menu_items.js",
+        ],
+    },
 }
+

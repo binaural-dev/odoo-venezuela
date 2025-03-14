@@ -648,6 +648,13 @@ msgstr "La Disponibilidad del Producto para la Venta."
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/product_template.py:0
+#, python-format
+msgid "Price cannot be negative."
+msgstr "El precio no puede ser negativo."
+
+#. module: l10n_ve_stock
+#. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_location.py:0
 #, python-format
 msgid "The priority must be greater than 0."
@@ -668,7 +675,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking
 msgid "Transfer"
-msgstr "Transferir"
+msgstr "Traslado"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__type_delivery_step
