@@ -116,6 +116,9 @@
             <field name="payment_reference" position="after">
                 <field name="financial_document" attrs="{'invisible':[('move_type','not in',['out_refund','out_invoice'])]}" />
             </field>
+            <xpath expr="//page[@name='other_info']//field[@name='ref']" position="attributes">
+                <attribute name="attrs">{'readonly': [('move_type', 'in', ['out_refund'])]}</attribute>
+            </xpath>
         </field>
     </record>
     <record id="view_invoice_tree" model="ir.ui.view">
