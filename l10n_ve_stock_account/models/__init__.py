@@ -7,4 +7,5 @@ from . import (
     stock_move,
     sale_order,
     transfer_reason,
+    ir_actions_report
 )
