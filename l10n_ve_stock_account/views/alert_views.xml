@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <template id="l10n_ve_stock_account.l10n_ve_stock_account_alert" name="Alert Banner"
+    inherit_id="web.layout" active="True">
+    <xpath expr="//body" position="inside">
+      <t t-set="env" t-value="request.env(context=ctx)" />
+      <t t-set="pickings"
+        t-value="env['stock.picking'].sudo().search([('type_delivery_step','=','out'),('transfer_reason_id.code','not in', ['consignment','transfer']),('state_guide_dispatch', '=', 'to_invoice')])" />
+      <div>
+        <span id="oe_neutralize_banner"
+          t-if="pickings"
+          t-attf-style="
+                text-align: center;
+                color: #FFFFFF;
+                background-color: #D0442C;
+                position: relative;
+                display: block;
+                font-size: 16px;">
+          Tienes <t t-out="len(pickings)" /> guías de despacho por facturar </span>
+      </div>
+    </xpath>
+    <xpath expr="//head">
+      <meta name="robots" content="noindex,nofollow" />
+    </xpath>
+  </template>
+</odoo>

@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 16.0+e-20250102\n"
+"Project-Id-Version: Odoo Server 16.0+e\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-11 12:50+0000\n"
-"PO-Revision-Date: 2025-03-11 12:50+0000\n"
+"POT-Creation-Date: 2025-03-13 14:19+0000\n"
+"PO-Revision-Date: 2025-03-13 14:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -54,6 +54,17 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
 msgid "<br/> ("
 msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid ""
+"<span class=\"o_form_label\" style=\"font-size: 14px; white-space: nowrap;\">\n"
+"                        Upon confirmation, the corresponding sequences will be generated, and you will no longer be able to edit the invoice. \n"
+"                    </span>"
+msgstr ""
+"<span class=\"o_form_label\" style=\"font-size: 14px; white-space: nowrap;\">\n"
+"                        Al confirmar, se generarán las secuencias correspondientes y luego no podrá editar la factura. \n"
+"                    </span>"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
@@ -116,6 +127,11 @@ msgid "<strong>Total Sales</strong>"
 msgstr "Total de Ventas"
 
 #. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid "Accept"
+msgstr "Aceptar"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_search_tax_unit_l10n_ve_payment_extension
 msgid "Active"
 msgstr "Activo"
@@ -124,6 +140,13 @@ msgstr "Activo"
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__status
 msgid "Active?"
 msgstr "Activo"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid "Alert"
+msgstr "Alerta"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__amount_currency
@@ -168,9 +191,19 @@ msgid "Bank Statement Line"
 msgstr "Línea de extracto bancario"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment_register__base_currency_is_vef
+msgid "Base Currency Is Vef"
+msgstr "La moneda base es Bs"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.account_report_document
 msgid "COMPROBANTE CONTABLE No."
 msgstr ""
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid "Cancel"
+msgstr "Cancelar"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.form_wizard_all_payments
@@ -229,6 +262,7 @@ msgstr "País"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__create_uid
 msgid "Created by"
@@ -236,10 +270,16 @@ msgstr "Creado por"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__create_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__create_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__create_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__create_date
 msgid "Created on"
 msgstr "Creado en"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_res_currency
+msgid "Currency"
+msgstr "Moneda"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_payment_search_inherit_l10n_ve_accountant
@@ -295,6 +335,7 @@ msgstr "Descuento"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__display_name
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__display_name
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__display_name
 msgid "Display Name"
@@ -304,6 +345,11 @@ msgstr "Nombre"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
 msgid "Documento"
 msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_currency__edit_rate
+msgid "Edit Rate"
+msgstr "Editar Tasa"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
@@ -536,6 +582,7 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__id
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__id
 msgid "ID"
@@ -612,6 +659,7 @@ msgstr "Ultima tasa"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details____last_update
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard____last_update
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report____last_update
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit____last_update
 msgid "Last Modified on"
@@ -619,6 +667,7 @@ msgstr "Última modificación en"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__write_uid
 msgid "Last Updated by"
@@ -626,6 +675,7 @@ msgstr "Última actualización por"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_invoices_details__write_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__write_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_payment_report__write_date
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__write_date
 msgid "Last Updated on"
@@ -647,6 +697,16 @@ msgstr "Actualizar Tasa Manualmente"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.financial_all_payments
 msgid "Monto"
 msgstr ""
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_move_action_post_alert_wizard__move_id
+msgid "Move"
+msgstr "Movimiento"
+
+#. module: l10n_ve_accountant
+#: model:ir.model,name:l10n_ve_accountant.model_move_action_post_alert_wizard
+msgid "Move Action Post Alert"
+msgstr "Alerta al Postear Movimiento"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.report_account_invoices_details
@@ -785,7 +845,7 @@ msgstr "Recalcular debito y credito alterno de apuntes contables"
 #: code:addons/l10n_ve_accountant/report/account_invoice_details_report.py:0
 #, python-format
 msgid "Refund"
-msgstr "Devolucion"
+msgstr "Devolución"
 
 #. module: l10n_ve_accountant
 #: model:ir.model,name:l10n_ve_accountant.model_account_payment_register
@@ -928,8 +988,6 @@ msgstr ""
 #, python-format
 msgid "The rate has been updated from %(last_rate)s to %(rate)s "
 msgstr ""
-"La tasa ha sido actualizada de: %(last_rate)s a una tasa personalizada: "
-"%(rate)s"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment_register__foreign_rate
@@ -949,7 +1007,7 @@ msgstr "La tasa debe ser superior a cero."
 #, python-format
 msgid ""
 "The time zone is not registered, log in to your profile and configure it."
-msgstr "La zona horaria no está registrada, accede a tu perfil y configúrala."
+msgstr ""
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1017,6 +1075,11 @@ msgstr "Identificación"
 #: model:ir.model.fields,help:l10n_ve_accountant.field_account_payment__vat
 msgid "VAT of the partner"
 msgstr "Identificación"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.move_action_post_alert_wizard
+msgid "Validation"
+msgstr "Validación"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_tax_unit__value
@@ -1167,3 +1230,4 @@ msgstr "Notas de Crédito"
 #: model:ir.ui.menu,name:account.menu_action_account_payments_receivable
 msgid "Collections"
 msgstr "Cobranzas"
+
