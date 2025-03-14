@@ -30,6 +30,7 @@ class StockPicking(models.Model):
     show_create_bill = fields.Boolean(compute="_compute_button_visibility")
     show_create_customer_credit = fields.Boolean(compute="_compute_button_visibility")
     show_create_vendor_credit = fields.Boolean(compute="_compute_button_visibility")
+    show_create_invoice_internal = fields.Boolean(compute="_compute_button_visibility")
 
     has_document = fields.Boolean(
         string="Has Document",
@@ -97,50 +98,33 @@ class StockPicking(models.Model):
             )
         return guide_number.next_by_id(guide_number.id)
 
-    @api.depends(
-        "invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return"
-    )
+    @api.depends("invoice_count", "state", "state_guide_dispatch", "operation_code", "is_return")
     def _compute_button_visibility(self):
         for record in self:
-            record.show_create_invoice = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.state_guide_dispatch == "to_invoice",
-                    record.operation_code != "incoming",
-                    not record.is_return,
-                ]
-            )
+            # Variables comunes para evitar cálculos repetitivos
+            is_invoice_empty = record.invoice_count == 0
+            is_done = record.state == "done"
+            is_to_invoice = record.state_guide_dispatch == "to_invoice"
 
-            record.show_create_bill = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.state_guide_dispatch == "to_invoice",
-                    record.operation_code != "outgoing",
-                    not record.is_return,
-                ]
-            )
+            # Inicializar todos los valores en False por defecto
+            record.show_create_invoice = False
+            record.show_create_bill = False
+            record.show_create_customer_credit = False
+            record.show_create_vendor_credit = False
+            record.show_create_invoice_internal = False  # Nuevo campo
 
-            record.show_create_customer_credit = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.state_guide_dispatch == "to_invoice",
-                    record.operation_code != "outgoing",
-                    record.is_return,
-                ]
-            )
+            # Aplicar reglas solo si la transferencia está lista para facturación
+            if is_invoice_empty and is_done and is_to_invoice:
+                if record.operation_code == "incoming":
+                    record.show_create_bill = not record.is_return
+                    record.show_create_vendor_credit = record.is_return
 
-            record.show_create_vendor_credit = all(
-                [
-                    record.invoice_count == 0,
-                    record.state == "done",
-                    record.state_guide_dispatch == "to_invoice",
-                    record.operation_code != "incoming",
-                    record.is_return,
-                ]
-            )
+                if record.operation_code == "outgoing":
+                    record.show_create_invoice = not record.is_return
+                    record.show_create_customer_credit = record.is_return
+
+                if record.operation_code == "internal":
+                    record.show_create_invoice_internal = True  # Activar botón solo en internas
 
     def create_invoice_lots(self):
         valid_picking = self.filtered(
@@ -321,6 +305,55 @@ class StockPicking(models.Model):
             invoice.with_context(move_action_post_alert=True).action_post()
         return res
     
+    def create_internal_invoice(self):
+        """
+        Creates an internal invoice from an internal stock transfer.
+        """
+        self._validate_one_invoice_posted()
+        for picking_id in self:
+            if picking_id.picking_type_id.code != "internal":
+                raise UserError(_("Este proceso solo aplica para transferencias internas."))
+
+            current_user = self.env.uid
+            company = picking_id.company_id
+
+            # Obtener el diario de la factura desde la configuración
+            internal_journal_id = (
+                picking_id.env["ir.config_parameter"]
+                .sudo()
+                .get_param("stock_move_invoice.internal_journal_id")
+                or False
+            )
+            if not internal_journal_id:
+                raise UserError(_("Debe configurar un diario para facturas internas en la configuración."))
+
+            # Obtener líneas de la factura desde los movimientos de stock
+            invoice_line_list = picking_id._get_invoice_lines_for_invoice()
+            origin_name = self._get_origin_name(picking_id)
+
+            invoice = self.env['account.move'].create({
+                'move_type': 'out_invoice',  # Puede ser 'out_invoice' si es autofactura de venta interna
+                'invoice_origin': origin_name,
+                'invoice_user_id': current_user,
+                'narration': picking_id.name,
+                'partner_id': company.partner_id.id,  # La empresa como cliente/proveedor
+                'currency_id': company.currency_id.id,
+                'journal_id': int(internal_journal_id),
+                'payment_reference': picking_id.name,
+                'picking_id': picking_id.id,
+                'invoice_line_ids': invoice_line_list,
+                'transfer_ids': self,
+            })
+
+            # Publicar la factura automáticamente (opcional)
+            invoice.with_context(move_action_post_alert=True).action_post()
+
+            # Marcar el picking como facturado
+            picking_id.write({"state_guide_dispatch": "invoiced"})
+
+        return invoice
+
+    
     def _validate_one_invoice_posted(self):
         for picking in self:
             invoice_ids = self.env["account.move"].search(
@@ -337,6 +370,9 @@ class StockPicking(models.Model):
         if picking.operation_code == "outgoing":
             if picking.sale_id:
                 return picking.sale_id.name
+        if picking.operation_code == "internal":
+            if picking.transfer_reason_id:
+                return picking.transfer_reason_id.name
         return picking.name
 
     def _pre_action_done_hook(self):
